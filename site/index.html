@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bonobo Game</title>
+  <meta name="description" content="Il platform fighter multiplayer dei Bonobi: si gioca dal browser, lo costruiamo insieme sul Discord.">
+  <meta property="og:title" content="Bonobo Game">
+  <meta property="og:description" content="Il platform fighter multiplayer dei Bonobi. Vieni a menare, o a costruirlo con noi.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦍</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#">🦍 Bonobo Game</a>
+    <nav>
+      <a href="#prova">Prova</a>
+      <a href="#roadmap">Roadmap</a>
+      <a href="#parlamento">Parlamento</a>
+      <a href="#lottatore">Il tuo lottatore</a>
+      <a href="#contribuisci">Contribuisci</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-text">
+        <p class="kicker">Un picchiaduro fatto dal Discord, per il Discord</p>
+        <h1>Bonobo<br>Game</h1>
+        <p class="lead">Il platform fighter dei Bonobi, stile Brawlhalla e Smash. Si gioca dal browser: apri il link, chiama gli amici e cercate di buttarvi giù dall'arena.</p>
+        <p class="lead">Ogni lottatore, arena e provocazione viene da noi: le nostre facce, i nostri tormentoni, le nostre voci.</p>
+        <div class="cta">
+          <a id="play-link" class="btn btn-primary" href="#prova">Prova il sacco qui sotto</a>
+          <a class="btn" href="#lottatore">Proponi il tuo lottatore</a>
+        </div>
+        <p id="play-note" class="small muted">Il link per giocare online arriva con il deploy automatico (issue <a href="https://github.com/nicpanozzo/bonobo-game/issues/19">#19</a>).</p>
+      </div>
+      <div class="hero-art" aria-hidden="true">
+        <div class="bonobo b1">🦍</div>
+        <div class="pow">POW!</div>
+        <div class="bonobo b2">🦍</div>
+        <div class="stage-line"></div>
+      </div>
+    </section>
+
+    <section id="regole" class="band">
+      <h2>Come si gioca</h2>
+      <div class="cards4">
+        <article class="rule"><span class="big">%</span><h3>Danno in percentuale</h3><p>I colpi non tolgono vita: fanno salire la tua percentuale. Più è alta, più voli lontano.</p></article>
+        <article class="rule"><span class="big">💨</span><h3>Fuori dall'arena</h3><p>Se ti lanciano oltre i bordi perdi una vita. Ognuno ne ha 3, vince l'ultimo in piedi.</p></article>
+        <article class="rule"><span class="big">⤴</span><h3>Doppio salto</h3><p>Le piattaforme sottili si attraversano da sotto. Col doppio salto rientri quando ti hanno lanciato.</p></article>
+        <article class="rule"><span class="big">👥</span><h3>Fino a 4 in stanza</h3><p>Ogni partita è una stanza con il suo link: lo mandi sul canale e chi entra gioca.</p></article>
+      </div>
+      <table class="keys">
+        <tr><td><kbd>A</kbd> <kbd>D</kbd> o <kbd>←</kbd> <kbd>→</kbd></td><td>Muoversi</td></tr>
+        <tr><td><kbd>W</kbd> <kbd>↑</kbd> o <kbd>Spazio</kbd></td><td>Saltare, di nuovo in aria per il doppio salto</td></tr>
+        <tr><td><kbd>S</kbd> o <kbd>↓</kbd></td><td>Scendere da una piattaforma, caduta veloce</td></tr>
+        <tr><td><kbd>J</kbd></td><td>Attacco leggero: veloce, spinge poco</td></tr>
+        <tr><td><kbd>K</kbd></td><td>Attacco pesante: lento, lancia lontano</td></tr>
+      </table>
+    </section>
+
+    <section id="prova">
+      <h2>Il sacco da allenamento</h2>
+      <p>Una versione giocattolo delle regole vere, qui nella pagina. Prendi a pugni il sacco, fagli salire la percentuale e poi mandalo fuori con un pesante. Quanto riesci a mandarlo lontano?</p>
+      <div class="demo">
+        <canvas id="demo" width="960" height="540" aria-label="Mini gioco: colpisci il sacco da allenamento"></canvas>
+        <div class="demo-hud">
+          <div><span class="muted small">Sacco</span><strong id="bag-pct">0%</strong></div>
+          <div><span class="muted small">Lanci fuori</span><strong id="bag-kos">0</strong></div>
+          <div><span class="muted small">Record</span><strong id="bag-record">0 m</strong></div>
+        </div>
+        <div class="touch" aria-label="Comandi touch">
+          <button data-key="left" aria-label="Sinistra">◀</button>
+          <button data-key="right" aria-label="Destra">▶</button>
+          <button data-key="jump" aria-label="Salto">⤴</button>
+          <button data-key="light" aria-label="Attacco leggero">J</button>
+          <button data-key="heavy" aria-label="Attacco pesante">K</button>
+        </div>
+        <p class="small muted">Clicca sul riquadro per dargli i tasti. Danni e contraccolpo sono quelli del gioco vero (PR <a href="https://github.com/nicpanozzo/bonobo-game/pull/10">#10</a>), la fisica è semplificata.</p>
+      </div>
+    </section>
+
+    <section id="roadmap" class="band">
+      <h2>Cosa stiamo costruendo</h2>
+      <p>Presa dal vivo dalle issue su GitHub. <strong>Cosa sai fare?</strong> Scegli e trovi i lavori adatti a te, anche se non hai mai programmato.</p>
+      <div id="role-filter" class="chips" role="group" aria-label="Filtra per ruolo"></div>
+      <div class="columns">
+        <div>
+          <h3>🟢 Da prendere adesso</h3>
+          <div id="issues-ready" class="issue-list"><p class="muted">Carico le issue…</p></div>
+        </div>
+        <div>
+          <h3>🟡 In attesa di qualcos'altro</h3>
+          <div id="issues-waiting" class="issue-list"><p class="muted">Carico le issue…</p></div>
+        </div>
+      </div>
+      <div class="columns">
+        <div>
+          <h3>🔨 Ci stanno lavorando</h3>
+          <div id="prs-open" class="issue-list"><p class="muted">Carico le PR…</p></div>
+        </div>
+        <div>
+          <h3>🎉 Entrato nel gioco</h3>
+          <div id="prs-merged" class="issue-list"><p class="muted">Carico le PR…</p></div>
+        </div>
+      </div>
+      <p class="small muted">La mappa completa è nell'issue <a href="https://github.com/nicpanozzo/bonobo-game/issues/25">#25</a>. Per prendere un lavoro scrivi "ci penso io" nell'issue.</p>
+    </section>
+
+    <section id="parlamento">
+      <h2>🏛️ Il Parlamento dei Bonobi</h2>
+      <p>Le decisioni vere del gioco (quanto fa male il calcio, come si chiama l'arena) passano dal Parlamento. Si vota con un sondaggio nel canale Discord, qui trovi la seduta in corso e le delibere passate. Il risultato entra nel gioco, parola di bonobo.</p>
+      <div id="sedute" class="sedute"><p class="muted">Convoco il Parlamento…</p></div>
+      <p class="small muted">Vuoi proporre una questione? <a id="new-seduta" href="#">Convoca una seduta</a> e lancia il sondaggio sul Discord.</p>
+    </section>
+
+    <section id="lottatore" class="band">
+      <h2>Proponi il tuo lottatore</h2>
+      <p>Ogni membro del Discord può avere il suo lottatore nel gioco. Compila la scheda, guarda l'anteprima e mandala: si apre un'issue su GitHub già scritta, e un umano o un agente la trasforma in un personaggio vero.</p>
+      <div class="fighter-builder">
+        <form id="fighter-form" autocomplete="off">
+          <label>Nome del lottatore<input name="name" maxlength="40" placeholder="Es. Il Bonobo Furioso" required></label>
+          <label>Chi è nel canale<input name="who" maxlength="40" placeholder="Es. @luca" required></label>
+          <div class="row">
+            <label>Colore principale<input type="color" name="color1" value="#c0392b"></label>
+            <label>Colore secondario<input type="color" name="color2" value="#f1c40f"></label>
+          </div>
+          <fieldset>
+            <legend>Stile</legend>
+            <label class="radio"><input type="radio" name="style" value="equilibrato" checked> Equilibrato</label>
+            <label class="radio"><input type="radio" name="style" value="veloce"> Veloce</label>
+            <label class="radio"><input type="radio" name="style" value="pesante"> Pesante</label>
+            <label class="radio"><input type="radio" name="style" value="saltatore"> Saltatore</label>
+          </fieldset>
+          <label>Mossa firma, in una frase<input name="move" maxlength="120" placeholder="Es. lancia una banana che rimbalza"></label>
+          <label>Provocazione<input name="taunt" maxlength="80" placeholder="Es. Ti mando così lontano che ti serve il passaporto"></label>
+          <label>Frase di vittoria<input name="win" maxlength="80" placeholder="Es. Anche oggi la giungla è mia"></label>
+          <label>Riferimenti: tormentoni, meme, foto da cui disegnarlo<textarea name="refs" rows="3" maxlength="600"></textarea></label>
+          <label class="check"><input type="checkbox" name="consent" required> Sono io, oppure la persona è d'accordo ad avere un lottatore</label>
+          <div class="cta">
+            <button class="btn btn-primary" type="submit">Apri la proposta su GitHub</button>
+            <button class="btn" type="button" id="copy-discord">Copia per il Discord</button>
+          </div>
+          <p id="form-msg" class="small muted" role="status"></p>
+        </form>
+        <div class="preview" aria-live="polite">
+          <div class="vs">SCHEDA LOTTATORE</div>
+          <svg id="fighter-svg" viewBox="0 0 120 160" role="img" aria-label="Anteprima del lottatore">
+            <ellipse cx="60" cy="152" rx="34" ry="6" fill="rgba(0,0,0,.25)"/>
+            <rect id="f-body" x="36" y="56" width="48" height="90" rx="10"/>
+            <rect id="f-belt" x="36" y="104" width="48" height="10"/>
+            <circle id="f-head" cx="60" cy="38" r="26"/>
+            <ellipse id="f-face" cx="60" cy="44" rx="16" ry="13"/>
+            <circle cx="53" cy="36" r="3.5" fill="#111"/>
+            <circle cx="67" cy="36" r="3.5" fill="#111"/>
+            <path d="M52 50 Q60 56 68 50" stroke="#111" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+            <rect id="f-glove-l" x="18" y="80" width="20" height="18" rx="7"/>
+            <rect id="f-glove-r" x="82" y="80" width="20" height="18" rx="7"/>
+          </svg>
+          <h3 id="p-name">Il tuo lottatore</h3>
+          <p id="p-who" class="muted small">di qualcuno del canale</p>
+          <div id="p-stats" class="stats"></div>
+          <p id="p-taunt" class="quote"></p>
+          <p class="tiny muted">Le barre sono a occhio: i numeri veri li decide il gruppo.</p>
+        </div>
+      </div>
+      <h3>Già proposti</h3>
+      <div id="fighters" class="fighter-list"><p class="muted">Carico le proposte…</p></div>
+    </section>
+
+    <section id="contribuisci">
+      <h2>Entra nella squadra</h2>
+      <div class="cards4">
+        <article class="rule"><span class="big">🎨</span><h3>Disegni</h3><p>Sprite dei lottatori, arene, sfondi. Bastano anche scarabocchi da cui partire.</p></article>
+        <article class="rule"><span class="big">🎤</span><h3>Suoni e voci</h3><p>Colpi, musica, e soprattutto le vostre voci per provocazioni e annunciatore.</p></article>
+        <article class="rule"><span class="big">💡</span><h3>Idee e voti</h3><p>Mosse, nomi, tormentoni. Le scelte di design passano dai sondaggi sul canale.</p></article>
+        <article class="rule"><span class="big">⌨️</span><h3>Codice</h3><p>TypeScript, Phaser e Socket.IO. Va benissimo anche farlo con il tuo agente AI.</p></article>
+      </div>
+      <ol class="steps">
+        <li>Chiedi a Nicola di aggiungerti come collaboratore su GitHub.</li>
+        <li>Scegli un lavoro <a href="#roadmap">da prendere adesso</a> e scrivi "ci penso io" nell'issue.</li>
+        <li>Segui la guida passo passo in <a href="https://github.com/nicpanozzo/bonobo-game/blob/main/CONTRIBUTING.md">CONTRIBUTING.md</a>. Se lavori con un agente, le sue regole sono in <a href="https://github.com/nicpanozzo/bonobo-game/blob/main/AGENTS.md">AGENTS.md</a>.</li>
+        <li>Apri la Pull Request: un altro del gruppo la prova e la unisce.</li>
+      </ol>
+      <h3>Chi l'ha fatto finora</h3>
+      <div id="contributors" class="avatars"><p class="muted">Carico…</p></div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Fatto dai Bonobi · <a href="https://github.com/nicpanozzo/bonobo-game">Codice su GitHub</a> · Questa pagina sta in <code>site/</code>, migliorala anche tu.</p>
+  </footer>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
