@@ -230,6 +230,22 @@ function sedutaCard(issue) {
     ));
   });
   card.append(el('a', { class: 'btn', href: issue.html_url, text: closed ? 'Leggi la delibera' : 'Vota su GitHub' }));
+  if (!closed) {
+    // Annuncio da incollare nel canale: chi non ha GitHub vota nel sondaggio Discord, e alla chiusura si sommano
+    const share = el('button', { class: 'btn', type: 'button', text: 'Copia per il Discord' });
+    share.addEventListener('click', async () => {
+      const text = `🏛️ **${issue.title}**\n` +
+        options.map((o) => `${o.emoji} ${o.text}`).join('\n') +
+        `\nVota con la reazione qui: <${issue.html_url}>\nVoti dal vivo: ${location.href.split('#')[0]}#parlamento`;
+      try {
+        await navigator.clipboard.writeText(text);
+        share.textContent = 'Copiato!';
+      } catch {
+        share.textContent = 'Copia non riuscita';
+      }
+    });
+    card.append(' ', share);
+  }
   return card;
 }
 
