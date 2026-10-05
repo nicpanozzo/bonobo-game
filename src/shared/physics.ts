@@ -24,7 +24,13 @@ export function stepFighter(f: Fighter, dtMs: number): void {
   const dt = dtMs / 1000;
 
   if (f.ko) {
+    // Da KO non si controlla niente, ma il corpo continua a volare per il
+    // colpo ricevuto e cade fino a terra (prima restava sospeso in aria).
     f.respawnTimer -= dtMs;
+    f.attacking = false;
+    f.hitstun = false;
+    f.vx *= 0.9;
+    moveAndCollide(f, dt);
     return;
   }
 
@@ -56,7 +62,11 @@ export function stepFighter(f: Fighter, dtMs: number): void {
   }
   f.attacking = f.attackTimer > 0;
 
-  // Gravità e integrazione
+  moveAndCollide(f, dt);
+}
+
+// Gravità, spostamento, pavimento e bordi dello schermo
+function moveAndCollide(f: Fighter, dt: number): void {
   f.vy += FIGHTER.gravity * dt;
   f.x += f.vx * dt;
   f.y += f.vy * dt;

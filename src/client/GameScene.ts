@@ -89,7 +89,11 @@ export class GameScene extends Phaser.Scene {
         v = this.createView(p);
         this.views.set(p.id, v);
       }
+      // Appena rinato: niente interpolazione, deve comparire subito al punto
+      // di partenza invece di scivolare dal punto in cui era andato KO.
+      const respawned = v.target.ko && !p.ko;
       v.target = p;
+      if (respawned) v.body.setPosition(p.x, p.y - FIGHTER.height / 2);
     }
     for (const [id, v] of this.views) {
       if (seen.has(id)) continue;
