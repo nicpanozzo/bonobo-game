@@ -83,13 +83,21 @@ async function send(payload, image) {
   return res.json();
 }
 
+// Link cliccabile al messaggio: il webhook sa in quale server (guild) e canale scrive
+async function messageLink(message) {
+  const res = await fetch(WEBHOOK_URL);
+  if (!res.ok) return `id ${message.id}`;
+  const webhook = await res.json();
+  return `https://discord.com/channels/${webhook.guild_id}/${message.channel_id}/${message.id}`;
+}
+
 async function post(text, imageSource) {
   if (!text) usage('manca il testo');
   const image = imageSource ? await loadImage(imageSource) : undefined;
   const payload = { username: BOT_NAME, content: text };
   if (image) payload.embeds = [{ image: { url: `attachment://${image.name}` } }];
   const message = await send(payload, image);
-  console.log(`Postato. Id messaggio: ${message.id}`);
+  console.log(`Postato: ${await messageLink(message)}`);
 }
 
 async function poll(question, answers, options) {
@@ -105,7 +113,7 @@ async function poll(question, answers, options) {
       allow_multiselect: Boolean(options.multi),
     },
   });
-  console.log(`Sondaggio aperto per ${hours} ore. Id messaggio: ${message.id}`);
+  console.log(`Sondaggio aperto per ${hours} ore: ${await messageLink(message)}`);
   console.log(`Per leggere i voti: npm run discord -- results ${message.id}`);
 }
 
