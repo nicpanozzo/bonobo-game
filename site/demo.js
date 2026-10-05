@@ -104,7 +104,8 @@ export function startDemo(canvas) {
   canvas.tabIndex = 0;
 
   const input = { left: false, right: false, jump: false, down: false, light: false, heavy: false };
-  const prev = { ...input };
+  // I tasti premuti si ricordano fino al prossimo passo di fisica, anche se rilasciati nello stesso frame
+  const justPressed = new Set();
   const player = createBody(460);
   const bag = createBody(820);
   bag.facing = -1;
@@ -132,6 +133,7 @@ export function startDemo(canvas) {
     const key = KEYMAP[e.code];
     if (!key) return;
     e.preventDefault();
+    if (!e.repeat) justPressed.add(key);
     input[key] = true;
   });
   canvas.addEventListener('keyup', (e) => {
@@ -147,6 +149,7 @@ export function startDemo(canvas) {
     const key = button.dataset.key;
     const set = (on) => (e) => {
       e.preventDefault();
+      if (on && !input[key]) justPressed.add(key);
       input[key] = on;
       if (on) touched = true;
       button.classList.toggle('on', on);
@@ -157,7 +160,7 @@ export function startDemo(canvas) {
     button.addEventListener('pointerleave', set(false));
   }
 
-  const pressed = (k) => input[k] && !prev[k];
+  const pressed = (k) => justPressed.has(k);
 
   function stepPlayer(dt) {
     const f = player;
@@ -319,10 +322,10 @@ export function startDemo(canvas) {
       ctx.fillRect(0, 0, WORLD.width, WORLD.height);
       ctx.fillStyle = '#f7c948';
       ctx.font = '44px Bungee, Impact, sans-serif';
-      ctx.fillText(matchMedia('(pointer: coarse)').matches ? 'Usa i tasti qui sotto' : 'Clicca qui per giocare', WORLD.width / 2, 250);
+      ctx.fillText(matchMedia('(pointer: coarse)').matches ? 'Usa i tasti qui sotto' : 'Clicca qui per giocare', WORLD.width / 2, 150);
       ctx.fillStyle = '#f3f1e7';
       ctx.font = '26px Nunito, sans-serif';
-      ctx.fillText('A D muovi · W salta · J leggero · K pesante', WORLD.width / 2, 300);
+      ctx.fillText('A D muovi · W salta · J leggero · K pesante', WORLD.width / 2, 200);
     }
   }
 
@@ -341,7 +344,7 @@ export function startDemo(canvas) {
         stepPlayer(STEP);
         resolveHit();
         stepBag(STEP);
-        Object.assign(prev, input);
+        justPressed.clear();
         for (const p of popups) {
           p.life -= STEP * 1.2;
           p.y -= 60 * STEP;

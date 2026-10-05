@@ -183,7 +183,18 @@ async function loadRoadmap() {
   }
 }
 
-// ---------- Parlamento ----------
+// ---------- Parlamento e lottatori ----------
+
+// Chi apre l'issue dal sito senza permessi sul repo non può mettere etichette:
+// riconosciamo le sedute e le schede anche dal titolo
+const SEDUTA_TITLE = /^(🏛️?\s*)?SEDUTA/iu;
+const FIGHTER_TITLE = /^Lottatore:/i;
+const hasLabel = (issue, name) => issue.labels.some((l) => l.name === name);
+let everyIssuePromise;
+function everyIssue() {
+  everyIssuePromise ??= gh('/issues?state=all&per_page=100').then((list) => list.filter((i) => !i.pull_request));
+  return everyIssuePromise;
+}
 
 // Le opzioni di una seduta sono righe della issue come "- 🎉 Il giusto (12%)"
 function parseOptions(body) {
@@ -241,8 +252,7 @@ async function loadParliament() {
     body: NEW_SEDUTA_BODY,
   })}`;
   try {
-    const issues = await gh(`/issues?state=all&labels=${encodeURIComponent(PARLIAMENT_LABEL)}&per_page=20`);
-    const sedute = issues.filter((i) => !i.pull_request);
+    const sedute = (await everyIssue()).filter((i) => hasLabel(i, PARLIAMENT_LABEL) || SEDUTA_TITLE.test(i.title));
     const open = sedute.filter((i) => i.state === 'open');
     const closed = sedute.filter((i) => i.state === 'closed').slice(0, 2);
     if (open.length + closed.length === 0) {
@@ -358,8 +368,7 @@ document.getElementById('copy-discord').addEventListener('click', async () => {
 async function loadFighters() {
   const box = document.getElementById('fighters');
   try {
-    const issues = await gh(`/issues?state=all&labels=${encodeURIComponent(FIGHTER_LABEL)}&per_page=50`);
-    const fighters = issues.filter((i) => !i.pull_request);
+    const fighters = (await everyIssue()).filter((i) => hasLabel(i, FIGHTER_LABEL) || FIGHTER_TITLE.test(i.title));
     if (fighters.length === 0) {
       box.replaceChildren(el('p', { class: 'muted', text: 'Nessuno ancora. Sarai il primo sfidante?' }));
       return;
