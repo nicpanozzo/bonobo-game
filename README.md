@@ -1,8 +1,20 @@
 # Bonobo Game 🦍👊
 
-Picchiaduro multiplayer online che gira nel browser, fatto tra amici.
+**Il picchiaduro multiplayer del nostro gruppo Discord.** Si gioca dal browser, senza installare niente: apri il link, mandalo agli amici e vi menate nella stessa stanza.
 
-Stato attuale: fino a 4 giocatori entrano nella stessa stanza, si muovono, saltano e si prendono a pugni. Chi arriva a 0 HP va KO e rinasce dopo 2 secondi. La grafica sono rettangoli: è tutto da costruire!
+![Due giocatori nella stessa stanza](docs/screenshot.png)
+
+> Siamo agli inizi: fino a 4 giocatori entrano nella stessa stanza, si muovono, saltano e si prendono a pugni. Chi arriva a 0 HP va KO e rinasce dopo 2 secondi. La grafica sono rettangoli, quindi c'è spazio per tutti: grafici, programmatori, chi fa i suoni, chi inventa le mosse.
+
+**Nuovo nel progetto?** Leggi [CONTRIBUTING.md](CONTRIBUTING.md): spiega passo passo come fare la tua prima modifica, anche se non hai mai usato Git.
+
+## Tecnologie
+
+- [Phaser](https://phaser.io) per la grafica e l'input nel browser
+- [Socket.IO](https://socket.io) per il multiplayer in tempo reale
+- [Node.js](https://nodejs.org) + Express per il server
+- [Vite](https://vite.dev) per lo sviluppo (ricarica la pagina da sola quando salvi)
+- Tutto in [TypeScript](https://www.typescriptlang.org)
 
 ## Comandi di gioco
 
@@ -17,7 +29,7 @@ Stato attuale: fino a 4 giocatori entrano nella stessa stanza, si muovono, salta
 Serve [Node.js](https://nodejs.org) 20 o più recente.
 
 ```bash
-git clone https://github.com/<proprietario>/bonobo-game.git
+git clone https://github.com/nicpanozzo/bonobo-game.git
 cd bonobo-game
 npm install
 npm run dev
@@ -54,6 +66,8 @@ src/
 Il principio chiave: **il server è l'arbitro**. Il browser manda solo quali tasti sono premuti, il server calcola dove sono tutti e chi ha colpito chi, poi manda lo stato a tutti 30 volte al secondo. Così nessuno può barare modificando il proprio client.
 
 ## Come contribuire
+
+Versione breve qui sotto, quella completa (con i comandi spiegati uno per uno) è in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 1. Fatti aggiungere come collaboratore al repo GitHub (Settings → Collaborators).
 2. Crea un branch per ogni cosa che fai:
