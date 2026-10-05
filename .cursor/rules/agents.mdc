@@ -1,0 +1,6 @@
+---
+description: Regole del progetto bonobo-game per tutti gli agenti
+alwaysApply: true
+---
+
+Segui le regole in @AGENTS.md (radice della repo). Sono le stesse per tutti gli agenti del progetto.
