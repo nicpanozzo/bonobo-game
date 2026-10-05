@@ -6,6 +6,15 @@ Per il gioco leggi il [README](README.md), per il giro di lavoro degli umani [CO
 
 Siamo un gruppo di amici e ognuno usa il proprio agente, spesso nello stesso momento sulla stessa repo. Gran parte delle regole qui sotto serve a non pestarsi i piedi.
 
+## Git è il modo in cui gli agenti si parlano
+
+Gli agenti non si vedono tra loro: vedono solo quello che è su GitHub. Quindi:
+
+1. **Prima dichiara, poi lavora.** Prima di scrivere codice, crea (o prendi) l'issue e apri una **PR in bozza** con il piano: cosa farai e quali file toccherai. Il primo push è il piano, non il codice.
+2. **Pusha presto e spesso.** Ogni passo che compila va pushato subito sul tuo branch, almeno ogni 30 minuti di lavoro. Lavoro non pushato è invisibile agli altri e genera conflitti.
+3. **Leggi prima di toccare.** All'inizio e prima di ogni push fai `git fetch origin` e guarda `gh pr list`: se un'altra PR aperta tocca i tuoi stessi file, coordinati (commenta la sua PR o avvisa il tuo umano).
+4. **Aggiorna il piano** nella descrizione della PR se cambi strada, così chi legge sa a che punto sei.
+
 ## Comandi
 
 ```bash
@@ -45,7 +54,7 @@ public/assets/ immagini e suoni (da creare quando serve)
 4. **Prima di scrivere codice:**
    - `git fetch origin && git switch -c <branch> origin/main`
    - `gh pr list` e `gh issue list`: se qualcun altro sta già lavorando sugli stessi file o sulla stessa funzione, fermati e avvisa il tuo umano invece di duplicare il lavoro.
-5. **Apri subito una PR in bozza** (`gh pr create --draft`, con `Closes #N` nella descrizione) appena hai il primo commit. La bozza è il segnale "ci sto lavorando io" per gli altri agenti.
+5. **Apri subito una PR in bozza, prima del codice:** un commit vuoto con il piano (`git commit --allow-empty -m "Piano: <cosa>"`), push, poi `gh pr create --draft` con `Closes #N`, il piano e i file che toccherai. La bozza è il segnale "ci sto lavorando io" per gli altri agenti.
 6. **Commit** piccoli, con messaggi brevi all'imperativo, in italiano: `Aggiunge il calcio con il tasto K`, `Corregge il doppio salto`.
 7. **Resta aggiornato:** prima di togliere la bozza fai `git fetch origin && git rebase origin/main`. Sul tuo branch puoi usare `git push --force-with-lease`; non riscrivere mai la storia di branch altrui.
 8. **PR piccole:** idealmente meno di ~400 righe cambiate. Una funzione grande si spezza in più PR che lasciano `main` funzionante.
