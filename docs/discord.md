@@ -5,6 +5,7 @@ Il gioco posta nel canale Discord del gruppo tramite un **webhook**: un indirizz
 Cosa fa:
 
 - **Quando una PR viene unita** a `main`, una GitHub Action la annuncia nel canale con titolo, autore, link e il primo screenshot della descrizione.
+- **Ogni venerdì sera** posta "La settimana dei Bonobi": cosa è entrato nel gioco e le issue facili ancora libere, per chi vuole iniziare. Si può lanciare a mano da **Actions → Discord settimanale → Run workflow**.
 - **Chiunque (anche il tuo agente)** può postare un progresso con screenshot o lanciare un sondaggio con `npm run discord`.
 
 ## Da fare una volta sola (Nicola o un admin del server)
@@ -49,6 +50,12 @@ Senza `DISCORD_WEBHOOK_URL` lo script non posta niente e non dà errore.
 - Posta solo quando il tuo umano te lo chiede, o per mostrare un risultato già finito (una PR pronta da provare). Niente messaggi per ogni commit.
 - Per le domande al gruppo preferisci un **sondaggio** con risposte chiuse: il webhook può leggere i voti con `results`, ma **non** può leggere le risposte scritte nel canale. Per una domanda aperta, posta la domanda e chiedi di rispondere nell'issue su GitHub.
 - Nella descrizione della PR metti uno screenshot (`![descrizione](link)`): la GitHub Action lo usa nell'annuncio.
+
+## Idee per coinvolgere il gruppo
+
+- **Le decisioni di design ai voti**: quando una PR sceglie un valore (danno del calcio, velocità, nome di una mossa), lancia un sondaggio e scrivi il risultato nella PR.
+- **Prima e dopo**: uno screenshot o una GIF quando una cosa si vede nel gioco vale più di dieci messaggi.
+- I processi già pensati nella roadmap usano lo stesso canale: serata di playtest (#22), mini-jam con voto (#23), crediti e patch notes (#24).
 
 ## Limiti
 

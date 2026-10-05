@@ -7,6 +7,7 @@
 //   node scripts/discord.mjs poll "Domanda?" "Risposta 1" "Risposta 2" [--hours 24] [--multi]
 //   node scripts/discord.mjs results <id-messaggio>
 //   node scripts/discord.mjs pr-merged          (usato dalla GitHub Action)
+//   node scripts/discord.mjs weekly             (riepilogo del venerdì, dalla GitHub Action)
 
 import { readFile } from 'node:fs/promises';
 import { basename } from 'node:path';
@@ -16,6 +17,8 @@ const BOT_NAME = 'Bonobo Game';
 // Discord accetta sondaggi da 1 a 768 ore (32 giorni)
 const MAX_POLL_HOURS = 768;
 const MAX_POLL_ANSWERS = 10;
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+const FIRST_ISSUE_LABEL = 'good first issue';
 
 function usage(message) {
   if (message) console.error(`Errore: ${message}\n`);
@@ -124,6 +127,42 @@ async function results(messageId) {
   console.log(closed ? '(sondaggio chiuso)' : `(aperto fino a ${message.poll.expiry})`);
 }
 
+// Chiamata all'API di GitHub con il token dell'Action
+async function github(path) {
+  const res = await fetch(`https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}${path}`, {
+    headers: {
+      Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+      Accept: 'application/vnd.github+json',
+    },
+  });
+  if (!res.ok) throw new Error(`GitHub ha risposto ${res.status}: ${await res.text()}`);
+  return res.json();
+}
+
+// Riepilogo della settimana: cosa è entrato nel gioco e cosa si può prendere,
+// così anche chi non apre GitHub vede che il gioco cresce e trova da dove iniziare
+async function weekly() {
+  const since = Date.now() - WEEK_MS;
+  const closed = await github('/pulls?state=closed&base=main&sort=updated&direction=desc&per_page=50');
+  const merged = closed.filter((pr) => pr.merged_at && Date.parse(pr.merged_at) >= since);
+  const easy = await github(`/issues?state=open&labels=${encodeURIComponent(FIRST_ISSUE_LABEL)}&per_page=5`);
+  const takeable = easy.filter((issue) => !issue.pull_request && issue.assignees.length === 0);
+
+  const lines = ['🦍 **La settimana dei Bonobi**', ''];
+  if (merged.length > 0) {
+    lines.push('**Entrato nel gioco:**');
+    for (const pr of merged) lines.push(`• ${pr.title} (di ${pr.user.login})`);
+  } else {
+    lines.push('Questa settimana non è entrato niente nel gioco: tocca a voi! 👀');
+  }
+  if (takeable.length > 0) {
+    lines.push('', '**Da prendere, anche se non hai mai programmato:**');
+    for (const issue of takeable) lines.push(`• [${issue.title}](<${issue.html_url}>)`);
+  }
+  lines.push('', 'Commenta "ci penso io" su un\'issue e sei dentro.');
+  await post(lines.join('\n'));
+}
+
 // Primo screenshot nella descrizione della PR: ![..](url) oppure <img src="url">
 function firstImageUrl(markdown) {
   const match =
@@ -163,6 +202,7 @@ try {
   else if (command === 'poll') await poll(positional[0], positional.slice(1), options);
   else if (command === 'results') await results(positional[0]);
   else if (command === 'pr-merged') await prMerged();
+  else if (command === 'weekly') await weekly();
   else usage(`comando sconosciuto: ${command}`);
 } catch (err) {
   console.error(`Errore: ${err.message}`);
