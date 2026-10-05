@@ -175,8 +175,8 @@ footer { padding: 28px 16px; text-align: center; color: var(--muted); border-top
 .seduta { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; }
 .seduta h3 { margin: 0 0 4px; overflow-wrap: anywhere; }
 .seduta .stato { font-size: .8rem; color: var(--muted); margin-bottom: 10px; }
-.opzione { margin: 8px 0; }
-.opzione .riga { display: flex; justify-content: space-between; gap: 8px; font-size: .95rem; }
-.opzione .riga span:first-child { overflow-wrap: anywhere; }
-.opzione.vince .bar span { background: var(--green); }
+.mozioni { margin: 0 0 8px; padding-left: 1.2em; }
+.mozioni li { margin: 4px 0; overflow-wrap: anywhere; }
+.mozioni li.vince { color: var(--green); font-weight: 800; list-style: none; margin-left: -1.2em; }
+.esito { font-weight: 800; }
 .seduta .btn { margin-top: 10px; padding: 8px 16px; font-size: .9rem; }

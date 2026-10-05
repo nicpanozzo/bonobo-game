@@ -22,12 +22,6 @@ const HIDDEN_LABELS = new Set(['pronto', 'in attesa']);
 const FIGHTER_LABEL = 'personaggio'; // lo stesso del modulo "Il mio lottatore" (issue #21)
 const PARLIAMENT_LABEL = 'parlamento';
 
-// Le reazioni di GitHub sono i "pulsanti di voto" del Parlamento
-const VOTE_EMOJI = {
-  '👍': '+1', '👎': '-1', '😄': 'laugh', '🎉': 'hooray',
-  '😕': 'confused', '❤️': 'heart', '🚀': 'rocket', '👀': 'eyes',
-};
-
 // ---------- utilità ----------
 
 function el(tag, props = {}, ...children) {
@@ -196,69 +190,58 @@ function everyIssue() {
   return everyIssuePromise;
 }
 
-// Le opzioni di una seduta sono righe della issue come "- 🎉 Il giusto (12%)"
-function parseOptions(body) {
+// Si vota con un sondaggio nel canale Discord: la issue è il verbale della seduta.
+// Le opzioni sono le righe a elenco ("- Calcio rotante"), il link al sondaggio è un link discord.com
+// e, a seduta chiusa, la riga "Esito: ..." dice chi ha vinto.
+const DISCORD_LINK = /https:\/\/(?:www\.)?(?:discord\.com|discordapp\.com|discord\.gg)\/[^\s)>\]]+/;
+const OUTCOME_LINE = /^\s*\**\s*Esito\s*:?\s*\**\s*:?\s*(.+)$/im;
+
+function parseSeduta(body) {
+  const text = body ?? '';
   const options = [];
-  for (const line of (body ?? '').split('\n')) {
-    const match = /^\s*[-*]\s*(👍|👎|😄|🎉|😕|❤️|❤|🚀|👀)\s*(.+)$/u.exec(line);
-    if (!match) continue;
-    const emoji = match[1] === '❤' ? '❤️' : match[1];
-    options.push({ emoji, text: match[2].trim(), key: VOTE_EMOJI[emoji] });
+  for (const line of text.split('\n')) {
+    const match = /^\s*[-*]\s+(?!\[)(.+)$/.exec(line);
+    if (match) options.push(match[1].replace(/\*\*/g, '').trim());
   }
-  return options;
+  const outcome = OUTCOME_LINE.exec(text)?.[1].replace(/\*\*/g, '').trim();
+  return { options, poll: DISCORD_LINK.exec(text)?.[0], outcome };
 }
 
 function sedutaCard(issue) {
-  const options = parseOptions(issue.body);
-  const votes = options.map((o) => issue.reactions?.[o.key] ?? 0);
-  const total = votes.reduce((a, b) => a + b, 0);
-  const best = Math.max(...votes);
+  const { options, poll, outcome } = parseSeduta(issue.body);
   const closed = issue.state === 'closed';
   const card = el('article', { class: 'seduta' },
-    el('h3', { text: issue.title }),
-    el('div', { class: 'stato', text: `${closed ? '🔨 Deliberato' : '🗳️ Seduta aperta'} · ${total} vot${total === 1 ? 'o' : 'i'} · #${issue.number}` }),
+    el('h3', { text: issue.title.replace(/^(🏛\uFE0F?\s*)/u, '') }),
+    el('div', { class: 'stato', text: `${closed ? '🔨 Deliberato' : '🗳️ Seduta aperta: si vota sul Discord'} · #${issue.number}` }),
   );
-  if (options.length === 0) {
-    card.append(el('p', { class: 'muted small', text: 'Questa seduta non ha opzioni nel formato "- 🎉 opzione".' }));
+  const list = el('ul', { class: 'mozioni' });
+  for (const option of options) {
+    const winner = closed && outcome && outcome.toLowerCase().includes(option.toLowerCase());
+    list.append(el('li', { class: winner ? 'vince' : '', text: winner ? `🏆 ${option}` : option }));
   }
-  options.forEach((o, i) => {
-    const pct = total ? Math.round((votes[i] / total) * 100) : 0;
-    const winner = closed && total > 0 && votes[i] === best;
-    card.append(el('div', { class: `opzione${winner ? ' vince' : ''}` },
-      el('div', { class: 'riga' }, el('span', { text: `${o.emoji} ${o.text}` }), el('span', { text: String(votes[i]) })),
-      el('div', { class: 'bar' }, el('span', { style: { width: `${pct}%` } })),
-    ));
-  });
-  card.append(el('a', { class: 'btn', href: issue.html_url, text: closed ? 'Leggi la delibera' : 'Vota su GitHub' }));
+  card.append(list);
+  if (closed && outcome) card.append(el('p', { class: 'esito', text: `Esito: ${outcome}` }));
   if (!closed) {
-    // Annuncio da incollare nel canale: chi non ha GitHub vota nel sondaggio Discord, e alla chiusura si sommano
-    const share = el('button', { class: 'btn', type: 'button', text: 'Copia per il Discord' });
-    share.addEventListener('click', async () => {
-      const text = `🏛️ **${issue.title}**\n` +
-        options.map((o) => `${o.emoji} ${o.text}`).join('\n') +
-        `\nVota con la reazione qui: <${issue.html_url}>\nVoti dal vivo: ${location.href.split('#')[0]}#parlamento`;
-      try {
-        await navigator.clipboard.writeText(text);
-        share.textContent = 'Copiato!';
-      } catch {
-        share.textContent = 'Copia non riuscita';
-      }
-    });
-    card.append(' ', share);
+    card.append(poll
+      ? el('a', { class: 'btn btn-primary', href: poll, target: '_blank', rel: 'noopener', text: 'Vota sul Discord' })
+      : el('p', { class: 'small muted', text: 'Il sondaggio è nel canale Discord dei Bonobi.' }));
   }
+  card.append(' ', el('a', { class: 'btn', href: issue.html_url, text: closed ? 'Leggi la delibera' : 'Il verbale su GitHub' }));
   return card;
 }
 
 const NEW_SEDUTA_BODY = `Ordine del giorno: <la questione, in una frase>
 
-Si vota con la reazione corrispondente a questo messaggio. Almeno un'opzione assurda è obbligatoria.
+Si vota nel sondaggio sul canale Discord. Almeno un'opzione assurda è obbligatoria.
 
-- 👍 <opzione 1>
-- 🎉 <opzione 2>
-- 🚀 <opzione 3>
-- 😄 <opzione assurda>
+- <opzione 1>
+- <opzione 2>
+- <opzione 3>
+- <opzione assurda>
 
-La seduta si chiude il <data>. Il risultato va nella PR e in \`constants.ts\`.`;
+Sondaggio: <link al messaggio del sondaggio su Discord>
+
+A seduta chiusa aggiungi la riga "Esito: <opzione vincente>" e chiudi l'issue. Il risultato va nella PR e in \`constants.ts\`.`;
 
 async function loadParliament() {
   const box = document.getElementById('sedute');
