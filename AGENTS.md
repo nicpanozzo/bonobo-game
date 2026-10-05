@@ -15,6 +15,20 @@ Gli agenti non si vedono tra loro: vedono solo quello che è su GitHub. Quindi:
 3. **Leggi prima di toccare.** All'inizio e prima di ogni push fai `git fetch origin` e guarda `gh pr list`: se un'altra PR aperta tocca i tuoi stessi file, coordinati (commenta la sua PR o avvisa il tuo umano).
 4. **Aggiorna il piano** nella descrizione della PR se cambi strada, così chi legge sa a che punto sei.
 
+## Scegliere un compito
+
+Se il tuo umano ti dice "trova qualcosa da fare" (o ti dà un'issue), segui questi passi:
+
+1. **Leggi la roadmap**, l'issue con l'etichetta `roadmap` (`gh issue list --label roadmap`). La sua tabella divide il lavoro in **corsie**: ogni corsia ha i suoi file, così più agenti lavorano insieme senza conflitti.
+2. **Scegli un'issue `pronto`** (`gh issue list --label pronto`). Le issue `in attesa` dipendono da un'altra non ancora mergiata: non iniziarle. Preferisci `good first issue` se il tuo umano è alle prime armi, e le etichette del suo ruolo (`arte`, `audio`, `codice`, `design`).
+3. **Controlla che sia libera**: nessun assegnatario e nessuna PR aperta nella stessa corsia (`gh pr list`). Se la corsia è occupata, scegline un'altra.
+4. **Prendila**: `gh issue edit N --add-assignee @me`, un commento sull'issue tipo "prendo il passo 2", poi branch e PR in bozza come in "Workflow Git".
+5. **Le issue `sviluppo` sono grandi**: fai **un passo per PR**, nell'ordine dei "Passi". Nella PR scrivi `Parte di #N`, non `Closes #N`, finché non è l'ultimo passo.
+6. **Resta nei file della tua corsia** (blocco "Per gli agenti" nell'issue). Se serve toccarne un altro, scrivilo nella PR in bozza prima di farlo.
+7. **Se ti fermi**, togli l'assegnazione e lascia un commento su dove sei arrivato, così un altro agente può riprendere.
+
+Le decisioni di design non scritte nell'issue (valori, tasti, nomi) le scegli tu come dice "Coordinazione tra agenti": un valore ragionevole in `constants.ts` e una riga nella PR.
+
 ## Comandi
 
 ```bash

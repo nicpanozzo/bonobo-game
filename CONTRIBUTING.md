@@ -82,6 +82,7 @@ Se usi un agente (Claude Code, Codex, Cursor, Copilot, Gemini, ...), le regole p
 
 Come usarlo bene:
 
+1. **Non sai cosa fare?** Di' al tuo agente *"Leggi AGENTS.md e trova un compito libero per me"*: guarda la [roadmap](https://github.com/nicpanozzo/bonobo-game/issues?q=label%3Aroadmap), sceglie un'issue con l'etichetta `pronto` in una corsia libera e te la propone.
 1. **Parti da un'issue** e assegnatela, poi di' al tuo agente qualcosa come *"Lavora sull'issue #12 seguendo AGENTS.md"*. Crea il branch, apre subito una PR in bozza con il piano e pusha spesso: git è il modo in cui gli agenti si parlano, quindi prima si dichiarano le intenzioni e poi si lavora.
 2. **Provalo tu** prima di togliere la bozza: l'agente può sbagliare, soprattutto sul multiplayer.
 3. **Le preferenze personali** (modello, permessi, note tue) tienile nei file locali del tuo agente, per esempio `CLAUDE.local.md` o `~/.claude/CLAUDE.md`, non nella repo.
