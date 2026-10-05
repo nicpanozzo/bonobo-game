@@ -3,9 +3,13 @@
 export interface InputState {
   left: boolean;
   right: boolean;
-  jump: boolean;
-  attack: boolean;
+  up: boolean; // salto (anche doppio salto in aria)
+  down: boolean; // scende dalle piattaforme sottili, caduta veloce in aria
+  light: boolean; // attacco leggero
+  heavy: boolean; // attacco pesante
 }
+
+export type AttackKind = "light" | "heavy";
 
 export interface PlayerState {
   id: string;
@@ -16,17 +20,21 @@ export interface PlayerState {
   vx: number;
   vy: number;
   facing: 1 | -1;
-  hp: number;
+  percent: number; // danno accumulato: più è alto, più si vola lontano
+  stocks: number; // vite rimaste
   onGround: boolean;
-  attacking: boolean; // il colpo è attivo in questo momento
+  attack: AttackKind | null; // attacco in corso
+  attackActive: boolean; // la hitbox può colpire in questo momento
   hitstun: boolean;
-  ko: boolean;
-  kos: number; // quante volte ha messo KO qualcuno
+  respawning: boolean; // ha appena perso una vita ed è fuori gioco
+  invulnerable: boolean;
+  eliminated: boolean; // vite finite
 }
 
 export interface GameSnapshot {
   t: number;
   players: PlayerState[];
+  winnerId: string | null; // chi ha vinto la partita, se è finita
 }
 
 // Eventi Socket.IO tipizzati

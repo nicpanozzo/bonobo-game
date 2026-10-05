@@ -2,14 +2,16 @@
 // premuti dai giocatori, calcola la fisica e manda a tutti lo stato.
 
 import type { Server } from "socket.io";
-import { COLORS, FIGHTER, MAX_PLAYERS_PER_ROOM, SEND_RATE, TICK_RATE, WORLD } from "../shared/constants";
-import { emptyInput, resolveHits, respawn, spawnX, stepFighter, type Fighter } from "../shared/physics";
+import { COLORS, MATCH_RESTART_MS, MAX_PLAYERS_PER_ROOM, SEND_RATE, TICK_RATE } from "../shared/constants";
+import { createFighter, isAlive, resetForMatch, resolveHits, stepFighter, type Fighter } from "../shared/physics";
 import type { ClientToServer, GameSnapshot, InputState, PlayerState, ServerToClient } from "../shared/types";
 
 export class Room {
   private fighters = new Map<string, Fighter>();
   private loop: NodeJS.Timeout;
   private ticks = 0;
+  private winnerId: string | null = null;
+  private restartTimer = 0;
 
   constructor(
     public readonly code: string,
@@ -28,28 +30,7 @@ export class Room {
 
   addPlayer(id: string, name: string) {
     const index = this.freeIndex();
-    this.fighters.set(id, {
-      id,
-      name: name.slice(0, 16) || "Bonobo",
-      color: COLORS[index],
-      x: spawnX(index),
-      y: WORLD.floorY,
-      vx: 0,
-      vy: 0,
-      facing: index % 2 === 0 ? 1 : -1,
-      hp: FIGHTER.maxHp,
-      onGround: true,
-      attacking: false,
-      hitstun: false,
-      ko: false,
-      kos: 0,
-      input: emptyInput(),
-      attackTimer: 0,
-      cooldownTimer: 0,
-      hitstunTimer: 0,
-      respawnTimer: 0,
-      alreadyHit: new Set(),
-    });
+    this.fighters.set(id, createFighter(id, name.slice(0, 16) || "Bonobo", COLORS[index], index));
   }
 
   removePlayer(id: string) {
@@ -62,8 +43,10 @@ export class Room {
     f.input = {
       left: !!input.left,
       right: !!input.right,
-      jump: !!input.jump,
-      attack: !!input.attack,
+      up: !!input.up,
+      down: !!input.down,
+      light: !!input.light,
+      heavy: !!input.heavy,
     };
   }
 
@@ -80,16 +63,35 @@ export class Room {
   private tick() {
     const dt = 1000 / TICK_RATE;
     const list = [...this.fighters.values()];
-    for (const f of list) {
-      stepFighter(f, dt);
-      if (f.ko && f.respawnTimer <= 0) respawn(f, COLORS.indexOf(f.color));
-    }
+    for (const f of list) stepFighter(f, dt);
     resolveHits(list);
+    this.updateMatch(list, dt);
 
     this.ticks++;
     if (this.ticks % Math.round(TICK_RATE / SEND_RATE) === 0) {
       this.io.to(this.code).emit("snapshot", this.snapshot(list));
     }
+  }
+
+  // Vince l'ultimo con vite rimaste; dopo una pausa si ricomincia
+  private updateMatch(list: Fighter[], dt: number) {
+    if (this.winnerId) {
+      this.restartTimer -= dt;
+      if (this.restartTimer <= 0) this.restartMatch(list);
+      return;
+    }
+    const alive = list.filter(isAlive);
+    if (list.length >= 2 && alive.length === 1) {
+      this.winnerId = alive[0].id;
+      this.restartTimer = MATCH_RESTART_MS;
+    } else if (list.length > 0 && alive.length === 0) {
+      this.restartMatch(list); // chi gioca da solo e finisce le vite riparte subito
+    }
+  }
+
+  private restartMatch(list: Fighter[]) {
+    this.winnerId = null;
+    for (const f of list) resetForMatch(f, COLORS.indexOf(f.color));
   }
 
   private snapshot(list: Fighter[]): GameSnapshot {
@@ -102,13 +104,16 @@ export class Room {
       vx: Math.round(f.vx),
       vy: Math.round(f.vy),
       facing: f.facing,
-      hp: f.hp,
+      percent: f.percent,
+      stocks: f.stocks,
       onGround: f.onGround,
-      attacking: f.attacking,
+      attack: f.attack,
+      attackActive: f.attackActive,
       hitstun: f.hitstun,
-      ko: f.ko,
-      kos: f.kos,
+      respawning: f.respawning,
+      invulnerable: f.invulnerable,
+      eliminated: f.eliminated,
     }));
-    return { t: Date.now(), players };
+    return { t: Date.now(), players, winnerId: this.winnerId };
   }
 }
