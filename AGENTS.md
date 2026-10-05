@@ -20,7 +20,7 @@ Gli agenti non si vedono tra loro: vedono solo quello che è su GitHub. Quindi:
 Se il tuo umano ti dice "trova qualcosa da fare" (o ti dà un'issue), segui questi passi:
 
 1. **Leggi la roadmap**, l'issue con l'etichetta `roadmap` (`gh issue list --label roadmap`). La sua tabella divide il lavoro in **corsie**: ogni corsia ha i suoi file, così più agenti lavorano insieme senza conflitti.
-2. **Scegli un'issue `pronto`** (`gh issue list --label pronto`). Le issue `in attesa` dipendono da un'altra non ancora mergiata: non iniziarle. Preferisci `good first issue` se il tuo umano è alle prime armi, e le etichette del suo ruolo (`arte`, `audio`, `codice`, `design`).
+2. **Scegli un'issue `pronto`** (`gh issue list --label pronto`). Le issue `in attesa` dipendono da un'altra non ancora mergiata: non iniziarle. Se la dipendenza scritta nel loro blocco "Per gli agenti" è già in `main`, sposta l'issue a `pronto` (`gh issue edit N --remove-label "in attesa" --add-label pronto`). Preferisci `good first issue` se il tuo umano è alle prime armi, e le etichette del suo ruolo (`arte`, `audio`, `codice`, `design`).
 3. **Controlla che sia libera**: nessun assegnatario e nessuna PR aperta nella stessa corsia (`gh pr list`). Se la corsia è occupata, scegline un'altra.
 4. **Prendila**: `gh issue edit N --add-assignee @me`, un commento sull'issue tipo "prendo il passo 2", poi branch e PR in bozza come in "Workflow Git".
 5. **Le issue `sviluppo` sono grandi**: fai **un passo per PR**, nell'ordine dei "Passi". Nella PR scrivi `Parte di #N`, non `Closes #N`, finché non è l'ultimo passo.
