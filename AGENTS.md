@@ -3,6 +3,7 @@
 Istruzioni per gli agenti AI (Claude Code, Codex, Cursor, Copilot, Gemini, ...) che lavorano su **bonobo-game**, un picchiaduro multiplayer online nel browser.
 Questo file è l'unica fonte di verità per gli agenti: `CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructions.md` e `.cursor/rules/` rimandano qui.
 Per il gioco leggi il [README](README.md), per il giro di lavoro degli umani [CONTRIBUTING.md](CONTRIBUTING.md).
+Il giro di lavoro passo per passo, con i comandi, è in [.claude/skills/compito/SKILL.md](.claude/skills/compito/SKILL.md): Claude Code lo carica da solo (`/compito`), **ogni altro agente lo legge all'inizio di un compito**.
 
 Siamo un gruppo di amici e ognuno usa il proprio agente, spesso nello stesso momento sulla stessa repo. Gran parte delle regole qui sotto serve a non pestarsi i piedi.
 
@@ -14,6 +15,9 @@ Gli agenti non si vedono tra loro: vedono solo quello che è su GitHub. Quindi:
 2. **Pusha presto e spesso.** Ogni passo che compila va pushato subito sul tuo branch, almeno ogni 30 minuti di lavoro. Lavoro non pushato è invisibile agli altri e genera conflitti.
 3. **Leggi prima di toccare.** All'inizio e prima di ogni push fai `git fetch origin` e guarda `gh pr list`: se un'altra PR aperta tocca i tuoi stessi file, coordinati (commenta la sua PR o avvisa il tuo umano).
 4. **Aggiorna il piano** nella descrizione della PR se cambi strada, così chi legge sa a che punto sei.
+5. **Riprendi prima di iniziare.** A inizio sessione guarda se hai già una PR aperta (`gh pr list --author @me`): finiscila, leggendo commenti e review, prima di prendere altro.
+
+Senza `gh` (Cursor, agenti cloud, ...) fai le stesse letture e scritture con gli strumenti GitHub che hai: i passi non si saltano.
 
 ## Scegliere un compito
 
@@ -22,10 +26,11 @@ Se il tuo umano ti dice "trova qualcosa da fare" (o ti dà un'issue), segui ques
 1. **Leggi la roadmap**, l'issue con l'etichetta `roadmap` (`gh issue list --label roadmap`). La sua tabella divide il lavoro in **corsie**: ogni corsia ha i suoi file, così più agenti lavorano insieme senza conflitti.
 2. **Scegli un'issue `pronto`** (`gh issue list --label pronto`). Le issue `in attesa` dipendono da un'altra non ancora mergiata: non iniziarle. Se la dipendenza scritta nel loro blocco "Per gli agenti" è già in `main`, sposta l'issue a `pronto` (`gh issue edit N --remove-label "in attesa" --add-label pronto`). Preferisci `good first issue` se il tuo umano è alle prime armi, e le etichette del suo ruolo (`arte`, `audio`, `codice`, `design`).
 3. **Controlla che sia libera**: nessun assegnatario e nessuna PR aperta nella stessa corsia (`gh pr list`). Se la corsia è occupata, scegline un'altra.
-4. **Prendila**: `gh issue edit N --add-assignee @me`, un commento sull'issue tipo "prendo il passo 2", poi branch e PR in bozza come in "Workflow Git".
+4. **Prendila**: `gh issue edit N --add-assignee @me`, un commento sull'issue tipo "prendo il passo 2", poi branch e PR in bozza come in "Workflow Git". Subito dopo rileggi l'issue: se un altro l'ha presa prima di te (assegnazione o commento precedente al tuo), vince chi è arrivato prima; togli l'assegnazione e scegline un'altra.
 5. **Le issue `sviluppo` sono grandi**: fai **un passo per PR**, nell'ordine dei "Passi". Nella PR scrivi `Parte di #N`, non `Closes #N`, finché non è l'ultimo passo.
 6. **Resta nei file della tua corsia** (blocco "Per gli agenti" nell'issue). Se serve toccarne un altro, scrivilo nella PR in bozza prima di farlo.
 7. **Se ti fermi**, togli l'assegnazione e lascia un commento su dove sei arrivato, così un altro agente può riprendere.
+8. **Issue abbandonate:** se un'issue è assegnata ma da 3 giorni non c'è nessun push né commento, chiedi nell'issue "posso prenderla?" taggando l'assegnatario. Senza risposta entro un giorno puoi prenderla, ripartendo dal suo branch se esiste.
 
 Le decisioni di design non scritte nell'issue (valori, tasti, nomi) le scegli tu come dice "Coordinazione tra agenti": un valore ragionevole in `constants.ts` e una riga nella PR.
 
@@ -74,7 +79,7 @@ public/assets/ immagini e suoni (da creare quando serve)
 
 1. **Mai committare o pushare su `main`.** `main` deve essere sempre giocabile.
 2. **Un compito = un'issue = un branch = una PR.** Se l'issue non c'è, chiedi al tuo umano di crearla o creala tu con `gh issue create`.
-3. **Branch:** `<nome-umano>/<cosa-fai>` in minuscolo, es. `luca/calcio`, `marta/fix-salto-doppio`.
+3. **Branch:** `<nome-umano>/<cosa-fai>` in minuscolo, es. `luca/calcio`, `marta/fix-salto-doppio`. Se il tuo ambiente impone un nome (agenti cloud: `claude/...`, `codex/...`), usa quello e scrivi il nome dell'umano nella PR.
 4. **Prima di scrivere codice:**
    - `git fetch origin && git switch -c <branch> origin/main`
    - `gh pr list` e `gh issue list`: se qualcun altro sta già lavorando sugli stessi file o sulla stessa funzione, fermati e avvisa il tuo umano invece di duplicare il lavoro.
@@ -82,16 +87,17 @@ public/assets/ immagini e suoni (da creare quando serve)
 6. **Commit** piccoli, con messaggi brevi all'imperativo, in italiano: `Aggiunge il calcio con il tasto K`, `Corregge il doppio salto`.
 7. **Resta aggiornato:** prima di togliere la bozza fai `git fetch origin && git rebase origin/main`. Sul tuo branch puoi usare `git push --force-with-lease`; non riscrivere mai la storia di branch altrui.
 8. **PR piccole:** idealmente meno di ~400 righe cambiate. Una funzione grande si spezza in più PR che lasciano `main` funzionante.
-9. **Merge:** lo fa un umano diverso dall'autore, dopo averla provata (squash merge). L'agente non approva e non mergia mai le proprie PR.
+9. **Merge:** lo fa un umano diverso dall'autore, dopo averla provata (squash merge). L'agente non approva e non mergia mai le proprie PR. Quando togli la bozza chiedi la review a un altro del gruppo (`gh pr edit N --add-reviewer <login>`) o di' al tuo umano di chiederla sul Discord.
 
 ## Coordinazione tra agenti
 
 - **Resta nel perimetro del compito.** Niente refactor "già che ci sono", riformattazioni di file che non tocchi, rinomine di massa o cambi di configurazione (`tsconfig.json`, `vite.config.ts`): creano conflitti nelle PR degli altri. Se vedi qualcosa da sistemare, apri un'issue.
 - **File caldi:** `constants.ts`, `types.ts` e `GameScene.ts` li toccano quasi tutti. Aggiungi righe, non riordinare quelle esistenti.
 - **Dipendenze:** aggiungi un pacchetto npm solo se serve davvero e spiega perché nella PR. `package-lock.json` si cambia solo con `npm install`, mai a mano; in caso di conflitto rigeneralo con `npm install` dopo il rebase.
-- **File di coordinamento** (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `CONTRIBUTING.md`, `.github/`, `.cursor/`): si cambiano in una PR dedicata, mai insieme a codice di gioco.
+- **File di coordinamento** (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `CONTRIBUTING.md`, `.github/`, `.cursor/`, `.claude/`): si cambiano in una PR dedicata, mai insieme a codice di gioco.
 - **Decisioni di game design** (danni, velocità, nuove mosse, comandi): se il compito non le specifica, scegli un valore ragionevole, mettilo in `constants.ts` e scrivilo nella PR perché il gruppo possa discuterlo.
 - **Se sei bloccato o il compito è ambiguo**, chiedi al tuo umano o commenta l'issue invece di indovinare.
+- **Condividi quello che impari.** Una trappola o una convenzione che farebbe sbagliare anche il prossimo agente diventa una riga in questo file, in una PR dedicata. Le note personali restano nei file locali del tuo agente.
 
 ## Stile del codice
 
