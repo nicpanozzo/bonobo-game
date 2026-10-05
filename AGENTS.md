@@ -1,0 +1,87 @@
+# AGENTS.md
+
+Istruzioni per gli agenti AI (Claude Code, Codex, Cursor, Copilot, Gemini, ...) che lavorano su **bonobo-game**, un picchiaduro multiplayer online nel browser.
+Questo file è l'unica fonte di verità per gli agenti: `CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructions.md` e `.cursor/rules/` rimandano qui.
+Per il gioco leggi il [README](README.md), per il giro di lavoro degli umani [CONTRIBUTING.md](CONTRIBUTING.md).
+
+Siamo un gruppo di amici e ognuno usa il proprio agente, spesso nello stesso momento sulla stessa repo. Gran parte delle regole qui sotto serve a non pestarsi i piedi.
+
+## Comandi
+
+```bash
+npm install          # Node 20+
+npm run dev          # server di gioco (:3000) + client Vite (:5173) insieme
+npm run typecheck    # tsc --noEmit: deve passare prima di ogni push
+npm run build        # build del client in dist/: deve passare prima di ogni push
+npm start            # versione di produzione sulla porta 3000
+```
+
+Per provare il multiplayer apri `http://localhost:5173/?room=test` in due finestre (o due tab). Non esiste ancora una suite di test: se aggiungi logica pura in `src/shared/` puoi proporne una in una PR dedicata.
+
+## Struttura
+
+```
+src/shared/    codice comune a server e client
+  constants.ts   TUTTI i numeri del gioco (velocità, salto, danni, hitbox, tick rate)
+  physics.ts     logica pura: movimento, gravità, colpi, KO. Niente rete, niente grafica
+  types.ts       stato dei giocatori e PROTOCOLLO Socket.IO (ServerToClient / ClientToServer)
+src/server/    Express + Socket.IO. index.ts gestisce le stanze, Room.ts fa girare la partita
+src/client/    Phaser. GameScene.ts disegna e manda i tasti, network.ts gestisce la connessione
+public/assets/ immagini e suoni (da creare quando serve)
+```
+
+## Architettura: regole che non si rompono
+
+- **Il server è l'arbitro.** Il client manda solo `InputState` (tasti premuti) e disegna gli snapshot che riceve. Posizioni, colpi, danni e KO si calcolano in `src/shared/physics.ts`, eseguito dal server. Non aggiungere mai un evento in cui il client dice "ho colpito" o "sono qui".
+- **`physics.ts` resta puro**: niente import da `socket.io`, `phaser`, `express` o dal DOM, così potrà girare anche nel browser per la predizione.
+- **I numeri vanno in `constants.ts`**, con un nome e un commento sull'unità (pixel/s, ms). Niente valori magici sparsi nel codice.
+- **Il protocollo è un contratto condiviso.** `types.ts` (eventi Socket.IO e forma di `PlayerState`/`GameSnapshot`) si cambia solo in una PR che lo dichiara nel titolo (es. `Protocollo: aggiunge l'evento chat`) e che aggiorna server e client insieme.
+
+## Workflow Git (obbligatorio)
+
+1. **Mai committare o pushare su `main`.** `main` deve essere sempre giocabile.
+2. **Un compito = un'issue = un branch = una PR.** Se l'issue non c'è, chiedi al tuo umano di crearla o creala tu con `gh issue create`.
+3. **Branch:** `<nome-umano>/<cosa-fai>` in minuscolo, es. `luca/calcio`, `marta/fix-salto-doppio`.
+4. **Prima di scrivere codice:**
+   - `git fetch origin && git switch -c <branch> origin/main`
+   - `gh pr list` e `gh issue list`: se qualcun altro sta già lavorando sugli stessi file o sulla stessa funzione, fermati e avvisa il tuo umano invece di duplicare il lavoro.
+5. **Apri subito una PR in bozza** (`gh pr create --draft`, con `Closes #N` nella descrizione) appena hai il primo commit. La bozza è il segnale "ci sto lavorando io" per gli altri agenti.
+6. **Commit** piccoli, con messaggi brevi all'imperativo, in italiano: `Aggiunge il calcio con il tasto K`, `Corregge il doppio salto`.
+7. **Resta aggiornato:** prima di togliere la bozza fai `git fetch origin && git rebase origin/main`. Sul tuo branch puoi usare `git push --force-with-lease`; non riscrivere mai la storia di branch altrui.
+8. **PR piccole:** idealmente meno di ~400 righe cambiate. Una funzione grande si spezza in più PR che lasciano `main` funzionante.
+9. **Merge:** lo fa un umano diverso dall'autore, dopo averla provata (squash merge). L'agente non approva e non mergia mai le proprie PR.
+
+## Coordinazione tra agenti
+
+- **Resta nel perimetro del compito.** Niente refactor "già che ci sono", riformattazioni di file che non tocchi, rinomine di massa o cambi di configurazione (`tsconfig.json`, `vite.config.ts`): creano conflitti nelle PR degli altri. Se vedi qualcosa da sistemare, apri un'issue.
+- **File caldi:** `constants.ts`, `types.ts` e `GameScene.ts` li toccano quasi tutti. Aggiungi righe, non riordinare quelle esistenti.
+- **Dipendenze:** aggiungi un pacchetto npm solo se serve davvero e spiega perché nella PR. `package-lock.json` si cambia solo con `npm install`, mai a mano; in caso di conflitto rigeneralo con `npm install` dopo il rebase.
+- **File di coordinamento** (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `CONTRIBUTING.md`, `.github/`, `.cursor/`): si cambiano in una PR dedicata, mai insieme a codice di gioco.
+- **Decisioni di game design** (danni, velocità, nuove mosse, comandi): se il compito non le specifica, scegli un valore ragionevole, mettilo in `constants.ts` e scrivilo nella PR perché il gruppo possa discuterlo.
+- **Se sei bloccato o il compito è ambiguo**, chiedi al tuo umano o commenta l'issue invece di indovinare.
+
+## Stile del codice
+
+- TypeScript `strict`, moduli ES. Niente `any` se non con un commento che spiega perché.
+- Nomi di variabili, funzioni e tipi in inglese; commenti in italiano, brevi, che spiegano il *perché*.
+- Segui lo stile del file che stai modificando.
+- Usa i tipi in `types.ts` per gli eventi Socket.IO (`Server<ClientToServer, ServerToClient>`), mai stringhe non tipizzate.
+
+## Asset
+
+- Solo asset fatti da noi o con licenza libera (CC0, CC-BY, ...). Annota fonte, autore e licenza in `public/assets/CREDITS.md`.
+- File singoli oltre i 5 MB solo dopo averne parlato con il gruppo.
+
+## Mai
+
+- Committare segreti, token, `.env`, `node_modules/` o `dist/`.
+- Pushare su `main`, fare force-push su branch altrui, mergiare la propria PR.
+- Disattivare controlli (`// @ts-ignore`, `strict: false`) per far passare il typecheck.
+- Spostare logica di gioco nel client.
+- Modificare il README se il compito non lo richiede.
+
+## Prima di dire "fatto"
+
+1. `npm run typecheck` e `npm run build` passano.
+2. Hai avviato `npm run dev` e provato con due finestre, se la modifica tocca il gioco.
+3. La PR usa il template e dice quale agente ha scritto il codice e come l'hai provata.

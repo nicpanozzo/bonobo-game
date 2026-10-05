@@ -67,3 +67,22 @@ GitHub ti mostra un link per aprire la **Pull Request** (PR): aprila, scrivi cos
 - **`npm install` dà errori**: controlla di avere Node 20+ con `node -v`.
 - **La pagina dice "Connessione..." e basta**: il server non è partito, guarda il terminale di `npm run dev`.
 - **Git dice che ci sono conflitti**: niente panico, chiedi su Discord e lo sistemiamo insieme.
+
+## Lavorare con un agente AI
+
+Se usi un agente (Claude Code, Codex, Cursor, Copilot, Gemini, ...), le regole per lui sono in [AGENTS.md](AGENTS.md) e le legge da solo. Ogni agente trova il suo file, che rimanda sempre ad AGENTS.md:
+
+| Agente | File che legge |
+|---|---|
+| Codex, Cursor, Copilot, Jules, Aider, ... | `AGENTS.md` |
+| Claude Code | `CLAUDE.md` (importa `AGENTS.md`) |
+| Gemini CLI | `GEMINI.md` (importa `AGENTS.md`) |
+| GitHub Copilot | `.github/copilot-instructions.md` |
+| Cursor | `.cursor/rules/agents.mdc` |
+
+Come usarlo bene:
+
+1. **Parti da un'issue** e assegnatela, poi di' al tuo agente qualcosa come *"Lavora sull'issue #12 seguendo AGENTS.md"*. Crea il branch e apre una PR in bozza: così gli agenti degli altri vedono che ci stai lavorando.
+2. **Provalo tu** prima di togliere la bozza: l'agente può sbagliare, soprattutto sul multiplayer.
+3. **Le preferenze personali** (modello, permessi, note tue) tienile nei file locali del tuo agente, per esempio `CLAUDE.local.md` o `~/.claude/CLAUDE.md`, non nella repo.
+4. **Se il tuo agente sbaglia sempre la stessa cosa**, aggiungi una riga ad AGENTS.md in una PR dedicata. Teniamolo corto (sotto le ~150 righe): più è lungo, meno gli agenti lo seguono.
