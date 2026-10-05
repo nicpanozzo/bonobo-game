@@ -121,6 +121,12 @@ function renderIssues() {
   };
   fill(ready, visible.filter((i) => has(i, 'pronto')), 'Niente di libero qui per ora: prova un altro filtro o proponi un\'idea.');
   fill(waiting, visible.filter((i) => has(i, 'in attesa')), 'Niente in attesa.');
+  // Le issue senza stato (appena aperte) non devono sparire: le mostriamo a parte.
+  // Roadmap, sedute e proposte di lottatori hanno già la loro sezione.
+  const fresh = visible.filter((i) => !has(i, 'pronto') && !has(i, 'in attesa') && !has(i, 'roadmap')
+    && !has(i, PARLIAMENT_LABEL) && !has(i, FIGHTER_LABEL) && !SEDUTA_TITLE.test(i.title) && !FIGHTER_TITLE.test(i.title));
+  document.getElementById('new-block').hidden = fresh.length === 0;
+  fill(document.getElementById('issues-new'), fresh, '');
 }
 
 function renderRoleFilter() {
