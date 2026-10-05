@@ -7,12 +7,12 @@ on:
   workflow_dispatch:
     inputs:
       tipo:
-        description: 'post (messaggio) o poll (sondaggio)'
+        description: 'post (messaggio), poll (sondaggio) o results (voti di un sondaggio)'
         type: choice
-        options: [poll, post]
+        options: [poll, post, results]
         default: poll
       testo:
-        description: 'Testo del messaggio o domanda del sondaggio'
+        description: "Testo del messaggio, domanda del sondaggio o, per results, l'id del messaggio"
         required: true
       risposte:
         description: 'Solo per poll: risposte separate da | (da 2 a 10)'
@@ -40,6 +40,8 @@ jobs:
       - run: |
           if [ "$TIPO" = "post" ]; then
             node scripts/discord.mjs post "$TESTO"
+          elif [ "$TIPO" = "results" ]; then
+            node scripts/discord.mjs results "$TESTO"
           else
             IFS='|' read -ra LISTA <<< "$RISPOSTE"
             EXTRA=()
