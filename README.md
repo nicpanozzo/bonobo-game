@@ -1,10 +1,18 @@
 # Bonobo Game 🦍👊
 
-**Il picchiaduro multiplayer del nostro gruppo Discord.** Si gioca dal browser, senza installare niente: apri il link, mandalo agli amici e vi menate nella stessa stanza.
+**Il platform fighter multiplayer del nostro gruppo Discord**, nello stile di Brawlhalla e Smash Bros. Si gioca dal browser, senza installare niente: apri il link, mandalo agli amici e cercate di buttarvi giù dall'arena.
 
-![Due giocatori nella stessa stanza](docs/screenshot.png)
+![Due giocatori nell'arena con le piattaforme](docs/screenshot.png)
 
-> Siamo agli inizi: fino a 4 giocatori entrano nella stessa stanza, si muovono, saltano e si prendono a pugni. Chi arriva a 0 HP va KO e rinasce dopo 2 secondi. La grafica sono rettangoli, quindi c'è spazio per tutti: grafici, programmatori, chi fa i suoni, chi inventa le mosse.
+> Siamo agli inizi, ma le regole base ci sono già. La grafica sono rettangoli, quindi c'è spazio per tutti: grafici, programmatori, chi fa i suoni, chi inventa le mosse.
+
+## Come si gioca
+
+- Fino a 4 giocatori nella stessa stanza, ognuno con **3 vite**.
+- I colpi non tolgono vita: fanno salire la tua **percentuale di danno**. Più è alta, più il prossimo colpo ti lancia lontano.
+- Se vieni lanciato fuori dall'arena (oltre i bordi dello schermo) **perdi una vita** e rinasci dall'alto con la percentuale azzerata e un attimo di invulnerabilità.
+- L'arena ha un palco principale solido e **piattaforme sottili** che si attraversano saltando da sotto. Con il **doppio salto** puoi rientrare quando ti hanno lanciato fuori.
+- Vince l'ultimo con vite rimaste; dopo 5 secondi parte una nuova partita.
 
 **Nuovo nel progetto?** Leggi [CONTRIBUTING.md](CONTRIBUTING.md): spiega passo passo come fare la tua prima modifica, anche se non hai mai usato Git.
 
@@ -21,8 +29,10 @@
 | Azione | Tasti |
 |---|---|
 | Muoversi | ← → oppure A D |
-| Saltare | ↑ oppure W |
-| Colpire | J oppure Spazio |
+| Saltare (premi di nuovo in aria per il doppio salto) | ↑, W oppure Spazio |
+| Scendere da una piattaforma / caduta veloce | ↓ oppure S |
+| Attacco leggero (veloce, spinge poco) | J |
+| Attacco pesante (lento, lancia lontano) | K |
 
 ## Avviarlo sul tuo computer
 
@@ -51,12 +61,12 @@ Altri comandi:
 ```
 src/
   shared/      codice usato sia dal server che dal client
-    constants.ts   velocità, salto, danni, colori… i numeri del gioco
-    physics.ts     movimento, gravità, colpi, KO (logica pura, niente grafica)
+    constants.ts   arena, velocità, salti, attacchi, vite… i numeri del gioco
+    physics.ts     movimento, piattaforme, colpi, knockback, vite (logica pura, niente grafica)
     types.ts       i messaggi che si scambiano client e server
   server/
     index.ts       server Express + Socket.IO, gestisce le stanze
-    Room.ts        una partita: riceve i tasti, fa girare la fisica 60 volte al secondo
+    Room.ts        una partita: riceve i tasti, fa girare la fisica 60 volte al secondo, decide chi vince
   client/
     main.ts        avvia Phaser
     network.ts     connessione al server, stanza e nome dall'URL
@@ -88,12 +98,13 @@ Regole semplici: PR piccole (una cosa alla volta), niente push diretti su `main`
 
 ### Idee per iniziare
 
-- **Grafica**: sostituire i rettangoli con sprite animati (camminata, salto, pugno) in `GameScene.ts`.
-- **Mosse**: calcio, parata, colpo caricato, doppio salto (in `physics.ts` + `constants.ts`).
-- **Arene**: piattaforme su cui saltare, sfondi diversi.
-- **Personaggi**: statistiche diverse (veloce ma fragile, lento ma forte).
+- **Grafica**: sostituire i rettangoli con sprite animati (fermo, corsa, salto, attacchi) in `GameScene.ts`.
+- **Mosse**: attacchi direzionali (su, giù, in aria), schivata, una mossa di recupero verso l'alto (in `physics.ts` + `constants.ts`).
+- **Arene**: altre disposizioni di piattaforme, sfondi, piattaforme che si muovono.
+- **Personaggi**: armi o statistiche diverse (veloce ma leggero, lento ma pesante).
+- **Telecamera**: zoom che segue i giocatori quando si allontanano.
 - **Lobby**: schermata iniziale per scegliere nome, stanza e personaggio.
-- **Suoni**: colpi, KO, musica.
+- **Suoni**: colpi, lanci, perdita di una vita, musica.
 - **Rete più fluida**: predizione lato client per il proprio personaggio (la fisica in `shared/` è già pronta per girare anche nel browser).
 
 ## Metterlo online gratis
