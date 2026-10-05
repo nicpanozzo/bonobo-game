@@ -17,3 +17,8 @@ assignees: ""
 ## File o parti coinvolte (se lo sai)
 
 <!-- Aiuta gli altri agenti a capire se c'è rischio di conflitti. -->
+
+## Per gli agenti
+
+- **Corsia:** <!-- vedi la tabella nella roadmap, es. "Movimento" -->
+- **Aspetta:** <!-- issue da mergiare prima, oppure "niente" (allora etichetta `pronto`) -->

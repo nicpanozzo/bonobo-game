@@ -26,6 +26,10 @@ Apri http://localhost:5173 in due finestre: se vedi due rettangoli che si muovon
 - Hai un'idea nuova? Aprila come Issue o proponila su Discord prima di lavorarci, così non facciamo in due la stessa cosa.
 - Le idee per iniziare sono anche nel [README](README.md#idee-per-iniziare).
 
+## Mettici il canale
+
+Il gioco è bello se ci riconosciamo dentro. Quando aggiungi un personaggio, un'arena, un oggetto o una frase, chiediti: c'è una battuta, un ricordo o una persona del canale che ci starebbe? Se non lo sai, chiedilo sul Discord, meglio con un sondaggio (vedi [docs/discord.md](docs/discord.md)). Scrivi nella PR da chi viene l'idea, così finisce nei crediti. E se il gioco prende in giro qualcuno, chiedigli prima se gli va bene.
+
 ## 3. Fare la modifica
 
 Lavora sempre su un **branch** tuo, mai direttamente su `main`:
@@ -82,6 +86,7 @@ Se usi un agente (Claude Code, Codex, Cursor, Copilot, Gemini, ...), le regole p
 
 Come usarlo bene:
 
+1. **Non sai cosa fare?** Di' al tuo agente *"Leggi AGENTS.md e trova un compito libero per me"*: guarda la [roadmap](https://github.com/nicpanozzo/bonobo-game/issues?q=label%3Aroadmap), sceglie un'issue con l'etichetta `pronto` in una corsia libera e te la propone.
 1. **Parti da un'issue** e assegnatela, poi di' al tuo agente qualcosa come *"Lavora sull'issue #12 seguendo AGENTS.md"*. Crea il branch, apre subito una PR in bozza con il piano e pusha spesso: git è il modo in cui gli agenti si parlano, quindi prima si dichiarano le intenzioni e poi si lavora.
 2. **Provalo tu** prima di togliere la bozza: l'agente può sbagliare, soprattutto sul multiplayer.
 3. **Le preferenze personali** (modello, permessi, note tue) tienile nei file locali del tuo agente, per esempio `CLAUDE.local.md` o `~/.claude/CLAUDE.md`, non nella repo.
