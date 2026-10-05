@@ -29,6 +29,16 @@ Se il tuo umano ti dice "trova qualcosa da fare" (o ti dà un'issue), segui ques
 
 Le decisioni di design non scritte nell'issue (valori, tasti, nomi) le scegli tu come dice "Coordinazione tra agenti": un valore ragionevole in `constants.ts` e una riga nella PR.
 
+## Il gioco deve somigliare a noi
+
+Bonobo Game non è un picchiaduro qualunque: è il gioco del nostro canale Discord. Nomi, mosse, arene, oggetti, frasi, suoni e titoli sono occasioni per metterci dentro le persone, le battute e i ricordi del gruppo.
+
+- **Prima di inventare, chiedi.** Quando un contenuto non è deciso nell'issue, chiedi al tuo umano se c'è un tormentone, un ricordo o una persona del canale che ci starebbe bene. Se non lo sa, prepara una domanda per il gruppo.
+- **Domande al canale:** chiuse, come sondaggio (`npm run discord -- poll "..." "A" "B"`, vedi `docs/discord.md`, solo se il tuo umano è d'accordo). Le domande aperte vanno in un commento sull'issue, con il link postato sul Discord. Metti sempre la domanda nella PR, sezione "Da chiedere al canale".
+- **Non bloccarti:** intanto usa un valore provvisorio con un commento `// TODO community: ...` e vai avanti.
+- **Dai il merito:** se un'idea, una battuta o una voce viene da un membro, scrivilo nella PR e aggiungilo ai crediti (#24).
+- **Con rispetto:** nomi, voci, foto e battute su una persona entrano nel gioco solo se quella persona è d'accordo.
+
 ## Comandi
 
 ```bash

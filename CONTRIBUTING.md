@@ -26,6 +26,10 @@ Apri http://localhost:5173 in due finestre: se vedi due rettangoli che si muovon
 - Hai un'idea nuova? Aprila come Issue o proponila su Discord prima di lavorarci, così non facciamo in due la stessa cosa.
 - Le idee per iniziare sono anche nel [README](README.md#idee-per-iniziare).
 
+## Mettici il canale
+
+Il gioco è bello se ci riconosciamo dentro. Quando aggiungi un personaggio, un'arena, un oggetto o una frase, chiediti: c'è una battuta, un ricordo o una persona del canale che ci starebbe? Se non lo sai, chiedilo sul Discord, meglio con un sondaggio (vedi [docs/discord.md](docs/discord.md)). Scrivi nella PR da chi viene l'idea, così finisce nei crediti. E se il gioco prende in giro qualcuno, chiedigli prima se gli va bene.
+
 ## 3. Fare la modifica
 
 Lavora sempre su un **branch** tuo, mai direttamente su `main`:
