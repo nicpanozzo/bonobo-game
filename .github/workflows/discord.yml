@@ -1,0 +1,28 @@
+# Quando una PR viene unita a main, la annuncia nel canale Discord con il primo screenshot
+# della descrizione. Serve il secret DISCORD_WEBHOOK_URL (vedi docs/discord.md):
+# se manca, il job finisce senza postare niente.
+name: Discord
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  annuncia:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node scripts/discord.mjs pr-merged
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          GITHUB_TOKEN: ${{ github.token }}

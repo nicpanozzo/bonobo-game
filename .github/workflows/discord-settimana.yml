@@ -1,0 +1,26 @@
+# Ogni venerdì sera posta nel canale Discord cosa è entrato nel gioco in settimana
+# e le issue facili ancora libere. Si può lanciare a mano da Actions → Run workflow.
+name: Discord settimanale
+
+on:
+  schedule:
+    - cron: '0 17 * * 5' # venerdì alle 17 UTC (19 in Italia d'estate)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read
+
+jobs:
+  riepilogo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node scripts/discord.mjs weekly
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          GITHUB_TOKEN: ${{ github.token }}

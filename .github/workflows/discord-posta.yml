@@ -1,0 +1,55 @@
+# Posta nel canale Discord a mano, da Actions → Discord posta → Run workflow.
+# Serve anche agli agenti: lanciano questo workflow via API e il webhook resta
+# un secret, senza che nessuno debba conoscerne l'URL.
+name: Discord posta
+
+on:
+  workflow_dispatch:
+    inputs:
+      tipo:
+        description: 'post (messaggio) o poll (sondaggio)'
+        type: choice
+        options: [poll, post]
+        default: poll
+      testo:
+        description: 'Testo del messaggio o domanda del sondaggio'
+        required: true
+      risposte:
+        description: 'Solo per poll: risposte separate da | (da 2 a 10)'
+        default: ''
+      ore:
+        description: 'Solo per poll: quante ore resta aperto'
+        default: '48'
+      multi:
+        description: 'Solo per poll: più risposte selezionabili'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  posta:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      # Gli input passano da variabili d'ambiente, mai interpolati nello script
+      - run: |
+          if [ "$TIPO" = "post" ]; then
+            node scripts/discord.mjs post "$TESTO"
+          else
+            IFS='|' read -ra LISTA <<< "$RISPOSTE"
+            EXTRA=()
+            if [ "$MULTI" = "true" ]; then EXTRA+=(--multi); fi
+            node scripts/discord.mjs poll "$TESTO" "${LISTA[@]}" --hours "$ORE" "${EXTRA[@]}"
+          fi
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          TIPO: ${{ inputs.tipo }}
+          TESTO: ${{ inputs.testo }}
+          RISPOSTE: ${{ inputs.risposte }}
+          ORE: ${{ inputs.ore }}
+          MULTI: ${{ inputs.multi }}
