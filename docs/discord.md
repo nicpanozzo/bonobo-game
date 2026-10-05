@@ -53,6 +53,8 @@ Senza `DISCORD_WEBHOOK_URL` lo script non posta niente e non dà errore.
 
 ## Idee per coinvolgere il gruppo
 
+Le rubriche fisse con esempi pronti da postare sono in [format-discord.md](format-discord.md).
+
 - **Le decisioni di design ai voti**: quando una PR sceglie un valore (danno del calcio, velocità, nome di una mossa), lancia un sondaggio e scrivi il risultato nella PR.
 - **Prima e dopo**: uno screenshot o una GIF quando una cosa si vede nel gioco vale più di dieci messaggi.
 - I processi già pensati nella roadmap usano lo stesso canale: serata di playtest (#22), mini-jam con voto (#23), crediti e patch notes (#24).
