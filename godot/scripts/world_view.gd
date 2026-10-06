@@ -438,9 +438,19 @@ func _draw_sprite(p: Dictionary, character: Dictionary, now: float) -> void:
 	var sheet: Dictionary = character.sprite
 	var name := _animation_for(p)
 	var state: Dictionary = _anims.get(p.id, {})
-	if state.get("name") != name:
+	# Sul server il colpo finisce quando la hitbox si spegne, prima del recupero disegnato:
+	# se si resta fermi a terra lasciamo finire l'animazione del colpo
+	var prev_name: String = state.get("name", "")
+	if name == "idle" and (prev_name == "light" or prev_name == "heavy"):
+		var prev: Dictionary = sheet.animations[prev_name]
+		if (now - float(state.since)) / 1000.0 * float(prev.fps) < float(prev.frames):
+			name = prev_name
+	var attacking: bool = p.attack != null
+	var new_attack: bool = attacking and not bool(state.get("attacking", false))
+	if state.get("name") != name or new_attack:
 		state = {"name": name, "since": now}
 		_anims[p.id] = state
+	state["attacking"] = attacking
 	var a: Dictionary = sheet.animations[name]
 	var frame := int((now - state.since) / 1000.0 * a.fps)
 	frame = frame % int(a.frames) if a.loop else mini(frame, int(a.frames) - 1)
