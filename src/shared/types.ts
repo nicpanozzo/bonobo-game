@@ -14,7 +14,7 @@ export interface InputState {
 }
 
 // Le varianti direzionali (#2): su tenendo su, giù tenendo giù a terra, Air in aria; recovery: K + su in aria (#11)
-export type AttackKind = "light" | "heavy" | "lightUp" | "lightDown" | "lightAir" | "heavyUp" | "heavyDown" | "heavyAir" | "recovery";
+export type AttackKind = "light" | "heavy" | "lightUp" | "lightDown" | "lightAir" | "heavyUp" | "heavyDown" | "heavyAir" | "recovery" | "ledgeAttack";
 
 export interface PlayerState {
   id: string;
@@ -88,6 +88,7 @@ export type GameEvent =
   | { type: "itemPick"; itemId: number; id: string } // id lo raccoglie
   | { type: "itemThrow"; itemId: number; id: string; x: number; y: number }
   | { type: "ledgeGrab"; id: string; x: number; y: number; invulnerable: boolean } // si aggrappa al bordo (#110)
+  | { type: "ledgeGetup"; id: string; option: "climb" | "attack" | "jump" | "roll" | "drop" } // come lascia il bordo (#110)
   | { type: "matchStart" }
   | { type: "matchEnd"; winnerId: string | null; winnerTeam: number; durationMs: number };
 

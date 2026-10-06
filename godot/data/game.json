@@ -120,6 +120,18 @@
       "angleDeg": 80,
       "boxX": -20,
       "boxY": -100
+    },
+    "ledgeAttack": {
+      "damage": 7,
+      "baseKnockback": 330,
+      "knockbackGrowth": 4,
+      "startupMs": 300,
+      "activeMs": 100,
+      "cooldownMs": 600,
+      "range": 60,
+      "height": 40,
+      "angleDeg": 30,
+      "boxY": -44
     }
   },
   "net": {
