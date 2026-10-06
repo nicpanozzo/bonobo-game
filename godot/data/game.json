@@ -1,0 +1,260 @@
+{
+  "world": {
+    "width": 1280,
+    "height": 720
+  },
+  "fighter": {
+    "width": 44,
+    "height": 88
+  },
+  "attacks": {
+    "light": {
+      "damage": 5,
+      "baseKnockback": 260,
+      "knockbackGrowth": 5,
+      "startupMs": 40,
+      "activeMs": 100,
+      "cooldownMs": 280,
+      "range": 52,
+      "height": 30,
+      "angleDeg": 35
+    },
+    "heavy": {
+      "damage": 13,
+      "baseKnockback": 420,
+      "knockbackGrowth": 11,
+      "startupMs": 260,
+      "activeMs": 120,
+      "cooldownMs": 750,
+      "range": 70,
+      "height": 44,
+      "angleDeg": 42
+    }
+  },
+  "net": {
+    "interpolationDelayMs": 80,
+    "teleportDistance": 300,
+    "bufferSize": 30
+  },
+  "colors": [
+    15158332,
+    3447003,
+    3066993,
+    15844367
+  ],
+  "teamColors": {
+    "1": [
+      15158332,
+      16751242
+    ],
+    "2": [
+      3447003,
+      9425151
+    ]
+  },
+  "teamNames": {
+    "1": "Rossa",
+    "2": "Blu"
+  },
+  "defaultStageId": "palco",
+  "stages": {
+    "palco": {
+      "id": "palco",
+      "name": "Il Palco",
+      "solids": [
+        {
+          "x": 240,
+          "y": 560,
+          "width": 800,
+          "height": 80
+        }
+      ],
+      "platforms": [
+        {
+          "x": 340,
+          "width": 200,
+          "y": 420
+        },
+        {
+          "x": 740,
+          "width": 200,
+          "y": 420
+        },
+        {
+          "x": 540,
+          "width": 200,
+          "y": 290
+        }
+      ],
+      "blastZone": {
+        "left": -250,
+        "right": 1530,
+        "top": -350,
+        "bottom": 920
+      },
+      "spawns": [
+        {
+          "x": 480,
+          "y": 560
+        },
+        {
+          "x": 800,
+          "y": 560
+        },
+        {
+          "x": 600,
+          "y": 560
+        },
+        {
+          "x": 680,
+          "y": 560
+        }
+      ],
+      "respawn": {
+        "x": 640,
+        "y": 160
+      },
+      "colors": {
+        "sky": 1911610,
+        "solid": 5913894,
+        "solidEdge": 9136709,
+        "platform": 10528952
+      }
+    },
+    "isole": {
+      "id": "isole",
+      "name": "Le Isole",
+      "solids": [
+        {
+          "x": 200,
+          "y": 560,
+          "width": 340,
+          "height": 90
+        },
+        {
+          "x": 740,
+          "y": 560,
+          "width": 340,
+          "height": 90
+        }
+      ],
+      "platforms": [
+        {
+          "x": 540,
+          "width": 200,
+          "y": 450
+        },
+        {
+          "x": 260,
+          "width": 180,
+          "y": 410
+        },
+        {
+          "x": 840,
+          "width": 180,
+          "y": 410
+        },
+        {
+          "x": 560,
+          "width": 160,
+          "y": 300
+        }
+      ],
+      "blastZone": {
+        "left": -250,
+        "right": 1530,
+        "top": -350,
+        "bottom": 920
+      },
+      "spawns": [
+        {
+          "x": 370,
+          "y": 560
+        },
+        {
+          "x": 910,
+          "y": 560
+        },
+        {
+          "x": 270,
+          "y": 560
+        },
+        {
+          "x": 1010,
+          "y": 560
+        }
+      ],
+      "respawn": {
+        "x": 640,
+        "y": 170
+      },
+      "colors": {
+        "sky": 1192007,
+        "solid": 3104058,
+        "solidEdge": 8175466,
+        "platform": 15260072
+      }
+    }
+  },
+  "defaultCharacterId": "default",
+  "characters": {
+    "default": {
+      "id": "default",
+      "name": "Bonobo"
+    },
+    "egiainuso": {
+      "id": "egiainuso",
+      "name": "Egiainuso",
+      "sprite": {
+        "path": "assets/characters/egiainuso/egiainuso.png",
+        "frameWidth": 64,
+        "frameHeight": 96,
+        "columns": 6,
+        "animations": {
+          "idle": {
+            "row": 0,
+            "frames": 4,
+            "fps": 4,
+            "loop": true
+          },
+          "walk": {
+            "row": 1,
+            "frames": 6,
+            "fps": 10,
+            "loop": true
+          },
+          "jump": {
+            "row": 2,
+            "frames": 2,
+            "fps": 8,
+            "loop": false
+          },
+          "fall": {
+            "row": 3,
+            "frames": 2,
+            "fps": 6,
+            "loop": true
+          },
+          "light": {
+            "row": 4,
+            "frames": 3,
+            "fps": 20,
+            "loop": false
+          },
+          "heavy": {
+            "row": 5,
+            "frames": 4,
+            "fps": 8,
+            "loop": false
+          },
+          "hit": {
+            "row": 6,
+            "frames": 2,
+            "fps": 10,
+            "loop": true
+          }
+        }
+      }
+    }
+  }
+}
