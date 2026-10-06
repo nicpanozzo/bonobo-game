@@ -8,10 +8,12 @@ import { ITEMS } from "../items";
 import { rng } from "../stageGenerator";
 import type { ItemState } from "../types";
 import { bodyBox } from "./attacks";
+import { moverPosition } from "./elements";
 import { pressed, type Fighter, type PhysicsContext } from "./fighter";
 
 export interface Item extends ItemState {
   onGround: boolean;
+  riding: number; // indice della piattaforma mobile su cui è appoggiato, -1 se nessuna (#14)
   thrownBy: string | null;
   lifeMs: number; // ms che restano a terra prima di sparire
 }
@@ -110,12 +112,13 @@ export function stepItems(world: ItemWorld, fighters: Fighter[], dtMs: number, c
       item.vy = 0;
     }
 
+    carry(item, dtMs, ctx);
     item.vy = Math.min(FIGHTER.maxFallSpeed, item.vy + FIGHTER.gravity * dt);
     if (item.onGround) item.vx = Math.sign(item.vx) * Math.max(0, Math.abs(item.vx) - ITEM_RULES.groundFriction * dt);
     const prevY = item.y;
     item.x += item.vx * dt;
     item.y += item.vy * dt;
-    land(item, prevY, spec.width / 2, ctx);
+    land(item, prevY, spec.width / 2, dtMs, ctx);
 
     if (item.thrown) hitWithItem(item, fighters, ctx);
     if (item.onGround) item.lifeMs -= dtMs;
@@ -133,27 +136,53 @@ function spawn(world: ItemWorld, ctx: PhysicsContext) {
   const kind = kinds[Math.floor(world.random() * kinds.length)];
   const x = Math.round(s.x + 30 + world.random() * (s.width - 60));
   const y = s.y - ITEM_RULES.dropHeight;
-  const item: Item = { id: world.nextId++, kind, x, y, vx: 0, vy: 0, heldBy: null, thrown: false, onGround: false, thrownBy: null, lifeMs: ITEM_RULES.lifeMs };
+  const item: Item = { id: world.nextId++, kind, x, y, vx: 0, vy: 0, heldBy: null, thrown: false, onGround: false, riding: -1, thrownBy: null, lifeMs: ITEM_RULES.lifeMs };
   world.items.push(item);
   ctx.events.push({ type: "itemSpawn", itemId: item.id, kind, x, y });
 }
 
-// Come i lottatori: sopra i blocchi pieni e le piattaforme sottili, solo scendendo
-function land(item: Item, prevY: number, half: number, ctx: PhysicsContext) {
+// Un oggetto appoggiato su una piattaforma mobile viaggia con lei (come carryRider in elements.ts)
+function carry(item: Item, dtMs: number, ctx: PhysicsContext) {
+  const m = item.riding >= 0 ? ctx.stage.movers?.[item.riding] : undefined;
+  if (!m || !item.onGround) return;
+  const t = ctx.timeMs ?? 0;
+  const before = moverPosition(m, t - dtMs);
+  const now = moverPosition(m, t);
+  item.x += now.x - before.x;
+  item.y += now.y - before.y;
+}
+
+// Come i lottatori: sopra i blocchi pieni, le piattaforme sottili e quelle mobili, solo scendendo
+function land(item: Item, prevY: number, half: number, dtMs: number, ctx: PhysicsContext) {
   item.onGround = false;
+  item.riding = -1;
   if (item.vy < 0) return;
   for (const s of [...ctx.stage.solids, ...ctx.stage.platforms]) {
     const over = item.x + half > s.x && item.x - half < s.x + s.width;
-    if (over && prevY <= s.y && item.y >= s.y) {
-      item.y = s.y;
-      item.vy = 0;
-      item.onGround = true;
-      // Un oggetto lanciato che tocca terra torna da raccogliere
-      item.thrown = false;
-      item.thrownBy = null;
+    if (over && prevY <= s.y && item.y >= s.y) return settle(item, s.y);
+  }
+  // Su un ascensore conta anche dov'era la superficie prima del passo (può venire incontro)
+  const movers = ctx.stage.movers ?? [];
+  const t = ctx.timeMs ?? 0;
+  for (let i = 0; i < movers.length; i++) {
+    const now = moverPosition(movers[i], t);
+    const before = moverPosition(movers[i], t - dtMs);
+    const over = item.x + half > now.x && item.x - half < now.x + movers[i].width;
+    if (over && prevY <= Math.max(before.y, now.y) && item.y >= now.y) {
+      settle(item, now.y);
+      item.riding = i;
       return;
     }
   }
+}
+
+function settle(item: Item, y: number) {
+  item.y = y;
+  item.vy = 0;
+  item.onGround = true;
+  // Un oggetto lanciato che tocca terra torna da raccogliere
+  item.thrown = false;
+  item.thrownBy = null;
 }
 
 // Il primo che l'oggetto lanciato tocca vola via come per un attacco, e l'oggetto si consuma
