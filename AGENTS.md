@@ -4,6 +4,7 @@ Istruzioni per gli agenti AI (Claude Code, Codex, Cursor, Copilot, Gemini, ...) 
 **Il gioco ufficiale è il client Godot in `godot/`** (decisione di Nicola, 6 ottobre 2026): ogni lavoro e ogni decisione nuova si fa in funzione di Godot. Il server Node resta l'arbitro e la logica resta in `src/shared/`; il vecchio client web in `src/client/` è congelato.
 Questo file è l'unica fonte di verità per gli agenti: `CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructions.md` e `.cursor/rules/` rimandano qui.
 Per il gioco leggi il [README](README.md), per il giro di lavoro degli umani [CONTRIBUTING.md](CONTRIBUTING.md).
+**Obiettivo attuale: un prodotto professionale, in fase precoce** (Nicola, 6 ottobre 2026). Il piano è in [docs/piano-prodotto.md](docs/piano-prodotto.md): 15 evolutive `E1`...`E15` in due ondate, ognuna un'issue con la specifica in `docs/evolutive/`. Provare dev'essere facilissimo e il deploy snello: niente processi pesanti.
 Il giro di lavoro passo per passo, con i comandi, è in [.claude/skills/compito/SKILL.md](.claude/skills/compito/SKILL.md): Claude Code lo carica da solo (`/compito`), **ogni altro agente lo legge all'inizio di un compito**.
 
 Siamo un gruppo di amici e ognuno usa il proprio agente, spesso nello stesso momento sulla stessa repo. Gran parte delle regole qui sotto serve a non pestarsi i piedi.
@@ -24,7 +25,7 @@ Senza `gh` (Cursor, agenti cloud, ...) fai le stesse letture e scritture con gli
 
 Se il tuo umano ti dice "trova qualcosa da fare" (o ti dà un'issue), segui questi passi:
 
-1. **Leggi la roadmap**, l'issue con l'etichetta `roadmap` (`gh issue list --label roadmap`). La sua tabella divide il lavoro in **corsie**: ogni corsia ha i suoi file, così più agenti lavorano insieme senza conflitti.
+1. **Leggi la roadmap**, l'issue con l'etichetta `roadmap` (`gh issue list --label roadmap`). La sua tabella divide il lavoro in **corsie**: ogni corsia ha i suoi file, così più agenti lavorano insieme senza conflitti. Poi leggi [docs/piano-prodotto.md](docs/piano-prodotto.md): le evolutive (titoli che iniziano con `E1 ·`, `E2 ·`...) hanno la precedenza, nell'ordine consigliato lì, e la loro specifica completa è in `docs/evolutive/E<n>.md`.
 2. **Scegli un'issue `pronto`** (`gh issue list --label pronto`). Le issue `in attesa` dipendono da un'altra non ancora mergiata: non iniziarle. Se la dipendenza scritta nel loro blocco "Per gli agenti" è già in `main`, sposta l'issue a `pronto` (`gh issue edit N --remove-label "in attesa" --add-label pronto`). Preferisci `good first issue` se il tuo umano è alle prime armi, e le etichette del suo ruolo (`arte`, `audio`, `codice`, `design`).
 3. **Controlla che sia libera**: nessun assegnatario e nessuna PR aperta nella stessa corsia (`gh pr list`). Se la corsia è occupata, scegline un'altra.
 4. **Prendila**: `gh issue edit N --add-assignee @me`, un commento sull'issue tipo "prendo il passo 2", poi branch e PR in bozza come in "Workflow Git". Subito dopo rileggi l'issue: se un altro l'ha presa prima di te (assegnazione o commento precedente al tuo), vince chi è arrivato prima; togli l'assegnazione e scegline un'altra.
@@ -143,5 +144,6 @@ public/assets/     immagini e suoni (arrivano in Godot con npm run export:godot)
 ## Prima di dire "fatto"
 
 1. `npm run typecheck`, `npm test` e `npm run build` passano, e il controllo CI della PR è verde.
-2. Gli script Godot si caricano senza `SCRIPT ERROR` e, se la modifica tocca il gioco, l'hai provata nel client Godot con due istanze.
-3. La PR usa il template e dice quale agente ha scritto il codice e come l'hai provata.
+2. Il *Fatto quando* del passo che hai fatto (scritto nell'issue) è verificato, e nella PR dici come.
+3. Gli script Godot si caricano senza `SCRIPT ERROR` e, se la modifica tocca il gioco, l'hai provata nel client Godot con due istanze.
+4. La PR usa il template e dice quale agente ha scritto il codice e come l'hai provata.
