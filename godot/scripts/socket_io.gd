@@ -10,11 +10,16 @@ extends RefCounted
 
 signal connected
 signal disconnected
+signal connect_failed # il server non si raggiunge (indirizzo sbagliato, tunnel spento, rete)
+
+const SILENCE_MS := 50000 # Engine.IO manda un ping ogni 25 s: dopo tanto silenzio la connessione è morta
 signal event_received(name: String, data: Variant)
 
 var _ws := WebSocketPeer.new()
 var _joined := false # siamo dentro il namespace e possiamo mandare eventi
 var _open := false
+var _connecting := false
+var _last_message := 0 # ms dell'ultimo messaggio ricevuto
 
 
 # base_url: http(s)://host:porta, oppure ws(s)://
@@ -30,6 +35,7 @@ func connect_to(base_url: String) -> Error:
 	_ws.inbound_buffer_size = 1 << 20 # gli snapshot con 8 giocatori stanno comodi
 	_joined = false
 	_open = false
+	_connecting = true
 	return _ws.connect_to_url(url + "/socket.io/?EIO=4&transport=websocket")
 
 
@@ -38,6 +44,7 @@ func is_joined() -> bool:
 
 
 func close() -> void:
+	_connecting = false
 	_ws.close()
 
 
@@ -53,14 +60,24 @@ func poll() -> void:
 	_ws.poll()
 	match _ws.get_ready_state():
 		WebSocketPeer.STATE_OPEN:
-			_open = true
+			if not _open:
+				_open = true
+				_connecting = false
+				_last_message = Time.get_ticks_msec()
 			while _ws.get_available_packet_count() > 0:
+				_last_message = Time.get_ticks_msec()
 				_handle(_ws.get_packet().get_string_from_utf8())
+			# Un tunnel che si spegne può lasciare il WebSocket "aperto" senza che arrivi più niente
+			if Time.get_ticks_msec() - _last_message > SILENCE_MS:
+				_ws.close()
 		WebSocketPeer.STATE_CLOSED:
 			if _open:
 				_open = false
 				_joined = false
 				disconnected.emit()
+			elif _connecting:
+				_connecting = false
+				connect_failed.emit()
 
 
 func _handle(msg: String) -> void:

@@ -37,6 +37,7 @@
 | Provocazione | T |
 | Menu (opzioni, link della stanza, esci) | Esc |
 | Musica accesa/spenta | M |
+| Schermo intero | F11 |
 
 I tasti si cambiano da Opzioni.
 

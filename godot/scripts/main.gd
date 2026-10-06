@@ -59,6 +59,7 @@ func _ready() -> void:
 
 	socket.connected.connect(_on_connected)
 	socket.disconnected.connect(_on_disconnected)
+	socket.connect_failed.connect(_on_connect_failed)
 	socket.event_received.connect(_on_event)
 
 	# Con stanza e nome nell'indirizzo si entra subito, come nel gioco web
@@ -157,8 +158,16 @@ func _on_connected() -> void:
 func _on_disconnected() -> void:
 	if not playing:
 		return
-	hud.set_status("Connessione persa, riprovo...")
+	hud.set_status("Connessione persa, riprovo... (Esc per tornare alla lobby)")
 	_retry_at = Time.get_ticks_msec() + RECONNECT_MS
+
+
+# Indirizzo sbagliato o server spento: si riprova, ma si dice cosa succede e come uscirne
+func _on_connect_failed() -> void:
+	if not playing:
+		return
+	hud.set_status("Non riesco a raggiungere %s, riprovo... (Esc per cambiare server)" % params.server)
+	_retry_at = Time.get_ticks_msec() + RECONNECT_MS * 2
 
 
 func _on_event(name: String, data: Variant) -> void:
@@ -251,6 +260,9 @@ func _frame_fighters(delta: float) -> void:
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	var key := event as InputEventKey
+	if key.pressed and not key.echo and key.keycode == KEY_F11:
+		_toggle_fullscreen() # anche nella lobby
+		return
 	if not playing or not key.pressed or key.echo:
 		return
 	if key.keycode == KEY_R:
@@ -261,6 +273,12 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		settings.save()
 	elif key.keycode == KEY_ESCAPE and not is_instance_valid(pause_menu):
 		_open_pause()
+
+
+# F11: schermo intero e ritorno, sia nell'app sia nel browser
+func _toggle_fullscreen() -> void:
+	var full := DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
+	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED if full else DisplayServer.WINDOW_MODE_FULLSCREEN)
 
 
 # Esc: il menu spegne i tasti di chi lo apre, ma la partita online va avanti
