@@ -596,52 +596,52 @@
       "name": "Bonobot",
       "sprite": {
         "path": "assets/characters/bonobot/bonobot.png",
-        "frameWidth": 106,
-        "frameHeight": 170,
-        "columns": 1,
+        "frameWidth": 236,
+        "frameHeight": 240,
+        "columns": 24,
         "scale": 0.5,
         "animations": {
           "idle": {
             "row": 0,
-            "frames": 1,
-            "fps": 1,
+            "frames": 24,
+            "fps": 12,
             "loop": true
           },
           "walk": {
-            "row": 0,
-            "frames": 1,
-            "fps": 1,
+            "row": 1,
+            "frames": 10,
+            "fps": 24,
             "loop": true
           },
           "jump": {
-            "row": 0,
-            "frames": 1,
-            "fps": 1,
+            "row": 2,
+            "frames": 7,
+            "fps": 24,
             "loop": false
           },
           "fall": {
-            "row": 0,
-            "frames": 1,
-            "fps": 1,
+            "row": 3,
+            "frames": 12,
+            "fps": 24,
             "loop": true
           },
           "light": {
-            "row": 0,
-            "frames": 1,
-            "fps": 1,
+            "row": 4,
+            "frames": 7,
+            "fps": 24,
             "loop": false
           },
           "heavy": {
-            "row": 0,
-            "frames": 1,
-            "fps": 1,
+            "row": 5,
+            "frames": 18,
+            "fps": 24,
             "loop": false
           },
           "hit": {
-            "row": 0,
-            "frames": 1,
-            "fps": 1,
-            "loop": true
+            "row": 6,
+            "frames": 8,
+            "fps": 24,
+            "loop": false
           }
         }
       }

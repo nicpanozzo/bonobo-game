@@ -49,24 +49,24 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
   },
 
   // Bonobo spavaldo con la canna in bocca: personaggio di test e manichino (#20), proposto da Riccardo (GiovannifRana).
-  // Per ora è un'immagine ferma, disegnata a 2x: tutte le animazioni usano l'unico fotogramma.
+  // Animato a pezzi (cutout) su uno scheletro e disegnato a 2x; i colpi seguono startupMs/activeMs di ATTACKS.
   bonobot: {
     id: "bonobot",
     name: "Bonobot",
     sprite: {
       path: "assets/characters/bonobot/bonobot.png",
-      frameWidth: 106,
-      frameHeight: 170,
-      columns: 1,
+      frameWidth: 236,
+      frameHeight: 240,
+      columns: 24,
       scale: 0.5,
       animations: {
-        idle: { row: 0, frames: 1, fps: 1, loop: true },
-        walk: { row: 0, frames: 1, fps: 1, loop: true },
-        jump: { row: 0, frames: 1, fps: 1, loop: false },
-        fall: { row: 0, frames: 1, fps: 1, loop: true },
-        light: { row: 0, frames: 1, fps: 1, loop: false },
-        heavy: { row: 0, frames: 1, fps: 1, loop: false },
-        hit: { row: 0, frames: 1, fps: 1, loop: true },
+        idle: { row: 0, frames: 24, fps: 12, loop: true }, // respiro e peso che si sposta, 2 s
+        walk: { row: 1, frames: 10, fps: 24, loop: true }, // galoppo sulle nocche alla velocità di groundSpeed
+        jump: { row: 2, frames: 7, fps: 24, loop: false },
+        fall: { row: 3, frames: 12, fps: 24, loop: true },
+        light: { row: 4, frames: 7, fps: 24, loop: false }, // schiaffo di rovescio: colpisce nei fotogrammi 2-4
+        heavy: { row: 5, frames: 18, fps: 24, loop: false }, // martello a due pugni: colpisce nei fotogrammi 7-10
+        hit: { row: 6, frames: 8, fps: 24, loop: false },
       },
     },
   },
