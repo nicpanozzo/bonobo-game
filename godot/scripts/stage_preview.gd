@@ -24,6 +24,11 @@ func _draw() -> void:
 		draw_rect(Rect2(o + Vector2(s.x, s.y) * k, Vector2(s.width, s.height) * k), _c(spec.colors.solid))
 	for p in spec.platforms:
 		draw_rect(Rect2(o + Vector2(p.x, p.y) * k, Vector2(p.width * k, 2)), _c(spec.colors.platform))
+	# Ascensori (al primo punto, in giallo) e trappole (in rosso), #14
+	for m in spec.get("movers", []):
+		draw_rect(Rect2(o + Vector2(m.path[0].x, m.path[0].y) * k, Vector2(m.width * k, 3)), Color("f1c40f"))
+	for h in spec.get("hazards", []):
+		draw_rect(Rect2(o + Vector2(h.x, h.y) * k, Vector2(h.width, h.height) * k), Color(1, 0.25, 0.2))
 
 
 static func _c(n: Variant) -> Color:

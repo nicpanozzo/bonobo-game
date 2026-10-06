@@ -8,11 +8,11 @@ var delay_ms := 80.0
 var teleport_distance := 300.0
 var size := 30
 
-var _frames: Array = [] # [{ t: ora del server, players: { id: PlayerState } }]
+var _frames: Array = [] # [{ t: ora del server, stage_ms: tempo dell'arena, players: { id: PlayerState } }]
 var _offset := NAN # ora locale - ora del server, stimata
 
 
-func push(server_time: float, received_at: float, players: Array) -> void:
+func push(server_time: float, received_at: float, players: Array, stage_ms := 0.0) -> void:
 	# Lo scarto più piccolo visto è il più vicino al vero: i ritardi di rete lo fanno solo crescere.
 	# Si lascia salire piano, nel caso gli orologi derivino.
 	var sample := received_at - server_time
@@ -22,7 +22,7 @@ func push(server_time: float, received_at: float, players: Array) -> void:
 	var by_id := {}
 	for p in players:
 		by_id[p.id] = p
-	_frames.append({"t": server_time, "players": by_id})
+	_frames.append({"t": server_time, "stage_ms": stage_ms, "players": by_id})
 	if _frames.size() > size:
 		_frames.pop_front()
 
@@ -71,3 +71,19 @@ func _latest(id: String) -> Variant:
 		if _frames[j].players.has(id):
 			return _frames[j].players[id]
 	return null
+
+
+# Tempo dell'arena all'ora locale `now`, interpolato come i giocatori: muove ascensori e trappole (#14)
+func sample_stage_ms(now: float) -> float:
+	if is_nan(_offset) or _frames.is_empty():
+		return 0.0
+	var render_time := now - _offset - delay_ms
+	var i := _frames.size() - 1
+	while i > 0 and _frames[i].t > render_time:
+		i -= 1
+	var a: Dictionary = _frames[i]
+	if i + 1 >= _frames.size() or render_time <= a.t:
+		# Senza un frame dopo si va avanti con l'orologio, così gli ascensori non si fermano a scatti
+		return a.stage_ms + maxf(0.0, render_time - a.t)
+	var b: Dictionary = _frames[i + 1]
+	return lerpf(a.stage_ms, b.stage_ms, (render_time - a.t) / (b.t - a.t))
