@@ -6,6 +6,7 @@ import { Server } from "socket.io";
 import type { ClientToServer, ServerToClient } from "../shared/types";
 import { Bots, parseBotKind } from "./bot";
 import { discordHooks } from "./discord";
+import { Leaderboard, leaderboardPage } from "./leaderboard";
 import { combineHooks, Room } from "./Room";
 
 const PORT = Number(process.env.PORT) || 3000;
@@ -26,6 +27,16 @@ app.get("/health", (_req, res) => {
 
 const rooms = new Map<string, Room>();
 
+// Classifica delle partite (#18): un file JSON accanto al server, o dove dice LEADERBOARD_FILE
+const leaderboard = new Leaderboard(process.env.LEADERBOARD_FILE || path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../data/classifica.json"));
+void leaderboard.load();
+app.get("/classifica", (_req, res) => {
+  res.type("html").send(leaderboardPage(leaderboard.week()));
+});
+app.get("/classifica.json", (_req, res) => {
+  res.json(leaderboard.week());
+});
+
 io.on("connection", (socket) => {
   let room: Room | undefined;
 
@@ -36,7 +47,7 @@ io.on("connection", (socket) => {
     if (!r) {
       // Arena, regole e bot li decide chi crea la stanza
       const bots = new Bots();
-      const discord = discordHooks(process.env.DISCORD_WEBHOOK_URL, (id) => bots.isBot(id));
+      const discord = discordHooks(process.env.DISCORD_WEBHOOK_URL, (id) => bots.isBot(id), leaderboard);
       r = new Room(code, io, { stageId: typeof stageId === "string" ? stageId : undefined, rules }, combineHooks(bots.hooks, discord));
       rooms.set(code, r);
       const kind = parseBotKind(bot);

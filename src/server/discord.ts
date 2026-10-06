@@ -5,6 +5,7 @@ import { TEAM_NAMES } from "../shared/constants";
 import type { MatchEndEvent } from "../shared/match";
 import type { Fighter } from "../shared/physics";
 import type { MatchRules } from "../shared/types";
+import type { Leaderboard } from "./leaderboard";
 import type { RoomHooks } from "./Room";
 import { MatchStats, type PlayerStats } from "./stats";
 
@@ -54,17 +55,24 @@ export async function postToDiscord(url: string, content: string): Promise<void>
   }
 }
 
-// I ganci per una stanza: contano le statistiche e a fine partita postano il risultato.
-// Le partite con meno di due umani (es. da soli contro un bot) non finiscono nel canale.
-export function discordHooks(webhookUrl: string | undefined, isBot: (id: string) => boolean): RoomHooks {
+// I ganci per una stanza: contano le statistiche e a fine partita postano il risultato
+// e lo segnano in classifica. Le partite con meno di due umani (es. da soli contro un bot) non contano.
+export function discordHooks(webhookUrl: string | undefined, isBot: (id: string) => boolean, leaderboard?: Leaderboard): RoomHooks {
   const stats = new MatchStats();
   return {
     onEvents: (_room, events) => stats.add(events),
     onMatchEnd: (room, result, fighters: readonly Fighter[]) => {
-      if (!webhookUrl) return;
       const humans = fighters.filter((f) => !isBot(f.id));
       if (humans.length < 2) return;
-      void postToDiscord(webhookUrl, formatResult(result, fighters, (id) => stats.get(id), room.rules));
+      leaderboard?.record({
+        t: Date.now(),
+        players: humans.map((f) => {
+          const s = stats.get(f.id);
+          const won = result.winnerTeam === 1 || result.winnerTeam === 2 ? f.team === result.winnerTeam : f.id === result.winnerId;
+          return { name: f.name, won, kos: s.kos, falls: s.falls, damageDealt: s.damageDealt };
+        }),
+      });
+      if (webhookUrl) void postToDiscord(webhookUrl, formatResult(result, fighters, (id) => stats.get(id), room.rules));
     },
   };
 }
