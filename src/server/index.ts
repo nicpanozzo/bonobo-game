@@ -7,6 +7,7 @@ import { NET_LIMITS } from "../shared/constants";
 import type { ClientToServer, ServerToClient } from "../shared/types";
 import { Bots, parseBotKind } from "./bot";
 import { discordHooks } from "./discord";
+import { health } from "./health";
 import { Leaderboard, leaderboardPage } from "./leaderboard";
 import { Flood, TokenBucket } from "./rateLimit";
 import { combineHooks, Room } from "./Room";
@@ -29,7 +30,7 @@ if (process.env.NODE_ENV === "production") {
   app.use(express.static(dist));
 }
 app.get("/health", (_req, res) => {
-  res.json({ ok: true, rooms: rooms.size });
+  res.json(health(rooms.values(), process.env));
 });
 
 const rooms = new Map<string, Room>();

@@ -67,6 +67,11 @@ export class Room {
     return this.humans.size === 0;
   }
 
+  /** Giocatori umani collegati, per /health (i bot non contano) */
+  get humanCount() {
+    return this.humans.size;
+  }
+
   addPlayer(id: string, name: string, characterId?: string) {
     this.match.addPlayer(id, name, characterId);
     this.humans.add(id);
