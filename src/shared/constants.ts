@@ -106,6 +106,18 @@ export const DODGE = {
   cooldownMs: 900, // dall'inizio della schivata alla successiva
 };
 
+// Bordo del palco (#110): in aria, scendendo, ci si aggrappa agli spigoli in alto dei blocchi pieni.
+// L'invulnerabilità vale solo per la prima presa dopo aver toccato terra o essere stati colpiti.
+export const LEDGE = {
+  grabBoxX: 36, // distanza massima in orizzontale tra la mano e lo spigolo, pixel
+  grabBoxY: 48, // distanza massima in verticale tra la mano e lo spigolo, pixel
+  hangOffsetY: 56, // da appesi i piedi stanno tanti pixel sotto lo spigolo (la mano è lì)
+  invulnMs: 800, // invulnerabilità della prima presa
+  maxGrabs: 3, // prese senza toccare terra: alla successiva non ci si aggrappa più
+  regrabMs: 300, // dopo essersi staccati non ci si riaggrappa per questo tempo
+  maxHangMs: 5000, // dopo tanto tempo appesi si cade
+};
+
 export const HITSTUN_PER_KNOCKBACK = 0.35; // ms di stordimento per ogni pixel/s di knockback
 export const HITSTUN_AIR_DRAG = 0.985; // rallentamento per tick mentre si vola via
 

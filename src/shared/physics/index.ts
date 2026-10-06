@@ -6,16 +6,19 @@
 //   attacks.ts   attacchi e colpi (#2, #15)
 //   stage.ts     contatto con l'arena, KO e respawn (#14)
 //   elements.ts  ascensori e trappole (#14)
+//   ledge.ts     bordo del palco (#110)
 
 import { resolveHits, tryStartAttack, updateAttack } from "./attacks";
 import { carryRider, resolveHazards } from "./elements";
 import type { Fighter, PhysicsContext } from "./fighter";
+import { holdLedge, tryGrabLedge } from "./ledge";
 import { applyControls, applyGravity } from "./movement";
 import { collideWithStage, loseStock, outOfBlastZone, respawn } from "./stage";
 
 export * from "./fighter";
 export { resolveHits } from "./attacks";
 export { hazardActive, moverPosition } from "./elements";
+export { ledgesOf } from "./ledge";
 
 // Un passo di simulazione per un lottatore (dtMs = durata del tick)
 export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void {
@@ -45,8 +48,16 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
   f.dodgeTimer = Math.max(0, f.dodgeTimer - dtMs);
   f.dodgeCooldown = Math.max(0, f.dodgeCooldown - dtMs);
   f.hazardTimer = Math.max(0, f.hazardTimer - dtMs);
+  f.regrabTimer = Math.max(0, f.regrabTimer - dtMs);
   f.hitstun = f.hitstunTimer > 0;
   f.invulnerable = f.invulnerableTimer > 0;
+  if (f.hitstun) f.ledgeGrabs = 0; // un colpo ridà le prese del bordo (#110)
+
+  // Appesi al bordo si resta fermi: niente controlli, attacchi né gravità
+  if (holdLedge(f, dtMs, ctx)) {
+    f.prevInput = f.input;
+    return;
+  }
 
   updateAttack(f, dtMs);
   applyControls(f, dt, ctx);
@@ -70,6 +81,7 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
 export function stepWorld(fighters: Fighter[], dtMs: number, ctx: PhysicsContext): void {
   ctx.timeMs = (ctx.timeMs ?? 0) + dtMs;
   for (const f of fighters) stepFighter(f, dtMs, ctx);
+  for (const f of fighters) tryGrabLedge(f, fighters, ctx);
   resolveHits(fighters, ctx);
   resolveHazards(fighters, ctx);
 }

@@ -26,6 +26,10 @@ export interface Fighter extends PlayerState {
   checkpoint: number; // in Corsa (#57): indice dell'ultimo checkpoint toccato, da lì si riparte
   riding: number; // indice della piattaforma mobile su cui si sta (#14), -1 se nessuna
   hazardTimer: number; // ms prima di poter prendere un'altra trappola (#14)
+  ledgeIndex: number; // spigolo a cui si è appesi, indice in ledgesOf(stage) (#110), -1 se nessuno
+  ledgeTimer: number; // ms passati appesi
+  ledgeGrabs: number; // prese del bordo da quando si è toccato terra o si è stati colpiti
+  regrabTimer: number; // ms prima di potersi aggrappare di nuovo
 }
 
 // Quello che serve alla fisica oltre ai lottatori: l'arena e dove scrivere gli eventi
@@ -81,6 +85,7 @@ export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
     invulnerable: false,
     eliminated: false,
     carrier: false,
+    ledge: null,
     input: emptyInput(),
     prevInput: emptyInput(),
     jumpsLeft: FIGHTER.maxJumps,
@@ -101,6 +106,10 @@ export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
     checkpoint: 0,
     riding: -1,
     hazardTimer: 0,
+    ledgeIndex: -1,
+    ledgeTimer: 0,
+    ledgeGrabs: 0,
+    regrabTimer: 0,
   };
 }
 

@@ -107,6 +107,14 @@ function decideSimple(self: Fighter, players: readonly Fighter[], stage: StageSp
     if (!mem.last[key]) input[key] = true;
   };
 
+  // Appeso al bordo (#110): per ora sale sempre con il salto, verso il palco
+  if (self.ledge) {
+    tap("up");
+    input.left = self.facing === -1;
+    input.right = self.facing === 1;
+    return input;
+  }
+
   // Fuori dal palco: si torna verso il blocco più vicino, salti e recupero quando si sta cadendo
   const ground = groundUnder(stage, self.x);
   if (!self.onGround && (!ground || self.y > ground.y)) {
