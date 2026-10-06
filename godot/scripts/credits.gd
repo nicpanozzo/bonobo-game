@@ -8,7 +8,7 @@ signal closed
 const PEOPLE := [
 	["Nicola (@nicpanozzo)", "Idea e organizzazione", "Ha messo in piedi il gioco, la roadmap e il gruppo"],
 	["@MauroGrecchi", "Personaggi", "Egiainuso, la creatura blu sulla barchetta (#37)"],
-	["@GiovannifRana", "Playtest e arte", "Segnalazioni su KO e respawn (#8, #9), direzione artistica (#41)"],
+	["@GiovannifRana", "Playtest e arte", "Segnalazioni su KO e respawn (#8, #9), direzione artistica (#41), Bonobot (#20)"],
 	["Claude Code", "Codice", "Agente che ha scritto parte del codice per gli umani del gruppo"],
 ]
 

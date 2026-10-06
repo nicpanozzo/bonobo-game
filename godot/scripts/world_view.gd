@@ -391,7 +391,7 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 	var character: Dictionary = game.characters.get(p.characterId, game.characters[game.defaultCharacterId])
 	var head := fh # altezza della testa sopra i piedi: lo sprite può essere più alto del corpo
 	if _textures.has(character.id):
-		head = maxf(fh, character.sprite.frameHeight)
+		head = maxf(fh, character.sprite.frameHeight * character.sprite.get("scale", 1.0))
 		_draw_sprite(p, character, now)
 	else:
 		var color := _color(p.color)
@@ -447,7 +447,8 @@ func _draw_sprite(p: Dictionary, character: Dictionary, now: float) -> void:
 	var fw: float = sheet.frameWidth
 	var fh: float = sheet.frameHeight
 	var src := Rect2(frame * fw, a.row * fh, fw, fh)
-	draw_set_transform(Vector2(p.x, p.y), 0, Vector2(p.facing, 1))
+	var scale: float = sheet.get("scale", 1.0) # 0.5 per i disegni fatti a 2x
+	draw_set_transform(Vector2(p.x, p.y), 0, Vector2(p.facing * scale, scale))
 	draw_texture_rect_region(_textures[character.id], Rect2(-fw / 2, -fh, fw, fh), src)
 	draw_set_transform(Vector2.ZERO)
 

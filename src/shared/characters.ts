@@ -8,6 +8,7 @@ export interface SpriteSheetSpec {
   frameWidth: number; // pixel
   frameHeight: number;
   columns: number; // fotogrammi per riga nel PNG
+  scale?: number; // grandezza a schermo rispetto al PNG: 0.5 per i disegni fatti a 2x (manca = 1)
   // Riga del PNG, numero di fotogrammi e velocità di ogni animazione (fotogrammi/s)
   animations: Record<AnimationName, { row: number; frames: number; fps: number; loop: boolean }>;
 }
@@ -43,6 +44,29 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         light: { row: 4, frames: 3, fps: 20, loop: false },
         heavy: { row: 5, frames: 4, fps: 8, loop: false }, // il colpo di remo cade quando la hitbox si attiva (startupMs)
         hit: { row: 6, frames: 2, fps: 10, loop: true },
+      },
+    },
+  },
+
+  // Bonobo spavaldo con la canna in bocca: personaggio di test e manichino (#20), proposto da Riccardo (GiovannifRana).
+  // Per ora è un'immagine ferma, disegnata a 2x: tutte le animazioni usano l'unico fotogramma.
+  bonobot: {
+    id: "bonobot",
+    name: "Bonobot",
+    sprite: {
+      path: "assets/characters/bonobot/bonobot.png",
+      frameWidth: 106,
+      frameHeight: 170,
+      columns: 1,
+      scale: 0.5,
+      animations: {
+        idle: { row: 0, frames: 1, fps: 1, loop: true },
+        walk: { row: 0, frames: 1, fps: 1, loop: true },
+        jump: { row: 0, frames: 1, fps: 1, loop: false },
+        fall: { row: 0, frames: 1, fps: 1, loop: true },
+        light: { row: 0, frames: 1, fps: 1, loop: false },
+        heavy: { row: 0, frames: 1, fps: 1, loop: false },
+        hit: { row: 0, frames: 1, fps: 1, loop: true },
       },
     },
   },

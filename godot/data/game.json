@@ -590,6 +590,61 @@
           }
         }
       }
+    },
+    "bonobot": {
+      "id": "bonobot",
+      "name": "Bonobot",
+      "sprite": {
+        "path": "assets/characters/bonobot/bonobot.png",
+        "frameWidth": 106,
+        "frameHeight": 170,
+        "columns": 1,
+        "scale": 0.5,
+        "animations": {
+          "idle": {
+            "row": 0,
+            "frames": 1,
+            "fps": 1,
+            "loop": true
+          },
+          "walk": {
+            "row": 0,
+            "frames": 1,
+            "fps": 1,
+            "loop": true
+          },
+          "jump": {
+            "row": 0,
+            "frames": 1,
+            "fps": 1,
+            "loop": false
+          },
+          "fall": {
+            "row": 0,
+            "frames": 1,
+            "fps": 1,
+            "loop": true
+          },
+          "light": {
+            "row": 0,
+            "frames": 1,
+            "fps": 1,
+            "loop": false
+          },
+          "heavy": {
+            "row": 0,
+            "frames": 1,
+            "fps": 1,
+            "loop": false
+          },
+          "hit": {
+            "row": 0,
+            "frames": 1,
+            "fps": 1,
+            "loop": true
+          }
+        }
+      }
     }
   }
 }
