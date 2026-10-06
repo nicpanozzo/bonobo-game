@@ -62,11 +62,14 @@ func music_on() -> bool:
 func on_event(e: Dictionary) -> void:
 	match e.type:
 		"attack":
-			_play(e.kind, {"volume": 0.7, "pitch": randf_range(0.95, 1.05)})
+			# Le varianti direzionali (#2) usano il suono del colpo base, un po' più acuto in su e più grave in giù
+			var kind: String = e.kind
+			var tilt := 0.12 if kind.ends_with("Up") else (-0.12 if kind.ends_with("Down") else 0.0)
+			_play("heavy" if kind.begins_with("heavy") else "light", {"volume": 0.7, "pitch": randf_range(0.95, 1.05) + tilt})
 		"hit":
 			# Più alta la percentuale del bersaglio, più forte e più grave il colpo
 			var strength := minf(1.0, e.percent / game.audio.hitLoudPercent)
-			_play("hitHeavy" if e.kind == "heavy" else "hitLight", {"volume": 0.6 + 0.4 * strength, "x": e.x, "pitch": 1.1 - 0.3 * strength})
+			_play("hitHeavy" if str(e.kind).begins_with("heavy") else "hitLight", {"volume": 0.6 + 0.4 * strength, "x": e.x, "pitch": 1.1 - 0.3 * strength})
 		"jump":
 			_play("doubleJump" if e.air else "jump", {"volume": 0.6, "x": e.x})
 		"land":

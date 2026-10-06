@@ -90,7 +90,7 @@ func on_event(e: Dictionary) -> void:
 			if e.id == my_id:
 				_reached = int(e.index)
 		"hit":
-			var big: bool = e.kind == "heavy"
+			var big: bool = str(e.kind).begins_with("heavy")
 			_sparks.append({"x": e.x, "y": e.y, "age": 0.0, "size": 34.0 if big else 20.0, "color": Color(1, 0.85, 0.3) if big else Color.WHITE})
 			# Più il colpo lancia lontano, più lo schermo trema; i colpi enormi fanno anche un lampo
 			var fx: Dictionary = game.effects
@@ -270,13 +270,16 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 		draw_circle(Vector2(p.x + p.facing * fw * 0.22, p.y - fh * 0.78), 5.0, Color.WHITE)
 		draw_circle(Vector2(p.x + p.facing * fw * 0.27, p.y - fh * 0.78), 2.5, Color.BLACK)
 
-	# Colpo in corso: la stessa hitbox di attackBox() in src/shared/physics/attacks.ts
+	# Colpo in corso: la stessa hitbox di attackBox() in src/shared/physics/attacks.ts,
+	# spostata da boxX/boxY per le varianti direzionali (#2)
 	if p.attack != null:
 		var spec: Dictionary = game.attacks[p.attack]
-		var x: float = p.x + fw / 2 if p.facing == 1 else p.x - fw / 2 - spec.range
-		var c := Color("ff9f43") if p.attack == "heavy" else Color.WHITE
+		var front: float = spec.get("boxX", fw / 2)
+		var x: float = p.x + front if p.facing == 1 else p.x - front - spec.range
+		var y: float = p.y + spec.get("boxY", -fh * 0.7)
+		var c := Color("ff9f43") if str(p.attack).begins_with("heavy") else Color.WHITE
 		c.a = 0.85 if p.attackActive else 0.25
-		draw_rect(Rect2(x, p.y - fh * 0.7, spec.range, spec.height), c)
+		draw_rect(Rect2(x, y, spec.range, spec.height), c)
 
 	var label := "%s  %d%%" % [p.name, roundi(p.percent)]
 	var size := _font.get_string_size(label, HORIZONTAL_ALIGNMENT_CENTER, -1, 16)
@@ -319,7 +322,7 @@ static func _animation_for(p: Dictionary) -> String:
 	if p.hitstun:
 		return "hit"
 	if p.attack != null:
-		return p.attack
+		return "heavy" if str(p.attack).begins_with("heavy") else "light" # le varianti usano l'animazione del colpo base
 	if not p.onGround:
 		return "jump" if p.vy < 0 else "fall"
 	if absf(p.vx) > 20:

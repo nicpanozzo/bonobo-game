@@ -109,6 +109,39 @@ describe("attacchi", () => {
     assert.equal(ofType(ctx.events, "attack").length, 1);
   });
 
+  it("attacchi direzionali: la variante dipende dai tasti tenuti e da terra/aria (#2)", () => {
+    const kinds: string[] = [];
+    for (const keys of [{ light: true }, { light: true, down: true }, { heavy: true, up: true }] as Partial<InputState>[]) {
+      const { ctx, fighters } = setup();
+      press(fighters[0], keys);
+      run(fighters, ctx, 1);
+      kinds.push(ofType(ctx.events, "attack")[0].kind);
+    }
+    const { ctx, fighters } = setup();
+    const [f] = fighters;
+    press(f, { up: true });
+    run(fighters, ctx, 1);
+    press(f, {});
+    run(fighters, ctx, 5);
+    press(f, { heavy: true });
+    run(fighters, ctx, 1);
+    kinds.push(ofType(ctx.events, "attack")[0].kind);
+    assert.deepEqual(kinds, ["light", "lightDown", "heavyUp", "heavyAir"]);
+  });
+
+  it("l'attacco in su lancia in verticale chi sta sopra la testa", () => {
+    const { ctx, fighters, a, b } = facingPair();
+    b.x = a.x + 10;
+    a.prevInput = { ...emptyInput(), up: true }; // su tenuto da prima: niente salto
+    press(a, { up: true, light: true });
+    run(fighters, ctx, 10);
+    const hits = ofType(ctx.events, "hit");
+    assert.equal(hits.length, 1);
+    assert.equal(hits[0].kind, "lightUp");
+    run(fighters, ctx, 3);
+    assert.ok(b.vy < 0 && Math.abs(b.vy) > Math.abs(b.vx) * 5, "vola in su, quasi dritto");
+  });
+
   it("hitstop: dopo il colpo attaccante e bersaglio restano fermi, poi il bersaglio vola", () => {
     const { ctx, fighters, a, b } = facingPair();
     press(a, { heavy: true });

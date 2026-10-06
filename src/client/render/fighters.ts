@@ -141,7 +141,7 @@ export class FighterViews implements RenderModule {
       v.fist.setSize(spec.range, spec.height);
       v.fist.setDisplaySize(spec.range, spec.height);
       v.fist.setAlpha(t.attackActive ? 1 : 0.3);
-      v.fist.setFillStyle(t.attack === "heavy" ? 0xff9f43 : 0xffffff);
+      v.fist.setFillStyle(t.attack.startsWith("heavy") ? 0xff9f43 : 0xffffff);
       v.fist.x = v.body.x + t.facing * (FIGHTER.width / 2 + spec.range / 2);
       v.fist.y = top + FIGHTER.height * 0.3 + spec.height / 2;
     } else {
@@ -167,7 +167,7 @@ export class FighterViews implements RenderModule {
 // Quale animazione mostrare, dai soli campi dello snapshot
 function animationFor(p: PlayerState): AnimationName {
   if (p.hitstun) return "hit";
-  if (p.attack) return p.attack;
+  if (p.attack) return p.attack.startsWith("heavy") ? "heavy" : "light"; // le varianti (#2) usano l'animazione del colpo base
   if (!p.onGround) return p.vy < 0 ? "jump" : "fall";
   if (Math.abs(p.vx) > 20) return "walk";
   return "idle";

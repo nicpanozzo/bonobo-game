@@ -1,6 +1,8 @@
 // Numeri del gioco condivisi tra client e server.
 // Vuoi un gioco più veloce o salti più alti? Si parte da qui.
 
+import type { AttackKind } from "./types";
+
 export const WORLD = {
   width: 1280, // area visibile, pixel
   height: 720,
@@ -39,9 +41,11 @@ export interface AttackSpec {
   range: number; // lunghezza della hitbox davanti al personaggio, pixel
   height: number;
   angleDeg: number; // angolo di lancio sopra l'orizzontale
+  boxX?: number; // pixel dal centro del personaggio, in avanti, dove comincia la hitbox (di base: metà larghezza)
+  boxY?: number; // pixel dai piedi in su dove sta il bordo alto della hitbox, negativo (di base: -70% dell'altezza)
 }
 
-export const ATTACKS: Record<"light" | "heavy", AttackSpec> = {
+export const ATTACKS: Record<AttackKind, AttackSpec> = {
   light: {
     damage: 5,
     baseKnockback: 260,
@@ -64,6 +68,13 @@ export const ATTACKS: Record<"light" | "heavy", AttackSpec> = {
     height: 44,
     angleDeg: 42,
   },
+  // Attacchi direzionali (#2): valori provvisori, da discutere alla serata di playtest (#22)
+  lightUp: { damage: 6, baseKnockback: 280, knockbackGrowth: 5, startupMs: 60, activeMs: 110, cooldownMs: 320, range: 54, height: 48, angleDeg: 85, boxX: -27, boxY: -128 }, // sopra la testa
+  lightDown: { damage: 4, baseKnockback: 230, knockbackGrowth: 4.5, startupMs: 50, activeMs: 110, cooldownMs: 300, range: 60, height: 24, angleDeg: 18, boxX: 10, boxY: -24 }, // sgambetto basso
+  lightAir: { damage: 6, baseKnockback: 260, knockbackGrowth: 5, startupMs: 50, activeMs: 160, cooldownMs: 320, range: 54, height: 50, angleDeg: 40, boxX: 8, boxY: -72 },
+  heavyUp: { damage: 14, baseKnockback: 430, knockbackGrowth: 11.5, startupMs: 280, activeMs: 130, cooldownMs: 800, range: 80, height: 64, angleDeg: 88, boxX: -40, boxY: -144 }, // lancia in verticale
+  heavyDown: { damage: 12, baseKnockback: 400, knockbackGrowth: 10, startupMs: 240, activeMs: 140, cooldownMs: 760, range: 88, height: 30, angleDeg: 25, boxX: 8, boxY: -30 }, // spazzata radente
+  heavyAir: { damage: 12, baseKnockback: 410, knockbackGrowth: 10.5, startupMs: 200, activeMs: 140, cooldownMs: 700, range: 66, height: 60, angleDeg: 32, boxX: 12, boxY: -82 },
 };
 
 export const HITSTUN_PER_KNOCKBACK = 0.35; // ms di stordimento per ogni pixel/s di knockback
