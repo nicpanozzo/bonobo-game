@@ -107,6 +107,19 @@
       "angleDeg": 32,
       "boxX": 12,
       "boxY": -82
+    },
+    "recovery": {
+      "damage": 4,
+      "baseKnockback": 300,
+      "knockbackGrowth": 3,
+      "startupMs": 0,
+      "activeMs": 250,
+      "cooldownMs": 0,
+      "range": 40,
+      "height": 70,
+      "angleDeg": 80,
+      "boxX": -20,
+      "boxY": -100
     }
   },
   "net": {

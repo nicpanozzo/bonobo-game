@@ -37,7 +37,7 @@ export class Audio implements RenderModule {
 
     switch (e.type) {
       case "attack":
-        play(e.kind.startsWith("heavy") ? "heavy" : "light", { volume: 0.7, pitch: 0.95 + Math.random() * 0.1 });
+        play(e.kind === "recovery" ? "doubleJump" : e.kind.startsWith("heavy") ? "heavy" : "light", { volume: 0.7, pitch: 0.95 + Math.random() * 0.1 });
         break;
       case "hit": {
         // Più alta la percentuale del bersaglio, più forte e più grave il colpo

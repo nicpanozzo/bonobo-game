@@ -75,6 +75,27 @@ export const ATTACKS: Record<AttackKind, AttackSpec> = {
   heavyUp: { damage: 14, baseKnockback: 430, knockbackGrowth: 11.5, startupMs: 280, activeMs: 130, cooldownMs: 800, range: 80, height: 64, angleDeg: 88, boxX: -40, boxY: -144 }, // lancia in verticale
   heavyDown: { damage: 12, baseKnockback: 400, knockbackGrowth: 10, startupMs: 240, activeMs: 140, cooldownMs: 760, range: 88, height: 30, angleDeg: 25, boxX: 8, boxY: -30 }, // spazzata radente
   heavyAir: { damage: 12, baseKnockback: 410, knockbackGrowth: 10.5, startupMs: 200, activeMs: 140, cooldownMs: 700, range: 66, height: 60, angleDeg: 32, boxX: 12, boxY: -82 },
+  // Mossa di recupero (#11): la spinta sta in RECOVERY, qui solo il colpetto che dà salendo
+  recovery: {
+    damage: 4,
+    baseKnockback: 300,
+    knockbackGrowth: 3,
+    startupMs: 0,
+    activeMs: 250,
+    cooldownMs: 0, // dopo la mossa non si attacca comunque fino all'atterraggio
+    range: 40,
+    height: 70,
+    angleDeg: 80, // quasi in verticale: chi sta sopra il bordo viene spinto via in alto
+    boxX: -20, // centrata sul personaggio
+    boxY: -100, // dalla testa in su: colpisce chi sta sopra mentre si sale
+  },
+};
+
+// Mossa di recupero (#11): in aria K + su dà una spinta verso l'alto, una volta finché
+// non si tocca terra o si viene colpiti. Un salto da terra sale di circa 160 pixel, questa di circa 240.
+export const RECOVERY = {
+  speed: 1050, // velocità verso l'alto, pixel/s
+  drift: 300, // velocità orizzontale verso la direzione tenuta, pixel/s
 };
 
 export const HITSTUN_PER_KNOCKBACK = 0.35; // ms di stordimento per ogni pixel/s di knockback

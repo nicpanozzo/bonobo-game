@@ -14,6 +14,8 @@ export interface Fighter extends PlayerState {
   cooldownTimer: number; // ms prima di poter attaccare ancora
   hitstunTimer: number;
   hitstopTimer: number; // ms di fermo dopo un colpo dato o preso (#15)
+  recoveryUsed: boolean; // la mossa di recupero è già stata usata in questo salto (#11)
+  helpless: boolean; // dopo il recupero non si attacca fino all'atterraggio
   respawnTimer: number;
   invulnerableTimer: number;
   alreadyHit: Set<string>; // chi ha già preso questo colpo
@@ -80,6 +82,8 @@ export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
     cooldownTimer: 0,
     hitstunTimer: 0,
     hitstopTimer: 0,
+    recoveryUsed: false,
+    helpless: false,
     respawnTimer: 0,
     invulnerableTimer: 0,
     alreadyHit: new Set(),

@@ -12,8 +12,8 @@ export interface InputState {
   taunt: boolean; // provocazione (#16): per ora produce solo l'evento
 }
 
-// Le varianti direzionali (#2): su tenendo su, giù tenendo giù a terra, Air in aria
-export type AttackKind = "light" | "heavy" | "lightUp" | "lightDown" | "lightAir" | "heavyUp" | "heavyDown" | "heavyAir";
+// Le varianti direzionali (#2): su tenendo su, giù tenendo giù a terra, Air in aria; recovery: K + su in aria (#11)
+export type AttackKind = "light" | "heavy" | "lightUp" | "lightDown" | "lightAir" | "heavyUp" | "heavyDown" | "heavyAir" | "recovery";
 
 export interface PlayerState {
   id: string;
