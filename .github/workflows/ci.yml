@@ -50,3 +50,6 @@ jobs:
           ~/godot/godot --headless --path godot --import 2>&1 | tee /tmp/import.log
           ~/godot/godot --headless --path godot --quit-after 60 2>&1 | tee /tmp/run.log
           ! grep -E "SCRIPT ERROR|Parse Error|Failed to load script" /tmp/import.log /tmp/run.log
+      # Test degli script del client (godot/tests, #83): un test che fallisce fa uscire con 1
+      - name: Test del client
+        run: ~/godot/godot --headless --path godot --script res://tests/run_tests.gd
