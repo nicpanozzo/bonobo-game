@@ -2,10 +2,7 @@
 # legge solo gli snapshot (interpolati) e gli eventi che arrivano dal server.
 extends Node2D
 
-const HIT_SPARK_MS := 220.0 # durata della scintilla di un colpo
-const SHAKE_KO := 14.0 # pixel di scossa della telecamera a un KO
-const SHAKE_DECAY := 40.0 # pixel/s di scossa che si spengono
-
+# I numeri degli effetti stanno in EFFECTS (constants.ts), letti da game.effects
 var game: Dictionary # godot/data/game.json
 var stage: Dictionary
 var my_id := ""
@@ -17,6 +14,9 @@ var _alive: Array = [] # id dei lottatori disegnati all'ultimo frame
 var _reached := 0 # checkpoint della Corsa presi da me
 var _sparks: Array = [] # [{ x, y, age, size, color }]
 var _shake := 0.0
+var _flash := 0.0 # ms di lampo bianco rimasti
+var _dust: Array = [] # [{ x, y, dx, age }] sbuffi di polvere
+var _trails := {} # id -> Array[Vector2] delle ultime posizioni, per la scia di chi vola
 var _font: Font = ThemeDB.fallback_font
 var view_rect := Rect2(0, 0, 1280, 720) # la parte di mondo che si vede, decisa dalla telecamera in main.gd
 var _textures := {} # id personaggio -> Texture2D dello spritesheet
@@ -42,6 +42,9 @@ func reset() -> void:
 	positions = {}
 	_anims = {}
 	_sparks = []
+	_dust = []
+	_trails = {}
+	_flash = 0.0
 	my_id = ""
 	set_stage(game.defaultStageId)
 
@@ -87,16 +90,41 @@ func on_event(e: Dictionary) -> void:
 		"hit":
 			var big: bool = e.kind == "heavy"
 			_sparks.append({"x": e.x, "y": e.y, "age": 0.0, "size": 34.0 if big else 20.0, "color": Color(1, 0.85, 0.3) if big else Color.WHITE})
+			# Più il colpo lancia lontano, più lo schermo trema; i colpi enormi fanno anche un lampo
+			var fx: Dictionary = game.effects
+			var kb := float(e.get("knockback", 0))
+			if kb > fx.shakeFromKnockback:
+				_shake = maxf(_shake, minf(fx.shakeMax, (kb - fx.shakeFromKnockback) * fx.shakePerKnockback))
+			if kb >= fx.flashKnockback:
+				_flash = fx.flashMs
+		"land":
+			_puff(e.x, e.y)
+		"jump":
+			if not e.get("air", false):
+				_puff(e.x, e.y)
 		"ko":
-			_shake = SHAKE_KO
+			_shake = game.effects.shakeKo
 			_sparks.append({"x": clampf(e.x, 0, game.world.width), "y": clampf(e.y, 0, game.world.height), "age": 0.0, "size": 90.0, "color": Color(1, 0.4, 0.3)})
 
 
+# Sbuffi di polvere ai piedi, a destra e a sinistra
+func _puff(x: float, y: float) -> void:
+	var n := int(game.effects.dustPuffs)
+	for i in n:
+		var dx := (float(i) / maxf(1, n - 1) - 0.5) * 2.0 # da -1 a 1
+		_dust.append({"x": x, "y": y, "dx": dx, "age": 0.0})
+
+
 func _process(delta: float) -> void:
+	var fx: Dictionary = game.effects
 	for s in _sparks:
 		s.age += delta * 1000.0
-	_sparks = _sparks.filter(func(s): return s.age < HIT_SPARK_MS)
-	_shake = maxf(0.0, _shake - SHAKE_DECAY * delta * 10.0)
+	_sparks = _sparks.filter(func(s): return s.age < fx.hitSparkMs)
+	for d in _dust:
+		d.age += delta * 1000.0
+	_dust = _dust.filter(func(d): return d.age < fx.dustMs)
+	_flash = maxf(0.0, _flash - delta * 1000.0)
+	_shake = maxf(0.0, _shake - fx.shakeDecay * delta)
 	position = Vector2(randf_range(-_shake, _shake), randf_range(-_shake, _shake)) if _shake > 0 else Vector2.ZERO
 	queue_redraw()
 
@@ -123,15 +151,45 @@ func _draw() -> void:
 			positions[id] = Vector2(p.x, p.y)
 			if not p.eliminated:
 				_alive.append(id)
+				_draw_trail(id, p)
 				_draw_fighter(p, now)
 
 	_draw_offscreen_markers()
 
+	for d in _dust:
+		var kd: float = d.age / game.effects.dustMs
+		var dc := Color(0.9, 0.85, 0.75, 0.8 * (1.0 - kd))
+		draw_circle(Vector2(d.x + d.dx * (8 + 34 * kd), d.y - 4 - 10 * kd * absf(d.dx)), 4 + 7 * kd, dc)
+
 	for s in _sparks:
-		var k: float = s.age / HIT_SPARK_MS
+		var k: float = s.age / game.effects.hitSparkMs
 		var c: Color = s.color
 		c.a = 1.0 - k
 		draw_arc(Vector2(s.x, s.y), s.size * (0.4 + k), 0, TAU, 20, c, 4.0)
+
+	if _flash > 0:
+		draw_rect(view_rect.grow(40), Color(1, 1, 1, 0.45 * _flash / float(game.effects.flashMs)))
+
+
+# Chi vola veloce (lanciato lontano) lascia dietro di sé delle sagome che sbiadiscono
+func _draw_trail(id: String, p: Dictionary) -> void:
+	var fx: Dictionary = game.effects
+	var fast: bool = not p.onGround and Vector2(p.vx, p.vy).length() > fx.trailSpeed and not p.respawning
+	var trail: Array = _trails.get(id, [])
+	if fast:
+		trail.push_front(Vector2(p.x, p.y))
+		trail.resize(mini(trail.size(), int(fx.trailLength)))
+	elif not trail.is_empty():
+		trail.pop_back() # la scia si accorcia da sola quando si rallenta
+	_trails[id] = trail
+	var fw: float = game.fighter.width
+	var fh: float = game.fighter.height
+	var col := _color(p.color)
+	for i in range(1, trail.size()):
+		var pos: Vector2 = trail[i]
+		col.a = 0.35 * (1.0 - float(i) / trail.size())
+		var shrink := 1.0 - 0.08 * i
+		draw_rect(Rect2(pos.x - fw * shrink / 2, pos.y - fh * shrink, fw * shrink, fh * shrink), col)
 
 
 # Corsa: checkpoint (asta grigia, bandierina verde quando la si prende) e arrivo a scacchi

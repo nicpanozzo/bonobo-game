@@ -49,6 +49,20 @@
     "maxZoom": 1.3,
     "smoothingMs": 220
   },
+  "effects": {
+    "hitSparkMs": 220,
+    "shakeKo": 14,
+    "shakeDecay": 400,
+    "shakeFromKnockback": 450,
+    "shakePerKnockback": 0.01,
+    "shakeMax": 12,
+    "flashKnockback": 1100,
+    "flashMs": 90,
+    "dustMs": 320,
+    "dustPuffs": 5,
+    "trailSpeed": 900,
+    "trailLength": 6
+  },
   "colors": [
     15158332,
     3447003,
