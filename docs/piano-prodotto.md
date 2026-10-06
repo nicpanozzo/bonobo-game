@@ -3,9 +3,9 @@
 **Obiettivo (Nicola, 6 ottobre 2026):** portare Bonobo Game a un livello di prodotto professionale, un passo alla volta. Siamo ancora in una fase precoce, quindi due regole valgono per tutto il piano:
 
 - **Provare dev'essere facilissimo.** Ogni passo ha un *Fatto quando* verificabile, e chi tocca il client aggiunge un test in `godot/tests/` appena E3 passo 1 è in `main`.
-- **Deploy e distribuzione snelli.** Ogni merge è un rilascio (le Release `app-N` e la build web), niente tag a mano, niente staging, niente allarmi per ora, e nessuno resta fuori da una stanza per una versione vecchia.
+- **Deploy e distribuzione snelli.** Ogni merge è un rilascio (le Release `app-N` e la build web), niente tag a mano, niente staging, niente allarmi per ora, e nessuno resta fuori da una stanza per una versione vecchia. Il link nel browser è la via principale per provare; l'app desktop si aggiorna da sola (E16).
 
-Il piano ha 15 evolutive in due ondate. Ogni evolutiva è un'issue `sviluppo` (una PR per passo) con una specifica completa in [`docs/evolutive/`](evolutive/). Le corsie servono a lavorare in parallelo senza toccare gli stessi file. Il piano l'ha scritto un team di agenti, uno per reparto (produzione, QA, rete, gameplay, arte, audio, interfaccia).
+Il piano ha 16 evolutive in due ondate. Ogni evolutiva è un'issue `sviluppo` (una PR per passo) con una specifica completa in [`docs/evolutive/`](evolutive/). Le corsie servono a lavorare in parallelo senza toccare gli stessi file. Il piano l'ha scritto un team di agenti, uno per reparto (produzione, QA, rete, gameplay, arte, audio, interfaccia).
 
 ## Ondata 1: basi solide e facili da provare
 
@@ -14,10 +14,11 @@ Il piano ha 15 evolutive in due ondate. Ogni evolutiva è un'issue `sviluppo` (u
 | E1 | Server in produzione e anteprima giocabile per ogni PR | #19 | Infrastruttura | passo 2 subito; passo 1 serve un umano per l'account |
 | E2 | Versioni e rilasci leggeri | #106 | Rilasci | passo 1 |
 | E3 | Rete di sicurezza: test Godot, partita vera, prestazioni | #83 | Qualità | passo 1 |
-| E4 | Server robusto e sicuro | #105 | Rete | **passo 1, urgente** |
+| E4 | Server robusto e sicuro | #105 | Rete | passo 2 (passo 1 fatto, #114) |
 | E5 | Riconnessione | #107 | Rete | dopo E4 passi 1-2 |
 | E6 | Controller e input completo | #108 | Input | passo 1 |
 | E7 | Direzione artistica e pipeline degli sprite | #41 | Arte | passo 1 |
+| E16 | App che si aggiorna da sola | #115 | Rilasci | passo 1 |
 
 ## Ondata 2: gameplay e presentazione completi
 
@@ -36,11 +37,11 @@ Le issue che le evolutive assorbono: #1 (in E7), #6 (in E13), #21 (in E11), #91 
 
 ## Ordine consigliato e incroci
 
-1. **Prima di tutto E4 passo 1:** oggi `socket.emit("join", null)` spegne il server per tutti.
+1. **E4 passo 1 è fatto** (#114): un messaggio malformato non spegne più il server.
 2. **Subito dopo E3 passo 1 ed E1 passo 2:** test del client in CI e un link per provare ogni PR nel browser. Rendono più facile tutto il resto. E3 passo 1 divide anche `ci.yml` in job separati, così E1, E2 ed E3 aggiungono job invece di toccare gli stessi passi.
 3. **E6 passo 4 (buffer degli input) prima di E8, E9 ed E10:** corregge un tasto perso oggi e tocca gli stessi file di `physics/`.
 4. **Protocollo in fila, non in parallelo:** E2 passo 2 (versione nel `join` ed evento unico `refused`), poi E5 (token nel `welcome`). E8 ed E9 aggiungono righe a `types.ts` senza riordinarle. E10 passo 2 porta anche il campo `jump` separato da `up`, così il protocollo dell'input cambia una volta sola. La barra della suprema (#101) tocca gli stessi file di E10: chi arriva secondo si coordina nella PR.
-5. **File contesi:** `scripts/export-godot.ts` (E2, E7, E11, E12, E13: E7 passo 2 lo divide in una funzione per tipo di asset), `options.gd` e `settings.gd` (E6, E13, E14: E14 ridisegna il menu dopo che i cursori nuovi sono entrati), `index.ts` (E1, E2, E4, E5: prima E4 passi 1-2, che lo rendono testabile).
+5. **File contesi:** `.github/workflows/app.yml` (E2, E16: una PR per volta), `scripts/export-godot.ts` (E2, E7, E11, E12, E13: E7 passo 2 lo divide in una funzione per tipo di asset), `options.gd` e `settings.gd` (E6, E13, E14: E14 ridisegna il menu dopo che i cursori nuovi sono entrati), `index.ts` (E1, E2, E4, E5: prima E4 passi 1-2, che lo rendono testabile).
 6. **Le mosse nuove non sono mute:** E8, E9 ed E10 portano almeno una ricetta in `synth.gd` per ogni evento nuovo.
 7. **Una schermata di collegamento sola:** E14 passo 2 ed E5 passo 4 usano lo stesso componente in `ui.gd`.
 

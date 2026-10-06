@@ -4,7 +4,7 @@ Istruzioni per gli agenti AI (Claude Code, Codex, Cursor, Copilot, Gemini, ...) 
 **Il gioco ufficiale è il client Godot in `godot/`** (decisione di Nicola, 6 ottobre 2026): ogni lavoro e ogni decisione nuova si fa in funzione di Godot. Il server Node resta l'arbitro e la logica resta in `src/shared/`; il vecchio client web in `src/client/` è congelato.
 Questo file è l'unica fonte di verità per gli agenti: `CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructions.md` e `.cursor/rules/` rimandano qui.
 Per il gioco leggi il [README](README.md), per il giro di lavoro degli umani [CONTRIBUTING.md](CONTRIBUTING.md).
-**Obiettivo attuale: un prodotto professionale, in fase precoce** (Nicola, 6 ottobre 2026). Il piano è in [docs/piano-prodotto.md](docs/piano-prodotto.md): 15 evolutive `E1`...`E15` in due ondate, ognuna un'issue con la specifica in `docs/evolutive/`. Provare dev'essere facilissimo e il deploy snello: niente processi pesanti.
+**Obiettivo attuale: un prodotto professionale, in fase precoce** (Nicola, 6 ottobre 2026). Il piano è in [docs/piano-prodotto.md](docs/piano-prodotto.md): 16 evolutive `E1`...`E16` in due ondate, ognuna un'issue con la specifica in `docs/evolutive/`. Provare dev'essere facilissimo e il deploy snello: niente processi pesanti.
 Il giro di lavoro passo per passo, con i comandi, è in [.claude/skills/compito/SKILL.md](.claude/skills/compito/SKILL.md): Claude Code lo carica da solo (`/compito`), **ogni altro agente lo legge all'inizio di un compito**.
 
 Siamo un gruppo di amici e ognuno usa il proprio agente, spesso nello stesso momento sulla stessa repo. Gran parte delle regole qui sotto serve a non pestarsi i piedi.
