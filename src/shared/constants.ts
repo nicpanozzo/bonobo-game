@@ -74,3 +74,17 @@ export const RESPAWN_INVULNERABLE_MS = 1500;
 export const MATCH_RESTART_MS = 5000; // pausa dopo la vittoria prima della nuova partita
 
 export const COLORS = [0xe74c3c, 0x3498db, 0x2ecc71, 0xf1c40f];
+
+// Generatore di arene casuali (stageGenerator.ts). Le altezze tengono conto del salto:
+// un salto da terra sale di circa 160 pixel, con il doppio salto quasi 300.
+export const STAGE_GEN = {
+  groundY: [520, 600], // altezza della superficie principale, pixel
+  groundThickness: [60, 100],
+  singleWidth: [560, 880], // larghezza del palco unico
+  islandWidth: [260, 380], // larghezza di ogni isola
+  islandGap: [120, 220], // vuoto tra le isole: ci si cade dentro
+  islandsChance: 0.4, // probabilità di avere due isole invece di un palco unico
+  platformWidth: [160, 240],
+  tierStep: [115, 150], // distanza in altezza tra un piano e quello sotto
+  secondTierChance: 0.6,
+};
