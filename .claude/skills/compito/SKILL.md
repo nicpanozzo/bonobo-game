@@ -95,6 +95,7 @@ gh pr ready N
 ```
 
 - Compila tutto il template: come provarla, quale agente l'ha scritta, idee della community usate o da chiedere.
+- Se la PR cambia qualcosa che un giocatore nota (mossa, arena, suono, menu, modo di gioco...), aggiungi l'etichetta `per-giocatori` (`gh pr edit N --add-label per-giocatori`) e uno screenshot nella descrizione: al merge finisce sul Discord con quell'immagine. CI, documenti, refactor e regole degli agenti restano senza etichetta e non vengono annunciati.
 - Quando la CI è verde, senza conflitti né commenti aperti, **unisci tu la PR** (`gh pr merge N --squash`), come dice AGENTS.md. La review di un altro è facoltativa.
 - Se chiudi una dipendenza, dopo il merge sposta da `in attesa` a `pronto` le issue che sblocca.
 

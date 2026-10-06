@@ -19,5 +19,6 @@ Closes #
 
 - Scritto con: <!-- es. Claude Code, Codex, Cursor, a mano -->
 - Cambia il protocollo in `src/shared/types.ts`? <!-- no / sì: cosa -->
+- Da annunciare sul Discord? <!-- solo se un giocatore lo nota: etichetta per-giocatori e uno screenshot qui sopra -->
 - Nuove dipendenze? <!-- no / sì: quali e perché -->
 - Idee della community usate (di chi) o da chiedere al canale? <!-- es. "frase di vittoria proposta da Luca"; "sondaggio: nome dell'arena" -->
