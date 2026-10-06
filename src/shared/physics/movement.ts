@@ -1,6 +1,6 @@
 // Corsa, controllo in aria, salti, caduta veloce e gravità.
 
-import { FIGHTER, FLAG, HITSTUN_AIR_DRAG, RECOVERY } from "../constants";
+import { DODGE, FIGHTER, FLAG, HITSTUN_AIR_DRAG, RECOVERY } from "../constants";
 import { startAttack } from "./attacks";
 import { pressed, type Fighter, type PhysicsContext } from "./fighter";
 
@@ -12,6 +12,22 @@ export function applyControls(f: Fighter, dt: number, ctx: PhysicsContext): void
   }
 
   const dir = (f.input.right ? 1 : 0) - (f.input.left ? 1 : 0);
+
+  // Schivata (#3): mentre dura si scivola alla velocità decisa all'inizio, senza controlli né attacchi
+  if (f.dodgeTimer > 0) return;
+  if (pressed(f, "dodge") && !f.attack && f.dodgeCooldown === 0 && (f.onGround || !f.airDodgeUsed)) {
+    f.dodgeTimer = DODGE.durationMs;
+    f.dodgeCooldown = DODGE.cooldownMs;
+    f.invulnerableTimer = Math.max(f.invulnerableTimer, DODGE.durationMs);
+    f.invulnerable = true;
+    f.vx = dir * DODGE.speed;
+    if (!f.onGround) {
+      f.airDodgeUsed = true;
+      f.vy = 0; // in aria ci si ferma un attimo, come in Brawlhalla
+    }
+    if (dir !== 0) f.facing = dir as 1 | -1;
+    return;
+  }
   const speed = f.carrier ? FLAG.carrierSpeed : 1; // la bandiera pesa
   // Durante un attacco da terra si resta fermi, in aria si mantiene lo slancio
   if (f.onGround) {

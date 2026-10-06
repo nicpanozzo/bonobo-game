@@ -4,7 +4,7 @@ import { AUDIO } from "../shared/constants";
 // il resto del client le legge con getSettings() e ascolta i cambi con onSettingsChange().
 
 // Le azioni che si possono assegnare a un tasto (le stesse di InputState)
-export const ACTIONS = ["left", "right", "up", "down", "light", "heavy", "taunt"] as const;
+export const ACTIONS = ["left", "right", "up", "down", "light", "heavy", "taunt", "dodge"] as const;
 export type Action = (typeof ACTIONS)[number];
 // Tasti indicati con KeyboardEvent.code ("KeyA", "ArrowLeft", "Space"...): non dipendono dalla lingua della tastiera
 export type Bindings = Record<Action, string[]>;
@@ -17,6 +17,7 @@ export const DEFAULT_BINDINGS: Bindings = {
   light: ["KeyJ"],
   heavy: ["KeyK"],
   taunt: ["KeyT"],
+  dodge: ["KeyL"],
 };
 
 export interface Settings {

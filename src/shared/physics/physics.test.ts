@@ -3,7 +3,7 @@
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { ATTACKS, FIGHTER, HITSTOP, RECOVERY, RESPAWN_MS, TICK_RATE } from "../constants";
+import { ATTACKS, DODGE, FIGHTER, HITSTOP, RECOVERY, RESPAWN_MS, TICK_RATE } from "../constants";
 import { getStage } from "../stages";
 import type { GameEvent, InputState } from "../types";
 import { createFighter, emptyInput, stepWorld, type Fighter, type PhysicsContext } from "./index";
@@ -222,6 +222,62 @@ describe("recupero (#11)", () => {
     assert.equal(ofType(ctx.events, "hit").length, 1);
     assert.equal(b.recoveryUsed, false);
     assert.equal(b.helpless, false);
+  });
+});
+
+describe("schivata (#3)", () => {
+  it("con L ci si sposta nella direzione tenuta e i colpi non entrano", () => {
+    const s = setup(2);
+    const [a, b] = s.fighters;
+    a.x = 600;
+    b.x = 600 + FIGHTER.width + 20;
+    a.facing = 1;
+    press(a, { heavy: true });
+    run(s.fighters, s.ctx, 1);
+    const startX = b.x;
+    press(b, { dodge: true, right: true });
+    run(s.fighters, s.ctx, Math.floor(DODGE.durationMs / DT) - 1);
+    assert.equal(b.invulnerable, true);
+    assert.ok(b.x > startX + 50, "si è spostato a destra");
+    assert.equal(ofType(s.ctx.events, "hit").length, 0, "il pesante va a vuoto");
+  });
+
+  it("dopo la schivata c'è la ricarica", () => {
+    const { ctx, fighters } = setup(1);
+    const [f] = fighters;
+    press(f, { dodge: true });
+    run(fighters, ctx, 1);
+    press(f, {});
+    run(fighters, ctx, Math.ceil(DODGE.durationMs / DT) + 1);
+    assert.equal(f.invulnerable, false);
+    press(f, { dodge: true });
+    run(fighters, ctx, 1);
+    assert.equal(f.invulnerable, false, "ancora in ricarica");
+    press(f, {});
+    run(fighters, ctx, Math.ceil(DODGE.cooldownMs / DT));
+    press(f, { dodge: true });
+    run(fighters, ctx, 1);
+    assert.equal(f.invulnerable, true, "ricarica finita");
+  });
+
+  it("in aria una volta sola fino all'atterraggio", () => {
+    const { ctx, fighters } = setup(1);
+    const [f] = fighters;
+    Object.assign(f, { y: 200, onGround: false, vy: 0 });
+    press(f, { dodge: true });
+    run(fighters, ctx, 1);
+    assert.equal(f.airDodgeUsed, true);
+    press(f, {});
+    run(fighters, ctx, Math.ceil(DODGE.durationMs / DT) + 1);
+    f.dodgeCooldown = 0; // ricarica saltata: conta solo il limite in aria
+    assert.equal(f.onGround, false);
+    press(f, { dodge: true });
+    run(fighters, ctx, 1);
+    assert.equal(f.dodgeTimer, 0, "la seconda in aria non parte");
+    press(f, {});
+    run(fighters, ctx, 200);
+    assert.equal(f.onGround, true);
+    assert.equal(f.airDodgeUsed, false, "a terra torna disponibile");
   });
 });
 

@@ -98,6 +98,14 @@ export const RECOVERY = {
   drift: 300, // velocità orizzontale verso la direzione tenuta, pixel/s
 };
 
+// Schivata (#3): con L si è invulnerabili per un attimo e ci si sposta di poco nella direzione tenuta.
+// 260 ms a 520 pixel/s = circa 135 pixel, poco più di tre volte la larghezza del lottatore.
+export const DODGE = {
+  durationMs: 260, // invulnerabilità e spostamento
+  speed: 520, // pixel/s nella direzione tenuta (fermi se nessuna)
+  cooldownMs: 900, // dall'inizio della schivata alla successiva
+};
+
 export const HITSTUN_PER_KNOCKBACK = 0.35; // ms di stordimento per ogni pixel/s di knockback
 export const HITSTUN_AIR_DRAG = 0.985; // rallentamento per tick mentre si vola via
 

@@ -36,6 +36,8 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
   f.hitstunTimer = Math.max(0, f.hitstunTimer - dtMs);
   f.invulnerableTimer = Math.max(0, f.invulnerableTimer - dtMs);
   f.dropTimer = Math.max(0, f.dropTimer - dtMs);
+  f.dodgeTimer = Math.max(0, f.dodgeTimer - dtMs);
+  f.dodgeCooldown = Math.max(0, f.dodgeCooldown - dtMs);
   f.hitstun = f.hitstunTimer > 0;
   f.invulnerable = f.invulnerableTimer > 0;
 
