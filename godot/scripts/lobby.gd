@@ -5,6 +5,7 @@ extends Control
 
 signal join_requested(choice: Dictionary)
 signal options_requested
+signal credits_requested
 
 const MAX_SEED := 999999 # come stageGenerator.ts: "casuale-<seme>" e "corsa-<seme>"
 const MODES := [["ffa", "Tutti contro tutti"], ["teams", "Squadre"], ["flag", "Bandiera (a squadre)"], ["race", "Corsa (platformer)"]]
@@ -146,6 +147,7 @@ func setup(game_data: Dictionary, params: Dictionary, link: Callable) -> void:
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	foot.add_child(spacer)
+	foot.add_child(UI.button("Crediti", func(): credits_requested.emit()))
 	foot.add_child(UI.button("Opzioni", func(): options_requested.emit()))
 	box.add_child(foot)
 	if _name.text == "":

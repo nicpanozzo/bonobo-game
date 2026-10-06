@@ -78,6 +78,11 @@ func _show_lobby() -> void:
 		options.theme = UI.theme()
 		ui_layer.add_child(options)
 		options.setup(settings))
+	lobby.credits_requested.connect(func():
+		var credits := preload("res://scripts/credits.gd").new()
+		credits.theme = UI.theme()
+		ui_layer.add_child(credits)
+		credits.setup())
 
 
 func _join(choice: Dictionary) -> void:
