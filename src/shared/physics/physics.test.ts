@@ -3,7 +3,7 @@
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { ATTACKS, FIGHTER, RESPAWN_MS, TICK_RATE } from "../constants";
+import { ATTACKS, FIGHTER, HITSTOP, RESPAWN_MS, TICK_RATE } from "../constants";
 import { getStage } from "../stages";
 import type { GameEvent, InputState } from "../types";
 import { createFighter, emptyInput, stepWorld, type Fighter, type PhysicsContext } from "./index";
@@ -107,6 +107,22 @@ describe("attacchi", () => {
     assert.equal(b.percent, ATTACKS.light.damage);
     assert.ok(b.x > startX, "vola nella direzione del colpo");
     assert.equal(ofType(ctx.events, "attack").length, 1);
+  });
+
+  it("hitstop: dopo il colpo attaccante e bersaglio restano fermi, poi il bersaglio vola", () => {
+    const { ctx, fighters, a, b } = facingPair();
+    press(a, { heavy: true });
+    let ticks = 0;
+    while (ofType(ctx.events, "hit").length === 0 && ticks++ < 60) run(fighters, ctx, 1);
+    assert.equal(ofType(ctx.events, "hit").length, 1, "il pesante è entrato");
+    const stopMs = HITSTOP.baseMs + HITSTOP.perDamageMs * ATTACKS.heavy.damage;
+    assert.equal(b.hitstopTimer, stopMs);
+    const frozen = { ax: a.x, bx: b.x, by: b.y, attackTimer: a.attackTimer };
+    run(fighters, ctx, Math.floor(stopMs / DT) - 1);
+    assert.deepEqual({ ax: a.x, bx: b.x, by: b.y, attackTimer: a.attackTimer }, frozen, "tutto fermo");
+    run(fighters, ctx, 3);
+    assert.ok(b.x > frozen.bx, "finito il fermo, vola");
+    assert.equal(b.hitstopTimer, 0);
   });
 
   it("canHit può impedire il colpo (fuoco amico)", () => {

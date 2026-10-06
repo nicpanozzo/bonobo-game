@@ -69,6 +69,14 @@ export const ATTACKS: Record<"light" | "heavy", AttackSpec> = {
 export const HITSTUN_PER_KNOCKBACK = 0.35; // ms di stordimento per ogni pixel/s di knockback
 export const HITSTUN_AIR_DRAG = 0.985; // rallentamento per tick mentre si vola via
 
+// Hitstop (#15): quando un colpo entra attaccante e bersaglio si fermano per un istante,
+// più a lungo se il colpo è forte. Il bersaglio parte in volo solo dopo.
+export const HITSTOP = {
+  baseMs: 30, // anche il colpo più debole si sente
+  perDamageMs: 6, // ms in più per ogni punto di danno: leggero (5) = 60 ms, pesante (13) = 108 ms
+  maxMs: 200,
+};
+
 export const STOCKS = 3; // vite per partita
 export const RESPAWN_MS = 1500; // attesa dopo aver perso una vita
 export const RESPAWN_INVULNERABLE_MS = 1500;

@@ -1,6 +1,6 @@
 // Attacchi: inizio, finestra attiva, hitbox e cosa succede a chi viene colpito.
 
-import { ATTACKS, FIGHTER, HITSTUN_PER_KNOCKBACK } from "../constants";
+import { ATTACKS, FIGHTER, HITSTOP, HITSTUN_PER_KNOCKBACK } from "../constants";
 import type { AttackKind } from "../types";
 import { pressed, type Fighter, type PhysicsContext } from "./fighter";
 
@@ -76,6 +76,10 @@ export function resolveHits(fighters: Fighter[], ctx: PhysicsContext): void {
       target.attackActive = false;
       target.facing = (-attacker.facing) as 1 | -1;
       target.lastHitById = attacker.id;
+      // Il fermo si somma a quello in corso solo fino al massimo (più colpi nello stesso tick)
+      const stop = Math.min(HITSTOP.maxMs, HITSTOP.baseMs + HITSTOP.perDamageMs * spec.damage);
+      attacker.hitstopTimer = Math.max(attacker.hitstopTimer, stop);
+      target.hitstopTimer = Math.max(target.hitstopTimer, stop);
 
       // Punto d'impatto: il centro della parte di hitbox che tocca il bersaglio
       const ix = (Math.max(box.x, body.x) + Math.min(box.x + box.w, body.x + body.w)) / 2;

@@ -26,6 +26,12 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
     return;
   }
 
+  // Hitstop (#15): tutto resta fermo, timer compresi. prevInput non si aggiorna,
+  // così un tasto premuto durante il fermo vale al primo passo dopo.
+  if (f.hitstopTimer > 0) {
+    f.hitstopTimer = Math.max(0, f.hitstopTimer - dtMs);
+    return;
+  }
   f.cooldownTimer = Math.max(0, f.cooldownTimer - dtMs);
   f.hitstunTimer = Math.max(0, f.hitstunTimer - dtMs);
   f.invulnerableTimer = Math.max(0, f.invulnerableTimer - dtMs);
