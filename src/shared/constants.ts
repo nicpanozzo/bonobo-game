@@ -6,27 +6,7 @@ export const WORLD = {
   height: 720,
 };
 
-// Arena: un palco principale solido e piattaforme sottili attraversabili dal basso.
-export const STAGE = {
-  x: 240, // bordo sinistro del palco principale
-  width: 800,
-  y: 560, // superficie su cui si cammina
-  thickness: 80,
-};
-
-export const PLATFORMS = [
-  { x: 340, width: 200, y: 420 },
-  { x: 740, width: 200, y: 420 },
-  { x: 540, width: 200, y: 290 },
-];
-
-// Zone di espulsione: chi esce da questo rettangolo perde una vita.
-export const BLAST_ZONE = {
-  left: -250,
-  right: WORLD.width + 250,
-  top: -350,
-  bottom: WORLD.height + 200,
-};
+// Palco, piattaforme, zone di espulsione e punti di partenza stanno in stages.ts, uno per arena.
 
 export const TICK_RATE = 60; // aggiornamenti della fisica al secondo (server)
 export const SEND_RATE = 30; // stati inviati ai client al secondo
@@ -91,7 +71,6 @@ export const HITSTUN_AIR_DRAG = 0.985; // rallentamento per tick mentre si vola 
 export const STOCKS = 3; // vite per partita
 export const RESPAWN_MS = 1500; // attesa dopo aver perso una vita
 export const RESPAWN_INVULNERABLE_MS = 1500;
-export const RESPAWN_POINT = { x: WORLD.width / 2, y: 160 };
 export const MATCH_RESTART_MS = 5000; // pausa dopo la vittoria prima della nuova partita
 
 export const COLORS = [0xe74c3c, 0x3498db, 0x2ecc71, 0xf1c40f];

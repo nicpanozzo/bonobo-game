@@ -7,6 +7,7 @@ export interface InputState {
   down: boolean; // scende dalle piattaforme sottili, caduta veloce in aria
   light: boolean; // attacco leggero
   heavy: boolean; // attacco pesante
+  taunt: boolean; // provocazione (#16): per ora produce solo l'evento
 }
 
 export type AttackKind = "light" | "heavy";
@@ -16,6 +17,7 @@ export interface PlayerState {
   name: string;
   characterId: string; // vedi src/shared/characters.ts
   color: number;
+  team: number; // 0 = nessuna squadra (tutti contro tutti), 1 e 2 = squadre (#17)
   x: number; // centro orizzontale
   y: number; // piedi
   vx: number;
@@ -32,20 +34,55 @@ export interface PlayerState {
   eliminated: boolean; // vite finite
 }
 
+// Regole della partita, scelte da chi crea la stanza (#17). Default in src/shared/rules.ts
+export interface MatchRules {
+  mode: "ffa" | "teams"; // tutti contro tutti, o squadre
+  stocks: number; // vite a testa
+  timeLimitSec: number; // 0 = senza limite di tempo
+  friendlyFire: boolean; // nelle squadre, se ci si può colpire tra compagni
+}
+
+// Cose successe tra uno snapshot e l'altro. La fisica le produce, e chi disegna,
+// suona, muove la telecamera o scrive sul Discord le ascolta senza toccare la fisica.
+export type GameEvent =
+  | { type: "jump"; id: string; x: number; y: number; air: boolean } // air = doppio salto
+  | { type: "land"; id: string; x: number; y: number }
+  | { type: "attack"; id: string; kind: AttackKind } // inizio di un attacco (il colpo può andare a vuoto)
+  | {
+      type: "hit";
+      attackerId: string;
+      targetId: string;
+      kind: AttackKind;
+      damage: number;
+      percent: number; // percentuale del bersaglio dopo il colpo
+      knockback: number; // pixel/s: utile per dosare effetti e suoni
+      x: number; // punto d'impatto
+      y: number;
+    }
+  | { type: "ko"; id: string; byId: string | null; x: number; y: number; stocksLeft: number } // uscito dall'arena
+  | { type: "respawn"; id: string }
+  | { type: "taunt"; id: string }
+  | { type: "matchStart" }
+  | { type: "matchEnd"; winnerId: string | null; winnerTeam: number; durationMs: number };
+
 export interface GameSnapshot {
   t: number;
   players: PlayerState[];
   winnerId: string | null; // chi ha vinto la partita, se è finita
+  timeLeftMs: number | null; // null se la partita non ha limite di tempo
+  events: GameEvent[]; // tutto quello che è successo dallo snapshot precedente
 }
 
 // Eventi Socket.IO tipizzati
 export interface ServerToClient {
-  welcome: (data: { id: string; room: string }) => void;
+  welcome: (data: { id: string; room: string; stageId: string; rules: MatchRules }) => void;
   snapshot: (snap: GameSnapshot) => void;
   roomFull: () => void;
 }
 
 export interface ClientToServer {
-  join: (data: { room: string; name: string; characterId?: string }) => void;
+  // stageId e rules contano solo per chi crea la stanza; gli altri entrano in quella che c'è
+  join: (data: { room: string; name: string; characterId?: string; stageId?: string; rules?: Partial<MatchRules> }) => void;
   input: (input: InputState) => void;
+  rematch: () => void; // a fine partita, ricomincia subito (#17)
 }
