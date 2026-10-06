@@ -91,6 +91,7 @@ function withoutTunnel(reason: string, hint: string): void {
 
 function startTunnel(): void {
   let found = false;
+  let url: string | undefined;
   const timer = setTimeout(() => {
     if (!found) withoutTunnel("Il tunnel non risponde.", "Per giocare con chi è lontano serve internet libero verso Cloudflare: riavvia più tardi.");
   }, TUNNEL_TIMEOUT_MS);
@@ -116,10 +117,12 @@ function startTunnel(): void {
     if (!stream) continue;
     createInterface({ input: stream }).on("line", (text) => {
       const match = /https:\/\/[a-z0-9-]+\.trycloudflare\.com/.exec(text);
-      if (match && !found) {
+      if (match) url ??= match[0];
+      // Il link si annuncia quando il tunnel è collegato davvero, così chi lo apre subito entra
+      if (url && !found && /Registered tunnel connection/.test(text)) {
         found = true;
         clearTimeout(timer);
-        announce(match[0]);
+        announce(url);
       }
     });
   }

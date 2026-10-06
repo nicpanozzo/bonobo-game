@@ -110,7 +110,7 @@ jobs:
           # Il tunnel vero, solo come controllo: se Cloudflare oggi non risponde la Release esce lo stesso
           URL=""
           for i in $(seq 1 30); do URL=$(grep -o 'https://[a-z0-9-]*\.trycloudflare\.com' server.log | head -1 || true); [ -n "$URL" ] && break; sleep 1; done
-          for i in $(seq 1 30); do [ -n "$URL" ] && curl -sf "$URL/health" && echo " <- dal tunnel $URL" && break; sleep 2; done || true
+          for i in $(seq 1 30); do [ -n "$URL" ] && curl -sf --doh-url https://1.1.1.1/dns-query "$URL/health" && echo " <- dal tunnel $URL" && break; sleep 2; done || true
           kill $PID || true
           cat server.log
       - run: (cd pacco && zip -qry ../bonobo-server-${{ matrix.name }}.zip .)
