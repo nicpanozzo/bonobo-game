@@ -232,3 +232,9 @@ export const BOT_LEVELS = {
 export const HAZARD = {
   cooldownMs: 700, // ms dopo una trappola in cui non se ne prende un'altra (niente colpi a raffica)
 };
+
+// Classifica delle partite (#18, src/server/leaderboard.ts)
+export const LEADERBOARD = {
+  windowDays: 7, // la pagina /classifica conta le partite degli ultimi 7 giorni
+  maxMatches: 2000, // partite tenute nel file, le più vecchie si buttano
+};
