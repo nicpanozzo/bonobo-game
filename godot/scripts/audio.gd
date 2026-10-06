@@ -65,7 +65,10 @@ func on_event(e: Dictionary) -> void:
 			# Le varianti direzionali (#2) usano il suono del colpo base, un po' più acuto in su e più grave in giù
 			var kind: String = e.kind
 			var tilt := 0.12 if kind.ends_with("Up") else (-0.12 if kind.ends_with("Down") else 0.0)
-			_play("heavy" if kind.begins_with("heavy") else "light", {"volume": 0.7, "pitch": randf_range(0.95, 1.05) + tilt})
+			if kind == "recovery":
+				_play("doubleJump", {"volume": 0.7}) # il recupero (#11) suona come un doppio salto
+			else:
+				_play("heavy" if kind.begins_with("heavy") else "light", {"volume": 0.7, "pitch": randf_range(0.95, 1.05) + tilt})
 		"hit":
 			# Più alta la percentuale del bersaglio, più forte e più grave il colpo
 			var strength := minf(1.0, e.percent / game.audio.hitLoudPercent)

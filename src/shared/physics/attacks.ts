@@ -5,7 +5,7 @@ import type { AttackKind } from "../types";
 import { pressed, type Fighter, type PhysicsContext } from "./fighter";
 
 export function tryStartAttack(f: Fighter, ctx: PhysicsContext): void {
-  if (f.hitstun || f.attack || f.cooldownTimer > 0) return;
+  if (f.hitstun || f.attack || f.cooldownTimer > 0 || f.helpless) return;
   if (pressed(f, "heavy")) startAttack(f, variant(f, "heavy"), ctx);
   else if (pressed(f, "light")) startAttack(f, variant(f, "light"), ctx);
 }
@@ -18,7 +18,7 @@ export function variant(f: Fighter, base: "light" | "heavy"): AttackKind {
   return base;
 }
 
-function startAttack(f: Fighter, kind: AttackKind, ctx: PhysicsContext) {
+export function startAttack(f: Fighter, kind: AttackKind, ctx: PhysicsContext) {
   f.attack = kind;
   f.attackTimer = 0;
   f.cooldownTimer = ATTACKS[kind].cooldownMs;
@@ -85,6 +85,9 @@ export function resolveHits(fighters: Fighter[], ctx: PhysicsContext): void {
       target.attackActive = false;
       target.facing = (-attacker.facing) as 1 | -1;
       target.lastHitById = attacker.id;
+      // Chi viene colpito può di nuovo usare il recupero (#11)
+      target.recoveryUsed = false;
+      target.helpless = false;
       // Il fermo si somma a quello in corso solo fino al massimo (più colpi nello stesso tick)
       const stop = Math.min(HITSTOP.maxMs, HITSTOP.baseMs + HITSTOP.perDamageMs * spec.damage);
       attacker.hitstopTimer = Math.max(attacker.hitstopTimer, stop);

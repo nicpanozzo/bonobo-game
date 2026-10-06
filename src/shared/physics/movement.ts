@@ -1,6 +1,7 @@
 // Corsa, controllo in aria, salti, caduta veloce e gravità.
 
-import { FIGHTER, FLAG, HITSTUN_AIR_DRAG } from "../constants";
+import { FIGHTER, FLAG, HITSTUN_AIR_DRAG, RECOVERY } from "../constants";
+import { startAttack } from "./attacks";
 import { pressed, type Fighter, type PhysicsContext } from "./fighter";
 
 // Cosa fa il lottatore con i tasti premuti (solo se non è stordito)
@@ -24,6 +25,16 @@ export function applyControls(f: Fighter, dt: number, ctx: PhysicsContext): void
     f.vx = Math.abs(f.vx) <= slow ? 0 : f.vx - Math.sign(f.vx) * slow;
   }
   if (dir !== 0 && !f.attack) f.facing = dir as 1 | -1;
+
+  // Recupero (#11): in aria, K premuto tenendo su. Vince sul salto se i due tasti arrivano insieme.
+  if (!f.onGround && !f.attack && !f.recoveryUsed && f.input.up && pressed(f, "heavy")) {
+    f.vy = -RECOVERY.speed;
+    f.vx = dir * RECOVERY.drift;
+    f.recoveryUsed = true;
+    f.helpless = true;
+    startAttack(f, "recovery", ctx);
+    return;
+  }
 
   // Salto e doppio salto
   if (pressed(f, "up") && f.jumpsLeft > 0) {

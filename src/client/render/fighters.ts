@@ -167,6 +167,7 @@ export class FighterViews implements RenderModule {
 // Quale animazione mostrare, dai soli campi dello snapshot
 function animationFor(p: PlayerState): AnimationName {
   if (p.hitstun) return "hit";
+  if (p.attack === "recovery") return "jump";
   if (p.attack) return p.attack.startsWith("heavy") ? "heavy" : "light"; // le varianti (#2) usano l'animazione del colpo base
   if (!p.onGround) return p.vy < 0 ? "jump" : "fall";
   if (Math.abs(p.vx) > 20) return "walk";

@@ -3,7 +3,7 @@
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { ATTACKS, FIGHTER, HITSTOP, RESPAWN_MS, TICK_RATE } from "../constants";
+import { ATTACKS, FIGHTER, HITSTOP, RECOVERY, RESPAWN_MS, TICK_RATE } from "../constants";
 import { getStage } from "../stages";
 import type { GameEvent, InputState } from "../types";
 import { createFighter, emptyInput, stepWorld, type Fighter, type PhysicsContext } from "./index";
@@ -165,6 +165,63 @@ describe("attacchi", () => {
     run(fighters, ctx, 15);
     assert.equal(b.percent, 0);
     assert.equal(ofType(ctx.events, "hit").length, 0);
+  });
+});
+
+describe("recupero (#11)", () => {
+  // In aria sotto il bordo del palco, già senza salti
+  function falling() {
+    const s = setup(1);
+    const [f] = s.fighters;
+    Object.assign(f, { x: stage.blastZone.left + 200, y: 800, onGround: false, jumpsLeft: 0, vy: 300 });
+    return { ...s, f };
+  }
+
+  it("K + su in aria spinge in alto, una volta sola", () => {
+    const { ctx, fighters, f } = falling();
+    press(f, { up: true, heavy: true });
+    run(fighters, ctx, 1);
+    assert.ok(f.vy < -RECOVERY.speed + 100, "spinta verso l'alto");
+    assert.equal(f.attack, "recovery");
+    assert.equal(ofType(ctx.events, "attack")[0].kind, "recovery");
+    press(f, { up: true });
+    run(fighters, ctx, 30);
+    press(f, { up: true, heavy: true });
+    run(fighters, ctx, 1);
+    assert.equal(ofType(ctx.events, "attack").length, 1, "la seconda volta non parte");
+  });
+
+  it("dopo il recupero non si attacca fino all'atterraggio, poi torna disponibile", () => {
+    const { ctx, fighters, f } = falling();
+    f.x = stage.solids[0].x + 30; // sopra il palco: ricadendo ci atterra
+    f.y = stage.solids[0].y - 200;
+    press(f, { up: true, heavy: true });
+    run(fighters, ctx, 1);
+    press(f, {});
+    run(fighters, ctx, 20);
+    press(f, { light: true });
+    run(fighters, ctx, 1);
+    assert.equal(f.attack, null, "niente attacchi in aria dopo il recupero");
+    press(f, {});
+    run(fighters, ctx, 120);
+    assert.equal(f.onGround, true);
+    assert.equal(f.recoveryUsed, false);
+    assert.equal(f.helpless, false);
+  });
+
+  it("chi viene colpito può riusarlo", () => {
+    const { ctx, fighters } = setup(2);
+    const [a, b] = fighters;
+    b.recoveryUsed = true;
+    b.helpless = true;
+    a.x = 600;
+    b.x = 600 + FIGHTER.width + 20;
+    a.facing = 1;
+    press(a, { light: true });
+    run(fighters, ctx, 15);
+    assert.equal(ofType(ctx.events, "hit").length, 1);
+    assert.equal(b.recoveryUsed, false);
+    assert.equal(b.helpless, false);
   });
 });
 
