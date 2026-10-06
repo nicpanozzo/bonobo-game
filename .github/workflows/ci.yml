@@ -1,4 +1,4 @@
-# Arbitro automatico: ogni PR e ogni push su main devono passare typecheck e build.
+# Arbitro automatico: ogni PR e ogni push su main devono passare typecheck, test, build e il caricamento del client Godot.
 name: CI
 
 on:
@@ -26,3 +26,27 @@ jobs:
       - run: npm run test --if-present
       # godot/data/game.json è generato dai dati del gioco: deve restare allineato (#59)
       - run: npm run export:godot && git diff --exit-code godot/data
+
+  # Il client Godot è il gioco ufficiale: i suoi script devono caricarsi senza errori
+  godot:
+    runs-on: ubuntu-latest
+    env:
+      GODOT_VERSION: 4.5.1
+    steps:
+      - uses: actions/checkout@v4
+      - id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: ~/godot
+          key: godot-${{ env.GODOT_VERSION }}-editor
+      - if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/godot
+          curl -sSL -o /tmp/godot.zip https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip
+          unzip -oq /tmp/godot.zip -d ~/godot
+          mv ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 ~/godot/godot
+      - name: Carica il progetto e gli script
+        run: |
+          ~/godot/godot --headless --path godot --import 2>&1 | tee /tmp/import.log
+          ~/godot/godot --headless --path godot --quit-after 60 2>&1 | tee /tmp/run.log
+          ! grep -E "SCRIPT ERROR|Parse Error|Failed to load script" /tmp/import.log /tmp/run.log

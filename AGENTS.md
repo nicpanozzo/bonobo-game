@@ -1,6 +1,7 @@
 # AGENTS.md
 
-Istruzioni per gli agenti AI (Claude Code, Codex, Cursor, Copilot, Gemini, ...) che lavorano su **bonobo-game**, un picchiaduro multiplayer online nel browser.
+Istruzioni per gli agenti AI (Claude Code, Codex, Cursor, Copilot, Gemini, ...) che lavorano su **bonobo-game**, un picchiaduro multiplayer online.
+**Il gioco ufficiale è il client Godot in `godot/`** (decisione di Nicola, 6 ottobre 2026): ogni lavoro e ogni decisione nuova si fa in funzione di Godot. Il server Node resta l'arbitro e la logica resta in `src/shared/`; il vecchio client web in `src/client/` è congelato.
 Questo file è l'unica fonte di verità per gli agenti: `CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructions.md` e `.cursor/rules/` rimandano qui.
 Per il gioco leggi il [README](README.md), per il giro di lavoro degli umani [CONTRIBUTING.md](CONTRIBUTING.md).
 Il giro di lavoro passo per passo, con i comandi, è in [.claude/skills/compito/SKILL.md](.claude/skills/compito/SKILL.md): Claude Code lo carica da solo (`/compito`), **ogni altro agente lo legge all'inizio di un compito**.
@@ -48,18 +49,29 @@ Bonobo Game non è un picchiaduro qualunque: è il gioco del nostro canale Disco
 
 ```bash
 npm install          # Node 22 consigliato (i test usano i pattern di node --test)
-npm run dev          # server di gioco (:3000) + client Vite (:5173) insieme
+npm run dev          # server di gioco (:3000), più il vecchio client web (:5173) che serve solo a confronto
 npm run typecheck    # tsc --noEmit: deve passare prima di ogni push
 npm test             # test della logica pura in src/shared (*.test.ts): devono passare prima di ogni push
-npm run build        # build del client in dist/: deve passare prima di ogni push
+npm run build        # build del vecchio client in dist/: deve passare prima di ogni push
+npm run export:godot # rigenera godot/data (game.json e sprite) da src/shared e public/assets
 npm start            # versione di produzione sulla porta 3000
+
+godot --headless --path godot --import            # Godot 4.5.1: carica il progetto
+godot --headless --path godot --quit-after 60     # nessun "SCRIPT ERROR" = gli script si caricano
 ```
 
-Per provare il multiplayer apri `http://localhost:5173` (lobby) o `http://localhost:5173/?room=test&name=A` (entra subito) in due finestre. Se aggiungi o cambi logica in `src/shared/`, aggiungi un test accanto al file (`nome.test.ts`, runner di Node). La CI (`.github/workflows/ci.yml`) lancia typecheck, test e build su ogni PR.
+Per provare il multiplayer, con `npm run dev` acceso apri `godot/project.godot` in Godot 4.5 e premi F5 in due istanze (menu Debug, più istanze), oppure da terminale `godot --path godot -- --room=test --name=A` due volte. Se aggiungi o cambi logica in `src/shared/`, aggiungi un test accanto al file (`nome.test.ts`, runner di Node) e rilancia `npm run export:godot`. La CI (`.github/workflows/ci.yml`) lancia typecheck, test, build, il controllo di `godot/data` e il caricamento degli script Godot su ogni PR.
 
 ## Struttura
 
 ```
+godot/             IL GIOCO UFFICIALE: client Godot 4.5 (GDScript), manda i tasti e disegna gli snapshot
+  scripts/main.gd    collegamento, tasti → InputState, telecamera, apre lobby e menu
+  scripts/world_view.gd   arena, lottatori e sprite, scintille, scossa    hud.gd  schede, tempo, fine partita
+  scripts/lobby.gd   lobby (stage_preview.gd anteprime)    audio.gd + synth.gd  effetti e musica sintetizzati
+  scripts/options.gd settings.gd pause_menu.gd ui.gd   opzioni, preferenze e tasti salvati, menu Esc, tema
+  scripts/socket_io.gd snapshot_buffer.gd   Socket.IO su WebSocket, interpolazione
+  data/              GENERATO da npm run export:godot: non si modifica a mano
 src/shared/        codice comune a server e client
   constants.ts       TUTTI i numeri del gioco (velocità, salto, danni, hitbox, tick rate, audio)
   types.ts           PROTOCOLLO Socket.IO, PlayerState, GameSnapshot e GameEvent (hit, ko, jump...)
@@ -67,22 +79,18 @@ src/shared/        codice comune a server e client
   characters.ts      personaggi    stages.ts  arene    stageGenerator.ts  arene casuali da un seme
   rules.ts           regole della partita (MatchRules), chi vince    items.ts  oggetti (#17)
 src/server/        Express + Socket.IO. index.ts gestisce le stanze, Room.ts fa girare la partita (ganci per bot e Discord)
-src/client/        Phaser + menu in HTML
-  LobbyScene.ts      lobby: nome, stanza, lottatore, arena, regole
-  GameScene.ts       regista della partita: passa snapshot ed eventi ai moduli di render/
-  render/            stage, fighters, hud, results, effects, camera, audio: uno per corsia
-  audio/             motore Web Audio, effetti sintetizzati (sfx.ts) e musica
-  input.ts settings.ts OptionsPanel.ts PauseMenu.ts   tasti, preferenze salvate, opzioni, menu Esc
-public/assets/     immagini e suoni, crediti in CREDITS.md
+src/client/        vecchio client Phaser: CONGELATO, solo correzioni, niente funzioni nuove
+public/assets/     immagini e suoni (arrivano in Godot con npm run export:godot), crediti in CREDITS.md
 ```
 
 ## Architettura: regole che non si rompono
 
+- **Godot è l'unico client ufficiale.** Tutto quello che si vede o si sente (grafica, effetti, suoni, menu, telecamera) si fa in `godot/`. In `src/client/` solo correzioni.
 - **Il server è l'arbitro.** Il client manda solo `InputState` (tasti premuti) e disegna gli snapshot che riceve. Posizioni, colpi, danni e KO si calcolano in `src/shared/physics/`, eseguito dal server. Non aggiungere mai un evento in cui il client dice "ho colpito" o "sono qui".
-- **`physics/` resta puro e deterministico**: niente import da `socket.io`, `phaser`, `express` o dal DOM, niente `Math.random` né orologi, così potrà girare anche nel browser per la predizione.
+- **`physics/` resta puro e deterministico**: niente import da `socket.io`, `phaser`, `express` o dal DOM, niente `Math.random` né orologi, così un giorno potrà girare anche nel client per la predizione.
 - **Effetti, suoni, telecamera e Discord ascoltano gli eventi** (`GameEvent` nello snapshot, prodotti dalla fisica): non leggono né cambiano lo stato della fisica. Un nuovo tipo di evento è un cambio di protocollo.
 - **I numeri vanno in `constants.ts`**, con un nome e un commento sull'unità (pixel/s, ms). Niente valori magici sparsi nel codice.
-- **Il protocollo è un contratto condiviso.** `types.ts` (eventi Socket.IO e forma di `PlayerState`/`GameSnapshot`) si cambia solo in una PR che lo dichiara nel titolo (es. `Protocollo: aggiunge l'evento chat`) e che aggiorna server e client insieme.
+- **Il protocollo è un contratto condiviso.** `types.ts` (eventi Socket.IO e forma di `PlayerState`/`GameSnapshot`) si cambia solo in una PR che lo dichiara nel titolo (es. `Protocollo: aggiunge l'evento chat`) e che aggiorna server e client Godot insieme.
 
 ## Workflow Git (obbligatorio)
 
@@ -101,7 +109,7 @@ public/assets/     immagini e suoni, crediti in CREDITS.md
 ## Coordinazione tra agenti
 
 - **Resta nel perimetro del compito.** Niente refactor "già che ci sono", riformattazioni di file che non tocchi, rinomine di massa o cambi di configurazione (`tsconfig.json`, `vite.config.ts`): creano conflitti nelle PR degli altri. Se vedi qualcosa da sistemare, apri un'issue.
-- **File caldi:** `constants.ts`, `types.ts` e `GameScene.ts` li toccano quasi tutti. Aggiungi righe, non riordinare quelle esistenti.
+- **File caldi:** `constants.ts`, `types.ts`, `godot/scripts/main.gd` e `world_view.gd` li toccano quasi tutti. Aggiungi righe, non riordinare quelle esistenti.
 - **Dipendenze:** aggiungi un pacchetto npm solo se serve davvero e spiega perché nella PR. `package-lock.json` si cambia solo con `npm install`, mai a mano; in caso di conflitto rigeneralo con `npm install` dopo il rebase.
 - **File di coordinamento** (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `CONTRIBUTING.md`, `.github/`, `.cursor/`, `.claude/`): si cambiano in una PR dedicata, mai insieme a codice di gioco.
 - **Decisioni di game design** (danni, velocità, nuove mosse, comandi): se il compito non le specifica, scegli un valore ragionevole, mettilo in `constants.ts` e scrivilo nella PR perché il gruppo possa discuterlo.
@@ -114,6 +122,8 @@ public/assets/     immagini e suoni, crediti in CREDITS.md
 - Nomi di variabili, funzioni e tipi in inglese; commenti in italiano, brevi, che spiegano il *perché*.
 - Segui lo stile del file che stai modificando.
 - Usa i tipi in `types.ts` per gli eventi Socket.IO (`Server<ClientToServer, ServerToClient>`), mai stringhe non tipizzate.
+- GDScript: tab, nomi in inglese in `snake_case`, tipi espliciti. Con `:=` su un valore letto da un `Dictionary` Godot dà "Cannot infer the type": scrivi il tipo (`var x: float = d.x`).
+- Un `Control` già aggiunto alla scena si allarga a tutto lo schermo con `set_anchors_and_offsets_preset(...)`: `set_anchors_preset` da solo lo lascia grande zero.
 
 ## Asset
 
@@ -131,5 +141,5 @@ public/assets/     immagini e suoni, crediti in CREDITS.md
 ## Prima di dire "fatto"
 
 1. `npm run typecheck`, `npm test` e `npm run build` passano, e il controllo CI della PR è verde.
-2. Hai avviato `npm run dev` e provato con due finestre, se la modifica tocca il gioco.
+2. Gli script Godot si caricano senza `SCRIPT ERROR` e, se la modifica tocca il gioco, l'hai provata nel client Godot con due istanze.
 3. La PR usa il template e dice quale agente ha scritto il codice e come l'hai provata.

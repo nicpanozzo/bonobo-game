@@ -4,10 +4,11 @@ Benvenuto! 🦍 Non serve essere esperti: qualsiasi aiuto va bene, dal codice al
 
 ## 1. Preparare il computer (una volta sola)
 
-1. Installa [Node.js](https://nodejs.org) (versione LTS, 20 o più recente).
+1. Installa [Node.js](https://nodejs.org) (versione 22).
 2. Installa [Git](https://git-scm.com/downloads).
-3. Crea un account su [GitHub](https://github.com) e chiedi a Nicola di aggiungerti come collaboratore del repo.
-4. Consigliato: [VS Code](https://code.visualstudio.com) come editor.
+3. Installa [Godot 4.5](https://godotengine.org/download) (la versione standard, non .NET): è il programma con cui è fatto il gioco.
+4. Crea un account su [GitHub](https://github.com) e chiedi a Nicola di aggiungerti come collaboratore del repo.
+5. Consigliato: [VS Code](https://code.visualstudio.com) come editor.
 
 Poi scarica il progetto:
 
@@ -18,7 +19,9 @@ npm install
 npm run dev
 ```
 
-Apri http://localhost:5173 in due finestre: se vedi due rettangoli che si muovono, sei pronto.
+Lascia `npm run dev` acceso (è il server di gioco). Apri Godot, **Importa** `godot/project.godot` e premi Play (F5) due volte, o una volta con due istanze (menu Debug): se nella stessa stanza vedi due lottatori che si muovono, sei pronto.
+
+> Il gioco ufficiale è quello in `godot/`. La cartella `src/client/` è il vecchio client web: non ci si aggiungono più funzioni.
 
 ## 2. Scegliere cosa fare
 
@@ -40,10 +43,12 @@ git pull                          # prendi le ultime novità
 git checkout -b luca/calcio       # nome/cosa-fai
 ```
 
-Modifica i file, salva e prova nel browser (con `npm run dev` acceso si aggiorna da solo). Prima di consegnare:
+Modifica i file, salva e prova in Godot (F5) con `npm run dev` acceso. Prima di consegnare:
 
 ```bash
 npm run typecheck                 # nessun errore = ok
+npm test                          # la logica del gioco funziona ancora
+npm run export:godot              # solo se hai cambiato src/shared o public/assets
 ```
 
 ## 4. Consegnare con una Pull Request
@@ -60,16 +65,16 @@ GitHub ti mostra un link per aprire la **Pull Request** (PR): aprila, scrivi cos
 
 - **Una PR, una cosa.** Meglio tre PR piccole che una gigante.
 - **Niente push diretti su `main`.**
-- **Prova prima di consegnare**: il gioco deve partire e `npm run typecheck` deve passare.
+- **Prova prima di consegnare**: il gioco deve partire in Godot e `npm run typecheck` deve passare.
 - **I numeri del gioco** (velocità, danni, salto) stanno in `src/shared/constants.ts`: cambiali lì, non sparsi nel codice.
-- **La logica sta sul server.** Danni, colpi e movimenti si calcolano in `src/shared/physics.ts`, che gira sul server. Il client (`src/client/`) disegna e manda i tasti premuti.
-- **Immagini e suoni** vanno in `public/assets/` (crea la cartella se non c'è). Usa solo roba fatta da voi o con licenza libera.
+- **La logica sta sul server.** Danni, colpi e movimenti si calcolano in `src/shared/physics/`, che gira sul server. Il gioco Godot (`godot/`) disegna, suona e manda i tasti premuti.
+- **Immagini e suoni** vanno in `public/assets/`; `npm run export:godot` li porta in Godot. Usa solo roba fatta da voi o con licenza libera.
 - Commenti e messaggi di commit in italiano vanno benissimo.
 
 ## Problemi comuni
 
-- **`npm install` dà errori**: controlla di avere Node 20+ con `node -v`.
-- **La pagina dice "Connessione..." e basta**: il server non è partito, guarda il terminale di `npm run dev`.
+- **`npm install` dà errori**: controlla di avere Node 22 con `node -v`.
+- **Il gioco dice "Mi collego..." e basta**: il server non è partito, guarda il terminale di `npm run dev` (o controlla l'indirizzo del server nella lobby).
 - **Git dice che ci sono conflitti**: niente panico, chiedi su Discord e lo sistemiamo insieme.
 
 ## Lavorare con un agente AI

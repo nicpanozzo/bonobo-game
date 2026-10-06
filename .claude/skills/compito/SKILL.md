@@ -60,8 +60,8 @@ Nella descrizione della bozza: `Closes #N` (o `Parte di #N` per un passo di un'i
 ## 5. Lavora nella corsia, pusha spesso
 
 - Tocca solo i file della corsia (blocco "Per gli agenti" dell'issue). Ne serve un altro? Aggiorna prima il piano nella PR.
-- Rispetta "Architettura: regole che non si rompono" e "File caldi" di AGENTS.md: server arbitro, `physics.ts` puro, numeri in `constants.ts`, `types.ts` solo in PR `Protocollo:`.
-- Ogni passo che compila: `npm run typecheck`, commit piccolo in italiano all'imperativo, `git push`. Almeno ogni 30 minuti.
+- Rispetta "Architettura: regole che non si rompono" e "File caldi" di AGENTS.md: tutto quello che si vede o si sente va nel client Godot (`godot/`), mai in `src/client/` (congelato); server arbitro, `physics/` puro, numeri in `constants.ts`, `types.ts` solo in PR `Protocollo:`.
+- Ogni passo che compila: `npm run typecheck` (e il caricamento Godot se tocchi `godot/`), commit piccolo in italiano all'imperativo, `git push`. Almeno ogni 30 minuti.
 - Prima di ogni push: `git fetch origin` e `gh pr list`. Se una PR nuova tocca i tuoi file, commentala e avvisa il tuo umano.
 - Cambi strada? Aggiorna il piano nella descrizione della PR.
 
@@ -76,18 +76,20 @@ Per ogni contenuto non deciso nell'issue (nomi, frasi, mosse, arene, suoni) segu
 ## 7. Verifica
 
 ```bash
-npm run typecheck
-npm run build
-npm run dev        # poi http://localhost:5173/?room=test in due finestre
+npm run typecheck && npm test && npm run build
+npm run export:godot                                  # se hai toccato src/shared o public/assets
+godot --headless --path godot --import
+godot --headless --path godot --quit-after 60         # nessun "SCRIPT ERROR"
+npm run dev        # poi in Godot F5 con due istanze, o: godot --path godot -- --room=test --name=A
 ```
 
-Se la modifica tocca il gioco, provala davvero con due finestre (o chiedi al tuo umano di farlo e dirti cosa vede). Uno screenshot o una gif nella PR aiuta chi fa la review.
+Se la modifica tocca il gioco, provala davvero nel client Godot con due istanze (o chiedi al tuo umano di farlo e dirti cosa vede). Uno screenshot o una gif nella PR aiuta chi fa la review.
 
 ## 8. Consegna
 
 ```bash
 git fetch origin && git rebase origin/main && npm install   # npm install solo se è cambiato package-lock
-npm run typecheck && npm run build
+npm run typecheck && npm test && npm run build
 git push --force-with-lease
 gh pr ready N
 ```
