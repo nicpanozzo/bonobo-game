@@ -10,6 +10,7 @@ export const WORLD = {
 
 export const TICK_RATE = 60; // aggiornamenti della fisica al secondo (server)
 export const SEND_RATE = 30; // stati inviati ai client al secondo
+export const MAX_CATCHUP_TICKS = 5; // passi recuperabili in una volta se il server resta indietro
 export const MAX_PLAYERS_PER_ROOM = 4;
 
 export const FIGHTER = {
