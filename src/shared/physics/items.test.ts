@@ -37,7 +37,7 @@ const ofType = <T extends GameEvent["type"]>(events: GameEvent[], type: T) =>
   events.filter((e): e is Extract<GameEvent, { type: T }> => e.type === type);
 
 function banana(x: number, y: number): Item {
-  return { id: 99, kind: "banana", x, y, vx: 0, vy: 0, heldBy: null, thrown: false, onGround: true, thrownBy: null, lifeMs: ITEM_RULES.lifeMs };
+  return { id: 99, kind: "banana", x, y, vx: 0, vy: 0, heldBy: null, thrown: false, onGround: true, riding: -1, thrownBy: null, lifeMs: ITEM_RULES.lifeMs };
 }
 
 describe("oggetti", () => {
@@ -104,6 +104,19 @@ describe("oggetti", () => {
     assert.equal(world.items[0].heldBy, null);
     assert.equal(world.items[0].onGround, true);
     assert.ok(Math.abs(world.items[0].x - a.x) < FIGHTER.width, "è caduto ai piedi");
+  });
+
+  it("si appoggia su un ascensore e sale con lui (#14)", () => {
+    const { fighters, world } = setup();
+    // Ascensore a sinistra del palco: fermo in basso per 1 s, poi sale di 200 pixel in 1 s
+    const elevator = { width: 100, path: [{ x: 40, y: 500 }, { x: 40, y: 300 }], periodMs: 4000, pauseMs: 1000 };
+    const ctx: PhysicsContext = { stage: { ...stage, movers: [elevator] }, events: [] };
+    world.items.push({ ...banana(90, 420), onGround: false });
+    run(world, fighters, ctx, 30);
+    assert.equal(world.items[0].y, 500, "atterrato sull'ascensore");
+    assert.equal(world.items[0].riding, 0);
+    run(world, fighters, ctx, 120);
+    assert.ok(Math.abs(world.items[0].y - 300) < 2, `in cima con l'ascensore (y = ${world.items[0].y})`);
   });
 
   it("chi viene colpito molla l'oggetto", () => {
