@@ -29,6 +29,7 @@ var _retry_at := -1
 func _ready() -> void:
 	game = JSON.parse_string(FileAccess.get_file_as_string("res://data/game.json"))
 	settings = Settings.new(game.audio)
+	settings.stick_deadzone = game.input.stickDeadzone
 	url_params = _read_params()
 	# Si riparte dall'ultima scelta; l'indirizzo vince
 	params = settings.profile.duplicate()
@@ -57,6 +58,7 @@ func _ready() -> void:
 	add_child(ui_layer)
 	_show_lobby()
 
+	Input.joy_connection_changed.connect(_on_joy_changed)
 	socket.connected.connect(_on_connected)
 	socket.disconnected.connect(_on_disconnected)
 	socket.connect_failed.connect(_on_connect_failed)
@@ -278,6 +280,20 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		settings.save()
 	elif key.keycode == KEY_ESCAPE and not is_instance_valid(pause_menu):
 		_open_pause()
+
+
+# Un pad collegato o staccato si annuncia per un attimo, sopra lobby, menu e partita
+func _on_joy_changed(device: int, connected: bool) -> void:
+	var pad_name := Input.get_joy_name(device)
+	var toast := UI.label(("Pad collegato: " + pad_name).trim_suffix(": ") if connected else "Pad scollegato")
+	var box := StyleBoxFlat.new()
+	box.bg_color = Color(0, 0, 0, 0.8)
+	box.set_corner_radius_all(8)
+	box.set_content_margin_all(10)
+	toast.add_theme_stylebox_override("normal", box)
+	ui_layer.add_child(toast)
+	toast.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP, Control.PRESET_MODE_MINSIZE, 12)
+	get_tree().create_timer(game.input.padToastMs / 1000.0).timeout.connect(toast.queue_free)
 
 
 # F11: schermo intero e ritorno, sia nell'app sia nel browser

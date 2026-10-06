@@ -134,6 +134,10 @@
     "musicBpm": 132,
     "hitLoudPercent": 120
   },
+  "input": {
+    "stickDeadzone": 0.35,
+    "padToastMs": 2000
+  },
   "camera": {
     "margin": 140,
     "minZoom": 0.7,

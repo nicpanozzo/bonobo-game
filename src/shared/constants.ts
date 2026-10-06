@@ -266,3 +266,9 @@ export const NET_LIMITS = {
   rematchPerSecond: 2, // richieste di rivincita al secondo
   floodCloseMs: 10_000, // millisecondi di fila oltre il limite dopo cui il client viene chiuso
 };
+
+// Comandi col pad (E6, #108): numeri che usa solo il client Godot, esportati in game.json
+export const INPUT = {
+  stickDeadzone: 0.35, // da 0 a 1: sotto questa inclinazione la levetta (o il grilletto) non conta
+  padToastMs: 2000, // millisecondi di "Pad collegato: <nome>" sullo schermo
+};

@@ -59,3 +59,33 @@ func test_file_salvato_male() -> void:
 	runner.check(s.bindings.heavy == Settings.DEFAULT_BINDINGS.heavy, "tasti non in lista: default")
 	runner.check(s.profile == {}, "profilo non valido: vuoto")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(PATH))
+
+
+func test_pad_di_default_e_salvato() -> void:
+	var s := _fresh()
+	runner.check(s.pad_bindings == Settings.DEFAULT_PAD_BINDINGS, "pad di default")
+	s.pad_bindings.light = [JOY_BUTTON_Y]
+	s.save()
+	var again := Settings.new(AUDIO, PATH)
+	runner.check(again.pad_bindings.light == [JOY_BUTTON_Y], "pad ricaricato: %s" % [again.pad_bindings.light])
+	runner.check(again.pad_bindings.heavy == [JOY_BUTTON_B], "il resto resta: %s" % [again.pad_bindings.heavy])
+
+
+func test_pad_salvato_male() -> void:
+	var cfg := ConfigFile.new()
+	cfg.set_value("pad", "light", ["A"])
+	cfg.set_value("pad", "heavy", [-3])
+	cfg.save(PATH)
+	var s := Settings.new(AUDIO, PATH)
+	runner.check(s.pad_bindings.light == Settings.DEFAULT_PAD_BINDINGS.light, "pulsanti con stringhe: default")
+	runner.check(s.pad_bindings.heavy == Settings.DEFAULT_PAD_BINDINGS.heavy, "pulsanti negativi: default")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(PATH))
+
+
+func test_levetta_con_zona_morta() -> void:
+	var left := Settings.axis_input(JOY_AXIS_LEFT_X, false)
+	runner.check(Settings.DEFAULT_PAD_BINDINGS.left.has(left), "levetta a sinistra nel default")
+	runner.check(not Settings.axis_active(-0.2, left % 2, 0.35), "poco inclinata: non conta")
+	runner.check(Settings.axis_active(-0.8, left % 2, 0.35), "inclinata a sinistra: conta")
+	runner.check(not Settings.axis_active(0.8, left % 2, 0.35), "inclinata a destra: non è sinistra")
+	runner.check(Settings.axis_active(0.5, 1, 0.35), "grilletto premuto")
