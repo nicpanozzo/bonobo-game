@@ -57,7 +57,7 @@ export class Hud implements RenderModule {
       box.setPosition(slot * i + slot / 2, HUD_Y);
       const lives = "●".repeat(Math.max(0, p.stocks)) + "○".repeat(Math.max(0, this.maxStocks - p.stocks));
       box.setText(`${p.name}\n${p.eliminated ? "OUT" : `${p.percent}%`}  ${lives}`);
-      box.setColor(percentColor(p.percent, p.eliminated));
+      setColorIfChanged(box, percentColor(p.percent, p.eliminated));
     });
     for (const [id, box] of this.boxes) {
       if (seen.has(id)) continue;
@@ -75,9 +75,15 @@ export class Hud implements RenderModule {
     } else {
       const sec = Math.ceil(snap.timeLeftMs / 1000);
       this.timer.setText(`${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`);
-      this.timer.setColor(sec <= 10 ? "#ff5a4a" : "#ffffff");
+      setColorIfChanged(this.timer, sec <= 10 ? "#ff5a4a" : "#ffffff");
     }
   }
+}
+
+// setColor ridisegna sempre il testo (in Phaser setText invece controlla già se è cambiato):
+// con gli snapshot a 30 al secondo conviene saltarlo quando il colore è lo stesso
+function setColorIfChanged(text: Phaser.GameObjects.Text, color: string) {
+  if (text.style.color !== color) text.setColor(color);
 }
 
 // Bianco a 0%, poi giallo, arancione e rosso man mano che si accumula danno

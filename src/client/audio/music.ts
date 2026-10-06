@@ -21,8 +21,14 @@ export class Music {
   private timer: number | undefined;
   private nextTime = 0;
   private step = 0;
+  private noise: AudioBuffer; // rumore riusato da rullante e charleston, invece di crearne uno a colpo
 
-  constructor(private bus: AudioBus) {}
+  constructor(private bus: AudioBus) {
+    const { ctx } = bus;
+    this.noise = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * 0.2), ctx.sampleRate);
+    const d = this.noise.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  }
 
   start() {
     if (this.timer !== undefined) return;
@@ -90,11 +96,8 @@ export class Music {
 
   private burst(t: number, freq: number, dur: number, vol: number) {
     const { ctx, music } = this.bus;
-    const buf = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * dur), ctx.sampleRate);
-    const d = buf.getChannelData(0);
-    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     const src = ctx.createBufferSource();
-    src.buffer = buf;
+    src.buffer = this.noise;
     const f = ctx.createBiquadFilter();
     f.type = "highpass";
     f.frequency.value = freq;
@@ -103,5 +106,6 @@ export class Music {
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     src.connect(f).connect(g).connect(music);
     src.start(t);
+    src.stop(t + dur + 0.02);
   }
 }
