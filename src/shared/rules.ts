@@ -21,7 +21,7 @@ export function sanitizeRules(raw: Partial<MatchRules> | undefined): MatchRules 
   const int = (v: unknown, min: number, max: number, fallback: number) =>
     typeof v === "number" && Number.isFinite(v) ? Math.max(min, Math.min(max, Math.round(v))) : fallback;
   return {
-    mode: r.mode === "teams" || r.mode === "flag" ? r.mode : "ffa",
+    mode: r.mode === "teams" || r.mode === "flag" || r.mode === "race" ? r.mode : "ffa",
     stocks: int(r.stocks, 1, RULE_LIMITS.maxStocks, DEFAULT_RULES.stocks),
     timeLimitSec: int(r.timeLimitSec, 0, RULE_LIMITS.maxTimeLimitSec, DEFAULT_RULES.timeLimitSec),
     friendlyFire: typeof r.friendlyFire === "boolean" ? r.friendlyFire : DEFAULT_RULES.friendlyFire,
@@ -29,7 +29,7 @@ export function sanitizeRules(raw: Partial<MatchRules> | undefined): MatchRules 
 }
 
 // Modalità in cui si gioca divisi in due squadre
-export const isTeamMode = (rules: MatchRules) => rules.mode !== "ffa";
+export const isTeamMode = (rules: MatchRules) => rules.mode === "teams" || rules.mode === "flag";
 
 // Chi può colpire chi: tra compagni di squadra solo con il fuoco amico
 export function canHitWithRules(rules: MatchRules, attackerTeam: number, targetTeam: number): boolean {
@@ -71,7 +71,7 @@ export function leaderOnTime(rules: MatchRules, players: Standing[]): Standing |
 // Chi vince quando restano in gioco solo lui (o solo la sua squadra); undefined se la partita continua
 export function lastStanding(rules: MatchRules, players: Standing[]): Standing | undefined {
   const alive = players.filter((p) => !p.eliminated);
-  if (players.length < 2 || alive.length === 0 || rules.mode === "flag") return undefined;
+  if (players.length < 2 || alive.length === 0 || rules.mode === "flag" || rules.mode === "race") return undefined;
   if (rules.mode === "teams") {
     const teamsInGame = new Set(players.map((p) => p.team));
     const teamsAlive = new Set(alive.map((p) => p.team));

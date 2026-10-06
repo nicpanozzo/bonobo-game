@@ -151,11 +151,12 @@ export class FighterViews implements RenderModule {
     v.label.setPosition(v.body.x, top - 6);
     v.flag.setVisible(t.carrier && !hidden).setPosition(v.body.x, top - 24);
 
-    // Freccia sul bordo dello schermo per chi è stato lanciato fuori
-    const off = v.body.x < 0 || v.body.x > WORLD.width || v.body.y < 0 || v.body.y > WORLD.height;
+    // Freccia sul bordo dello schermo per chi è stato lanciato fuori (o resta indietro nella Corsa)
+    const left = this.scene.cameras.main.scrollX;
+    const off = v.body.x < left || v.body.x > left + WORLD.width || v.body.y < 0 || v.body.y > WORLD.height;
     v.marker.setVisible(off && !hidden);
     if (off) {
-      const mx = Phaser.Math.Clamp(v.body.x, 16, WORLD.width - 16);
+      const mx = Phaser.Math.Clamp(v.body.x, left + 16, left + WORLD.width - 16);
       const my = Phaser.Math.Clamp(v.body.y, 16, WORLD.height - 16);
       v.marker.setPosition(mx, my);
       v.marker.setRotation(Math.atan2(v.body.y - my, v.body.x - mx) - Math.PI / 2);

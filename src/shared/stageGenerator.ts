@@ -7,9 +7,9 @@ import { STAGE_GEN, WORLD } from "./constants";
 import type { Rect, StageSpec, ThinPlatform } from "./stages";
 
 export const RANDOM_STAGE_PREFIX = "casuale-";
-const MAX_SEED = 999_999;
+export const MAX_SEED = 999_999;
 
-const PALETTES: StageSpec["colors"][] = [
+export const PALETTES: StageSpec["colors"][] = [
   { sky: 0x1d2b3a, solid: 0x5a3d26, solidEdge: 0x8b6a45, platform: 0xa0a8b8 },
   { sky: 0x2b1d3a, solid: 0x3d2a5a, solidEdge: 0x7a5aa8, platform: 0xc8a0e0 },
   { sky: 0x13302a, solid: 0x2e4a2a, solidEdge: 0x6a9a4a, platform: 0xb8d8a0 },
@@ -28,7 +28,7 @@ export function seedFromStageId(id: string): number | null {
 }
 
 // Numeri pseudo-casuali ripetibili (mulberry32): niente Math.random qui dentro
-function rng(seed: number) {
+export function rng(seed: number) {
   let a = seed >>> 0;
   const next = () => {
     a = (a + 0x6d2b79f5) >>> 0;

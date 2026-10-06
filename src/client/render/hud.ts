@@ -1,11 +1,11 @@
 import Phaser from "phaser";
 import { STOCKS, TEAM_NAMES, WORLD } from "../../shared/constants";
-import { getStage } from "../../shared/stages";
+import { getStage, type StageSpec } from "../../shared/stages";
 import type { GameSnapshot, MatchRules } from "../../shared/types";
 import type { MatchInfo, RenderModule } from "./module";
 
 const HUD_Y = WORLD.height - 56;
-const MODE_NAMES: Record<MatchRules["mode"], string> = { ffa: "Tutti contro tutti", teams: "Squadre", flag: "Bandiera" };
+const MODE_NAMES: Record<MatchRules["mode"], string> = { ffa: "Tutti contro tutti", teams: "Squadre", flag: "Bandiera", race: "Corsa" };
 
 // Scritte sopra il gioco: stato della connessione, riquadri con percentuale e vite, vincitore
 export class Hud implements RenderModule {
@@ -16,23 +16,28 @@ export class Hud implements RenderModule {
   private timer: Phaser.GameObjects.Text;
   private score: Phaser.GameObjects.Text; // punti delle squadre in Bandiera
   private rules?: MatchRules;
+  private stage?: StageSpec;
 
   constructor(private scene: Phaser.Scene) {
-    this.status = scene.add.text(12, 10, "Connessione...", { fontSize: "16px", color: "#ffffff" }).setDepth(20);
+    // Tutte le scritte restano ferme sullo schermo anche quando la telecamera scorre (Corsa)
+    this.status = scene.add.text(12, 10, "Connessione...", { fontSize: "16px", color: "#ffffff" }).setDepth(20).setScrollFactor(0);
     this.banner = scene.add
       .text(WORLD.width / 2, 200, "", { fontSize: "48px", color: "#ffffff", fontStyle: "bold" })
       .setOrigin(0.5)
-      .setDepth(20);
+      .setDepth(20)
+      .setScrollFactor(0);
     this.timer = scene.add
       .text(WORLD.width / 2, 40, "", { fontSize: "28px", color: "#ffffff", fontStyle: "bold" }) // sotto la riga della stanza
       .setOrigin(0.5, 0)
       .setStroke("#000000", 4)
-      .setDepth(20);
+      .setDepth(20)
+      .setScrollFactor(0);
     this.score = scene.add
       .text(WORLD.width / 2, 40, "", { fontSize: "24px", color: "#ffffff", fontStyle: "bold" })
       .setOrigin(0.5, 0)
       .setStroke("#000000", 4)
-      .setDepth(20);
+      .setDepth(20)
+      .setScrollFactor(0);
   }
 
   setStatus(text: string) {
@@ -41,6 +46,7 @@ export class Hud implements RenderModule {
 
   onWelcome(info: MatchInfo) {
     this.maxStocks = info.rules.stocks;
+    this.stage = getStage(info.stageId);
     this.rules = info.rules;
     const mode = MODE_NAMES[info.rules.mode] + (info.rules.mode === "flag" ? ` a ${info.rules.stocks} ${info.rules.stocks === 1 ? "punto" : "punti"}` : "");
     this.setStatus(`Stanza: ${info.room} · ${getStage(info.stageId).name} · ${mode} · manda il link agli amici`);
@@ -58,6 +64,7 @@ export class Hud implements RenderModule {
           .text(0, HUD_Y, "", { fontSize: "20px", color: "#ffffff", align: "center", fontStyle: "bold" })
           .setOrigin(0.5, 0)
           .setDepth(20)
+          .setScrollFactor(0)
           .setStroke(`#${p.color.toString(16).padStart(6, "0")}`, 4);
         this.boxes.set(p.id, box);
       }
@@ -65,8 +72,11 @@ export class Hud implements RenderModule {
       // In otto i riquadri sono larghi la metà: si scrive più piccolo
       const size = snap.players.length > 4 ? "15px" : "20px";
       if (box.style.fontSize !== size) box.setFontSize(size);
-      // In Bandiera le vite sono infinite: al loro posto si segna chi porta la bandiera
-      const lives = snap.teamScores
+      // In Bandiera le vite sono infinite: al loro posto si segna chi porta la bandiera;
+      // in Corsa quanta strada si è fatta
+      const lives = this.stage?.goal
+        ? `🏁 ${progress(this.stage, p.x)}%`
+        : snap.teamScores
         ? p.carrier
           ? "🚩"
           : ""
@@ -114,4 +124,11 @@ function percentColor(percent: number, eliminated: boolean): string {
   const g = Math.round(255 * (1 - t * 0.85));
   const b = Math.round(255 * Math.max(0, 1 - t * 2));
   return `rgb(255,${g},${b})`;
+}
+
+// Strada fatta in un percorso della Corsa, da 0 (partenza) a 100 (traguardo)
+function progress(stage: StageSpec, x: number): number {
+  const start = stage.spawns[0].x;
+  const end = stage.goal!.x;
+  return Math.round(Math.max(0, Math.min(1, (x - start) / (end - start))) * 100);
 }

@@ -12,7 +12,7 @@ import type { RenderModule } from "./module";
 export class Audio implements RenderModule {
   private music?: Music;
 
-  constructor(scene: Phaser.Scene) {
+  constructor(private scene: Phaser.Scene) {
     setupAudioUnlock((bus) => this.ready(bus));
     if (getBus()) this.ready(getBus()!);
     // M accende e spegne la musica
@@ -31,7 +31,8 @@ export class Audio implements RenderModule {
     const bus = getBus();
     if (!bus || bus.ctx.state !== "running") return;
     // Il suono arriva dal lato dello schermo dove succede la cosa
-    const pan = (x: number) => (x / WORLD.width) * 2 - 1;
+    const left = this.scene.cameras.main.scrollX; // nei percorsi lunghi conta dove si trova la telecamera
+    const pan = (x: number) => Math.max(-1, Math.min(1, ((x - left) / WORLD.width) * 2 - 1));
     const play = (name: SoundName, opts: { volume?: number; pan?: number; pitch?: number } = {}) => playSound(bus, name, opts);
 
     switch (e.type) {
@@ -51,7 +52,10 @@ export class Audio implements RenderModule {
         play("land", { volume: 0.5, pan: pan(e.x) });
         break;
       case "ko":
-        play("ko", { pan: pan(Math.max(0, Math.min(WORLD.width, e.x))) });
+        play("ko", { pan: pan(e.x) });
+        break;
+      case "checkpoint":
+        play("point", { volume: 0.5, pitch: 1.3 });
         break;
       case "flag":
         play("point");

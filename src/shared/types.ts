@@ -37,8 +37,8 @@ export interface PlayerState {
 
 // Regole della partita, scelte da chi crea la stanza (#17). Default in src/shared/rules.ts
 export interface MatchRules {
-  mode: "ffa" | "teams" | "flag"; // tutti contro tutti, squadre, o Bandiera (#56)
-  stocks: number; // vite a testa; in Bandiera i punti per vincere (le vite lì sono infinite)
+  mode: "ffa" | "teams" | "flag" | "race"; // tutti contro tutti, squadre, Bandiera (#56) o Corsa (#57)
+  stocks: number; // vite a testa; in Bandiera i punti per vincere; in Corsa non conta (vite infinite)
   timeLimitSec: number; // 0 = senza limite di tempo
   friendlyFire: boolean; // nelle squadre, se ci si può colpire tra compagni
 }
@@ -64,6 +64,7 @@ export type GameEvent =
   | { type: "respawn"; id: string }
   | { type: "taunt"; id: string }
   | { type: "flag"; scoringTeam: number; byId: string | null; team: number; carrierId: string | null } // portabandiera di "team" buttato fuori: punto a scoringTeam, la bandiera passa a carrierId
+  | { type: "checkpoint"; id: string; index: number } // in Corsa: nuovo punto da cui si riparte
   | { type: "matchStart" }
   | { type: "matchEnd"; winnerId: string | null; winnerTeam: number; durationMs: number };
 

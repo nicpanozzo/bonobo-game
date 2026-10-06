@@ -90,6 +90,22 @@ export const STAGE_GEN = {
   secondTierChance: 0.6,
 };
 
+// Percorsi della modalità Corsa (#57, courseGenerator.ts). Distanze in pixel.
+// Un salto da fermo copre circa 250 pixel in orizzontale e sale di 160: i valori restano sotto.
+export const COURSE = {
+  length: 6000, // dalla partenza al traguardo, circa cinque schermi
+  startWidth: 640, // blocco di partenza, ci stanno tutti e otto
+  goalWidth: 480, // blocco del traguardo
+  gap: [80, 220], // vuoto tra un appoggio e il successivo
+  rise: 120, // quanto più in alto può stare l'appoggio successivo
+  y: [280, 560], // altezze possibili della superficie (più in basso le coprirebbe l'HUD)
+  solidWidth: [220, 560], // blocchi pieni
+  platformWidth: [140, 220], // piattaforme sottili sospese sul vuoto
+  platformChance: 0.4, // probabilità che il prossimo appoggio sia sottile
+  checkpointEvery: 1100, // distanza minima tra due checkpoint
+  respawnHeight: 120, // si ricompare un po' sopra il checkpoint
+};
+
 // Squadre (#17): una tonalità per ogni compagno (fino a 4 contro 4), così i compagni si distinguono tra loro
 export const TEAM_COLORS: Record<1 | 2, number[]> = {
   1: [0xe74c3c, 0xff9a8a, 0xb03020, 0xff6f5e],
