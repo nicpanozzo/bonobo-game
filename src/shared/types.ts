@@ -39,6 +39,18 @@ export interface PlayerState {
   carrier: boolean; // porta la bandiera della sua squadra (modalità "flag", #56)
 }
 
+// Un oggetto nell'arena (#17): a terra, in volo o in mano a qualcuno
+export interface ItemState {
+  id: number;
+  kind: string; // vedi src/shared/items.ts
+  x: number; // centro
+  y: number; // base
+  vx: number;
+  vy: number;
+  heldBy: string | null; // chi lo tiene in mano
+  thrown: boolean; // lanciato: colpisce chi tocca
+}
+
 // Regole della partita, scelte da chi crea la stanza (#17). Default in src/shared/rules.ts
 export interface MatchRules {
   mode: "ffa" | "teams" | "flag" | "race"; // tutti contro tutti, squadre, Bandiera (#56) o Corsa (#57)
@@ -57,7 +69,8 @@ export type GameEvent =
       type: "hit";
       attackerId: string;
       targetId: string;
-      kind: AttackKind;
+      kind: AttackKind | "item"; // "item": un oggetto lanciato (#17), il tipo è in itemKind
+      itemKind?: string;
       damage: number;
       percent: number; // percentuale del bersaglio dopo il colpo
       knockback: number; // pixel/s: utile per dosare effetti e suoni
@@ -70,6 +83,9 @@ export type GameEvent =
   | { type: "flag"; scoringTeam: number; byId: string | null; team: number; carrierId: string | null } // portabandiera di "team" buttato fuori: punto a scoringTeam, la bandiera passa a carrierId
   | { type: "checkpoint"; id: string; index: number } // in Corsa: nuovo punto da cui si riparte
   | { type: "hazard"; id: string; index: number; damage: number; percent: number; knockback: number; x: number; y: number } // preso da una trappola (stage.hazards[index], #14)
+  | { type: "itemSpawn"; itemId: number; kind: string; x: number; y: number } // un oggetto comincia a cadere (#17)
+  | { type: "itemPick"; itemId: number; id: string } // id lo raccoglie
+  | { type: "itemThrow"; itemId: number; id: string; x: number; y: number }
   | { type: "matchStart" }
   | { type: "matchEnd"; winnerId: string | null; winnerTeam: number; durationMs: number };
 
@@ -79,6 +95,7 @@ export interface GameSnapshot {
   winnerId: string | null; // chi ha vinto la partita, se è finita
   timeLeftMs: number | null; // null se la partita non ha limite di tempo
   teamScores: Record<1 | 2, number> | null; // punti delle squadre in Bandiera, null nelle altre modalità
+  items: ItemState[]; // oggetti nell'arena (#17)
   events: GameEvent[]; // tutto quello che è successo dallo snapshot precedente
   stageMs: number; // tempo dell'arena: da qui il client calcola dove sono ascensori e trappole (#14)
 }

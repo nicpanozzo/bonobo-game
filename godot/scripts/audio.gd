@@ -87,6 +87,11 @@ func on_event(e: Dictionary) -> void:
 			_play("point")
 		"taunt":
 			_play("taunt")
+		# Oggetti (#17): finché non hanno suoni loro, si riusano quelli che ci sono
+		"itemPick":
+			_play("point", {"volume": 0.4, "pitch": 1.6})
+		"itemThrow":
+			_play("light", {"volume": 0.7, "x": e.x, "pitch": 0.8})
 		"matchStart":
 			_play("start")
 		"matchEnd":

@@ -1,5 +1,5 @@
-// Oggetti che cadono nell'arena (#17 passo 3). Per ora solo il contratto:
-// la raccolta e il lancio arriveranno in src/shared/physics/items.ts.
+// Oggetti che cadono nell'arena (#17 passo 3). Caduta, raccolta e lancio sono in
+// src/shared/physics/items.ts, i numeri comuni in ITEM_RULES (constants.ts).
 
 export interface ItemSpec {
   id: string;

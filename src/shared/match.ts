@@ -5,6 +5,7 @@
 import { getCharacter } from "./characters";
 import { COLORS, FIGHTER, MATCH_RESTART_MS, MAX_PLAYERS_PER_ROOM, TEAM_COLORS } from "./constants";
 import { createFighter, resetForMatch, stepWorld, type Fighter, type PhysicsContext } from "./physics";
+import { createItemWorld, handleItemInput, itemStates, resetItems, stepItems, type ItemWorld } from "./physics/items";
 import { canHitWithRules, flagWinnerTeam, isTeamMode, lastStanding, leaderOnTime, sanitizeRules } from "./rules";
 import { COURSE_PREFIX, seedFromCourseId } from "./courseGenerator";
 import { seedFromStageId } from "./stageGenerator";
@@ -28,6 +29,7 @@ export class Match {
   private matchTimeMs = 0;
   private ctx: PhysicsContext;
   private scores: Record<1 | 2, number> = { 1: 0, 2: 0 }; // solo in Bandiera
+  private items: ItemWorld | null; // oggetti (#17): solo in Tutti contro tutti e Squadre
 
   constructor(options: MatchOptions = {}) {
     this.rules = sanitizeRules(options.rules);
@@ -39,6 +41,7 @@ export class Match {
       canHit: (a, t) => canHitWithRules(rules, a.team, t.team),
       unlimitedStocks: rules.mode === "flag" || rules.mode === "race",
     };
+    this.items = rules.mode === "ffa" || rules.mode === "teams" ? createItemWorld(seedOf(this.stage.id)) : null;
   }
 
   get size() {
@@ -103,7 +106,11 @@ export class Match {
   // Un passo di simulazione; restituisce gli eventi nati da allora (anche fuori dal passo, es. la rivincita)
   step(dtMs: number): GameEvent[] {
     const list = this.players as Fighter[];
+    // Gli oggetti cadono solo quando c'è qualcuno con cui litigarseli e la partita non è finita
+    const items = this.items && list.length >= 2 && !this.winnerId ? this.items : null;
+    if (items) handleItemInput(items, list, this.ctx);
     stepWorld(list, dtMs, this.ctx);
+    if (items) stepItems(items, list, dtMs, this.ctx);
     if (this.rules.mode === "flag" && !this.winnerId) this.scoreFlags();
     if (this.rules.mode === "race" && !this.winnerId) this.updateCheckpoints(list);
     this.updateMatch(list, dtMs);
@@ -140,7 +147,8 @@ export class Match {
     }
     const teamScores = this.rules.mode === "flag" ? { ...this.scores } : null;
     const stageMs = Math.round(this.ctx.timeMs ?? 0);
-    return { t, players, winnerId: this.winnerId, timeLeftMs: this.timeLeftMs(), teamScores, events, stageMs };
+    const items = this.items ? itemStates(this.items) : [];
+    return { t, players, winnerId: this.winnerId, timeLeftMs: this.timeLeftMs(), teamScores, items, events, stageMs };
   }
 
   // Si entra nella squadra con meno giocatori (a parità, la Rossa)
@@ -255,6 +263,7 @@ export class Match {
     this.winnerId = null;
     this.matchTimeMs = 0;
     this.scores = { 1: 0, 2: 0 };
+    if (this.items) resetItems(this.items);
     for (const f of this.fighters.values()) resetForMatch(f, this.slots.get(f.id) ?? 0, this.rules.stocks, this.stage);
     this.assignFlags(); // si riparte dal primo di ogni squadra
     this.ctx.events.push({ type: "matchStart" });
@@ -264,6 +273,13 @@ export class Match {
     if (this.rules.timeLimitSec <= 0) return null;
     return Math.max(0, Math.round(this.rules.timeLimitSec * 1000 - this.matchTimeMs));
   }
+}
+
+// Seme degli oggetti dall'id dell'arena: stessa arena, stessa sequenza
+function seedOf(id: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < id.length; i++) h = Math.imul(h ^ id.charCodeAt(i), 16777619);
+  return h >>> 0;
 }
 
 // In Corsa serve un percorso: se l'arena scelta non lo è, se ne genera uno dal suo seme

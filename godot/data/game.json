@@ -160,6 +160,33 @@
     "percentShakePerDamage": 0.6,
     "percentShakeMax": 9
   },
+  "items": {
+    "banana": {
+      "id": "banana",
+      "name": "Banana",
+      "damage": 8,
+      "knockback": 300,
+      "width": 24,
+      "height": 16,
+      "color": 15844367
+    }
+  },
+  "itemRules": {
+    "firstSpawnMs": 6000,
+    "spawnEveryMs": 11000,
+    "maxOnStage": 2,
+    "dropHeight": 420,
+    "pickRange": 40,
+    "throwSpeed": 1100,
+    "throwLift": 220,
+    "throwUpSpeed": 1100,
+    "groundFriction": 2400,
+    "lifeMs": 15000,
+    "knockbackGrowth": 6,
+    "angleDeg": 38,
+    "holdOffsetX": 22,
+    "holdOffsetY": 52
+  },
   "colors": [
     15158332,
     3447003,
