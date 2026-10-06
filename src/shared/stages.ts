@@ -18,6 +18,29 @@ export interface ThinPlatform {
   width: number;
 }
 
+// Piattaforma sottile che si muove (ascensore, montacarichi). La posizione dipende solo dal
+// tempo dell'arena (elementPosition in physics/elements.ts), così server e client la calcolano uguale.
+export interface MovingPlatform {
+  width: number;
+  path: { x: number; y: number }[]; // punti toccati in ordine (bordo sinistro, superficie), almeno 2
+  periodMs: number; // durata di un giro completo, soste comprese
+  loop?: boolean; // true: dall'ultimo punto torna dritto al primo; altrimenti fa avanti e indietro
+  pauseMs?: number; // sosta a ogni punto, come un ascensore al piano
+  offsetMs?: number; // sfasamento, per far partire due piattaforme in momenti diversi
+}
+
+// Trappola: un rettangolo che, quando è acceso, toglie percentuale e lancia via chi lo tocca
+export interface Hazard extends Rect {
+  kind: string; // solo per il disegno: "spuntoni", "fuoco", "laser"...
+  damage: number; // percentuale aggiunta
+  knockback: number; // pixel/s di lancio di base
+  knockbackGrowth: number; // pixel/s in più per ogni punto di percentuale
+  angleDeg: number; // direzione del lancio: 90 = dritto in alto, 45 = in diagonale lontano dal centro della trappola
+  periodMs?: number; // se c'è, la trappola si accende e si spegne a ciclo
+  activeMs?: number; // per quanto resta accesa in ogni ciclo
+  offsetMs?: number;
+}
+
 export interface StageSpec {
   id: string;
   name: string;
@@ -31,6 +54,9 @@ export interface StageSpec {
   width?: number; // larghezza del mondo se più larga dello schermo: la telecamera segue
   checkpoints?: { x: number; y: number }[]; // dove si ricompare dopo una caduta (y = superficie)
   goal?: Rect; // chi lo tocca vince
+  // Elementi dinamici (#14 passo 4)
+  movers?: MovingPlatform[];
+  hazards?: Hazard[];
 }
 
 // Larghezza del mondo di un'arena: lo schermo, o di più per i percorsi
@@ -85,6 +111,46 @@ export const STAGES: Record<string, StageSpec> = {
     ],
     respawn: { x: WORLD.width / 2, y: 170 },
     colors: { sky: 0x123047, solid: 0x2f5d3a, solidEdge: 0x7cbf6a, platform: 0xe8d9a8 },
+  },
+
+  // Un capannone con un ascensore in mezzo, una navetta che fa avanti e indietro,
+  // il fuoco che si accende nella fossa e gli spuntoni ai bordi (#14 passo 4).
+  // TODO community: un posto nostro con ascensori e trappole (un magazzino, un cantiere, la palestra?)
+  fabbrica: {
+    id: "fabbrica",
+    name: "La Fabbrica",
+    solids: [
+      { x: 140, y: 560, width: 300, height: 90 },
+      { x: 840, y: 560, width: 300, height: 90 },
+      { x: 440, y: 640, width: 400, height: 60 }, // la fossa, sotto il livello delle isole
+    ],
+    platforms: [],
+    movers: [
+      // Ascensore: sale e scende in mezzo alla fossa, fermandosi a ogni piano
+      { width: 140, path: [{ x: 570, y: 540 }, { x: 570, y: 260 }], periodMs: 7000, pauseMs: 1200 },
+      // Navetta: attraversa l'arena da un'isola all'altra
+      { width: 150, path: [{ x: 150, y: 400 }, { x: 980, y: 400 }], periodMs: 9000, pauseMs: 600 },
+    ],
+    hazards: [
+      // Fuoco nella fossa: acceso 1,5 s ogni 4 s, lancia in alto
+      { kind: "fuoco", x: 440, y: 610, width: 400, height: 30, damage: 8, knockback: 600, knockbackGrowth: 4, angleDeg: 80, periodMs: 4000, activeMs: 1500 },
+      // Spuntoni sempre accesi sui bordi esterni delle isole
+      { kind: "spuntoni", x: 140, y: 540, width: 60, height: 20, damage: 10, knockback: 500, knockbackGrowth: 6, angleDeg: 60 },
+      { kind: "spuntoni", x: 1080, y: 540, width: 60, height: 20, damage: 10, knockback: 500, knockbackGrowth: 6, angleDeg: 60 },
+    ],
+    blastZone: { left: -250, right: WORLD.width + 250, top: -350, bottom: WORLD.height + 200 },
+    spawns: [
+      { x: 300, y: 560 },
+      { x: 980, y: 560 },
+      { x: 380, y: 560 },
+      { x: 900, y: 560 },
+      { x: 240, y: 560 },
+      { x: 1040, y: 560 },
+      { x: 340, y: 560 },
+      { x: 940, y: 560 },
+    ],
+    respawn: { x: WORLD.width / 2, y: 160 },
+    colors: { sky: 0x22201f, solid: 0x4a4f57, solidEdge: 0xf1c40f, platform: 0xc0c6cc },
   },
 };
 

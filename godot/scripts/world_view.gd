@@ -79,7 +79,7 @@ func stage_width() -> float:
 
 
 func on_snapshot(snap: Dictionary) -> void:
-	buffer.push(snap.t, Time.get_ticks_msec(), snap.players)
+	buffer.push(snap.t, Time.get_ticks_msec(), snap.players, float(snap.get("stageMs", 0)))
 	player_ids = snap.players.map(func(p): return p.id)
 
 
@@ -100,6 +100,10 @@ func on_event(e: Dictionary) -> void:
 				_shake = maxf(_shake, minf(fx.shakeMax, (kb - fx.shakeFromKnockback) * fx.shakePerKnockback))
 			if kb >= fx.flashKnockback:
 				_flash = fx.flashMs
+		"hazard":
+			# Trappola (#14): scintilla arancione e scossa come un colpo forte
+			_sparks.append({"x": e.x, "y": e.y, "age": 0.0, "size": 30.0, "color": Color(1, 0.55, 0.15)})
+			_shake = maxf(_shake, minf(game.effects.shakeMax, float(e.knockback) * game.effects.shakePerKnockback))
 		"land":
 			_puff(e.x, e.y)
 		"jump":
@@ -151,6 +155,7 @@ func _draw() -> void:
 	for p in stage.platforms:
 		draw_rect(Rect2(p.x, p.y, p.width, 8), _color(stage.colors.platform))
 
+	_draw_elements(buffer.sample_stage_ms(Time.get_ticks_msec()))
 	_draw_course()
 
 	var now := Time.get_ticks_msec()
@@ -225,6 +230,88 @@ func _draw_trail(id: String, p: Dictionary) -> void:
 		col.a = 0.35 * (1.0 - float(i) / trail.size())
 		var shrink := 1.0 - 0.08 * i
 		draw_rect(Rect2(pos.x - fw * shrink / 2, pos.y - fh * shrink, fw * shrink, fh * shrink), col)
+
+
+# Ascensori e trappole (#14), dove sono all'istante t dell'arena: stessi calcoli di physics/elements.ts
+func _draw_elements(t: float) -> void:
+	var movers: Array = stage.get("movers") if stage.get("movers") != null else []
+	for m in movers:
+		var pos := mover_position(m, t)
+		draw_rect(Rect2(pos.x, pos.y, m.width, 10), _color(stage.colors.platform))
+		# Strisce gialle e nere sotto: si capisce che si muove
+		for x in range(0, int(m.width), 20):
+			draw_rect(Rect2(pos.x + x, pos.y + 10, minf(10, m.width - x), 5), Color("f1c40f"))
+	var hazards: Array = stage.get("hazards") if stage.get("hazards") != null else []
+	for h in hazards:
+		_draw_hazard(h, hazard_active(h, t), t)
+
+
+func _draw_hazard(h: Dictionary, on: bool, t: float) -> void:
+	var r := Rect2(h.x, h.y, h.width, h.height)
+	match h.kind:
+		"spuntoni":
+			var n := maxi(1, int(h.width / 15.0))
+			var w: float = h.width / n
+			var col := Color("d9dde3") if on else Color("6b6f75")
+			for i in n:
+				var x: float = h.x + i * w
+				draw_colored_polygon(PackedVector2Array([Vector2(x, h.y + h.height), Vector2(x + w / 2, h.y), Vector2(x + w, h.y + h.height)]), col)
+		"fuoco":
+			if not on:
+				# Spento: solo le bocchette, che si scaldano poco prima di accendersi
+				draw_rect(Rect2(r.position.x, r.end.y - 6, r.size.x, 6), Color("5a2a1a"))
+				return
+			for i in int(h.width / 20.0):
+				var flicker := 0.6 + 0.4 * sin(t / 70.0 + i * 1.7)
+				var fh: float = h.height * (1.2 + flicker)
+				var x: float = h.x + i * 20.0
+				draw_colored_polygon(PackedVector2Array([Vector2(x, r.end.y), Vector2(x + 10, r.end.y - fh), Vector2(x + 20, r.end.y)]), Color(1, 0.35 + 0.3 * flicker, 0.1, 0.9))
+		_:
+			# Trappola senza disegno suo: un rettangolo rosso che pulsa quando è accesa
+			var a := 0.35 + 0.25 * sin(t / 90.0) if on else 0.15
+			draw_rect(r, Color(1, 0.2, 0.2, a))
+
+
+# Posizione di una piattaforma mobile al tempo t: la stessa formula di moverPosition() in physics/elements.ts
+static func mover_position(m: Dictionary, t: float) -> Vector2:
+	var pts: Array = m.path
+	if pts.size() < 2:
+		return Vector2(pts[0].x, pts[0].y)
+	var route: Array = pts.duplicate()
+	if m.get("loop", false):
+		route.append(pts[0])
+	else:
+		for i in range(pts.size() - 2, -1, -1):
+			route.append(pts[i])
+	var segments := route.size() - 1
+	var pause: float = m.get("pauseMs", 0)
+	var lengths: Array[float] = []
+	var total := 0.0
+	for i in segments:
+		var d := Vector2(route[i + 1].x - route[i].x, route[i + 1].y - route[i].y).length()
+		lengths.append(d)
+		total += d
+	var period: float = m.periodMs
+	var travel := maxf(1.0, period - pause * segments)
+	var left := fposmod(t + float(m.get("offsetMs", 0)), period)
+	for i in segments:
+		var a := Vector2(route[i].x, route[i].y)
+		if left < pause:
+			return a
+		left -= pause
+		var seg_ms: float = travel * lengths[i] / total if total > 0 else travel / segments
+		if left < seg_ms:
+			return a.lerp(Vector2(route[i + 1].x, route[i + 1].y), left / seg_ms)
+		left -= seg_ms
+	return Vector2(route[segments].x, route[segments].y)
+
+
+# Come hazardActive() in physics/elements.ts
+static func hazard_active(h: Dictionary, t: float) -> bool:
+	var period: float = h.get("periodMs", 0)
+	if period <= 0:
+		return true
+	return fposmod(t + float(h.get("offsetMs", 0)), period) < float(h.get("activeMs", period / 2.0))
 
 
 # Corsa: checkpoint (asta grigia, bandierina verde quando la si prende) e arrivo a scacchi

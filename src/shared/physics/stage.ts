@@ -1,12 +1,14 @@
 // Contatto con l'arena: blocchi pieni, piattaforme sottili, zone di espulsione, vite e ritorno in gioco.
 
 import { COURSE, FIGHTER, RESPAWN_INVULNERABLE_MS, RESPAWN_MS } from "../constants";
+import { landOnMover } from "./elements";
 import type { Fighter, PhysicsContext } from "./fighter";
 
-export function collideWithStage(f: Fighter, prevY: number, ctx: PhysicsContext): void {
+export function collideWithStage(f: Fighter, prevY: number, ctx: PhysicsContext, dtMs = 0): void {
   const half = FIGHTER.width / 2;
   const wasOnGround = f.onGround;
   f.onGround = false;
+  f.riding = -1;
 
   for (const s of ctx.stage.solids) {
     // Blocco pieno: si atterra sopra...
@@ -37,6 +39,15 @@ export function collideWithStage(f: Fighter, prevY: number, ctx: PhysicsContext)
         land(f, p.y);
         break;
       }
+    }
+  }
+
+  // Piattaforme mobili (#14): come le sottili, e da lì in poi ci si viaggia sopra
+  if (!f.onGround && f.vy >= 0 && f.dropTimer === 0) {
+    const i = landOnMover(f, prevY, dtMs, ctx);
+    if (i >= 0) {
+      land(f, f.y);
+      f.riding = i;
     }
   }
 

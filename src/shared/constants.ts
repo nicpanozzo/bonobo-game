@@ -227,3 +227,8 @@ export const BOT_LEVELS = {
   semplice: { reactionMs: 180, heavyEvery: 3, dodges: false }, // heavyEvery: un pesante ogni tanti attacchi
   difficile: { reactionMs: 90, heavyEvery: 2, dodges: true }, // dodges: schiva i pesanti che vede arrivare
 };
+
+// Elementi dinamici delle arene (#14): ascensori e trappole. I loro numeri stanno nei dati dell'arena.
+export const HAZARD = {
+  cooldownMs: 700, // ms dopo una trappola in cui non se ne prende un'altra (niente colpi a raffica)
+};

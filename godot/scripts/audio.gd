@@ -73,6 +73,8 @@ func on_event(e: Dictionary) -> void:
 			# Più alta la percentuale del bersaglio, più forte e più grave il colpo
 			var strength := minf(1.0, e.percent / game.audio.hitLoudPercent)
 			_play("hitHeavy" if str(e.kind).begins_with("heavy") else "hitLight", {"volume": 0.6 + 0.4 * strength, "x": e.x, "pitch": 1.1 - 0.3 * strength})
+		"hazard":
+			_play("hitHeavy", {"volume": 0.8, "x": e.x, "pitch": 0.8})
 		"jump":
 			_play("doubleJump" if e.air else "jump", {"volume": 0.6, "x": e.x})
 		"land":

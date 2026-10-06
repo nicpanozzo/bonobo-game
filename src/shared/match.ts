@@ -139,7 +139,8 @@ export class Match {
       });
     }
     const teamScores = this.rules.mode === "flag" ? { ...this.scores } : null;
-    return { t, players, winnerId: this.winnerId, timeLeftMs: this.timeLeftMs(), teamScores, events };
+    const stageMs = Math.round(this.ctx.timeMs ?? 0);
+    return { t, players, winnerId: this.winnerId, timeLeftMs: this.timeLeftMs(), teamScores, events, stageMs };
   }
 
   // Si entra nella squadra con meno giocatori (a parità, la Rossa)

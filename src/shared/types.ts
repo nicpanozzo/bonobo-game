@@ -69,6 +69,7 @@ export type GameEvent =
   | { type: "taunt"; id: string }
   | { type: "flag"; scoringTeam: number; byId: string | null; team: number; carrierId: string | null } // portabandiera di "team" buttato fuori: punto a scoringTeam, la bandiera passa a carrierId
   | { type: "checkpoint"; id: string; index: number } // in Corsa: nuovo punto da cui si riparte
+  | { type: "hazard"; id: string; index: number; damage: number; percent: number; knockback: number; x: number; y: number } // preso da una trappola (stage.hazards[index], #14)
   | { type: "matchStart" }
   | { type: "matchEnd"; winnerId: string | null; winnerTeam: number; durationMs: number };
 
@@ -79,6 +80,7 @@ export interface GameSnapshot {
   timeLeftMs: number | null; // null se la partita non ha limite di tempo
   teamScores: Record<1 | 2, number> | null; // punti delle squadre in Bandiera, null nelle altre modalità
   events: GameEvent[]; // tutto quello che è successo dallo snapshot precedente
+  stageMs: number; // tempo dell'arena: da qui il client calcola dove sono ascensori e trappole (#14)
 }
 
 // Eventi Socket.IO tipizzati
