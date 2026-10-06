@@ -32,12 +32,13 @@ export interface PlayerState {
   respawning: boolean; // ha appena perso una vita ed è fuori gioco
   invulnerable: boolean;
   eliminated: boolean; // vite finite
+  carrier: boolean; // porta la bandiera della sua squadra (modalità "flag", #56)
 }
 
 // Regole della partita, scelte da chi crea la stanza (#17). Default in src/shared/rules.ts
 export interface MatchRules {
-  mode: "ffa" | "teams"; // tutti contro tutti, o squadre
-  stocks: number; // vite a testa
+  mode: "ffa" | "teams" | "flag"; // tutti contro tutti, squadre, o Bandiera (#56)
+  stocks: number; // vite a testa; in Bandiera i punti per vincere (le vite lì sono infinite)
   timeLimitSec: number; // 0 = senza limite di tempo
   friendlyFire: boolean; // nelle squadre, se ci si può colpire tra compagni
 }
@@ -62,6 +63,7 @@ export type GameEvent =
   | { type: "ko"; id: string; byId: string | null; x: number; y: number; stocksLeft: number } // uscito dall'arena
   | { type: "respawn"; id: string }
   | { type: "taunt"; id: string }
+  | { type: "flag"; scoringTeam: number; byId: string | null; team: number; carrierId: string | null } // portabandiera di "team" buttato fuori: punto a scoringTeam, la bandiera passa a carrierId
   | { type: "matchStart" }
   | { type: "matchEnd"; winnerId: string | null; winnerTeam: number; durationMs: number };
 
@@ -70,6 +72,7 @@ export interface GameSnapshot {
   players: PlayerState[];
   winnerId: string | null; // chi ha vinto la partita, se è finita
   timeLeftMs: number | null; // null se la partita non ha limite di tempo
+  teamScores: Record<1 | 2, number> | null; // punti delle squadre in Bandiera, null nelle altre modalità
   events: GameEvent[]; // tutto quello che è successo dallo snapshot precedente
 }
 

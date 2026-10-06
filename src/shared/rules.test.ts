@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { canHitWithRules, DEFAULT_RULES, lastStanding, leaderOnTime, RULE_LIMITS, sanitizeRules } from "./rules";
+import { canHitWithRules, DEFAULT_RULES, flagWinnerTeam, lastStanding, leaderOnTime, RULE_LIMITS, sanitizeRules } from "./rules";
 
 describe("regole della partita", () => {
   it("senza niente usa i default", () => {
@@ -54,5 +54,14 @@ describe("chi vince", () => {
     assert.equal(canHitWithRules({ ...teams, friendlyFire: true }, 1, 1), true);
     assert.equal(canHitWithRules(teams, 1, 2), true);
     assert.equal(canHitWithRules(ffa, 0, 0), true);
+  });
+  it("Bandiera: punti, compagni e punto d'oro", () => {
+    const flag = sanitizeRules({ mode: "flag", stocks: 3 });
+    assert.equal(flag.mode, "flag");
+    assert.equal(canHitWithRules(flag, 1, 1), false, "niente fuoco amico");
+    assert.equal(flagWinnerTeam(flag, { 1: 3, 2: 1 }, false), 1);
+    assert.equal(flagWinnerTeam(flag, { 1: 1, 2: 2 }, false), undefined);
+    assert.equal(flagWinnerTeam(flag, { 1: 1, 2: 2 }, true), 2);
+    assert.equal(flagWinnerTeam(flag, { 1: 2, 2: 2 }, true), undefined, "pari: si continua");
   });
 });

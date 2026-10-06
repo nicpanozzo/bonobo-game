@@ -1,6 +1,6 @@
 // Corsa, controllo in aria, salti, caduta veloce e gravità.
 
-import { FIGHTER, HITSTUN_AIR_DRAG } from "../constants";
+import { FIGHTER, FLAG, HITSTUN_AIR_DRAG } from "../constants";
 import { pressed, type Fighter, type PhysicsContext } from "./fighter";
 
 // Cosa fa il lottatore con i tasti premuti (solo se non è stordito)
@@ -11,12 +11,14 @@ export function applyControls(f: Fighter, dt: number, ctx: PhysicsContext): void
   }
 
   const dir = (f.input.right ? 1 : 0) - (f.input.left ? 1 : 0);
+  const speed = f.carrier ? FLAG.carrierSpeed : 1; // la bandiera pesa
   // Durante un attacco da terra si resta fermi, in aria si mantiene lo slancio
   if (f.onGround) {
-    f.vx = f.attack ? 0 : dir * FIGHTER.groundSpeed;
+    f.vx = f.attack ? 0 : dir * FIGHTER.groundSpeed * speed;
   } else if (dir !== 0) {
     f.vx += dir * FIGHTER.airAccel * dt;
-    f.vx = Math.max(-FIGHTER.airSpeed, Math.min(FIGHTER.airSpeed, f.vx));
+    const max = FIGHTER.airSpeed * speed;
+    f.vx = Math.max(-max, Math.min(max, f.vx));
   } else {
     const slow = FIGHTER.airFriction * dt;
     f.vx = Math.abs(f.vx) <= slow ? 0 : f.vx - Math.sign(f.vx) * slow;

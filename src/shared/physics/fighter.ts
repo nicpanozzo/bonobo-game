@@ -24,6 +24,7 @@ export interface PhysicsContext {
   stage: StageSpec;
   events: GameEvent[];
   canHit?: (attacker: Fighter, target: Fighter) => boolean; // es. niente fuoco amico (#17)
+  unlimitedStocks?: boolean; // chi esce non perde vite (es. Bandiera, #56): torna e basta
 }
 
 export const emptyInput = (): InputState => ({
@@ -68,6 +69,7 @@ export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
     respawning: false,
     invulnerable: false,
     eliminated: false,
+    carrier: false,
     input: emptyInput(),
     prevInput: emptyInput(),
     jumpsLeft: FIGHTER.maxJumps,

@@ -59,7 +59,7 @@ export function outOfBlastZone(f: Fighter, ctx: PhysicsContext): boolean {
 }
 
 export function loseStock(f: Fighter, ctx: PhysicsContext): void {
-  f.stocks -= 1;
+  if (!ctx.unlimitedStocks) f.stocks -= 1;
   ctx.events.push({
     type: "ko",
     id: f.id,

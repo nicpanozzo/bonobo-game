@@ -4,7 +4,7 @@ import type { AudioBus } from "./engine";
 // Per sostituirne uno con un suono registrato da noi, metti il file in public/assets/sfx/
 // e aggiungi una riga in SAMPLE_FILES: il file vince sulla sintesi.
 
-export type SoundName = "light" | "heavy" | "hitLight" | "hitHeavy" | "jump" | "doubleJump" | "land" | "ko" | "taunt" | "start" | "victory";
+export type SoundName = "light" | "heavy" | "hitLight" | "hitHeavy" | "jump" | "doubleJump" | "land" | "ko" | "taunt" | "start" | "victory" | "point";
 
 // TODO community: suoni registrati da noi (#6), es. light: "assets/sfx/pugno.ogg"
 export const SAMPLE_FILES: Partial<Record<SoundName, string>> = {};
@@ -119,6 +119,10 @@ const RECIPES: Record<SoundName, Recipe> = {
   },
   start: (c, o, t) => {
     [392, 523, 659, 784].forEach((f, i) => tone(c, o, t + i * 0.09, "square", f, f, 0.14, 0.13));
+  },
+  // Punto in Bandiera: due note che salgono, più brevi della vittoria
+  point: (c, o, t) => {
+    [659, 988].forEach((f, i) => tone(c, o, t + i * 0.1, "square", f, f, i === 1 ? 0.3 : 0.1, 0.14));
   },
   victory: (c, o, t) => {
     [523, 659, 784, 1047, 784, 1047].forEach((f, i) => tone(c, o, t + i * 0.12, "square", f, f, i === 5 ? 0.5 : 0.14, 0.14));

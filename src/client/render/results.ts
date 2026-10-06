@@ -7,6 +7,7 @@ interface Stats {
   kos: number; // avversari mandati fuori
   falls: number; // vite perse
   damage: number; // percentuale inflitta
+  flags: number; // portabandiera avversari buttati fuori (Bandiera, #56)
 }
 
 // Classifica a fine partita, calcolata dagli eventi di gioco (hit, ko)
@@ -32,13 +33,14 @@ export class Results implements RenderModule {
 
   private of(id: string): Stats {
     let s = this.stats.get(id);
-    if (!s) this.stats.set(id, (s = { kos: 0, falls: 0, damage: 0 }));
+    if (!s) this.stats.set(id, (s = { kos: 0, falls: 0, damage: 0, flags: 0 }));
     return s;
   }
 
   onEvent(e: GameEvent) {
     if (e.type === "matchStart") this.stats.clear();
     if (e.type === "hit") this.of(e.attackerId).damage += e.damage;
+    if (e.type === "flag" && e.byId) this.of(e.byId).flags += 1;
     if (e.type === "ko") {
       this.of(e.id).falls += 1;
       if (e.byId) this.of(e.byId).kos += 1;
@@ -55,8 +57,8 @@ export class Results implements RenderModule {
     this.shownFor = snap.winnerId;
     const rows = [...snap.players]
       .map((p) => ({ p, s: this.of(p.id) }))
-      .sort((a, b) => Number(b.p.id === snap.winnerId) - Number(a.p.id === snap.winnerId) || b.s.kos - a.s.kos || b.s.damage - a.s.damage)
-      .map(({ p, s }) => `${p.id === snap.winnerId ? "👑 " : ""}${p.name}   KO ${s.kos} · cadute ${s.falls} · danni ${s.damage}%`);
+      .sort((a, b) => Number(b.p.id === snap.winnerId) - Number(a.p.id === snap.winnerId) || b.s.flags - a.s.flags || b.s.kos - a.s.kos || b.s.damage - a.s.damage)
+      .map(({ p, s }) => `${p.id === snap.winnerId ? "👑 " : ""}${p.name}   ${snap.teamScores ? `🚩 ${s.flags} · ` : ""}KO ${s.kos} · cadute ${s.falls} · danni ${s.damage}%`);
     this.panel.setText([...rows, "", "R: rivincita subito"].join("\n")).setVisible(true);
   }
 }

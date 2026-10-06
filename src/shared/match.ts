@@ -5,7 +5,7 @@
 import { getCharacter } from "./characters";
 import { COLORS, MATCH_RESTART_MS, MAX_PLAYERS_PER_ROOM, TEAM_COLORS } from "./constants";
 import { createFighter, resetForMatch, stepWorld, type Fighter, type PhysicsContext } from "./physics";
-import { canHitWithRules, lastStanding, leaderOnTime, sanitizeRules } from "./rules";
+import { canHitWithRules, flagWinnerTeam, isTeamMode, lastStanding, leaderOnTime, sanitizeRules } from "./rules";
 import { getStage, type StageSpec } from "./stages";
 import type { GameEvent, GameSnapshot, InputState, MatchRules, PlayerState } from "./types";
 
@@ -25,12 +25,18 @@ export class Match {
   private restartTimer = 0;
   private matchTimeMs = 0;
   private ctx: PhysicsContext;
+  private scores: Record<1 | 2, number> = { 1: 0, 2: 0 }; // solo in Bandiera
 
   constructor(options: MatchOptions = {}) {
     this.stage = getStage(options.stageId);
     this.rules = sanitizeRules(options.rules);
     const rules = this.rules;
-    this.ctx = { stage: this.stage, events: [], canHit: (a, t) => canHitWithRules(rules, a.team, t.team) };
+    this.ctx = {
+      stage: this.stage,
+      events: [],
+      canHit: (a, t) => canHitWithRules(rules, a.team, t.team),
+      unlimitedStocks: rules.mode === "flag",
+    };
   }
 
   get size() {
@@ -47,7 +53,7 @@ export class Match {
 
   addPlayer(id: string, name: string, characterId?: string) {
     const index = this.freeIndex();
-    const team = this.rules.mode === "teams" ? this.smallerTeam() : 0;
+    const team = isTeamMode(this.rules) ? this.smallerTeam() : 0;
     const fighter = createFighter(
       {
         id,
@@ -62,11 +68,13 @@ export class Match {
     );
     this.slots.set(id, index);
     this.fighters.set(id, fighter);
+    this.assignFlags();
   }
 
   removePlayer(id: string) {
     this.fighters.delete(id);
     this.slots.delete(id);
+    this.assignFlags(); // se se ne va il portabandiera, la bandiera passa a un compagno
   }
 
   // I dati arrivano dalla rete: si tengono solo booleani
@@ -93,6 +101,7 @@ export class Match {
   step(dtMs: number): GameEvent[] {
     const list = this.players as Fighter[];
     stepWorld(list, dtMs, this.ctx);
+    if (this.rules.mode === "flag" && !this.winnerId) this.scoreFlags();
     this.updateMatch(list, dtMs);
     const events = this.ctx.events;
     this.ctx.events = [];
@@ -122,9 +131,11 @@ export class Match {
         respawning: f.respawning,
         invulnerable: f.invulnerable,
         eliminated: f.eliminated,
+        carrier: f.carrier,
       });
     }
-    return { t, players, winnerId: this.winnerId, timeLeftMs: this.timeLeftMs(), events };
+    const teamScores = this.rules.mode === "flag" ? { ...this.scores } : null;
+    return { t, players, winnerId: this.winnerId, timeLeftMs: this.timeLeftMs(), teamScores, events };
   }
 
   // Si entra nella squadra con meno giocatori (a parità, la Rossa)
@@ -149,6 +160,37 @@ export class Match {
     return 0;
   }
 
+  // Bandiera (#56): ogni squadra con almeno un giocatore ha un portabandiera
+  private assignFlags(except?: Fighter) {
+    if (this.rules.mode !== "flag") return;
+    for (const team of [1, 2]) {
+      const members = this.teamBySlot(team);
+      if (members.length === 0 || members.some((f) => f.carrier)) continue;
+      // Il prossimo dopo chi l'ha appena persa, così la portano tutti a turno
+      const from = except ? members.indexOf(except) : -1;
+      members[(from + 1) % members.length].carrier = true;
+    }
+  }
+
+  private teamBySlot(team: number): Fighter[] {
+    return this.players.filter((f) => f.team === team).sort((a, b) => (this.slots.get(a.id) ?? 0) - (this.slots.get(b.id) ?? 0));
+  }
+
+  // Un portabandiera buttato fuori dà un punto all'altra squadra e passa la bandiera
+  private scoreFlags() {
+    for (const e of [...this.ctx.events]) {
+      if (e.type !== "ko") continue;
+      const f = this.fighters.get(e.id);
+      if (!f?.carrier) continue;
+      const scoringTeam = f.team === 1 ? 2 : 1;
+      this.scores[scoringTeam] += 1;
+      f.carrier = false;
+      this.assignFlags(f);
+      const next = this.teamBySlot(f.team).find((m) => m.carrier);
+      this.ctx.events.push({ type: "flag", scoringTeam, byId: e.byId, team: f.team, carrierId: next?.id ?? null });
+    }
+  }
+
   // Vince l'ultimo (o l'ultima squadra) con vite rimaste, o chi è avanti allo scadere del tempo.
   // Dopo una pausa, o se qualcuno chiede la rivincita, si ricomincia.
   private updateMatch(list: Fighter[], dt: number) {
@@ -159,7 +201,7 @@ export class Match {
     }
     if (list.length >= 2) this.matchTimeMs += dt; // il tempo corre solo quando c'è qualcuno contro cui giocare
     const timeUp = this.rules.timeLimitSec > 0 && this.matchTimeMs >= this.rules.timeLimitSec * 1000;
-    const winner = lastStanding(this.rules, list) ?? (timeUp ? leaderOnTime(this.rules, list) : undefined);
+    const winner = this.rules.mode === "flag" ? this.flagWinner(timeUp) : (lastStanding(this.rules, list) ?? (timeUp ? leaderOnTime(this.rules, list) : undefined));
     if (winner) {
       this.winnerId = winner.id;
       this.restartTimer = MATCH_RESTART_MS;
@@ -169,10 +211,19 @@ export class Match {
     }
   }
 
+  private flagWinner(timeUp: boolean): Fighter | undefined {
+    const team = flagWinnerTeam(this.rules, this.scores, timeUp);
+    if (!team) return undefined;
+    const members = this.teamBySlot(team);
+    return members.find((f) => f.carrier) ?? members[0];
+  }
+
   private restartMatch() {
     this.winnerId = null;
     this.matchTimeMs = 0;
+    this.scores = { 1: 0, 2: 0 };
     for (const f of this.fighters.values()) resetForMatch(f, this.slots.get(f.id) ?? 0, this.rules.stocks, this.stage);
+    this.assignFlags(); // si riparte dal primo di ogni squadra
     this.ctx.events.push({ type: "matchStart" });
   }
 
