@@ -18,6 +18,15 @@ export interface RoomHooks {
   onMatchEnd?: (room: Room, result: MatchEndEvent, fighters: readonly Fighter[]) => void;
 }
 
+// Più estensioni sulla stessa stanza (bot e Discord): ogni gancio le chiama tutte, in ordine
+export function combineHooks(...list: RoomHooks[]): RoomHooks {
+  return {
+    onTick: (room, fighters) => list.forEach((h) => h.onTick?.(room, fighters)),
+    onEvents: (room, events) => list.forEach((h) => h.onEvents?.(room, events)),
+    onMatchEnd: (room, result, fighters) => list.forEach((h) => h.onMatchEnd?.(room, result, fighters)),
+  };
+}
+
 const TICK_MS = 1000 / TICK_RATE;
 const TICKS_PER_SNAPSHOT = Math.round(TICK_RATE / SEND_RATE);
 
