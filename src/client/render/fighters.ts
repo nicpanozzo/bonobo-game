@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { CHARACTERS, getCharacter, type AnimationName } from "../../shared/characters";
 import { ATTACKS, FIGHTER, WORLD } from "../../shared/constants";
 import type { GameSnapshot, PlayerState } from "../../shared/types";
+import { SnapshotBuffer } from "../interpolation";
 import type { MatchInfo, RenderModule } from "./module";
 
 // Come appare un giocatore sullo schermo: lo sprite del suo personaggio,
@@ -26,6 +27,7 @@ export function preloadCharacters(scene: Phaser.Scene) {
 export class FighterViews implements RenderModule {
   private views = new Map<string, FighterView>();
   private myId = "";
+  private buffer = new SnapshotBuffer<PlayerState>();
 
   constructor(private scene: Phaser.Scene) {
     // Un'animazione per riga dello spritesheet, con chiave "<personaggio>-<animazione>"
@@ -56,6 +58,7 @@ export class FighterViews implements RenderModule {
   }
 
   onSnapshot(snap: GameSnapshot) {
+    this.buffer.push(snap.t, performance.now(), new Map(snap.players.map((p) => [p.id, p])));
     const seen = new Set<string>();
     for (const p of snap.players) {
       seen.add(p.id);
@@ -77,21 +80,13 @@ export class FighterViews implements RenderModule {
     }
   }
 
-  update(_time: number, delta: number) {
-    // Interpolazione: ci avviciniamo dolcemente all'ultimo stato del server
-    const k = Math.min(1, delta / 50);
-    for (const v of this.views.values()) {
-      const t = v.target;
-      const tx = t.x;
-      const ty = t.y - FIGHTER.height / 2;
-      // Dopo un respawn si salta direttamente alla nuova posizione
-      if (Math.abs(tx - v.body.x) > 300 || Math.abs(ty - v.body.y) > 300) {
-        v.body.setPosition(tx, ty);
-      } else {
-        v.body.x += (tx - v.body.x) * k;
-        v.body.y += (ty - v.body.y) * k;
-      }
-      this.layout(v);
+  update() {
+    const now = performance.now();
+    for (const [id, v] of this.views) {
+      // Stato di un attimo fa con la posizione interpolata (vedi interpolation.ts); y sono i piedi
+      const p = this.buffer.sample(id, now) ?? v.target;
+      v.body.setPosition(p.x, p.y - FIGHTER.height / 2);
+      this.layout(v, p);
     }
   }
 
@@ -112,8 +107,7 @@ export class FighterViews implements RenderModule {
     return { body, fist, label, marker, sprite, target: p };
   }
 
-  private layout(v: FighterView) {
-    const t = v.target;
+  private layout(v: FighterView, t: PlayerState) {
     const hidden = t.respawning || t.eliminated;
     const top = v.body.y - FIGHTER.height / 2;
     const alpha = t.invulnerable ? 0.4 + 0.3 * Math.sin(this.scene.time.now / 60) : 1;

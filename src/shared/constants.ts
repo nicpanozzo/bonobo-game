@@ -105,3 +105,11 @@ export const AUDIO = {
   musicBpm: 132, // velocità della musica sintetizzata, battiti al minuto
   hitLoudPercent: 120, // da questa percentuale in su i colpi suonano al massimo
 };
+
+// Rete lato client: si disegna il passato di qualche ms e si interpola tra due snapshot,
+// così il movimento resta fluido anche se i pacchetti arrivano a scatti
+export const NET = {
+  interpolationDelayMs: 80, // circa due snapshot e mezzo a 30/s
+  teleportDistance: 300, // pixel: oltre questo salto (es. respawn) non si interpola
+  bufferSize: 30, // snapshot tenuti in memoria (1 secondo)
+};
