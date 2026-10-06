@@ -40,3 +40,11 @@ func test_argomenti_per_ripartire() -> void:
 
 func test_versione_del_motore() -> void:
 	runner.check(Engine.get_version_info().string.begins_with(Updater.engine_version()), Updater.engine_version())
+
+
+func test_avviso_app_nuova() -> void:
+	var n := Updater.new_app_notice()
+	var buttons := n.find_children("*", "Button", true, false)
+	runner.check(buttons.size() == 2, "scarica e chiudi: %d bottoni" % buttons.size())
+	runner.check(n.find_children("*", "Timer", true, false).size() == 1, "sparisce da solo")
+	n.free()
