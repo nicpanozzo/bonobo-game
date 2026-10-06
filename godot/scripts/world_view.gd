@@ -24,14 +24,25 @@ var _anims := {} # id giocatore -> { name, since }: animazione in corso e da qua
 
 func setup(game_data: Dictionary) -> void:
 	game = game_data
-	buffer.delay_ms = game.net.interpolationDelayMs
-	buffer.teleport_distance = game.net.teleportDistance
-	buffer.size = int(game.net.bufferSize)
-	set_stage(game.defaultStageId)
+	reset()
 	for id in game.characters:
 		var c: Dictionary = game.characters[id]
 		if c.get("sprite") != null:
 			_textures[id] = load("res://data/" + c.sprite.path)
+
+
+# Si torna alla lobby: via i giocatori della stanza di prima
+func reset() -> void:
+	buffer = SnapshotBuffer.new()
+	buffer.delay_ms = game.net.interpolationDelayMs
+	buffer.teleport_distance = game.net.teleportDistance
+	buffer.size = int(game.net.bufferSize)
+	player_ids = []
+	positions = {}
+	_anims = {}
+	_sparks = []
+	my_id = ""
+	set_stage(game.defaultStageId)
 
 
 func set_stage(stage_id: String) -> void:

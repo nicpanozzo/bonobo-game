@@ -1,26 +1,21 @@
 # Client Godot di Bonobo Game. Come il client web, non decide niente: manda solo i tasti
 # premuti (InputState) al server Node e disegna gli snapshot che riceve.
 # Server, stanza e nome arrivano dall'indirizzo (?server=...&room=...&name=...) nella versione web,
-# o dalla riga di comando (-- --server=... --room=... --name=...) su desktop; altrimenti dalla lobby.
+# o dalla riga di comando (-- --server=... --room=... --name=...) su desktop; altrimenti dalla lobby,
+# che parte dall'ultima scelta salvata. ?bot=manichino aggiunge un avversario del server (#20).
 extends Node2D
 
 const DEFAULT_SERVER := "http://localhost:3000" # npm run dev
 const RECONNECT_MS := 1500 # attesa prima di riprovare a collegarsi
-
-# I tasti di default del gioco web (src/client/settings.ts)
-const BINDINGS := {
-	"left": [KEY_A, KEY_LEFT],
-	"right": [KEY_D, KEY_RIGHT],
-	"up": [KEY_W, KEY_UP, KEY_SPACE],
-	"down": [KEY_S, KEY_DOWN],
-	"light": [KEY_J],
-	"heavy": [KEY_K],
-	"taunt": [KEY_T],
-}
+const PAGES_URL := "https://nicpanozzo.github.io/bonobo-game/godot/" # dove sta la versione web (pages.yml)
 
 var game: Dictionary
+var settings: Settings
 var socket := SocketIO.new()
 var params := {}
+var url_params := {} # solo quelli dell'indirizzo o della riga di comando
+var ui_layer := CanvasLayer.new()
+var pause_menu: Control
 var world: Node2D
 var camera := Camera2D.new()
 var audio: Node2D
@@ -33,7 +28,13 @@ var _retry_at := -1
 
 func _ready() -> void:
 	game = JSON.parse_string(FileAccess.get_file_as_string("res://data/game.json"))
-	params = _read_params()
+	settings = Settings.new(game.audio)
+	url_params = _read_params()
+	# Si riparte dall'ultima scelta; l'indirizzo vince
+	params = settings.profile.duplicate()
+	params.merge(url_params, true)
+	if not params.has("server"):
+		params.server = DEFAULT_SERVER
 	world = preload("res://scripts/world_view.gd").new()
 	world.setup(game)
 	add_child(world)
@@ -42,6 +43,8 @@ func _ready() -> void:
 	audio = preload("res://scripts/audio.gd").new()
 	add_child(audio)
 	audio.setup(game)
+	settings.changed.connect(_apply_volumes)
+	_apply_volumes()
 
 	var layer := CanvasLayer.new()
 	add_child(layer)
@@ -50,25 +53,81 @@ func _ready() -> void:
 	hud.set_anchors_preset(Control.PRESET_FULL_RECT)
 	hud.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(hud)
-	lobby = preload("res://scripts/lobby.gd").new()
-	layer.add_child(lobby)
-	lobby.setup(game, params)
-	lobby.join_requested.connect(_join)
+	ui_layer.layer = 2 # menu sopra l'HUD
+	add_child(ui_layer)
+	_show_lobby()
 
 	socket.connected.connect(_on_connected)
 	socket.disconnected.connect(_on_disconnected)
 	socket.event_received.connect(_on_event)
 
 	# Con stanza e nome nell'indirizzo si entra subito, come nel gioco web
-	if params.has("room") and params.has("name"):
+	if url_params.has("room") and url_params.has("name"):
 		_join(params)
+
+
+func _show_lobby() -> void:
+	lobby = preload("res://scripts/lobby.gd").new()
+	lobby.theme = UI.theme()
+	ui_layer.add_child(lobby)
+	lobby.setup(game, params, room_link)
+	lobby.join_requested.connect(_join)
+	lobby.options_requested.connect(func():
+		var options := preload("res://scripts/options.gd").new()
+		options.theme = UI.theme()
+		ui_layer.add_child(options)
+		options.setup(settings))
 
 
 func _join(choice: Dictionary) -> void:
 	params.merge(choice, true)
-	lobby.hide()
+	if params.server == "":
+		params.server = DEFAULT_SERVER
+	settings.profile = {"name": params.name, "room": params.room, "char": params.get("char", ""), "stage": params.get("stage", ""), "rules": params.get("rules", {}), "server": params.server}
+	settings.save()
+	_set_url(params.room)
+	if is_instance_valid(lobby):
+		lobby.queue_free()
 	playing = true
 	_connect()
+
+
+# Esce dalla stanza e torna alla lobby (dal menu di pausa)
+func _leave() -> void:
+	playing = false
+	_retry_at = -1
+	socket.close()
+	world.reset()
+	hud.reset()
+	camera.position = Vector2.ZERO
+	_show_lobby()
+
+
+func _apply_volumes() -> void:
+	audio.set_volumes(settings.master, settings.sfx, settings.music, settings.music_on)
+
+
+# Il link da mandare agli amici porta la stanza (e il server, se la pagina non sta sul server)
+func room_link(room: String) -> String:
+	var base := PAGES_URL
+	var same_origin := false
+	if OS.has_feature("web"):
+		base = str(JavaScriptBridge.eval("window.location.origin + window.location.pathname", true))
+		same_origin = str(JavaScriptBridge.eval("window.location.origin", true)) == params.server
+	var link := base + "?room=" + room.uri_encode()
+	if not same_origin:
+		link += "&server=" + str(params.server).uri_encode()
+	return link
+
+
+# Nella versione web la stanza va nell'indirizzo, così ricaricare la pagina riporta lì
+func _set_url(room: String) -> void:
+	if not OS.has_feature("web"):
+		return
+	var query := "?room=" + room.uri_encode()
+	if url_params.has("server"):
+		query += "&server=" + str(url_params.server).uri_encode()
+	JavaScriptBridge.eval("history.replaceState(null, '', %s)" % JSON.stringify(query), true)
 
 
 func _connect() -> void:
@@ -85,12 +144,18 @@ func _on_connected() -> void:
 	if params.get("stage", "") != "":
 		data.stageId = params.stage # conta solo se la stanza è nuova
 	if params.get("char", "") != "":
-		data.characterId = params.char # per ora si disegna comunque un rettangolo
+		data.characterId = params.char
+	if params.get("rules") is Dictionary and not params.rules.is_empty():
+		data.rules = params.rules # contano solo se la stanza è nuova
+	if params.get("bot", "") != "":
+		data.bot = params.bot
 	socket.emit("join", data)
 	_last_input = ""
 
 
 func _on_disconnected() -> void:
+	if not playing:
+		return
 	hud.set_status("Connessione persa, riprovo...")
 	_retry_at = Time.get_ticks_msec() + RECONNECT_MS
 
@@ -105,7 +170,7 @@ func _on_event(name: String, data: Variant) -> void:
 				world.set_stage_spec(data.stage)
 			else:
 				world.set_stage(data.stageId)
-			hud.rules = data.rules
+			hud.on_welcome(data, world.stage)
 			camera.limit_left = 0
 			camera.limit_right = int(world.stage_width())
 			camera.position = Vector2.ZERO
@@ -151,18 +216,26 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		socket.emit("rematch") # il server lo accetta solo a partita finita
 	elif key.keycode == KEY_M:
 		# M accende e spegne la musica, come nel gioco web
-		audio.set_volumes(game.audio.master, game.audio.sfx, game.audio.music, not audio.music_on())
+		settings.music_on = not settings.music_on
+		settings.save()
+	elif key.keycode == KEY_ESCAPE and not is_instance_valid(pause_menu):
+		_open_pause()
+
+
+# Esc: il menu spegne i tasti di chi lo apre, ma la partita online va avanti
+func _open_pause() -> void:
+	pause_menu = preload("res://scripts/pause_menu.gd").new()
+	pause_menu.theme = UI.theme()
+	ui_layer.add_child(pause_menu)
+	pause_menu.setup(settings, room_link(params.room))
+	pause_menu.left.connect(_leave)
 
 
 func _send_input() -> void:
 	var input := {}
-	var focused := get_viewport().gui_get_focus_owner() != null
-	for action in BINDINGS:
-		var on := false
-		if not focused:
-			for k in BINDINGS[action]:
-				on = on or Input.is_physical_key_pressed(k)
-		input[action] = on
+	var off := get_viewport().gui_get_focus_owner() != null or is_instance_valid(pause_menu)
+	for action in Settings.ACTIONS:
+		input[action] = not off and settings.is_pressed(action)
 	# Come il client web: si manda l'input solo quando cambia
 	var key := JSON.stringify(input)
 	if key != _last_input and socket.is_joined():
@@ -186,6 +259,4 @@ func _read_params() -> Dictionary:
 			var kv := arg.trim_prefix("--").split("=", true, 1)
 			if kv.size() == 2:
 				out[kv[0]] = kv[1]
-	if not out.has("server"):
-		out.server = DEFAULT_SERVER
 	return out
