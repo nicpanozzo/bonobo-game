@@ -1,0 +1,93 @@
+# Anteprima giocabile di ogni PR (#19 passo 2): il client Godot della PR esportato per il web
+# e pubblicato sul sito in /pr/<numero>/, con il link in un commento della PR.
+# Le anteprime stanno nel branch "anteprime" (un solo commit, riscritto ogni volta) e le pubblica pages.yml.
+# Si salva solo il pacchetto del gioco: il motore (index.wasm) è lo stesso per tutti e lo copia pages.yml.
+name: Anteprime
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+    paths:
+      - 'godot/**'
+      - '.github/workflows/anteprima.yml'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+# Una sola alla volta: tutte riscrivono lo stesso branch
+concurrency:
+  group: anteprime
+  cancel-in-progress: false
+
+env:
+  GODOT_VERSION: 4.5.1
+  PR: ${{ github.event.pull_request.number }}
+
+jobs:
+  anteprima:
+    # Le PR dai fork non hanno il permesso di scrivere: per loro niente anteprima
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        if: github.event.action != 'closed'
+      - id: cache-godot
+        if: github.event.action != 'closed'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/godot
+            ~/.local/share/godot/export_templates
+          key: godot-${{ env.GODOT_VERSION }}-web
+      - if: github.event.action != 'closed' && steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          BASE=https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable
+          mkdir -p ~/godot ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+          curl -sSL -o /tmp/godot.zip $BASE/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip
+          unzip -oq /tmp/godot.zip -d ~/godot
+          mv ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 ~/godot/godot
+          curl -sSL -o /tmp/templates.tpz $BASE/Godot_v${GODOT_VERSION}-stable_export_templates.tpz
+          unzip -joq /tmp/templates.tpz 'templates/web_nothreads_release.zip' 'templates/version.txt' -d ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+      - name: Esporta il client della PR
+        if: github.event.action != 'closed'
+        run: |
+          mkdir -p /tmp/web
+          ~/godot/godot --headless --path godot --import
+          ~/godot/godot --headless --path godot --export-release Web /tmp/web/index.html
+          test -f /tmp/web/index.pck
+          rm /tmp/web/index.wasm
+      - name: Aggiorna il branch delle anteprime
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          URL="https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
+          if git clone -q --depth 1 --branch anteprime "$URL" /tmp/anteprime 2>/dev/null; then :; else
+            mkdir -p /tmp/anteprime && cd /tmp/anteprime && git init -q -b anteprime && git remote add origin "$URL"
+          fi
+          cd /tmp/anteprime
+          rm -rf "pr/$PR"
+          if [ "${{ github.event.action }}" != "closed" ]; then mkdir -p "pr/$PR" && cp -r /tmp/web/. "pr/$PR/"; fi
+          # Un commit solo, riscritto: il branch non cresce a ogni push
+          git checkout -q --orphan nuovo && git add -A
+          git commit -q --allow-empty -m "Anteprime delle PR aperte"
+          git push -q -f origin nuovo:anteprime
+      - name: Link nella PR
+        if: github.event.action != 'closed'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          LINK="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/pr/$PR/"
+          BODY="<!-- anteprima -->
+          **Prova questa PR nel browser:** $LINK
+
+          Serve un server acceso: apri il link con \`?server=<indirizzo>\` (per esempio quello di \`npm run host\`), oppure \`?server=http://localhost:3000\` con \`npm run dev\` sul tuo computer. Si aggiorna a ogni push, un paio di minuti dopo questo commento.
+
+          _Commit ${HEAD_SHA::7}, aggiornato da .github/workflows/anteprima.yml_"
+          ID=$(gh api "repos/${{ github.repository }}/issues/$PR/comments" --paginate --jq '.[] | select(.body | startswith("<!-- anteprima -->")) | .id' | head -1)
+          if [ -n "$ID" ]; then
+            gh api -X PATCH "repos/${{ github.repository }}/issues/comments/$ID" -f body="$BODY" > /dev/null
+          else
+            gh api "repos/${{ github.repository }}/issues/$PR/comments" -f body="$BODY" > /dev/null
+          fi
