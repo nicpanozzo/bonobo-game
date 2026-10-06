@@ -19,6 +19,9 @@ var _flash := 0.0 # ms di lampo bianco rimasti
 var _dust: Array = [] # [{ x, y, dx, age }] sbuffi di polvere
 var _trails := {} # id -> Array[Vector2] delle ultime posizioni, per la scia di chi vola
 var _beams: Array = [] # [{ x, y, age, color }] raggi dei KO, dal punto di uscita verso il centro
+var _items: Array = [] # oggetti dell'ultimo snapshot (#17)
+var _item_pos := {} # id oggetto -> Vector2 disegnata, che insegue quella dello snapshot
+var _facings := {} # id giocatore -> verso, per mettere in mano gli oggetti
 var _font: Font = ThemeDB.fallback_font
 var view_rect := Rect2(0, 0, 1280, 720) # la parte di mondo che si vede, decisa dalla telecamera in main.gd
 var _textures := {} # id personaggio -> Texture2D dello spritesheet
@@ -45,6 +48,8 @@ func reset() -> void:
 	_anims = {}
 	_sparks = []
 	_beams = []
+	_items = []
+	_item_pos = {}
 	_dust = []
 	_trails = {}
 	_flash = 0.0
@@ -81,6 +86,7 @@ func stage_width() -> float:
 func on_snapshot(snap: Dictionary) -> void:
 	buffer.push(snap.t, Time.get_ticks_msec(), snap.players, float(snap.get("stageMs", 0)))
 	player_ids = snap.players.map(func(p): return p.id)
+	_items = snap.get("items", [])
 
 
 func on_event(e: Dictionary) -> void:
@@ -165,11 +171,13 @@ func _draw() -> void:
 		var p: Variant = _sampled.get(id)
 		if p != null:
 			positions[id] = Vector2(p.x, p.y)
+			_facings[id] = p.facing
 			if not p.eliminated:
 				_alive.append(id)
 				_draw_trail(id, p)
 				_draw_fighter(p, now)
 
+	_draw_items(now)
 	_draw_offscreen_markers()
 
 	for d in _dust:
@@ -209,6 +217,44 @@ func _draw_beam(b: Dictionary) -> void:
 		c.a = alpha * (0.75 if layer[0] == 1.0 else 0.9)
 		var end := from + dir * reach
 		draw_colored_polygon(PackedVector2Array([from - side * half * 0.08, end - side * half, end + side * half, from + side * half * 0.08]), c)
+
+
+# Oggetti (#17): in mano seguono il lottatore disegnato (che è interpolato), gli altri
+# inseguono la posizione dello snapshot; in volo girano su se stessi
+func _draw_items(now: int) -> void:
+	var seen := {}
+	for it in _items:
+		var target := Vector2(it.x, it.y)
+		var holder: Variant = it.heldBy
+		if holder != null and positions.has(holder):
+			var rules: Dictionary = game.itemRules
+			target = positions[holder] + Vector2(_facings.get(holder, 1) * rules.holdOffsetX, -rules.holdOffsetY)
+		var pos: Vector2 = _item_pos.get(it.id, target)
+		pos = target if holder != null or pos.distance_to(target) > 200 else pos.lerp(target, 0.5)
+		_item_pos[it.id] = pos
+		seen[it.id] = true
+		var spin := now / 1000.0 * 14.0 if it.thrown else 0.0
+		_draw_item(it.kind, pos, spin)
+	for id in _item_pos.keys():
+		if not seen.has(id):
+			_item_pos.erase(id)
+
+
+# La banana è una mezzaluna gialla con le punte scure; gli altri oggetti, finché non hanno
+# un disegno, sono un rettangolo del loro colore
+func _draw_item(kind: String, base: Vector2, spin: float) -> void:
+	var spec: Dictionary = game.items.get(kind, {"width": 24, "height": 16, "color": 0xffffff})
+	var w: float = spec.width
+	var h: float = spec.height
+	var center := base - Vector2(0, h / 2)
+	draw_set_transform(center, spin, Vector2.ONE)
+	if kind == "banana":
+		draw_arc(Vector2(0, -h * 0.9), h * 1.25, PI * 0.2, PI * 0.8, 12, _color(spec.color), h * 0.55)
+		draw_circle(Vector2(-w * 0.42, -h * 0.25), 2.5, Color("5a3a1a"))
+		draw_circle(Vector2(w * 0.42, -h * 0.25), 2.5, Color("5a3a1a"))
+	else:
+		draw_rect(Rect2(-w / 2, -h / 2, w, h), _color(spec.color))
+	draw_set_transform(Vector2.ZERO)
 
 
 # Chi vola veloce (lanciato lontano) lascia dietro di sé delle sagome che sbiadiscono

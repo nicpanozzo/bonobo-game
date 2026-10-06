@@ -238,3 +238,21 @@ export const LEADERBOARD = {
   windowDays: 7, // la pagina /classifica conta le partite degli ultimi 7 giorni
   maxMatches: 2000, // partite tenute nel file, le più vecchie si buttano
 };
+
+// Oggetti (#17): cadono dal cielo, si raccolgono con J o K e si lanciano con J o K
+export const ITEM_RULES = {
+  firstSpawnMs: 6000, // il primo oggetto cade dopo un po' dall'inizio
+  spawnEveryMs: 11000, // poi uno ogni tanto
+  maxOnStage: 2, // non di più nell'arena contemporaneamente
+  dropHeight: 420, // pixel sopra la superficie da cui cade
+  pickRange: 40, // pixel orizzontali tra il centro del lottatore e l'oggetto per raccoglierlo
+  throwSpeed: 1100, // pixel/s del lancio in avanti
+  throwLift: 220, // pixel/s verso l'alto nel lancio in avanti, per un arco
+  throwUpSpeed: 1100, // pixel/s tenendo su
+  groundFriction: 2400, // pixel/s² di frenata quando un oggetto struscia a terra
+  lifeMs: 15000, // a terra senza che nessuno lo prenda sparisce dopo tanto
+  knockbackGrowth: 6, // pixel/s di lancio in più per ogni punto di percentuale del bersaglio
+  angleDeg: 38, // angolo di lancio di chi viene colpito
+  holdOffsetX: 22, // pixel davanti al centro dove si tiene l'oggetto
+  holdOffsetY: 52, // pixel sopra i piedi
+};
