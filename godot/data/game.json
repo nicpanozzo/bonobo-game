@@ -358,6 +358,150 @@
         "solidEdge": 8175466,
         "platform": 15260072
       }
+    },
+    "fabbrica": {
+      "id": "fabbrica",
+      "name": "La Fabbrica",
+      "solids": [
+        {
+          "x": 140,
+          "y": 560,
+          "width": 300,
+          "height": 90
+        },
+        {
+          "x": 840,
+          "y": 560,
+          "width": 300,
+          "height": 90
+        },
+        {
+          "x": 440,
+          "y": 640,
+          "width": 400,
+          "height": 60
+        }
+      ],
+      "platforms": [],
+      "movers": [
+        {
+          "width": 140,
+          "path": [
+            {
+              "x": 570,
+              "y": 540
+            },
+            {
+              "x": 570,
+              "y": 260
+            }
+          ],
+          "periodMs": 7000,
+          "pauseMs": 1200
+        },
+        {
+          "width": 150,
+          "path": [
+            {
+              "x": 150,
+              "y": 400
+            },
+            {
+              "x": 980,
+              "y": 400
+            }
+          ],
+          "periodMs": 9000,
+          "pauseMs": 600
+        }
+      ],
+      "hazards": [
+        {
+          "kind": "fuoco",
+          "x": 440,
+          "y": 610,
+          "width": 400,
+          "height": 30,
+          "damage": 8,
+          "knockback": 600,
+          "knockbackGrowth": 4,
+          "angleDeg": 80,
+          "periodMs": 4000,
+          "activeMs": 1500
+        },
+        {
+          "kind": "spuntoni",
+          "x": 140,
+          "y": 540,
+          "width": 60,
+          "height": 20,
+          "damage": 10,
+          "knockback": 500,
+          "knockbackGrowth": 6,
+          "angleDeg": 60
+        },
+        {
+          "kind": "spuntoni",
+          "x": 1080,
+          "y": 540,
+          "width": 60,
+          "height": 20,
+          "damage": 10,
+          "knockback": 500,
+          "knockbackGrowth": 6,
+          "angleDeg": 60
+        }
+      ],
+      "blastZone": {
+        "left": -250,
+        "right": 1530,
+        "top": -350,
+        "bottom": 920
+      },
+      "spawns": [
+        {
+          "x": 300,
+          "y": 560
+        },
+        {
+          "x": 980,
+          "y": 560
+        },
+        {
+          "x": 380,
+          "y": 560
+        },
+        {
+          "x": 900,
+          "y": 560
+        },
+        {
+          "x": 240,
+          "y": 560
+        },
+        {
+          "x": 1040,
+          "y": 560
+        },
+        {
+          "x": 340,
+          "y": 560
+        },
+        {
+          "x": 940,
+          "y": 560
+        }
+      ],
+      "respawn": {
+        "x": 640,
+        "y": 160
+      },
+      "colors": {
+        "sky": 2236447,
+        "solid": 4869975,
+        "solidEdge": 15844367,
+        "platform": 12633804
+      }
     }
   },
   "defaultCharacterId": "default",

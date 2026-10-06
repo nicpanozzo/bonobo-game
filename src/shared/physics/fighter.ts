@@ -24,6 +24,8 @@ export interface Fighter extends PlayerState {
   alreadyHit: Set<string>; // chi ha già preso questo colpo
   lastHitById: string | null; // chi l'ha colpito per ultimo: a lui va il KO
   checkpoint: number; // in Corsa (#57): indice dell'ultimo checkpoint toccato, da lì si riparte
+  riding: number; // indice della piattaforma mobile su cui si sta (#14), -1 se nessuna
+  hazardTimer: number; // ms prima di poter prendere un'altra trappola (#14)
 }
 
 // Quello che serve alla fisica oltre ai lottatori: l'arena e dove scrivere gli eventi
@@ -32,6 +34,7 @@ export interface PhysicsContext {
   events: GameEvent[];
   canHit?: (attacker: Fighter, target: Fighter) => boolean; // es. niente fuoco amico (#17)
   unlimitedStocks?: boolean; // chi esce non perde vite (es. Bandiera, #56): torna e basta
+  timeMs?: number; // tempo dell'arena in ms: muove ascensori e trappole (#14). Lo fa avanzare stepWorld
 }
 
 export const emptyInput = (): InputState => ({
@@ -96,6 +99,8 @@ export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
     alreadyHit: new Set(),
     lastHitById: null,
     checkpoint: 0,
+    riding: -1,
+    hazardTimer: 0,
   };
 }
 
