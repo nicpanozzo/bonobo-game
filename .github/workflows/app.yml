@@ -1,0 +1,73 @@
+# Esporta il gioco Godot per Windows, Mac e Linux e lo pubblica come Release su GitHub,
+# a ogni merge su main che tocca godot/. I link "latest" puntano sempre all'ultima versione:
+# https://github.com/nicpanozzo/bonobo-game/releases/latest/download/bonobo-game-windows.zip
+name: App
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'godot/**'
+      - '.github/workflows/app.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: app
+  cancel-in-progress: false
+
+env:
+  GODOT_VERSION: 4.5.1
+
+jobs:
+  pubblica:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Godot e i modelli di esportazione per desktop si scaricano una volta e restano in cache
+      - id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/godot
+            ~/.local/share/godot/export_templates
+          key: godot-${{ env.GODOT_VERSION }}-desktop
+      - if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          BASE=https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable
+          T=~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+          mkdir -p ~/godot $T
+          curl -sSL -o /tmp/godot.zip $BASE/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip
+          unzip -oq /tmp/godot.zip -d ~/godot
+          mv ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 ~/godot/godot
+          curl -sSL -o /tmp/templates.tpz $BASE/Godot_v${GODOT_VERSION}-stable_export_templates.tpz
+          unzip -joq /tmp/templates.tpz 'templates/version.txt' 'templates/windows_release_x86_64.exe' 'templates/linux_release.x86_64' 'templates/macos.zip' -d $T
+          rm /tmp/templates.tpz
+      - name: Esporta per Windows, Mac e Linux
+        run: |
+          mkdir -p godot/build/windows godot/build/macos godot/build/linux out
+          ~/godot/godot --headless --path godot --import
+          ~/godot/godot --headless --path godot --export-release Windows build/windows/bonobo-game.exe
+          ~/godot/godot --headless --path godot --export-release macOS build/macos/bonobo-game.zip
+          ~/godot/godot --headless --path godot --export-release Linux build/linux/bonobo-game.x86_64
+          (cd godot/build/windows && zip -q ../../../out/bonobo-game-windows.zip bonobo-game.exe)
+          cp godot/build/macos/bonobo-game.zip out/bonobo-game-mac.zip
+          (cd godot/build/linux && chmod +x bonobo-game.x86_64 && zip -q ../../../out/bonobo-game-linux.zip bonobo-game.x86_64)
+          ls -la out
+      - name: Pubblica la Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG=app-${{ github.run_number }}
+          cat > /tmp/note.md <<'EOF'
+          Il gioco da scaricare. Apri l'app, scrivi il nome, incolla nel campo **Server** il link della serata che gira sul Discord e premi **Gioca**.
+
+          - **Windows:** scompatta lo zip e apri `bonobo-game.exe`. Se Windows dice "PC protetto", clicca "Ulteriori informazioni" e poi "Esegui comunque".
+          - **Mac:** scompatta lo zip e apri **Bonobo Game**. La prima volta il Mac la blocca perché non è firmata da Apple: vai in Impostazioni di Sistema → Privacy e sicurezza → "Apri comunque" (sui Mac più vecchi basta tasto destro → Apri). Se dice che è danneggiata, nel Terminale: `xattr -cr ~/Downloads/"Bonobo Game.app"`.
+          - **Linux:** scompatta lo zip e apri `bonobo-game.x86_64`.
+
+          Senza installare niente si gioca anche dal browser: https://nicpanozzo.github.io/bonobo-game/godot/
+          EOF
+          gh release create "$TAG" out/*.zip --target "$GITHUB_SHA" --title "Bonobo Game ($TAG)" --notes-file /tmp/note.md --latest
