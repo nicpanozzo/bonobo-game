@@ -38,7 +38,27 @@ export function formatResult(result: MatchEndEvent, players: readonly Player[], 
       if (s.selfDestructs) parts.push(`${s.selfDestructs} da solo`);
       return `${p.id === result.winnerId ? "👑" : "•"} ${p.name}: ${parts.join(", ")}`;
     });
-  return [`${head} (${time})`, ...lines].join("\n");
+  const titles = funTitles(players, stats);
+  return [`${head} (${time})`, ...lines, ...(titles.length ? [`🏅 ${titles.join(" · ")}`] : [])].join("\n");
+}
+
+// TODO community: nomi e titoli nostri, magari dai tormentoni del canale
+const TITLES: { name: string; score: (s: PlayerStats) => number; min: number }[] = [
+  { name: "Kamikaze", score: (s) => s.selfDestructs, min: 1 }, // più cadute da solo
+  { name: "Martello", score: (s) => s.damageDealt, min: 1 }, // più danni inflitti
+  { name: "Muro", score: (s) => -s.damageTaken, min: -Infinity }, // meno danni subiti
+];
+
+// I titoli della partita: vanno a uno solo, quindi niente titolo se c'è un pari merito
+export function funTitles(players: readonly Player[], stats: (id: string) => PlayerStats): string[] {
+  if (players.length < 2) return [];
+  const out: string[] = [];
+  for (const t of TITLES) {
+    const scores = players.map((p) => ({ p, v: t.score(stats(p.id)) })).sort((a, b) => b.v - a.v);
+    const [best, next] = scores;
+    if (best.v >= t.min && best.v > next.v) out.push(`${t.name}: ${best.p.name}`);
+  }
+  return out;
 }
 
 // Invio al webhook con fetch, senza librerie. Un errore di rete non deve mai fermare la partita.
