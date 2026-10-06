@@ -3,6 +3,8 @@
 # https://github.com/nicpanozzo/bonobo-game/releases/latest/download/bonobo-game-windows.zip
 # Nella stessa Release c'è il server per ospitare una serata con un doppio clic (#78):
 # https://github.com/nicpanozzo/bonobo-game/releases/latest/download/bonobo-server-windows.zip
+# E il gioco senza motore con la sua versione, per l'app che si aggiorna da sola (#115):
+# https://github.com/nicpanozzo/bonobo-game/releases/latest/download/bonobo-game-version.json
 name: App
 
 on:
@@ -144,6 +146,12 @@ jobs:
           curl -sSL -o /tmp/templates.tpz $BASE/Godot_v${GODOT_VERSION}-stable_export_templates.tpz
           unzip -joq /tmp/templates.tpz 'templates/version.txt' 'templates/windows_release_x86_64.exe' 'templates/linux_release.x86_64' 'templates/macos.zip' -d $T
           rm /tmp/templates.tpz
+      # La versione finisce dentro il gioco (#115): l'app la confronta con bonobo-game-version.json
+      # della Release per sapere se aggiornarsi. Il file si scrive solo qui, non sta nel repository.
+      - name: Scrive la versione nel gioco
+        run: |
+          printf '{"version": %s, "godot": "%s", "commit": "%s"}\n' "${{ github.run_number }}" "$GODOT_VERSION" "${GITHUB_SHA::7}" > godot/data/build.json
+          cat godot/data/build.json
       - name: Esporta per Windows, Mac e Linux
         run: |
           mkdir -p godot/build/windows godot/build/macos godot/build/linux out
@@ -155,6 +163,15 @@ jobs:
           cp godot/build/macos/bonobo-game.zip out/bonobo-game-mac.zip
           (cd godot/build/linux && chmod +x bonobo-game.x86_64 && zip -q ../../../out/bonobo-game-linux.zip bonobo-game.x86_64)
           ls -la out
+      # Il gioco senza motore (#115): l'app scarica questo pacchetto per aggiornarsi senza riscaricare tutto.
+      # Le immagini sono senza compressione per la GPU, quindi lo stesso .pck vale per Windows, Mac e Linux.
+      - name: Esporta il pacchetto del gioco e la sua versione
+        run: |
+          ~/godot/godot --headless --path godot --export-pack Linux build/bonobo-game.pck
+          cp godot/build/bonobo-game.pck out/
+          SIZE=$(stat -c %s out/bonobo-game.pck)
+          printf '{"version": %s, "godot": "%s", "size": %s}\n' "${{ github.run_number }}" "$GODOT_VERSION" "$SIZE" > out/bonobo-game-version.json
+          cat out/bonobo-game-version.json
       - uses: actions/download-artifact@v4
         with:
           pattern: bonobo-server-*
@@ -178,4 +195,4 @@ jobs:
 
           Tutto spiegato passo per passo: https://nicpanozzo.github.io/bonobo-game/#gioca
           EOF
-          gh release create "$TAG" out/*.zip --target "$GITHUB_SHA" --title "Bonobo Game ($TAG)" --notes-file /tmp/note.md --latest
+          gh release create "$TAG" out/*.zip out/bonobo-game.pck out/bonobo-game-version.json --target "$GITHUB_SHA" --title "Bonobo Game ($TAG)" --notes-file /tmp/note.md --latest
