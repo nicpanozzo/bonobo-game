@@ -3,15 +3,20 @@
 // Copia anche gli spritesheet dei personaggi in godot/data/<path>, perché Godot vede solo la sua cartella.
 // Da rilanciare quando cambiano stages.ts, characters.ts o constants.ts: npm run export:godot
 
-import { copyFileSync, mkdirSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { CHARACTERS, DEFAULT_CHARACTER_ID } from "../src/shared/characters";
-import { ATTACKS, AUDIO, CAMERA, COLORS, EFFECTS, FIGHTER, INPUT, ITEM_RULES, NET, TEAM_COLORS, TEAM_NAMES, WORLD } from "../src/shared/constants";
+import { ATTACKS, AUDIO, CAMERA, COLORS, EFFECTS, FIGHTER, INPUT, ITEM_RULES, NET, PROTOCOL_VERSION, TEAM_COLORS, TEAM_NAMES, WORLD } from "../src/shared/constants";
 import { ITEMS } from "../src/shared/items";
 import { DEFAULT_STAGE_ID, STAGES } from "../src/shared/stages";
 
+// La versione del gioco ha una fonte sola, package.json (E2, #106)
+const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")) as { version: string };
+
 const data = {
+  version: pkg.version,
+  protocol: PROTOCOL_VERSION,
   world: WORLD,
   fighter: { width: FIGHTER.width, height: FIGHTER.height },
   attacks: ATTACKS,

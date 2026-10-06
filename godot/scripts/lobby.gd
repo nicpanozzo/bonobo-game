@@ -158,6 +158,7 @@ func setup(game_data: Dictionary, params: Dictionary, link: Callable) -> void:
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	foot.add_child(spacer)
+	foot.add_child(UI.label(UI.version_text(game_data), 13, Color(UI.TEXT, 0.5)))
 	foot.add_child(UI.button("Crediti", func():
 		_back_to = get_viewport().gui_get_focus_owner()
 		credits_requested.emit()))

@@ -35,6 +35,8 @@ func setup(s: Settings, room_link: String) -> void:
 	_note = UI.label("La partita continua mentre il menu è aperto.", 13, Color(UI.TEXT, 0.7))
 	_note.autowrap_mode = TextServer.AUTOWRAP_WORD
 	box.add_child(_note)
+	var game = JSON.parse_string(FileAccess.get_file_as_string("res://data/game.json"))
+	box.add_child(UI.label(UI.version_text(game if game is Dictionary else {}), 13, Color(UI.TEXT, 0.5)))
 	UI.keep_focus(self, resume_button)
 
 

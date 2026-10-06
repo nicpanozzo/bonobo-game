@@ -47,6 +47,17 @@ static func label(text: String, size := 17, color := TEXT) -> Label:
 	return l
 
 
+# "v0.2.0 · build 28": la versione da package.json (game.json) e il numero della Release (build.json,
+# scritto da app.yml; manca nell'editor e nel web)
+static func version_text(game: Dictionary) -> String:
+	var text := "v%s" % game.get("version", "?")
+	if FileAccess.file_exists("res://data/build.json"):
+		var build = JSON.parse_string(FileAccess.get_file_as_string("res://data/build.json"))
+		if build is Dictionary and build.has("version"):
+			text += " · build %d" % int(build.version)
+	return text
+
+
 # Titoletto di sezione, maiuscolo come nel web
 static func heading(text: String) -> Label:
 	return label(text.to_upper(), 13, Color(TEXT, 0.8))
