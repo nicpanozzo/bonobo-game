@@ -1,0 +1,70 @@
+import Phaser from "phaser";
+import { STOCKS, WORLD } from "../../shared/constants";
+import type { GameSnapshot } from "../../shared/types";
+import type { MatchInfo, RenderModule } from "./module";
+
+const HUD_Y = WORLD.height - 56;
+
+// Scritte sopra il gioco: stato della connessione, riquadri con percentuale e vite, vincitore
+export class Hud implements RenderModule {
+  private status: Phaser.GameObjects.Text;
+  private banner: Phaser.GameObjects.Text;
+  private boxes = new Map<string, Phaser.GameObjects.Text>();
+  private maxStocks = STOCKS; // vite a testa nelle regole della stanza
+
+  constructor(private scene: Phaser.Scene) {
+    this.status = scene.add.text(12, 10, "Connessione...", { fontSize: "16px", color: "#ffffff" }).setDepth(20);
+    this.banner = scene.add
+      .text(WORLD.width / 2, 200, "", { fontSize: "48px", color: "#ffffff", fontStyle: "bold" })
+      .setOrigin(0.5)
+      .setDepth(20);
+  }
+
+  setStatus(text: string) {
+    this.status.setText(text);
+  }
+
+  onWelcome(info: MatchInfo) {
+    this.maxStocks = info.rules.stocks;
+    this.setStatus(`Stanza: ${info.room} · manda il link agli amici`);
+  }
+
+  onSnapshot(snap: GameSnapshot) {
+    // Un riquadro in basso per giocatore
+    const seen = new Set<string>();
+    const slot = WORLD.width / Math.max(snap.players.length, 1);
+    snap.players.forEach((p, i) => {
+      seen.add(p.id);
+      let box = this.boxes.get(p.id);
+      if (!box) {
+        box = this.scene.add
+          .text(0, HUD_Y, "", { fontSize: "20px", color: "#ffffff", align: "center", fontStyle: "bold" })
+          .setOrigin(0.5, 0)
+          .setDepth(20)
+          .setStroke(`#${p.color.toString(16).padStart(6, "0")}`, 4);
+        this.boxes.set(p.id, box);
+      }
+      box.setPosition(slot * i + slot / 2, HUD_Y);
+      const lives = "●".repeat(Math.max(0, p.stocks)) + "○".repeat(Math.max(0, this.maxStocks - p.stocks));
+      box.setText(`${p.name}\n${p.eliminated ? "OUT" : `${p.percent}%`}  ${lives}`);
+      box.setColor(percentColor(p.percent, p.eliminated));
+    });
+    for (const [id, box] of this.boxes) {
+      if (seen.has(id)) continue;
+      box.destroy();
+      this.boxes.delete(id);
+    }
+
+    const winner = snap.players.find((p) => p.id === snap.winnerId);
+    this.banner.setText(winner ? `${winner.name} vince!` : "");
+  }
+}
+
+// Bianco a 0%, poi giallo, arancione e rosso man mano che si accumula danno
+function percentColor(percent: number, eliminated: boolean): string {
+  if (eliminated) return "#777777";
+  const t = Math.min(percent / 150, 1);
+  const g = Math.round(255 * (1 - t * 0.85));
+  const b = Math.round(255 * Math.max(0, 1 - t * 2));
+  return `rgb(255,${g},${b})`;
+}
