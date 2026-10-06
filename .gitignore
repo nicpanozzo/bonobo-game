@@ -4,3 +4,4 @@ dist
 *.log
 .env
 CLAUDE.local.md
+build
