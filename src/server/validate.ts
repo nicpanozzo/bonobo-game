@@ -59,3 +59,34 @@ export function parseInput(raw: unknown): InputState | null {
     dodge: raw.dodge === true,
   };
 }
+
+// Caratteri invisibili o che girano il testo (controllo, larghezza zero, RTL, mezze emoji tagliate dal limite
+// di maxStringLength): in un nome servono solo a ingannare. Lo ZWJ si tiene solo dentro le emoji composte
+const INVISIBLE = /[\p{Cc}\p{Cf}\p{Cs}]/gu;
+const ZWJ = "\u200D";
+const LONE_ZWJ = /(?<!\p{Extended_Pictographic}\uFE0F?)\u200D|\u200D(?!\p{Extended_Pictographic})/gu;
+const graphemes = new Intl.Segmenter(undefined, { granularity: "grapheme" });
+const cut = (text: string, max: number) =>
+  Array.from(graphemes.segment(text), (s) => s.segment)
+    .slice(0, max)
+    .join("");
+
+// Nome pulito, lungo al massimo NET_LIMITS.maxNameLength caratteri veri (un'emoji non si spezza),
+// "Bonobo" se vuoto e "Nome 2", "Nome 3"... se qualcuno nella stanza si chiama già così
+export function sanitizeName(raw: string, taken: readonly string[] = []): string {
+  const max = NET_LIMITS.maxNameLength;
+  const clean = raw
+    .replace(LONE_ZWJ, "")
+    .replace(/\s+/gu, " ")
+    .replace(INVISIBLE, (c) => (c === ZWJ ? c : ""))
+    .replace(/ +/g, " ")
+    .trim();
+  const name = cut(clean, max).trim() || "Bonobo";
+  const used = new Set(taken.map((n) => n.toLowerCase()));
+  if (!used.has(name.toLowerCase())) return name;
+  for (let n = 2; ; n++) {
+    const suffix = ` ${n}`;
+    const candidate = `${cut(name, max - suffix.length).trim()}${suffix}`;
+    if (!used.has(candidate.toLowerCase())) return candidate;
+  }
+}

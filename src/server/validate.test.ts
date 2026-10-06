@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { NET_LIMITS } from "../shared/constants";
-import { parseInput, parseJoin, parseRoomCode } from "./validate";
+import { parseInput, parseJoin, parseRoomCode, sanitizeName } from "./validate";
 
 const JUNK: unknown[] = [null, undefined, 42, "ciao", true, [], [1, 2], () => 1];
 
@@ -53,5 +53,34 @@ describe("parseInput", () => {
   it("conta come premuto solo true", () => {
     const input = parseInput({ left: true, right: 1, up: "true", down: {}, light: true, extra: true });
     assert.deepEqual(input, { left: true, right: false, up: false, down: false, light: true, heavy: false, taunt: false, dodge: false });
+  });
+});
+
+describe("sanitizeName", () => {
+  const cp = (...codes: number[]) => String.fromCodePoint(...codes);
+  const length = (s: string) => [...new Intl.Segmenter().segment(s)].length;
+
+  it("toglie controllo, larghezza zero e RTL e comprime gli spazi", () => {
+    assert.equal(sanitizeName(`${cp(0x202e)}Lu${cp(0x200b)}ca${cp(0)}  \t\n Bonobo `), "Luca Bonobo");
+  });
+
+  it("taglia a 16 caratteri veri senza spezzare le emoji composte", () => {
+    const family = cp(0x1f468, 0x200d, 0x1f469, 0x200d, 0x1f467);
+    const name = sanitizeName(family.repeat(20));
+    assert.equal(length(name), NET_LIMITS.maxNameLength);
+    assert.equal(name, family.repeat(NET_LIMITS.maxNameLength));
+    // Una mezza emoji (tagliata da maxStringLength) sparisce invece di diventare un quadratino
+    assert.equal(sanitizeName(`ab${cp(0x1f412)}`.slice(0, 3)), "ab");
+  });
+
+  it("vuoto o invisibile diventa Bonobo", () => {
+    assert.equal(sanitizeName(""), "Bonobo");
+    assert.equal(sanitizeName(`${cp(0x200d)} ${cp(0x200b)}`), "Bonobo");
+  });
+
+  it("un doppione nella stanza diventa Nome 2, Nome 3...", () => {
+    assert.equal(sanitizeName("Luca", ["luca"]), "Luca 2");
+    assert.equal(sanitizeName("Luca", ["Luca", "Luca 2"]), "Luca 3");
+    assert.equal(sanitizeName("x".repeat(16), ["x".repeat(16)]), `${"x".repeat(14)} 2`);
   });
 });

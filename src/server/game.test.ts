@@ -7,34 +7,49 @@ import { Server } from "socket.io";
 import { io as connect, type Socket } from "socket.io-client";
 import { MAX_PLAYERS_PER_ROOM, NET_LIMITS } from "../shared/constants";
 import type { ClientToServer, ServerToClient } from "../shared/types";
-import { attachGame } from "./game";
+import { attachGame, type GameDeps } from "./game";
 import type { Room } from "./Room";
 
 type Client = Socket<ServerToClient, ClientToServer>;
 
-let io: Server<ClientToServer, ServerToClient>;
-let rooms: Map<string, Room>;
-let url = "";
+interface TestServer {
+  io: Server<ClientToServer, ServerToClient>;
+  rooms: Map<string, Room>;
+  url: string;
+}
+
+const servers: TestServer[] = [];
 const clients: Client[] = [];
 // Un messaggio che non arriva fa fallire la prova invece di bloccare npm test
 const LIMIT = { timeout: 5000 };
 
-before(async () => {
+async function startServer(deps: GameDeps = {}): Promise<TestServer> {
   const http = createServer();
-  io = new Server<ClientToServer, ServerToClient>(http, { maxHttpBufferSize: NET_LIMITS.maxMessageBytes });
-  rooms = attachGame(io);
+  const io = new Server<ClientToServer, ServerToClient>(http, { maxHttpBufferSize: NET_LIMITS.maxMessageBytes });
+  const rooms = attachGame(io, deps);
   await new Promise<void>((resolve) => http.listen(0, "127.0.0.1", resolve));
-  url = `http://127.0.0.1:${(http.address() as AddressInfo).port}`;
+  const server = { io, rooms, url: `http://127.0.0.1:${(http.address() as AddressInfo).port}` };
+  servers.push(server);
+  return server;
+}
+
+// Il server delle prove generali: tutti i client arrivano da 127.0.0.1, quindi niente limiti per IP
+let rooms: Map<string, Room>;
+let url = "";
+before(async () => {
+  ({ rooms, url } = await startServer({ limits: { maxConnectionsPerIp: 1000, newRoomsPerIpPerMinute: 1000 } }));
 });
 
 after(async () => {
   for (const c of clients) c.disconnect();
-  for (const r of rooms.values()) r.destroy();
-  await io.close();
+  for (const s of servers) {
+    for (const r of s.rooms.values()) r.destroy();
+    await s.io.close();
+  }
 });
 
-async function client(): Promise<Client> {
-  const c: Client = connect(url, { transports: ["websocket"], reconnection: false, forceNew: true });
+async function client(to = url): Promise<Client> {
+  const c: Client = connect(to, { transports: ["websocket"], reconnection: false, forceNew: true });
   clients.push(c);
   await new Promise<void>((resolve, reject) => {
     c.once("connect", resolve);
@@ -51,12 +66,14 @@ function join(c: Client, room: string, name = "Prova") {
   });
 }
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 // L'uscita di un client arriva al server un attimo dopo: si aspetta che lo stato cambi
 async function until(done: () => boolean, ms = 2000) {
   const end = Date.now() + ms;
   while (!done()) {
     assert.ok(Date.now() < end, "il server non ha aggiornato lo stato in tempo");
-    await new Promise((resolve) => setTimeout(resolve, 10));
+    await sleep(10);
   }
 }
 
@@ -142,4 +159,61 @@ test("l'ultimo che esce chiude la stanza", LIMIT, async () => {
   assert.ok(rooms.has("vuota"));
   b.disconnect();
   await until(() => !rooms.has("vuota"));
+});
+
+test("limite per IP: la nona connessione dallo stesso indirizzo viene chiusa", LIMIT, async () => {
+  const server = await startServer();
+  const first: Client[] = [];
+  for (let i = 0; i < NET_LIMITS.maxConnectionsPerIp; i++) first.push(await client(server.url));
+  const ninth = await client(server.url);
+  await until(() => !ninth.connected);
+  assert.ok(first.every((c) => c.connected));
+  // Quando uno esce si libera il posto
+  // (il server non dice quando ha contato l'uscita: si aspetta un attimo)
+  first[0].disconnect();
+  await sleep(50);
+  const again = await client(server.url);
+  await sleep(50);
+  assert.ok(again.connected);
+  for (const c of [...first, again]) c.disconnect();
+});
+
+test("nome con caratteri RTL, emoji e 40 caratteri esce pulito e lungo 16", LIMIT, async () => {
+  const c = await client();
+  const rtl = String.fromCodePoint(0x202e);
+  const zeroWidth = String.fromCodePoint(0x200b);
+  assert.equal(await join(c, "nomi", `${rtl}Bo${zeroWidth}nobo 🐒🐒   ${"x".repeat(40)}`), "welcome");
+  const name = rooms.get("nomi")?.match.players.find((p) => p.id === c.id)?.name;
+  assert.equal(name, "Bonobo 🐒🐒 xxxxxx");
+  assert.equal([...new Intl.Segmenter().segment(name ?? "")].length, 16);
+  // Lo stesso nome nella stessa stanza diventa "Nome 2"
+  const twin = await client();
+  assert.equal(await join(twin, "nomi", "bonobo 🐒🐒 xxxxxx"), "welcome");
+  assert.equal(rooms.get("nomi")?.match.players.find((p) => p.id === twin.id)?.name, "bonobo 🐒🐒 xxxx 2");
+  c.disconnect();
+  twin.disconnect();
+});
+
+test("stanze: oltre il limite di stanze nuove per IP il socket si chiude", LIMIT, async () => {
+  const server = await startServer({ limits: { newRoomsPerIpPerMinute: 2 } });
+  const a = await client(server.url);
+  const b = await client(server.url);
+  const c = await client(server.url);
+  assert.equal(await join(a, "uno"), "welcome");
+  assert.equal(await join(b, "due"), "welcome");
+  c.emit("join", { room: "tre", name: "C" });
+  await until(() => !c.connected);
+  assert.equal(server.rooms.has("tre"), false);
+  // In una stanza che esiste già si entra ancora
+  const d = await client(server.url);
+  assert.equal(await join(d, "uno"), "welcome");
+  for (const x of [a, b, d]) x.disconnect();
+});
+
+test("stanza senza tasti per troppo tempo: si chiude e scollega chi è dentro", LIMIT, async () => {
+  const server = await startServer({ roomIdleMs: 100 });
+  const c = await client(server.url);
+  assert.equal(await join(c, "ferma"), "welcome");
+  await until(() => !c.connected);
+  assert.equal(server.rooms.has("ferma"), false);
 });
