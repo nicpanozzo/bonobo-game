@@ -72,6 +72,62 @@ describe("partita", () => {
     }
   });
 
+  it("Bandiera: un portabandiera per squadra, punto a chi lo butta fuori, la bandiera gira", () => {
+    const m = new Match({ rules: { mode: "flag", stocks: 2 } });
+    for (const id of ["a", "b", "c", "d"]) m.addPlayer(id, id.toUpperCase());
+    const carriers = () => m.players.filter((p) => p.carrier).map((p) => p.id);
+    assert.deepEqual(carriers(), ["a", "b"], "il primo di ogni squadra");
+
+    // Un giocatore senza bandiera che cade non perde vite e non dà punti
+    const c = m.players.find((p) => p.id === "c")!;
+    c.x = m.stage.blastZone.right + 100;
+    let events = run(m, 2);
+    assert.equal(c.stocks, 2);
+    assert.equal(events.some((e) => e.type === "flag"), false);
+
+    // Il portabandiera rosso cade: punto alla Blu, la bandiera passa a "c"
+    const a = m.players.find((p) => p.id === "a")!;
+    a.x = m.stage.blastZone.right + 100;
+    events = run(m, 1);
+    const flag = events.find((e) => e.type === "flag");
+    assert.ok(flag && flag.type === "flag" && flag.scoringTeam === 2 && flag.carrierId === "c");
+    assert.deepEqual(m.snapshot([], 0).teamScores, { 1: 0, 2: 1 });
+    assert.deepEqual(carriers().sort(), ["b", "c"]);
+
+    // Secondo punto: la Blu vince
+    c.respawning = false;
+    c.x = m.stage.blastZone.right + 100;
+    events = run(m, 1);
+    const end = events.find((e) => e.type === "matchEnd");
+    assert.ok(end && end.type === "matchEnd" && end.winnerTeam === 2);
+
+    // Rivincita: punti a zero, bandiere al primo di ogni squadra
+    m.requestRematch();
+    run(m, 1);
+    assert.deepEqual(m.snapshot([], 0).teamScores, { 1: 0, 2: 0 });
+    assert.deepEqual(carriers().sort(), ["a", "b"]);
+  });
+
+  it("Bandiera: se il portabandiera esce dalla stanza la bandiera passa a un compagno", () => {
+    const m = new Match({ rules: { mode: "flag" } });
+    for (const id of ["a", "b", "c"]) m.addPlayer(id, id.toUpperCase());
+    m.removePlayer("a");
+    assert.equal(m.players.find((p) => p.id === "c")!.carrier, true);
+  });
+
+  it("Bandiera: a pari punti allo scadere si va al punto d'oro", () => {
+    const m = new Match({ rules: { mode: "flag", timeLimitSec: 1 } });
+    m.addPlayer("a", "A");
+    m.addPlayer("b", "B");
+    let events = run(m, TICK_RATE + 2);
+    assert.equal(events.some((e) => e.type === "matchEnd"), false);
+    assert.equal(m.snapshot([], 0).timeLeftMs, 0);
+    m.players.find((p) => p.id === "b")!.x = m.stage.blastZone.left - 100;
+    events = run(m, 1);
+    const end = events.find((e) => e.type === "matchEnd");
+    assert.ok(end && end.type === "matchEnd" && end.winnerId === "a");
+  });
+
   it("i dati strani dalla rete diventano booleani e i nomi si accorciano", () => {
     const m = new Match();
     m.addPlayer("a", "un nome davvero troppo lungo");

@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { CHARACTERS, getCharacter, type AnimationName } from "../../shared/characters";
-import { ATTACKS, FIGHTER, WORLD } from "../../shared/constants";
+import { ATTACKS, FIGHTER, TEAM_COLORS, WORLD } from "../../shared/constants";
 import type { GameSnapshot, PlayerState } from "../../shared/types";
 import { SnapshotBuffer } from "../interpolation";
 import type { MatchInfo, RenderModule } from "./module";
@@ -12,6 +12,7 @@ interface FighterView {
   fist: Phaser.GameObjects.Rectangle;
   label: Phaser.GameObjects.Text;
   marker: Phaser.GameObjects.Triangle; // freccia sul bordo quando si è fuori schermo
+  flag: Phaser.GameObjects.Container; // bandiera sopra la testa in modalità Bandiera (#56)
   sprite?: Phaser.GameObjects.Sprite; // solo per i personaggi con spritesheet; il rettangolo resta come riferimento
   target: PlayerState; // ultimo stato ricevuto dal server
 }
@@ -75,6 +76,7 @@ export class FighterViews implements RenderModule {
       v.fist.destroy();
       v.label.destroy();
       v.marker.destroy();
+      v.flag.destroy();
       v.sprite?.destroy();
       this.views.delete(id);
     }
@@ -97,6 +99,14 @@ export class FighterViews implements RenderModule {
     const fist = s.add.rectangle(0, 0, 10, 10, 0xffffff).setVisible(false);
     const label = s.add.text(0, 0, p.name, { fontSize: "14px", color: "#ffffff" }).setOrigin(0.5, 1);
     const marker = s.add.triangle(0, 0, 0, 0, 20, 0, 10, 16, p.color).setVisible(false);
+    // Asta e drappo nel colore della squadra. TODO community: cosa si porta al posto della bandiera? (#56)
+    const cloth = TEAM_COLORS[p.team as 1 | 2]?.[0] ?? 0xffffff;
+    const flag = s.add
+      .container(0, 0, [
+        s.add.rectangle(0, 0, 4, 40, 0xdddddd).setOrigin(0.5, 1),
+        s.add.triangle(2, -40, 0, 0, 30, 9, 0, 18, cloth).setOrigin(0, 0).setStrokeStyle(2, 0xffffff),
+      ])
+      .setVisible(false);
     const character = getCharacter(p.characterId);
     let sprite: Phaser.GameObjects.Sprite | undefined;
     if (character.sprite && s.textures.exists(character.id)) {
@@ -104,7 +114,7 @@ export class FighterViews implements RenderModule {
       sprite = s.add.sprite(p.x, p.y, character.id).setOrigin(0.5, 1);
       body.setVisible(false);
     }
-    return { body, fist, label, marker, sprite, target: p };
+    return { body, fist, label, marker, flag, sprite, target: p };
   }
 
   private layout(v: FighterView, t: PlayerState) {
@@ -139,6 +149,7 @@ export class FighterViews implements RenderModule {
     }
 
     v.label.setPosition(v.body.x, top - 6);
+    v.flag.setVisible(t.carrier && !hidden).setPosition(v.body.x, top - 24);
 
     // Freccia sul bordo dello schermo per chi è stato lanciato fuori
     const off = v.body.x < 0 || v.body.x > WORLD.width || v.body.y < 0 || v.body.y > WORLD.height;

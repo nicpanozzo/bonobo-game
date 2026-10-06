@@ -93,7 +93,8 @@ export class LobbyScene extends Phaser.Scene {
         <div class="rules">
           <select id="lobby-mode" title="Modalità">
             <option value="ffa">Tutti contro tutti</option>
-            <option value="teams">Squadre 2 contro 2</option>
+            <option value="teams">Squadre</option>
+            <option value="flag">Bandiera (a squadre)</option>
           </select>
           <select id="lobby-stocks" title="Vite">
             ${[1, 2, 3, 4, 5].map((n) => `<option value="${n}">${n} ${n === 1 ? "vita" : "vite"}</option>`).join("")}
@@ -132,8 +133,12 @@ export class LobbyScene extends Phaser.Scene {
     stocksSel.value = String(Math.min(5, rules.stocks));
     timeSel.value = [0, 120, 180, 300].includes(rules.timeLimitSec) ? String(rules.timeLimitSec) : "0";
     ffBox.checked = rules.friendlyFire;
-    // Il fuoco amico ha senso solo a squadre
-    const syncFf = () => (ffBox.parentElement!.style.visibility = modeSel.value === "teams" ? "visible" : "hidden");
+    // Il fuoco amico ha senso solo a squadre; in Bandiera le vite diventano i punti per vincere
+    const syncFf = () => {
+      ffBox.parentElement!.style.visibility = modeSel.value !== "ffa" ? "visible" : "hidden";
+      const flag = modeSel.value === "flag";
+      for (const o of stocksSel.options) o.text = `${o.value} ${flag ? (o.value === "1" ? "punto" : "punti") : o.value === "1" ? "vita" : "vite"}`;
+    };
     modeSel.addEventListener("change", syncFf);
     syncFf();
     roomInput.value = d.room ?? randomRoom();
@@ -198,7 +203,7 @@ export class LobbyScene extends Phaser.Scene {
         characterId,
         stageId,
         rules: {
-          mode: modeSel.value === "teams" ? "teams" : "ffa",
+          mode: modeSel.value === "teams" || modeSel.value === "flag" ? modeSel.value : "ffa",
           stocks: Number(stocksSel.value),
           timeLimitSec: Number(timeSel.value),
           friendlyFire: ffBox.checked,

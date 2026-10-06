@@ -5,6 +5,7 @@ import type { GameSnapshot, MatchRules } from "../../shared/types";
 import type { MatchInfo, RenderModule } from "./module";
 
 const HUD_Y = WORLD.height - 56;
+const MODE_NAMES: Record<MatchRules["mode"], string> = { ffa: "Tutti contro tutti", teams: "Squadre", flag: "Bandiera" };
 
 // Scritte sopra il gioco: stato della connessione, riquadri con percentuale e vite, vincitore
 export class Hud implements RenderModule {
@@ -13,6 +14,7 @@ export class Hud implements RenderModule {
   private boxes = new Map<string, Phaser.GameObjects.Text>();
   private maxStocks = STOCKS; // vite a testa nelle regole della stanza
   private timer: Phaser.GameObjects.Text;
+  private score: Phaser.GameObjects.Text; // punti delle squadre in Bandiera
   private rules?: MatchRules;
 
   constructor(private scene: Phaser.Scene) {
@@ -22,7 +24,12 @@ export class Hud implements RenderModule {
       .setOrigin(0.5)
       .setDepth(20);
     this.timer = scene.add
-      .text(WORLD.width / 2, 12, "", { fontSize: "28px", color: "#ffffff", fontStyle: "bold" })
+      .text(WORLD.width / 2, 40, "", { fontSize: "28px", color: "#ffffff", fontStyle: "bold" }) // sotto la riga della stanza
+      .setOrigin(0.5, 0)
+      .setStroke("#000000", 4)
+      .setDepth(20);
+    this.score = scene.add
+      .text(WORLD.width / 2, 40, "", { fontSize: "24px", color: "#ffffff", fontStyle: "bold" })
       .setOrigin(0.5, 0)
       .setStroke("#000000", 4)
       .setDepth(20);
@@ -35,7 +42,7 @@ export class Hud implements RenderModule {
   onWelcome(info: MatchInfo) {
     this.maxStocks = info.rules.stocks;
     this.rules = info.rules;
-    const mode = info.rules.mode === "teams" ? "Squadre" : "Tutti contro tutti";
+    const mode = MODE_NAMES[info.rules.mode] + (info.rules.mode === "flag" ? ` a ${info.rules.stocks} ${info.rules.stocks === 1 ? "punto" : "punti"}` : "");
     this.setStatus(`Stanza: ${info.room} · ${getStage(info.stageId).name} · ${mode} · manda il link agli amici`);
   }
 
@@ -58,7 +65,12 @@ export class Hud implements RenderModule {
       // In otto i riquadri sono larghi la metà: si scrive più piccolo
       const size = snap.players.length > 4 ? "15px" : "20px";
       if (box.style.fontSize !== size) box.setFontSize(size);
-      const lives = "●".repeat(Math.max(0, p.stocks)) + "○".repeat(Math.max(0, this.maxStocks - p.stocks));
+      // In Bandiera le vite sono infinite: al loro posto si segna chi porta la bandiera
+      const lives = snap.teamScores
+        ? p.carrier
+          ? "🚩"
+          : ""
+        : "●".repeat(Math.max(0, p.stocks)) + "○".repeat(Math.max(0, this.maxStocks - p.stocks));
       box.setText(`${p.name}\n${p.eliminated ? "OUT" : `${p.percent}%`}  ${lives}`);
       setColorIfChanged(box, percentColor(p.percent, p.eliminated));
     });
@@ -69,15 +81,21 @@ export class Hud implements RenderModule {
     }
 
     const winner = snap.players.find((p) => p.id === snap.winnerId);
-    const team = winner && this.rules?.mode === "teams" ? TEAM_NAMES[winner.team as 1 | 2] : undefined;
+    const team = winner && this.rules && this.rules.mode !== "ffa" ? TEAM_NAMES[winner.team as 1 | 2] : undefined;
     this.banner.setText(winner ? `${team ? `Squadra ${team}` : winner.name} vince!` : "");
+
+    const scores = snap.teamScores;
+    this.score.setText(scores ? `${TEAM_NAMES[1]} ${scores[1]}  –  ${scores[2]} ${TEAM_NAMES[2]}` : "");
+    if (scores) this.score.setY(snap.timeLeftMs === null ? 40 : 74);
 
     // Conto alla rovescia, rosso negli ultimi 10 secondi
     if (snap.timeLeftMs === null) {
       this.timer.setText("");
     } else {
       const sec = Math.ceil(snap.timeLeftMs / 1000);
-      this.timer.setText(`${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`);
+      // Bandiera a pari punti allo scadere: si gioca finché qualcuno segna
+      const golden = sec === 0 && scores && scores[1] === scores[2] && !snap.winnerId;
+      this.timer.setText(golden ? "Punto d'oro!" : `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`);
       setColorIfChanged(this.timer, sec <= 10 ? "#ff5a4a" : "#ffffff");
     }
   }

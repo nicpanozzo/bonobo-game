@@ -53,6 +53,9 @@ export class Audio implements RenderModule {
       case "ko":
         play("ko", { pan: pan(Math.max(0, Math.min(WORLD.width, e.x))) });
         break;
+      case "flag":
+        play("point");
+        break;
       case "taunt":
         play("taunt");
         break;

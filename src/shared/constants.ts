@@ -95,6 +95,11 @@ export const TEAM_COLORS: Record<1 | 2, number[]> = {
   1: [0xe74c3c, 0xff9a8a, 0xb03020, 0xff6f5e],
   2: [0x3498db, 0x8fd0ff, 0x1f5f9a, 0x5dade2],
 };
+// Bandiera (#56): chi porta la bandiera è più lento, così ha bisogno dei compagni
+export const FLAG = {
+  carrierSpeed: 0.85, // frazione della velocità normale, a terra e in aria
+};
+
 export const TEAM_NAMES: Record<1 | 2, string> = { 1: "Rossa", 2: "Blu" };
 
 // Audio (#6): volumi di partenza, da 0 a 1. Ognuno poi li cambia nelle opzioni.
