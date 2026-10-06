@@ -256,3 +256,13 @@ export const ITEM_RULES = {
   holdOffsetX: 22, // pixel davanti al centro dove si tiene l'oggetto
   holdOffsetY: 52, // pixel sopra i piedi
 };
+
+// Limiti della rete (#105): il server non si fida di quello che riceve
+export const NET_LIMITS = {
+  maxMessageBytes: 16_384, // byte massimi di un messaggio Socket.IO (il predefinito è 1 MB)
+  maxStringLength: 64, // caratteri tenuti di ogni stringa ricevuta (nome, stanza, arena...), prima dei tagli più stretti
+  inputPerSecond: 120, // messaggi "input" al secondo concessi a un client (il client ne manda solo quando cambia un tasto)
+  inputBurst: 30, // messaggi "input" che possono arrivare tutti insieme
+  rematchPerSecond: 2, // richieste di rivincita al secondo
+  floodCloseMs: 10_000, // millisecondi di fila oltre il limite dopo cui il client viene chiuso
+};
