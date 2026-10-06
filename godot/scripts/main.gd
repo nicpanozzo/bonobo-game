@@ -6,6 +6,7 @@
 extends Node2D
 
 const DEFAULT_SERVER := "http://localhost:3000" # npm run dev
+const PRODUCTION_SERVER := "https://bonobo-game.onrender.com" # server fisso (render.yaml, #19): lo usa il gioco esportato
 const RECONNECT_MS := 1500 # attesa prima di riprovare a collegarsi
 const PAGES_URL := "https://nicpanozzo.github.io/bonobo-game/godot/" # dove sta la versione web (pages.yml)
 
@@ -34,8 +35,9 @@ func _ready() -> void:
 	# Si riparte dall'ultima scelta; l'indirizzo vince
 	params = settings.profile.duplicate()
 	params.merge(url_params, true)
-	if not params.has("server"):
-		params.server = DEFAULT_SERVER
+	# Nel gioco esportato anche un localhost salvato prima del server fisso diventa la produzione
+	if not params.has("server") or (params.server == DEFAULT_SERVER and not url_params.has("server")):
+		params.server = _default_server()
 	world = preload("res://scripts/world_view.gd").new()
 	world.setup(game)
 	add_child(world)
@@ -90,7 +92,7 @@ func _show_lobby() -> void:
 func _join(choice: Dictionary) -> void:
 	params.merge(choice, true)
 	if params.server == "":
-		params.server = DEFAULT_SERVER
+		params.server = _default_server()
 	settings.profile = {"name": params.name, "room": params.room, "char": params.get("char", ""), "stage": params.get("stage", ""), "rules": params.get("rules", {}), "server": params.server}
 	settings.save()
 	_set_url(params.room)
@@ -339,3 +341,8 @@ func _read_params() -> Dictionary:
 			if kv.size() == 2:
 				out[kv[0]] = kv[1]
 	return out
+
+
+# In editor si gioca con npm run dev; il gioco esportato (web, app) va sul server fisso
+func _default_server() -> String:
+	return PRODUCTION_SERVER if OS.has_feature("template") else DEFAULT_SERVER
