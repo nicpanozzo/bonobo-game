@@ -10,6 +10,7 @@ export interface JoinChoice {
   characterId?: string;
   stageId?: string; // conta solo se la stanza è nuova
   rules?: Partial<MatchRules>; // idem
+  bot?: string; // idem: avversario del server, es. ?bot=manichino (#20)
 }
 
 const PROFILE_KEY = "bonobo.profile";
@@ -25,6 +26,7 @@ export function readJoinDefaults(): Partial<JoinChoice> {
     characterId: params.get("char") || saved.characterId,
     stageId: params.get("stage") || saved.stageId,
     rules: saved.rules,
+    bot: params.get("bot") || undefined,
   };
 }
 

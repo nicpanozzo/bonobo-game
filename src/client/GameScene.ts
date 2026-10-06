@@ -19,6 +19,7 @@ export interface JoinData {
   characterId?: string;
   stageId?: string; // contano solo se la stanza è nuova
   rules?: Partial<MatchRules>;
+  bot?: string; // avversario del server, es. "manichino" (#20)
 }
 
 // La scena della partita fa da regista: collega il server ai moduli in src/client/render/,
@@ -74,8 +75,8 @@ export class GameScene extends Phaser.Scene {
   // Si ascolta il server solo dopo create(): con gli sprite da caricare, preload() ritarda la scena
   // e uno snapshot arrivato prima troverebbe i moduli non ancora creati.
   private listen() {
-    const { room, name, characterId, stageId, rules } = this.joinData;
-    const join = () => this.socket.emit("join", { room, name, characterId, stageId, rules });
+    const { room, name, characterId, stageId, rules, bot } = this.joinData;
+    const join = () => this.socket.emit("join", { room, name, characterId, stageId, rules, bot });
     this.socket.on("welcome", ({ id, room, stageId, rules }) => {
       for (const m of this.modules) m.onWelcome?.({ myId: id, room, stageId, rules });
     });

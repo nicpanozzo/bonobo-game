@@ -90,7 +90,8 @@ export interface ServerToClient {
 
 export interface ClientToServer {
   // stageId e rules contano solo per chi crea la stanza; gli altri entrano in quella che c'è
-  join: (data: { room: string; name: string; characterId?: string; stageId?: string; rules?: Partial<MatchRules> }) => void;
+  // bot: chi crea la stanza può aggiungere un avversario del server, es. "manichino" (#20)
+  join: (data: { room: string; name: string; characterId?: string; stageId?: string; rules?: Partial<MatchRules>; bot?: string }) => void;
   input: (input: InputState) => void;
   rematch: () => void; // a fine partita, ricomincia subito (#17)
 }

@@ -28,6 +28,7 @@ export class Room {
   private lastTime = performance.now();
   private accumulator = 0;
   private pendingEvents: GameEvent[] = []; // eventi accumulati fino al prossimo snapshot
+  private humans = new Set<string>(); // i bot (#20) non tengono aperta la stanza
 
   constructor(
     public readonly code: string,
@@ -54,15 +55,17 @@ export class Room {
   }
 
   get isEmpty() {
-    return this.match.size === 0;
+    return this.humans.size === 0;
   }
 
   addPlayer(id: string, name: string, characterId?: string) {
     this.match.addPlayer(id, name, characterId);
+    this.humans.add(id);
   }
 
   removePlayer(id: string) {
     this.match.removePlayer(id);
+    this.humans.delete(id);
   }
 
   setInput(id: string, input: InputState) {
