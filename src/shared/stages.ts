@@ -23,7 +23,7 @@ export interface StageSpec {
   solids: Rect[]; // blocchi pieni: ci si cammina sopra e non si attraversano
   platforms: ThinPlatform[]; // sottili: si attraversano dal basso e scendendo con giù
   blastZone: { left: number; right: number; top: number; bottom: number }; // chi esce perde una vita
-  spawns: { x: number; y: number }[]; // punti di partenza, uno per giocatore (y = piedi)
+  spawns: { x: number; y: number }[]; // punti di partenza, uno per giocatore (y = piedi), in coppie simmetriche
   respawn: { x: number; y: number }; // dove si ricompare dopo aver perso una vita
   colors: { sky: number; solid: number; solidEdge: number; platform: number }; // finché non c'è uno sfondo disegnato
 }
@@ -44,7 +44,7 @@ export const STAGES: Record<string, StageSpec> = {
       { x: 540, width: 200, y: 290 },
     ],
     blastZone: { left: -250, right: WORLD.width + 250, top: -350, bottom: WORLD.height + 200 },
-    spawns: [0.3, 0.7, 0.45, 0.55].map((f) => ({ x: MAIN.x + MAIN.width * f, y: MAIN.y })),
+    spawns: [0.3, 0.7, 0.45, 0.55, 0.2, 0.8, 0.37, 0.63].map((f) => ({ x: MAIN.x + MAIN.width * f, y: MAIN.y })),
     respawn: { x: WORLD.width / 2, y: 160 },
     colors: { sky: 0x1d2b3a, solid: 0x5a3d26, solidEdge: 0x8b6a45, platform: 0xa0a8b8 },
   },
@@ -70,6 +70,10 @@ export const STAGES: Record<string, StageSpec> = {
       { x: 910, y: 560 },
       { x: 270, y: 560 },
       { x: 1010, y: 560 },
+      { x: 470, y: 560 },
+      { x: 810, y: 560 },
+      { x: 320, y: 560 },
+      { x: 960, y: 560 },
     ],
     respawn: { x: WORLD.width / 2, y: 170 },
     colors: { sky: 0x123047, solid: 0x2f5d3a, solidEdge: 0x7cbf6a, platform: 0xe8d9a8 },

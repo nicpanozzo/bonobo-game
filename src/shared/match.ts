@@ -20,7 +20,7 @@ export class Match {
   readonly stage: StageSpec;
   readonly rules: MatchRules;
   private fighters = new Map<string, Fighter>();
-  private slots = new Map<string, number>(); // posto di ognuno (0-3): decide partenza e colore
+  private slots = new Map<string, number>(); // posto di ognuno (0-7): decide partenza e colore
   private winnerId: string | null = null;
   private restartTimer = 0;
   private matchTimeMs = 0;
