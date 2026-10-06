@@ -32,7 +32,7 @@ describe("bot", () => {
       match.step(DT);
     }
     assert.deepEqual({ x: dummy.x, y: dummy.y }, start, "da solo non si muove");
-    match.setInput("a", { left: false, right: false, up: false, down: false, light: true, heavy: false, taunt: false });
+    match.setInput("a", { left: false, right: false, up: false, down: false, light: true, heavy: false, taunt: false, dodge: false });
     for (let i = 0; i < 15; i++) {
       bots.tick(match);
       match.step(DT);

@@ -31,6 +31,7 @@ export class KeyboardInput {
       light: on("light"),
       heavy: on("heavy"),
       taunt: on("taunt"),
+      dodge: on("dodge"),
     };
   }
 

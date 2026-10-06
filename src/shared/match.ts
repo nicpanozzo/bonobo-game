@@ -91,6 +91,7 @@ export class Match {
       light: !!input.light,
       heavy: !!input.heavy,
       taunt: !!input.taunt,
+      dodge: !!input.dodge,
     };
   }
 

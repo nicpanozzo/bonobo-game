@@ -10,6 +10,7 @@ export interface InputState {
   light: boolean; // attacco leggero
   heavy: boolean; // attacco pesante
   taunt: boolean; // provocazione (#16): per ora produce solo l'evento
+  dodge: boolean; // schivata (#3): invulnerabili per un attimo, spostandosi nella direzione tenuta
 }
 
 // Le varianti direzionali (#2): su tenendo su, giù tenendo giù a terra, Air in aria; recovery: K + su in aria (#11)

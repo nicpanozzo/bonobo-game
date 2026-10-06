@@ -16,6 +16,9 @@ export interface Fighter extends PlayerState {
   hitstopTimer: number; // ms di fermo dopo un colpo dato o preso (#15)
   recoveryUsed: boolean; // la mossa di recupero è già stata usata in questo salto (#11)
   helpless: boolean; // dopo il recupero non si attacca fino all'atterraggio
+  dodgeTimer: number; // ms di schivata ancora in corso (#3)
+  dodgeCooldown: number; // ms prima di poter schivare di nuovo
+  airDodgeUsed: boolean; // in aria si schiva una volta sola fino all'atterraggio
   respawnTimer: number;
   invulnerableTimer: number;
   alreadyHit: Set<string>; // chi ha già preso questo colpo
@@ -39,6 +42,7 @@ export const emptyInput = (): InputState => ({
   light: false,
   heavy: false,
   taunt: false,
+  dodge: false,
 });
 
 export interface FighterSetup {
@@ -84,6 +88,9 @@ export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
     hitstopTimer: 0,
     recoveryUsed: false,
     helpless: false,
+    dodgeTimer: 0,
+    dodgeCooldown: 0,
+    airDodgeUsed: false,
     respawnTimer: 0,
     invulnerableTimer: 0,
     alreadyHit: new Set(),

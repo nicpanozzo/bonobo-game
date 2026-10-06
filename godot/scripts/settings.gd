@@ -8,7 +8,7 @@ signal changed
 
 const PATH := "user://bonobo.cfg"
 # Le azioni che si possono assegnare a un tasto (le stesse di InputState)
-const ACTIONS := ["left", "right", "up", "down", "light", "heavy", "taunt"]
+const ACTIONS := ["left", "right", "up", "down", "light", "heavy", "taunt", "dodge"]
 const LABELS := {
 	"left": "Sinistra",
 	"right": "Destra",
@@ -17,6 +17,7 @@ const LABELS := {
 	"light": "Attacco leggero",
 	"heavy": "Attacco pesante",
 	"taunt": "Provocazione",
+	"dodge": "Schivata",
 }
 # I tasti di default del gioco web (DEFAULT_BINDINGS), come tasti fisici: non dipendono dalla lingua della tastiera
 const DEFAULT_BINDINGS := {
@@ -27,6 +28,7 @@ const DEFAULT_BINDINGS := {
 	"light": [KEY_J],
 	"heavy": [KEY_K],
 	"taunt": [KEY_T],
+	"dodge": [KEY_L],
 }
 const MAX_KEYS := 3 # tasti per azione
 

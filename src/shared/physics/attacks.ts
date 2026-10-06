@@ -5,7 +5,7 @@ import type { AttackKind } from "../types";
 import { pressed, type Fighter, type PhysicsContext } from "./fighter";
 
 export function tryStartAttack(f: Fighter, ctx: PhysicsContext): void {
-  if (f.hitstun || f.attack || f.cooldownTimer > 0 || f.helpless) return;
+  if (f.hitstun || f.attack || f.cooldownTimer > 0 || f.helpless || f.dodgeTimer > 0) return;
   if (pressed(f, "heavy")) startAttack(f, variant(f, "heavy"), ctx);
   else if (pressed(f, "light")) startAttack(f, variant(f, "light"), ctx);
 }

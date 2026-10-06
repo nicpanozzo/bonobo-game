@@ -11,6 +11,7 @@ const LABELS: Record<Action, string> = {
   light: "Attacco leggero",
   heavy: "Attacco pesante",
   taunt: "Provocazione",
+  dodge: "Schivata",
 };
 
 const SLOTS = 2; // tasti per azione mostrati nel menu

@@ -26,6 +26,7 @@ const randomInput = (): InputState => ({
   down: rand() < 0.05,
   light: rand() < 0.2,
   heavy: rand() < 0.1,
+  dodge: rand() < 0.05,
   taunt: false,
 });
 
