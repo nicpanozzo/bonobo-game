@@ -143,3 +143,20 @@ export const CAMERA = {
   maxZoom: 1.3, // quanto si avvicina quando i lottatori sono vicini
   smoothingMs: 220, // più alto = movimenti più morbidi e più lenti
 };
+
+// Effetti del client (#15 passi 2 e 3): solo grafica, partono dagli eventi dello snapshot.
+// Il knockback di un colpo va da ~260 px/s (leggero a 0%) a oltre 1500 (pesante sopra il 100%).
+export const EFFECTS = {
+  hitSparkMs: 220, // durata della scintilla di un colpo
+  shakeKo: 14, // pixel di scossa a un KO
+  shakeDecay: 400, // pixel/s di scossa che si spengono
+  shakeFromKnockback: 450, // px/s: sotto questo knockback lo schermo non trema
+  shakePerKnockback: 0.01, // pixel di scossa per ogni px/s di knockback oltre la soglia
+  shakeMax: 12, // pixel: scossa massima per un colpo
+  flashKnockback: 1100, // px/s: da qui in su il colpo fa anche un lampo bianco
+  flashMs: 90,
+  dustMs: 320, // durata della polvere quando si atterra o si salta da terra
+  dustPuffs: 5, // sbuffi di polvere per atterraggio
+  trailSpeed: 900, // px/s: chi vola più veloce di così lascia una scia
+  trailLength: 6, // posizioni ricordate per la scia (una per frame)
+};
