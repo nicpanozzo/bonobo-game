@@ -43,7 +43,7 @@ io.on("connection", (socket) => {
     room = r;
     socket.join(code);
     r.addPlayer(socket.id, String(name || ""), typeof characterId === "string" ? characterId : undefined);
-    socket.emit("welcome", { id: socket.id, room: code, stageId: r.stage.id, rules: r.rules });
+    socket.emit("welcome", { id: socket.id, room: code, stageId: r.stage.id, rules: r.rules, stage: r.stage });
     console.log(`[${code}] entra ${socket.id}`);
   });
 

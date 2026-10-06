@@ -1,5 +1,7 @@
 // Messaggi scambiati tra client e server.
 
+import type { StageSpec } from "./stages";
+
 export interface InputState {
   left: boolean;
   right: boolean;
@@ -79,7 +81,9 @@ export interface GameSnapshot {
 
 // Eventi Socket.IO tipizzati
 export interface ServerToClient {
-  welcome: (data: { id: string; room: string; stageId: string; rules: MatchRules }) => void;
+  // stage è l'arena intera: chi non ha il codice di src/shared (client Godot, #59) non sa rigenerare
+  // le arene casuali e i percorsi della Corsa dal loro id
+  welcome: (data: { id: string; room: string; stageId: string; rules: MatchRules; stage: StageSpec }) => void;
   snapshot: (snap: GameSnapshot) => void;
   roomFull: () => void;
 }
