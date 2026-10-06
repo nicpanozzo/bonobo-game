@@ -1,4 +1,5 @@
 # Ogni venerdì sera posta nel canale Discord cosa è entrato nel gioco in settimana
+# (solo le PR con l'etichetta "per-giocatori")
 # e le issue facili ancora libere. Si può lanciare a mano da Actions → Run workflow.
 name: Discord settimanale
 

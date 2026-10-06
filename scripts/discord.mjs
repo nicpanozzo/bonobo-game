@@ -19,6 +19,8 @@ const MAX_POLL_HOURS = 768;
 const MAX_POLL_ANSWERS = 10;
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 const FIRST_ISSUE_LABEL = 'good first issue';
+// Etichetta delle PR da annunciare sul Discord: solo cambi che un giocatore nota
+const PLAYER_LABEL = 'per-giocatori';
 
 function usage(message) {
   if (message) console.error(`Errore: ${message}\n`);
@@ -152,7 +154,13 @@ async function github(path) {
 async function weekly() {
   const since = Date.now() - WEEK_MS;
   const closed = await github('/pulls?state=closed&base=main&sort=updated&direction=desc&per_page=50');
-  const merged = closed.filter((pr) => pr.merged_at && Date.parse(pr.merged_at) >= since);
+  // Solo le PR che un giocatore nota: CI, documenti e refactor non interessano al canale
+  const merged = closed.filter(
+    (pr) =>
+      pr.merged_at &&
+      Date.parse(pr.merged_at) >= since &&
+      pr.labels.some((label) => label.name === PLAYER_LABEL),
+  );
   const easy = await github(`/issues?state=open&labels=${encodeURIComponent(FIRST_ISSUE_LABEL)}&per_page=5`);
   const takeable = easy.filter((issue) => !issue.pull_request && issue.assignees.length === 0);
 

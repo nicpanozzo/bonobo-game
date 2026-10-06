@@ -1,5 +1,6 @@
-# Quando una PR viene unita a main, la annuncia nel canale Discord con il primo screenshot
-# della descrizione. Serve il secret DISCORD_WEBHOOK_URL (vedi docs/discord.md):
+# Quando una PR con l'etichetta "per-giocatori" viene unita a main, la annuncia nel canale
+# Discord con il primo screenshot della descrizione. Le altre PR (CI, documenti, refactor,
+# regole degli agenti) non si annunciano: il canale è per chi gioca. Serve il secret DISCORD_WEBHOOK_URL (vedi docs/discord.md):
 # se manca, il job finisce senza postare niente.
 name: Discord
 
@@ -13,7 +14,7 @@ permissions:
 
 jobs:
   annuncia:
-    if: github.event.pull_request.merged == true
+    if: github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'per-giocatori')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
