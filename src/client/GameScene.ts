@@ -1,7 +1,8 @@
 import Phaser from "phaser";
 import type { MatchRules } from "../shared/types";
 import { KeyboardInput } from "./input";
-import type { GameSocket } from "./network";
+import { readJoinDefaults, roomLink, type GameSocket } from "./network";
+import { openPauseMenu } from "./PauseMenu";
 import { Audio } from "./render/audio";
 import { CameraRig } from "./render/camera";
 import { Effects } from "./render/effects";
@@ -37,6 +38,7 @@ export class GameScene extends Phaser.Scene {
   init(data: JoinData) {
     this.joinData = data;
     this.socket = data.socket;
+    this.lastInput = ""; // la scena si riusa quando si torna dalla lobby
   }
 
   preload() {
@@ -47,9 +49,16 @@ export class GameScene extends Phaser.Scene {
     this.hud = new Hud(this);
     // L'ordine conta solo per chi disegna sopra chi
     this.modules = [new StageView(this), new FighterViews(this), new Effects(this), new CameraRig(this), new Audio(this), this.hud, new Results(this)];
-    this.keyboard = new KeyboardInput(this);
+    this.keyboard = new KeyboardInput();
     // A fine partita R fa ripartire subito (il server lo accetta solo se la partita è finita)
     this.input.keyboard!.on("keydown-R", () => this.socket.emit("rematch"));
+    this.input.keyboard!.on("keydown-ESC", () => this.openMenu());
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.closeMenu?.();
+      this.keyboard.destroy();
+      this.socket.removeAllListeners();
+      this.socket.disconnect();
+    });
     this.listen();
   }
 
@@ -69,6 +78,26 @@ export class GameScene extends Phaser.Scene {
     this.socket.on("connect", join);
     this.socket.on("disconnect", () => this.hud.setStatus("Connessione persa, riprovo..."));
     if (this.socket.connected) join();
+  }
+
+  private closeMenu?: () => void;
+
+  // Esc: il menu spegne i tasti di chi lo apre, ma la partita online va avanti
+  private openMenu() {
+    if (this.closeMenu) return;
+    this.keyboard.enabled = false;
+    this.closeMenu = openPauseMenu({
+      link: roomLink(this.joinData.room),
+      onResume: () => {
+        this.closeMenu = undefined;
+        this.keyboard.clear();
+        this.keyboard.enabled = true;
+      },
+      onLeave: () => {
+        this.closeMenu = undefined;
+        this.scene.start("lobby", { defaults: { ...readJoinDefaults(), room: this.joinData.room } });
+      },
+    });
   }
 
   update(time: number, delta: number) {

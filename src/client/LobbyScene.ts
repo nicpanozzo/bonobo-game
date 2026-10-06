@@ -4,6 +4,7 @@ import { WORLD } from "../shared/constants";
 import { sanitizeRules } from "../shared/rules";
 import { randomStageId, seedFromStageId } from "../shared/stageGenerator";
 import { getStage, STAGES, type StageSpec } from "../shared/stages";
+import { openOptions } from "./OptionsPanel";
 import { connect, randomRoom, roomLink, saveProfile, type JoinChoice } from "./network";
 
 // Schermata iniziale: nome, stanza, personaggio e link da mandare agli amici.
@@ -41,6 +42,7 @@ const CSS = `
 #lobby .rules .ff { display: flex; align-items: center; gap: 6px; font-size: 14px; margin: 0; text-transform: none; letter-spacing: 0; opacity: 1; }
 #lobby .rules .ff input { width: auto; }
 #lobby .foot { display: flex; justify-content: space-between; margin-top: 14px; font-size: 13px; opacity: .7; }
+#lobby .foot span { display: flex; gap: 12px; }
 #lobby .foot button { background: none; padding: 0; font-size: 13px; text-decoration: underline; color: #eee; }
 #lobby .msg { min-height: 1.2em; font-size: 13px; color: #8fd18f; margin-top: 6px; }
 `;
@@ -107,7 +109,10 @@ export class LobbyScene extends Phaser.Scene {
         <button class="play" type="submit">Gioca</button>
         <div class="foot">
           <span>Mandate a tutti lo stesso link per giocare insieme</span>
-          <button type="button" data-act="credits" hidden>Crediti</button>
+          <span>
+            <button type="button" data-act="options">Opzioni</button>
+            <button type="button" data-act="credits" hidden>Crediti</button>
+          </span>
         </div>
       </form>`;
     document.body.append(root);
@@ -179,6 +184,7 @@ export class LobbyScene extends Phaser.Scene {
         }
       }
       if (act === "credits") this.scene.start("credits");
+      if (act === "options") openOptions();
     });
 
     // Il pulsante dei crediti compare quando esiste la loro scena (#24)
