@@ -95,3 +95,12 @@ export const TEAM_COLORS: Record<1 | 2, number[]> = {
   2: [0x3498db, 0x8fd0ff],
 };
 export const TEAM_NAMES: Record<1 | 2, string> = { 1: "Rossa", 2: "Blu" };
+
+// Audio (#6): volumi di partenza, da 0 a 1. Ognuno poi li cambia nelle opzioni.
+export const AUDIO = {
+  master: 0.8,
+  sfx: 0.7,
+  music: 0.35,
+  musicBpm: 132, // velocità della musica sintetizzata, battiti al minuto
+  hitLoudPercent: 120, // da questa percentuale in su i colpi suonano al massimo
+};
