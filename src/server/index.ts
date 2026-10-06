@@ -42,6 +42,20 @@ app.get("/classifica.json", (_req, res) => {
 // Stanze e messaggi dei giocatori: src/server/game.ts
 const rooms = attachGame(io, { leaderboard, discordWebhookUrl: process.env.DISCORD_WEBHOOK_URL });
 
+// Un errore sfuggito (in un gancio asincrono, in una libreria) non spegne il server per tutti: si registra e si va avanti.
+// Solo se la porta non si apre non c'è niente da tenere acceso. host.ts ha un suo gestore che lo spiega a chi ospita.
+process.on("uncaughtException", (err: NodeJS.ErrnoException) => {
+  if (err.syscall === "listen") {
+    if (process.listenerCount("uncaughtException") > 1) return;
+    console.error(`[server] non riesco ad aprire la porta ${PORT}:`, err.message);
+    process.exit(1);
+  }
+  console.error("[server] errore non gestito, il server resta acceso:", err);
+});
+process.on("unhandledRejection", (reason) => {
+  console.error("[server] promessa rifiutata non gestita, il server resta acceso:", reason);
+});
+
 http.listen(PORT, () => {
   console.log(`Server di gioco su http://localhost:${PORT}`);
 });

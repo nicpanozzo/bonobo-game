@@ -133,12 +133,14 @@ function shutdown(): void {
   process.exit(0);
 }
 
-// Con il doppio clic la finestra sparirebbe subito: l'errore resta leggibile finché non si preme Invio
+// Con il doppio clic la finestra sparirebbe subito: l'errore resta leggibile finché non si preme Invio.
+// Solo per la porta che non si apre: gli altri errori li registra index.ts e il server resta acceso (#105)
 process.on("uncaughtException", (err: NodeJS.ErrnoException) => {
+  if (err.syscall !== "listen") return;
   tunnel?.kill();
   line();
   if (err.code === "EADDRINUSE") line(`❌ La porta ${PORT} è già occupata: forse il server è già acceso in un'altra finestra.`);
-  else line(`❌ Qualcosa è andato storto: ${err.message}`);
+  else line(`❌ Non riesco ad aprire la porta ${PORT}: ${err.message}`);
   line("Premi Invio per chiudere.");
   process.stdin.resume();
   process.stdin.once("data", () => process.exit(1));

@@ -3,7 +3,7 @@
 // e manda a tutti lo stato.
 
 import type { Server } from "socket.io";
-import { MAX_CATCHUP_TICKS, SEND_RATE, TICK_RATE } from "../shared/constants";
+import { MAX_CATCHUP_TICKS, ROOM_MAX_ERRORS, SEND_RATE, TICK_RATE } from "../shared/constants";
 import { Match, type MatchEndEvent, type MatchOptions } from "../shared/match";
 import type { Fighter } from "../shared/physics";
 import type { ClientToServer, GameEvent, InputState, ServerToClient } from "../shared/types";
@@ -38,6 +38,8 @@ export class Room {
   private accumulator = 0;
   private pendingEvents: GameEvent[] = []; // eventi accumulati fino al prossimo snapshot
   private humans = new Set<string>(); // i bot (#20) non tengono aperta la stanza
+  private errors = 0; // errori di fila nel passo: al terzo la stanza si chiude
+  onClose?: () => void; // chi tiene l'elenco delle stanze (game.ts) la toglie quando si chiude da sola
   lastHumanInput = Date.now(); // ms dell'ultimo ingresso o tasto di un umano: senza, la stanza si chiude (ROOM_IDLE_MS)
 
   constructor(
@@ -105,8 +107,24 @@ export class Room {
     this.accumulator = Math.min(this.accumulator, TICK_MS * MAX_CATCHUP_TICKS);
     while (this.accumulator >= TICK_MS) {
       this.accumulator -= TICK_MS;
-      this.tick();
+      // Un errore nella partita o in un gancio (bot, Discord) ferma solo questa stanza, mai il server
+      try {
+        this.tick();
+        this.errors = 0;
+      } catch (err) {
+        console.error(`[${this.code}] errore nel passo della partita:`, err);
+        if (++this.errors >= ROOM_MAX_ERRORS) this.close();
+        return;
+      }
     }
+  }
+
+  // Chiusura per errori: la stanza sparisce dall'elenco e chi c'era dentro viene scollegato
+  private close() {
+    console.error(`[${this.code}] chiusa dopo ${ROOM_MAX_ERRORS} errori di fila`);
+    this.destroy();
+    this.onClose?.();
+    this.io.in(this.code).disconnectSockets(true);
   }
 
   private tick() {
