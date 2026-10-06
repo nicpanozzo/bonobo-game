@@ -14,6 +14,8 @@ const UPDATE_DIR := "user://update/"
 const CHECK_TIMEOUT_S := 5.0 # oltre, si gioca con la versione che c'è
 const DOWNLOAD_TIMEOUT_S := 180.0 # il pacchetto intero, anche con una rete lenta
 const MAIN_SCENE := "res://main.tscn"
+const DOWNLOAD_PAGE := "https://nicpanozzo.github.io/bonobo-game/#gioca" # dove si scarica l'app nuova
+const NEW_APP_NOTICE_S := 30.0 # l'avviso "app nuova" sparisce da solo, per non coprire la partita
 
 var _http := HTTPRequest.new()
 var _bar := ProgressBar.new()
@@ -54,8 +56,11 @@ func _process(_delta: float) -> void:
 func _on_version(result: int, code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
 	_remote = parse_remote(body.get_string_from_utf8()) if result == HTTPRequest.RESULT_SUCCESS and code == 200 else {}
 	var current := int(read_json("res://data/build.json").get("version", 0))
-	if decide(current, _remote, engine_version()) != "download":
-		# "new_app" (motore diverso) arriva col passo 3: per ora si gioca con quello che c'è
+	var what := decide(current, _remote, engine_version())
+	if what != "download":
+		if what == "new_app":
+			# Il gioco nuovo vuole un altro motore: un .pck non basta, si gioca con questa e si avvisa
+			get_tree().root.add_child.call_deferred(new_app_notice())
 		_start_game()
 		return
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(UPDATE_DIR))
@@ -125,6 +130,40 @@ func _build_ui() -> void:
 	_bar.visible = false
 	_bar.custom_minimum_size = Vector2(420, 24)
 	box.add_child(_bar)
+
+
+# Avviso in alto, sopra la lobby e oltre il cambio di scena (sta nella radice): link al sito o chiudi
+static func new_app_notice() -> CanvasLayer:
+	var layer := CanvasLayer.new()
+	layer.name = "NewAppNotice"
+	layer.layer = 10
+	var bar := PanelContainer.new()
+	bar.theme = UI.theme()
+	bar.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+	bar.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	bar.position.y = 12
+	layer.add_child(bar)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	bar.add_child(row)
+	var label := Label.new()
+	label.text = "C'è un'app nuova di Bonobo Game: questa non si aggiorna più da sola."
+	row.add_child(label)
+	var get := Button.new()
+	get.text = "Scarica l'app nuova"
+	get.pressed.connect(func(): OS.shell_open(DOWNLOAD_PAGE))
+	row.add_child(get)
+	var close := Button.new()
+	close.text = "×"
+	close.pressed.connect(layer.queue_free)
+	row.add_child(close)
+	var timer := Timer.new()
+	timer.wait_time = NEW_APP_NOTICE_S
+	timer.one_shot = true
+	timer.autostart = true
+	timer.timeout.connect(layer.queue_free)
+	layer.add_child(timer)
+	return layer
 
 
 func _user_arg(key: String) -> String:
