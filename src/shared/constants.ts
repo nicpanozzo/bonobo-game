@@ -88,3 +88,10 @@ export const STAGE_GEN = {
   tierStep: [115, 150], // distanza in altezza tra un piano e quello sotto
   secondTierChance: 0.6,
 };
+
+// Squadre (#17): due tonalità per squadra, così i compagni si distinguono tra loro
+export const TEAM_COLORS: Record<1 | 2, number[]> = {
+  1: [0xe74c3c, 0xff9a8a],
+  2: [0x3498db, 0x8fd0ff],
+};
+export const TEAM_NAMES: Record<1 | 2, string> = { 1: "Rossa", 2: "Blu" };

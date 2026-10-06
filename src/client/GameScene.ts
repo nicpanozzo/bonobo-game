@@ -7,6 +7,7 @@ import { CameraRig } from "./render/camera";
 import { Effects } from "./render/effects";
 import { FighterViews, preloadCharacters } from "./render/fighters";
 import { Hud } from "./render/hud";
+import { Results } from "./render/results";
 import type { RenderModule } from "./render/module";
 import { StageView } from "./render/stage";
 
@@ -45,8 +46,10 @@ export class GameScene extends Phaser.Scene {
   create() {
     this.hud = new Hud(this);
     // L'ordine conta solo per chi disegna sopra chi
-    this.modules = [new StageView(this), new FighterViews(this), new Effects(this), new CameraRig(this), new Audio(this), this.hud];
+    this.modules = [new StageView(this), new FighterViews(this), new Effects(this), new CameraRig(this), new Audio(this), this.hud, new Results(this)];
     this.keyboard = new KeyboardInput(this);
+    // A fine partita R fa ripartire subito (il server lo accetta solo se la partita è finita)
+    this.input.keyboard!.on("keydown-R", () => this.socket.emit("rematch"));
     this.listen();
   }
 
