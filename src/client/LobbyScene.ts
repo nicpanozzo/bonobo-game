@@ -1,5 +1,8 @@
 import Phaser from "phaser";
 import { CHARACTERS, getCharacter, type CharacterSpec } from "../shared/characters";
+import { WORLD } from "../shared/constants";
+import { randomStageId, seedFromStageId } from "../shared/stageGenerator";
+import { getStage, STAGES, type StageSpec } from "../shared/stages";
 import { connect, randomRoom, roomLink, saveProfile, type JoinChoice } from "./network";
 
 // Schermata iniziale: nome, stanza, personaggio e link da mandare agli amici.
@@ -27,6 +30,11 @@ const CSS = `
 #lobby .char.sel { border-color: #ffcf4a; background: #2a2a10; }
 #lobby .char .pic { width: 64px; height: 72px; margin: 0 auto 6px; background-repeat: no-repeat; image-rendering: pixelated; }
 #lobby .char .box { width: 30px; height: 60px; margin: 6px auto 12px; border-radius: 4px; background: #e74c3c; }
+#lobby .stages { display: flex; gap: 10px; flex-wrap: wrap; }
+#lobby .stage { width: 140px; padding: 6px; border-radius: 10px; background: #0d1520; border: 2px solid #3a5068; text-align: center; font-size: 13px; }
+#lobby .stage.sel { border-color: #ffcf4a; background: #2a2a10; }
+#lobby .stage canvas { display: block; width: 128px; height: 72px; margin: 0 auto 4px; border-radius: 6px; }
+#lobby .hint { text-transform: none; letter-spacing: 0; opacity: .6; }
 #lobby .foot { display: flex; justify-content: space-between; margin-top: 14px; font-size: 13px; opacity: .7; }
 #lobby .foot button { background: none; padding: 0; font-size: 13px; text-decoration: underline; color: #eee; }
 #lobby .msg { min-height: 1.2em; font-size: 13px; color: #8fd18f; margin-top: 6px; }
@@ -46,6 +54,7 @@ export class LobbyScene extends Phaser.Scene {
   create(data: LobbyData) {
     const d = data.defaults ?? {};
     let characterId = getCharacter(d.characterId).id;
+    let stageId = getStage(d.stageId).id;
 
     if (!document.getElementById("lobby-style")) {
       const style = document.createElement("style");
@@ -71,7 +80,8 @@ export class LobbyScene extends Phaser.Scene {
         <div class="msg" data-msg></div>
         <label>Lottatore</label>
         <div class="chars" data-chars></div>
-        <!-- Qui andrà la scelta dell'arena (#14) -->
+        <label>Arena <span class="hint">(la sceglie chi crea la stanza)</span></label>
+        <div class="stages" data-stages></div>
         <button class="play" type="submit">Gioca</button>
         <div class="foot">
           <span>Mandate a tutti lo stesso link per giocare insieme</span>
@@ -101,6 +111,23 @@ export class LobbyScene extends Phaser.Scene {
     });
     drawChars();
 
+    // Le arene di stages.ts più una generata a caso: cliccandola di nuovo se ne genera un'altra
+    const stages = $<HTMLDivElement>("[data-stages]");
+    let randomId = seedFromStageId(stageId) !== null ? stageId : randomStageId();
+    const drawStages = () => {
+      const cards = Object.values(STAGES).map((st) => stageCard(st, st.id, st.name, st.id === stageId));
+      cards.push(stageCard(getStage(randomId), randomId, "Casuale 🎲", randomId === stageId));
+      stages.replaceChildren(...cards);
+    };
+    stages.addEventListener("click", (e) => {
+      const el = (e.target as HTMLElement).closest<HTMLButtonElement>("[data-stage]");
+      if (!el) return;
+      if (el.dataset.stage === randomId && stageId === randomId) randomId = randomStageId();
+      stageId = seedFromStageId(el.dataset.stage!) !== null ? randomId : el.dataset.stage!;
+      drawStages();
+    });
+    drawStages();
+
     const cleanRoom = () => roomInput.value.toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 24);
 
     root.addEventListener("click", async (e) => {
@@ -128,6 +155,7 @@ export class LobbyScene extends Phaser.Scene {
         name: nameInput.value.trim().slice(0, 16) || "Bonobo",
         room: cleanRoom() || randomRoom(),
         characterId,
+        stageId,
       };
       saveProfile(choice);
       this.scene.start("game", { socket: connect(), ...choice });
@@ -142,6 +170,32 @@ export class LobbyScene extends Phaser.Scene {
     this.root?.remove();
     this.root = undefined;
   }
+}
+
+// Riquadro con il disegno in piccolo dell'arena
+function stageCard(stage: StageSpec, id: string, label: string, selected: boolean): HTMLButtonElement {
+  const el = document.createElement("button");
+  el.type = "button";
+  el.className = `stage${selected ? " sel" : ""}`;
+  el.dataset.stage = id;
+  const canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = 144;
+  const g = canvas.getContext("2d");
+  if (g) {
+    const k = canvas.width / WORLD.width;
+    const hex = (c: number) => `#${c.toString(16).padStart(6, "0")}`;
+    g.fillStyle = hex(stage.colors.sky);
+    g.fillRect(0, 0, canvas.width, canvas.height);
+    g.fillStyle = hex(stage.colors.solid);
+    for (const s of stage.solids) g.fillRect(s.x * k, s.y * k, s.width * k, s.height * k);
+    g.fillStyle = hex(stage.colors.platform);
+    for (const p of stage.platforms) g.fillRect(p.x * k, p.y * k, p.width * k, 3);
+  }
+  const name = document.createElement("div");
+  name.textContent = label;
+  el.append(canvas, name);
+  return el;
 }
 
 function charCard(c: CharacterSpec, selected: boolean): HTMLButtonElement {

@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { STOCKS, WORLD } from "../../shared/constants";
+import { getStage } from "../../shared/stages";
 import type { GameSnapshot } from "../../shared/types";
 import type { MatchInfo, RenderModule } from "./module";
 
@@ -26,7 +27,7 @@ export class Hud implements RenderModule {
 
   onWelcome(info: MatchInfo) {
     this.maxStocks = info.rules.stocks;
-    this.setStatus(`Stanza: ${info.room} · manda il link agli amici`);
+    this.setStatus(`Stanza: ${info.room} · ${getStage(info.stageId).name} · manda il link agli amici`);
   }
 
   onSnapshot(snap: GameSnapshot) {

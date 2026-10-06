@@ -8,6 +8,7 @@ export interface JoinChoice {
   room: string;
   name: string;
   characterId?: string;
+  stageId?: string; // conta solo se la stanza è nuova
 }
 
 const PROFILE_KEY = "bonobo.profile";
@@ -21,6 +22,7 @@ export function readJoinDefaults(): Partial<JoinChoice> {
     room: params.get("room") || undefined,
     name: params.get("name") || saved.name,
     characterId: params.get("char") || saved.characterId,
+    stageId: params.get("stage") || saved.stageId,
   };
 }
 
@@ -42,16 +44,17 @@ export function saveProfile(choice: JoinChoice) {
   // La stanza va nell'URL, così ricaricare la pagina riporta nella stessa stanza
   history.replaceState(null, "", `?room=${encodeURIComponent(choice.room)}`);
   try {
-    localStorage.setItem(PROFILE_KEY, JSON.stringify({ name: choice.name, characterId: choice.characterId }));
+    localStorage.setItem(PROFILE_KEY, JSON.stringify({ name: choice.name, characterId: choice.characterId, stageId: choice.stageId }));
   } catch {
     // Navigazione privata o archiviazione bloccata: pazienza, si riscrive il nome la prossima volta
   }
 }
 
-function loadProfile(): { name?: string; characterId?: string } {
+function loadProfile(): { name?: string; characterId?: string; stageId?: string } {
   try {
     const p = JSON.parse(localStorage.getItem(PROFILE_KEY) ?? "{}");
-    return { name: typeof p.name === "string" ? p.name : undefined, characterId: typeof p.characterId === "string" ? p.characterId : undefined };
+    const str = (v: unknown) => (typeof v === "string" ? v : undefined);
+    return { name: str(p.name), characterId: str(p.characterId), stageId: str(p.stageId) };
   } catch {
     return {};
   }
