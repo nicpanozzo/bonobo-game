@@ -1,4 +1,4 @@
-# Menu con Esc durante la partita (come src/client/PauseMenu.ts). La partita è online e non
+# Menu con Esc (o Start sul pad) durante la partita (come src/client/PauseMenu.ts). La partita è online e non
 # si ferma: il menu spegne solo i tasti di chi lo apre.
 extends Control
 
@@ -10,6 +10,7 @@ var link := ""
 var _note: Label
 var _dim: Control
 var _in_options := false
+var _options_button: Button
 
 
 func setup(s: Settings, room_link: String) -> void:
@@ -21,8 +22,10 @@ func setup(s: Settings, room_link: String) -> void:
 	add_child(_dim)
 	var box: VBoxContainer = parts[1]
 	box.add_child(UI.label("Menu", 28, UI.ACCENT))
-	box.add_child(UI.button("Riprendi", resume, true))
-	box.add_child(UI.button("Opzioni", _open_options))
+	var resume_button := UI.button("Riprendi", resume, true)
+	box.add_child(resume_button)
+	_options_button = UI.button("Opzioni", _open_options)
+	box.add_child(_options_button)
 	box.add_child(UI.button("Copia link della stanza", func():
 		UI.copy(link)
 		_note.text = "Link copiato: incollalo sul Discord"))
@@ -32,6 +35,7 @@ func setup(s: Settings, room_link: String) -> void:
 	_note = UI.label("La partita continua mentre il menu è aperto.", 13, Color(UI.TEXT, 0.7))
 	_note.autowrap_mode = TextServer.AUTOWRAP_WORD
 	box.add_child(_note)
+	UI.keep_focus(self, resume_button)
 
 
 func resume() -> void:
@@ -47,13 +51,15 @@ func _open_options() -> void:
 	options.setup(settings)
 	options.closed.connect(func():
 		_in_options = false
-		_dim.show())
+		_dim.show()
+		_options_button.grab_focus())
 
 
+# Esc, B o Start riprendono la partita
 func _input(event: InputEvent) -> void:
-	var key := event as InputEventKey
-	if _in_options or key == null or not key.pressed or key.echo:
+	if _in_options or event.is_echo():
 		return
-	if key.keycode == KEY_ESCAPE:
+	var start: bool = event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_START
+	if start or event.is_action_pressed("ui_cancel"):
 		get_viewport().set_input_as_handled()
 		resume()
