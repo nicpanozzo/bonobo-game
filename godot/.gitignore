@@ -1,0 +1,4 @@
+# Cache dell'editor e build esportate: si rigenerano
+.godot/
+build/
+*.import
