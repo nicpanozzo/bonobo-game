@@ -1,0 +1,21 @@
+# Server fisso del gioco su Render, piano gratuito (#19 passo 1).
+# Un umano lo collega una volta sola: render.com → New → Blueprint → questa repo (vedi la PR #19 passo 1).
+# Il piano gratuito non chiede la carta, si addormenta dopo 15 minuti senza visite
+# e il primo accesso dopo la pausa impiega circa un minuto: in questa fase va bene.
+services:
+  - type: web
+    name: bonobo-game # l'indirizzo diventa https://bonobo-game.onrender.com (PRODUCTION_SERVER in godot/scripts/main.gd)
+    runtime: node
+    plan: free
+    region: frankfurt # in Europa, vicino a noi: meno lag
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    # Pubblica main solo quando la CI è verde
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      # Il webhook del Discord si incolla a mano nella dashboard di Render, non sta nella repo
+      - key: DISCORD_WEBHOOK_URL
+        sync: false
