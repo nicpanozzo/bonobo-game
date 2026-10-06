@@ -99,6 +99,9 @@ export function resolveHazards(fighters: Fighter[], ctx: PhysicsContext): void {
       f.hitstun = true;
       f.attack = null;
       f.attackActive = false;
+      // Come dopo un colpo (#11): si può di nuovo usare il recupero
+      f.recoveryUsed = false;
+      f.helpless = false;
       f.hazardTimer = HAZARD.cooldownMs;
       f.hitstopTimer = Math.max(f.hitstopTimer, Math.min(HITSTOP.maxMs, HITSTOP.baseMs + HITSTOP.perDamageMs * h.damage));
       ctx.events.push({
