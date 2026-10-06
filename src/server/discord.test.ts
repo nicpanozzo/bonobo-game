@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { sanitizeRules } from "../shared/rules";
 import type { GameEvent } from "../shared/types";
-import { formatResult } from "./discord";
+import { formatResult, funTitles } from "./discord";
 import { MatchStats } from "./stats";
 
 const hit = (attackerId: string, targetId: string, damage: number): GameEvent => ({
@@ -47,6 +47,14 @@ describe("messaggio Discord", () => {
     assert.equal(head, "🦍 **Luca** vince su Marta (1:35)");
     assert.equal(first, "👑 Luca: 2 KO, 40% inflitti, 0 cadute");
     assert.equal(second, "• Marta: 0 KO, 0% inflitti, 3 cadute, 1 da solo");
+    assert.equal(text.split("\n")[3], "🏅 Kamikaze: Marta · Martello: Luca · Muro: Luca");
+  });
+
+  it("i titoli non vanno a nessuno in caso di pari merito", () => {
+    const s = new MatchStats();
+    s.add([hit("a", "b", 10), hit("b", "a", 10)]);
+    assert.deepEqual(funTitles(players, (id) => s.get(id)), []);
+    assert.doesNotMatch(formatResult({ type: "matchEnd", winnerId: "a", winnerTeam: 0, durationMs: 0 }, players, (id) => s.get(id), sanitizeRules({})), /🏅/);
   });
 
   it("a squadre vince la squadra", () => {
