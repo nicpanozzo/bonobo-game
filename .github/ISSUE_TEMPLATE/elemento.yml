@@ -1,0 +1,52 @@
+name: Elemento nuovo per le arene
+description: Un pezzo di arena che ancora non esiste (trampolino, nastro trasportatore, pavimento che crolla...).
+title: "Elemento: "
+labels: ["arena", "sviluppo", "in attesa"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Un elemento è un comportamento nuovo: serve codice nella fisica e nel disegno, quindi lo fa un agente in una PR a sé.
+        Dopo, qualsiasi arena lo può usare scrivendo solo dati. Gli elementi che esistono già sono in [docs/arene.md](https://github.com/nicpanozzo/bonobo-game/blob/main/docs/arene.md).
+  - type: input
+    id: nome
+    attributes:
+      label: Nome
+      placeholder: "Es. Trampolino"
+    validations:
+      required: true
+  - type: textarea
+    id: cosa
+    attributes:
+      label: Cosa fa a chi lo tocca
+      description: "Es. chi ci atterra sopra rimbalza in alto il doppio di un salto; da sotto si attraversa."
+    validations:
+      required: true
+  - type: textarea
+    id: tempo
+    attributes:
+      label: Come cambia nel tempo
+      description: "Sempre uguale, a ciclo (ogni quanti secondi?), o reagisce ai giocatori (crolla dopo 1 secondo che ci stai sopra)?"
+  - type: textarea
+    id: numeri
+    attributes:
+      label: Cosa si deve poter regolare
+      description: "I numeri che ogni arena sceglie per conto suo, es. forza del rimbalzo, larghezza, durata."
+  - type: textarea
+    id: aspetto
+    attributes:
+      label: Come si vede e come si sente
+      description: Colori, animazione, suono quando scatta.
+  - type: input
+    id: arena
+    attributes:
+      label: In quale arena lo vorresti
+      description: Un'arena esistente o un'issue "Arena:".
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        **Per gli agenti:** corsia Arene (#25). L'elemento si descrive con dati in `StageSpec` (`src/shared/stages.ts`, campo opzionale),
+        la logica va in `src/shared/physics/elements.ts` come funzione pura del tempo dell'arena (`ctx.timeMs`) o dello stato dei lottatori,
+        con test in `elements.test.ts`; il disegno in `godot/scripts/world_view.gd` (`_draw_elements`). Se il client deve sapere qualcosa
+        che non ricava dal tempo dell'arena, è un cambio di protocollo: titolo della PR con `Protocollo:`.

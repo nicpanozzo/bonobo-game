@@ -1,0 +1,63 @@
+name: Arena nuova
+description: Proponi un'arena (un posto nostro, un tormentone). Un agente la costruisce nella prossima versione.
+title: "Arena: "
+labels: ["arena", "design", "in attesa"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Grazie! Non serve saper programmare: descrivi l'arena e, se vuoi, allega un disegno.
+        Un agente la traduce in dati in `src/shared/stages.ts` e apre una PR con lo screenshot.
+        Il formato dei dati e gli elementi disponibili sono in [docs/arene.md](https://github.com/nicpanozzo/bonobo-game/blob/main/docs/arene.md).
+  - type: input
+    id: nome
+    attributes:
+      label: Nome dell'arena
+      placeholder: "Es. Il Bar di Marco"
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Che posto è e perché ci somiglia
+      description: Il ricordo, la battuta o la persona del canale dietro l'arena. Chi è citato deve essere d'accordo.
+    validations:
+      required: true
+  - type: textarea
+    id: forma
+    attributes:
+      label: Forma
+      description: |
+        Com'è fatta: blocchi pieni, piattaforme sottili, buchi. Va benissimo a parole
+        ("un bancone lungo in basso, due sgabelli sopra, un buco a destra") o con un disegno allegato.
+        Lo schermo è 1280×720 pixel; un lottatore è alto 88 e salta circa 160 (300 con il doppio salto).
+    validations:
+      required: true
+  - type: checkboxes
+    id: elementi
+    attributes:
+      label: Elementi che si muovono o fanno male
+      description: Quelli già pronti. Se ne vuoi uno che non c'è, apri anche un'issue "Elemento nuovo".
+      options:
+        - label: Ascensore (sale e scende, si ferma ai piani)
+        - label: Navetta (piattaforma che va avanti e indietro, o fa un giro)
+        - label: Spuntoni (sempre accesi)
+        - label: Fuoco o laser (si accende e si spegne a ciclo)
+  - type: textarea
+    id: dati
+    attributes:
+      label: Dati (facoltativo)
+      description: Se sai già i numeri, scrivili qui nel formato di docs/arene.md. Altrimenti li sceglie l'agente.
+      render: json
+  - type: textarea
+    id: aspetto
+    attributes:
+      label: Colori, sfondo, musica
+      description: Colori o un'immagine di sfondo (solo se nostra o con licenza libera).
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        **Per gli agenti:** quando l'issue ha abbastanza dettagli, spostala a `pronto`. Corsia Arene (#25).
+        Un'arena = una PR che aggiunge un blocco in `STAGES` (`src/shared/stages.ts`), rilancia `npm run export:godot`
+        e mette nella PR uno screenshot del client Godot. Niente codice nuovo: se serve un elemento che non esiste, prima l'issue dell'elemento.
