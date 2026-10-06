@@ -33,7 +33,9 @@ export function resetItems(world: ItemWorld): void {
   world.spawnTimer = ITEM_RULES.firstSpawnMs;
 }
 
-const busy = (f: Fighter) => f.eliminated || f.respawning || f.hitstun || f.hitstopTimer > 0 || f.attack !== null;
+// Non si raccoglie né si lancia mentre si è occupati: colpiti, in attacco, in schivata o inermi dopo il recupero
+const busy = (f: Fighter) =>
+  f.eliminated || f.respawning || f.hitstun || f.hitstopTimer > 0 || f.attack !== null || f.helpless || f.dodgeTimer > 0;
 
 // Il tasto usato per l'oggetto non deve far partire anche un attacco: lo si segna come già premuto
 function consumeAttackKeys(f: Fighter) {
