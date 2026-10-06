@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { CHARACTERS, getCharacter, type AnimationName } from "../shared/characters";
-import { ATTACKS, FIGHTER, PLATFORMS, STAGE, STOCKS, WORLD } from "../shared/constants";
+import { ATTACKS, FIGHTER, STOCKS, WORLD } from "../shared/constants";
+import { getStage, type StageSpec } from "../shared/stages";
 import type { GameSnapshot, InputState, PlayerState } from "../shared/types";
 import type { GameSocket } from "./network";
 
@@ -34,6 +35,8 @@ export class GameScene extends Phaser.Scene {
   private lastInput = "";
   private statusText!: Phaser.GameObjects.Text;
   private bannerText!: Phaser.GameObjects.Text;
+  private stageLayer?: Phaser.GameObjects.Container;
+  private maxStocks = STOCKS; // vite a testa nelle regole della stanza
 
   constructor() {
     super("game");
@@ -48,8 +51,10 @@ export class GameScene extends Phaser.Scene {
   // e uno snapshot arrivato prima troverebbe testi e animazioni non ancora creati.
   private listen() {
     const data = this.joinData;
-    this.socket.on("welcome", ({ id, room }) => {
+    this.socket.on("welcome", ({ id, room, stageId, rules }) => {
       this.myId = id;
+      this.maxStocks = rules.stocks;
+      this.drawStage(getStage(stageId));
       this.statusText.setText(`Stanza: ${room} · manda il link agli amici`);
     });
     this.socket.on("roomFull", () => this.statusText.setText("Stanza piena! Prova con un altro ?room="));
@@ -81,15 +86,8 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
-    // Sfondo, palco principale e piattaforme sottili
-    this.add.rectangle(WORLD.width / 2, WORLD.height / 2, WORLD.width, WORLD.height, 0x1d2b3a);
-    this.add
-      .rectangle(STAGE.x, STAGE.y, STAGE.width, STAGE.thickness, 0x5a3d26)
-      .setOrigin(0, 0)
-      .setStrokeStyle(4, 0x8b6a45);
-    for (const p of PLATFORMS) {
-      this.add.rectangle(p.x, p.y, p.width, 10, 0xa0a8b8).setOrigin(0, 0);
-    }
+    // L'arena vera arriva con il benvenuto del server; intanto si disegna quella base
+    this.drawStage(getStage(undefined));
 
     this.statusText = this.add.text(12, 10, "Connessione...", { fontSize: "16px", color: "#ffffff" });
     this.bannerText = this.add
@@ -98,9 +96,23 @@ export class GameScene extends Phaser.Scene {
       .setDepth(10);
 
     const kb = this.input.keyboard!;
-    this.keys = kb.addKeys("LEFT,RIGHT,UP,DOWN,A,D,W,S,SPACE,J,K") as Record<string, Phaser.Input.Keyboard.Key>;
+    this.keys = kb.addKeys("LEFT,RIGHT,UP,DOWN,A,D,W,S,SPACE,J,K,T") as Record<string, Phaser.Input.Keyboard.Key>;
 
     this.listen();
+  }
+
+  // Sfondo, blocchi pieni e piattaforme sottili dell'arena
+  private drawStage(stage: StageSpec) {
+    this.stageLayer?.destroy();
+    const layer = this.add.container(0, 0).setDepth(-1);
+    layer.add(this.add.rectangle(WORLD.width / 2, WORLD.height / 2, WORLD.width, WORLD.height, stage.colors.sky));
+    for (const s of stage.solids) {
+      layer.add(this.add.rectangle(s.x, s.y, s.width, s.height, stage.colors.solid).setOrigin(0, 0).setStrokeStyle(4, stage.colors.solidEdge));
+    }
+    for (const p of stage.platforms) {
+      layer.add(this.add.rectangle(p.x, p.y, p.width, 10, stage.colors.platform).setOrigin(0, 0));
+    }
+    this.stageLayer = layer;
   }
 
   update(_time: number, delta: number) {
@@ -132,6 +144,7 @@ export class GameScene extends Phaser.Scene {
       down: k.DOWN.isDown || k.S.isDown,
       light: k.J.isDown,
       heavy: k.K.isDown,
+      taunt: k.T.isDown,
     };
     // Mandiamo l'input solo quando cambia, per non intasare la rete
     const key = JSON.stringify(input);
@@ -169,7 +182,7 @@ export class GameScene extends Phaser.Scene {
       const v = this.views.get(p.id)!;
       const slot = WORLD.width / Math.max(ordered.length, 1);
       v.hud.setPosition(slot * i + slot / 2, HUD_Y);
-      v.hud.setText(`${p.name}\n${p.eliminated ? "OUT" : `${p.percent}%`}  ${"●".repeat(Math.max(0, p.stocks))}${"○".repeat(Math.max(0, STOCKS - p.stocks))}`);
+      v.hud.setText(`${p.name}\n${p.eliminated ? "OUT" : `${p.percent}%`}  ${"●".repeat(Math.max(0, p.stocks))}${"○".repeat(Math.max(0, this.maxStocks - p.stocks))}`);
       v.hud.setColor(percentColor(p.percent, p.eliminated));
     });
 

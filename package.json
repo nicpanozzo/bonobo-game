@@ -11,6 +11,7 @@
     "build": "vite build",
     "start": "NODE_ENV=production tsx src/server/index.ts",
     "typecheck": "tsc --noEmit",
+    "test": "tsx --test \"src/**/*.test.ts\"",
     "discord": "node scripts/discord.mjs"
   },
   "engines": {
