@@ -3,20 +3,58 @@ import type { ClientToServer, ServerToClient } from "../shared/types";
 
 export type GameSocket = Socket<ServerToClient, ClientToServer>;
 
-// Stanza, nome e personaggio si leggono dall'indirizzo: ?room=amici&name=Nico&char=egiainuso
-// Senza stanza ne creiamo una a caso e la mettiamo nell'URL, così il link si può condividere.
-export function readRoomAndName() {
+// Quello che serve per entrare in partita: lo sceglie la lobby, o arriva dal link.
+export interface JoinChoice {
+  room: string;
+  name: string;
+  characterId?: string;
+}
+
+const PROFILE_KEY = "bonobo.profile";
+
+// Stanza, nome e personaggio dall'indirizzo: ?room=amici&name=Nico&char=egiainuso
+// (i link vecchi continuano a funzionare), altrimenti dall'ultima visita.
+export function readJoinDefaults(): Partial<JoinChoice> {
   const params = new URLSearchParams(location.search);
-  let room = params.get("room");
-  if (!room) {
-    room = Math.random().toString(36).slice(2, 7);
-    params.set("room", room);
-    history.replaceState(null, "", `?${params}`);
+  const saved = loadProfile();
+  return {
+    room: params.get("room") || undefined,
+    name: params.get("name") || saved.name,
+    characterId: params.get("char") || saved.characterId,
+  };
+}
+
+// Con stanza e nome nell'URL si entra subito, come prima della lobby
+export function hasDirectJoin(d: Partial<JoinChoice>): d is JoinChoice {
+  return new URLSearchParams(location.search).has("name") && !!d.room && !!d.name;
+}
+
+export function randomRoom(): string {
+  return Math.random().toString(36).slice(2, 7);
+}
+
+// Il link da mandare agli amici porta solo la stanza: nome e personaggio li sceglie ognuno
+export function roomLink(room: string): string {
+  return `${location.origin}${location.pathname}?room=${encodeURIComponent(room)}`;
+}
+
+export function saveProfile(choice: JoinChoice) {
+  // La stanza va nell'URL, così ricaricare la pagina riporta nella stessa stanza
+  history.replaceState(null, "", `?room=${encodeURIComponent(choice.room)}`);
+  try {
+    localStorage.setItem(PROFILE_KEY, JSON.stringify({ name: choice.name, characterId: choice.characterId }));
+  } catch {
+    // Navigazione privata o archiviazione bloccata: pazienza, si riscrive il nome la prossima volta
   }
-  const name = params.get("name") || `Bonobo${Math.floor(Math.random() * 100)}`;
-  // Finché non c'è la lobby (#5) il personaggio si sceglie con ?char=
-  const characterId = params.get("char") || undefined;
-  return { room, name, characterId };
+}
+
+function loadProfile(): { name?: string; characterId?: string } {
+  try {
+    const p = JSON.parse(localStorage.getItem(PROFILE_KEY) ?? "{}");
+    return { name: typeof p.name === "string" ? p.name : undefined, characterId: typeof p.characterId === "string" ? p.characterId : undefined };
+  } catch {
+    return {};
+  }
 }
 
 export function connect(): GameSocket {
