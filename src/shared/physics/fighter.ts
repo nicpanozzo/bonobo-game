@@ -13,6 +13,7 @@ export interface Fighter extends PlayerState {
   attackTimer: number; // ms dall'inizio dell'attacco in corso
   cooldownTimer: number; // ms prima di poter attaccare ancora
   hitstunTimer: number;
+  hitstopTimer: number; // ms di fermo dopo un colpo dato o preso (#15)
   respawnTimer: number;
   invulnerableTimer: number;
   alreadyHit: Set<string>; // chi ha già preso questo colpo
@@ -78,6 +79,7 @@ export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
     attackTimer: 0,
     cooldownTimer: 0,
     hitstunTimer: 0,
+    hitstopTimer: 0,
     respawnTimer: 0,
     invulnerableTimer: 0,
     alreadyHit: new Set(),
