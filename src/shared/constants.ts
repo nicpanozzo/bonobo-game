@@ -217,8 +217,13 @@ export const EFFECTS = {
 
 // Bot del server (#20, src/server/bot.ts): quanto è svelto e quando attacca
 export const BOT = {
-  reactionMs: 180, // ogni quanto il bot rivede le sue scelte, ms: più basso = più difficile
-  heavyEvery: 3, // un attacco pesante ogni tanti attacchi
   jumpAtHeight: 90, // pixel: se il bersaglio sta più in alto di così, salta
   edgeMargin: 40, // pixel: a terra non si avvicina al bordo del palco più di così
+};
+
+// Livelli di difficoltà dei bot (#20 passo 3): ?bot=facile, ?bot=semplice, ?bot=difficile
+export const BOT_LEVELS = {
+  facile: { reactionMs: 320, heavyEvery: 5, dodges: false }, // reactionMs: ogni quanto rivede le scelte
+  semplice: { reactionMs: 180, heavyEvery: 3, dodges: false }, // heavyEvery: un pesante ogni tanti attacchi
+  difficile: { reactionMs: 90, heavyEvery: 2, dodges: true }, // dodges: schiva i pesanti che vede arrivare
 };
