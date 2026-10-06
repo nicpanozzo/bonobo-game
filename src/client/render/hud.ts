@@ -55,6 +55,9 @@ export class Hud implements RenderModule {
         this.boxes.set(p.id, box);
       }
       box.setPosition(slot * i + slot / 2, HUD_Y);
+      // In otto i riquadri sono larghi la metà: si scrive più piccolo
+      const size = snap.players.length > 4 ? "15px" : "20px";
+      if (box.style.fontSize !== size) box.setFontSize(size);
       const lives = "●".repeat(Math.max(0, p.stocks)) + "○".repeat(Math.max(0, this.maxStocks - p.stocks));
       box.setText(`${p.name}\n${p.eliminated ? "OUT" : `${p.percent}%`}  ${lives}`);
       setColorIfChanged(box, percentColor(p.percent, p.eliminated));

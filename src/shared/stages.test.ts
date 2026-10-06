@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { FIGHTER, TICK_RATE, WORLD } from "./constants";
+import { FIGHTER, MAX_PLAYERS_PER_ROOM, TICK_RATE, WORLD } from "./constants";
 import { createFighter, stepWorld, type PhysicsContext } from "./physics";
 import { generateStage, seedFromStageId } from "./stageGenerator";
 import { getStage, STAGES, type StageSpec } from "./stages";
@@ -29,7 +29,7 @@ function checkStage(stage: StageSpec) {
   for (const p of stage.platforms) {
     assert.ok(reachable(stage, p), `${stage.id}: piattaforma a ${p.x},${p.y} irraggiungibile`);
   }
-  assert.ok(stage.spawns.length >= 4, `${stage.id}: quattro partenze`);
+  assert.ok(stage.spawns.length >= MAX_PLAYERS_PER_ROOM, `${stage.id}: una partenza per giocatore`);
 
   // Chi parte da ogni punto di partenza resta fermo sul palco
   const ctx: PhysicsContext = { stage, events: [] };

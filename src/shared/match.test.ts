@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { TICK_RATE } from "./constants";
+import { MAX_PLAYERS_PER_ROOM, TICK_RATE } from "./constants";
 import { Match } from "./match";
 import type { GameEvent } from "./types";
 
@@ -56,6 +56,20 @@ describe("partita", () => {
     for (const id of ["a", "b", "c", "d"]) m.addPlayer(id, id.toUpperCase());
     assert.deepEqual(m.players.map((p) => p.team), [1, 2, 1, 2]);
     assert.equal(new Set(m.players.map((p) => p.color)).size, 4, "colori tutti diversi");
+  });
+
+  it("in otto: posti, partenze e colori tutti diversi, poi la stanza è piena", () => {
+    for (const mode of ["ffa", "teams"] as const) {
+      const m = new Match({ rules: { mode } });
+      for (let i = 0; i < MAX_PLAYERS_PER_ROOM; i++) m.addPlayer(`p${i}`, `P${i}`);
+      assert.equal(m.isFull, true);
+      const ps = m.players;
+      assert.equal(new Set(ps.map((p) => p.color)).size, 8, `${mode}: colori diversi`);
+      assert.equal(new Set(ps.map((p) => p.x)).size, 8, `${mode}: partenze diverse`);
+      if (mode === "teams") assert.equal(ps.filter((p) => p.team === 1).length, 4);
+      run(m, 30);
+      assert.ok(ps.every((p) => p.onGround && !p.respawning), `${mode}: tutti fermi sul palco`);
+    }
   });
 
   it("i dati strani dalla rete diventano booleani e i nomi si accorciano", () => {

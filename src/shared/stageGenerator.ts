@@ -92,9 +92,10 @@ export function generateStage(seed: number): StageSpec {
   }
 
   // Partenze sui blocchi pieni, a coppie simmetriche
+  // (otto, uno per giocatore: #55)
   const spawns = islands
-    ? [solids[0].x + solids[0].width * 0.5, solids[1].x + solids[1].width * 0.5, solids[0].x + solids[0].width * 0.25, solids[1].x + solids[1].width * 0.75]
-    : [0.3, 0.7, 0.45, 0.55].map((f) => left + span * f);
+    ? [0.5, 0.25, 0.75, 0.375].flatMap((f) => [solids[0].x + solids[0].width * f, solids[1].x + solids[1].width * (1 - f)])
+    : [0.3, 0.7, 0.45, 0.55, 0.2, 0.8, 0.37, 0.63].map((f) => left + span * f);
 
   const top = Math.min(...platforms.map((p) => p.y));
   return {

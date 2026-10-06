@@ -11,7 +11,7 @@ export const WORLD = {
 export const TICK_RATE = 60; // aggiornamenti della fisica al secondo (server)
 export const SEND_RATE = 30; // stati inviati ai client al secondo
 export const MAX_CATCHUP_TICKS = 5; // passi recuperabili in una volta se il server resta indietro
-export const MAX_PLAYERS_PER_ROOM = 4;
+export const MAX_PLAYERS_PER_ROOM = 8; // 4 contro 4 a squadre (#55)
 
 export const FIGHTER = {
   width: 44,
@@ -74,7 +74,7 @@ export const RESPAWN_MS = 1500; // attesa dopo aver perso una vita
 export const RESPAWN_INVULNERABLE_MS = 1500;
 export const MATCH_RESTART_MS = 5000; // pausa dopo la vittoria prima della nuova partita
 
-export const COLORS = [0xe74c3c, 0x3498db, 0x2ecc71, 0xf1c40f];
+export const COLORS = [0xe74c3c, 0x3498db, 0x2ecc71, 0xf1c40f, 0x9b59b6, 0xe67e22, 0x1abc9c, 0xff6fb5];
 
 // Generatore di arene casuali (stageGenerator.ts). Le altezze tengono conto del salto:
 // un salto da terra sale di circa 160 pixel, con il doppio salto quasi 300.
@@ -90,10 +90,10 @@ export const STAGE_GEN = {
   secondTierChance: 0.6,
 };
 
-// Squadre (#17): due tonalità per squadra, così i compagni si distinguono tra loro
+// Squadre (#17): una tonalità per ogni compagno (fino a 4 contro 4), così i compagni si distinguono tra loro
 export const TEAM_COLORS: Record<1 | 2, number[]> = {
-  1: [0xe74c3c, 0xff9a8a],
-  2: [0x3498db, 0x8fd0ff],
+  1: [0xe74c3c, 0xff9a8a, 0xb03020, 0xff6f5e],
+  2: [0x3498db, 0x8fd0ff, 0x1f5f9a, 0x5dade2],
 };
 export const TEAM_NAMES: Record<1 | 2, string> = { 1: "Rossa", 2: "Blu" };
 
