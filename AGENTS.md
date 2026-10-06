@@ -47,31 +47,40 @@ Bonobo Game non è un picchiaduro qualunque: è il gioco del nostro canale Disco
 ## Comandi
 
 ```bash
-npm install          # Node 20+
+npm install          # Node 22 consigliato (i test usano i pattern di node --test)
 npm run dev          # server di gioco (:3000) + client Vite (:5173) insieme
 npm run typecheck    # tsc --noEmit: deve passare prima di ogni push
+npm test             # test della logica pura in src/shared (*.test.ts): devono passare prima di ogni push
 npm run build        # build del client in dist/: deve passare prima di ogni push
 npm start            # versione di produzione sulla porta 3000
 ```
 
-Per provare il multiplayer apri `http://localhost:5173/?room=test` in due finestre (o due tab). Non esiste ancora una suite di test: se aggiungi logica pura in `src/shared/` puoi proporne una in una PR dedicata.
+Per provare il multiplayer apri `http://localhost:5173` (lobby) o `http://localhost:5173/?room=test&name=A` (entra subito) in due finestre. Se aggiungi o cambi logica in `src/shared/`, aggiungi un test accanto al file (`nome.test.ts`, runner di Node). La CI (`.github/workflows/ci.yml`) lancia typecheck, test e build su ogni PR.
 
 ## Struttura
 
 ```
-src/shared/    codice comune a server e client
-  constants.ts   TUTTI i numeri del gioco (velocità, salto, danni, hitbox, tick rate)
-  physics.ts     logica pura: movimento, gravità, colpi, KO. Niente rete, niente grafica
-  types.ts       stato dei giocatori e PROTOCOLLO Socket.IO (ServerToClient / ClientToServer)
-src/server/    Express + Socket.IO. index.ts gestisce le stanze, Room.ts fa girare la partita
-src/client/    Phaser. GameScene.ts disegna e manda i tasti, network.ts gestisce la connessione
-public/assets/ immagini e suoni (da creare quando serve)
+src/shared/        codice comune a server e client
+  constants.ts       TUTTI i numeri del gioco (velocità, salto, danni, hitbox, tick rate, audio)
+  types.ts           PROTOCOLLO Socket.IO, PlayerState, GameSnapshot e GameEvent (hit, ko, jump...)
+  physics/           logica pura, niente rete né grafica: fighter, movement, attacks, stage, index (stepWorld)
+  characters.ts      personaggi    stages.ts  arene    stageGenerator.ts  arene casuali da un seme
+  rules.ts           regole della partita (MatchRules), chi vince    items.ts  oggetti (#17)
+src/server/        Express + Socket.IO. index.ts gestisce le stanze, Room.ts fa girare la partita (ganci per bot e Discord)
+src/client/        Phaser + menu in HTML
+  LobbyScene.ts      lobby: nome, stanza, lottatore, arena, regole
+  GameScene.ts       regista della partita: passa snapshot ed eventi ai moduli di render/
+  render/            stage, fighters, hud, results, effects, camera, audio: uno per corsia
+  audio/             motore Web Audio, effetti sintetizzati (sfx.ts) e musica
+  input.ts settings.ts OptionsPanel.ts PauseMenu.ts   tasti, preferenze salvate, opzioni, menu Esc
+public/assets/     immagini e suoni, crediti in CREDITS.md
 ```
 
 ## Architettura: regole che non si rompono
 
-- **Il server è l'arbitro.** Il client manda solo `InputState` (tasti premuti) e disegna gli snapshot che riceve. Posizioni, colpi, danni e KO si calcolano in `src/shared/physics.ts`, eseguito dal server. Non aggiungere mai un evento in cui il client dice "ho colpito" o "sono qui".
-- **`physics.ts` resta puro**: niente import da `socket.io`, `phaser`, `express` o dal DOM, così potrà girare anche nel browser per la predizione.
+- **Il server è l'arbitro.** Il client manda solo `InputState` (tasti premuti) e disegna gli snapshot che riceve. Posizioni, colpi, danni e KO si calcolano in `src/shared/physics/`, eseguito dal server. Non aggiungere mai un evento in cui il client dice "ho colpito" o "sono qui".
+- **`physics/` resta puro e deterministico**: niente import da `socket.io`, `phaser`, `express` o dal DOM, niente `Math.random` né orologi, così potrà girare anche nel browser per la predizione.
+- **Effetti, suoni, telecamera e Discord ascoltano gli eventi** (`GameEvent` nello snapshot, prodotti dalla fisica): non leggono né cambiano lo stato della fisica. Un nuovo tipo di evento è un cambio di protocollo.
 - **I numeri vanno in `constants.ts`**, con un nome e un commento sull'unità (pixel/s, ms). Niente valori magici sparsi nel codice.
 - **Il protocollo è un contratto condiviso.** `types.ts` (eventi Socket.IO e forma di `PlayerState`/`GameSnapshot`) si cambia solo in una PR che lo dichiara nel titolo (es. `Protocollo: aggiunge l'evento chat`) e che aggiorna server e client insieme.
 
@@ -121,6 +130,6 @@ public/assets/ immagini e suoni (da creare quando serve)
 
 ## Prima di dire "fatto"
 
-1. `npm run typecheck` e `npm run build` passano.
+1. `npm run typecheck`, `npm test` e `npm run build` passano, e il controllo CI della PR è verde.
 2. Hai avviato `npm run dev` e provato con due finestre, se la modifica tocca il gioco.
 3. La PR usa il template e dice quale agente ha scritto il codice e come l'hai provata.
