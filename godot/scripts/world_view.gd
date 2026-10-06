@@ -11,6 +11,7 @@ var player_ids: Array = []
 
 var positions := {} # id -> Vector2 dei piedi, come disegnati all'ultimo frame (per la telecamera)
 var _alive: Array = [] # id dei lottatori disegnati all'ultimo frame
+var _sampled := {} # id -> stato interpolato di questo frame, calcolato una volta sola in _draw
 var _reached := 0 # checkpoint della Corsa presi da me
 var _sparks: Array = [] # [{ x, y, age, size, color }]
 var _shake := 0.0
@@ -154,8 +155,9 @@ func _draw() -> void:
 
 	var now := Time.get_ticks_msec()
 	_alive = []
+	_sampled = buffer.sample_all(player_ids, now)
 	for id in player_ids:
-		var p: Variant = buffer.sample(id, now)
+		var p: Variant = _sampled.get(id)
 		if p != null:
 			positions[id] = Vector2(p.x, p.y)
 			if not p.eliminated:
@@ -336,7 +338,7 @@ static func _animation_for(p: Dictionary) -> String:
 func _draw_offscreen_markers() -> void:
 	var w: float = game.world.width
 	for id in player_ids:
-		var p: Variant = buffer.sample(id, Time.get_ticks_msec())
+		var p: Variant = _sampled.get(id)
 		if p == null or p.respawning or p.eliminated:
 			continue
 		var cx: float = p.x

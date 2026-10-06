@@ -22,7 +22,7 @@ var audio: Node2D
 var hud: Control
 var lobby: Control
 var playing := false
-var _last_input := ""
+var _last_input := {}
 var _retry_at := -1
 
 
@@ -152,7 +152,7 @@ func _on_connected() -> void:
 	if params.get("bot", "") != "":
 		data.bot = params.bot
 	socket.emit("join", data)
-	_last_input = ""
+	_last_input = {}
 
 
 func _on_disconnected() -> void:
@@ -295,10 +295,9 @@ func _send_input() -> void:
 	var off := get_viewport().gui_get_focus_owner() != null or is_instance_valid(pause_menu)
 	for action in Settings.ACTIONS:
 		input[action] = not off and settings.is_pressed(action)
-	# Come il client web: si manda l'input solo quando cambia
-	var key := JSON.stringify(input)
-	if key != _last_input and socket.is_joined():
-		_last_input = key
+	# Come il client web: si manda l'input solo quando cambia (== confronta i contenuti)
+	if input != _last_input and socket.is_joined():
+		_last_input = input
 		socket.emit("input", input)
 
 
