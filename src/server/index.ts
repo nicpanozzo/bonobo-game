@@ -25,7 +25,7 @@ const rooms = new Map<string, Room>();
 io.on("connection", (socket) => {
   let room: Room | undefined;
 
-  socket.on("join", ({ room: rawCode, name }) => {
+  socket.on("join", ({ room: rawCode, name, characterId }) => {
     if (room) return;
     const code = String(rawCode || "lobby").toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 24) || "lobby";
     let r = rooms.get(code);
@@ -39,7 +39,7 @@ io.on("connection", (socket) => {
     }
     room = r;
     socket.join(code);
-    r.addPlayer(socket.id, String(name || ""));
+    r.addPlayer(socket.id, String(name || ""), typeof characterId === "string" ? characterId : undefined);
     socket.emit("welcome", { id: socket.id, room: code });
     console.log(`[${code}] entra ${socket.id}`);
   });

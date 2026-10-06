@@ -2,6 +2,7 @@
 // premuti dai giocatori, calcola la fisica e manda a tutti lo stato.
 
 import type { Server } from "socket.io";
+import { getCharacter } from "../shared/characters";
 import { COLORS, MATCH_RESTART_MS, MAX_PLAYERS_PER_ROOM, SEND_RATE, TICK_RATE } from "../shared/constants";
 import { createFighter, isAlive, resetForMatch, resolveHits, stepFighter, type Fighter } from "../shared/physics";
 import type { ClientToServer, GameSnapshot, InputState, PlayerState, ServerToClient } from "../shared/types";
@@ -28,9 +29,10 @@ export class Room {
     return this.fighters.size === 0;
   }
 
-  addPlayer(id: string, name: string) {
+  addPlayer(id: string, name: string, characterId?: string) {
     const index = this.freeIndex();
-    this.fighters.set(id, createFighter(id, name.slice(0, 16) || "Bonobo", COLORS[index], index));
+    const character = getCharacter(characterId);
+    this.fighters.set(id, createFighter(id, name.slice(0, 16) || "Bonobo", character.id, COLORS[index], index));
   }
 
   removePlayer(id: string) {
@@ -98,6 +100,7 @@ export class Room {
     const players: PlayerState[] = list.map((f) => ({
       id: f.id,
       name: f.name,
+      characterId: f.characterId,
       color: f.color,
       x: Math.round(f.x),
       y: Math.round(f.y),

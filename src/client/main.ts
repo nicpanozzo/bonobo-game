@@ -3,7 +3,7 @@ import { WORLD } from "../shared/constants";
 import { GameScene } from "./GameScene";
 import { connect, readRoomAndName } from "./network";
 
-const { room, name } = readRoomAndName();
+const { room, name, characterId } = readRoomAndName();
 const socket = connect();
 
 const game = new Phaser.Game({
@@ -16,4 +16,4 @@ const game = new Phaser.Game({
   scene: [],
 });
 
-game.scene.add("game", GameScene, true, { socket, room, name });
+game.scene.add("game", GameScene, true, { socket, room, name, characterId });

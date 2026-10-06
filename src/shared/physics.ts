@@ -43,10 +43,11 @@ export function spawnX(index: number): number {
   return STAGE.x + STAGE.width * slots[index % slots.length];
 }
 
-export function createFighter(id: string, name: string, color: number, index: number): Fighter {
+export function createFighter(id: string, name: string, characterId: string, color: number, index: number): Fighter {
   return {
     id,
     name,
+    characterId,
     color,
     x: spawnX(index),
     y: STAGE.y,
@@ -286,7 +287,7 @@ export function resolveHits(fighters: Fighter[]): void {
 
 // Riporta tutti all'inizio partita
 export function resetForMatch(f: Fighter, index: number): void {
-  Object.assign(f, createFighter(f.id, f.name, f.color, index), { input: f.input, prevInput: f.prevInput });
+  Object.assign(f, createFighter(f.id, f.name, f.characterId, f.color, index), { input: f.input, prevInput: f.prevInput });
 }
 
 export const isAlive = (f: Fighter) => !f.eliminated;

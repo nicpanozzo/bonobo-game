@@ -3,7 +3,7 @@ import type { ClientToServer, ServerToClient } from "../shared/types";
 
 export type GameSocket = Socket<ServerToClient, ClientToServer>;
 
-// Stanza e nome si leggono dall'indirizzo: ?room=amici&name=Nico
+// Stanza, nome e personaggio si leggono dall'indirizzo: ?room=amici&name=Nico&char=egiainuso
 // Senza stanza ne creiamo una a caso e la mettiamo nell'URL, così il link si può condividere.
 export function readRoomAndName() {
   const params = new URLSearchParams(location.search);
@@ -14,7 +14,9 @@ export function readRoomAndName() {
     history.replaceState(null, "", `?${params}`);
   }
   const name = params.get("name") || `Bonobo${Math.floor(Math.random() * 100)}`;
-  return { room, name };
+  // Finché non c'è la lobby (#5) il personaggio si sceglie con ?char=
+  const characterId = params.get("char") || undefined;
+  return { room, name, characterId };
 }
 
 export function connect(): GameSocket {
