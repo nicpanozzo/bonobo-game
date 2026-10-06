@@ -32,7 +32,7 @@ func _draw() -> void:
 
 	# Una scheda per giocatore in basso, come nel gioco web
 	var players: Array = _snap.players
-	var card_w := 170.0
+	var card_w := minf(170.0, (w - 20) / maxi(1, players.size())) # fino a 8 giocatori in una riga
 	var x0 := w / 2 - card_w * players.size() / 2
 	for i in players.size():
 		var p: Dictionary = players[i]
@@ -43,7 +43,7 @@ func _draw() -> void:
 		var name: String = p.name + (" (tu)" if p.id == my_id else "")
 		draw_string(_font, Vector2(x + 20, h - 64), name, HORIZONTAL_ALIGNMENT_LEFT, card_w - 30, 15, Color.WHITE)
 		var pct := "KO" if p.eliminated else "%d%%" % roundi(p.percent)
-		draw_string(_font, Vector2(x + 20, h - 30), pct, HORIZONTAL_ALIGNMENT_LEFT, -1, 30, _percent_color(p.percent))
+		draw_string(_font, Vector2(x + 20, h - 30), pct, HORIZONTAL_ALIGNMENT_LEFT, -1, 28, _percent_color(p.percent))
 		for k in int(p.stocks):
 			draw_circle(Vector2(x + card_w - 24 - k * 14, h - 34), 5, col)
 
