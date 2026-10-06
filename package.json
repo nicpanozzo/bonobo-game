@@ -14,6 +14,7 @@
     "test": "tsx --test \"src/**/*.test.ts\"",
     "discord": "node scripts/discord.mjs",
     "bench": "tsx scripts/bench.ts",
+    "bench:godot": "godot --headless --path godot --script res://tools/bench_client.gd",
     "export:godot": "tsx scripts/export-godot.ts"
   },
   "engines": {

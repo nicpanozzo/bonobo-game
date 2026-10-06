@@ -29,17 +29,31 @@ func push(server_time: float, received_at: float, players: Array) -> void:
 
 # Stato da disegnare per un giocatore all'ora locale `now`, con x e y interpolate
 func sample(id: String, now: float) -> Variant:
+	return sample_all([id], now).get(id)
+
+
+# Come sample, per tutti gli id insieme: la coppia di snapshot si cerca una volta sola per frame
+func sample_all(ids: Array, now: float) -> Dictionary:
+	var out := {}
 	if is_nan(_offset) or _frames.is_empty():
-		return null
+		return out
 	var render_time := now - _offset - delay_ms
 	var i := _frames.size() - 1
 	while i > 0 and _frames[i].t > render_time:
 		i -= 1
 	var a: Dictionary = _frames[i]
+	var b: Dictionary = _frames[i + 1] if i + 1 < _frames.size() and render_time > a.t else {}
+	for id in ids:
+		var p: Variant = _interpolate(id, a, b, render_time)
+		if p != null:
+			out[id] = p
+	return out
+
+
+func _interpolate(id: String, a: Dictionary, b: Dictionary, render_time: float) -> Variant:
 	var pa: Variant = a.players.get(id)
-	if i + 1 >= _frames.size() or pa == null or render_time <= a.t:
+	if b.is_empty() or pa == null:
 		return pa if pa != null else _latest(id)
-	var b: Dictionary = _frames[i + 1]
 	var pb: Variant = b.players.get(id)
 	if pb == null:
 		return pa
