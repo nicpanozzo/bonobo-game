@@ -35,6 +35,8 @@ Se il tuo umano ti dice "trova qualcosa da fare" (o ti dà un'issue), segui ques
 
 Le decisioni di design non scritte nell'issue (valori, tasti, nomi) le scegli tu come dice "Coordinazione tra agenti": un valore ragionevole in `constants.ts` e una riga nella PR.
 
+**Arene ed elementi nuovi** arrivano dai moduli "Arena nuova" ed "Elemento nuovo" (etichetta `arena`): come tradurli in dati e codice è in [docs/arene.md](docs/arene.md).
+
 ## Il gioco deve somigliare a noi
 
 Bonobo Game non è un picchiaduro qualunque: è il gioco del nostro canale Discord. Nomi, mosse, arene, oggetti, frasi, suoni e titoli sono occasioni per metterci dentro le persone, le battute e i ricordi del gruppo.
