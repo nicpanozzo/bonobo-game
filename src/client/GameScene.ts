@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { CHARACTERS, getCharacter, type AnimationName } from "../shared/characters";
 import { ATTACKS, FIGHTER, PLATFORMS, STAGE, STOCKS, WORLD } from "../shared/constants";
 import type { GameSnapshot, InputState, PlayerState } from "../shared/types";
 import type { GameSocket } from "./network";
@@ -11,13 +12,22 @@ interface FighterView {
   label: Phaser.GameObjects.Text;
   marker: Phaser.GameObjects.Triangle; // freccia sul bordo quando si è fuori schermo
   hud: Phaser.GameObjects.Text;
+  sprite?: Phaser.GameObjects.Sprite; // solo per i personaggi con spritesheet; il rettangolo resta come riferimento
   target: PlayerState; // ultimo stato ricevuto dal server
+}
+
+interface JoinData {
+  socket: GameSocket;
+  room: string;
+  name: string;
+  characterId?: string;
 }
 
 const HUD_Y = WORLD.height - 56;
 
 export class GameScene extends Phaser.Scene {
   private socket!: GameSocket;
+  private joinData!: JoinData;
   private myId = "";
   private views = new Map<string, FighterView>();
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
@@ -29,20 +39,48 @@ export class GameScene extends Phaser.Scene {
     super("game");
   }
 
-  init(data: { socket: GameSocket; room: string; name: string }) {
+  init(data: JoinData) {
+    this.joinData = data;
     this.socket = data.socket;
+  }
+
+  // Si ascolta il server solo dopo create(): con gli sprite da caricare, preload() ritarda la scena
+  // e uno snapshot arrivato prima troverebbe testi e animazioni non ancora creati.
+  private listen() {
+    const data = this.joinData;
     this.socket.on("welcome", ({ id, room }) => {
       this.myId = id;
       this.statusText.setText(`Stanza: ${room} · manda il link agli amici`);
     });
     this.socket.on("roomFull", () => this.statusText.setText("Stanza piena! Prova con un altro ?room="));
     this.socket.on("snapshot", (snap) => this.applySnapshot(snap));
-    this.socket.on("connect", () => this.socket.emit("join", { room: data.room, name: data.name }));
+    this.socket.on("connect", () => this.socket.emit("join", { room: data.room, name: data.name, characterId: data.characterId }));
     this.socket.on("disconnect", () => this.statusText.setText("Connessione persa, riprovo..."));
-    if (this.socket.connected) this.socket.emit("join", { room: data.room, name: data.name });
+    if (this.socket.connected) this.socket.emit("join", { room: data.room, name: data.name, characterId: data.characterId });
+  }
+
+  preload() {
+    for (const c of Object.values(CHARACTERS)) {
+      if (!c.sprite) continue;
+      this.load.spritesheet(c.id, c.sprite.path, { frameWidth: c.sprite.frameWidth, frameHeight: c.sprite.frameHeight });
+    }
   }
 
   create() {
+    // Un'animazione per riga dello spritesheet, con chiave "<personaggio>-<animazione>"
+    for (const c of Object.values(CHARACTERS)) {
+      if (!c.sprite) continue;
+      for (const [name, a] of Object.entries(c.sprite.animations)) {
+        const start = a.row * c.sprite.columns;
+        this.anims.create({
+          key: `${c.id}-${name}`,
+          frames: this.anims.generateFrameNumbers(c.id, { start, end: start + a.frames - 1 }),
+          frameRate: a.fps,
+          repeat: a.loop ? -1 : 0,
+        });
+      }
+    }
+
     // Sfondo, palco principale e piattaforme sottili
     this.add.rectangle(WORLD.width / 2, WORLD.height / 2, WORLD.width, WORLD.height, 0x1d2b3a);
     this.add
@@ -61,6 +99,8 @@ export class GameScene extends Phaser.Scene {
 
     const kb = this.input.keyboard!;
     this.keys = kb.addKeys("LEFT,RIGHT,UP,DOWN,A,D,W,S,SPACE,J,K") as Record<string, Phaser.Input.Keyboard.Key>;
+
+    this.listen();
   }
 
   update(_time: number, delta: number) {
@@ -119,6 +159,7 @@ export class GameScene extends Phaser.Scene {
       v.label.destroy();
       v.marker.destroy();
       v.hud.destroy();
+      v.sprite?.destroy();
       this.views.delete(id);
     }
 
@@ -146,17 +187,33 @@ export class GameScene extends Phaser.Scene {
       .text(0, HUD_Y, "", { fontSize: "20px", color: "#ffffff", align: "center", fontStyle: "bold" })
       .setOrigin(0.5, 0)
       .setStroke(`#${p.color.toString(16).padStart(6, "0")}`, 4);
-    return { body, fist, label, marker, hud, target: p };
+    const character = getCharacter(p.characterId);
+    let sprite: Phaser.GameObjects.Sprite | undefined;
+    if (character.sprite && this.textures.exists(character.id)) {
+      // I piedi dello sprite coincidono con quelli del giocatore (y in PlayerState)
+      sprite = this.add.sprite(p.x, p.y, character.id).setOrigin(0.5, 1);
+      body.setVisible(false);
+    }
+    return { body, fist, label, marker, hud, sprite, target: p };
   }
 
   private layout(v: FighterView) {
     const t = v.target;
     const hidden = t.respawning || t.eliminated;
     const top = v.body.y - FIGHTER.height / 2;
-    v.body.setVisible(!hidden);
+    const alpha = t.invulnerable ? 0.4 + 0.3 * Math.sin(this.time.now / 60) : 1;
     v.label.setVisible(!hidden);
-    v.body.setAlpha(t.invulnerable ? 0.4 + 0.3 * Math.sin(this.time.now / 60) : 1);
-    v.body.setFillStyle(t.hitstun ? 0xffffff : t.color);
+    if (v.sprite) {
+      v.sprite.setVisible(!hidden).setAlpha(alpha);
+      v.sprite.setPosition(v.body.x, v.body.y + FIGHTER.height / 2);
+      v.sprite.setFlipX(t.facing === -1);
+      const key = `${t.characterId}-${animationFor(t)}`;
+      if (v.sprite.anims.currentAnim?.key !== key) v.sprite.play(key);
+    } else {
+      v.body.setVisible(!hidden);
+      v.body.setAlpha(alpha);
+      v.body.setFillStyle(t.hitstun ? 0xffffff : t.color);
+    }
 
     // Il colpo si vede già durante la preparazione (più trasparente), pieno quando può colpire
     if (t.attack && !hidden) {
@@ -184,6 +241,15 @@ export class GameScene extends Phaser.Scene {
       v.marker.setRotation(Math.atan2(v.body.y - my, v.body.x - mx) - Math.PI / 2);
     }
   }
+}
+
+// Quale animazione mostrare, dai soli campi dello snapshot
+function animationFor(p: PlayerState): AnimationName {
+  if (p.hitstun) return "hit";
+  if (p.attack) return p.attack;
+  if (!p.onGround) return p.vy < 0 ? "jump" : "fall";
+  if (Math.abs(p.vx) > 20) return "walk";
+  return "idle";
 }
 
 // Bianco a 0%, poi giallo, arancione e rosso man mano che si accumula danno

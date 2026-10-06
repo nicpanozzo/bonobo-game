@@ -14,6 +14,7 @@ export type AttackKind = "light" | "heavy";
 export interface PlayerState {
   id: string;
   name: string;
+  characterId: string; // vedi src/shared/characters.ts
   color: number;
   x: number; // centro orizzontale
   y: number; // piedi
@@ -45,6 +46,6 @@ export interface ServerToClient {
 }
 
 export interface ClientToServer {
-  join: (data: { room: string; name: string }) => void;
+  join: (data: { room: string; name: string; characterId?: string }) => void;
   input: (input: InputState) => void;
 }
