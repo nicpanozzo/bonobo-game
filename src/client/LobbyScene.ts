@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { CHARACTERS, getCharacter, type CharacterSpec } from "../shared/characters";
 import { WORLD } from "../shared/constants";
+import { sanitizeRules } from "../shared/rules";
 import { randomStageId, seedFromStageId } from "../shared/stageGenerator";
 import { getStage, STAGES, type StageSpec } from "../shared/stages";
 import { connect, randomRoom, roomLink, saveProfile, type JoinChoice } from "./network";
@@ -35,6 +36,10 @@ const CSS = `
 #lobby .stage.sel { border-color: #ffcf4a; background: #2a2a10; }
 #lobby .stage canvas { display: block; width: 128px; height: 72px; margin: 0 auto 4px; border-radius: 6px; }
 #lobby .hint { text-transform: none; letter-spacing: 0; opacity: .6; }
+#lobby .rules { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; }
+#lobby .rules select { width: 100%; padding: 8px; font-size: 15px; border-radius: 8px; border: 2px solid #3a5068; background: #0d1520; color: #fff; }
+#lobby .rules .ff { display: flex; align-items: center; gap: 6px; font-size: 14px; margin: 0; text-transform: none; letter-spacing: 0; opacity: 1; }
+#lobby .rules .ff input { width: auto; }
 #lobby .foot { display: flex; justify-content: space-between; margin-top: 14px; font-size: 13px; opacity: .7; }
 #lobby .foot button { background: none; padding: 0; font-size: 13px; text-decoration: underline; color: #eee; }
 #lobby .msg { min-height: 1.2em; font-size: 13px; color: #8fd18f; margin-top: 6px; }
@@ -82,6 +87,23 @@ export class LobbyScene extends Phaser.Scene {
         <div class="chars" data-chars></div>
         <label>Arena <span class="hint">(la sceglie chi crea la stanza)</span></label>
         <div class="stages" data-stages></div>
+        <label>Regole <span class="hint">(anche queste le sceglie chi crea la stanza)</span></label>
+        <div class="rules">
+          <select id="lobby-mode" title="Modalità">
+            <option value="ffa">Tutti contro tutti</option>
+            <option value="teams">Squadre 2 contro 2</option>
+          </select>
+          <select id="lobby-stocks" title="Vite">
+            ${[1, 2, 3, 4, 5].map((n) => `<option value="${n}">${n} ${n === 1 ? "vita" : "vite"}</option>`).join("")}
+          </select>
+          <select id="lobby-time" title="Tempo">
+            <option value="0">Senza tempo</option>
+            <option value="120">2 minuti</option>
+            <option value="180">3 minuti</option>
+            <option value="300">5 minuti</option>
+          </select>
+          <label class="ff"><input type="checkbox" id="lobby-ff" /> Fuoco amico</label>
+        </div>
         <button class="play" type="submit">Gioca</button>
         <div class="foot">
           <span>Mandate a tutti lo stesso link per giocare insieme</span>
@@ -96,6 +118,19 @@ export class LobbyScene extends Phaser.Scene {
     const roomInput = $<HTMLInputElement>("#lobby-room");
     const msg = $<HTMLDivElement>("[data-msg]");
     nameInput.value = d.name ?? "";
+    const rules = sanitizeRules(d.rules);
+    const modeSel = $<HTMLSelectElement>("#lobby-mode");
+    const stocksSel = $<HTMLSelectElement>("#lobby-stocks");
+    const timeSel = $<HTMLSelectElement>("#lobby-time");
+    const ffBox = $<HTMLInputElement>("#lobby-ff");
+    modeSel.value = rules.mode;
+    stocksSel.value = String(Math.min(5, rules.stocks));
+    timeSel.value = [0, 120, 180, 300].includes(rules.timeLimitSec) ? String(rules.timeLimitSec) : "0";
+    ffBox.checked = rules.friendlyFire;
+    // Il fuoco amico ha senso solo a squadre
+    const syncFf = () => (ffBox.parentElement!.style.visibility = modeSel.value === "teams" ? "visible" : "hidden");
+    modeSel.addEventListener("change", syncFf);
+    syncFf();
     roomInput.value = d.room ?? randomRoom();
 
     // Un riquadro per ogni personaggio di characters.ts
@@ -156,6 +191,12 @@ export class LobbyScene extends Phaser.Scene {
         room: cleanRoom() || randomRoom(),
         characterId,
         stageId,
+        rules: {
+          mode: modeSel.value === "teams" ? "teams" : "ffa",
+          stocks: Number(stocksSel.value),
+          timeLimitSec: Number(timeSel.value),
+          friendlyFire: ffBox.checked,
+        },
       };
       saveProfile(choice);
       this.scene.start("game", { socket: connect(), ...choice });

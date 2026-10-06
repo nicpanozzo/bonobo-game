@@ -1,7 +1,7 @@
 import Phaser from "phaser";
-import { STOCKS, WORLD } from "../../shared/constants";
+import { STOCKS, TEAM_NAMES, WORLD } from "../../shared/constants";
 import { getStage } from "../../shared/stages";
-import type { GameSnapshot } from "../../shared/types";
+import type { GameSnapshot, MatchRules } from "../../shared/types";
 import type { MatchInfo, RenderModule } from "./module";
 
 const HUD_Y = WORLD.height - 56;
@@ -12,12 +12,19 @@ export class Hud implements RenderModule {
   private banner: Phaser.GameObjects.Text;
   private boxes = new Map<string, Phaser.GameObjects.Text>();
   private maxStocks = STOCKS; // vite a testa nelle regole della stanza
+  private timer: Phaser.GameObjects.Text;
+  private rules?: MatchRules;
 
   constructor(private scene: Phaser.Scene) {
     this.status = scene.add.text(12, 10, "Connessione...", { fontSize: "16px", color: "#ffffff" }).setDepth(20);
     this.banner = scene.add
       .text(WORLD.width / 2, 200, "", { fontSize: "48px", color: "#ffffff", fontStyle: "bold" })
       .setOrigin(0.5)
+      .setDepth(20);
+    this.timer = scene.add
+      .text(WORLD.width / 2, 12, "", { fontSize: "28px", color: "#ffffff", fontStyle: "bold" })
+      .setOrigin(0.5, 0)
+      .setStroke("#000000", 4)
       .setDepth(20);
   }
 
@@ -27,7 +34,9 @@ export class Hud implements RenderModule {
 
   onWelcome(info: MatchInfo) {
     this.maxStocks = info.rules.stocks;
-    this.setStatus(`Stanza: ${info.room} · ${getStage(info.stageId).name} · manda il link agli amici`);
+    this.rules = info.rules;
+    const mode = info.rules.mode === "teams" ? "Squadre" : "Tutti contro tutti";
+    this.setStatus(`Stanza: ${info.room} · ${getStage(info.stageId).name} · ${mode} · manda il link agli amici`);
   }
 
   onSnapshot(snap: GameSnapshot) {
@@ -57,7 +66,17 @@ export class Hud implements RenderModule {
     }
 
     const winner = snap.players.find((p) => p.id === snap.winnerId);
-    this.banner.setText(winner ? `${winner.name} vince!` : "");
+    const team = winner && this.rules?.mode === "teams" ? TEAM_NAMES[winner.team as 1 | 2] : undefined;
+    this.banner.setText(winner ? `${team ? `Squadra ${team}` : winner.name} vince!` : "");
+
+    // Conto alla rovescia, rosso negli ultimi 10 secondi
+    if (snap.timeLeftMs === null) {
+      this.timer.setText("");
+    } else {
+      const sec = Math.ceil(snap.timeLeftMs / 1000);
+      this.timer.setText(`${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`);
+      this.timer.setColor(sec <= 10 ? "#ff5a4a" : "#ffffff");
+    }
   }
 }
 
