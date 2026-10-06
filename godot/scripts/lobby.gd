@@ -28,6 +28,7 @@ var _ff := CheckBox.new()
 var _character := ""
 var _stage := ""
 var _random_stage := ""
+var _server_len := 0 # per riconoscere un link incollato nel campo del server
 
 
 func setup(game_data: Dictionary, params: Dictionary, link: Callable) -> void:
@@ -127,7 +128,9 @@ func setup(game_data: Dictionary, params: Dictionary, link: Callable) -> void:
 
 	box.add_child(UI.heading("Server"))
 	_server.text = params.server
-	_server.placeholder_text = "https://... (il link della serata)"
+	_server.placeholder_text = "https://... (o incolla qui il link della serata)"
+	_server_len = _server.text.length()
+	_server.text_changed.connect(_on_server_text)
 	box.add_child(_server)
 
 	var play := UI.button("Gioca", _submit, true)
@@ -236,6 +239,7 @@ func _stage_card(id: String, text: String, spec: Dictionary) -> Button:
 
 
 func _submit() -> void:
+	_apply_link(_server.text) # anche un link scritto a mano
 	var mode: String = MODES[_mode.selected][0]
 	get_viewport().gui_release_focus() # così i tasti tornano alla partita
 	join_requested.emit({
@@ -246,6 +250,37 @@ func _submit() -> void:
 		"rules": {"mode": mode, "stocks": _stocks.selected + 1, "timeLimitSec": TIMES[_time.selected][0], "friendlyFire": _ff.button_pressed},
 		"server": _server.text.strip_edges(),
 	})
+
+
+# Nell'app da scaricare si incolla il link mandato sul Discord (".../godot/?room=amici&server=...")
+# e si prendono server e stanza da lì. Solo se il testo arriva tutto insieme, cioè incollato
+func _on_server_text(text: String) -> void:
+	var pasted := text.length() - _server_len > 1
+	_server_len = text.length()
+	if pasted:
+		_apply_link(text)
+
+
+func _apply_link(text: String) -> void:
+	var found := parse_link(text)
+	if found.has("room"):
+		_room.text = found.room
+	if found.has("server"):
+		_server.text = found.server
+		_server_len = _server.text.length()
+		_server.caret_column = _server_len
+
+
+static func parse_link(text: String) -> Dictionary:
+	var found := {}
+	var at := text.find("?")
+	if at < 0:
+		return found
+	for pair in text.substr(at + 1).strip_edges().split("&", false):
+		var kv := pair.split("=", true, 1)
+		if kv.size() == 2 and kv[1] != "" and kv[0] in ["room", "server"]:
+			found[kv[0]] = kv[1].uri_decode()
+	return found
 
 
 func _clean_room() -> String:
