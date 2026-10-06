@@ -16,10 +16,18 @@ interface FighterView {
   target: PlayerState; // ultimo stato ricevuto dal server
 }
 
+interface JoinData {
+  socket: GameSocket;
+  room: string;
+  name: string;
+  characterId?: string;
+}
+
 const HUD_Y = WORLD.height - 56;
 
 export class GameScene extends Phaser.Scene {
   private socket!: GameSocket;
+  private joinData!: JoinData;
   private myId = "";
   private views = new Map<string, FighterView>();
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
@@ -31,8 +39,15 @@ export class GameScene extends Phaser.Scene {
     super("game");
   }
 
-  init(data: { socket: GameSocket; room: string; name: string; characterId?: string }) {
+  init(data: JoinData) {
+    this.joinData = data;
     this.socket = data.socket;
+  }
+
+  // Si ascolta il server solo dopo create(): con gli sprite da caricare, preload() ritarda la scena
+  // e uno snapshot arrivato prima troverebbe testi e animazioni non ancora creati.
+  private listen() {
+    const data = this.joinData;
     this.socket.on("welcome", ({ id, room }) => {
       this.myId = id;
       this.statusText.setText(`Stanza: ${room} · manda il link agli amici`);
@@ -84,6 +99,8 @@ export class GameScene extends Phaser.Scene {
 
     const kb = this.input.keyboard!;
     this.keys = kb.addKeys("LEFT,RIGHT,UP,DOWN,A,D,W,S,SPACE,J,K") as Record<string, Phaser.Input.Keyboard.Key>;
+
+    this.listen();
   }
 
   update(_time: number, delta: number) {

@@ -41,7 +41,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         jump: { row: 2, frames: 2, fps: 8, loop: false },
         fall: { row: 3, frames: 2, fps: 6, loop: true },
         light: { row: 4, frames: 3, fps: 20, loop: false },
-        heavy: { row: 5, frames: 4, fps: 10, loop: false },
+        heavy: { row: 5, frames: 4, fps: 8, loop: false }, // il colpo di remo cade quando la hitbox si attiva (startupMs)
         hit: { row: 6, frames: 2, fps: 10, loop: true },
       },
     },
