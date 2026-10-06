@@ -15,10 +15,11 @@ permissions:
   contents: write
   pull-requests: write
 
-# Una sola alla volta: tutte riscrivono lo stesso branch
+# Un push nuovo sulla stessa PR annulla l'anteprima vecchia. PR diverse si costruiscono in parallelo
+# e si mettono in fila solo al push del branch (sotto, con --force-with-lease e qualche tentativo).
 concurrency:
-  group: anteprime
-  cancel-in-progress: false
+  group: anteprima-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 env:
   GODOT_VERSION: 4.5.1
@@ -62,16 +63,25 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898283+github-actions[bot]@users.noreply.github.com"
           URL="https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
-          if git clone -q --depth 1 --branch anteprime "$URL" /tmp/anteprime 2>/dev/null; then :; else
-            mkdir -p /tmp/anteprime && cd /tmp/anteprime && git init -q -b anteprime && git remote add origin "$URL"
-          fi
-          cd /tmp/anteprime
-          rm -rf "pr/$PR"
-          if [ "${{ github.event.action }}" != "closed" ]; then mkdir -p "pr/$PR" && cp -r /tmp/web/. "pr/$PR/"; fi
-          # Un commit solo, riscritto: il branch non cresce a ogni push
-          git checkout -q --orphan nuovo && git add -A
-          git commit -q --allow-empty -m "Anteprime delle PR aperte"
-          git push -q -f origin nuovo:anteprime
+          # Un'altra PR può aver riscritto il branch nel frattempo: si riparte da quello nuovo e si riprova
+          for tentativo in 1 2 3 4 5 6; do
+            rm -rf /tmp/anteprime
+            if git clone -q --depth 1 --branch anteprime "$URL" /tmp/anteprime 2>/dev/null; then
+              PRIMA=$(git -C /tmp/anteprime rev-parse HEAD)
+            else
+              mkdir -p /tmp/anteprime && git -C /tmp/anteprime init -q -b anteprime && git -C /tmp/anteprime remote add origin "$URL"
+              PRIMA=""
+            fi
+            cd /tmp/anteprime
+            rm -rf "pr/$PR"
+            if [ "${{ github.event.action }}" != "closed" ]; then mkdir -p "pr/$PR" && cp -r /tmp/web/. "pr/$PR/"; fi
+            # Un commit solo, riscritto: il branch non cresce a ogni push
+            git checkout -q --orphan nuovo && git add -A
+            git commit -q --allow-empty -m "Anteprime delle PR aperte"
+            if git push -q --force-with-lease="anteprime:$PRIMA" origin nuovo:anteprime; then exit 0; fi
+            cd / && sleep $((tentativo * 3))
+          done
+          echo "Il branch anteprime cambia troppo spesso, riprova con un push" && exit 1
       - name: Link nella PR
         if: github.event.action != 'closed'
         env:
