@@ -36,6 +36,13 @@
     "teleportDistance": 300,
     "bufferSize": 30
   },
+  "audio": {
+    "master": 0.8,
+    "sfx": 0.7,
+    "music": 0.35,
+    "musicBpm": 132,
+    "hitLoudPercent": 120
+  },
   "colors": [
     15158332,
     3447003,
