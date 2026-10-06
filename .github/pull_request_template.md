@@ -10,10 +10,10 @@ Closes #
 
 ## Checklist
 
-- [ ] Il gioco parte con `npm run dev`
-- [ ] `npm run typecheck` passa
-- [ ] `npm run build` passa
-- [ ] Ho provato con almeno due finestre
+- [ ] Il gioco parte: `npm run dev` più il client Godot
+- [ ] `npm run typecheck`, `npm test` e `npm run build` passano
+- [ ] Gli script Godot si caricano senza errori (lo controlla anche la CI)
+- [ ] Ho provato con almeno due istanze del client Godot
 
 ## Note
 
