@@ -18,6 +18,7 @@
     <a class="brand" href="#">🦍 Bonobo Game</a>
     <nav>
       <a href="#gioca">Gioca</a>
+      <a href="#novita">Cosa c'è</a>
       <a href="#prova">Prova</a>
       <a href="#roadmap">Roadmap</a>
       <a href="#parlamento">Parlamento</a>
@@ -31,7 +32,7 @@
       <div class="hero-text">
         <p class="kicker">Un picchiaduro fatto dal Discord, per il Discord</p>
         <h1>Bonobo<br>Game</h1>
-        <p class="lead">Il platform fighter dei Bonobi, stile Brawlhalla e Smash. Scarica il gioco o aprilo nel browser, chiama gli amici e cercate di buttarvi giù dall'arena.</p>
+        <p class="lead">Il platform fighter dei Bonobi, stile Brawlhalla e Smash, fatto con Godot. Scarica il gioco o aprilo nel browser, chiama gli amici e cercate di buttarvi giù dall'arena.</p>
         <p class="lead">Ogni lottatore, arena e provocazione viene da noi: le nostre facce, i nostri tormentoni, le nostre voci.</p>
         <div class="cta">
           <a id="play-link" class="btn btn-primary" href="#gioca">Scarica e gioca</a>
@@ -90,15 +91,42 @@
             <li>Lascia aperta la finestra nera finché giocate: chiuderla spegne la serata.</li>
           </ol>
           <p class="small muted">Si blocca all'apertura? Valgono gli stessi passi del gioco qui sopra (su Mac il file si chiama <code>bonobo-server</code>). Server per gli altri sistemi: <a href="https://github.com/nicpanozzo/bonobo-game/releases/latest/download/bonobo-server-windows.zip">Windows</a> · <a href="https://github.com/nicpanozzo/bonobo-game/releases/latest/download/bonobo-server-mac.zip">Mac con chip Apple</a> · <a href="https://github.com/nicpanozzo/bonobo-game/releases/latest/download/bonobo-server-mac-intel.zip">Mac Intel</a> · <a href="https://github.com/nicpanozzo/bonobo-game/releases/latest/download/bonobo-server-linux.zip">Linux</a>. Dal codice: <code>npm run host</code>.</p>
+          <details class="help">
+            <summary>Ospiti dal codice con <code>npm run host</code> su un Mac Intel?</summary>
+            <p>Lì <code>brew install cloudflared</code> può fallire (succede con i Command Line Tools vecchi). Scarica il programma ufficiale da <a href="https://github.com/cloudflare/cloudflared/releases/latest">github.com/cloudflare/cloudflared/releases</a>, il file <code>cloudflared-darwin-amd64.tgz</code>, oppure dal Terminale:</p>
+            <p><code>curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-darwin-amd64.tgz | tar xz -C /usr/local/bin</code></p>
+            <p>Lo zip del server qui sopra ha già <code>cloudflared</code> dentro: questo serve solo a chi parte dal codice.</p>
+          </details>
         </article>
       </div>
     </section>
 
-    <section id="regole">
+    <section id="novita">
+      <h2>Cosa c'è nel gioco</h2>
+      <p>Il gioco ufficiale è il client fatto con Godot: lo scarichi qui sopra o lo apri nel browser. Ecco cosa è entrato finora.</p>
+      <div class="shots">
+        <figure><img src="img/fabbrica.jpg" alt="La Fabbrica: il fuoco nella fossa, gli spuntoni ai bordi e le piattaforme che si muovono" loading="lazy" width="1280" height="720"><figcaption>La Fabbrica, contro il bot difficile: il fuoco si accende nella fossa, ai bordi ci sono gli spuntoni.</figcaption></figure>
+        <figure><img src="img/bandiera.jpg" alt="Una partita a Bandiera, squadra rossa contro squadra blu" loading="lazy" width="1280" height="720"><figcaption>Bandiera: rossi contro blu, si porta a casa la bandiera degli altri.</figcaption></figure>
+        <figure><img src="img/lobby.jpg" alt="La lobby: nome, stanza, lottatore, arena, regole e bot" loading="lazy" width="1280" height="720"><figcaption>La lobby: chi crea la stanza sceglie arena, regole e bot.</figcaption></figure>
+        <figure><img src="img/crediti.jpg" alt="I titoli di coda nella lobby" loading="lazy" width="1280" height="720"><figcaption>I titoli di coda: chi ha fatto cosa.</figcaption></figure>
+      </div>
+      <div class="cards4">
+        <article class="rule"><span class="big">🏁</span><h3>Quattro modalità</h3><p>Tutti contro tutti, Squadre, Bandiera a squadre e Corsa: un percorso nuovo a ogni stanza, vince chi arriva prima al traguardo.</p></article>
+        <article class="rule"><span class="big">🏭</span><h3>Arene con trappole</h3><p>Il Palco, Le Isole e La Fabbrica, con ascensori, navette, fuoco e spuntoni. Oppure Casuale, un'arena nuova ogni volta.</p></article>
+        <article class="rule"><span class="big">🍌</span><h3>Oggetti</h3><p>Dal cielo cadono banane: avvicinati e premi J o K per raccoglierle, poi di nuovo per lanciarle in faccia a qualcuno.</p></article>
+        <article class="rule"><span class="big">🤖</span><h3>Bot per allenarsi</h3><p>Da soli si gioca contro il manichino, il bot facile, quello normale o il difficile, che torna sul palco quando lo lanci fuori.</p></article>
+        <article class="rule"><span class="big">🏆</span><h3>Classifica</h3><p>Le partite tra amici finiscono nella classifica della settimana. Risultati e titoli divertenti arrivano sul Discord.</p></article>
+        <article class="rule"><span class="big">🥋</span><h3>Mosse nuove</h3><p>Attacchi diversi tenendo su o giù, in aria, la schivata con L e il recupero verso l'alto con K + su mentre cadi.</p></article>
+        <article class="rule"><span class="big">🎛️</span><h3>Opzioni</h3><p>Tasti da cambiare, volume, schermo intero e un menu con Esc per copiare il link della stanza.</p></article>
+        <article class="rule"><span class="big">🎬</span><h3>Titoli di coda</h3><p>Nella lobby c'è il bottone Crediti: ogni disegno, suono e idea porta il nome di chi l'ha fatta.</p></article>
+      </div>
+    </section>
+
+    <section id="regole" class="band">
       <h2>Come si gioca</h2>
       <div class="cards4">
         <article class="rule"><span class="big">%</span><h3>Danno in percentuale</h3><p>I colpi non tolgono vita: fanno salire la tua percentuale. Più è alta, più voli lontano.</p></article>
-        <article class="rule"><span class="big">💨</span><h3>Fuori dall'arena</h3><p>Se ti lanciano oltre i bordi perdi una vita. Ognuno ne ha 3, vince l'ultimo in piedi.</p></article>
+        <article class="rule"><span class="big">💨</span><h3>Fuori dall'arena</h3><p>Se ti lanciano oltre i bordi perdi una vita. Di solito sono 3, vince l'ultimo in piedi.</p></article>
         <article class="rule"><span class="big">⤴</span><h3>Doppio salto</h3><p>Le piattaforme sottili si attraversano da sotto. Col doppio salto rientri quando ti hanno lanciato.</p></article>
         <article class="rule"><span class="big">👥</span><h3>Fino a 4 in stanza</h3><p>Ogni partita è una stanza con il suo link: lo mandi sul canale e chi entra gioca.</p></article>
       </div>
@@ -108,6 +136,11 @@
         <tr><td><kbd>S</kbd> o <kbd>↓</kbd></td><td>Scendere da una piattaforma, caduta veloce</td></tr>
         <tr><td><kbd>J</kbd></td><td>Attacco leggero: veloce, spinge poco</td></tr>
         <tr><td><kbd>K</kbd></td><td>Attacco pesante: lento, lancia lontano</td></tr>
+        <tr><td><kbd>J</kbd> o <kbd>K</kbd> + <kbd>↑</kbd> / <kbd>↓</kbd></td><td>Attacchi verso l'alto o radenti; in aria cambiano ancora</td></tr>
+        <tr><td><kbd>K</kbd> + <kbd>↑</kbd> in aria</td><td>Recupero: uno slancio verso l'alto per tornare sul palco</td></tr>
+        <tr><td><kbd>L</kbd></td><td>Schivata: per un attimo i colpi non ti prendono</td></tr>
+        <tr><td><kbd>J</kbd> o <kbd>K</kbd> vicino a un oggetto</td><td>Raccoglierlo; con l'oggetto in mano, lanciarlo</td></tr>
+        <tr><td><kbd>T</kbd> · <kbd>Esc</kbd> · <kbd>M</kbd></td><td>Provocazione · menu e opzioni · musica</td></tr>
       </table>
     </section>
 
@@ -230,13 +263,13 @@
         <article class="rule"><span class="big">🎨</span><h3>Disegni</h3><p>Sprite dei lottatori, arene, sfondi. Bastano anche scarabocchi da cui partire.</p></article>
         <article class="rule"><span class="big">🎤</span><h3>Suoni e voci</h3><p>Colpi, musica, e soprattutto le vostre voci per provocazioni e annunciatore.</p></article>
         <article class="rule"><span class="big">💡</span><h3>Idee e voti</h3><p>Mosse, nomi, tormentoni. Le scelte di design passano dai sondaggi sul canale.</p></article>
-        <article class="rule"><span class="big">⌨️</span><h3>Codice</h3><p>TypeScript, Phaser e Socket.IO. Va benissimo anche farlo con il tuo agente AI.</p></article>
+        <article class="rule"><span class="big">⌨️</span><h3>Codice</h3><p>Godot (GDScript) per il gioco, TypeScript e Socket.IO per il server. Va benissimo anche farlo con il tuo agente AI.</p></article>
       </div>
       <ol class="steps">
         <li>Chiedi a Nicola di aggiungerti come collaboratore su GitHub.</li>
         <li>Scegli un lavoro <a href="#roadmap">da prendere adesso</a> e scrivi "ci penso io" nell'issue.</li>
         <li>Segui la guida passo passo in <a href="https://github.com/nicpanozzo/bonobo-game/blob/main/CONTRIBUTING.md">CONTRIBUTING.md</a>. Se lavori con un agente, le sue regole sono in <a href="https://github.com/nicpanozzo/bonobo-game/blob/main/AGENTS.md">AGENTS.md</a>.</li>
-        <li>Apri la Pull Request: un altro del gruppo la prova e la unisce.</li>
+        <li>Apri la Pull Request: quando i controlli automatici sono verdi la unisci tu. Se vuoi un parere chiedilo pure sul Discord.</li>
       </ol>
       <h3>Chi l'ha fatto finora</h3>
       <div id="contributors" class="avatars"><p class="muted">Carico…</p></div>
