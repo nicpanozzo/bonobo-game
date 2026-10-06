@@ -63,7 +63,7 @@ godot --headless --path godot --import            # Godot 4.5.1: carica il proge
 godot --headless --path godot --quit-after 60     # nessun "SCRIPT ERROR" = gli script si caricano
 ```
 
-Per provare il multiplayer, con `npm run dev` acceso apri `godot/project.godot` in Godot 4.5 e premi F5 in due istanze (menu Debug, più istanze), oppure da terminale `godot --path godot -- --room=test --name=A` due volte. Se aggiungi o cambi logica in `src/shared/`, aggiungi un test accanto al file (`nome.test.ts`, runner di Node) e rilancia `npm run export:godot`. La CI (`.github/workflows/ci.yml`) lancia typecheck, test, build, il controllo di `godot/data` e il caricamento degli script Godot su ogni PR.
+Per provare il multiplayer, con `npm run dev` acceso apri `godot/project.godot` in Godot 4.5 e premi F5 in due istanze (menu Debug, più istanze), oppure da terminale `godot --path godot -- --room=test --name=A` due volte. Se aggiungi o cambi logica in `src/shared/`, aggiungi un test accanto al file (`nome.test.ts`, runner di Node) e rilancia `npm run export:godot`. La CI (`.github/workflows/ci.yml`) lancia typecheck, test, build, il controllo di `godot/data` e il caricamento degli script Godot su ogni PR. Un push nuovo annulla le esecuzioni ancora in corso sulla stessa PR (anche Release, anteprime e sito su `main`), quindi non serve aspettare quelle vecchie; per un commit che non va controllato (solo testo, piano) scrivi `[skip ci]` nel messaggio.
 
 ## Struttura
 

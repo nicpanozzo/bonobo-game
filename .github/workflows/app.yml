@@ -29,9 +29,10 @@ on:
 permissions:
   contents: write
 
+# Se arriva un merge (o un push sulla PR) più nuovo, quello vecchio si annulla: la Release giusta è l'ultima
 concurrency:
   group: app-${{ github.event_name }}-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 env:
   GODOT_VERSION: 4.5.1
@@ -39,26 +40,11 @@ env:
 jobs:
   # Il server in un eseguibile solo (scripts/build-server.mjs), con accanto cloudflared per il tunnel.
   # Il Mac si costruisce su un Mac perché l'eseguibile va firmato (ad hoc) dopo averlo modificato.
+  # Sulle PR basta Linux per vedere che il server si costruisce: i Mac sono i runner più lenti da avere.
   server:
     strategy:
       matrix:
-        include:
-          - name: linux
-            os: ubuntu-latest
-            node: linux-x64
-            cloudflared: cloudflared-linux-amd64
-          - name: windows
-            os: ubuntu-latest
-            node: win-x64
-            cloudflared: cloudflared-windows-amd64.exe
-          - name: mac
-            os: macos-latest
-            node: darwin-arm64
-            cloudflared: cloudflared-darwin-arm64.tgz
-          - name: mac-intel
-            os: macos-latest
-            node: darwin-x64
-            cloudflared: cloudflared-darwin-amd64.tgz
+        include: ${{ fromJSON(github.event_name == 'pull_request' && '[{"name":"linux","os":"ubuntu-latest","node":"linux-x64","cloudflared":"cloudflared-linux-amd64"}]' || '[{"name":"linux","os":"ubuntu-latest","node":"linux-x64","cloudflared":"cloudflared-linux-amd64"},{"name":"windows","os":"ubuntu-latest","node":"win-x64","cloudflared":"cloudflared-windows-amd64.exe"},{"name":"mac","os":"macos-latest","node":"darwin-arm64","cloudflared":"cloudflared-darwin-arm64.tgz"},{"name":"mac-intel","os":"macos-latest","node":"darwin-x64","cloudflared":"cloudflared-darwin-amd64.tgz"}]') }}
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
