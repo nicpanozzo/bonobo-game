@@ -1,39 +1,33 @@
-// Una stanza = una partita. Il server è l'arbitro: riceve solo i tasti
-// premuti dai giocatori, calcola la fisica e manda a tutti lo stato.
+// Una stanza = una partita in rete. Il server è l'arbitro: riceve solo i tasti
+// premuti dai giocatori, fa avanzare la partita (src/shared/match.ts) a passo fisso
+// e manda a tutti lo stato.
 
 import type { Server } from "socket.io";
-import { getCharacter } from "../shared/characters";
-import { COLORS, MATCH_RESTART_MS, MAX_PLAYERS_PER_ROOM, SEND_RATE, TEAM_COLORS, TICK_RATE } from "../shared/constants";
-import { createFighter, resetForMatch, stepWorld, type Fighter, type PhysicsContext } from "../shared/physics";
-import { canHitWithRules, lastStanding, leaderOnTime, sanitizeRules } from "../shared/rules";
-import { getStage, type StageSpec } from "../shared/stages";
-import type { ClientToServer, GameEvent, GameSnapshot, InputState, MatchRules, PlayerState, ServerToClient } from "../shared/types";
+import { MAX_CATCHUP_TICKS, SEND_RATE, TICK_RATE } from "../shared/constants";
+import { Match, type MatchEndEvent, type MatchOptions } from "../shared/match";
+import type { Fighter } from "../shared/physics";
+import type { ClientToServer, GameEvent, InputState, ServerToClient } from "../shared/types";
 
-export interface RoomOptions {
-  stageId?: string;
-  rules?: Partial<MatchRules>;
-}
+export type RoomOptions = MatchOptions;
 
 // Punti di aggancio per chi estende la stanza senza toccarne il cuore:
 // bot.ts (#20) si iscrive a onTick, discord.ts e stats.ts (#18) a onMatchEnd.
 export interface RoomHooks {
-  onTick?: (room: Room, fighters: Fighter[]) => void;
+  onTick?: (room: Room, fighters: readonly Fighter[]) => void;
   onEvents?: (room: Room, events: GameEvent[]) => void;
-  onMatchEnd?: (room: Room, result: Extract<GameEvent, { type: "matchEnd" }>, fighters: Fighter[]) => void;
+  onMatchEnd?: (room: Room, result: MatchEndEvent, fighters: readonly Fighter[]) => void;
 }
 
+const TICK_MS = 1000 / TICK_RATE;
+const TICKS_PER_SNAPSHOT = Math.round(TICK_RATE / SEND_RATE);
+
 export class Room {
-  readonly stage: StageSpec;
-  readonly rules: MatchRules;
-  private fighters = new Map<string, Fighter>();
-  private slots = new Map<string, number>(); // posto di ognuno nella stanza (0-3): decide partenza e colore
+  readonly match: Match;
   private loop: NodeJS.Timeout;
   private ticks = 0;
-  private winnerId: string | null = null;
-  private restartTimer = 0;
-  private matchTimeMs = 0;
+  private lastTime = performance.now();
+  private accumulator = 0;
   private pendingEvents: GameEvent[] = []; // eventi accumulati fino al prossimo snapshot
-  private ctx: PhysicsContext;
 
   constructor(
     public readonly code: string,
@@ -41,162 +35,73 @@ export class Room {
     options: RoomOptions = {},
     private hooks: RoomHooks = {},
   ) {
-    this.stage = getStage(options.stageId);
-    this.rules = sanitizeRules(options.rules);
-    const rules = this.rules;
-    this.ctx = { stage: this.stage, events: [], canHit: (a, t) => canHitWithRules(rules, a.team, t.team) };
-    this.loop = setInterval(() => this.tick(), 1000 / TICK_RATE);
+    this.match = new Match(options);
+    // setInterval da solo sbanda di qualche ms a ogni giro: controlliamo l'orologio
+    // più spesso e facciamo tanti passi fissi quanti ne sono maturati (fixed timestep)
+    this.loop = setInterval(() => this.pump(), TICK_MS / 2);
+  }
+
+  get stage() {
+    return this.match.stage;
+  }
+
+  get rules() {
+    return this.match.rules;
   }
 
   get isFull() {
-    return this.fighters.size >= MAX_PLAYERS_PER_ROOM;
+    return this.match.isFull;
   }
 
   get isEmpty() {
-    return this.fighters.size === 0;
+    return this.match.size === 0;
   }
 
   addPlayer(id: string, name: string, characterId?: string) {
-    const index = this.freeIndex();
-    const character = getCharacter(characterId);
-    const team = this.rules.mode === "teams" ? this.smallerTeam() : 0;
-    const fighter = createFighter(
-      {
-        id,
-        name: name.slice(0, 16) || "Bonobo",
-        characterId: character.id,
-        color: team ? this.teamColor(team as 1 | 2) : COLORS[index],
-        team,
-        index,
-        stocks: this.rules.stocks,
-      },
-      this.stage,
-    );
-    this.slots.set(id, index);
-    this.fighters.set(id, fighter);
-  }
-
-  // Si entra nella squadra con meno giocatori (a parità, la Rossa)
-  private smallerTeam(): 1 | 2 {
-    const count = (t: number) => [...this.fighters.values()].filter((f) => f.team === t).length;
-    return count(2) < count(1) ? 2 : 1;
-  }
-
-  private teamColor(team: 1 | 2): number {
-    const used = new Set([...this.fighters.values()].map((f) => f.color));
-    return TEAM_COLORS[team].find((c) => !used.has(c)) ?? TEAM_COLORS[team][0];
+    this.match.addPlayer(id, name, characterId);
   }
 
   removePlayer(id: string) {
-    this.fighters.delete(id);
-    this.slots.delete(id);
+    this.match.removePlayer(id);
   }
 
   setInput(id: string, input: InputState) {
-    const f = this.fighters.get(id);
-    if (!f) return;
-    f.input = {
-      left: !!input.left,
-      right: !!input.right,
-      up: !!input.up,
-      down: !!input.down,
-      light: !!input.light,
-      heavy: !!input.heavy,
-      taunt: !!input.taunt,
-    };
+    this.match.setInput(id, input);
   }
 
-  // A fine partita chiunque può ricominciare subito, senza aspettare il conto alla rovescia
   requestRematch() {
-    if (this.winnerId) this.restartMatch([...this.fighters.values()]);
+    this.match.requestRematch();
   }
 
   destroy() {
     clearInterval(this.loop);
   }
 
-  private freeIndex(): number {
-    const used = new Set(this.slots.values());
-    for (let i = 0; i < MAX_PLAYERS_PER_ROOM; i++) if (!used.has(i)) return i;
-    return 0;
+  private pump() {
+    const now = performance.now();
+    this.accumulator += now - this.lastTime;
+    this.lastTime = now;
+    // Dopo un blocco lungo (debugger, server sovraccarico) non si recupera tutto in un colpo
+    this.accumulator = Math.min(this.accumulator, TICK_MS * MAX_CATCHUP_TICKS);
+    while (this.accumulator >= TICK_MS) {
+      this.accumulator -= TICK_MS;
+      this.tick();
+    }
   }
 
   private tick() {
-    const dt = 1000 / TICK_RATE;
-    const list = [...this.fighters.values()];
-    this.hooks.onTick?.(this, list);
-    stepWorld(list, dt, this.ctx);
-    this.updateMatch(list, dt);
-    // ctx.events raccoglie anche quelli nati fuori dal tick (es. la rivincita)
-    if (this.ctx.events.length) {
-      this.hooks.onEvents?.(this, this.ctx.events);
-      this.pendingEvents.push(...this.ctx.events);
-      this.ctx.events = [];
+    this.hooks.onTick?.(this, this.match.players);
+    const events = this.match.step(TICK_MS);
+    if (events.length) {
+      this.hooks.onEvents?.(this, events);
+      for (const e of events) if (e.type === "matchEnd") this.hooks.onMatchEnd?.(this, e, this.match.players);
+      this.pendingEvents.push(...events);
     }
 
     this.ticks++;
-    if (this.ticks % Math.round(TICK_RATE / SEND_RATE) === 0) {
-      this.io.to(this.code).emit("snapshot", this.snapshot(list));
+    if (this.ticks % TICKS_PER_SNAPSHOT === 0) {
+      this.io.to(this.code).emit("snapshot", this.match.snapshot(this.pendingEvents, Date.now()));
       this.pendingEvents = [];
     }
-  }
-
-  // Vince l'ultimo (o l'ultima squadra) con vite rimaste, o chi è avanti allo scadere del tempo.
-  // Dopo una pausa, o se qualcuno chiede la rivincita, si ricomincia.
-  private updateMatch(list: Fighter[], dt: number) {
-    if (this.winnerId) {
-      this.restartTimer -= dt;
-      if (this.restartTimer <= 0) this.restartMatch(list);
-      return;
-    }
-    if (list.length >= 2) this.matchTimeMs += dt; // il tempo corre solo quando c'è qualcuno contro cui giocare
-    const timeUp = this.rules.timeLimitSec > 0 && this.matchTimeMs >= this.rules.timeLimitSec * 1000;
-    const winner = lastStanding(this.rules, list) ?? (timeUp ? leaderOnTime(this.rules, list) : undefined);
-    if (winner) {
-      this.winnerId = winner.id;
-      this.restartTimer = MATCH_RESTART_MS;
-      const result = { type: "matchEnd" as const, winnerId: winner.id, winnerTeam: winner.team, durationMs: Math.round(this.matchTimeMs) };
-      this.ctx.events.push(result);
-      this.hooks.onMatchEnd?.(this, result, list);
-    } else if (list.length > 0 && list.every((f) => f.eliminated)) {
-      this.restartMatch(list); // chi gioca da solo e finisce le vite riparte subito
-    }
-  }
-
-  private restartMatch(list: Fighter[]) {
-    this.winnerId = null;
-    this.matchTimeMs = 0;
-    for (const f of list) resetForMatch(f, this.slots.get(f.id) ?? 0, this.rules.stocks, this.stage);
-    this.ctx.events.push({ type: "matchStart" });
-  }
-
-  private timeLeftMs(): number | null {
-    if (this.rules.timeLimitSec <= 0) return null;
-    return Math.max(0, Math.round(this.rules.timeLimitSec * 1000 - this.matchTimeMs));
-  }
-
-  private snapshot(list: Fighter[]): GameSnapshot {
-    const players: PlayerState[] = list.map((f) => ({
-      id: f.id,
-      name: f.name,
-      characterId: f.characterId,
-      color: f.color,
-      team: f.team,
-      x: Math.round(f.x),
-      y: Math.round(f.y),
-      vx: Math.round(f.vx),
-      vy: Math.round(f.vy),
-      facing: f.facing,
-      percent: f.percent,
-      stocks: f.stocks,
-      onGround: f.onGround,
-      attack: f.attack,
-      attackActive: f.attackActive,
-      hitstun: f.hitstun,
-      respawning: f.respawning,
-      invulnerable: f.invulnerable,
-      eliminated: f.eliminated,
-    }));
-    return { t: Date.now(), players, winnerId: this.winnerId, timeLeftMs: this.timeLeftMs(), events: this.pendingEvents };
   }
 }

@@ -9,7 +9,9 @@ import { Room } from "./Room";
 const PORT = Number(process.env.PORT) || 3000;
 const app = express();
 const http = createServer(app);
-const io = new Server<ClientToServer, ServerToClient>(http, { cors: { origin: "*" } });
+// Gli snapshot sono JSON molto ripetitivi (stessi nomi di campo 30 volte al secondo):
+// la compressione del WebSocket li riduce di molto a un costo di CPU trascurabile con 4 giocatori
+const io = new Server<ClientToServer, ServerToClient>(http, { cors: { origin: "*" }, perMessageDeflate: { threshold: 256 } });
 
 // In produzione lo stesso server serve anche il gioco già compilato (npm run build)
 if (process.env.NODE_ENV === "production") {
