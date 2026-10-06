@@ -206,3 +206,11 @@ export const EFFECTS = {
   percentShakePerDamage: 0.6, // pixel di tremolio per ogni punto di danno preso
   percentShakeMax: 9, // pixel: tremolio massimo della percentuale
 };
+
+// Bot del server (#20, src/server/bot.ts): quanto è svelto e quando attacca
+export const BOT = {
+  reactionMs: 180, // ogni quanto il bot rivede le sue scelte, ms: più basso = più difficile
+  heavyEvery: 3, // un attacco pesante ogni tanti attacchi
+  jumpAtHeight: 90, // pixel: se il bersaglio sta più in alto di così, salta
+  edgeMargin: 40, // pixel: a terra non si avvicina al bordo del palco più di così
+};
