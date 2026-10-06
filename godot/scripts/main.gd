@@ -122,6 +122,7 @@ func _process(_delta: float) -> void:
 	if playing:
 		_send_input()
 		_follow(_delta)
+		world.view_left = camera.position.x
 
 
 # Nei percorsi della Corsa, più larghi dello schermo, la telecamera segue il proprio lottatore

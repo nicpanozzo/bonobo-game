@@ -17,6 +17,9 @@ var _reached := 0 # checkpoint della Corsa presi da me
 var _sparks: Array = [] # [{ x, y, age, size, color }]
 var _shake := 0.0
 var _font: Font = ThemeDB.fallback_font
+var view_left := 0.0 # bordo sinistro dello schermo nel mondo (la telecamera scorre nella Corsa)
+var _textures := {} # id personaggio -> Texture2D dello spritesheet
+var _anims := {} # id giocatore -> { name, since }: animazione in corso e da quando
 
 
 func setup(game_data: Dictionary) -> void:
@@ -25,6 +28,10 @@ func setup(game_data: Dictionary) -> void:
 	buffer.teleport_distance = game.net.teleportDistance
 	buffer.size = int(game.net.bufferSize)
 	set_stage(game.defaultStageId)
+	for id in game.characters:
+		var c: Dictionary = game.characters[id]
+		if c.get("sprite") != null:
+			_textures[id] = load("res://data/" + c.sprite.path)
 
 
 func set_stage(stage_id: String) -> void:
@@ -95,6 +102,8 @@ func _draw() -> void:
 			if not p.eliminated:
 				_draw_fighter(p, now)
 
+	_draw_offscreen_markers()
+
 	for s in _sparks:
 		var k: float = s.age / HIT_SPARK_MS
 		var c: Color = s.color
@@ -130,34 +139,96 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 	# Chi è appena rientrato lampeggia finché è invulnerabile
 	if p.respawning or (p.invulnerable and int(now / 100) % 2 == 0):
 		return
-	var color := _color(p.color)
-	if p.hitstun:
-		color = color.lightened(0.5)
-	var body := Rect2(p.x - fw / 2, p.y - fh, fw, fh)
-	draw_rect(body, color)
-	if p.id == my_id:
-		draw_rect(body, Color.WHITE, false, 3.0)
-	# Occhio dalla parte in cui si guarda
-	draw_circle(Vector2(p.x + p.facing * fw * 0.22, p.y - fh * 0.78), 5.0, Color.WHITE)
-	draw_circle(Vector2(p.x + p.facing * fw * 0.27, p.y - fh * 0.78), 2.5, Color.BLACK)
+	var character: Dictionary = game.characters.get(p.characterId, game.characters[game.defaultCharacterId])
+	var head := fh # altezza della testa sopra i piedi: lo sprite può essere più alto del corpo
+	if _textures.has(character.id):
+		head = maxf(fh, character.sprite.frameHeight)
+		_draw_sprite(p, character, now)
+	else:
+		var color := _color(p.color)
+		if p.hitstun:
+			color = color.lightened(0.5)
+		var body := Rect2(p.x - fw / 2, p.y - fh, fw, fh)
+		draw_rect(body, color)
+		if p.id == my_id:
+			draw_rect(body, Color.WHITE, false, 3.0)
+		# Occhio dalla parte in cui si guarda
+		draw_circle(Vector2(p.x + p.facing * fw * 0.22, p.y - fh * 0.78), 5.0, Color.WHITE)
+		draw_circle(Vector2(p.x + p.facing * fw * 0.27, p.y - fh * 0.78), 2.5, Color.BLACK)
 
 	# Colpo in corso: la stessa hitbox di attackBox() in src/shared/physics/attacks.ts
 	if p.attack != null:
 		var spec: Dictionary = game.attacks[p.attack]
 		var x: float = p.x + fw / 2 if p.facing == 1 else p.x - fw / 2 - spec.range
-		var c := Color(1, 1, 1, 0.85) if p.attackActive else Color(1, 1, 1, 0.25)
+		var c := Color("ff9f43") if p.attack == "heavy" else Color.WHITE
+		c.a = 0.85 if p.attackActive else 0.25
 		draw_rect(Rect2(x, p.y - fh * 0.7, spec.range, spec.height), c)
 
 	var label := "%s  %d%%" % [p.name, roundi(p.percent)]
 	var size := _font.get_string_size(label, HORIZONTAL_ALIGNMENT_CENTER, -1, 16)
-	draw_string(_font, Vector2(p.x - size.x / 2, p.y - fh - 10), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color.WHITE)
+	draw_string(_font, Vector2(p.x - size.x / 2, p.y - head - 10), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color.WHITE)
+	if p.id == my_id and _textures.has(character.id):
+		# Un triangolino sopra il nome dice chi sei, al posto del bordo bianco del rettangolo
+		var top: float = p.y - head - 30
+		draw_colored_polygon(PackedVector2Array([Vector2(p.x - 7, top - 10), Vector2(p.x + 7, top - 10), Vector2(p.x, top)]), Color.WHITE)
 
 	# Bandiera: chi la porta ha una bandierina del colore della squadra sopra la testa
 	if p.get("carrier", false):
-		var top: float = p.y - fh - 34
+		var top: float = p.y - head - 34
 		draw_rect(Rect2(p.x - 1, top - 30, 3, 30), Color.WHITE)
 		var team_color := Color("e74c3c") if int(p.team) == 1 else Color("3498db")
 		draw_colored_polygon(PackedVector2Array([Vector2(p.x + 2, top - 30), Vector2(p.x + 26, top - 22), Vector2(p.x + 2, top - 14)]), team_color)
+
+
+# Un fotogramma dello spritesheet, con i piedi dello sprite su quelli del giocatore
+# e girato dalla parte in cui guarda (come FighterViews in src/client/render/fighters.ts)
+func _draw_sprite(p: Dictionary, character: Dictionary, now: float) -> void:
+	var sheet: Dictionary = character.sprite
+	var name := _animation_for(p)
+	var state: Dictionary = _anims.get(p.id, {})
+	if state.get("name") != name:
+		state = {"name": name, "since": now}
+		_anims[p.id] = state
+	var a: Dictionary = sheet.animations[name]
+	var frame := int((now - state.since) / 1000.0 * a.fps)
+	frame = frame % int(a.frames) if a.loop else mini(frame, int(a.frames) - 1)
+	var fw: float = sheet.frameWidth
+	var fh: float = sheet.frameHeight
+	var src := Rect2(frame * fw, a.row * fh, fw, fh)
+	draw_set_transform(Vector2(p.x, p.y), 0, Vector2(p.facing, 1))
+	draw_texture_rect_region(_textures[character.id], Rect2(-fw / 2, -fh, fw, fh), src)
+	draw_set_transform(Vector2.ZERO)
+
+
+# Quale animazione mostrare, dai soli campi dello snapshot (animationFor in fighters.ts)
+static func _animation_for(p: Dictionary) -> String:
+	if p.hitstun:
+		return "hit"
+	if p.attack != null:
+		return p.attack
+	if not p.onGround:
+		return "jump" if p.vy < 0 else "fall"
+	if absf(p.vx) > 20:
+		return "walk"
+	return "idle"
+
+
+# Freccia sul bordo dello schermo per chi è stato lanciato fuori (o resta indietro nella Corsa)
+func _draw_offscreen_markers() -> void:
+	var w: float = game.world.width
+	var h: float = game.world.height
+	for id in player_ids:
+		var p: Variant = buffer.sample(id, Time.get_ticks_msec())
+		if p == null or p.respawning or p.eliminated:
+			continue
+		var cx: float = p.x
+		var cy: float = p.y - game.fighter.height / 2.0
+		if cx >= view_left and cx <= view_left + w and cy >= 0 and cy <= h:
+			continue
+		var m := Vector2(clampf(cx, view_left + 16, view_left + w - 16), clampf(cy, 16, h - 16))
+		var dir := (Vector2(cx, cy) - m).normalized()
+		var side := dir.orthogonal() * 9
+		draw_colored_polygon(PackedVector2Array([m + dir * 14, m - dir * 4 + side, m - dir * 4 - side]), _color(p.color))
 
 
 static func _color(n: Variant) -> Color:
