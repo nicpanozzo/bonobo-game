@@ -1,6 +1,8 @@
 # Esporta il gioco Godot per Windows, Mac e Linux e lo pubblica come Release su GitHub,
-# a ogni merge su main che tocca godot/. I link "latest" puntano sempre all'ultima versione:
+# a ogni merge su main che tocca godot/ o il server. I link "latest" puntano sempre all'ultima versione:
 # https://github.com/nicpanozzo/bonobo-game/releases/latest/download/bonobo-game-windows.zip
+# Nella stessa Release c'è il server per ospitare una serata con un doppio clic (#78):
+# https://github.com/nicpanozzo/bonobo-game/releases/latest/download/bonobo-server-windows.zip
 name: App
 
 on:
@@ -8,6 +10,10 @@ on:
     branches: [main]
     paths:
       - 'godot/**'
+      - 'src/server/**'
+      - 'src/shared/**'
+      - 'scripts/build-server.mjs'
+      - 'package-lock.json'
       - '.github/workflows/app.yml'
   workflow_dispatch:
 
@@ -22,7 +28,87 @@ env:
   GODOT_VERSION: 4.5.1
 
 jobs:
+  # Il server in un eseguibile solo (scripts/build-server.mjs), con accanto cloudflared per il tunnel.
+  # Il Mac si costruisce su un Mac perché l'eseguibile va firmato (ad hoc) dopo averlo modificato.
+  server:
+    strategy:
+      matrix:
+        include:
+          - name: linux
+            os: ubuntu-latest
+            node: linux-x64
+            cloudflared: cloudflared-linux-amd64
+          - name: windows
+            os: ubuntu-latest
+            node: win-x64
+            cloudflared: cloudflared-windows-amd64.exe
+          - name: mac
+            os: macos-latest
+            node: darwin-arm64
+            cloudflared: cloudflared-darwin-arm64.tgz
+          - name: mac-intel
+            os: macos-latest
+            node: darwin-x64
+            cloudflared: cloudflared-darwin-amd64.tgz
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Scarica node e cloudflared per ${{ matrix.name }}
+        run: |
+          mkdir -p dl pacco
+          V=$(node -v)
+          CF=https://github.com/cloudflare/cloudflared/releases/latest/download/${{ matrix.cloudflared }}
+          if [ "${{ matrix.node }}" = win-x64 ]; then
+            curl -sSL -o dl/node https://nodejs.org/dist/$V/win-x64/node.exe
+            curl -sSL -o pacco/cloudflared.exe $CF
+          else
+            curl -sSL https://nodejs.org/dist/$V/node-$V-${{ matrix.node }}.tar.gz | tar -xz -C dl --strip-components=2 node-$V-${{ matrix.node }}/bin/node
+            case "${{ matrix.cloudflared }}" in
+              *.tgz) curl -sSL $CF | tar -xz -C pacco cloudflared ;;
+              *) curl -sSL -o pacco/cloudflared $CF ;;
+            esac
+            chmod +x pacco/cloudflared
+          fi
+      - name: Costruisce il server
+        run: |
+          case "${{ matrix.name }}" in
+            windows) TARGET=win; OUT=pacco/bonobo-server.exe ;;
+            mac*) TARGET=mac; OUT=pacco/bonobo-server ;;
+            *) TARGET=linux; OUT=pacco/bonobo-server ;;
+          esac
+          node scripts/build-server.mjs --target $TARGET --node dl/node --out $OUT
+          cat > pacco/LEGGIMI.txt <<'EOF'
+          Server di Bonobo Game: ospita una serata con un doppio clic.
+
+          1. Apri bonobo-server (su Windows bonobo-server.exe). Lascia cloudflared accanto, serve per il tunnel.
+          2. Dopo qualche secondo il link della serata è copiato: incollalo sul Discord.
+          3. Si apre il gioco nel browser: entra anche tu. Chi ha l'app incolla il link nel campo Server.
+          4. Lascia aperta la finestra finché giocate: chiuderla spegne la serata.
+
+          Istruzioni con le immagini: https://nicpanozzo.github.io/bonobo-game/#ospita
+          EOF
+          ls -la pacco
+      - name: Prova che l'eseguibile parte (solo dove può girare)
+        if: matrix.name == 'linux' || matrix.name == 'mac'
+        run: |
+          ./pacco/bonobo-server > server.log 2>&1 &
+          for i in $(seq 1 20); do curl -sf http://localhost:3000/health && break; sleep 1; done
+          curl -sf http://localhost:3000/health
+          kill %1 || true
+          cat server.log
+      - run: (cd pacco && zip -qry ../bonobo-server-${{ matrix.name }}.zip .)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bonobo-server-${{ matrix.name }}
+          path: bonobo-server-${{ matrix.name }}.zip
+
   pubblica:
+    needs: server
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -56,6 +142,11 @@ jobs:
           cp godot/build/macos/bonobo-game.zip out/bonobo-game-mac.zip
           (cd godot/build/linux && chmod +x bonobo-game.x86_64 && zip -q ../../../out/bonobo-game-linux.zip bonobo-game.x86_64)
           ls -la out
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: bonobo-server-*
+          path: out
+          merge-multiple: true
       - name: Pubblica la Release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -69,5 +160,9 @@ jobs:
           - **Linux:** scompatta lo zip e apri `bonobo-game.x86_64`.
 
           Senza installare niente si gioca anche dal browser: https://nicpanozzo.github.io/bonobo-game/godot/
+
+          **Per ospitare una serata** scarica `bonobo-server` per il tuo sistema (`mac` per i Mac con chip Apple, `mac-intel` per quelli più vecchi), scompatta e apri `bonobo-server`: dopo qualche secondo il link della serata è già copiato, incollalo sul Discord. Lascia aperta la finestra finché giocate.
+
+          Tutto spiegato passo per passo: https://nicpanozzo.github.io/bonobo-game/#gioca
           EOF
           gh release create "$TAG" out/*.zip --target "$GITHUB_SHA" --title "Bonobo Game ($TAG)" --notes-file /tmp/note.md --latest
