@@ -43,6 +43,12 @@
     "musicBpm": 132,
     "hitLoudPercent": 120
   },
+  "camera": {
+    "margin": 140,
+    "minZoom": 0.7,
+    "maxZoom": 1.3,
+    "smoothingMs": 220
+  },
   "colors": [
     15158332,
     3447003,

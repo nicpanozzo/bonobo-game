@@ -100,6 +100,7 @@ func _leave() -> void:
 	world.reset()
 	hud.reset()
 	camera.position = Vector2.ZERO
+	camera.zoom = Vector2.ONE
 	_show_lobby()
 
 
@@ -171,9 +172,8 @@ func _on_event(name: String, data: Variant) -> void:
 			else:
 				world.set_stage(data.stageId)
 			hud.on_welcome(data, world.stage)
-			camera.limit_left = 0
-			camera.limit_right = int(world.stage_width())
 			camera.position = Vector2.ZERO
+			camera.zoom = Vector2.ONE
 		"snapshot":
 			for e in data.events:
 				world.on_event(e)
@@ -191,21 +191,62 @@ func _process(_delta: float) -> void:
 		_connect()
 	if playing:
 		_send_input()
-		_follow(_delta)
-		world.view_left = camera.position.x
-		audio.view_left = camera.position.x
+		if world.stage_width() > game.world.width:
+			_follow(_delta)
+		else:
+			_frame_fighters(_delta)
+		var view := Rect2(camera.position, Vector2(game.world.width, game.world.height) / camera.zoom.x)
+		world.view_rect = view
+		audio.view_left = view.position.x
 
 
 # Nei percorsi della Corsa, più larghi dello schermo, la telecamera segue il proprio lottatore
 # (come src/client/render/camera.ts): un po' a sinistra del centro, per vedere la strada davanti
 func _follow(delta: float) -> void:
 	var w: float = game.world.width
-	if world.stage_width() <= w or not world.positions.has(world.my_id):
+	if not world.positions.has(world.my_id):
 		return
 	var target: float = world.positions[world.my_id].x - w * 0.4
 	target = clampf(target, 0, world.stage_width() - w)
 	var k := 1.0 - exp(-delta * 1000.0 / 120.0)
 	camera.position.x += (target - camera.position.x) * k
+
+
+# Nelle arene (#12) la telecamera inquadra tutti i lottatori vivi con un po' d'aria attorno:
+# si avvicina quando sono vicini e si allontana quando si sparpagliano, ma non mostra mai
+# più delle zone di espulsione. La posizione è l'angolo in alto a sinistra della vista.
+func _frame_fighters(delta: float) -> void:
+	var cam: Dictionary = game.camera
+	var screen := Vector2(game.world.width, game.world.height)
+	var bz: Dictionary = world.stage.get("blastZone", {"left": 0, "right": screen.x, "top": 0, "bottom": screen.y})
+	var limits := Rect2(bz.left, bz.top, bz.right - bz.left, bz.bottom - bz.top)
+	# Zoom più lontano possibile: quello che riempie le zone di espulsione, o minZoom se è più vicino
+	var far: float = maxf(cam.minZoom, maxf(screen.x / limits.size.x, screen.y / limits.size.y))
+
+	var box := Rect2()
+	var first := true
+	for pos in world.alive_positions():
+		# Il lottatore va dai piedi (pos) alla testa
+		var r := Rect2(pos.x - game.fighter.width / 2.0, pos.y - game.fighter.height, game.fighter.width, game.fighter.height)
+		box = r if first else box.merge(r)
+		first = false
+	var target_zoom := 1.0
+	var center := screen / 2
+	if not first:
+		box = box.grow(cam.margin)
+		target_zoom = clampf(minf(screen.x / box.size.x, screen.y / box.size.y), far, cam.maxZoom)
+		center = box.get_center()
+
+	var k := 1.0 - exp(-delta * 1000.0 / float(cam.smoothingMs))
+	var zoom := lerpf(camera.zoom.x, target_zoom, k)
+	var size := screen / zoom
+	var old_center := camera.position + screen / camera.zoom.x / 2
+	var c := old_center.lerp(center, k)
+	# La vista resta dentro le zone di espulsione
+	c.x = clampf(c.x, limits.position.x + size.x / 2, limits.end.x - size.x / 2)
+	c.y = clampf(c.y, limits.position.y + size.y / 2, limits.end.y - size.y / 2)
+	camera.zoom = Vector2(zoom, zoom)
+	camera.position = c - size / 2
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
