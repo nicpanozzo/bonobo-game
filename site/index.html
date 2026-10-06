@@ -17,6 +17,7 @@
   <header class="topbar">
     <a class="brand" href="#">🦍 Bonobo Game</a>
     <nav>
+      <a href="#gioca">Gioca</a>
       <a href="#prova">Prova</a>
       <a href="#roadmap">Roadmap</a>
       <a href="#parlamento">Parlamento</a>
@@ -30,13 +31,13 @@
       <div class="hero-text">
         <p class="kicker">Un picchiaduro fatto dal Discord, per il Discord</p>
         <h1>Bonobo<br>Game</h1>
-        <p class="lead">Il platform fighter dei Bonobi, stile Brawlhalla e Smash. Si gioca dal browser: apri il link, chiama gli amici e cercate di buttarvi giù dall'arena.</p>
+        <p class="lead">Il platform fighter dei Bonobi, stile Brawlhalla e Smash. Scarica il gioco o aprilo nel browser, chiama gli amici e cercate di buttarvi giù dall'arena.</p>
         <p class="lead">Ogni lottatore, arena e provocazione viene da noi: le nostre facce, i nostri tormentoni, le nostre voci.</p>
         <div class="cta">
-          <a id="play-link" class="btn btn-primary" href="#prova">Prova il sacco qui sotto</a>
-          <a class="btn" href="#lottatore">Proponi il tuo lottatore</a>
+          <a id="play-link" class="btn btn-primary" href="#gioca">Scarica e gioca</a>
+          <a class="btn" href="godot/">Gioca nel browser</a>
         </div>
-        <p id="play-note" class="small muted">Il link per giocare online arriva con il deploy automatico (issue <a href="https://github.com/nicpanozzo/bonobo-game/issues/19">#19</a>).</p>
+        <p id="play-note" class="small muted">Gratis, per Windows, Mac e Linux. Dal browser senza installare niente.</p>
       </div>
       <div class="hero-art" aria-hidden="true">
         <div class="bonobo b1">🦍</div>
@@ -46,7 +47,54 @@
       </div>
     </section>
 
-    <section id="regole" class="band">
+
+    <section id="gioca" class="band">
+      <h2>Scarica e gioca</h2>
+      <p>Sempre l'ultima versione, appena esce. <span id="release-info" class="muted"></span></p>
+      <div class="cta">
+        <a id="dl-game" class="btn btn-primary btn-big" href="https://github.com/nicpanozzo/bonobo-game/releases/latest">Scarica il gioco</a>
+        <a id="dl-browser" class="btn btn-big" href="godot/">Gioca nel browser</a>
+      </div>
+      <p class="small muted">Per altri sistemi: <a href="https://github.com/nicpanozzo/bonobo-game/releases/latest/download/bonobo-game-windows.zip">Windows</a> · <a href="https://github.com/nicpanozzo/bonobo-game/releases/latest/download/bonobo-game-mac.zip">Mac</a> · <a href="https://github.com/nicpanozzo/bonobo-game/releases/latest/download/bonobo-game-linux.zip">Linux</a>. Scompatta lo zip e apri il gioco.</p>
+      <details class="help">
+        <summary>Windows o il Mac non lo vogliono aprire?</summary>
+        <p><strong>Windows:</strong> se compare "PC protetto", clicca "Ulteriori informazioni" e poi "Esegui comunque". Se chiede il permesso per la rete, clicca "Consenti".</p>
+        <p><strong>Mac:</strong> il gioco non è firmato da Apple, quindi la prima volta il Mac lo blocca. Vai in Impostazioni di Sistema → Privacy e sicurezza e premi "Apri comunque" (sui Mac più vecchi basta tasto destro → Apri). Se dice che è danneggiato, apri il Terminale e scrivi <code>xattr -cr ~/Downloads/"Bonobo Game.app"</code>.</p>
+        <p><strong>Linux:</strong> se non parte, rendilo eseguibile con <code>chmod +x bonobo-game.x86_64</code>.</p>
+      </details>
+
+      <div class="ways">
+        <article id="unisciti" class="way">
+          <h3>🎮 Entra in una serata</h3>
+          <ol class="steps">
+            <li>Chi ospita manda il link della serata sul Discord.</li>
+            <li>Incollalo qui ed entri subito nel browser:
+              <form id="join-form" class="join" autocomplete="off">
+                <input id="join-link" type="text" placeholder="https://nicpanozzo.github.io/bonobo-game/godot/?room=..." aria-label="Link della serata">
+                <button class="btn btn-primary" type="submit">Entra</button>
+              </form>
+              <span id="join-msg" class="small muted" role="status"></span>
+            </li>
+            <li>Con il gioco scaricato: incolla lo stesso link nel campo <strong>Server</strong> della lobby e premi <strong>Gioca</strong>.</li>
+          </ol>
+        </article>
+        <article id="ospita" class="way">
+          <h3>🏠 Ospita una serata</h3>
+          <ol class="steps">
+            <li>Scarica il server per il tuo computer:
+              <div class="cta"><a id="dl-server" class="btn btn-primary" href="https://github.com/nicpanozzo/bonobo-game/releases/latest">Scarica il server</a></div>
+              <span id="server-note" class="small muted"></span>
+            </li>
+            <li>Scompatta lo zip e apri <code>bonobo-server</code> con un doppio clic. Lascia <code>cloudflared</code> lì accanto: è quello che ti fa raggiungere dagli amici, senza toccare il router.</li>
+            <li>Dopo qualche secondo il link della serata è già copiato: incollalo sul Discord. Il gioco ti si apre nel browser, entra anche tu.</li>
+            <li>Lascia aperta la finestra nera finché giocate: chiuderla spegne la serata.</li>
+          </ol>
+          <p class="small muted">Si blocca all'apertura? Valgono gli stessi passi del gioco qui sopra (su Mac il file si chiama <code>bonobo-server</code>). Server per gli altri sistemi: <a href="https://github.com/nicpanozzo/bonobo-game/releases/latest/download/bonobo-server-windows.zip">Windows</a> · <a href="https://github.com/nicpanozzo/bonobo-game/releases/latest/download/bonobo-server-mac.zip">Mac con chip Apple</a> · <a href="https://github.com/nicpanozzo/bonobo-game/releases/latest/download/bonobo-server-mac-intel.zip">Mac Intel</a> · <a href="https://github.com/nicpanozzo/bonobo-game/releases/latest/download/bonobo-server-linux.zip">Linux</a>. Dal codice: <code>npm run host</code>.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="regole">
       <h2>Come si gioca</h2>
       <div class="cards4">
         <article class="rule"><span class="big">%</span><h3>Danno in percentuale</h3><p>I colpi non tolgono vita: fanno salire la tua percentuale. Più è alta, più voli lontano.</p></article>

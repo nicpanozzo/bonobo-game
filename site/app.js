@@ -92,6 +92,105 @@ if (GAME_URL) {
   document.getElementById('play-note').textContent = 'Crea una stanza e manda il link sul canale.';
 }
 
+// ---------- scarica e gioca ----------
+
+const DOWNLOAD = `${REPO_URL}/releases/latest/download`;
+const SYSTEMS = {
+  windows: { name: 'Windows', game: 'bonobo-game-windows.zip', server: 'bonobo-server-windows.zip' },
+  mac: { name: 'Mac', game: 'bonobo-game-mac.zip', server: 'bonobo-server-mac.zip' },
+  'mac-intel': { name: 'Mac Intel', game: 'bonobo-game-mac.zip', server: 'bonobo-server-mac-intel.zip' },
+  linux: { name: 'Linux', game: 'bonobo-game-linux.zip', server: 'bonobo-server-linux.zip' },
+};
+
+// Che computer ha chi guarda la pagina. Sul Mac il browser non dice il chip: lo indovina la scheda video
+function detectSystem() {
+  const ua = navigator.userAgent;
+  const platform = navigator.userAgentData?.platform || navigator.platform || '';
+  if (/Android|iPhone|iPad|iPod/i.test(ua) || (/Mac/.test(platform) && navigator.maxTouchPoints > 1)) return 'mobile';
+  if (/Win/i.test(platform)) return 'windows';
+  if (/Mac/i.test(platform)) {
+    try {
+      const gl = document.createElement('canvas').getContext('webgl');
+      const info = gl?.getExtension('WEBGL_debug_renderer_info');
+      const gpu = info ? String(gl.getParameter(info.UNMASKED_RENDERER_WEBGL)) : '';
+      if (/Intel|AMD|Radeon|NVIDIA/i.test(gpu)) return 'mac-intel';
+    } catch {
+      // niente WebGL: si va sul chip Apple, che hanno quasi tutti i Mac di oggi
+    }
+    return 'mac';
+  }
+  if (/Linux|X11/i.test(platform + ua)) return 'linux';
+  return null;
+}
+
+function setupDownloads() {
+  const system = detectSystem();
+  const game = document.getElementById('dl-game');
+  const server = document.getElementById('dl-server');
+  const known = SYSTEMS[system];
+  if (known) {
+    game.href = `${DOWNLOAD}/${known.game}`;
+    game.textContent = `Scarica per ${known.name === 'Mac Intel' ? 'Mac' : known.name}`;
+    server.href = `${DOWNLOAD}/${known.server}`;
+    server.textContent = `Scarica il server per ${known.name}`;
+  } else if (system === 'mobile') {
+    // Il gioco da scaricare è per computer: dal telefono si gioca nel browser
+    game.href = 'godot/';
+    game.textContent = 'Gioca nel browser';
+    document.getElementById('dl-browser').hidden = true;
+    document.getElementById('server-note').textContent = 'Il server si scarica da un computer.';
+  }
+}
+
+async function loadRelease() {
+  const info = document.getElementById('release-info');
+  try {
+    const release = await gh('/releases/latest');
+    info.textContent = `Adesso è la ${release.tag_name}, uscita il ${shortDate(release.published_at)}.`;
+    // Le Release più vecchie del server da scaricare (#78) non lo hanno ancora
+    if (!release.assets.some((a) => a.name.startsWith('bonobo-server'))) {
+      document.getElementById('server-note').textContent = 'Il server da scaricare arriva con la prossima versione: intanto si ospita dal codice con npm run host.';
+    }
+  } catch {
+    // senza GitHub i link "latest" funzionano lo stesso
+  }
+}
+
+// Dal link della serata (o dal solo indirizzo del server) all'indirizzo del gioco nel browser
+function joinUrl(text) {
+  const raw = text.trim();
+  if (!raw) return null;
+  let url;
+  try {
+    url = new URL(raw);
+  } catch {
+    return null;
+  }
+  const params = new URLSearchParams();
+  const room = url.searchParams.get('room');
+  const server = url.searchParams.get('server');
+  if (server) params.set('server', server);
+  else if (!url.hostname.endsWith('github.io')) params.set('server', url.origin); // incollato solo il server
+  else return null;
+  if (room) params.set('room', room);
+  return `godot/?${params}`;
+}
+
+function setupJoin() {
+  const form = document.getElementById('join-form');
+  const msg = document.getElementById('join-msg');
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const target = joinUrl(document.getElementById('join-link').value);
+    if (!target) {
+      msg.textContent = 'Questo non sembra il link di una serata: chiedi a chi ospita di rimandarlo.';
+      return;
+    }
+    msg.textContent = '';
+    location.href = target;
+  });
+}
+
 // ---------- roadmap ----------
 
 let allIssues = [];
@@ -406,6 +505,9 @@ async function loadContributors() {
 
 // ---------- avvio ----------
 
+setupDownloads();
+setupJoin();
+loadRelease();
 renderRoleFilter();
 updatePreview();
 loadRoadmap();
