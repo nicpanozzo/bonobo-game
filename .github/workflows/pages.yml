@@ -1,5 +1,6 @@
 # Pubblica il sito del progetto (cartella site/) su GitHub Pages quando cambia su main.
 # Insieme al sito pubblica il client Godot esportato per il web, in /godot/ (#59).
+# Pubblica anche le anteprime delle PR (branch "anteprime", vedi anteprima.yml) in /pr/<numero>/.
 # Va attivato una volta sola: Settings → Pages → Source: GitHub Actions.
 name: Sito
 
@@ -10,6 +11,10 @@ on:
       - 'site/**'
       - 'godot/**'
       - '.github/workflows/pages.yml'
+  # Quando cambia un'anteprima. workflow_run gira su main, quindi può pubblicare su Pages
+  workflow_run:
+    workflows: [Anteprime]
+    types: [completed]
   workflow_dispatch:
 
 permissions:
@@ -55,6 +60,15 @@ jobs:
           ~/godot/godot --headless --path godot --import
           ~/godot/godot --headless --path godot --export-release Web ../site/godot/index.html
           test -f site/godot/index.wasm
+      - name: Aggiunge le anteprime delle PR in site/pr
+        run: |
+          if git clone -q --depth 1 --branch anteprime "https://github.com/${{ github.repository }}.git" /tmp/anteprime 2>/dev/null && [ -d /tmp/anteprime/pr ]; then
+            shopt -s nullglob
+            cp -r /tmp/anteprime/pr site/pr
+            # Il motore è lo stesso per tutte: si copia quello appena esportato
+            for d in site/pr/*/; do cp site/godot/index.wasm "$d"; done
+            ls site/pr
+          fi
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
