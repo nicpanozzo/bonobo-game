@@ -9,6 +9,8 @@ signal options_requested
 const MAX_SEED := 999999 # come stageGenerator.ts: "casuale-<seme>" e "corsa-<seme>"
 const MODES := [["ffa", "Tutti contro tutti"], ["teams", "Squadre"], ["flag", "Bandiera (a squadre)"], ["race", "Corsa (platformer)"]]
 const TIMES := [[0, "Senza tempo"], [120, "2 minuti"], [180, "3 minuti"], [300, "5 minuti"]]
+# Avversari del server per giocare da soli (#20, src/server/bot.ts)
+const BOTS := [["", "Nessun bot"], ["manichino", "Manichino"], ["facile", "Bot facile"], ["semplice", "Bot"], ["difficile", "Bot difficile"]]
 
 var game: Dictionary
 var room_link: Callable # stanza -> link da mandare agli amici
@@ -25,6 +27,7 @@ var _mode := OptionButton.new()
 var _stocks := OptionButton.new()
 var _time := OptionButton.new()
 var _ff := CheckBox.new()
+var _bot := OptionButton.new()
 var _character := ""
 var _stage := ""
 var _random_stage := ""
@@ -120,7 +123,10 @@ func setup(game_data: Dictionary, params: Dictionary, link: Callable) -> void:
 	_time.select(maxi(0, TIMES.map(func(t): return t[0]).find(int(saved.get("timeLimitSec", 0)))))
 	_ff.text = "Fuoco amico"
 	_ff.button_pressed = bool(saved.get("friendlyFire", false))
-	for c in [_mode, _stocks, _time, _ff]:
+	for b in BOTS:
+		_bot.add_item(b[1])
+	_bot.select(maxi(0, BOTS.map(func(x): return x[0]).find(str(params.get("bot", "")))))
+	for c in [_mode, _stocks, _time, _ff, _bot]:
 		rules.add_child(c)
 	box.add_child(rules)
 	_mode.item_selected.connect(func(_i): _sync_rules())
@@ -249,6 +255,7 @@ func _submit() -> void:
 		"stage": _new_id("corsa-") if mode == "race" else _stage,
 		"rules": {"mode": mode, "stocks": _stocks.selected + 1, "timeLimitSec": TIMES[_time.selected][0], "friendlyFire": _ff.button_pressed},
 		"server": _server.text.strip_edges(),
+		"bot": BOTS[_bot.selected][0], # conta solo se la stanza è nuova
 	})
 
 

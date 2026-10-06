@@ -70,4 +70,38 @@ describe("bot", () => {
     assert.equal(bot.stocks, stocks, "non è caduto");
     assert.equal(bot.onGround, true, "è di nuovo a terra");
   });
+
+  it("i livelli si chiamano facile, semplice e difficile", () => {
+    for (const kind of ["facile", "semplice", "difficile"]) assert.equal(parseBotKind(kind), kind);
+  });
+
+  it("il bot difficile schiva il pesante che vede arrivare, il facile no", () => {
+    const hitsBy = (kind: "facile" | "difficile") => {
+      const match = new Match();
+      const bots = new Bots();
+      match.addPlayer("a", "A");
+      const id = bots.add(match, kind)!;
+      const a = match.players.find((p) => p.id === "a")!;
+      const bot = match.players.find((p) => p.id === id)!;
+      a.x = 600;
+      a.facing = 1;
+      bot.x = 600 + FIGHTER.width + 30;
+      let hits = 0;
+      // Il giocatore tira un pesante ogni secondo per 6 secondi
+      for (let i = 0; i < 60 * 6; i++) {
+        const heavy = i % 60 === 0;
+        match.setInput("a", { left: false, right: false, up: false, down: false, light: false, heavy, taunt: false, dodge: false });
+        bots.tick(match);
+        hits += match.step(DT).filter((e) => e.type === "hit" && e.targetId === id).length;
+        // Il giocatore resta fermo dov'è: si riavvicina al bot per il prossimo colpo
+        if (i % 60 === 59) {
+          a.x = bot.x - (FIGHTER.width + 30);
+          a.facing = 1;
+        }
+      }
+      return hits;
+    };
+    const [hard, easy] = [hitsBy("difficile"), hitsBy("facile")];
+    assert.ok(hard < easy, "il difficile ne prende meno");
+  });
 });

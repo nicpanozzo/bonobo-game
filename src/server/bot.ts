@@ -1,7 +1,7 @@
 // Avversari del server (#20). Un bot è un giocatore come gli altri: a ogni tick scrive
 // il suo InputState e passa dalla stessa fisica, non sposta mai il personaggio da sé.
 
-import { ATTACKS, BOT, FIGHTER, TICK_RATE } from "../shared/constants";
+import { ATTACKS, BOT, BOT_LEVELS, FIGHTER, TICK_RATE } from "../shared/constants";
 import type { Match } from "../shared/match";
 import { emptyInput, type Fighter } from "../shared/physics";
 import type { StageSpec } from "../shared/stages";
@@ -10,12 +10,16 @@ import type { RoomHooks } from "./Room";
 
 // manichino: sta fermo e incassa, per provare colpi e combo (passo 1)
 // semplice: insegue, attacca e torna sul palco quando viene lanciato fuori (passo 2)
-export type BotKind = "manichino" | "semplice";
+// facile e difficile: lo stesso bot, più lento o più svelto, e il difficile schiva (passo 3)
+type BotLevel = keyof typeof BOT_LEVELS;
+export type BotKind = "manichino" | BotLevel;
 
 // TODO community: nomi nostri per i bot (es. un membro che si offre volontario)
 const BOT_NAMES: Record<BotKind, string> = {
   manichino: "Manichino",
+  facile: "Bot facile",
   semplice: "Bot",
+  difficile: "Bot difficile",
 };
 
 // Il parametro arriva dalla rete: si accettano solo i tipi conosciuti
@@ -23,7 +27,7 @@ export function parseBotKind(value: unknown): BotKind | null {
   return typeof value === "string" && Object.hasOwn(BOT_NAMES, value) ? (value as BotKind) : null;
 }
 
-const REACTION_TICKS = Math.max(1, Math.round((BOT.reactionMs * TICK_RATE) / 1000));
+const reactionTicks = (level: BotLevel) => Math.max(1, Math.round((BOT_LEVELS[level].reactionMs * TICK_RATE) / 1000));
 
 // Quello che un bot si ricorda tra un tick e l'altro
 interface BotMemory {
@@ -57,7 +61,7 @@ export class Bots {
     for (const f of players) {
       const mem = this.bots.get(f.id);
       if (!mem) continue;
-      const input = mem.kind === "semplice" ? decideSimple(f, players, match.stage, mem) : emptyInput();
+      const input = mem.kind === "manichino" ? emptyInput() : decideSimple(f, players, match.stage, mem, mem.kind);
       mem.last = input;
       match.setInput(f.id, input);
     }
@@ -90,7 +94,8 @@ function nearestSolidX(stage: StageSpec, x: number): number {
   return best;
 }
 
-function decideSimple(self: Fighter, players: readonly Fighter[], stage: StageSpec, mem: BotMemory): InputState {
+function decideSimple(self: Fighter, players: readonly Fighter[], stage: StageSpec, mem: BotMemory, level: BotLevel): InputState {
+  const skill = BOT_LEVELS[level];
   const input = emptyInput();
   if (self.eliminated || self.respawning) return input;
   // Un tasto conta come premuto solo se al tick prima era rilasciato
@@ -114,9 +119,9 @@ function decideSimple(self: Fighter, players: readonly Fighter[], stage: StageSp
     return input;
   }
 
-  // Sul palco: si rivede la scelta ogni REACTION_TICKS, nel frattempo si tengono i tasti di movimento
+  // Sul palco: si rivede la scelta ogni tot tick (il tempo di reazione), nel frattempo si tengono i tasti di movimento
   mem.ticks++;
-  if (mem.ticks % REACTION_TICKS !== 0) {
+  if (mem.ticks % reactionTicks(level) !== 0) {
     input.left = mem.hold.left;
     input.right = mem.hold.right;
     return input;
@@ -132,6 +137,15 @@ function decideSimple(self: Fighter, players: readonly Fighter[], stage: StageSp
   const reach = FIGHTER.width / 2 + spec.range;
   const facingTarget = Math.sign(dx) === self.facing || dx === 0;
 
+  // Il difficile schiva un attacco pesante che sta caricando a portata, allontanandosi
+  const threat = target.attack?.startsWith("heavy") && !target.attackActive && Math.abs(dx) <= reach + FIGHTER.width;
+  if (skill.dodges && threat && self.onGround && self.dodgeCooldown === 0) {
+    tap("dodge");
+    input.left = dx > 0;
+    input.right = dx < 0;
+    return input;
+  }
+
   if (Math.abs(dx) <= reach && Math.abs(dy) < FIGHTER.height) {
     if (!facingTarget) {
       // Prima ci si gira verso il bersaglio, l'attacco al giro dopo
@@ -139,7 +153,7 @@ function decideSimple(self: Fighter, players: readonly Fighter[], stage: StageSp
       mem.hold.right = dx > 0;
     } else {
       mem.attacks++;
-      tap(mem.attacks % BOT.heavyEvery === 0 ? "heavy" : "light");
+      tap(mem.attacks % skill.heavyEvery === 0 ? "heavy" : "light");
     }
   } else {
     // Si insegue, ma senza buttarsi giù dal palco dietro a chi sta volando via
