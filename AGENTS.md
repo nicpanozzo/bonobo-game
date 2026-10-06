@@ -104,7 +104,7 @@ public/assets/     immagini e suoni (arrivano in Godot con npm run export:godot)
 6. **Commit** piccoli, con messaggi brevi all'imperativo, in italiano: `Aggiunge il calcio con il tasto K`, `Corregge il doppio salto`.
 7. **Resta aggiornato:** prima di togliere la bozza fai `git fetch origin && git rebase origin/main`. Sul tuo branch puoi usare `git push --force-with-lease`; non riscrivere mai la storia di branch altrui.
 8. **PR piccole:** idealmente meno di ~400 righe cambiate. Una funzione grande si spezza in più PR che lasciano `main` funzionante.
-9. **Merge:** lo fa un umano diverso dall'autore, dopo averla provata (squash merge). L'agente non approva e non mergia mai le proprie PR. Quando togli la bozza chiedi la review a un altro del gruppo (`gh pr edit N --add-reviewer <login>`) o di' al tuo umano di chiederla sul Discord.
+9. **Merge:** chi apre la PR la unisce da solo (squash merge) appena la CI è verde e la PR non è più in bozza, senza aspettare la review di un altro (decisione di Nicola, 6 ottobre 2026). Prima di unire controlla che non ci siano conflitti con `main` né commenti di review ancora aperti. Se vuoi un parere, chiedilo pure (`gh pr edit N --add-reviewer <login>` o sul Discord), ma non è obbligatorio.
 
 ## Coordinazione tra agenti
 
@@ -133,7 +133,7 @@ public/assets/     immagini e suoni (arrivano in Godot con npm run export:godot)
 ## Mai
 
 - Committare segreti, token, `.env`, `node_modules/` o `dist/`.
-- Pushare su `main`, fare force-push su branch altrui, mergiare la propria PR.
+- Pushare su `main`, fare force-push su branch altrui, unire una PR con la CI rossa o ancora in bozza.
 - Disattivare controlli (`// @ts-ignore`, `strict: false`) per far passare il typecheck.
 - Spostare logica di gioco nel client.
 - Modificare il README se il compito non lo richiede.
