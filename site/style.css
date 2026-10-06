@@ -180,3 +180,18 @@ footer { padding: 28px 16px; text-align: center; color: var(--muted); border-top
 .mozioni li.vince { color: var(--green); font-weight: 800; list-style: none; margin-left: -1.2em; }
 .esito { font-weight: 800; }
 .seduta .btn { margin-top: 10px; padding: 8px 16px; font-size: .9rem; }
+
+/* Scarica e gioca */
+.btn-big { padding: 16px 28px; font-size: 1.15rem; }
+.help { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; margin: 10px 0 24px; }
+.help summary { cursor: pointer; font-weight: 700; }
+.help p { margin: .6em 0; overflow-wrap: anywhere; }
+.ways { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.way { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; min-width: 0; }
+.way h3 { margin: 0 0 .3em; }
+.way .cta { margin: 10px 0 4px; }
+.way code { overflow-wrap: anywhere; }
+.join { display: flex; gap: 8px; margin: 8px 0 4px; }
+.join input { flex: 1; min-width: 0; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--text); font: inherit; }
+.join input:focus { outline: 2px solid var(--banana); outline-offset: 1px; }
+@media (max-width: 860px) { .ways { grid-template-columns: 1fr; } }

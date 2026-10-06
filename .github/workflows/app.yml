@@ -15,13 +15,20 @@ on:
       - 'scripts/build-server.mjs'
       - 'package-lock.json'
       - '.github/workflows/app.yml'
+  # Sulle PR che toccano il server si prova solo a costruirlo, senza pubblicare niente
+  pull_request:
+    paths:
+      - 'src/server/**'
+      - 'scripts/build-server.mjs'
+      - 'package-lock.json'
+      - '.github/workflows/app.yml'
   workflow_dispatch:
 
 permissions:
   contents: write
 
 concurrency:
-  group: app
+  group: app-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: false
 
 env:
@@ -109,6 +116,7 @@ jobs:
 
   pubblica:
     needs: server
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
