@@ -89,3 +89,40 @@ func test_levetta_con_zona_morta() -> void:
 	runner.check(Settings.axis_active(-0.8, left % 2, 0.35), "inclinata a sinistra: conta")
 	runner.check(not Settings.axis_active(0.8, left % 2, 0.35), "inclinata a destra: non è sinistra")
 	runner.check(Settings.axis_active(0.5, 1, 0.35), "grilletto premuto")
+
+
+func test_conflitto_dice_da_dove() -> void:
+	var s := _fresh()
+	runner.check(s.assign("light", 0, KEY_K) == "heavy", "K tolto dall'attacco pesante")
+	runner.check(s.bindings.heavy.is_empty(), "il pesante resta senza tasti: %s" % [s.bindings.heavy])
+	runner.check(s.assign("taunt", 1, KEY_Y) == "", "Y era libero")
+
+
+func test_rimappare_il_pad() -> void:
+	var s := _fresh()
+	runner.check(s.assign("light", 0, JOY_BUTTON_B, true) == "heavy", "B tolto dal pesante")
+	runner.check(s.pad_bindings.light == [JOY_BUTTON_B], "B ora è il leggero: %s" % [s.pad_bindings.light])
+	runner.check(s.bindings == Settings.DEFAULT_BINDINGS, "la tastiera non cambia")
+	s.assign("up", 0, -1, true) # toglie A (che è 0)
+	runner.check(not s.pad_bindings.up.has(JOY_BUTTON_A), "A tolto dal salto: %s" % [s.pad_bindings.up])
+	var again := Settings.new(AUDIO, PATH)
+	runner.check(again.pad_bindings.light == [JOY_BUTTON_B], "salvato: %s" % [again.pad_bindings.light])
+
+
+func test_ripristina_un_dispositivo_alla_volta() -> void:
+	var s := _fresh()
+	s.assign("light", 0, KEY_K)
+	s.assign("light", 0, JOY_BUTTON_Y, true)
+	s.reset_bindings(true)
+	runner.check(s.pad_bindings == Settings.DEFAULT_PAD_BINDINGS, "pad ripristinato")
+	runner.check(s.bindings.light == [KEY_K], "tastiera intatta: %s" % [s.bindings.light])
+
+
+func test_nomi_dei_pulsanti() -> void:
+	runner.check(Settings.pad_kind("PS5 Controller") == "ps", "PlayStation")
+	runner.check(Settings.pad_kind("Nintendo Switch Pro Controller") == "switch", "Switch")
+	runner.check(Settings.pad_kind("") == "xbox", "sconosciuto: Xbox")
+	runner.check(Settings.pad_label(JOY_BUTTON_A, "ps") == "Croce", "A su PlayStation")
+	runner.check(Settings.pad_label(JOY_BUTTON_A, "switch") == "B", "A su Switch")
+	runner.check(Settings.pad_label(Settings.axis_input(JOY_AXIS_TRIGGER_RIGHT, true), "ps") == "R2", "grilletto destro")
+	runner.check(Settings.pad_label(Settings.axis_input(JOY_AXIS_LEFT_Y, false)) == "LS su", "levetta su")

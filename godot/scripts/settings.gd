@@ -91,8 +91,18 @@ func reset(notify := true) -> void:
 	sfx = _defaults.sfx
 	music = _defaults.music
 	music_on = true
-	bindings = DEFAULT_BINDINGS.duplicate(true)
-	pad_bindings = DEFAULT_PAD_BINDINGS.duplicate(true)
+	reset_bindings(false, false)
+	reset_bindings(true, false)
+	if notify:
+		save()
+
+
+# Tasti di default solo per la tastiera o solo per il pad ("Ripristina" nelle opzioni)
+func reset_bindings(pad: bool, notify := true) -> void:
+	if pad:
+		pad_bindings = DEFAULT_PAD_BINDINGS.duplicate(true)
+	else:
+		bindings = DEFAULT_BINDINGS.duplicate(true)
 	if notify:
 		save()
 
@@ -135,21 +145,71 @@ static func axis_active(value: float, positive: int, deadzone: float) -> bool:
 	return value > deadzone if positive == 1 else value < -deadzone
 
 
-# Un tasto fa una sola azione: se era già usato altrove, lì si toglie.
-# keycode = 0 toglie il tasto in quella posizione.
-func assign(action: String, slot: int, keycode: int) -> void:
+# Un tasto fa una sola azione: se era già usato altrove, lì si toglie, e si dice da dove
+# (nome dell'azione, "" se era libero). code = 0 toglie il tasto in quella posizione.
+# pad: code è un pulsante o una levetta del pad (vedi AXIS_BASE) invece di un tasto.
+# Nota: sul pad 0 è JOY_BUTTON_A, quindi per toglierlo si passa -1.
+func assign(action: String, slot: int, code: int, pad := false) -> String:
+	var all: Dictionary = pad_bindings if pad else bindings
+	var none := -1 if pad else 0
+	var taken_from := ""
 	for a in ACTIONS:
-		bindings[a] = bindings[a].filter(func(k): return k != keycode)
-	var list: Array = bindings[action]
-	if keycode != 0:
+		if a != action and code != none and all[a].has(code):
+			taken_from = a
+		all[a] = all[a].filter(func(k): return k != code)
+	var list: Array = all[action]
+	if code != none:
 		if slot < list.size():
-			list[slot] = keycode
+			list[slot] = code
 		else:
-			list.append(keycode)
+			list.append(code)
 	elif slot < list.size():
 		list.remove_at(slot)
-	bindings[action] = list.slice(0, MAX_KEYS)
+	all[action] = list.slice(0, MAX_PAD if pad else MAX_KEYS)
 	save()
+	return taken_from
+
+
+# Che pad è: cambiano i nomi dei pulsanti, non la loro posizione (Godot usa quella di SDL)
+static func pad_kind(joy_name: String) -> String:
+	var n := joy_name.to_lower()
+	for word in ["playstation", "ps3", "ps4", "ps5", "dualshock", "dualsense", "sony"]:
+		if word in n:
+			return "ps"
+	for word in ["nintendo", "switch", "joy-con", "pro controller"]:
+		if word in n:
+			return "switch"
+	return "xbox"
+
+
+const PAD_BUTTON_NAMES := {
+	"xbox": ["A", "B", "X", "Y", "Back", "Guide", "Start", "L3", "R3", "LB", "RB"],
+	"ps": ["Croce", "Cerchio", "Quadrato", "Triangolo", "Share", "PS", "Options", "L3", "R3", "L1", "R1"],
+	# Switch: le lettere sono scambiate rispetto alla posizione (in basso c'è B)
+	"switch": ["B", "A", "Y", "X", "-", "Home", "+", "L3", "R3", "L", "R"],
+}
+const PAD_TRIGGER_NAMES := {"xbox": ["LT", "RT"], "ps": ["L2", "R2"], "switch": ["ZL", "ZR"]}
+
+
+# Nome di un pulsante o di una levetta (code come in pad_bindings) per il tipo di pad
+static func pad_label(code: int, kind := "xbox") -> String:
+	if code >= AXIS_BASE:
+		var axis := (code - AXIS_BASE) / 2
+		var positive := code % 2 == 1
+		match axis:
+			JOY_AXIS_TRIGGER_LEFT, JOY_AXIS_TRIGGER_RIGHT:
+				return PAD_TRIGGER_NAMES[kind][axis - JOY_AXIS_TRIGGER_LEFT]
+			JOY_AXIS_LEFT_X, JOY_AXIS_RIGHT_X:
+				return ("LS " if axis == JOY_AXIS_LEFT_X else "RS ") + ("destra" if positive else "sinistra")
+			_:
+				return ("LS " if axis == JOY_AXIS_LEFT_Y else "RS ") + ("giù" if positive else "su")
+	match code:
+		JOY_BUTTON_DPAD_UP: return "Dir. su"
+		JOY_BUTTON_DPAD_DOWN: return "Dir. giù"
+		JOY_BUTTON_DPAD_LEFT: return "Dir. sinistra"
+		JOY_BUTTON_DPAD_RIGHT: return "Dir. destra"
+	var names: Array = PAD_BUTTON_NAMES[kind]
+	return names[code] if code < names.size() else "Pulsante %d" % code
 
 
 static func key_label(keycode: int) -> String:
