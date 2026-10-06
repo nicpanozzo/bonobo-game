@@ -134,3 +134,12 @@ export const NET = {
   teleportDistance: 300, // pixel: oltre questo salto (es. respawn) non si interpola
   bufferSize: 30, // snapshot tenuti in memoria (1 secondo)
 };
+
+// Telecamera (#12): nelle arene inquadra tutti i lottatori vivi e zooma quando si allontanano.
+// Non si allarga mai oltre le zone di espulsione dell'arena.
+export const CAMERA = {
+  margin: 140, // pixel di aria attorno al gruppo di lottatori
+  minZoom: 0.7, // più piccolo = più lontano; 1 = l'arena intera come prima
+  maxZoom: 1.3, // quanto si avvicina quando i lottatori sono vicini
+  smoothingMs: 220, // più alto = movimenti più morbidi e più lenti
+};

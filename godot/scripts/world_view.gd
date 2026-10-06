@@ -13,11 +13,12 @@ var buffer := SnapshotBuffer.new()
 var player_ids: Array = []
 
 var positions := {} # id -> Vector2 dei piedi, come disegnati all'ultimo frame (per la telecamera)
+var _alive: Array = [] # id dei lottatori disegnati all'ultimo frame
 var _reached := 0 # checkpoint della Corsa presi da me
 var _sparks: Array = [] # [{ x, y, age, size, color }]
 var _shake := 0.0
 var _font: Font = ThemeDB.fallback_font
-var view_left := 0.0 # bordo sinistro dello schermo nel mondo (la telecamera scorre nella Corsa)
+var view_rect := Rect2(0, 0, 1280, 720) # la parte di mondo che si vede, decisa dalla telecamera in main.gd
 var _textures := {} # id personaggio -> Texture2D dello spritesheet
 var _anims := {} # id giocatore -> { name, since }: animazione in corso e da quando
 
@@ -54,6 +55,15 @@ func set_stage_spec(spec: Dictionary) -> void:
 	stage = spec
 	_reached = 0
 	queue_redraw()
+
+
+# Piedi dei lottatori in gioco (non eliminati), per la telecamera
+func alive_positions() -> Array[Vector2]:
+	var out: Array[Vector2] = []
+	for id in _alive:
+		if positions.has(id):
+			out.append(positions[id])
+	return out
 
 
 # Larghezza del mondo: lo schermo, o di più per i percorsi della Corsa (stageWidth in stages.ts)
@@ -106,11 +116,13 @@ func _draw() -> void:
 	_draw_course()
 
 	var now := Time.get_ticks_msec()
+	_alive = []
 	for id in player_ids:
 		var p: Variant = buffer.sample(id, now)
 		if p != null:
 			positions[id] = Vector2(p.x, p.y)
 			if not p.eliminated:
+				_alive.append(id)
 				_draw_fighter(p, now)
 
 	_draw_offscreen_markers()
@@ -227,19 +239,21 @@ static func _animation_for(p: Dictionary) -> String:
 # Freccia sul bordo dello schermo per chi è stato lanciato fuori (o resta indietro nella Corsa)
 func _draw_offscreen_markers() -> void:
 	var w: float = game.world.width
-	var h: float = game.world.height
 	for id in player_ids:
 		var p: Variant = buffer.sample(id, Time.get_ticks_msec())
 		if p == null or p.respawning or p.eliminated:
 			continue
 		var cx: float = p.x
 		var cy: float = p.y - game.fighter.height / 2.0
-		if cx >= view_left and cx <= view_left + w and cy >= 0 and cy <= h:
+		if view_rect.has_point(Vector2(cx, cy)):
 			continue
-		var m := Vector2(clampf(cx, view_left + 16, view_left + w - 16), clampf(cy, 16, h - 16))
+		# Con la telecamera lontana tutto si rimpicciolisce: la freccia resta della stessa misura sullo schermo
+		var s := view_rect.size.x / w
+		var inner := view_rect.grow(-16 * s)
+		var m := Vector2(clampf(cx, inner.position.x, inner.end.x), clampf(cy, inner.position.y, inner.end.y))
 		var dir := (Vector2(cx, cy) - m).normalized()
-		var side := dir.orthogonal() * 9
-		draw_colored_polygon(PackedVector2Array([m + dir * 14, m - dir * 4 + side, m - dir * 4 - side]), _color(p.color))
+		var side := dir.orthogonal() * 9 * s
+		draw_colored_polygon(PackedVector2Array([m + dir * 14 * s, m - dir * 4 * s + side, m - dir * 4 * s - side]), _color(p.color))
 
 
 static func _color(n: Variant) -> Color:
