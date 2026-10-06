@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { CHARACTERS, getCharacter, type CharacterSpec } from "../shared/characters";
 import { WORLD } from "../shared/constants";
 import { sanitizeRules } from "../shared/rules";
+import { randomCourseId } from "../shared/courseGenerator";
 import { randomStageId, seedFromStageId } from "../shared/stageGenerator";
 import { getStage, STAGES, type StageSpec } from "../shared/stages";
 import { openOptions } from "./OptionsPanel";
@@ -61,7 +62,8 @@ export class LobbyScene extends Phaser.Scene {
   create(data: LobbyData) {
     const d = data.defaults ?? {};
     let characterId = getCharacter(d.characterId).id;
-    let stageId = getStage(d.stageId).id;
+    const saved = getStage(d.stageId);
+    let stageId = saved.goal ? getStage(undefined).id : saved.id; // i percorsi della Corsa non sono arene da scegliere
 
     if (!document.getElementById("lobby-style")) {
       const style = document.createElement("style");
@@ -87,14 +89,16 @@ export class LobbyScene extends Phaser.Scene {
         <div class="msg" data-msg></div>
         <label>Lottatore</label>
         <div class="chars" data-chars></div>
-        <label>Arena <span class="hint">(la sceglie chi crea la stanza)</span></label>
+        <label data-stage-label>Arena <span class="hint">(la sceglie chi crea la stanza)</span></label>
         <div class="stages" data-stages></div>
+        <p class="hint" data-course-note hidden>In Corsa si gioca su un percorso lungo, nuovo a ogni stanza: vince chi arriva prima al traguardo.</p>
         <label>Regole <span class="hint">(anche queste le sceglie chi crea la stanza)</span></label>
         <div class="rules">
           <select id="lobby-mode" title="Modalità">
             <option value="ffa">Tutti contro tutti</option>
             <option value="teams">Squadre</option>
             <option value="flag">Bandiera (a squadre)</option>
+            <option value="race">Corsa (platformer)</option>
           </select>
           <select id="lobby-stocks" title="Vite">
             ${[1, 2, 3, 4, 5].map((n) => `<option value="${n}">${n} ${n === 1 ? "vita" : "vite"}</option>`).join("")}
@@ -135,7 +139,13 @@ export class LobbyScene extends Phaser.Scene {
     ffBox.checked = rules.friendlyFire;
     // Il fuoco amico ha senso solo a squadre; in Bandiera le vite diventano i punti per vincere
     const syncFf = () => {
-      ffBox.parentElement!.style.visibility = modeSel.value !== "ffa" ? "visible" : "hidden";
+      const team = modeSel.value === "teams" || modeSel.value === "flag";
+      ffBox.parentElement!.style.visibility = team ? "visible" : "hidden";
+      // In Corsa le vite non contano e l'arena è un percorso generato
+      const race = modeSel.value === "race";
+      stocksSel.style.display = race ? "none" : "";
+      for (const sel of ["[data-stage-label]", "[data-stages]"]) $<HTMLElement>(sel).style.display = race ? "none" : "";
+      $<HTMLElement>("[data-course-note]").hidden = !race;
       const flag = modeSel.value === "flag";
       for (const o of stocksSel.options) o.text = `${o.value} ${flag ? (o.value === "1" ? "punto" : "punti") : o.value === "1" ? "vita" : "vite"}`;
     };
@@ -201,9 +211,9 @@ export class LobbyScene extends Phaser.Scene {
         name: nameInput.value.trim().slice(0, 16) || "Bonobo",
         room: cleanRoom() || randomRoom(),
         characterId,
-        stageId,
+        stageId: modeSel.value === "race" ? randomCourseId() : stageId,
         rules: {
-          mode: modeSel.value === "teams" || modeSel.value === "flag" ? modeSel.value : "ffa",
+          mode: modeSel.value === "teams" || modeSel.value === "flag" || modeSel.value === "race" ? modeSel.value : "ffa",
           stocks: Number(stocksSel.value),
           timeLimitSec: Number(timeSel.value),
           friendlyFire: ffBox.checked,

@@ -1,6 +1,6 @@
 // Contatto con l'arena: blocchi pieni, piattaforme sottili, zone di espulsione, vite e ritorno in gioco.
 
-import { FIGHTER, RESPAWN_INVULNERABLE_MS, RESPAWN_MS } from "../constants";
+import { COURSE, FIGHTER, RESPAWN_INVULNERABLE_MS, RESPAWN_MS } from "../constants";
 import type { Fighter, PhysicsContext } from "./fighter";
 
 export function collideWithStage(f: Fighter, prevY: number, ctx: PhysicsContext): void {
@@ -83,8 +83,10 @@ export function loseStock(f: Fighter, ctx: PhysicsContext): void {
 
 export function respawn(f: Fighter, ctx: PhysicsContext): void {
   f.respawning = false;
-  f.x = ctx.stage.respawn.x;
-  f.y = ctx.stage.respawn.y;
+  // Nei percorsi si riparte dall'ultimo checkpoint, nelle arene dal punto di ritorno
+  const cp = ctx.stage.checkpoints?.[f.checkpoint];
+  f.x = cp ? cp.x : ctx.stage.respawn.x;
+  f.y = cp ? cp.y - COURSE.respawnHeight : ctx.stage.respawn.y;
   f.vx = 0;
   f.vy = 0;
   f.percent = 0;

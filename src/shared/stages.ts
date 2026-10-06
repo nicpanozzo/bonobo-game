@@ -2,6 +2,7 @@
 // La fisica legge solo questi dati, il client li disegna: un'arena non ha codice suo.
 
 import { WORLD } from "./constants";
+import { generateCourse, seedFromCourseId } from "./courseGenerator";
 import { generateStage, seedFromStageId } from "./stageGenerator";
 
 export interface Rect {
@@ -26,7 +27,14 @@ export interface StageSpec {
   spawns: { x: number; y: number }[]; // punti di partenza, uno per giocatore (y = piedi), in coppie simmetriche
   respawn: { x: number; y: number }; // dove si ricompare dopo aver perso una vita
   colors: { sky: number; solid: number; solidEdge: number; platform: number }; // finché non c'è uno sfondo disegnato
+  // Solo per i percorsi della modalità Corsa (#57)
+  width?: number; // larghezza del mondo se più larga dello schermo: la telecamera segue
+  checkpoints?: { x: number; y: number }[]; // dove si ricompare dopo una caduta (y = superficie)
+  goal?: Rect; // chi lo tocca vince
 }
+
+// Larghezza del mondo di un'arena: lo schermo, o di più per i percorsi
+export const stageWidth = (stage: StageSpec) => stage.width ?? WORLD.width;
 
 export const DEFAULT_STAGE_ID = "palco";
 
@@ -83,16 +91,19 @@ export const STAGES: Record<string, StageSpec> = {
 // Le arene generate si ricreano dal seme; si tengono le ultime per non rigenerarle a ogni chiamata
 const generated = new Map<string, StageSpec>();
 
-// Un id sconosciuto (o mancante) diventa l'arena base; "casuale-<seme>" un'arena generata
+// Un id sconosciuto (o mancante) diventa l'arena base; "casuale-<seme>" un'arena generata,
+// "corsa-<seme>" un percorso della modalità Corsa
 export function getStage(id: string | undefined): StageSpec {
   if (id && Object.hasOwn(STAGES, id)) return STAGES[id];
-  const seed = id ? seedFromStageId(id) : null;
-  if (seed === null) return STAGES[DEFAULT_STAGE_ID];
-  let stage = generated.get(id!);
+  if (!id) return STAGES[DEFAULT_STAGE_ID];
+  const seed = seedFromStageId(id);
+  const courseSeed = seedFromCourseId(id);
+  if (seed === null && courseSeed === null) return STAGES[DEFAULT_STAGE_ID];
+  let stage = generated.get(id);
   if (!stage) {
     if (generated.size > 50) generated.clear();
-    stage = generateStage(seed);
-    generated.set(id!, stage);
+    stage = seed !== null ? generateStage(seed) : generateCourse(courseSeed!);
+    generated.set(id, stage);
   }
   return stage;
 }

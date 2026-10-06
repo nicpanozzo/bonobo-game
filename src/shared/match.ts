@@ -3,9 +3,11 @@
 // girare in locale (allenamento, predizione) e un porting su un altro motore parte da qui.
 
 import { getCharacter } from "./characters";
-import { COLORS, MATCH_RESTART_MS, MAX_PLAYERS_PER_ROOM, TEAM_COLORS } from "./constants";
+import { COLORS, FIGHTER, MATCH_RESTART_MS, MAX_PLAYERS_PER_ROOM, TEAM_COLORS } from "./constants";
 import { createFighter, resetForMatch, stepWorld, type Fighter, type PhysicsContext } from "./physics";
 import { canHitWithRules, flagWinnerTeam, isTeamMode, lastStanding, leaderOnTime, sanitizeRules } from "./rules";
+import { COURSE_PREFIX, seedFromCourseId } from "./courseGenerator";
+import { seedFromStageId } from "./stageGenerator";
 import { getStage, type StageSpec } from "./stages";
 import type { GameEvent, GameSnapshot, InputState, MatchRules, PlayerState } from "./types";
 
@@ -28,14 +30,14 @@ export class Match {
   private scores: Record<1 | 2, number> = { 1: 0, 2: 0 }; // solo in Bandiera
 
   constructor(options: MatchOptions = {}) {
-    this.stage = getStage(options.stageId);
     this.rules = sanitizeRules(options.rules);
+    this.stage = stageFor(this.rules, options.stageId);
     const rules = this.rules;
     this.ctx = {
       stage: this.stage,
       events: [],
       canHit: (a, t) => canHitWithRules(rules, a.team, t.team),
-      unlimitedStocks: rules.mode === "flag",
+      unlimitedStocks: rules.mode === "flag" || rules.mode === "race",
     };
   }
 
@@ -102,6 +104,7 @@ export class Match {
     const list = this.players as Fighter[];
     stepWorld(list, dtMs, this.ctx);
     if (this.rules.mode === "flag" && !this.winnerId) this.scoreFlags();
+    if (this.rules.mode === "race" && !this.winnerId) this.updateCheckpoints(list);
     this.updateMatch(list, dtMs);
     const events = this.ctx.events;
     this.ctx.events = [];
@@ -201,7 +204,12 @@ export class Match {
     }
     if (list.length >= 2) this.matchTimeMs += dt; // il tempo corre solo quando c'è qualcuno contro cui giocare
     const timeUp = this.rules.timeLimitSec > 0 && this.matchTimeMs >= this.rules.timeLimitSec * 1000;
-    const winner = this.rules.mode === "flag" ? this.flagWinner(timeUp) : (lastStanding(this.rules, list) ?? (timeUp ? leaderOnTime(this.rules, list) : undefined));
+    const winner =
+      this.rules.mode === "flag"
+        ? this.flagWinner(timeUp)
+        : this.rules.mode === "race"
+          ? this.raceWinner(list, timeUp)
+          : (lastStanding(this.rules, list) ?? (timeUp ? leaderOnTime(this.rules, list) : undefined));
     if (winner) {
       this.winnerId = winner.id;
       this.restartTimer = MATCH_RESTART_MS;
@@ -209,6 +217,29 @@ export class Match {
     } else if (list.length > 0 && list.every((f) => f.eliminated)) {
       this.restartMatch(); // chi gioca da solo e finisce le vite riparte subito
     }
+  }
+
+  // Corsa (#57): toccando un checkpoint più avanti lo si fa proprio
+  private updateCheckpoints(list: Fighter[]) {
+    const cps = this.stage.checkpoints ?? [];
+    for (const f of list) {
+      if (f.respawning || !f.onGround) continue;
+      let i = f.checkpoint;
+      while (i + 1 < cps.length && f.x >= cps[i + 1].x) i++;
+      if (i === f.checkpoint) continue;
+      f.checkpoint = i;
+      this.ctx.events.push({ type: "checkpoint", id: f.id, index: i });
+    }
+  }
+
+  // Vince chi tocca il traguardo; allo scadere del tempo chi è arrivato più avanti
+  private raceWinner(list: Fighter[], timeUp: boolean): Fighter | undefined {
+    const g = this.stage.goal;
+    const half = FIGHTER.width / 2;
+    const touching = g && list.find((f) => !f.respawning && f.x + half > g.x && f.x - half < g.x + g.width && f.y > g.y && f.y - FIGHTER.height < g.y + g.height);
+    if (touching) return touching;
+    if (!timeUp || list.length === 0) return undefined;
+    return [...list].sort((a, b) => (b.respawning ? -Infinity : b.x) - (a.respawning ? -Infinity : a.x))[0];
   }
 
   private flagWinner(timeUp: boolean): Fighter | undefined {
@@ -231,4 +262,13 @@ export class Match {
     if (this.rules.timeLimitSec <= 0) return null;
     return Math.max(0, Math.round(this.rules.timeLimitSec * 1000 - this.matchTimeMs));
   }
+}
+
+// In Corsa serve un percorso: se l'arena scelta non lo è, se ne genera uno dal suo seme
+function stageFor(rules: MatchRules, stageId: string | undefined): StageSpec {
+  const stage = getStage(stageId);
+  if (rules.mode !== "race") return stage.goal ? getStage(undefined) : stage; // un percorso fuori dalla Corsa non ha senso
+  if (stage.goal) return stage;
+  const seed = (stageId && (seedFromCourseId(stageId) ?? seedFromStageId(stageId))) || 1;
+  return getStage(`${COURSE_PREFIX}${seed}`);
 }

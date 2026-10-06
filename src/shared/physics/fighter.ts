@@ -17,6 +17,7 @@ export interface Fighter extends PlayerState {
   invulnerableTimer: number;
   alreadyHit: Set<string>; // chi ha già preso questo colpo
   lastHitById: string | null; // chi l'ha colpito per ultimo: a lui va il KO
+  checkpoint: number; // in Corsa (#57): indice dell'ultimo checkpoint toccato, da lì si riparte
 }
 
 // Quello che serve alla fisica oltre ai lottatori: l'arena e dove scrivere gli eventi
@@ -81,6 +82,7 @@ export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
     invulnerableTimer: 0,
     alreadyHit: new Set(),
     lastHitById: null,
+    checkpoint: 0,
   };
 }
 

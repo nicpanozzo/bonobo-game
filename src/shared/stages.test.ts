@@ -2,8 +2,9 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { FIGHTER, MAX_PLAYERS_PER_ROOM, TICK_RATE, WORLD } from "./constants";
 import { createFighter, stepWorld, type PhysicsContext } from "./physics";
+import { courseSteps, generateCourse } from "./courseGenerator";
 import { generateStage, seedFromStageId } from "./stageGenerator";
-import { getStage, STAGES, type StageSpec } from "./stages";
+import { getStage, STAGES, stageWidth, type StageSpec } from "./stages";
 
 // Un salto sale di v²/2g pixel; con il doppio salto si arriva alla somma dei due
 const JUMP_HEIGHT = (FIGHTER.jumpSpeed * FIGHTER.jumpSpeed) / (2 * FIGHTER.gravity);
@@ -23,11 +24,11 @@ function reachable(stage: StageSpec, p: { x: number; y: number; width: number })
 
 function checkStage(stage: StageSpec) {
   for (const p of [...stage.solids, ...stage.platforms]) {
-    assert.ok(p.x >= 0 && p.x + p.width <= WORLD.width, `${stage.id}: dentro lo schermo`);
+    assert.ok(p.x >= 0 && p.x + p.width <= stageWidth(stage), `${stage.id}: dentro il mondo`);
     assert.ok(p.y > 0 && p.y < WORLD.height, `${stage.id}: altezza valida`);
   }
-  for (const p of stage.platforms) {
-    assert.ok(reachable(stage, p), `${stage.id}: piattaforma a ${p.x},${p.y} irraggiungibile`);
+  if (!stage.goal) {
+    for (const p of stage.platforms) assert.ok(reachable(stage, p), `${stage.id}: piattaforma a ${p.x},${p.y} irraggiungibile`);
   }
   assert.ok(stage.spawns.length >= MAX_PLAYERS_PER_ROOM, `${stage.id}: una partenza per giocatore`);
 
@@ -60,5 +61,62 @@ describe("arene", () => {
     assert.equal(getStage("isole").id, "isole");
     assert.equal(getStage("casuale-42").id, "casuale-42");
     assert.equal(seedFromStageId("casuale-abc"), null);
+  });
+
+  it("i percorsi della Corsa si fanno tutti saltando da un appoggio al successivo", () => {
+    for (let seed = 0; seed < 300; seed++) {
+      const stage = generateCourse(seed);
+      checkStage(stage);
+      const steps = courseSteps(stage);
+      for (let i = 1; i < steps.length; i++) {
+        const [a, b] = [steps[i - 1], steps[i]];
+        const gap = b.x - (a.x + a.width);
+        assert.ok(gap > 0 && gap <= SIDE_REACH, `${stage.id}: salto ${i} lungo ${gap}`);
+        assert.ok(a.y - b.y <= JUMP_HEIGHT * 0.8, `${stage.id}: salto ${i} alto ${a.y - b.y}`);
+      }
+      const goal = stage.goal!;
+      const end = steps[steps.length - 1];
+      assert.ok(end.solid && goal.x >= end.x && goal.x + goal.width <= end.x + end.width, `${stage.id}: traguardo sull'ultimo blocco`);
+      assert.ok(stageWidth(stage) > WORLD.width * 4, `${stage.id}: lungo qualche schermo`);
+      assert.ok(stage.checkpoints!.length >= 3, `${stage.id}: checkpoint`);
+      assert.deepEqual(stage.checkpoints!.map((c) => c.x), [...stage.checkpoints!.map((c) => c.x)].sort((x, y) => x - y));
+    }
+    assert.deepEqual(generateCourse(7), generateCourse(7));
+    assert.equal(getStage("corsa-7").id, "corsa-7");
+  });
+
+  // Un "giocatore" che va verso l'appoggio successivo e salta al bordo arriva in fondo:
+  // la prova vera che i salti misurati sopra si fanno con la fisica del gioco
+  it("un giocatore che corre e salta ai bordi arriva al traguardo", () => {
+    for (let seed = 0; seed < 200; seed++) {
+      const stage = generateCourse(seed);
+      const steps = courseSteps(stage);
+      const ctx: PhysicsContext = { stage, events: [], unlimitedStocks: true };
+      const f = createFighter({ id: "a", name: "", characterId: "default", color: 0, team: 0, index: 0, stocks: 3 }, stage);
+      let on = 0; // appoggio su cui si trova (o da cui è saltato)
+      let falls = 0;
+      for (let t = 0; t < TICK_RATE * 90 && f.x < stage.goal!.x; t++) {
+        if (f.onGround) on = Math.max(0, steps.findIndex((s) => f.x + 30 > s.x && f.x - 30 < s.x + s.width && s.y === f.y));
+        const here = steps[on];
+        const next = steps[on + 1] ?? here;
+        let right = true;
+        let left = false;
+        let up = false;
+        if (f.onGround) {
+          up = here.x + here.width - f.x < 24 || (next.y < f.y && next.x - f.x < 50);
+        } else {
+          // In aria si punta il centro dell'appoggio dopo, con il doppio salto se si scende troppo presto
+          const aim = next.x + Math.min(next.width / 2, 60);
+          right = f.x < aim;
+          left = f.x > aim + 40;
+          up = f.vy > 0 && f.jumpsLeft > 0 && f.y > next.y - 20 && f.x < next.x;
+        }
+        f.input = { ...f.input, right, left, up: up && !f.prevInput.up };
+        stepWorld([f], 1000 / TICK_RATE, ctx);
+        if (ctx.events.some((e) => e.type === "ko")) falls++;
+        ctx.events = [];
+      }
+      assert.ok(f.x >= stage.goal!.x, `corsa-${seed}: arrivato a ${Math.round(f.x)} di ${stage.goal!.x}, cadute ${falls}`);
+    }
   });
 });

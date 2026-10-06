@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { MAX_PLAYERS_PER_ROOM, TICK_RATE } from "./constants";
+import { MAX_PLAYERS_PER_ROOM, RESPAWN_MS, TICK_RATE } from "./constants";
+import type { Fighter } from "./physics";
 import { Match } from "./match";
 import type { GameEvent } from "./types";
 
@@ -126,6 +127,48 @@ describe("partita", () => {
     events = run(m, 1);
     const end = events.find((e) => e.type === "matchEnd");
     assert.ok(end && end.type === "matchEnd" && end.winnerId === "a");
+  });
+
+  it("Corsa: percorso generato, checkpoint, ritorno senza perdere vite, vince chi arriva", () => {
+    const m = new Match({ stageId: "palco", rules: { mode: "race" } });
+    assert.ok(m.stage.goal && m.stage.id.startsWith("corsa-"), "in Corsa si gioca su un percorso");
+    m.addPlayer("a", "A");
+    m.addPlayer("b", "B");
+    const [a, b] = m.players as Fighter[];
+    const cp = m.stage.checkpoints![1];
+
+    // "a" arriva sul secondo checkpoint: lo prende
+    a.x = cp.x;
+    a.y = cp.y;
+    let events = run(m, 2);
+    assert.ok(events.some((e) => e.type === "checkpoint" && e.id === "a" && e.index === 1));
+
+    // poi cade: riparte da lì, con le vite intatte
+    a.x = cp.x;
+    a.y = m.stage.blastZone.bottom + 50;
+    events = run(m, 2 + Math.ceil(RESPAWN_MS / DT));
+    assert.ok(events.some((e) => e.type === "respawn" && e.id === "a"));
+    assert.equal(a.stocks, 3);
+    assert.ok(Math.abs(a.x - cp.x) < 60, "di nuovo vicino al checkpoint");
+
+    // "b" tocca il traguardo
+    const g = m.stage.goal!;
+    b.x = g.x + g.width / 2;
+    b.y = g.y + g.height;
+    events = run(m, 1);
+    const end = events.find((e) => e.type === "matchEnd");
+    assert.ok(end && end.type === "matchEnd" && end.winnerId === "b");
+  });
+
+  it("Corsa: allo scadere del tempo vince chi è più avanti; fuori dalla Corsa niente percorsi", () => {
+    const m = new Match({ stageId: "corsa-5", rules: { mode: "race", timeLimitSec: 1 } });
+    assert.equal(m.stage.id, "corsa-5");
+    m.addPlayer("a", "A");
+    m.addPlayer("b", "B");
+    (m.players[1] as Fighter).x += 300;
+    const end = run(m, TICK_RATE + 2).find((e) => e.type === "matchEnd");
+    assert.ok(end && end.type === "matchEnd" && end.winnerId === "b");
+    assert.equal(new Match({ stageId: "corsa-5" }).stage.id, "palco");
   });
 
   it("i dati strani dalla rete diventano booleani e i nomi si accorciano", () => {

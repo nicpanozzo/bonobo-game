@@ -28,6 +28,7 @@ export class Results implements RenderModule {
       })
       .setOrigin(0.5, 0)
       .setDepth(25)
+      .setScrollFactor(0)
       .setVisible(false);
   }
 
