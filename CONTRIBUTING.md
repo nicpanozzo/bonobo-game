@@ -59,7 +59,7 @@ git commit -m "Aggiunge il calcio con il tasto K"
 git push -u origin luca/calcio
 ```
 
-GitHub ti mostra un link per aprire la **Pull Request** (PR): aprila, scrivi cosa hai fatto e come provarlo. Un altro del gruppo la guarda, magari chiede qualche ritocco, e poi la unisce a `main`.
+GitHub ti mostra un link per aprire la **Pull Request** (PR): aprila, scrivi cosa hai fatto e come provarlo. Quando i controlli automatici sono verdi la unisci tu a `main`; se vuoi un parere prima, chiedilo a un altro del gruppo.
 
 ## Regole del gruppo
 
