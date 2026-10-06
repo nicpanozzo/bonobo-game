@@ -5,7 +5,8 @@ import express from "express";
 import { Server } from "socket.io";
 import type { ClientToServer, ServerToClient } from "../shared/types";
 import { Bots, parseBotKind } from "./bot";
-import { Room } from "./Room";
+import { discordHooks } from "./discord";
+import { combineHooks, Room } from "./Room";
 
 const PORT = Number(process.env.PORT) || 3000;
 const app = express();
@@ -35,7 +36,8 @@ io.on("connection", (socket) => {
     if (!r) {
       // Arena, regole e bot li decide chi crea la stanza
       const bots = new Bots();
-      r = new Room(code, io, { stageId: typeof stageId === "string" ? stageId : undefined, rules }, bots.hooks);
+      const discord = discordHooks(process.env.DISCORD_WEBHOOK_URL, (id) => bots.isBot(id));
+      r = new Room(code, io, { stageId: typeof stageId === "string" ? stageId : undefined, rules }, combineHooks(bots.hooks, discord));
       rooms.set(code, r);
       const kind = parseBotKind(bot);
       if (kind) bots.add(r.match, kind);

@@ -47,6 +47,10 @@ export class Bots {
     onTick: (room) => this.tick(room.match),
   };
 
+  isBot(id: string): boolean {
+    return this.bots.has(id);
+  }
+
   add(match: Match, kind: BotKind): string | null {
     if (match.isFull) return null;
     const id = `bot-${kind}-${++this.count}`;
