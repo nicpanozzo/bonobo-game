@@ -159,4 +159,10 @@ export const EFFECTS = {
   dustPuffs: 5, // sbuffi di polvere per atterraggio
   trailSpeed: 900, // px/s: chi vola più veloce di così lascia una scia
   trailLength: 6, // posizioni ricordate per la scia (una per frame)
+  koBeamMs: 750, // durata del raggio colorato di un KO
+  koBeamLength: 1400, // pixel: quanto entra nello schermo il raggio del KO
+  koBeamWidth: 150, // pixel: larghezza del raggio dove finisce (all'uscita è una punta)
+  percentShakeMs: 280, // durata del tremolio della percentuale dopo un colpo
+  percentShakePerDamage: 0.6, // pixel di tremolio per ogni punto di danno preso
+  percentShakeMax: 9, // pixel: tremolio massimo della percentuale
 };

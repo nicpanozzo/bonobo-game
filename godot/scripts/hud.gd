@@ -14,6 +14,8 @@ var _stage: Dictionary = {}
 var _snap: Dictionary = {}
 var _stats := {} # id -> { kos, falls, damage, flags }: la classifica di fine partita, dagli eventi
 var _font: Font = ThemeDB.fallback_font
+var _last_percent := {} # id -> percentuale dell'ultimo snapshot, per accorgersi dei colpi presi
+var _jolts := {} # id -> { ms, amp }: la percentuale trema per un attimo dopo un colpo
 
 
 func reset() -> void:
@@ -22,6 +24,8 @@ func reset() -> void:
 	_info = ""
 	_snap = {}
 	_stats = {}
+	_last_percent = {}
+	_jolts = {}
 	queue_redraw()
 
 
@@ -51,6 +55,24 @@ func on_snapshot(snap: Dictionary) -> void:
 				_stat(e.id).falls += 1
 				if e.byId != null:
 					_stat(e.byId).kos += 1
+	# Più danno in un colpo, più la percentuale trema
+	var fx: Dictionary = game.effects
+	for p in snap.players:
+		var before: float = _last_percent.get(p.id, p.percent)
+		if p.percent > before:
+			var amp: float = minf(fx.percentShakeMax, (p.percent - before) * fx.percentShakePerDamage)
+			_jolts[p.id] = {"ms": float(fx.percentShakeMs), "amp": maxf(amp, _jolts.get(p.id, {}).get("amp", 0.0))}
+		_last_percent[p.id] = p.percent
+	queue_redraw()
+
+
+func _process(delta: float) -> void:
+	if _jolts.is_empty():
+		return
+	for id in _jolts.keys():
+		_jolts[id].ms -= delta * 1000.0
+		if _jolts[id].ms <= 0:
+			_jolts.erase(id)
 	queue_redraw()
 
 
@@ -106,7 +128,14 @@ func _draw_cards(w: float, h: float, flag: bool) -> void:
 		var name: String = p.name + (" (tu)" if p.id == my_id else "")
 		draw_string(_font, Vector2(x + 20, h - 64), name, HORIZONTAL_ALIGNMENT_LEFT, card_w - 30, 15, Color.WHITE)
 		var pct := "OUT" if p.eliminated else "%d%%" % roundi(p.percent)
-		draw_string(_font, Vector2(x + 20, h - 30), pct, HORIZONTAL_ALIGNMENT_LEFT, -1, 28, _percent_color(p.percent, p.eliminated))
+		var pos := Vector2(x + 20, h - 30)
+		var size := 28
+		if _jolts.has(p.id) and not p.eliminated:
+			var j: Dictionary = _jolts[p.id]
+			var left: float = j.ms / game.effects.percentShakeMs
+			pos += Vector2(randf_range(-1, 1), randf_range(-1, 1)) * j.amp * left
+			size = roundi(28 * (1.0 + 0.3 * left * j.amp / game.effects.percentShakeMax))
+		draw_string(_font, pos, pct, HORIZONTAL_ALIGNMENT_LEFT, -1, size, _percent_color(p.percent, p.eliminated))
 		if _stage.get("goal") != null:
 			# Corsa: quanta strada si è fatta
 			draw_string(_font, Vector2(x + card_w - 62, h - 30), "%d%%" % _progress(p.x), HORIZONTAL_ALIGNMENT_LEFT, -1, 16, UI.ACCENT)

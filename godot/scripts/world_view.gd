@@ -17,6 +17,7 @@ var _shake := 0.0
 var _flash := 0.0 # ms di lampo bianco rimasti
 var _dust: Array = [] # [{ x, y, dx, age }] sbuffi di polvere
 var _trails := {} # id -> Array[Vector2] delle ultime posizioni, per la scia di chi vola
+var _beams: Array = [] # [{ x, y, age, color }] raggi dei KO, dal punto di uscita verso il centro
 var _font: Font = ThemeDB.fallback_font
 var view_rect := Rect2(0, 0, 1280, 720) # la parte di mondo che si vede, decisa dalla telecamera in main.gd
 var _textures := {} # id personaggio -> Texture2D dello spritesheet
@@ -42,6 +43,7 @@ func reset() -> void:
 	positions = {}
 	_anims = {}
 	_sparks = []
+	_beams = []
 	_dust = []
 	_trails = {}
 	_flash = 0.0
@@ -105,6 +107,10 @@ func on_event(e: Dictionary) -> void:
 		"ko":
 			_shake = game.effects.shakeKo
 			_sparks.append({"x": clampf(e.x, 0, game.world.width), "y": clampf(e.y, 0, game.world.height), "age": 0.0, "size": 90.0, "color": Color(1, 0.4, 0.3)})
+			# Il raggio prende il colore di chi è uscito, come in Smash
+			var p: Variant = buffer.sample(e.id, Time.get_ticks_msec())
+			var col: Color = _color(p.color) if p != null else Color(1, 0.4, 0.3)
+			_beams.append({"x": e.x, "y": e.y, "age": 0.0, "color": col})
 
 
 # Sbuffi di polvere ai piedi, a destra e a sinistra
@@ -123,6 +129,9 @@ func _process(delta: float) -> void:
 	for d in _dust:
 		d.age += delta * 1000.0
 	_dust = _dust.filter(func(d): return d.age < fx.dustMs)
+	for b in _beams:
+		b.age += delta * 1000.0
+	_beams = _beams.filter(func(b): return b.age < fx.koBeamMs)
 	_flash = maxf(0.0, _flash - delta * 1000.0)
 	_shake = maxf(0.0, _shake - fx.shakeDecay * delta)
 	position = Vector2(randf_range(-_shake, _shake), randf_range(-_shake, _shake)) if _shake > 0 else Vector2.ZERO
@@ -167,8 +176,32 @@ func _draw() -> void:
 		c.a = 1.0 - k
 		draw_arc(Vector2(s.x, s.y), s.size * (0.4 + k), 0, TAU, 20, c, 4.0)
 
+	for b in _beams:
+		_draw_beam(b)
+
 	if _flash > 0:
 		draw_rect(view_rect.grow(40), Color(1, 1, 1, 0.45 * _flash / float(game.effects.flashMs)))
+
+
+# Raggio del KO: parte a punta dal bordo dello schermo dove si è usciti e si allarga verso il centro.
+# Si allunga di colpo all'inizio e poi sbiadisce; dentro ha un'anima bianca.
+func _draw_beam(b: Dictionary) -> void:
+	var fx: Dictionary = game.effects
+	var k: float = b.age / fx.koBeamMs
+	var inner := view_rect.grow(-8)
+	var from := Vector2(clampf(b.x, inner.position.x, inner.end.x), clampf(b.y, inner.position.y, inner.end.y))
+	var dir := (view_rect.get_center() - from).normalized()
+	if dir == Vector2.ZERO:
+		dir = Vector2.UP
+	var side := dir.orthogonal()
+	var reach: float = fx.koBeamLength * minf(1.0, k * 5.0)
+	var alpha := 1.0 - k * k
+	for layer in [[1.0, b.color], [0.35, Color.WHITE]]:
+		var half: float = fx.koBeamWidth * 0.5 * layer[0] * (1.0 + k * 0.6)
+		var c: Color = layer[1]
+		c.a = alpha * (0.75 if layer[0] == 1.0 else 0.9)
+		var end := from + dir * reach
+		draw_colored_polygon(PackedVector2Array([from - side * half * 0.08, end - side * half, end + side * half, from + side * half * 0.08]), c)
 
 
 # Chi vola veloce (lanciato lontano) lascia dietro di sé delle sagome che sbiadiscono

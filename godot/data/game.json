@@ -61,7 +61,13 @@
     "dustMs": 320,
     "dustPuffs": 5,
     "trailSpeed": 900,
-    "trailLength": 6
+    "trailLength": 6,
+    "koBeamMs": 750,
+    "koBeamLength": 1400,
+    "koBeamWidth": 150,
+    "percentShakeMs": 280,
+    "percentShakePerDamage": 0.6,
+    "percentShakeMax": 9
   },
   "colors": [
     15158332,
