@@ -1,6 +1,8 @@
 // Numeri del gioco condivisi tra client e server.
 // Vuoi un gioco più veloce o salti più alti? Si parte da qui.
 
+import type { AttackKind } from "./types";
+
 export const WORLD = {
   width: 1280, // area visibile, pixel
   height: 720,
@@ -39,9 +41,11 @@ export interface AttackSpec {
   range: number; // lunghezza della hitbox davanti al personaggio, pixel
   height: number;
   angleDeg: number; // angolo di lancio sopra l'orizzontale
+  boxX?: number; // pixel dal centro del personaggio, in avanti, dove comincia la hitbox (di base: metà larghezza)
+  boxY?: number; // pixel dai piedi in su dove sta il bordo alto della hitbox, negativo (di base: -70% dell'altezza)
 }
 
-export const ATTACKS: Record<"light" | "heavy", AttackSpec> = {
+export const ATTACKS: Record<AttackKind, AttackSpec> = {
   light: {
     damage: 5,
     baseKnockback: 260,
@@ -64,6 +68,34 @@ export const ATTACKS: Record<"light" | "heavy", AttackSpec> = {
     height: 44,
     angleDeg: 42,
   },
+  // Attacchi direzionali (#2): valori provvisori, da discutere alla serata di playtest (#22)
+  lightUp: { damage: 6, baseKnockback: 280, knockbackGrowth: 5, startupMs: 60, activeMs: 110, cooldownMs: 320, range: 54, height: 48, angleDeg: 85, boxX: -27, boxY: -128 }, // sopra la testa
+  lightDown: { damage: 4, baseKnockback: 230, knockbackGrowth: 4.5, startupMs: 50, activeMs: 110, cooldownMs: 300, range: 60, height: 24, angleDeg: 18, boxX: 10, boxY: -24 }, // sgambetto basso
+  lightAir: { damage: 6, baseKnockback: 260, knockbackGrowth: 5, startupMs: 50, activeMs: 160, cooldownMs: 320, range: 54, height: 50, angleDeg: 40, boxX: 8, boxY: -72 },
+  heavyUp: { damage: 14, baseKnockback: 430, knockbackGrowth: 11.5, startupMs: 280, activeMs: 130, cooldownMs: 800, range: 80, height: 64, angleDeg: 88, boxX: -40, boxY: -144 }, // lancia in verticale
+  heavyDown: { damage: 12, baseKnockback: 400, knockbackGrowth: 10, startupMs: 240, activeMs: 140, cooldownMs: 760, range: 88, height: 30, angleDeg: 25, boxX: 8, boxY: -30 }, // spazzata radente
+  heavyAir: { damage: 12, baseKnockback: 410, knockbackGrowth: 10.5, startupMs: 200, activeMs: 140, cooldownMs: 700, range: 66, height: 60, angleDeg: 32, boxX: 12, boxY: -82 },
+  // Mossa di recupero (#11): la spinta sta in RECOVERY, qui solo il colpetto che dà salendo
+  recovery: {
+    damage: 4,
+    baseKnockback: 300,
+    knockbackGrowth: 3,
+    startupMs: 0,
+    activeMs: 250,
+    cooldownMs: 0, // dopo la mossa non si attacca comunque fino all'atterraggio
+    range: 40,
+    height: 70,
+    angleDeg: 80, // quasi in verticale: chi sta sopra il bordo viene spinto via in alto
+    boxX: -20, // centrata sul personaggio
+    boxY: -100, // dalla testa in su: colpisce chi sta sopra mentre si sale
+  },
+};
+
+// Mossa di recupero (#11): in aria K + su dà una spinta verso l'alto, una volta finché
+// non si tocca terra o si viene colpiti. Un salto da terra sale di circa 160 pixel, questa di circa 240.
+export const RECOVERY = {
+  speed: 1050, // velocità verso l'alto, pixel/s
+  drift: 300, // velocità orizzontale verso la direzione tenuta, pixel/s
 };
 
 export const HITSTUN_PER_KNOCKBACK = 0.35; // ms di stordimento per ogni pixel/s di knockback
@@ -167,4 +199,18 @@ export const EFFECTS = {
   dustPuffs: 5, // sbuffi di polvere per atterraggio
   trailSpeed: 900, // px/s: chi vola più veloce di così lascia una scia
   trailLength: 6, // posizioni ricordate per la scia (una per frame)
+  koBeamMs: 750, // durata del raggio colorato di un KO
+  koBeamLength: 1400, // pixel: quanto entra nello schermo il raggio del KO
+  koBeamWidth: 150, // pixel: larghezza del raggio dove finisce (all'uscita è una punta)
+  percentShakeMs: 280, // durata del tremolio della percentuale dopo un colpo
+  percentShakePerDamage: 0.6, // pixel di tremolio per ogni punto di danno preso
+  percentShakeMax: 9, // pixel: tremolio massimo della percentuale
+};
+
+// Bot del server (#20, src/server/bot.ts): quanto è svelto e quando attacca
+export const BOT = {
+  reactionMs: 180, // ogni quanto il bot rivede le sue scelte, ms: più basso = più difficile
+  heavyEvery: 3, // un attacco pesante ogni tanti attacchi
+  jumpAtHeight: 90, // pixel: se il bersaglio sta più in alto di così, salta
+  edgeMargin: 40, // pixel: a terra non si avvicina al bordo del palco più di così
 };

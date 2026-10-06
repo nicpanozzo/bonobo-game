@@ -5,12 +5,20 @@ import type { AttackKind } from "../types";
 import { pressed, type Fighter, type PhysicsContext } from "./fighter";
 
 export function tryStartAttack(f: Fighter, ctx: PhysicsContext): void {
-  if (f.hitstun || f.attack || f.cooldownTimer > 0) return;
-  if (pressed(f, "heavy")) startAttack(f, "heavy", ctx);
-  else if (pressed(f, "light")) startAttack(f, "light", ctx);
+  if (f.hitstun || f.attack || f.cooldownTimer > 0 || f.helpless) return;
+  if (pressed(f, "heavy")) startAttack(f, variant(f, "heavy"), ctx);
+  else if (pressed(f, "light")) startAttack(f, variant(f, "light"), ctx);
 }
 
-function startAttack(f: Fighter, kind: AttackKind, ctx: PhysicsContext) {
+// La variante viene dai tasti tenuti: su vince su tutto, poi l'aria, poi giù (a terra)
+export function variant(f: Fighter, base: "light" | "heavy"): AttackKind {
+  if (f.input.up) return `${base}Up`;
+  if (!f.onGround) return `${base}Air`;
+  if (f.input.down) return `${base}Down`;
+  return base;
+}
+
+export function startAttack(f: Fighter, kind: AttackKind, ctx: PhysicsContext) {
   f.attack = kind;
   f.attackTimer = 0;
   f.cooldownTimer = ATTACKS[kind].cooldownMs;
@@ -34,11 +42,12 @@ export function updateAttack(f: Fighter, dtMs: number): void {
 
 type Box = { x: number; y: number; w: number; h: number };
 
-// Rettangolo del colpo davanti al personaggio
+// Rettangolo del colpo, dalla parte in cui si guarda (boxX/boxY lo spostano per le varianti)
 export function attackBox(f: Fighter): Box {
   const spec = ATTACKS[f.attack ?? "light"];
-  const x = f.facing === 1 ? f.x + FIGHTER.width / 2 : f.x - FIGHTER.width / 2 - spec.range;
-  const y = f.y - FIGHTER.height * 0.7;
+  const front = spec.boxX ?? FIGHTER.width / 2;
+  const x = f.facing === 1 ? f.x + front : f.x - front - spec.range;
+  const y = f.y + (spec.boxY ?? -FIGHTER.height * 0.7);
   return { x, y, w: spec.range, h: spec.height };
 }
 
@@ -76,6 +85,9 @@ export function resolveHits(fighters: Fighter[], ctx: PhysicsContext): void {
       target.attackActive = false;
       target.facing = (-attacker.facing) as 1 | -1;
       target.lastHitById = attacker.id;
+      // Chi viene colpito può di nuovo usare il recupero (#11)
+      target.recoveryUsed = false;
+      target.helpless = false;
       // Il fermo si somma a quello in corso solo fino al massimo (più colpi nello stesso tick)
       const stop = Math.min(HITSTOP.maxMs, HITSTOP.baseMs + HITSTOP.perDamageMs * spec.damage);
       attacker.hitstopTimer = Math.max(attacker.hitstopTimer, stop);

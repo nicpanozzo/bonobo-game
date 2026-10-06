@@ -39,4 +39,35 @@ describe("bot", () => {
     }
     assert.ok(dummy.percent > 0, "il colpo è entrato");
   });
+
+  it("il bot semplice va verso il giocatore e lo colpisce", () => {
+    const match = new Match();
+    const bots = new Bots();
+    match.addPlayer("a", "A");
+    bots.add(match, "semplice");
+    const a = match.players.find((p) => p.id === "a")!;
+    for (let i = 0; i < 60 * 5 && a.percent === 0; i++) {
+      bots.tick(match);
+      match.step(DT);
+    }
+    assert.ok(a.percent > 0, "in 5 secondi ha colpito almeno una volta");
+  });
+
+  it("il bot semplice lanciato fuori torna sul palco", () => {
+    const match = new Match();
+    const bots = new Bots();
+    match.addPlayer("a", "A");
+    const id = bots.add(match, "semplice")!;
+    const bot = match.players.find((p) => p.id === id)!;
+    const ground = match.stage.solids[0];
+    // Fuori dal bordo destro, un po' sotto la superficie, già senza doppio salto
+    Object.assign(bot, { x: ground.x + ground.width + 120, y: ground.y + 60, vx: 0, vy: 200, onGround: false, jumpsLeft: 1 });
+    const stocks = bot.stocks;
+    for (let i = 0; i < 60 * 3 && !bot.onGround; i++) {
+      bots.tick(match);
+      match.step(DT);
+    }
+    assert.equal(bot.stocks, stocks, "non è caduto");
+    assert.equal(bot.onGround, true, "è di nuovo a terra");
+  });
 });

@@ -95,7 +95,7 @@ gh pr ready N
 ```
 
 - Compila tutto il template: come provarla, quale agente l'ha scritta, idee della community usate o da chiedere.
-- Chiedi la review a **un umano diverso dal tuo** (`gh pr edit N --add-reviewer <login>`, o di' al tuo umano di chiederla sul Discord). Non approvare e non mergiare mai la tua PR.
+- Quando la CI è verde, senza conflitti né commenti aperti, **unisci tu la PR** (`gh pr merge N --squash`), come dice AGENTS.md. La review di un altro è facoltativa.
 - Se chiudi una dipendenza, dopo il merge sposta da `in attesa` a `pronto` le issue che sblocca.
 
 ## 9. Se ti fermi prima della fine

@@ -11,12 +11,14 @@ var player_ids: Array = []
 
 var positions := {} # id -> Vector2 dei piedi, come disegnati all'ultimo frame (per la telecamera)
 var _alive: Array = [] # id dei lottatori disegnati all'ultimo frame
+var _sampled := {} # id -> stato interpolato di questo frame, calcolato una volta sola in _draw
 var _reached := 0 # checkpoint della Corsa presi da me
 var _sparks: Array = [] # [{ x, y, age, size, color }]
 var _shake := 0.0
 var _flash := 0.0 # ms di lampo bianco rimasti
 var _dust: Array = [] # [{ x, y, dx, age }] sbuffi di polvere
 var _trails := {} # id -> Array[Vector2] delle ultime posizioni, per la scia di chi vola
+var _beams: Array = [] # [{ x, y, age, color }] raggi dei KO, dal punto di uscita verso il centro
 var _font: Font = ThemeDB.fallback_font
 var view_rect := Rect2(0, 0, 1280, 720) # la parte di mondo che si vede, decisa dalla telecamera in main.gd
 var _textures := {} # id personaggio -> Texture2D dello spritesheet
@@ -42,6 +44,7 @@ func reset() -> void:
 	positions = {}
 	_anims = {}
 	_sparks = []
+	_beams = []
 	_dust = []
 	_trails = {}
 	_flash = 0.0
@@ -88,7 +91,7 @@ func on_event(e: Dictionary) -> void:
 			if e.id == my_id:
 				_reached = int(e.index)
 		"hit":
-			var big: bool = e.kind == "heavy"
+			var big: bool = str(e.kind).begins_with("heavy")
 			_sparks.append({"x": e.x, "y": e.y, "age": 0.0, "size": 34.0 if big else 20.0, "color": Color(1, 0.85, 0.3) if big else Color.WHITE})
 			# Più il colpo lancia lontano, più lo schermo trema; i colpi enormi fanno anche un lampo
 			var fx: Dictionary = game.effects
@@ -105,6 +108,10 @@ func on_event(e: Dictionary) -> void:
 		"ko":
 			_shake = game.effects.shakeKo
 			_sparks.append({"x": clampf(e.x, 0, game.world.width), "y": clampf(e.y, 0, game.world.height), "age": 0.0, "size": 90.0, "color": Color(1, 0.4, 0.3)})
+			# Il raggio prende il colore di chi è uscito, come in Smash
+			var p: Variant = buffer.sample(e.id, Time.get_ticks_msec())
+			var col: Color = _color(p.color) if p != null else Color(1, 0.4, 0.3)
+			_beams.append({"x": e.x, "y": e.y, "age": 0.0, "color": col})
 
 
 # Sbuffi di polvere ai piedi, a destra e a sinistra
@@ -123,6 +130,9 @@ func _process(delta: float) -> void:
 	for d in _dust:
 		d.age += delta * 1000.0
 	_dust = _dust.filter(func(d): return d.age < fx.dustMs)
+	for b in _beams:
+		b.age += delta * 1000.0
+	_beams = _beams.filter(func(b): return b.age < fx.koBeamMs)
 	_flash = maxf(0.0, _flash - delta * 1000.0)
 	_shake = maxf(0.0, _shake - fx.shakeDecay * delta)
 	position = Vector2(randf_range(-_shake, _shake), randf_range(-_shake, _shake)) if _shake > 0 else Vector2.ZERO
@@ -145,8 +155,9 @@ func _draw() -> void:
 
 	var now := Time.get_ticks_msec()
 	_alive = []
+	_sampled = buffer.sample_all(player_ids, now)
 	for id in player_ids:
-		var p: Variant = buffer.sample(id, now)
+		var p: Variant = _sampled.get(id)
 		if p != null:
 			positions[id] = Vector2(p.x, p.y)
 			if not p.eliminated:
@@ -167,8 +178,32 @@ func _draw() -> void:
 		c.a = 1.0 - k
 		draw_arc(Vector2(s.x, s.y), s.size * (0.4 + k), 0, TAU, 20, c, 4.0)
 
+	for b in _beams:
+		_draw_beam(b)
+
 	if _flash > 0:
 		draw_rect(view_rect.grow(40), Color(1, 1, 1, 0.45 * _flash / float(game.effects.flashMs)))
+
+
+# Raggio del KO: parte a punta dal bordo dello schermo dove si è usciti e si allarga verso il centro.
+# Si allunga di colpo all'inizio e poi sbiadisce; dentro ha un'anima bianca.
+func _draw_beam(b: Dictionary) -> void:
+	var fx: Dictionary = game.effects
+	var k: float = b.age / fx.koBeamMs
+	var inner := view_rect.grow(-8)
+	var from := Vector2(clampf(b.x, inner.position.x, inner.end.x), clampf(b.y, inner.position.y, inner.end.y))
+	var dir := (view_rect.get_center() - from).normalized()
+	if dir == Vector2.ZERO:
+		dir = Vector2.UP
+	var side := dir.orthogonal()
+	var reach: float = fx.koBeamLength * minf(1.0, k * 5.0)
+	var alpha := 1.0 - k * k
+	for layer in [[1.0, b.color], [0.35, Color.WHITE]]:
+		var half: float = fx.koBeamWidth * 0.5 * layer[0] * (1.0 + k * 0.6)
+		var c: Color = layer[1]
+		c.a = alpha * (0.75 if layer[0] == 1.0 else 0.9)
+		var end := from + dir * reach
+		draw_colored_polygon(PackedVector2Array([from - side * half * 0.08, end - side * half, end + side * half, from + side * half * 0.08]), c)
 
 
 # Chi vola veloce (lanciato lontano) lascia dietro di sé delle sagome che sbiadiscono
@@ -237,13 +272,16 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 		draw_circle(Vector2(p.x + p.facing * fw * 0.22, p.y - fh * 0.78), 5.0, Color.WHITE)
 		draw_circle(Vector2(p.x + p.facing * fw * 0.27, p.y - fh * 0.78), 2.5, Color.BLACK)
 
-	# Colpo in corso: la stessa hitbox di attackBox() in src/shared/physics/attacks.ts
+	# Colpo in corso: la stessa hitbox di attackBox() in src/shared/physics/attacks.ts,
+	# spostata da boxX/boxY per le varianti direzionali (#2)
 	if p.attack != null:
 		var spec: Dictionary = game.attacks[p.attack]
-		var x: float = p.x + fw / 2 if p.facing == 1 else p.x - fw / 2 - spec.range
-		var c := Color("ff9f43") if p.attack == "heavy" else Color.WHITE
+		var front: float = spec.get("boxX", fw / 2)
+		var x: float = p.x + front if p.facing == 1 else p.x - front - spec.range
+		var y: float = p.y + spec.get("boxY", -fh * 0.7)
+		var c := Color("ff9f43") if str(p.attack).begins_with("heavy") else Color.WHITE
 		c.a = 0.85 if p.attackActive else 0.25
-		draw_rect(Rect2(x, p.y - fh * 0.7, spec.range, spec.height), c)
+		draw_rect(Rect2(x, y, spec.range, spec.height), c)
 
 	var label := "%s  %d%%" % [p.name, roundi(p.percent)]
 	var size := _font.get_string_size(label, HORIZONTAL_ALIGNMENT_CENTER, -1, 16)
@@ -286,7 +324,9 @@ static func _animation_for(p: Dictionary) -> String:
 	if p.hitstun:
 		return "hit"
 	if p.attack != null:
-		return p.attack
+		if p.attack == "recovery":
+			return "jump" # il recupero (#11) usa l'animazione del salto
+		return "heavy" if str(p.attack).begins_with("heavy") else "light" # le varianti usano l'animazione del colpo base
 	if not p.onGround:
 		return "jump" if p.vy < 0 else "fall"
 	if absf(p.vx) > 20:
@@ -298,7 +338,7 @@ static func _animation_for(p: Dictionary) -> String:
 func _draw_offscreen_markers() -> void:
 	var w: float = game.world.width
 	for id in player_ids:
-		var p: Variant = buffer.sample(id, Time.get_ticks_msec())
+		var p: Variant = _sampled.get(id)
 		if p == null or p.respawning or p.eliminated:
 			continue
 		var cx: float = p.x
