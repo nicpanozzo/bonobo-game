@@ -22,6 +22,7 @@ var game: Dictionary
 var socket := SocketIO.new()
 var params := {}
 var world: Node2D
+var camera := Camera2D.new()
 var hud: Control
 var lobby: Control
 var playing := false
@@ -35,6 +36,8 @@ func _ready() -> void:
 	world = preload("res://scripts/world_view.gd").new()
 	world.setup(game)
 	add_child(world)
+	camera.anchor_mode = Camera2D.ANCHOR_MODE_FIXED_TOP_LEFT
+	add_child(camera)
 
 	var layer := CanvasLayer.new()
 	add_child(layer)
@@ -93,9 +96,15 @@ func _on_event(name: String, data: Variant) -> void:
 		"welcome":
 			world.my_id = data.id
 			hud.my_id = data.id
-			world.set_stage(data.stageId)
-			if str(data.stageId).begins_with("casuale"):
-				hud.set_status("Arena casuale: qui per ora si vede l'arena base")
+			# Server vecchi non mandano l'arena intera: allora si cerca tra quelle fisse per id
+			if data.get("stage") is Dictionary:
+				world.set_stage_spec(data.stage)
+			else:
+				world.set_stage(data.stageId)
+			hud.rules = data.rules
+			camera.limit_left = 0
+			camera.limit_right = int(world.stage_width())
+			camera.position = Vector2.ZERO
 		"snapshot":
 			for e in data.events:
 				world.on_event(e)
@@ -112,6 +121,19 @@ func _process(_delta: float) -> void:
 		_connect()
 	if playing:
 		_send_input()
+		_follow(_delta)
+
+
+# Nei percorsi della Corsa, più larghi dello schermo, la telecamera segue il proprio lottatore
+# (come src/client/render/camera.ts): un po' a sinistra del centro, per vedere la strada davanti
+func _follow(delta: float) -> void:
+	var w: float = game.world.width
+	if world.stage_width() <= w or not world.positions.has(world.my_id):
+		return
+	var target: float = world.positions[world.my_id].x - w * 0.4
+	target = clampf(target, 0, world.stage_width() - w)
+	var k := 1.0 - exp(-delta * 1000.0 / 120.0)
+	camera.position.x += (target - camera.position.x) * k
 
 
 func _unhandled_key_input(event: InputEvent) -> void:

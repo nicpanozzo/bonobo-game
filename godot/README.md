@@ -39,5 +39,6 @@ Non modificare `data/game.json` a mano: cambia `src/shared/stages.ts`, `characte
 
 ## Cosa manca
 
-- Arene casuali (`casuale-<seme>`): si generano sul server, qui si vede l'arena base. Servirà che il server mandi l'arena nel messaggio `welcome` (PR `Protocollo:`).
-- Sprite dei personaggi, suoni, musica, menu di pausa, tasti personalizzabili, squadre nell'HUD.
+- Sprite dei personaggi, suoni, musica, menu di pausa, tasti personalizzabili.
+
+Arene casuali e percorsi della Corsa arrivano interi dal server nel messaggio `welcome` (campo `stage`), perché Godot non ha il codice che li genera dal seme.
