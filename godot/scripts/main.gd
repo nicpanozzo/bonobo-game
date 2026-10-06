@@ -23,6 +23,7 @@ var socket := SocketIO.new()
 var params := {}
 var world: Node2D
 var camera := Camera2D.new()
+var audio: Node2D
 var hud: Control
 var lobby: Control
 var playing := false
@@ -38,6 +39,9 @@ func _ready() -> void:
 	add_child(world)
 	camera.anchor_mode = Camera2D.ANCHOR_MODE_FIXED_TOP_LEFT
 	add_child(camera)
+	audio = preload("res://scripts/audio.gd").new()
+	add_child(audio)
+	audio.setup(game)
 
 	var layer := CanvasLayer.new()
 	add_child(layer)
@@ -108,6 +112,7 @@ func _on_event(name: String, data: Variant) -> void:
 		"snapshot":
 			for e in data.events:
 				world.on_event(e)
+				audio.on_event(e)
 			world.on_snapshot(data)
 			hud.on_snapshot(data)
 		"roomFull":
@@ -123,6 +128,7 @@ func _process(_delta: float) -> void:
 		_send_input()
 		_follow(_delta)
 		world.view_left = camera.position.x
+		audio.view_left = camera.position.x
 
 
 # Nei percorsi della Corsa, più larghi dello schermo, la telecamera segue il proprio lottatore
@@ -139,8 +145,13 @@ func _follow(delta: float) -> void:
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	var key := event as InputEventKey
-	if playing and key.pressed and not key.echo and key.keycode == KEY_R:
+	if not playing or not key.pressed or key.echo:
+		return
+	if key.keycode == KEY_R:
 		socket.emit("rematch") # il server lo accetta solo a partita finita
+	elif key.keycode == KEY_M:
+		# M accende e spegne la musica, come nel gioco web
+		audio.set_volumes(game.audio.master, game.audio.sfx, game.audio.music, not audio.music_on())
 
 
 func _send_input() -> void:
