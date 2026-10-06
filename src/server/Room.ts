@@ -38,6 +38,7 @@ export class Room {
   private accumulator = 0;
   private pendingEvents: GameEvent[] = []; // eventi accumulati fino al prossimo snapshot
   private humans = new Set<string>(); // i bot (#20) non tengono aperta la stanza
+  lastHumanInput = Date.now(); // ms dell'ultimo ingresso o tasto di un umano: senza, la stanza si chiude (ROOM_IDLE_MS)
 
   constructor(
     public readonly code: string,
@@ -75,6 +76,7 @@ export class Room {
   addPlayer(id: string, name: string, characterId?: string) {
     this.match.addPlayer(id, name, characterId);
     this.humans.add(id);
+    this.lastHumanInput = Date.now();
   }
 
   removePlayer(id: string) {
@@ -84,6 +86,7 @@ export class Room {
 
   setInput(id: string, input: InputState) {
     this.match.setInput(id, input);
+    this.lastHumanInput = Date.now();
   }
 
   requestRematch() {

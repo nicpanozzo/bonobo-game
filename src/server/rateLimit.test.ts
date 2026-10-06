@@ -1,7 +1,7 @@
 // Test del limite di messaggi per client (#105)
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { Flood, TokenBucket } from "./rateLimit";
+import { clientIp, Flood, IpLimits, TokenBucket } from "./rateLimit";
 
 describe("TokenBucket", () => {
   it("lascia passare lo scatto iniziale e poi il ritmo concesso", () => {
@@ -39,5 +39,34 @@ describe("Flood", () => {
     flood.record(false, 0);
     flood.record(true, 500);
     assert.equal(flood.record(false, 1200), false);
+  });
+});
+
+describe("clientIp", () => {
+  it("da fuori usa l'indirizzo della connessione, anche se l'intestazione dice altro", () => {
+    assert.equal(clientIp("::ffff:8.8.8.8", { "cf-connecting-ip": "1.2.3.4" }), "8.8.8.8");
+  });
+
+  it("dietro il tunnel o un proxy legge l'IP vero dalle intestazioni", () => {
+    assert.equal(clientIp("127.0.0.1", { "cf-connecting-ip": "1.2.3.4" }), "1.2.3.4");
+    assert.equal(clientIp("10.0.0.7", { "x-forwarded-for": "5.6.7.8, 10.0.0.1" }), "5.6.7.8");
+    assert.equal(clientIp("::1", {}), "::1");
+    assert.equal(clientIp("192.168.1.20", {}), "192.168.1.20");
+  });
+});
+
+describe("IpLimits", () => {
+  it("chiude la connessione oltre il limite e la riapre quando una esce", () => {
+    const limits = new IpLimits(2, 5);
+    assert.deepEqual([limits.connect("a"), limits.connect("a"), limits.connect("a"), limits.connect("b")], [true, true, false, true]);
+    limits.disconnect("a");
+    assert.equal(limits.connect("a"), true);
+  });
+
+  it("concede tot stanze nuove al minuto per IP", () => {
+    const limits = new IpLimits(8, 2);
+    assert.deepEqual([limits.createRoom("a", 0), limits.createRoom("a", 1000), limits.createRoom("a", 2000)], [true, true, false]);
+    assert.equal(limits.createRoom("b", 2000), true);
+    assert.equal(limits.createRoom("a", 60_000), true);
   });
 });

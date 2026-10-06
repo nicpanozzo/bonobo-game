@@ -19,6 +19,13 @@ export interface MatchOptions {
 
 export type MatchEndEvent = Extract<GameEvent, { type: "matchEnd" }>;
 
+// 16 caratteri veri: slice() spezzerebbe un'emoji a metà (il server ripulisce già i nomi con sanitizeName)
+const graphemes = new Intl.Segmenter(undefined, { granularity: "grapheme" });
+const shortName = (name: string) =>
+  Array.from(graphemes.segment(name), (s) => s.segment)
+    .slice(0, 16)
+    .join("");
+
 export class Match {
   readonly stage: StageSpec;
   readonly rules: MatchRules;
@@ -62,7 +69,7 @@ export class Match {
     const fighter = createFighter(
       {
         id,
-        name: name.slice(0, 16) || "Bonobo",
+        name: shortName(name) || "Bonobo",
         characterId: getCharacter(characterId).id,
         color: team ? this.teamColor(team as 1 | 2) : COLORS[index],
         team,

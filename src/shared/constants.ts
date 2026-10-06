@@ -277,7 +277,12 @@ export const NET_LIMITS = {
   inputBurst: 30, // messaggi "input" che possono arrivare tutti insieme
   rematchPerSecond: 2, // richieste di rivincita al secondo
   floodCloseMs: 10_000, // millisecondi di fila oltre il limite dopo cui il client viene chiuso
+  maxConnectionsPerIp: 8, // connessioni aperte insieme dallo stesso IP (una stanza piena da una sola casa)
+  maxRooms: 50, // stanze aperte in tutto sul server
+  newRoomsPerIpPerMinute: 5, // stanze nuove che lo stesso IP può creare in un minuto
+  maxNameLength: 16, // caratteri veri (emoji comprese) di un nome
 };
+export const ROOM_IDLE_MS = 15 * 60_000; // millisecondi senza tasti umani dopo cui una stanza si chiude come se fosse vuota
 
 // Comandi col pad (E6, #108): numeri che usa solo il client Godot, esportati in game.json
 export const INPUT = {
