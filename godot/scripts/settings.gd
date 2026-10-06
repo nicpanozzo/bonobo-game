@@ -40,13 +40,16 @@ var bindings := {}
 var profile := {} # name, room, char, stage, rules, server
 
 var _defaults := {}
+var _path := PATH
 
 
-func _init(audio_defaults: Dictionary) -> void:
+# path: dove salvare, cambiato solo dai test per non toccare le preferenze di chi li lancia
+func _init(audio_defaults: Dictionary, path := PATH) -> void:
+	_path = path
 	_defaults = {"master": audio_defaults.master, "sfx": audio_defaults.sfx, "music": audio_defaults.music}
 	reset(false)
 	var cfg := ConfigFile.new()
-	if cfg.load(PATH) != OK:
+	if cfg.load(_path) != OK:
 		return
 	master = clampf(cfg.get_value("audio", "master", master), 0, 1)
 	sfx = clampf(cfg.get_value("audio", "sfx", sfx), 0, 1)
@@ -54,7 +57,8 @@ func _init(audio_defaults: Dictionary) -> void:
 	music_on = bool(cfg.get_value("audio", "music_on", music_on))
 	# Tasti: si tengono solo le azioni salvate bene, le altre restano al default
 	for a in ACTIONS:
-		var keys: Variant = cfg.get_value("keys", a, null)
+		# Con default null Godot lo considera "nessun default" e stampa un errore se la chiave manca
+		var keys: Variant = cfg.get_value("keys", a) if cfg.has_section_key("keys", a) else null
 		if keys is Array and keys.all(func(k): return k is int):
 			bindings[a] = keys.slice(0, MAX_KEYS)
 	var p: Variant = cfg.get_value("profile", "last", {})
@@ -81,7 +85,7 @@ func save() -> void:
 	for a in ACTIONS:
 		cfg.set_value("keys", a, bindings[a])
 	cfg.set_value("profile", "last", profile)
-	cfg.save(PATH) # se non si può salvare, le preferenze valgono solo per questa volta
+	cfg.save(_path) # se non si può salvare, le preferenze valgono solo per questa volta
 	changed.emit()
 
 

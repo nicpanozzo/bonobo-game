@@ -12,6 +12,7 @@
     "start": "NODE_ENV=production tsx src/server/index.ts",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test \"src/**/*.test.ts\"",
+    "test:godot": "godot --headless --path godot --script res://tests/run_tests.gd",
     "discord": "node scripts/discord.mjs",
     "bench": "tsx scripts/bench.ts",
     "bench:godot": "godot --headless --path godot --script res://tools/bench_client.gd",
