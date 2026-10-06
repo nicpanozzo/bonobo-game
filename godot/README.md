@@ -17,6 +17,9 @@ Nella versione web gli stessi valori vanno nell'indirizzo: `index.html?server=ht
 - **Web:** Progetto → Esporta → Web. Il preset è già pronto (senza thread, così funziona su qualsiasi hosting, anche GitHub Pages). Serve il pacchetto "Export templates" di Godot 4.5.1.
 - **Linux:** preset "Linux". Windows e Mac si aggiungono quando serve l'app da scaricare.
 
+L'app per Windows, Mac e Linux si pubblica da sola come Release a ogni merge su `main` che tocca `godot/` (`.github/workflows/app.yml`). I link portano sempre all'ultima versione:
+[Windows](https://github.com/nicpanozzo/bonobo-game/releases/latest/download/bonobo-game-windows.zip) · [Mac](https://github.com/nicpanozzo/bonobo-game/releases/latest/download/bonobo-game-mac.zip) · [Linux](https://github.com/nicpanozzo/bonobo-game/releases/latest/download/bonobo-game-linux.zip). Nell'app si incolla il link della stanza nel campo Server.
+
 La versione web si pubblica da sola su GitHub Pages a ogni merge su `main` (`.github/workflows/pages.yml`): https://nicpanozzo.github.io/bonobo-game/godot/
 
 Da riga di comando: `godot --headless --path godot --export-release Web build/web/index.html`.
