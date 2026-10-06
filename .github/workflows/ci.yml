@@ -24,3 +24,5 @@ jobs:
       - run: npm run build
       # I test arrivano con #26; finché lo script non esiste il passo non fa niente
       - run: npm run test --if-present
+      # godot/data/game.json è generato dai dati del gioco: deve restare allineato (#59)
+      - run: npm run export:godot && git diff --exit-code godot/data

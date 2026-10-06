@@ -1,4 +1,5 @@
 # Pubblica il sito del progetto (cartella site/) su GitHub Pages quando cambia su main.
+# Insieme al sito pubblica il client Godot esportato per il web, in /godot/ (#59).
 # Va attivato una volta sola: Settings → Pages → Source: GitHub Actions.
 name: Sito
 
@@ -7,6 +8,7 @@ on:
     branches: [main]
     paths:
       - 'site/**'
+      - 'godot/**'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 
@@ -19,6 +21,9 @@ concurrency:
   group: pages
   cancel-in-progress: true
 
+env:
+  GODOT_VERSION: 4.5.1
+
 jobs:
   pubblica:
     runs-on: ubuntu-latest
@@ -27,6 +32,29 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      # Godot e il suo modello di esportazione web si scaricano una volta e restano in cache
+      - id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/godot
+            ~/.local/share/godot/export_templates
+          key: godot-${{ env.GODOT_VERSION }}-web
+      - if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          BASE=https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable
+          mkdir -p ~/godot ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+          curl -sSL -o /tmp/godot.zip $BASE/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip
+          unzip -oq /tmp/godot.zip -d ~/godot
+          mv ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 ~/godot/godot
+          curl -sSL -o /tmp/templates.tpz $BASE/Godot_v${GODOT_VERSION}-stable_export_templates.tpz
+          unzip -joq /tmp/templates.tpz 'templates/web_nothreads_release.zip' 'templates/version.txt' -d ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+      - name: Esporta il client Godot in site/godot
+        run: |
+          mkdir -p site/godot
+          ~/godot/godot --headless --path godot --import
+          ~/godot/godot --headless --path godot --export-release Web ../site/godot/index.html
+          test -f site/godot/index.wasm
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
