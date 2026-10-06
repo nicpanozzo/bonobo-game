@@ -37,6 +37,7 @@ export interface PlayerState {
   invulnerable: boolean;
   eliminated: boolean; // vite finite
   carrier: boolean; // porta la bandiera della sua squadra (modalità "flag", #56)
+  ledge: "hang" | "climb" | "roll" | null; // appeso al bordo del palco o in risalita (#110), null altrimenti
 }
 
 // Un oggetto nell'arena (#17): a terra, in volo o in mano a qualcuno
@@ -86,6 +87,7 @@ export type GameEvent =
   | { type: "itemSpawn"; itemId: number; kind: string; x: number; y: number } // un oggetto comincia a cadere (#17)
   | { type: "itemPick"; itemId: number; id: string } // id lo raccoglie
   | { type: "itemThrow"; itemId: number; id: string; x: number; y: number }
+  | { type: "ledgeGrab"; id: string; x: number; y: number; invulnerable: boolean } // si aggrappa al bordo (#110)
   | { type: "matchStart" }
   | { type: "matchEnd"; winnerId: string | null; winnerTeam: number; durationMs: number };
 

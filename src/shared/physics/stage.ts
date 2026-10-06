@@ -65,6 +65,7 @@ function land(f: Fighter, y: number) {
   f.recoveryUsed = false;
   f.helpless = false;
   f.airDodgeUsed = false;
+  f.ledgeGrabs = 0;
 }
 
 export function outOfBlastZone(f: Fighter, ctx: PhysicsContext): boolean {
@@ -108,6 +109,7 @@ export function respawn(f: Fighter, ctx: PhysicsContext): void {
   f.recoveryUsed = false;
   f.helpless = false;
   f.airDodgeUsed = false;
+  f.ledgeGrabs = 0;
   f.invulnerableTimer = RESPAWN_INVULNERABLE_MS;
   f.invulnerable = true;
   ctx.events.push({ type: "respawn", id: f.id });

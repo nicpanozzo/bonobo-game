@@ -471,6 +471,8 @@ static func _animation_for(p: Dictionary) -> String:
 		if p.attack == "recovery":
 			return "jump" # il recupero (#11) usa l'animazione del salto
 		return "heavy" if str(p.attack).begins_with("heavy") else "light" # le varianti usano l'animazione del colpo base
+	if str(p.get("ledge", "")) == "hang":
+		return "jump" # appeso al bordo (#110): la posa vera arriva con il passo 3
 	if not p.onGround:
 		return "jump" if p.vy < 0 else "fall"
 	if absf(p.vx) > 20:

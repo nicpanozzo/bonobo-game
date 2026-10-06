@@ -143,6 +143,7 @@ export class Match {
         invulnerable: f.invulnerable,
         eliminated: f.eliminated,
         carrier: f.carrier,
+        ledge: f.ledge,
       });
     }
     const teamScores = this.rules.mode === "flag" ? { ...this.scores } : null;
