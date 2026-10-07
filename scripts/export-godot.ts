@@ -12,6 +12,7 @@ import { RECONNECT, RECONNECT_HOLD_MS } from "../src/shared/constants";
 import { COLORS_COLORBLIND, TEAM_COLORS_COLORBLIND } from "../src/shared/constants";
 import { ITEMS } from "../src/shared/items";
 import { DEFAULT_STAGE_ID, STAGES } from "../src/shared/stages";
+import { stageCheckData } from "../src/shared/stageCheck";
 
 // La versione del gioco ha una fonte sola, package.json (E2, #106)
 const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")) as { version: string };
@@ -24,6 +25,7 @@ const data = {
   attacks: ATTACKS,
   ledge: { hangOffsetY: LEDGE.hangOffsetY }, // bordo del palco (#110): dove sta la mano di chi è appeso
   shield: { maxHp: SHIELD.maxHp }, // scudo (#109): la bolla è grande in proporzione ai punti rimasti
+  stageCheck: stageCheckData(), // altezze di salto per il controllo delle arene nell'editor (E12)
   net: NET,
   reconnect: { ...RECONNECT, holdMs: RECONNECT_HOLD_MS }, // riconnessione dopo un calo di rete (#107)
   audio: AUDIO,
