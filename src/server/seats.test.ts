@@ -12,15 +12,16 @@ describe("Seats", () => {
     assert.ok(a.length >= 20);
   });
 
-  it("un token riporta nel posto tenuto, una volta sola", () => {
+  it("un token riporta nel posto tenuto, anche più volte e anche prima che il server veda la caduta", () => {
     const seats = new Seats(1000);
     const token = seats.issue("a");
-    assert.equal(seats.resume(token, 0), null, "il posto non è tenuto finché il giocatore è collegato");
+    assert.equal(seats.resume(token, 0), "a", "il client si accorge della caduta prima del server");
     seats.hold("a", 0);
     assert.ok(seats.isHeld("a"));
     assert.equal(seats.resume(token, 999), "a");
     assert.equal(seats.isHeld("a"), false);
-    assert.equal(seats.resume(token, 999), null);
+    seats.hold("a", 5000);
+    assert.equal(seats.resume(token, 5500), "a", "lo stesso token vale per una caduta successiva");
   });
 
   it("dopo il tempo il posto scade e il token non vale più", () => {
@@ -30,8 +31,7 @@ describe("Seats", () => {
     assert.deepEqual(seats.expired(500), []);
     assert.deepEqual(seats.expired(1000), ["a"]);
     assert.equal(seats.resume(token, 1000), null);
-    seats.hold("a", 2000);
-    assert.equal(seats.resume(token, 2000), null, "dopo release il token è dimenticato");
+    assert.equal(seats.resume(token, 3000), null, "dopo l'uscita il token è dimenticato");
   });
 
   it("un token non vale in un'altra stanza né se è sconosciuto", () => {

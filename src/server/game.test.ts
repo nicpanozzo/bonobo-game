@@ -247,3 +247,53 @@ test("caduta di rete: il lottatore resta fermo nel posto tenuto, poi esce (#107)
   assert.ok(server.rooms.has("caduta"));
   await until(() => !server.rooms.has("caduta"));
 });
+
+type Welcome = Parameters<ServerToClient["welcome"]>[0];
+function joinWith(c: Client, data: Parameters<ClientToServer["join"]>[0]) {
+  return new Promise<Welcome>((resolve) => {
+    c.once("welcome", resolve);
+    c.emit("join", data);
+  });
+}
+
+test("rientro con il token: stesso lottatore, stesse vite e percentuale (#107)", LIMIT, async () => {
+  const server = await startServer({ reconnectHoldMs: 400 });
+  const a = await client(server.url);
+  const b = await client(server.url);
+  const first = await joinWith(a, { room: "rientro", name: "A" });
+  await joinWith(b, { room: "rientro", name: "B" });
+  const room = server.rooms.get("rientro")!;
+  const fighter = room.match.players.find((p) => p.id === first.id)!;
+  fighter.percent = 42;
+  fighter.stocks = 2;
+
+  a.io.engine.close();
+  await until(() => fighter.away);
+  const a2 = await client(server.url);
+  const back = await joinWith(a2, { room: "rientro", name: "A", token: first.token });
+  assert.deepEqual([back.id, back.resumed, back.token], [first.id, true, first.token]);
+  assert.equal(room.match.players.length, 2, "bot, Discord e classifica vedono sempre due giocatori");
+  assert.deepEqual([fighter.away, fighter.percent, fighter.stocks], [false, 42, 2]);
+
+  // Il client si accorge della caduta prima del server: il socket nuovo vince, quello vecchio si chiude
+  const a3 = await client(server.url);
+  const stale = new Promise<void>((resolve) => a2.once("disconnect", () => resolve()));
+  assert.equal((await joinWith(a3, { room: "rientro", name: "A", token: first.token })).resumed, true);
+  await stale;
+  await sleep(50);
+  assert.equal(fighter.away, false, "l'uscita del vecchio socket non tocca il posto");
+  assert.equal(room.match.players.length, 2);
+
+  // I tasti del socket nuovo muovono lo stesso lottatore
+  a3.emit("input", { left: false, right: true, up: false, down: false, light: false, heavy: false, taunt: false, dodge: false });
+  await until(() => fighter.input.right);
+
+  // Posto scaduto: il token non vale più e si rientra da capo
+  a3.io.engine.close();
+  await until(() => !room.match.players.some((p) => p.id === first.id));
+  const a4 = await client(server.url);
+  const fresh = await joinWith(a4, { room: "rientro", name: "A", token: first.token });
+  assert.equal(fresh.resumed, false);
+  assert.notEqual(fresh.id, first.id);
+  for (const c of [b, a4]) c.disconnect();
+});

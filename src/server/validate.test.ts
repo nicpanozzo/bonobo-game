@@ -13,12 +13,12 @@ describe("parseJoin", () => {
 
   it("tiene i campi giusti e ripulisce il codice stanza", () => {
     const data = parseJoin({ room: "Serata-1!", name: "Luca", characterId: "egiainuso", stageId: "palco", bot: "facile" });
-    assert.deepEqual(data, { room: "serata-1", name: "Luca", characterId: "egiainuso", stageId: "palco", rules: undefined, bot: "facile" });
+    assert.deepEqual(data, { room: "serata-1", name: "Luca", characterId: "egiainuso", stageId: "palco", rules: undefined, bot: "facile", token: undefined });
   });
 
   it("ignora i campi del tipo sbagliato", () => {
     const data = parseJoin({ room: 7, name: { a: 1 }, characterId: 3, stageId: [], rules: "tante", bot: null });
-    assert.deepEqual(data, { room: "lobby", name: "", characterId: undefined, stageId: undefined, rules: undefined, bot: undefined });
+    assert.deepEqual(data, { room: "lobby", name: "", characterId: undefined, stageId: undefined, rules: undefined, bot: undefined, token: undefined });
   });
 
   it("taglia le stringhe enormi", () => {
@@ -34,6 +34,13 @@ describe("parseJoin", () => {
     const data = parseJoin({ room: "a", name: "b", rules });
     assert.deepEqual({ ...data?.rules }, { stocks: 5, mode: "teams", items: true });
     assert.equal(Object.getPrototypeOf(data?.rules), Object.prototype);
+  });
+});
+
+describe("token di riconnessione", () => {
+  it("tiene solo stringhe base64url corte", () => {
+    assert.equal(parseJoin({ room: "a", token: "AbC_d-12" })?.token, "AbC_d-12");
+    for (const token of [42, null, "", "x".repeat(33), "con spazi", "a/b+c=", { a: 1 }]) assert.equal(parseJoin({ room: "a", token })?.token, undefined);
   });
 });
 

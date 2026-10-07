@@ -30,12 +30,14 @@ export class Seats {
     return this.held.size;
   }
 
-  // Rientro con il token: restituisce il playerId se il posto è ancora tenuto, altrimenti null
+  // Rientro con il token: restituisce il playerId se il giocatore è ancora nella stanza, altrimenti null.
+  // Vale anche se il server non si è ancora accorto della caduta (il client se ne accorge prima).
+  // Il token resta lo stesso, così serve anche per una caduta successiva
   resume(token: string, now: number): string | null {
     const playerId = this.tokens.get(token);
     if (playerId === undefined) return null;
     const until = this.held.get(playerId);
-    if (until === undefined || now >= until) return null;
+    if (until !== undefined && now >= until) return null;
     this.held.delete(playerId);
     return playerId;
   }
