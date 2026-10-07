@@ -118,16 +118,25 @@ export interface ServerToClient {
   // le arene casuali e i percorsi della Corsa dal loro id
   // token: segreto di questo giocatore in questa stanza, mai negli snapshot; si rimanda nel join per rientrare (#107)
   // resumed: true = rientrato nel posto tenuto, con lo stesso lottatore
-  welcome: (data: { id: string; room: string; stageId: string; rules: MatchRules; stage: StageSpec; token: string; resumed: boolean }) => void;
+  // serverVersion: versione del gioco sul server (package.json), il client avvisa se è diversa dalla sua (E2)
+  welcome: (data: { id: string; room: string; stageId: string; rules: MatchRules; stage: StageSpec; token: string; resumed: boolean; serverVersion: string }) => void;
   snapshot: (snap: GameSnapshot) => void;
-  roomFull: () => void;
+  roomFull: () => void; // resta per i client di prima; i nuovi leggono refused
+  refused: (data: Refusal) => void; // unico rifiuto con motivo: protocollo diverso, stanza piena, troppe stanze (E2, E4)
+}
+
+// Perché il server non fa entrare: outdated = protocollo diverso, full = stanza piena, limit = troppe stanze sul server
+export interface Refusal {
+  reason: "outdated" | "full" | "limit";
+  message: string; // già pronto da mostrare a chi gioca
 }
 
 export interface ClientToServer {
   // stageId e rules contano solo per chi crea la stanza; gli altri entrano in quella che c'è
   // bot: chi crea la stanza può aggiungere un avversario del server, es. "manichino" (#20)
   // token: quello del welcome, dopo una caduta di rete; se il posto è ancora tenuto si rientra nello stesso lottatore (#107)
-  join: (data: { room: string; name: string; characterId?: string; stageId?: string; rules?: Partial<MatchRules>; bot?: string; token?: string }) => void;
+  // version e protocol: versione del gioco (package.json) e PROTOCOL_VERSION del client; mancano nei client di prima (E2)
+  join: (data: { room: string; name: string; characterId?: string; stageId?: string; rules?: Partial<MatchRules>; bot?: string; token?: string; version?: string; protocol?: number }) => void;
   input: (input: InputState) => void;
   rematch: () => void; // a fine partita, ricomincia subito (#17)
 }

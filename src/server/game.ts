@@ -10,6 +10,7 @@ import type { Leaderboard } from "./leaderboard";
 import { clientIp, Flood, IpLimits, TokenBucket } from "./rateLimit";
 import { combineHooks, Room } from "./Room";
 import { parseInput, parseJoin, sanitizeName } from "./validate";
+import { checkProtocol, ROOM_FULL, SERVER_VERSION, TOO_MANY_ROOMS } from "./version";
 
 export interface GameDeps {
   leaderboard?: Leaderboard;
@@ -70,6 +71,12 @@ export function attachGame(io: Server<ClientToServer, ServerToClient>, deps: Gam
       const data = parseJoin(raw);
       if (!data) return;
       const { room: code, characterId, stageId, rules, bot } = data;
+      const refusal = checkProtocol(data.protocol);
+      if (refusal) {
+        socket.emit("refused", refusal);
+        console.log(`[${code}] rifiutato: protocollo ${data.protocol}, versione ${data.version ?? "?"}`);
+        return;
+      }
       let r = rooms.get(code);
       // Rientro dopo una caduta di rete: il token del welcome riporta nello stesso lottatore, con vite e percentuale
       const { token } = data;
@@ -86,13 +93,14 @@ export function attachGame(io: Server<ClientToServer, ServerToClient>, deps: Gam
         owners.set(playerId, socket);
         socket.join(code);
         r.resumePlayer(playerId);
-        socket.emit("welcome", { id: playerId, room: code, stageId: r.stage.id, rules: r.rules, stage: r.stage, token, resumed: true });
+        socket.emit("welcome", { id: playerId, room: code, stageId: r.stage.id, rules: r.rules, stage: r.stage, token, resumed: true, serverVersion: SERVER_VERSION });
         console.log(`[${code}] rientra ${playerId}`);
         return;
       }
       if (!r) {
         if (rooms.size >= limits.maxRooms || !perIp.createRoom(ip, Date.now())) {
           console.log(`[${code}] stanza non creata: troppe stanze (${rooms.size}) o troppe nuove da ${ip}`);
+          socket.emit("refused", TOO_MANY_ROOMS);
           socket.disconnect(true);
           return;
         }
@@ -107,6 +115,7 @@ export function attachGame(io: Server<ClientToServer, ServerToClient>, deps: Gam
       }
       if (r.isFull) {
         socket.emit("roomFull");
+        socket.emit("refused", ROOM_FULL);
         return;
       }
       room = r;
@@ -115,7 +124,7 @@ export function attachGame(io: Server<ClientToServer, ServerToClient>, deps: Gam
       r.addPlayer(playerId, name, characterId);
       owners.set(playerId, socket);
       const fresh = r.seats.issue(playerId);
-      socket.emit("welcome", { id: playerId, room: code, stageId: r.stage.id, rules: r.rules, stage: r.stage, token: fresh, resumed: false });
+      socket.emit("welcome", { id: playerId, room: code, stageId: r.stage.id, rules: r.rules, stage: r.stage, token: fresh, resumed: false, serverVersion: SERVER_VERSION });
       console.log(`[${code}] entra ${playerId}`);
     });
 

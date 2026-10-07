@@ -31,6 +31,7 @@ var _token := "" # segreto del welcome: solo in memoria, vale per la stanza _tok
 var _token_room := ""
 var _lost_at := -1 # ms in cui la connessione è caduta durante la partita, -1 se siamo collegati (#107)
 var _attempt := 0 # tentativi di riconnessione da quando è caduta
+var _version_warned := false # banner "versione nuova" già mostrato (E2)
 var _try_hint := "" # prova del primo avvio (E14): si mostra appena si entra nella stanza
 var _last_snapshot := 0 # ms dell'ultimo snapshot: in partita il silenzio dice che la rete è caduta
 
@@ -229,8 +230,30 @@ func _on_connected() -> void:
 		data.bot = params.bot
 	if _token != "" and _token_room == str(params.room):
 		data.token = _token # dopo una caduta di rete: rientra nello stesso lottatore se il posto è tenuto (#107)
+	# Versione e protocollo (E2): un protocollo diverso viene rifiutato con refused, una versione diversa no.
+	# Per provarlo: -- --version=0.0.1 oppure -- --protocol=99
+	data.version = _my_version()
+	data.protocol = int(params.get("protocol", game.protocol))
 	socket.emit("join", data)
 	_last_input = {}
+
+
+func _my_version() -> String:
+	return str(params.get("version", game.version))
+
+
+# Server con un gioco più nuovo (E2): si avvisa una volta, senza bloccare la partita
+func _check_server_version(server_version: String) -> void:
+	if _version_warned or server_version == "" or not UI.newer_version(server_version, _my_version()):
+		return
+	_version_warned = true
+	var web := OS.has_feature("web")
+	var text := "C'è una versione nuova del gioco (v%s): %s" % [server_version, "ricarica la pagina" if web else "riapri l'app per averla"]
+	add_child(UI.banner(text, "Ricarica" if web else "Scarica", func():
+		if web:
+			JavaScriptBridge.eval("location.reload()")
+		else:
+			OS.shell_open("https://nicpanozzo.github.io/bonobo-game/#gioca")))
 
 
 func _on_disconnected() -> void:
@@ -294,6 +317,7 @@ func _on_event(name: String, data: Variant) -> void:
 			else:
 				world.set_stage(data.stageId)
 			hud.on_welcome(data, world.stage)
+			_check_server_version(str(data.get("serverVersion", "")))
 			camera.position = Vector2.ZERO
 			camera.zoom = Vector2.ONE
 		"snapshot":
@@ -306,6 +330,9 @@ func _on_event(name: String, data: Variant) -> void:
 			hud.on_snapshot(data)
 		"roomFull":
 			hud.set_status("Stanza piena! Prova con un'altra stanza")
+		"refused": # il server non ci fa entrare e dice perché (E2): si torna alla lobby con il messaggio
+			_leave()
+			add_child(UI.banner(str(data.get("message", "Il server non ti fa entrare")), "", Callable(), 15.0))
 
 
 func _process(_delta: float) -> void:

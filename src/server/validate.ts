@@ -12,6 +12,8 @@ export interface JoinData {
   rules?: Partial<MatchRules>;
   bot?: string;
   token?: string; // token del welcome per rientrare dopo una caduta di rete (#107)
+  version?: string; // versione del gioco del client (E2)
+  protocol?: number; // PROTOCOL_VERSION del client (E2)
 }
 
 const isObject = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
@@ -45,6 +47,8 @@ export function parseJoin(raw: unknown): JoinData | null {
     bot: shortString(raw.bot),
     // I token che diamo noi sono 22 caratteri base64url: qualunque altra cosa non è un token
     token: typeof raw.token === "string" && /^[A-Za-z0-9_-]{1,32}$/.test(raw.token) ? raw.token : undefined,
+    version: shortString(raw.version),
+    protocol: Number.isInteger(raw.protocol) ? (raw.protocol as number) : undefined,
   };
 }
 
