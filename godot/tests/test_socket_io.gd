@@ -42,3 +42,12 @@ func test_entrata_e_uscita_dal_namespace() -> void:
 	var joined := s.is_joined()
 	s._handle_socket_io("1")
 	runner.check(joined and not s.is_joined() and log == ["dentro", "fuori"], str(log))
+
+
+func test_silenzio_dal_pacchetto_di_apertura() -> void:
+	var s := SocketIO.new()
+	s._read_open('{"sid":"x","upgrades":[],"pingInterval":5000,"pingTimeout":5000,"maxPayload":16384}')
+	runner.check(s.silence_ms == 11000, "pingInterval + pingTimeout + 1 s: %d" % s.silence_ms)
+	var old := SocketIO.new()
+	old._read_open("rotto")
+	runner.check(old.silence_ms == SocketIO.SILENCE_MS, "senza apertura leggibile resta il valore di prima")

@@ -8,6 +8,7 @@ import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { CHARACTERS, DEFAULT_CHARACTER_ID } from "../src/shared/characters";
 import { ATTACKS, AUDIO, CAMERA, COLORS, EFFECTS, FIGHTER, INPUT, ITEM_RULES, LEDGE, NET, PROTOCOL_VERSION, RUMBLE, TEAM_COLORS, TEAM_NAMES, WORLD } from "../src/shared/constants";
+import { RECONNECT, RECONNECT_HOLD_MS } from "../src/shared/constants";
 import { ITEMS } from "../src/shared/items";
 import { DEFAULT_STAGE_ID, STAGES } from "../src/shared/stages";
 
@@ -22,6 +23,7 @@ const data = {
   attacks: ATTACKS,
   ledge: { hangOffsetY: LEDGE.hangOffsetY }, // bordo del palco (#110): dove sta la mano di chi è appeso
   net: NET,
+  reconnect: { ...RECONNECT, holdMs: RECONNECT_HOLD_MS }, // riconnessione dopo un calo di rete (#107)
   audio: AUDIO,
   input: INPUT,
   rumble: RUMBLE,

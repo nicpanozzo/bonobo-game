@@ -144,6 +144,16 @@
     "teleportDistance": 300,
     "bufferSize": 30
   },
+  "reconnect": {
+    "retryDelaysMs": [
+      1000,
+      2000,
+      4000,
+      5000
+    ],
+    "snapshotSilenceMs": 3000,
+    "holdMs": 20000
+  },
   "audio": {
     "master": 0.8,
     "sfx": 0.7,
