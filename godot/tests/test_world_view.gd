@@ -31,6 +31,9 @@ func test_stato_preciso_dei_colpi() -> void:
 	runner.check(WorldView._animation_for(_player({"attack": "heavyAir", "onGround": false})) == "heavyAir", "variante pesante in aria")
 	runner.check(WorldView._animation_for(_player({"attack": "recovery", "onGround": false})) == "recovery", "recupero")
 	runner.check(WorldView._animation_for(_player({"shielding": true})) == "shield", "scudo")
+	runner.check(WorldView._animation_for(_player({"grabbedBy": "b"})) == "grabbed", "tenuto con la presa")
+	runner.check(WorldView._animation_for(_player({}), true) == "grab", "chi tiene")
+	runner.check(WorldView._animation_for(_player({"attack": "throwBack"})) == "throw", "lancio")
 
 
 func test_disegno_proprio_o_ripiego() -> void:

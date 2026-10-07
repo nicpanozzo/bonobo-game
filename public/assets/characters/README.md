@@ -82,7 +82,10 @@ Facoltativi (`OPTIONAL_ANIMATION_NAMES`). Chi non li ha usa quello della colonna
 | `recovery` | il salto di recupero | `jump` |
 | `taunt` | provocazione | `idle` |
 | `shield` | con lo scudo alzato, dentro la bolla | `idle` |
-| `grab`, `special` | posti per presa e mosse speciali (E9, E10): il gioco non li usa ancora | `light`, `heavy` |
+| `grab` | parte la presa, e poi si tiene l'altro (#109) | `light` |
+| `throw` | uno dei quattro lanci dalla presa | `grab` |
+| `grabbed` | tenuto da qualcuno con la presa | `hit` |
+| `special` | posto per le mosse speciali (E10): il gioco non lo usa ancora | `heavy` |
 
 Il ripiego si decide una volta sola: `npm run export:godot` scrive in `godot/data/game.json` la tabella completa, con tutti gli stati. Le animazioni di passaggio (`doubleJump`, `tumble`, `land`, `taunt`) si vedono solo se sono disegnate: col ripiego interromperebbero la corsa o il salto.
 

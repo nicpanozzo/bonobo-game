@@ -78,3 +78,13 @@ func test_il_ko_abbassa_la_musica() -> void:
 	a.set_volumes(1.0, 1.0, 0.5, true) # cambiare il volume nelle opzioni non perde l'abbassamento
 	runner.check(is_equal_approx(AudioServer.get_bus_volume_db(bus), before - 8.0), "resta abbassata")
 	a.free()
+
+
+func test_presa_e_lancio_hanno_il_loro_suono() -> void:
+	var a: Node = _audio()
+	for name in ["grab", "throw"]:
+		runner.check(a.stream_for(name) is AudioStreamWAV, "manca il suono %s" % name)
+	# Gli eventi della presa non danno errori
+	for e in [{"type": "grab", "id": "a", "targetId": "b", "x": 0, "y": 0}, {"type": "grabRelease", "id": "a", "targetId": "b"}, {"type": "attack", "id": "a", "kind": "throwUp"}, {"type": "hit", "kind": "grab", "x": 0, "percent": 3}]:
+		a.on_event(e)
+	a.free()

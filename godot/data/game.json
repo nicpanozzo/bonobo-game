@@ -1180,6 +1180,20 @@
             "loop": false,
             "src": "light"
           },
+          "throw": {
+            "row": 4,
+            "frames": 3,
+            "fps": 20,
+            "loop": false,
+            "src": "light"
+          },
+          "grabbed": {
+            "row": 6,
+            "frames": 2,
+            "fps": 10,
+            "loop": true,
+            "src": "hit"
+          },
           "special": {
             "row": 5,
             "frames": 4,
@@ -1362,6 +1376,21 @@
             "loop": false,
             "hitFrame": 1,
             "src": "light"
+          },
+          "throw": {
+            "row": 4,
+            "frames": 7,
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 1,
+            "src": "light"
+          },
+          "grabbed": {
+            "row": 6,
+            "frames": 8,
+            "fps": 24,
+            "loop": false,
+            "src": "hit"
           },
           "special": {
             "row": 5,

@@ -93,9 +93,16 @@ func on_event(e: Dictionary) -> void:
 			var tilt := 0.12 if kind.ends_with("Up") else (-0.12 if kind.ends_with("Down") else 0.0)
 			if kind == "recovery":
 				_play("doubleJump", {"volume": 0.7}) # il recupero (#11) suona come un doppio salto
+			elif kind.begins_with("throw"):
+				_play("throw") # lancio dalla presa (#109)
+			elif kind == "grab":
+				_play("light", {"volume": 0.4, "pitch": 0.8}) # la mano che parte: un fruscio corto
 			else:
 				_play("heavy" if kind.begins_with("heavy") else "light", {"volume": 0.7, "pitch": randf_range(0.95, 1.05) + tilt})
 		"hit":
+			if e.kind == "grab":
+				_play("hitLight", {"volume": 0.45, "x": e.x, "pitch": 1.3}) # colpetto durante la presa
+				return
 			# Più alta la percentuale del bersaglio, più forte e più grave il colpo
 			var strength := minf(1.0, e.percent / game.audio.hitLoudPercent)
 			_play("hitHeavy" if str(e.kind).begins_with("heavy") else "hitLight", {"volume": 0.6 + 0.4 * strength, "x": e.x, "pitch": 1.1 - 0.3 * strength})
@@ -119,6 +126,10 @@ func on_event(e: Dictionary) -> void:
 			_play("shield", {"volume": 0.6, "x": e.x, "pitch": 0.75 + 0.35 * left})
 		"shieldBreak":
 			_play("shieldBreak", {"x": e.x})
+		"grab":
+			_play("grab", {"x": e.x})
+		"grabRelease":
+			_play("roll", {"volume": 0.4, "pitch": 1.2})
 		"ko":
 			_play("ko", {"x": e.x})
 			duck()
@@ -409,6 +420,14 @@ func _build_sounds() -> void:
 		s.noise(0, "highpass", 6000, 2500, 0.35, 0.6)
 		s.tone(0, "square", 900, 120, 0.5, 0.25)
 		s.tone(0.02, "sine", 160, 50, 0.45, 0.5))
+	# Presa (#109): una mano che stringe, tonfo sordo e stoffa
+	_sounds.grab = make.call(0.16, func(s):
+		s.tone(0, "sine", 220, 110, 0.1, 0.6)
+		s.noise(0, "bandpass", 1800, 900, 0.08, 0.45))
+	# Lancio: un "whoop" che sale, come qualcosa che parte in aria
+	_sounds.throw = make.call(0.32, func(s):
+		s.noise(0, "bandpass", 600, 2600, 0.28, 0.55)
+		s.tone(0.02, "triangle", 200, 520, 0.22, 0.25))
 	# Fuori dall'arena: esplosione e fischio che scende
 	_sounds.ko = make.call(0.95, func(s):
 		s.noise(0, "lowpass", 2500, 60, 0.9, 1.0)

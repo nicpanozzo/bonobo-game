@@ -110,7 +110,7 @@ export const GRAB = {
   pummelDamage: 1.5, // percentuale di un colpetto (leggero durante la presa)
   pummelEveryMs: 300, // ms minimi tra due colpetti
   releaseSpeed: 300, // pixel/s con cui ci si allontana quando la presa finisce senza lancio
-  holdDistance: 44, // pixel tra il centro di chi tiene e quello di chi è tenuto
+  holdDistance: 56, // pixel tra il centro di chi tiene e quello di chi è tenuto: un po' di spazio per il braccio
 };
 
 // Mossa di recupero (#11): in aria K + su dà una spinta verso l'alto, una volta finché
