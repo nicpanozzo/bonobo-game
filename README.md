@@ -101,6 +101,35 @@ Versione breve qui sotto, quella completa (con i comandi spiegati uno per uno) �
 
 Regole semplici: PR piccole (una cosa alla volta), niente push diretti su `main`, scrivete nel canale Discord su cosa state lavorando per non pestarvi i piedi.
 
+### Il prompt per il tuo agente AI
+
+Lavori con un agente (Claude Code, Codex, Cursor, Copilot, Gemini...)? Aprilo nella cartella della repo clonata e incollagli questo messaggio come primo prompt. Cambia solo il tuo nome e cosa ti piace fare.
+
+```text
+Ciao! Mi chiamo <IL TUO NOME> e voglio iniziare a collaborare a bonobo-game,
+il platform fighter multiplayer del nostro gruppo Discord. Sono collaboratore
+della repo su GitHub. Mi piace soprattutto: <grafica / codice / suoni / design / non so ancora>.
+
+Prima di fare qualsiasi cosa:
+1. Leggi AGENTS.md: sono le regole per tutti gli agenti e vincono su tutto il resto.
+   Poi leggi README.md, CONTRIBUTING.md e docs/piano-prodotto.md.
+2. Segui il giro di lavoro di .claude/skills/compito/SKILL.md
+   (se sei Claude Code è la skill /compito).
+3. Controlla su GitHub se ho già una PR aperta: se sì, finiamo quella.
+
+Poi:
+4. Leggi la roadmap e proponimi due o tre issue "pronto" libere adatte a me,
+   spiegandomi in parole semplici cosa vuol dire farle. Scelgo io.
+5. Prima di scrivere codice prendi l'issue e apri una PR in bozza con il piano
+   e i file che toccherai; poi pusha spesso, a piccoli passi.
+
+Tienimi informato in italiano e semplice. Se qualcosa non è deciso (nomi,
+battute, valori) chiedimi prima se c'è un'idea del gruppo. Se ti manca un
+accesso o uno strumento (gh, Godot, Node), dimmelo e aiutami a installarlo.
+```
+
+Non ripete le regole: le legge ogni volta da quei file, così resta valido anche quando cambiano.
+
 ### Idee per iniziare
 
 - **Grafica**: sprite animati per ogni lottatore (fermo, corsa, salto, attacchi) in `public/assets/`, disegnati da `godot/scripts/world_view.gd`.
