@@ -36,6 +36,7 @@ const RADIUS_PANEL := 16
 const FOCUS_WIDTH := 3
 
 const TOAST_S := 2.5 # secondi di un avviso a tempo
+const FADE_S := 0.18 # secondi della dissolvenza quando compare una schermata (titolo, lobby, primo avvio)
 
 # Font provvisorio con licenza OFL (godot/assets/fonts/OFL.txt).
 # TODO community: si cambia qui quando E7 (#41) sceglie la direzione artistica.
@@ -155,6 +156,12 @@ static func banner(text: String, button_text := "", on_press := Callable(), seco
 	timer.timeout.connect(layer.queue_free)
 	layer.add_child(timer)
 	return layer
+
+
+# Dissolvenza in entrata di una schermata appena aggiunta alla scena: breve, non rallenta chi va di fretta
+static func fade_in(screen: CanvasItem) -> void:
+	screen.modulate.a = 0.0
+	screen.create_tween().tween_property(screen, "modulate:a", 1.0, FADE_S)
 
 
 # Titoletto di sezione, maiuscolo come nel web
