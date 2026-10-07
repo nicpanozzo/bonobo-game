@@ -5,7 +5,7 @@ Un **elemento** (ascensore, trappola, trampolino...) è invece un comportamento:
 
 ## Il giro, dalla richiesta al gioco
 
-1. **Chiunque del canale apre un'issue** dal modulo giusto (GitHub → Issues → New issue):
+1. **Chiunque del canale apre un'issue** dal modulo giusto (GitHub → Issues → New issue), o la fa aprire all'[editor delle arene](https://nicpanozzo.github.io/bonobo-game/editor/) con "Proponi":
    - **Arena nuova**: nome, il posto o la battuta dietro, la forma a parole o con un disegno, gli elementi da usare.
    - **Elemento nuovo**: cosa fa a chi lo tocca, come cambia nel tempo, cosa si deve poter regolare.
 2. **Chi la legge** (una persona o un agente) completa i dettagli mancanti con domande nell'issue e la sposta a `pronto`.
@@ -20,7 +20,7 @@ Le arene non dipendono l'una dall'altra, quindi più agenti ne possono fare insi
 
 - **Issue con un modulo** (l'idea di Nicola) perché gli agenti vedono solo GitHub: la richiesta resta scritta, discussa e collegata alla PR che la realizza. Il modulo fa le domande giuste a chi non programma.
 - **Arene come dati** perché sono facili da controllare (i test in `stages.test.ts` verificano che ogni piattaforma sia raggiungibile e che le partenze siano sul palco) e un agente le scrive in pochi minuti.
-- **Il prossimo passo** (#91) è un piccolo editor sul sito (`site/`): si disegna l'arena trascinando i rettangoli, si vede subito come viene, e un bottone apre l'issue "Arena nuova" con i dati già scritti. Così nessuno deve indovinare le coordinate. Finché non c'è, una descrizione a parole o un disegno su carta bastano: i numeri li sceglie l'agente.
+- **L'editor sul sito** ([nicpanozzo.github.io/bonobo-game/editor](https://nicpanozzo.github.io/bonobo-game/editor/), codice in `site/editor/`, #91): si parte da un'arena del gioco, si trascinano blocchi, piattaforme, ascensori e trappole e si vede subito come viene. Le piattaforme irraggiungibili sono rosse (stesso controllo dei test, `src/shared/stageCheck.ts`) e le partenze si mettono da sole. "Proponi" apre l'issue "Arena nuova" con i dati già scritti; "Copia" dà il blocco da incollare in `stages.ts`. Una descrizione a parole o un disegno su carta vanno bene lo stesso: i numeri li sceglie l'agente.
 
 ## Il formato di un'arena
 

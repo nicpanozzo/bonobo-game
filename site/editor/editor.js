@@ -1,6 +1,6 @@
-// Editor delle arene (E12 passo 1): disegno e trascinamento sul canvas. I conti stanno in arena.js.
+// Editor delle arene (E12): disegno e trascinamento sul canvas. I conti stanno in arena.js.
 
-import { GRID, WORLD, problems, reachable, slug, snap, toStageSpec, toStagesTs } from "./arena.js";
+import { GRID, TEMPLATES, WORLD, hazardActive, moverPosition, problems, proposeUrl, reachable, slug, snap, toStageSpec, toStagesTs } from "./arena.js";
 
 // Le arene e i numeri del salto vengono dal gioco su main; se non si caricano si parte da un palco semplice
 const GAME_JSON = "https://raw.githubusercontent.com/nicpanozzo/bonobo-game/main/godot/data/game.json";
@@ -18,8 +18,10 @@ const FALLBACK = {
   stageCheck: { jumpHeight: 160, doubleJumpHeight: 293, sideReach: 250 },
 };
 const HANDLE = 14; // pixel del quadratino per allargare
-const MIN_SIZE = 40;
+const POINT = 11; // raggio dei punti del percorso di un ascensore
+const MIN_SIZE = 20;
 const PLATFORM_HIT = 14; // pixel sopra e sotto la linea di una piattaforma che contano come clic
+const NAMES = { solid: "Blocco", platform: "Piattaforma", mover: "Piattaforma mobile", hazard: "Trappola" };
 
 const canvas = document.getElementById("stage");
 const ctx = canvas.getContext("2d");
@@ -27,12 +29,14 @@ const $ = (id) => document.getElementById(id);
 
 let game = FALLBACK;
 let model = null; // l'arena che si sta disegnando
-let selected = null; // { kind: "solid" | "platform", index }
-let drag = null; // { mode: "move" | "width" | "height", dx, dy }
+let spec = null; // l'arena come finirà in stages.ts, ricalcolata a ogni modifica
+let selected = null; // { kind: "solid" | "platform" | "mover" | "hazard", index, point? }
+let drag = null; // { mode: "move" | "width" | "height", start, orig }
 
 const hex = (n) => `#${n.toString(16).padStart(6, "0")}`;
-const items = (kind) => (kind === "solid" ? model.solids : model.platforms);
-const current = () => (selected ? items(selected.kind)[selected.index] : null);
+const LISTS = { solid: "solids", platform: "platforms", mover: "movers", hazard: "hazards" };
+const list = (kind) => (model[LISTS[kind]] ??= []);
+const picked = () => (selected ? list(selected.kind)[selected.index] : null);
 
 async function load() {
   try {
@@ -52,6 +56,7 @@ async function load() {
   select.append(new Option("Vuota", ""));
   select.addEventListener("change", () => start(select.value));
   start(select.value);
+  requestAnimationFrame(frame);
 }
 
 // Una copia dell'arena scelta, con il nome da cambiare
@@ -60,39 +65,108 @@ function start(baseId) {
   model = structuredClone({
     solids: base.solids,
     platforms: base.platforms,
-    movers: base.movers,
-    hazards: base.hazards,
+    movers: base.movers ?? [],
+    hazards: base.hazards ?? [],
     respawn: base.respawn,
     colors: base.colors,
   });
   model.name = $("name").value;
   model.id = slug(model.name);
-  select(null);
+  selected = null;
   update();
 }
 
-function spec() {
-  return toStageSpec(model);
-}
-
-// Ridisegna e ricontrolla tutto
-function update() {
-  const s = spec();
-  draw(s);
-  const list = problems(s, game.stageCheck, Object.keys(game.stages));
+// Ricontrolla tutto dopo una modifica; il disegno va da solo in frame().
+// withProps false: non rifà i campi sotto il canvas (si sta scrivendo in uno di loro)
+function update(withProps = true) {
+  spec = toStageSpec(model);
+  const found = problems(spec, game.stageCheck, Object.keys(game.stages));
   const ul = $("problems");
-  ul.replaceChildren(...(list.length ? list : ["Tutto a posto: si può copiare."]).map((t) => Object.assign(document.createElement("li"), { textContent: t })));
-  ul.classList.toggle("ok", list.length === 0);
-  $("output").value = toStagesTs(s);
+  ul.replaceChildren(...(found.length ? found : ["Tutto a posto: si può copiare o proporre."]).map((t) => Object.assign(document.createElement("li"), { textContent: t })));
+  ul.classList.toggle("ok", found.length === 0);
+  $("output").value = toStagesTs(spec);
   $("id").textContent = model.id || "?";
   $("delete").disabled = !selected;
-  const c = current();
-  $("selection").textContent = c
-    ? `${selected.kind === "solid" ? "Blocco" : "Piattaforma"}: x ${c.x}, y ${c.y}, largo ${c.width}${c.height ? `, alto ${c.height}` : ""}. Frecce: sposta. Canc: elimina.`
-    : "Clicca un blocco o una piattaforma per sceglierlo. Frecce: sposta di 10 pixel. Canc: elimina.";
+  $("propose").href = proposeUrl(spec);
+  if (withProps) describe();
 }
 
-function draw(s) {
+// Sotto il canvas: cosa è scelto e i suoi numeri da cambiare
+function describe() {
+  const c = picked();
+  const props = $("props");
+  props.replaceChildren();
+  if (!c) {
+    $("selection").textContent = "Clicca un pezzo per sceglierlo. Frecce: sposta di 10 pixel. Canc: elimina.";
+    return;
+  }
+  const where = selected.kind === "mover" ? `percorso di ${c.path.length} punti` : `x ${c.x}, y ${c.y}, largo ${c.width}${c.height ? `, alto ${c.height}` : ""}`;
+  $("selection").textContent = `${NAMES[selected.kind]}: ${where}. Frecce: sposta. Canc: elimina.`;
+  if (selected.kind === "mover") {
+    field(props, "Giro (s)", c.periodMs / 1000, 1, 60, 0.5, (v) => (c.periodMs = v * 1000));
+    field(props, "Sosta ai punti (s)", (c.pauseMs ?? 0) / 1000, 0, 10, 0.1, (v) => (c.pauseMs = v * 1000));
+    check(props, "Giro chiuso", !!c.loop, (v) => (v ? (c.loop = true) : delete c.loop));
+    button(props, "+ Punto", () => {
+      const last = c.path[c.path.length - 1];
+      c.path.push({ x: Math.min(WORLD.width - c.width, last.x + 120), y: last.y });
+    });
+    if (c.path.length > 2) button(props, "− Punto", () => c.path.pop());
+  } else if (selected.kind === "hazard") {
+    field(props, "Danno (%)", c.damage, 1, 40, 1, (v) => (c.damage = v));
+    check(props, "A ciclo", !!c.periodMs, (v) => {
+      if (v) Object.assign(c, { periodMs: 4000, activeMs: 1500 });
+      else {
+        delete c.periodMs;
+        delete c.activeMs;
+      }
+    });
+    if (c.periodMs) {
+      field(props, "Ciclo (s)", c.periodMs / 1000, 1, 30, 0.5, (v) => (c.periodMs = v * 1000));
+      field(props, "Accesa (s)", c.activeMs / 1000, 0.5, 30, 0.5, (v) => (c.activeMs = Math.min(v * 1000, c.periodMs)));
+    }
+  }
+}
+
+function field(parent, label, value, min, max, step, set) {
+  const input = Object.assign(document.createElement("input"), { type: "number", value, min, max, step });
+  input.addEventListener("change", () => {
+    const v = Math.max(min, Math.min(max, Number(input.value) || min));
+    set(v);
+    update(false);
+  });
+  parent.append(wrap(label, input));
+}
+
+function check(parent, label, value, set) {
+  const input = Object.assign(document.createElement("input"), { type: "checkbox", checked: value });
+  input.addEventListener("change", () => {
+    set(input.checked);
+    setTimeout(update); // rifà i campi (es. Ciclo e Accesa) dopo che il clic è finito
+  });
+  parent.append(wrap(label, input));
+}
+
+function button(parent, label, onClick) {
+  const b = Object.assign(document.createElement("button"), { className: "btn", textContent: label });
+  b.addEventListener("click", () => {
+    onClick();
+    update();
+  });
+  parent.append(b);
+}
+
+function wrap(label, input) {
+  const l = document.createElement("label");
+  l.append(label, input);
+  return l;
+}
+
+function frame(now) {
+  if (spec) draw(spec, now);
+  requestAnimationFrame(frame);
+}
+
+function draw(s, t) {
   ctx.fillStyle = hex(model.colors.sky);
   ctx.fillRect(0, 0, WORLD.width, WORLD.height);
   // Griglia ogni 40 pixel, più marcata ogni 160, e il centro
@@ -100,31 +174,57 @@ function draw(s) {
   for (let y = 0; y <= WORLD.height; y += GRID * 4) line(0, y, WORLD.width, y, y % 160 === 0 ? 0.12 : 0.05);
   line(WORLD.width / 2, 0, WORLD.width / 2, WORLD.height, 0.25, [8, 8]);
 
-  // Trappole e percorsi degli ascensori: si vedono, si cambiano nel passo 2
-  for (const h of model.hazards ?? []) {
-    ctx.fillStyle = h.kind === "fuoco" ? "rgba(231, 76, 60, .45)" : "rgba(241, 196, 15, .5)";
-    ctx.fillRect(h.x, h.y, h.width, h.height);
-  }
-  for (const m of model.movers ?? []) {
-    ctx.strokeStyle = "rgba(255, 255, 255, .35)";
-    ctx.setLineDash([6, 6]);
-    ctx.lineWidth = 2;
-    ctx.strokeRect(Math.min(...m.path.map((p) => p.x)), Math.min(...m.path.map((p) => p.y)), Math.max(...m.path.map((p) => p.x)) - Math.min(...m.path.map((p) => p.x)) + m.width, Math.max(...m.path.map((p) => p.y)) - Math.min(...m.path.map((p) => p.y)) + 8);
-    ctx.setLineDash([]);
-  }
-
   model.solids.forEach((b, i) => {
     ctx.fillStyle = hex(model.colors.solid);
     ctx.fillRect(b.x, b.y, b.width, b.height);
     ctx.fillStyle = hex(model.colors.solidEdge);
     ctx.fillRect(b.x, b.y, b.width, 6);
-    if (selected?.kind === "solid" && selected.index === i) outline(b.x, b.y, b.width, b.height, true);
+    if (is("solid", i)) outline(b.x, b.y, b.width, b.height, true);
   });
   model.platforms.forEach((p, i) => {
-    const ok = reachable(s, p, game.stageCheck);
-    ctx.fillStyle = ok ? hex(model.colors.platform) : "#e74c3c";
+    ctx.fillStyle = reachable(s, p, game.stageCheck) ? hex(model.colors.platform) : "#e74c3c";
     ctx.fillRect(p.x, p.y, p.width, 8);
-    if (selected?.kind === "platform" && selected.index === i) outline(p.x, p.y, p.width, 8, false);
+    if (is("platform", i)) outline(p.x, p.y, p.width, 8, false);
+  });
+
+  // Trappole: piene quando sono accese, solo il bordo quando sono spente
+  model.hazards.forEach((h, i) => {
+    const color = h.kind === "fuoco" || h.kind === "laser" ? "231, 76, 60" : "241, 196, 15";
+    ctx.fillStyle = `rgba(${color}, ${hazardActive(h, t) ? 0.8 : 0.15})`;
+    ctx.fillRect(h.x, h.y, h.width, h.height);
+    ctx.strokeStyle = `rgba(${color}, .9)`;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(h.x, h.y, h.width, h.height);
+    if (is("hazard", i)) outline(h.x, h.y, h.width, h.height, true);
+  });
+
+  // Piattaforme mobili: il percorso tratteggiato, una sagoma a ogni punto e la piattaforma dove sta adesso
+  model.movers.forEach((m, i) => {
+    const mid = (p) => ({ x: p.x + m.width / 2, y: p.y + 4 });
+    const route = m.loop ? [...m.path, m.path[0]] : m.path;
+    ctx.strokeStyle = "rgba(255, 255, 255, .45)";
+    ctx.setLineDash([6, 6]);
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    route.forEach((p, k) => (k ? ctx.lineTo(mid(p).x, mid(p).y) : ctx.moveTo(mid(p).x, mid(p).y)));
+    ctx.stroke();
+    for (const p of m.path) ctx.strokeRect(p.x, p.y, m.width, 8);
+    ctx.setLineDash([]);
+    const now = moverPosition(m, t);
+    ctx.fillStyle = hex(model.colors.platform);
+    ctx.fillRect(now.x, now.y, m.width, 8);
+    if (is("mover", i)) outline(m.path[0].x, m.path[0].y, m.width, 8, false);
+    m.path.forEach((p, k) => {
+      const c = mid(p);
+      ctx.fillStyle = is("mover", i) && selected.point === k ? "#f7c948" : "rgba(255, 255, 255, .85)";
+      ctx.beginPath();
+      ctx.arc(c.x, c.y, POINT, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#1b1b1b";
+      ctx.font = "bold 12px Nunito, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(String(k + 1), c.x, c.y + 4);
+    });
   });
 
   // Partenze numerate e punto di ritorno dopo un KO
@@ -144,6 +244,8 @@ function draw(s) {
   ctx.stroke();
 }
 
+const is = (kind, index) => selected?.kind === kind && selected.index === index;
+
 function line(x1, y1, x2, y2, alpha, dash = []) {
   ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
   ctx.lineWidth = 1;
@@ -155,7 +257,7 @@ function line(x1, y1, x2, y2, alpha, dash = []) {
   ctx.setLineDash([]);
 }
 
-// Bordo della scelta e quadratini per allargare (a destra) e, sui blocchi, per alzare (sotto)
+// Bordo della scelta e quadratini per allargare (a destra) e, se ha un'altezza, per alzare (sotto)
 function outline(x, y, w, h, tall) {
   ctx.strokeStyle = "#f7c948";
   ctx.lineWidth = 3;
@@ -165,33 +267,43 @@ function outline(x, y, w, h, tall) {
   if (tall) ctx.fillRect(x + w / 2 - HANDLE / 2, y + h - HANDLE / 2, HANDLE, HANDLE);
 }
 
-function select(sel) {
-  selected = sel;
-}
-
 // Coordinate del mondo dal puntatore, qualunque sia la grandezza del canvas sullo schermo
 function worldPoint(e) {
   const r = canvas.getBoundingClientRect();
   return { x: ((e.clientX - r.left) / r.width) * WORLD.width, y: ((e.clientY - r.top) / r.height) * WORLD.height };
 }
 
-const near = (px, py, x, y) => Math.abs(px - x) <= HANDLE && Math.abs(py - y) <= HANDLE;
+const near = (px, py, x, y, d = HANDLE) => Math.abs(px - x) <= d && Math.abs(py - y) <= d;
+const inside = (pt, x, y, w, h) => pt.x >= x && pt.x <= x + w && pt.y >= y && pt.y <= y + h;
 
-function hit(pt) {
-  // Prima i quadratini della scelta, poi le piattaforme (sottili, stanno sopra), poi i blocchi
-  const c = current();
+// Cosa c'è sotto il puntatore, al tempo t (le piattaforme mobili si prendono dove stanno adesso)
+function hit(pt, t) {
+  const c = picked();
   if (c) {
-    const h = c.height ?? 8;
-    if (near(pt.x, pt.y, c.x + c.width, c.y + h / 2)) return { sel: selected, mode: "width" };
-    if (c.height && near(pt.x, pt.y, c.x + c.width / 2, c.y + c.height)) return { sel: selected, mode: "height" };
+    // Prima i quadratini della scelta: per una piattaforma mobile si allarga dal primo punto
+    const box = selected.kind === "mover" ? { ...c.path[0], width: c.width } : c;
+    const h = box.height ?? 8;
+    if (near(pt.x, pt.y, box.x + box.width, box.y + h / 2)) return { sel: { ...selected, point: undefined }, mode: "width" };
+    if (box.height && near(pt.x, pt.y, box.x + box.width / 2, box.y + box.height)) return { sel: selected, mode: "height" };
+  }
+  for (let i = model.movers.length - 1; i >= 0; i--) {
+    const m = model.movers[i];
+    const k = m.path.findIndex((p) => near(pt.x, pt.y, p.x + m.width / 2, p.y + 4, POINT));
+    if (k >= 0) return { sel: { kind: "mover", index: i, point: k }, mode: "move" };
+    const now = moverPosition(m, t);
+    if (inside(pt, now.x, now.y - PLATFORM_HIT, m.width, PLATFORM_HIT * 2)) return { sel: { kind: "mover", index: i }, mode: "move" };
+  }
+  for (let i = model.hazards.length - 1; i >= 0; i--) {
+    const h = model.hazards[i];
+    if (inside(pt, h.x, h.y - 4, h.width, h.height + 8)) return { sel: { kind: "hazard", index: i }, mode: "move" };
   }
   for (let i = model.platforms.length - 1; i >= 0; i--) {
     const p = model.platforms[i];
-    if (pt.x >= p.x && pt.x <= p.x + p.width && Math.abs(pt.y - p.y - 4) <= PLATFORM_HIT) return { sel: { kind: "platform", index: i }, mode: "move" };
+    if (inside(pt, p.x, p.y + 4 - PLATFORM_HIT, p.width, PLATFORM_HIT * 2)) return { sel: { kind: "platform", index: i }, mode: "move" };
   }
   for (let i = model.solids.length - 1; i >= 0; i--) {
     const b = model.solids[i];
-    if (pt.x >= b.x && pt.x <= b.x + b.width && pt.y >= b.y && pt.y <= b.y + b.height) return { sel: { kind: "solid", index: i }, mode: "move" };
+    if (inside(pt, b.x, b.y, b.width, b.height)) return { sel: { kind: "solid", index: i }, mode: "move" };
   }
   return null;
 }
@@ -199,10 +311,10 @@ function hit(pt) {
 canvas.addEventListener("pointerdown", (e) => {
   canvas.focus();
   const pt = worldPoint(e);
-  const h = hit(pt);
-  select(h?.sel ?? null);
-  const c = current();
-  drag = c ? { mode: h.mode, dx: pt.x - c.x, dy: pt.y - c.y } : null;
+  const h = hit(pt, performance.now());
+  selected = h?.sel ?? null;
+  const c = picked();
+  drag = c ? { mode: h.mode, start: pt, orig: structuredClone(c) } : null;
   if (drag) canvas.setPointerCapture(e.pointerId);
   update();
 });
@@ -210,16 +322,19 @@ canvas.addEventListener("pointerdown", (e) => {
 canvas.addEventListener("pointermove", (e) => {
   const pt = worldPoint(e);
   if (!drag) {
-    const h = hit(pt);
+    const h = hit(pt, performance.now());
     canvas.style.cursor = !h ? "default" : h.mode === "width" ? "ew-resize" : h.mode === "height" ? "ns-resize" : "move";
     return;
   }
-  const c = current();
-  if (drag.mode === "move") {
-    c.x = snap(pt.x - drag.dx);
-    c.y = snap(pt.y - drag.dy);
-  } else if (drag.mode === "width") c.width = Math.max(MIN_SIZE, snap(pt.x - c.x));
-  else c.height = Math.max(MIN_SIZE, snap(pt.y - c.y));
+  const dx = pt.x - drag.start.x;
+  const dy = pt.y - drag.start.y;
+  const c = picked();
+  const o = drag.orig;
+  if (drag.mode === "width") c.width = Math.max(MIN_SIZE * 2, snap((o.width ?? 0) + dx));
+  else if (drag.mode === "height") c.height = Math.max(MIN_SIZE, snap(o.height + dy));
+  else if (selected.kind !== "mover") Object.assign(c, { x: snap(o.x + dx), y: snap(o.y + dy) });
+  else if (selected.point !== undefined) Object.assign(c.path[selected.point], { x: snap(o.path[selected.point].x + dx), y: snap(o.path[selected.point].y + dy) });
+  else c.path.forEach((p, k) => Object.assign(p, { x: snap(o.path[k].x + dx), y: snap(o.path[k].y + dy) }));
   clamp(c);
   update();
 });
@@ -229,18 +344,25 @@ canvas.addEventListener("pointerup", () => (drag = null));
 // Dentro lo schermo, con la superficie tra il bordo in alto e quello in basso
 function clamp(c) {
   c.width = Math.min(c.width, WORLD.width);
-  c.x = Math.max(0, Math.min(WORLD.width - c.width, c.x));
-  c.y = Math.max(GRID, Math.min(WORLD.height - GRID, c.y));
+  const fit = (p) => {
+    p.x = Math.max(0, Math.min(WORLD.width - c.width, p.x));
+    p.y = Math.max(GRID, Math.min(WORLD.height - GRID, p.y));
+  };
+  if (c.path) c.path.forEach(fit);
+  else fit(c);
   if (c.height) c.height = Math.min(c.height, WORLD.height - c.y);
 }
 
 canvas.addEventListener("keydown", (e) => {
-  const c = current();
+  const c = picked();
   if (!c) return;
   const step = { ArrowLeft: [-GRID, 0], ArrowRight: [GRID, 0], ArrowUp: [0, -GRID], ArrowDown: [0, GRID] }[e.key];
   if (step) {
-    c.x += step[0];
-    c.y += step[1];
+    const targets = !c.path ? [c] : selected.point !== undefined ? [c.path[selected.point]] : c.path;
+    for (const p of targets) {
+      p.x += step[0];
+      p.y += step[1];
+    }
     clamp(c);
   } else if (e.key === "Delete" || e.key === "Backspace") remove();
   else return;
@@ -250,22 +372,22 @@ canvas.addEventListener("keydown", (e) => {
 
 function remove() {
   if (!selected) return;
-  items(selected.kind).splice(selected.index, 1);
-  select(null);
+  list(selected.kind).splice(selected.index, 1);
+  selected = null;
   update();
 }
 
 // I nuovi pezzi compaiono in mezzo, dove si vedono
-$("add-solid").addEventListener("click", () => {
-  model.solids.push({ x: 540, y: 600, width: 200, height: 80 });
-  select({ kind: "solid", index: model.solids.length - 1 });
+function add(kind, item) {
+  list(kind).push(item);
+  selected = { kind, index: list(kind).length - 1 };
   update();
-});
-$("add-platform").addEventListener("click", () => {
-  model.platforms.push({ x: 560, width: 160, y: 440 });
-  select({ kind: "platform", index: model.platforms.length - 1 });
-  update();
-});
+}
+$("add-solid").addEventListener("click", () => add("solid", { x: 540, y: 600, width: 200, height: 80 }));
+$("add-platform").addEventListener("click", () => add("platform", { x: 560, width: 160, y: 440 }));
+for (const [name, make] of Object.entries(TEMPLATES)) {
+  $(`add-${name}`).addEventListener("click", () => add(make().path ? "mover" : "hazard", make()));
+}
 $("delete").addEventListener("click", remove);
 
 $("name").addEventListener("input", () => {

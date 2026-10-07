@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import { CHARACTERS, characterStats } from "./characters";
 import { MAX_PLAYERS_PER_ROOM, TICK_RATE, WORLD } from "./constants";
 import { createFighter, stepWorld, type PhysicsContext } from "./physics";
+import { hazardActive, moverPosition } from "./physics/elements";
 import { courseSteps, generateCourse } from "./courseGenerator";
 import { generateStage, seedFromStageId } from "./stageGenerator";
 import { JUMP_HEIGHT, reachable, SIDE_REACH, stageCheckData } from "./stageCheck";
@@ -156,5 +157,26 @@ describe("arene", () => {
     const lopsided = editor.toStageSpec({ ...palco, id: "storta", solids: [{ x: 0, y: 560, width: 500, height: 80 }] });
     assert.deepEqual(lopsided.spawns, []);
     assert.equal(editor.slug("La Città Più Bella!"), "la-citta-piu-bella");
+  });
+
+  it("l'editor muove ascensori e accende trappole come la fisica (E12)", async () => {
+    const editor = await loadEditor();
+    const { movers = [], hazards = [] } = STAGES.fabbrica;
+    const loop = { width: 100, path: [{ x: 0, y: 0 }, { x: 300, y: 0 }, { x: 300, y: 200 }], periodMs: 5000, pauseMs: 300, loop: true, offsetMs: 700 };
+    for (let t = -3000; t < 20000; t += 137) {
+      for (const m of [...movers, loop]) assert.deepEqual(editor.moverPosition(m, t), moverPosition(m, t));
+      for (const h of hazards) assert.equal(editor.hazardActive(h, t), hazardActive(h, t));
+    }
+  });
+
+  it("Proponi apre il modulo Arena nuova con i dati dell'arena (E12)", async () => {
+    const editor = await loadEditor();
+    const spec = editor.toStageSpec({ ...STAGES.fabbrica, id: "nuova", name: "Il Cantiere" });
+    const url = new URL(editor.proposeUrl(spec));
+    assert.equal(url.pathname, "/nicpanozzo/bonobo-game/issues/new");
+    assert.equal(url.searchParams.get("template"), "arena.yml");
+    assert.equal(url.searchParams.get("nome"), "Il Cantiere");
+    assert.deepEqual(JSON.parse(url.searchParams.get("dati")!), spec);
+    assert.ok(url.href.length < 8000, "sta in un indirizzo");
   });
 });
