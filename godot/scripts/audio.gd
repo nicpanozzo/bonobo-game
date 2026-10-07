@@ -1,6 +1,7 @@
 # Suoni e musica, come src/client/render/audio.ts: partono dagli eventi di gioco.
-# Qui si decide quale suono va con quale evento; come suona sta nelle ricette qui sotto (synth.gd).
-# I suoni registrati da noi (TODO community, #6) potranno sostituire le ricette con un file.
+# Qui si decide quale suono va con quale evento. Se c'è un file registrato (E13, game.audioFiles, copiato da
+# public/assets/sfx con npm run export:godot) suona quello, con le varianti a rotazione casuale;
+# altrimenti la ricetta sintetizzata qui sotto (synth.gd), che resta sempre il ripiego.
 extends Node2D
 
 const PLAYERS := 12 # suoni che possono sovrapporsi
@@ -20,19 +21,26 @@ var view_left := 0.0 # per sapere da che lato dello schermo arriva un suono
 var _sounds := {} # nome -> AudioStreamWAV
 var _pool: Array[AudioStreamPlayer2D] = []
 var _next := 0
-var _music := AudioStreamPlayer.new()
+var _files := {} # nome -> Array[AudioStream] dei campioni registrati
+var _last := {} # nome -> indice dell'ultima variante suonata
+var _music := AudioStreamPlayer.new() # la musica che si sente
+var _music_out := AudioStreamPlayer.new() # quella che sta sfumando
 var _music_synth: Synth
 var _music_step := 0
+var _synth_music: AudioStreamWAV # la musica sintetizzata, pronta quando _music_step < 0
+var _track := "" # "lobby" o "match"
+var _music_files := {} # traccia -> AudioStream
+var _fade: Tween
 
 
 func setup(game_data: Dictionary) -> void:
 	game = game_data
-	for bus in ["Effetti", "Musica"]:
+	for bus in ["Effetti", "Musica", "Voci"]:
 		if AudioServer.get_bus_index(bus) < 0:
 			AudioServer.add_bus()
 			AudioServer.set_bus_name(AudioServer.bus_count - 1, bus)
 			AudioServer.set_bus_send(AudioServer.bus_count - 1, "Master")
-	set_volumes(game.audio.master, game.audio.sfx, game.audio.music, true)
+	set_volumes(game.audio.master, game.audio.sfx, game.audio.music, true, game.audio.get("voices", 0.8))
 	for i in PLAYERS:
 		var p := AudioStreamPlayer2D.new()
 		p.bus = "Effetti"
@@ -40,16 +48,19 @@ func setup(game_data: Dictionary) -> void:
 		p.attenuation = 0
 		_pool.append(p)
 		add_child(p)
-	_music.bus = "Musica"
-	add_child(_music)
+	for m in [_music, _music_out]:
+		m.bus = "Musica"
+		add_child(m)
 	_build_sounds()
+	_load_files(game.get("audioFiles", {}))
 	var bar: float = 60.0 / game.audio.musicBpm / 4.0 * STEPS
 	_music_synth = Synth.new(bar * CHORDS.size())
 
 
 # Volumi da 0 a 1, come nelle opzioni del gioco web
-func set_volumes(master: float, sfx: float, music: float, music_on: bool) -> void:
+func set_volumes(master: float, sfx: float, music: float, music_on: bool, voices := 0.8) -> void:
 	AudioServer.set_bus_volume_db(0, linear_to_db(master))
+	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Voci"), linear_to_db(voices))
 	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Effetti"), linear_to_db(sfx))
 	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Musica"), linear_to_db(music))
 	AudioServer.set_bus_mute(AudioServer.get_bus_index("Musica"), not music_on)
@@ -115,7 +126,7 @@ func on_event(e: Dictionary) -> void:
 func _play(name: String, opts := {}) -> void:
 	var p := _pool[_next]
 	_next = (_next + 1) % _pool.size()
-	p.stream = _sounds[name]
+	p.stream = stream_for(name)
 	p.volume_db = linear_to_db(opts.get("volume", 1.0))
 	p.pitch_scale = opts.get("pitch", 1.0)
 	# Il suono arriva dal lato dello schermo dove succede la cosa (al centro se non ha un punto)
@@ -131,10 +142,105 @@ func _process(_delta: float) -> void:
 		_music_play_step(_music_step)
 		_music_step += 1
 		if _music_step >= STEPS * CHORDS.size():
-			_music.stream = _music_synth.to_stream(true)
-			_music.play()
+			_synth_music = _music_synth.to_stream(true)
 			_music_step = -1 # finita: da qui in poi gira in loop
+			if not _music.playing:
+				_switch_music(_synth_music)
 			return
+
+
+# Il suono da far partire: una variante registrata (mai la stessa due volte di fila), o la ricetta
+func stream_for(name: String) -> AudioStream:
+	var files: Array = _files.get(name, [])
+	if files.is_empty():
+		return _sounds[name]
+	var i := pick_variant(files.size(), _last.get(name, -1), randi())
+	_last[name] = i
+	return files[i]
+
+
+# Quale variante su count: a caso con roll, ma diversa da last quando ce n'è più d'una
+static func pick_variant(count: int, last: int, roll: int) -> int:
+	if count <= 1:
+		return 0
+	var i := absi(roll) % (count - 1)
+	return i if i < last or last < 0 else i + 1
+
+
+# I campioni elencati in game.json; un file che non si carica si salta (resta la ricetta)
+func _load_files(files: Dictionary) -> void:
+	var sfx: Dictionary = files.get("sfx", {})
+	for name: String in sfx:
+		var loaded: Array[AudioStream] = []
+		for path: String in sfx[name]:
+			var stream := _load_stream(path)
+			if stream:
+				loaded.append(stream)
+		if not loaded.is_empty():
+			_files[name] = loaded
+	var music: Dictionary = files.get("music", {})
+	for track: String in music:
+		var paths: Array = music[track]
+		var stream := _load_stream(paths[0])
+		if stream:
+			_set_loop(stream)
+			_music_files[track] = stream
+
+
+static func _load_stream(path: String) -> AudioStream:
+	var full := "res://data/" + path
+	if not ResourceLoader.exists(full):
+		push_warning("Audio mancante, uso il suono sintetizzato: " + full)
+		return null
+	return load(full) as AudioStream
+
+
+static func _set_loop(stream: AudioStream) -> void:
+	if stream is AudioStreamOggVorbis:
+		(stream as AudioStreamOggVorbis).loop = true
+	elif stream is AudioStreamWAV:
+		var wav := stream as AudioStreamWAV
+		wav.loop_mode = AudioStreamWAV.LOOP_FORWARD
+		wav.loop_end = int(wav.get_length() * wav.mix_rate)
+
+
+# Musica della lobby o della partita: da file se c'è, altrimenti quella sintetizzata (uguale per tutte e due)
+func play_music(track: String) -> void:
+	if track == _track:
+		return
+	_track = track
+	var stream: AudioStream = _music_files.get(track, _synth_music)
+	if stream and stream != _music.stream:
+		_switch_music(stream)
+
+
+func music_track() -> String:
+	return _track
+
+
+# Dissolvenza incrociata: la musica che suona sfuma via, la nuova sale
+func _switch_music(stream: AudioStream) -> void:
+	if _fade:
+		_fade.kill()
+	var seconds: float = game.audio.get("musicFadeMs", 1500) / 1000.0
+	var had_music := _music.playing
+	var tmp := _music_out
+	_music_out = _music
+	_music = tmp
+	_music.stream = stream
+	if not is_inside_tree():
+		# Non ancora nella scena: partirà appena entra, senza dissolvenza
+		_music_out.autoplay = false
+		_music.autoplay = true
+		_music.volume_db = 0.0
+		return
+	_music.volume_db = -40.0 if had_music else 0.0
+	_music.play()
+	_fade = create_tween().set_parallel()
+	_fade.tween_property(_music, "volume_db", 0.0, seconds)
+	if had_music:
+		_fade.tween_property(_music_out, "volume_db", -40.0, seconds)
+		_fade.chain().tween_callback(_music_out.stop)
 
 
 # Un sedicesimo della musica: cassa, rullante, charleston, basso e accordi (playStep in music.ts)

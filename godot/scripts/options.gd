@@ -77,7 +77,7 @@ func _show_page(id: String) -> void:
 
 func _audio_page() -> VBoxContainer:
 	var page := VBoxContainer.new()
-	for v in [["master", "Generale"], ["sfx", "Effetti"], ["music", "Musica"]]:
+	for v in [["master", "Generale"], ["sfx", "Effetti"], ["music", "Musica"], ["voices", "Voci"]]:
 		page.add_child(_volume_row(v[0], v[1]))
 	page.add_child(UI.toggle("Musica accesa (anche con M)", settings.music_on, func(on):
 		settings.music_on = on

@@ -69,6 +69,7 @@ var master := 0.8
 var sfx := 0.7
 var music := 0.35
 var music_on := true
+var voices := 0.8 # personaggi e annunciatore (E13)
 var bindings := {}
 var pad_bindings := {}
 var rumble := Rumble.STRONG # vibrazione del pad: Rumble.OFF, WEAK o STRONG
@@ -85,7 +86,7 @@ var _path := PATH
 # path: dove salvare, cambiato solo dai test per non toccare le preferenze di chi li lancia
 func _init(audio_defaults: Dictionary, path := PATH) -> void:
 	_path = path
-	_defaults = {"master": audio_defaults.master, "sfx": audio_defaults.sfx, "music": audio_defaults.music}
+	_defaults = {"master": audio_defaults.master, "sfx": audio_defaults.sfx, "music": audio_defaults.music, "voices": audio_defaults.get("voices", 0.8)}
 	reset(false)
 	var cfg := ConfigFile.new()
 	if cfg.load(_path) != OK:
@@ -94,6 +95,7 @@ func _init(audio_defaults: Dictionary, path := PATH) -> void:
 	sfx = clampf(cfg.get_value("audio", "sfx", sfx), 0, 1)
 	music = clampf(cfg.get_value("audio", "music", music), 0, 1)
 	music_on = bool(cfg.get_value("audio", "music_on", music_on))
+	voices = clampf(cfg.get_value("audio", "voices", voices), 0, 1)
 	var r: Variant = cfg.get_value("pad_options", "rumble", rumble)
 	if r is int and r >= Rumble.OFF and r <= Rumble.STRONG:
 		rumble = r
@@ -134,6 +136,7 @@ func reset(notify := true) -> void:
 	sfx = _defaults.sfx
 	music = _defaults.music
 	music_on = true
+	voices = _defaults.voices
 	rumble = Rumble.STRONG
 	video = VIDEO_DEFAULTS.duplicate()
 	access = ACCESS_DEFAULTS.duplicate()
@@ -159,6 +162,7 @@ func save() -> void:
 	cfg.set_value("audio", "sfx", sfx)
 	cfg.set_value("audio", "music", music)
 	cfg.set_value("audio", "music_on", music_on)
+	cfg.set_value("audio", "voices", voices)
 	cfg.set_value("pad_options", "rumble", rumble)
 	for a in ACTIONS:
 		cfg.set_value("keys", a, bindings[a])
