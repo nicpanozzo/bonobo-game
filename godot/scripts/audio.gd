@@ -79,6 +79,14 @@ func on_event(e: Dictionary) -> void:
 			_play("doubleJump" if e.air else "jump", {"volume": 0.6, "x": e.x})
 		"land":
 			_play("land", {"volume": 0.5, "x": e.x})
+		"ledgeGrab":
+			_play("ledge", {"volume": 0.7, "x": e.x})
+		"ledgeGetup":
+			# Salto e attacco hanno già il loro suono; ci si lascia andare in silenzio
+			if e.option == "roll":
+				_play("roll", {"volume": 0.5})
+			elif e.option == "climb":
+				_play("land", {"volume": 0.3, "pitch": 1.3})
 		"ko":
 			_play("ko", {"x": e.x})
 		"checkpoint":
@@ -162,6 +170,12 @@ func _build_sounds() -> void:
 	_sounds.jump = make.call(0.15, func(s): s.tone(0, "square", 280, 560, 0.12, 0.12))
 	_sounds.doubleJump = make.call(0.15, func(s): s.tone(0, "square", 420, 900, 0.12, 0.1))
 	_sounds.land = make.call(0.13, func(s): s.noise(0, "lowpass", 900, 120, 0.1, 1.0))
+	# Presa del bordo (#110): un colpo sordo di mano sul legno, più corto e più tonale dell'atterraggio
+	_sounds.ledge = make.call(0.12, func(s):
+		s.tone(0, "sine", 170, 80, 0.09, 0.7)
+		s.noise(0, "lowpass", 600, 150, 0.05, 0.5))
+	# Rotolata dal bordo: un fruscio che scende
+	_sounds.roll = make.call(0.3, func(s): s.noise(0, "bandpass", 900, 350, 0.26, 0.4))
 	# Fuori dall'arena: esplosione e fischio che scende
 	_sounds.ko = make.call(0.95, func(s):
 		s.noise(0, "lowpass", 2500, 60, 0.9, 1.0)
