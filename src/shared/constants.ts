@@ -367,3 +367,10 @@ export const RUMBLE = {
   koStrength: 1,
   weakScale: 0.5, // opzione "debole": tutte le forze per questo numero
 };
+
+// Prova di bilanciamento senza rete (E11 passo E, npm run balance): ogni personaggio contro gli altri, bot contro bot
+export const BALANCE = {
+  maxWinRate: 0.6, // sopra questa parte di vittorie un personaggio è troppo forte: npm run balance esce con errore
+  generatedStages: 20, // arene casuali giocate oltre a quelle fisse, con semi 1, 2, 3...
+  maxMatchSec: 300, // s simulati prima di dare la partita per pari
+};

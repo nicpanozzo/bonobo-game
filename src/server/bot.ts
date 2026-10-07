@@ -146,8 +146,10 @@ function decideSimple(self: Fighter, players: readonly Fighter[], stage: StageSp
   mem.ledgeTicks = 0;
 
   // Fuori dal palco: si torna verso il blocco più vicino, salti e recupero quando si sta cadendo
+  // (una piattaforma sotto i piedi conta come palco: sopra un buco coperto non si fa il recupero)
   const ground = groundUnder(stage, self.x);
-  if (!self.onGround && (!ground || self.y > ground.y)) {
+  const platformBelow = stage.platforms.some((p) => self.x >= p.x && self.x <= p.x + p.width && self.y <= p.y);
+  if (!self.onGround && !platformBelow && (!ground || self.y > ground.y)) {
     const toX = homeX(stage, self.x, self.y);
     input.left = toX < self.x;
     input.right = toX > self.x;
@@ -175,6 +177,12 @@ function decideSimple(self: Fighter, players: readonly Fighter[], stage: StageSp
     }
   } else mem.shieldTicks = 0;
   if (mem.ticks % reactionTicks(level) !== 0) {
+    // Chi insegue si ferma appena il bersaglio è a portata davanti a lui, senza aspettare il giro dopo:
+    // altrimenti lo supera e se lo ritrova alle spalle
+    const ahead = nearestTarget(self, players);
+    const dx = ahead ? ahead.x - self.x : 0;
+    const arrived = ahead && Math.sign(dx) === self.facing && Math.abs(dx) <= FIGHTER.width / 2 + ATTACKS.light.range;
+    if (arrived && (dx > 0 ? mem.hold.right : mem.hold.left)) mem.hold = emptyInput();
     input.left = mem.hold.left;
     input.right = mem.hold.right;
     return input;
@@ -200,11 +208,17 @@ function decideSimple(self: Fighter, players: readonly Fighter[], stage: StageSp
     return input;
   }
 
-  if (Math.abs(dx) <= reach && Math.abs(dy) < FIGHTER.height) {
+  if (Math.abs(dx) < FIGHTER.width / 2 && Math.abs(dy) < FIGHTER.height) {
+    // Addosso al bersaglio i colpi passano oltre: ci si allontana per fare spazio
+    mem.hold.left = dx >= 0;
+    mem.hold.right = dx < 0;
+  } else if (Math.abs(dx) <= reach && Math.abs(dy) < FIGHTER.height) {
     if (!facingTarget) {
-      // Prima ci si gira verso il bersaglio, l'attacco al giro dopo
-      mem.hold.left = dx < 0;
-      mem.hold.right = dx > 0;
+      // Prima ci si gira verso il bersaglio, l'attacco al giro dopo. Il tasto vale un tick solo: tenuto fino al
+      // giro dopo, due bot uno di fronte all'altro si attraversano e restano girati al contrario per sempre
+      input.left = dx < 0;
+      input.right = dx > 0;
+      return input;
     } else {
       mem.attacks++;
       tap(mem.attacks % skill.heavyEvery === 0 ? "heavy" : "light");
@@ -217,7 +231,10 @@ function decideSimple(self: Fighter, players: readonly Fighter[], stage: StageSp
       mem.hold.right = wantX > self.x;
     }
   }
-  if (-dy > BOT.jumpAtHeight && Math.abs(dx) < 200 && self.onGround) tap("up");
+  // Bersaglio su una piattaforma: si salta, e se non basta si usa il secondo salto mentre si ricade.
+  // Bersaglio sotto: giù fa scendere dalla piattaforma sottile
+  if (-dy > BOT.jumpAtHeight && Math.abs(dx) < 200 && (self.onGround || (self.vy >= 0 && self.jumpsLeft > 0))) tap("up");
+  if (dy > BOT.jumpAtHeight && Math.abs(dx) < 200 && self.onGround) tap("down");
 
   input.left = mem.hold.left;
   input.right = mem.hold.right;

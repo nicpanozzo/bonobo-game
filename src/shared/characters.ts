@@ -45,7 +45,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     name: "Egiainuso",
     // Con la barchetta addosso è un po' più pesante e lento di Bonobot (E11)
     // TODO community: statistiche provvisorie, da confermare con @MauroGrecchi
-    stats: { weight: 1.15, speed: 0.9, airSpeed: 0.95, jump: 0.95 },
+    stats: { weight: 1.05, speed: 0.9, airSpeed: 0.95, jump: 0.95 },
     sprite: {
       path: "assets/characters/egiainuso/egiainuso.png",
       frameWidth: 64,

@@ -15,6 +15,7 @@
     "test:godot": "godot --headless --path godot --script res://tests/run_tests.gd",
     "discord": "node scripts/discord.mjs",
     "bench": "tsx scripts/bench.ts",
+    "balance": "tsx scripts/balance.ts",
     "bench:godot": "godot --headless --path godot --script res://tools/bench_client.gd",
     "export:godot": "tsx scripts/export-godot.ts",
     "host": "tsx src/server/host.ts",
