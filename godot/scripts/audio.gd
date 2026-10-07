@@ -35,6 +35,12 @@ var _started := {} # nome -> ms di avvio delle ultime copie (tetto ai suoni ugua
 var _music_volume := 1.0 # volume della musica scelto nelle opzioni, da 0 a 1
 var _duck_db := 0.0 # quanto è abbassata adesso la musica (0 = niente)
 var _duck: Tween
+var _announcer := AudioStreamPlayer.new() # la voce dell'annunciatore, sul bus Voci
+var _phrases := {} # frase -> Array[AudioStream] (game.audioFiles.announcer)
+var _queue: AnnouncerQueue
+var _time_left := -1.0 # tempo rimasto nell'ultimo snapshot, ms (-1 = senza limite)
+
+const AnnouncerQueue := preload("res://scripts/announcer_queue.gd")
 
 
 func setup(game_data: Dictionary) -> void:
@@ -55,6 +61,10 @@ func setup(game_data: Dictionary) -> void:
 	for m in [_music, _music_out]:
 		m.bus = "Musica"
 		add_child(m)
+	_announcer.bus = "Voci"
+	_announcer.finished.connect(_on_phrase_finished)
+	add_child(_announcer)
+	_queue = AnnouncerQueue.new(game.audio.get("announcerPriority", {}), game.audio.get("announcerInterrupt", 3), game.audio.get("announcerMaxWaitMs", 1500))
 	_build_sounds()
 	_load_files(game.get("audioFiles", {}))
 	var bar: float = 60.0 / game.audio.musicBpm / 4.0 * STEPS
@@ -112,6 +122,8 @@ func on_event(e: Dictionary) -> void:
 		"ko":
 			_play("ko", {"x": e.x})
 			duck()
+			if int(e.get("stocksLeft", 0)) == 1:
+				announce("lastLife")
 		"checkpoint":
 			_play("point", {"volume": 0.5, "pitch": 1.3})
 		"flag":
@@ -125,8 +137,56 @@ func on_event(e: Dictionary) -> void:
 			_play("light", {"volume": 0.7, "x": e.x, "pitch": 0.8})
 		"matchStart":
 			_play("start")
+			_queue.clear()
+			_announcer.stop()
+			_time_left = -1.0
+			announce("go")
 		"matchEnd":
 			_play("victory")
+			# Il server oggi decide sempre un vincitore; "draw" è pronta per quando ci sarà il pareggio
+			announce("game" if e.get("winnerId") != null else "draw")
+
+
+# Dallo snapshot l'annunciatore sente solo il tempo: "Dieci secondi!" quando scende sotto la soglia
+func on_snapshot(data: Dictionary) -> void:
+	var left: float = data.timeLeftMs if data.get("timeLeftMs") != null else -1.0
+	var warning: float = game.audio.get("announcerTimeWarningMs", 10000)
+	if crosses_warning(_time_left, left, warning) and data.get("winnerId") == null:
+		announce("tenSeconds")
+	_time_left = left
+
+
+# Il tempo è appena sceso sotto la soglia (e non era già sotto, né la partita è senza tempo o finita)
+static func crosses_warning(before: float, now: float, warning: float) -> bool:
+	return before > warning and now <= warning and now > 0
+
+
+# Una frase dell'annunciatore: senza il file registrato non si dice (niente ripiego sintetizzato)
+func announce(phrase: String) -> void:
+	if not _phrases.has(phrase):
+		return
+	if _queue.push(phrase, Time.get_ticks_msec()):
+		_say(phrase)
+
+
+func announcer_phrase() -> String:
+	return _queue.speaking
+
+
+func _say(phrase: String) -> void:
+	var files: Array = _phrases[phrase]
+	var i := pick_variant(files.size(), _last.get("announcer:" + phrase, -1), randi())
+	_last["announcer:" + phrase] = i
+	_announcer.stream = files[i]
+	duck()
+	if _announcer.is_inside_tree():
+		_announcer.play()
+
+
+func _on_phrase_finished() -> void:
+	var next := _queue.finished(Time.get_ticks_msec())
+	if next != "":
+		_say(next)
 
 
 func _play(name: String, opts := {}) -> void:
@@ -221,6 +281,15 @@ func _load_files(files: Dictionary) -> void:
 				loaded.append(stream)
 		if not loaded.is_empty():
 			_files[name] = loaded
+	var announcer: Dictionary = files.get("announcer", {})
+	for phrase: String in announcer:
+		var loaded: Array[AudioStream] = []
+		for path: String in announcer[phrase]:
+			var stream := _load_stream(path)
+			if stream:
+				loaded.append(stream)
+		if not loaded.is_empty():
+			_phrases[phrase] = loaded
 	var music: Dictionary = files.get("music", {})
 	for track: String in music:
 		var paths: Array = music[track]

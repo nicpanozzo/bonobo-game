@@ -176,7 +176,17 @@
     "sameSoundWindowMs": 60,
     "targetLufs": -16,
     "lufsTolerance": 2,
-    "maxPeakDb": -1
+    "maxPeakDb": -1,
+    "announcerPriority": {
+      "go": 1,
+      "tenSeconds": 1,
+      "lastLife": 2,
+      "game": 3,
+      "draw": 3
+    },
+    "announcerInterrupt": 3,
+    "announcerMaxWaitMs": 1500,
+    "announcerTimeWarningMs": 10000
   },
   "audioFiles": {
     "sfx": {},

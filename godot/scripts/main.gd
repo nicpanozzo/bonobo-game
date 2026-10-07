@@ -416,6 +416,7 @@ func _on_event(name: String, data: Variant) -> void:
 					tutorial.on_event(e, world.my_id)
 			world.on_snapshot(data)
 			hud.on_snapshot(data)
+			audio.on_snapshot(data)
 			if is_instance_valid(training):
 				training.on_snapshot(data)
 			if is_instance_valid(challenge_run):
