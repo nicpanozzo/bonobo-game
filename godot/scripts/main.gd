@@ -24,6 +24,7 @@ var audio: Node2D
 var rumble: Rumble
 var hud: Control
 var lobby: Control
+var title: Control # schermata del titolo (E14)
 var playing := false
 var _last_input := {}
 var _retry_at := -1
@@ -78,8 +79,10 @@ func _ready() -> void:
 	# Prima volta: nome, comandi e una prova col manichino (E14). Con un link a una stanza si entra e basta
 	if not settings.first_run_done and not (url_params.has("room") and url_params.has("name")):
 		_show_first_run()
+	elif url_params.has("room") and url_params.has("name"):
+		_show_lobby() # si entra subito nella stanza, qui sotto
 	else:
-		_show_lobby()
+		_show_title()
 
 	Input.joy_connection_changed.connect(_on_joy_changed)
 	socket.connected.connect(_on_connected)
@@ -98,6 +101,9 @@ func _show_lobby() -> void:
 	ui_layer.add_child(lobby)
 	lobby.setup(game, params, room_link)
 	lobby.join_requested.connect(_join)
+	lobby.back_requested.connect(func():
+		lobby.queue_free()
+		_show_title(true))
 	lobby.options_requested.connect(func():
 		var options := preload("res://scripts/options.gd").new()
 		options.theme = UI.theme()
@@ -116,6 +122,35 @@ func _show_lobby() -> void:
 		ui_layer.add_child(credits)
 		credits.setup()
 		credits.closed.connect(lobby.restore_focus))
+
+
+# Titolo e menu principale (E14): Gioca online porta alla lobby. skip_press: si torna dalla lobby, niente "Premi un tasto"
+func _show_title(skip_press := false) -> void:
+	title = preload("res://scripts/title.gd").new()
+	title.theme = UI.theme()
+	ui_layer.add_child(title)
+	title.setup(game, skip_press)
+	title.play_requested.connect(func():
+		title.queue_free()
+		_show_lobby())
+	title.options_requested.connect(func():
+		var options := preload("res://scripts/options.gd").new()
+		options.theme = UI.theme()
+		ui_layer.add_child(options)
+		options.setup(settings)
+		var scale := Access.text_scale
+		options.closed.connect(func():
+			if Access.text_scale != scale: # testo più grande o più piccolo: il titolo si rifà con le misure nuove
+				title.queue_free()
+				_show_title(true)
+			else:
+				title.restore_focus()))
+	title.credits_requested.connect(func():
+		var credits := preload("res://scripts/credits.gd").new()
+		credits.theme = UI.theme()
+		ui_layer.add_child(credits)
+		credits.setup()
+		credits.closed.connect(title.restore_focus))
 
 
 func _show_first_run() -> void:
