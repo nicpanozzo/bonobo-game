@@ -971,6 +971,18 @@
             "frames": 12,
             "fps": 24,
             "loop": true
+          },
+          "ledge": {
+            "row": 9,
+            "frames": 24,
+            "fps": 12,
+            "loop": true
+          },
+          "climb": {
+            "row": 10,
+            "frames": 10,
+            "fps": 24,
+            "loop": false
           }
         }
       }

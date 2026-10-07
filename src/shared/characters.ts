@@ -4,8 +4,9 @@
 import { CHARACTER_STATS } from "./constants";
 
 export type AnimationName = "idle" | "walk" | "jump" | "fall" | "light" | "heavy" | "hit";
-// Animazioni facoltative (#103): chi non le ha usa al loro posto jump (doppio salto) e hit (lanciato)
-export type OptionalAnimationName = "doubleJump" | "tumble";
+// Animazioni facoltative (#103): chi non le ha usa al loro posto jump (doppio salto) e hit (lanciato);
+// per il bordo (#110, #171) appeso e risalita usano jump
+export type OptionalAnimationName = "doubleJump" | "tumble" | "ledge" | "climb";
 export interface SpriteAnimation {
   row: number;
   frames: number;
@@ -92,6 +93,8 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         hit: { row: 6, frames: 8, fps: 24, loop: false },
         doubleJump: { row: 7, frames: 9, fps: 24, loop: false }, // capriola in avanti che si apre verso la caduta
         tumble: { row: 8, frames: 12, fps: 24, loop: true }, // rotola all'indietro quando vola via dopo un colpo forte
+        ledge: { row: 9, frames: 24, fps: 12, loop: true }, // appeso allo spigolo, piedi contro la parete, dondola piano
+        climb: { row: 10, frames: 10, fps: 24, loop: false }, // si tira su e torna in piedi in LEDGE.climbMs
       },
     },
   },
