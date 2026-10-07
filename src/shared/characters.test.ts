@@ -1,10 +1,13 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { ATTACKS } from "./constants";
+import { ATTACKS, DEFAULT_SPECIALS } from "./constants";
 import {
   ANIMATION_FALLBACK,
   ANIMATION_NAMES,
   CHARACTERS,
+  SPECIAL_SLOTS,
+  specialsFor,
+  type SpecialSpec,
   OPTIONAL_ANIMATION_NAMES,
   SPRITE_STATES,
   isSpriteFolder,
@@ -102,5 +105,64 @@ describe("ripiego delle animazioni (E7 passo 3)", () => {
         assert.ok(a.hitFrame >= 0 && a.hitFrame < a.frames, `${c.id}: hitFrame ${a.hitFrame} fuori da ${a.frames} fotogrammi`);
       }
     }
+  });
+});
+
+// Mosse speciali (E10 passo 1): numeri sensati per ogni speciale di ogni personaggio
+function specialProblems(sp: SpecialSpec): string[] {
+  const out: string[] = [];
+  const positive = (name: string, v: number) => !(v > 0) && out.push(`${name} = ${v}, deve essere > 0`);
+  if (!sp.name) out.push("senza nome");
+  positive("range", sp.range);
+  positive("height", sp.height);
+  positive("baseKnockback", sp.baseKnockback);
+  if (!(sp.knockbackGrowth >= 0)) out.push(`knockbackGrowth = ${sp.knockbackGrowth}`);
+  if (!(sp.angleDeg >= 0 && sp.angleDeg <= 180)) out.push(`angleDeg = ${sp.angleDeg}, fuori da 0-180`);
+  const damage = sp.type === "counter" ? sp.minDamage : sp.damage;
+  if (!(damage >= 0 && damage <= 30)) out.push(`danno ${damage}, fuori da 0-30`);
+  switch (sp.type) {
+    case "projectile":
+      for (const k of ["startupMs", "cooldownMs", "speed", "lifeMs", "maxAlive"] as const) positive(k, sp[k]);
+      if (!(sp.gravity >= 0)) out.push(`gravity = ${sp.gravity}`);
+      break;
+    case "dash":
+      for (const k of ["startupMs", "durationMs", "speed", "endLagMs"] as const) positive(k, sp[k]);
+      break;
+    case "charge":
+      for (const k of ["minMs", "maxMs", "activeMs", "endLagMs"] as const) positive(k, sp[k]);
+      if (!(sp.maxMs > sp.minMs)) out.push("maxMs deve superare minMs");
+      if (!(sp.maxMultiplier >= 1 && sp.damage * sp.maxMultiplier <= 30)) out.push(`maxMultiplier = ${sp.maxMultiplier}`);
+      break;
+    case "counter":
+      for (const k of ["startupMs", "windowMs", "endLagMs", "multiplier"] as const) positive(k, sp[k]);
+      break;
+  }
+  return out;
+}
+
+describe("mosse speciali (E10 passo 1)", () => {
+  it("ogni personaggio ha le tre speciali, con numeri validi", () => {
+    for (const id of Object.keys(CHARACTERS)) {
+      const specials = specialsFor(id);
+      for (const slot of SPECIAL_SLOTS) {
+        assert.ok(specials[slot], `${id}: manca la speciale ${slot}`);
+        assert.deepEqual(specialProblems(specials[slot]), [], `${id}.${slot}`);
+      }
+    }
+  });
+
+  it("chi non ne ha di sue usa quelle di base, e un id sconosciuto quelle del personaggio base", () => {
+    assert.deepEqual(specialsFor("default"), DEFAULT_SPECIALS);
+    assert.deepEqual(specialsFor("nessuno"), specialsFor("default"));
+  });
+
+  it("il controllo trova i numeri sbagliati", () => {
+    const bad = { ...DEFAULT_SPECIALS.side, durationMs: 0, damage: 45 } as SpecialSpec;
+    assert.equal(specialProblems(bad).length, 2);
+  });
+
+  it("il recupero di un personaggio non tocca gli altri attacchi", () => {
+    // Solo i ritocchi dichiarati in characters.ts: nessuno per ora, quindi attackSpecFor = ATTACKS
+    for (const c of Object.values(CHARACTERS)) for (const k of Object.keys(c.recovery ?? {})) assert.ok(k in ATTACKS.recovery || k === "speed" || k === "drift", `${c.id}: ${k}`);
   });
 });
