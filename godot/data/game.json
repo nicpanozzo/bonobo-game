@@ -198,6 +198,14 @@
     "koStrength": 1,
     "weakScale": 0.5
   },
+  "training": {
+    "speeds": [
+      1,
+      0.5,
+      0.25
+    ],
+    "maxPercent": 999
+  },
   "camera": {
     "margin": 140,
     "minZoom": 0.7,

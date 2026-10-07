@@ -10,6 +10,7 @@ import { CHARACTERS, DEFAULT_CHARACTER_ID } from "../src/shared/characters";
 import { ATTACKS, AUDIO, CAMERA, COLORS, EFFECTS, FIGHTER, INPUT, ITEM_RULES, LEDGE, NET, PROTOCOL_VERSION, RUMBLE, SHIELD, TEAM_COLORS, TEAM_NAMES, WORLD } from "../src/shared/constants";
 import { RECONNECT, RECONNECT_HOLD_MS } from "../src/shared/constants";
 import { COLORS_COLORBLIND, TEAM_COLORS_COLORBLIND } from "../src/shared/constants";
+import { TRAINING } from "../src/shared/constants";
 import { ITEMS } from "../src/shared/items";
 import { DEFAULT_STAGE_ID, STAGES } from "../src/shared/stages";
 import { stageCheckData } from "../src/shared/stageCheck";
@@ -59,6 +60,7 @@ const data = {
   audioFiles,
   input: INPUT,
   rumble: RUMBLE,
+  training: TRAINING, // allenamento (E15): velocità ammesse e percentuale massima del pannello
   camera: CAMERA,
   effects: EFFECTS,
   items: ITEMS,

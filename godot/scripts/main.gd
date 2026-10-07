@@ -36,6 +36,7 @@ var _attempt := 0 # tentativi di riconnessione da quando è caduta
 var _version_warned := false # banner "versione nuova" già mostrato (E2)
 var _try_hint := "" # prova del primo avvio (E14): si mostra appena si entra nella stanza
 var _last_snapshot := 0 # ms dell'ultimo snapshot: in partita il silenzio dice che la rete è caduta
+var training: Control # pannello dell'allenamento (E15), solo nelle stanze "training"
 
 
 func _ready() -> void:
@@ -202,6 +203,7 @@ func _leave() -> void:
 	socket.close()
 	world.reset()
 	hud.reset()
+	_set_training(false)
 	camera.position = Vector2.ZERO
 	camera.zoom = Vector2.ONE
 	_hide_connecting()
@@ -376,6 +378,7 @@ func _on_event(name: String, data: Variant) -> void:
 			else:
 				world.set_stage(data.stageId)
 			hud.on_welcome(data, world.stage)
+			_set_training(data.get("rules", {}).get("mode", "") == "training")
 			_check_server_version(str(data.get("serverVersion", "")))
 			camera.position = Vector2.ZERO
 			camera.zoom = Vector2.ONE
@@ -385,8 +388,12 @@ func _on_event(name: String, data: Variant) -> void:
 				world.on_event(e)
 				audio.on_event(e)
 				rumble.on_event(e)
+				if is_instance_valid(training):
+					training.on_event(e, world.my_id)
 			world.on_snapshot(data)
 			hud.on_snapshot(data)
+			if is_instance_valid(training):
+				training.on_snapshot(data)
 		"roomFull":
 			_show_connecting("Stanza piena!", "Prova con un'altra stanza: Annulla torna alla lobby.")
 		"refused": # il server non ci fa entrare e dice perché (E2): si torna alla lobby con il messaggio
@@ -566,3 +573,20 @@ func _read_params() -> Dictionary:
 # In editor si gioca con npm run dev; il gioco esportato (web, app) va sul server fisso
 func _default_server() -> String:
 	return PRODUCTION_SERVER if OS.has_feature("template") else DEFAULT_SERVER
+
+
+# In palestra (E15) compaiono il conta combo e il pannello; altrove spariscono, hitbox comprese
+func _set_training(on: bool) -> void:
+	if on == is_instance_valid(training):
+		return
+	if not on:
+		training.queue_free()
+		training = null
+		world.show_hitboxes = false
+		return
+	training = preload("res://scripts/training.gd").new()
+	training.theme = UI.theme()
+	ui_layer.add_child(training)
+	training.setup(game)
+	training.command.connect(func(data: Dictionary): socket.emit("training", data))
+	training.hitboxes_toggled.connect(func(on_off: bool): world.show_hitboxes = on_off)
