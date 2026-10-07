@@ -13,12 +13,12 @@ describe("parseJoin", () => {
 
   it("tiene i campi giusti e ripulisce il codice stanza", () => {
     const data = parseJoin({ room: "Serata-1!", name: "Luca", characterId: "egiainuso", stageId: "palco", bot: "facile" });
-    assert.deepEqual(data, { room: "serata-1", name: "Luca", characterId: "egiainuso", stageId: "palco", rules: undefined, bot: "facile", token: undefined });
+    assert.deepEqual(data, { room: "serata-1", name: "Luca", characterId: "egiainuso", stageId: "palco", rules: undefined, bot: "facile", token: undefined, version: undefined, protocol: undefined });
   });
 
   it("ignora i campi del tipo sbagliato", () => {
     const data = parseJoin({ room: 7, name: { a: 1 }, characterId: 3, stageId: [], rules: "tante", bot: null });
-    assert.deepEqual(data, { room: "lobby", name: "", characterId: undefined, stageId: undefined, rules: undefined, bot: undefined, token: undefined });
+    assert.deepEqual(data, { room: "lobby", name: "", characterId: undefined, stageId: undefined, rules: undefined, bot: undefined, token: undefined, version: undefined, protocol: undefined });
   });
 
   it("taglia le stringhe enormi", () => {
@@ -34,6 +34,16 @@ describe("parseJoin", () => {
     const data = parseJoin({ room: "a", name: "b", rules });
     assert.deepEqual({ ...data?.rules }, { stocks: 5, mode: "teams", items: true });
     assert.equal(Object.getPrototypeOf(data?.rules), Object.prototype);
+  });
+});
+
+describe("versione del client (E2)", () => {
+  it("tiene versione e protocollo solo se del tipo giusto", () => {
+    const data = parseJoin({ room: "a", version: "0.2.0", protocol: 1 });
+    assert.equal(data?.version, "0.2.0");
+    assert.equal(data?.protocol, 1);
+    for (const protocol of ["1", 1.5, null, NaN, {}]) assert.equal(parseJoin({ room: "a", protocol })?.protocol, undefined);
+    assert.equal(parseJoin({ room: "a", version: 2 })?.version, undefined);
   });
 });
 

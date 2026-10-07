@@ -119,6 +119,44 @@ static func version_text(game: Dictionary) -> String:
 	return text
 
 
+# true se a (es. "0.3.0", la versione del server) è più nuova di b: si confrontano i numeri uno a uno
+static func newer_version(a: String, b: String) -> bool:
+	var x := a.split(".")
+	var y := b.split(".")
+	for i in maxi(x.size(), y.size()):
+		var n := int(x[i]) if i < x.size() else 0
+		var m := int(y[i]) if i < y.size() else 0
+		if n != m:
+			return n > m
+	return false
+
+
+# Avviso in alto sopra lobby e partita, con un pulsante (se button_text non è vuoto) e la ×; sparisce da solo dopo seconds
+static func banner(text: String, button_text := "", on_press := Callable(), seconds := 30.0) -> CanvasLayer:
+	var layer := CanvasLayer.new()
+	layer.layer = 10
+	var bar := PanelContainer.new()
+	bar.theme = theme()
+	bar.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+	bar.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	bar.position.y = GAP_L
+	layer.add_child(bar)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", GAP_L)
+	bar.add_child(row)
+	row.add_child(label(text))
+	if button_text != "":
+		row.add_child(small_button(button_text, on_press))
+	row.add_child(small_button("×", layer.queue_free))
+	var timer := Timer.new()
+	timer.wait_time = seconds
+	timer.one_shot = true
+	timer.autostart = true
+	timer.timeout.connect(layer.queue_free)
+	layer.add_child(timer)
+	return layer
+
+
 # Titoletto di sezione, maiuscolo come nel web
 static func heading(text: String) -> Label:
 	return label(text.to_upper(), SIZE_NOTE, Color(TEXT, 0.8))

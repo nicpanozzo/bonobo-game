@@ -5,10 +5,11 @@ import type { AddressInfo } from "node:net";
 import { after, before, test } from "node:test";
 import { Server } from "socket.io";
 import { io as connect, type Socket } from "socket.io-client";
-import { MAX_PLAYERS_PER_ROOM, NET_LIMITS } from "../shared/constants";
+import { MAX_PLAYERS_PER_ROOM, NET_LIMITS, PROTOCOL_VERSION } from "../shared/constants";
 import type { ClientToServer, ServerToClient } from "../shared/types";
 import { attachGame, type GameDeps } from "./game";
 import type { Room } from "./Room";
+import { SERVER_VERSION } from "./version";
 
 type Client = Socket<ServerToClient, ClientToServer>;
 
@@ -151,6 +152,34 @@ test("stanza piena: chi arriva in più riceve roomFull", LIMIT, async () => {
   const extra = await client();
   assert.equal(await join(extra, "piena"), "roomFull");
   assert.equal(rooms.get("piena")?.match.players.length, MAX_PLAYERS_PER_ROOM);
+  for (const c of [...inside, extra]) c.disconnect();
+});
+
+test("versione nel join: protocollo uguale entra e sa la versione del server, protocollo diverso è rifiutato", LIMIT, async () => {
+  const ok = await client();
+  const welcome = new Promise<string>((resolve) => ok.once("welcome", (d) => resolve(d.serverVersion)));
+  ok.emit("join", { room: "versioni", name: "Nuovo", version: "0.0.1", protocol: PROTOCOL_VERSION });
+  assert.equal(await welcome, SERVER_VERSION);
+  const old = await client();
+  const refused = new Promise<string>((resolve) => old.once("refused", (r) => resolve(r.reason)));
+  old.emit("join", { room: "versioni", name: "Vecchio", protocol: PROTOCOL_VERSION + 1 });
+  assert.equal(await refused, "outdated");
+  await roundTrip("versioni-dopo");
+  assert.equal(rooms.get("versioni")?.match.players.length, 1);
+  for (const c of [ok, old]) c.disconnect();
+});
+
+test("stanza piena: arriva anche il rifiuto con motivo", LIMIT, async () => {
+  const inside: Client[] = [];
+  for (let i = 0; i < MAX_PLAYERS_PER_ROOM; i++) {
+    const c = await client();
+    assert.equal(await join(c, "piena2", `G${i}`), "welcome");
+    inside.push(c);
+  }
+  const extra = await client();
+  const refused = new Promise<string>((resolve) => extra.once("refused", (r) => resolve(r.reason)));
+  extra.emit("join", { room: "piena2", name: "Extra" });
+  assert.equal(await refused, "full");
   for (const c of [...inside, extra]) c.disconnect();
 });
 
