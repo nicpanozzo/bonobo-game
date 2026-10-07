@@ -252,6 +252,32 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       },
     },
   },
+
+  // Gatto rasta grassottello col bong, proposto da @MauroGrecchi (#168). Provvisorio: è il suo foglio ritagliato
+  // e ingrandito, un'eccezione alla style guide come Egiainuso (vedi public/assets/characters/elvedeo/README.md).
+  elvedeo: {
+    id: "elvedeo",
+    name: "Elvedeo",
+    // Con la pancia è più pesante e un po' lento, salta meno (E11)
+    // TODO community: statistiche provvisorie, da confermare con @MauroGrecchi
+    stats: { weight: 1.15, speed: 0.85, airSpeed: 0.95, jump: 0.9 },
+    sprite: {
+      dir: "assets/characters/elvedeo",
+      frameWidth: 360,
+      frameHeight: 200,
+      scale: 0.5, // ingrandito a 2x dal foglio originale
+      animations: {
+        idle: { fps: 12, loop: true }, // fuma, 2 s
+        walk: { fps: 20, loop: true }, // a quattro zampe
+        jump: { fps: 24, loop: false },
+        fall: { fps: 6, loop: true },
+        light: { fps: 24, loop: false, hitFrame: 2 }, // soffia la nuvola di fumo verde
+        heavy: { fps: 24, loop: false, hitFrame: 6 }, // colpo di bong dall'alto
+        hit: { fps: 24, loop: false },
+        tumble: { fps: 24, loop: true }, // rotola quando vola via
+      },
+    },
+  },
 };
 
 // Un id sconosciuto (o mancante) diventa il personaggio base
