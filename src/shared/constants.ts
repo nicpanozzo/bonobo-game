@@ -100,6 +100,13 @@ export const RECOVERY = {
   drift: 300, // velocità orizzontale verso la direzione tenuta, pixel/s
 };
 
+// Statistiche dei personaggi (E11, #13): moltiplicatori dei numeri di FIGHTER in characters.ts.
+// Il limite tiene i personaggi diversi ma senza che uno rompa le arene o il bilanciamento.
+export const CHARACTER_STATS = {
+  min: 0.8,
+  max: 1.2,
+};
+
 // Schivata (#3): con L si è invulnerabili per un attimo e ci si sposta di poco nella direzione tenuta.
 // 260 ms a 520 pixel/s = circa 135 pixel, poco più di tre volte la larghezza del lottatore.
 export const DODGE = {

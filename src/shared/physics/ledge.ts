@@ -2,6 +2,7 @@
 // Da appesi si risale verso il palco, con un attacco (light/heavy), rotolando (dodge) o saltando (su);
 // ci si lascia andare con giù o lontano dal palco, con un colpo o dopo LEDGE.maxHangMs.
 
+import { characterStats } from "../characters";
 import { ATTACKS, FIGHTER, LEDGE } from "../constants";
 import { startAttack, updateAttack } from "./attacks";
 import type { StageSpec } from "../stages";
@@ -166,7 +167,7 @@ export function holdLedge(f: Fighter, dtMs: number, ctx: PhysicsContext): boolea
       consume(f, "up");
       ctx.events.push({ type: "ledgeGetup", id: f.id, option: "jump" });
       releaseLedge(f);
-      f.vy = -FIGHTER.jumpSpeed;
+      f.vy = -FIGHTER.jumpSpeed * characterStats(f.characterId).jump; // E11
       f.invulnerableTimer = Math.max(f.invulnerableTimer, LEDGE.jumpInvulnMs);
       f.invulnerable = true;
       ctx.events.push({ type: "jump", id: f.id, x: Math.round(f.x), y: Math.round(f.y), air: false });

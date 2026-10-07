@@ -613,6 +613,12 @@
     "egiainuso": {
       "id": "egiainuso",
       "name": "Egiainuso",
+      "stats": {
+        "weight": 1.15,
+        "speed": 0.9,
+        "airSpeed": 0.95,
+        "jump": 0.95
+      },
       "sprite": {
         "path": "assets/characters/egiainuso/egiainuso.png",
         "frameWidth": 64,

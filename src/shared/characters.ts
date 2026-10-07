@@ -1,5 +1,7 @@
 // I personaggi giocabili. Aggiungerne uno = un blocco qui e una cartella in public/assets/characters/<id>/.
-// Per ora cambiano solo l'aspetto: statistiche e mosse proprie arrivano con il passo 1 di #13.
+// Cambiano aspetto e statistiche (E11 passo B); le mosse proprie arrivano con le speciali (E10).
+
+import { CHARACTER_STATS } from "./constants";
 
 export type AnimationName = "idle" | "walk" | "jump" | "fall" | "light" | "heavy" | "hit";
 
@@ -13,10 +15,20 @@ export interface SpriteSheetSpec {
   animations: Record<AnimationName, { row: number; frames: number; fps: number; loop: boolean }>;
 }
 
+// Moltiplicatori dei numeri di FIGHTER (1 = come Bonobot, il metro), tra CHARACTER_STATS.min e max
+export interface CharacterStats {
+  speed: number; // corsa a terra
+  airSpeed: number; // velocità massima in aria
+  jump: number; // velocità del salto e del doppio salto
+  weight: number; // il knockback dei colpi si divide per questo: più pesante, meno si vola
+  gravity: number; // caduta: più alta, si scende prima e si salta meno in alto
+}
+
 export interface CharacterSpec {
   id: string;
   name: string;
   sprite?: SpriteSheetSpec; // senza sprite si disegna il rettangolo colorato
+  stats?: Partial<CharacterStats>; // quelle che mancano valgono 1
 }
 
 export const DEFAULT_CHARACTER_ID = "default";
@@ -31,6 +43,9 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
   egiainuso: {
     id: "egiainuso",
     name: "Egiainuso",
+    // Con la barchetta addosso è un po' più pesante e lento di Bonobot (E11)
+    // TODO community: statistiche provvisorie, da confermare con @MauroGrecchi
+    stats: { weight: 1.15, speed: 0.9, airSpeed: 0.95, jump: 0.95 },
     sprite: {
       path: "assets/characters/egiainuso/egiainuso.png",
       frameWidth: 64,
@@ -75,4 +90,18 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
 // Un id sconosciuto (o mancante) diventa il personaggio base
 export function getCharacter(id: string | undefined): CharacterSpec {
   return (id && Object.hasOwn(CHARACTERS, id) && CHARACTERS[id]) || CHARACTERS[DEFAULT_CHARACTER_ID];
+}
+
+// Le statistiche di un personaggio, quelle che mancano a 1 e tutte dentro i limiti
+const statsCache = new Map<string, CharacterStats>();
+export function characterStats(id: string | undefined): CharacterStats {
+  const c = getCharacter(id);
+  let stats = statsCache.get(c.id);
+  if (!stats) {
+    const clamp = (v: number | undefined) => Math.min(CHARACTER_STATS.max, Math.max(CHARACTER_STATS.min, v ?? 1));
+    const s = c.stats ?? {};
+    stats = { speed: clamp(s.speed), airSpeed: clamp(s.airSpeed), jump: clamp(s.jump), weight: clamp(s.weight), gravity: clamp(s.gravity) };
+    statsCache.set(c.id, stats);
+  }
+  return stats;
 }
