@@ -307,3 +307,15 @@ export const INPUT = {
 // Versione del protocollo (E2, #106): sale solo quando types.ts cambia in modo che client e server
 // vecchi e nuovi non si capiscono più. La versione del gioco invece sta in package.json.
 export const PROTOCOL_VERSION = 1;
+
+// Vibrazione del pad (E6 passo 5): la sente chi colpisce, chi è colpito e chi va KO.
+// Forze da 0 a 1; il client Godot le moltiplica per l'opzione "Vibrazione" (debole o forte)
+export const RUMBLE = {
+  hitMs: 120, // durata per un colpo, millisecondi
+  hitMinStrength: 0.25, // forza del colpo più leggero
+  hitMaxKnockback: 1400, // pixel/s: da questo knockback in su il colpo vibra al massimo
+  attackerScale: 0.5, // chi colpisce sente questa parte della vibrazione di chi è colpito
+  koMs: 450, // durata per il proprio KO
+  koStrength: 1,
+  weakScale: 0.5, // opzione "debole": tutte le forze per questo numero
+};

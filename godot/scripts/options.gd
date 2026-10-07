@@ -35,7 +35,20 @@ func setup(s: Settings) -> void:
 	music.toggled.connect(func(on):
 		settings.music_on = on
 		settings.save())
-	_box.add_child(music)
+	# Vibrazione del pad sulla stessa riga della musica: il menu deve stare in 720 pixel
+	var row := HBoxContainer.new()
+	music.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(music)
+	row.add_child(UI.label("Vibrazione"))
+	var rumble := OptionButton.new()
+	for name in Rumble.LEVEL_NAMES:
+		rumble.add_item(name)
+	rumble.select(settings.rumble)
+	rumble.item_selected.connect(func(i):
+		settings.rumble = i
+		settings.save())
+	row.add_child(rumble)
+	_box.add_child(row)
 	# Titoletto e schede sulla stessa riga: il menu deve stare in 720 pixel
 	var tabs := HBoxContainer.new()
 	var heading := UI.heading("Comandi")

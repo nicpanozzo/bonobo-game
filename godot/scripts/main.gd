@@ -21,6 +21,7 @@ var pause_menu: Control
 var world: Node2D
 var camera := Camera2D.new()
 var audio: Node2D
+var rumble: Rumble
 var hud: Control
 var lobby: Control
 var playing := false
@@ -56,6 +57,7 @@ func _ready() -> void:
 	audio = preload("res://scripts/audio.gd").new()
 	add_child(audio)
 	audio.setup(game)
+	rumble = Rumble.new(game.rumble)
 	settings.changed.connect(_apply_volumes)
 	_apply_volumes()
 
@@ -128,6 +130,7 @@ func _leave() -> void:
 
 func _apply_volumes() -> void:
 	audio.set_volumes(settings.master, settings.sfx, settings.music, settings.music_on)
+	rumble.level = settings.rumble
 
 
 # Il link da mandare agli amici porta la stanza (e il server, se la pagina non sta sul server)
@@ -200,6 +203,7 @@ func _on_event(name: String, data: Variant) -> void:
 			_token_room = str(params.room)
 			world.my_id = data.id
 			hud.my_id = data.id
+			rumble.my_id = data.id
 			# Server vecchi non mandano l'arena intera: allora si cerca tra quelle fisse per id
 			if data.get("stage") is Dictionary:
 				world.set_stage_spec(data.stage)
@@ -212,6 +216,7 @@ func _on_event(name: String, data: Variant) -> void:
 			for e in data.events:
 				world.on_event(e)
 				audio.on_event(e)
+				rumble.on_event(e)
 			world.on_snapshot(data)
 			hud.on_snapshot(data)
 		"roomFull":

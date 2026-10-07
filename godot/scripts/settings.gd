@@ -53,6 +53,7 @@ var music := 0.35
 var music_on := true
 var bindings := {}
 var pad_bindings := {}
+var rumble := Rumble.STRONG # vibrazione del pad: Rumble.OFF, WEAK o STRONG
 var stick_deadzone := 0.35 # main.gd mette INPUT.stickDeadzone di game.json
 var profile := {} # name, room, char, stage, rules, server
 
@@ -72,6 +73,9 @@ func _init(audio_defaults: Dictionary, path := PATH) -> void:
 	sfx = clampf(cfg.get_value("audio", "sfx", sfx), 0, 1)
 	music = clampf(cfg.get_value("audio", "music", music), 0, 1)
 	music_on = bool(cfg.get_value("audio", "music_on", music_on))
+	var r: Variant = cfg.get_value("pad_options", "rumble", rumble)
+	if r is int and r >= Rumble.OFF and r <= Rumble.STRONG:
+		rumble = r
 	# Tasti: si tengono solo le azioni salvate bene, le altre restano al default
 	for a in ACTIONS:
 		# Con default null Godot lo considera "nessun default" e stampa un errore se la chiave manca
@@ -91,6 +95,7 @@ func reset(notify := true) -> void:
 	sfx = _defaults.sfx
 	music = _defaults.music
 	music_on = true
+	rumble = Rumble.STRONG
 	reset_bindings(false, false)
 	reset_bindings(true, false)
 	if notify:
@@ -113,6 +118,7 @@ func save() -> void:
 	cfg.set_value("audio", "sfx", sfx)
 	cfg.set_value("audio", "music", music)
 	cfg.set_value("audio", "music_on", music_on)
+	cfg.set_value("pad_options", "rumble", rumble)
 	for a in ACTIONS:
 		cfg.set_value("keys", a, bindings[a])
 		cfg.set_value("pad", a, pad_bindings[a])
