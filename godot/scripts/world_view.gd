@@ -27,7 +27,8 @@ var _item_pos := {} # id oggetto -> Vector2 disegnata, che insegue quella dello 
 var _facings := {} # id giocatore -> verso, per mettere in mano gli oggetti
 var _font: Font = ThemeDB.fallback_font
 var view_rect := Rect2(0, 0, 1280, 720) # la parte di mondo che si vede, decisa dalla telecamera in main.gd
-var _textures := {} # id personaggio -> Texture2D dello spritesheet
+var _textures := {} # id personaggio -> Texture2D dello spritesheet (nel formato cartella, quella di idle)
+var _state_textures := {} # id personaggio -> { stato: Texture2D }, solo per il formato cartella (E7 passo 2)
 var _anims := {} # id giocatore -> { name, since }: animazione in corso e da quando
 var show_hitboxes := false # allenamento (E15): corpo dei lottatori visibile anche sopra gli sprite
 var _air_jumps := {} # id giocatore -> quando ha fatto il doppio salto (ms), per l'animazione doubleJump (#103)
@@ -38,7 +39,16 @@ func setup(game_data: Dictionary) -> void:
 	reset()
 	for id in game.characters:
 		var c: Dictionary = game.characters[id]
-		if c.get("sprite") != null:
+		if c.get("sprite") == null:
+			continue
+		if c.sprite.has("dir"):
+			# Formato cartella: un PNG per stato, <dir>/<stato>.png, con i fotogrammi in fila
+			var states := {}
+			for state in c.sprite.animations:
+				states[state] = load("res://data/%s/%s.png" % [c.sprite.dir, state])
+			_state_textures[id] = states
+			_textures[id] = states.idle
+		else:
 			_textures[id] = load("res://data/" + c.sprite.path)
 
 
@@ -559,15 +569,21 @@ func _draw_sprite(p: Dictionary, character: Dictionary, now: float) -> void:
 		state = {"name": name, "since": air_jump if name == "doubleJump" else now}
 		_anims[p.id] = state
 	state["attacking"] = attacking
-	var a: Dictionary = sheet.animations[available_animation(sheet.animations, name)]
+	var shown := available_animation(sheet.animations, name)
+	var a: Dictionary = sheet.animations[shown]
 	var frame := int((now - state.since) / 1000.0 * a.fps)
 	frame = frame % int(a.frames) if a.loop else mini(frame, int(a.frames) - 1)
 	var fw: float = sheet.frameWidth
 	var fh: float = sheet.frameHeight
-	var src := Rect2(frame * fw, a.row * fh, fw, fh)
+	# Nel foglio unico ogni animazione è una riga; nel formato cartella è un PNG a sé, con una riga sola
+	var texture: Texture2D = _textures[character.id]
+	var row: float = a.get("row", 0)
+	if _state_textures.has(character.id):
+		texture = _state_textures[character.id][shown]
+	var src := Rect2(frame * fw, row * fh, fw, fh)
 	var scale: float = sheet.get("scale", 1.0) # 0.5 per i disegni fatti a 2x
 	draw_set_transform(Vector2(p.x, p.y), 0, Vector2(p.facing * scale, scale))
-	draw_texture_rect_region(_textures[character.id], Rect2(-fw / 2, -fh, fw, fh), src, Color(1, 1, 1, away_alpha(p)))
+	draw_texture_rect_region(texture, Rect2(-fw / 2, -fh, fw, fh), src, Color(1, 1, 1, away_alpha(p)))
 	draw_set_transform(Vector2.ZERO)
 
 
