@@ -3,6 +3,7 @@
 import { ATTACKS, FIGHTER, HITSTOP, HITSTUN_PER_KNOCKBACK } from "../constants";
 import type { AttackKind } from "../types";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
+import { clearStun, hitShield } from "./shield";
 
 export function tryStartAttack(f: Fighter, ctx: PhysicsContext): void {
   if (f.hitstun || f.attack || f.cooldownTimer > 0 || f.helpless || f.dodgeTimer > 0) return;
@@ -74,6 +75,20 @@ export function resolveHits(fighters: Fighter[], ctx: PhysicsContext): void {
       if (!overlap(box, body)) continue;
 
       attacker.alreadyHit.add(target.id);
+      // Il fermo si somma a quello in corso solo fino al massimo (più colpi nello stesso tick)
+      const stop = Math.min(HITSTOP.maxMs, HITSTOP.baseMs + HITSTOP.perDamageMs * spec.damage);
+      attacker.hitstopTimer = Math.max(attacker.hitstopTimer, stop);
+      target.hitstopTimer = Math.max(target.hitstopTimer, stop);
+      // Punto d'impatto: il centro della parte di hitbox che tocca il bersaglio
+      const ix = (Math.max(box.x, body.x) + Math.min(box.x + box.w, body.x + body.w)) / 2;
+      const iy = (Math.max(box.y, body.y) + Math.min(box.y + box.h, body.y + body.h)) / 2;
+
+      // Sullo scudo (#109): niente percentuale né knockback, solo punti di scudo
+      if (target.shielding) {
+        hitShield(target, attacker.id, spec.damage, attacker.facing, Math.round(ix), Math.round(iy), ctx);
+        continue;
+      }
+
       // Stile Smash/Brawlhalla: il danno non toglie vita, fa volare più lontano
       target.percent = Math.min(999, target.percent + spec.damage);
       const knockback = spec.baseKnockback + spec.knockbackGrowth * target.percent;
@@ -89,14 +104,7 @@ export function resolveHits(fighters: Fighter[], ctx: PhysicsContext): void {
       // Chi viene colpito può di nuovo usare il recupero (#11)
       target.recoveryUsed = false;
       target.helpless = false;
-      // Il fermo si somma a quello in corso solo fino al massimo (più colpi nello stesso tick)
-      const stop = Math.min(HITSTOP.maxMs, HITSTOP.baseMs + HITSTOP.perDamageMs * spec.damage);
-      attacker.hitstopTimer = Math.max(attacker.hitstopTimer, stop);
-      target.hitstopTimer = Math.max(target.hitstopTimer, stop);
-
-      // Punto d'impatto: il centro della parte di hitbox che tocca il bersaglio
-      const ix = (Math.max(box.x, body.x) + Math.min(box.x + box.w, body.x + body.w)) / 2;
-      const iy = (Math.max(box.y, body.y) + Math.min(box.y + box.h, body.y + body.h)) / 2;
+      clearStun(target);
       ctx.events.push({
         type: "hit",
         attackerId: attacker.id,

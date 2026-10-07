@@ -108,6 +108,24 @@ export const DODGE = {
   cooldownMs: 900, // dall'inizio della schivata alla successiva
 };
 
+// Scudo (#109, E8 passo 1): si tiene con I a terra. Assorbe il danno dei colpi al posto della percentuale,
+// si consuma da solo e si ricarica abbassato; a 0 si rompe e si resta storditi. Valori della specifica, da playtest (#22).
+export const SHIELD = {
+  maxHp: 50, // punti di scudo pieno
+  drainPerSec: 9, // punti persi al secondo tenendolo alzato: pieno si rompe da solo in ~5,5 s
+  regenPerSec: 6, // punti recuperati al secondo da abbassato
+  raiseMs: 33, // ms tra la pressione e lo scudo che para (2 frame)
+  dropMs: 116, // ms fermi dopo averlo abbassato (7 frame)
+  stunBaseMs: 33, // ms fermi sullo scudo dopo un colpo parato...
+  stunPerDamageMs: 13, // ...più tanti ms per punto di danno (leggero ~100 ms, pesante ~200 ms)
+  pushBase: 150, // pixel/s di scivolata all'indietro per un colpo parato...
+  pushPerDamage: 25, // ...più tanti pixel/s per punto di danno
+  pushFriction: 2000, // pixel/s²: quanto in fretta si ferma la scivolata
+  breakStunMs: 2500, // ms storditi e colpibili dopo la rottura
+  breakPopSpeed: 900, // pixel/s del saltino in alto quando si rompe
+  hpAfterBreak: 30, // punti di scudo con cui si riparte dopo la rottura
+};
+
 // Bordo del palco (#110): in aria, scendendo, ci si aggrappa agli spigoli in alto dei blocchi pieni.
 // L'invulnerabilità vale solo per la prima presa dopo aver toccato terra o essere stati colpiti.
 export const LEDGE = {

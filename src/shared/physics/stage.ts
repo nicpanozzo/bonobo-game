@@ -3,6 +3,7 @@
 import { COURSE, FIGHTER, RESPAWN_INVULNERABLE_MS, RESPAWN_MS } from "../constants";
 import { landOnMover } from "./elements";
 import type { Fighter, PhysicsContext } from "./fighter";
+import { resetShield } from "./shield";
 
 export function collideWithStage(f: Fighter, prevY: number, ctx: PhysicsContext, dtMs = 0): void {
   const half = FIGHTER.width / 2;
@@ -110,6 +111,7 @@ export function respawn(f: Fighter, ctx: PhysicsContext): void {
   f.helpless = false;
   f.airDodgeUsed = false;
   f.ledgeGrabs = 0;
+  resetShield(f); // scudo pieno, niente stordimento (#109)
   f.invulnerableTimer = RESPAWN_INVULNERABLE_MS;
   f.invulnerable = true;
   ctx.events.push({ type: "respawn", id: f.id });

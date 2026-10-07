@@ -102,6 +102,7 @@ export class Match {
       heavy: !!input.heavy,
       taunt: !!input.taunt,
       dodge: !!input.dodge,
+      shield: !!input.shield,
     };
     bufferPresses(f, next); // una pressione più corta di un tick non si perde (E6)
     f.input = next;
@@ -173,6 +174,9 @@ export class Match {
         carrier: f.carrier,
         ledge: f.ledge,
         away: f.away,
+        shielding: f.shielding,
+        shieldHp: Math.round(f.shieldHp),
+        stunned: f.stunned,
       });
     }
     const teamScores = this.rules.mode === "flag" ? { ...this.scores } : null;

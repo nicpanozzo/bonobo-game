@@ -32,6 +32,7 @@ export class KeyboardInput {
       heavy: on("heavy"),
       taunt: on("taunt"),
       dodge: on("dodge"),
+      shield: false, // il vecchio client è congelato: niente scudo (#109)
     };
   }
 

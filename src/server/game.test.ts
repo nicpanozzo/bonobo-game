@@ -285,7 +285,7 @@ test("rientro con il token: stesso lottatore, stesse vite e percentuale (#107)",
   assert.equal(room.match.players.length, 2);
 
   // I tasti del socket nuovo muovono lo stesso lottatore
-  a3.emit("input", { left: false, right: true, up: false, down: false, light: false, heavy: false, taunt: false, dodge: false });
+  a3.emit("input", { left: false, right: true, up: false, down: false, light: false, heavy: false, taunt: false, dodge: false, shield: false });
   await until(() => fighter.input.right);
 
   // Posto scaduto: il token non vale più e si rientra da capo

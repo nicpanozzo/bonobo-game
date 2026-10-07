@@ -60,6 +60,7 @@ export function parseInput(raw: unknown): InputState | null {
     heavy: raw.heavy === true,
     taunt: raw.taunt === true,
     dodge: raw.dodge === true,
+    shield: raw.shield === true,
   };
 }
 

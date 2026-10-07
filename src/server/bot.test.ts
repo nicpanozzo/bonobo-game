@@ -33,7 +33,7 @@ describe("bot", () => {
       match.step(DT);
     }
     assert.deepEqual({ x: dummy.x, y: dummy.y }, start, "da solo non si muove");
-    match.setInput("a", { left: false, right: false, up: false, down: false, light: true, heavy: false, taunt: false, dodge: false });
+    match.setInput("a", { left: false, right: false, up: false, down: false, light: true, heavy: false, taunt: false, dodge: false, shield: false });
     for (let i = 0; i < 15; i++) {
       bots.tick(match);
       match.step(DT);
@@ -91,7 +91,7 @@ describe("bot", () => {
       // Il giocatore tira un pesante ogni secondo per 6 secondi
       for (let i = 0; i < 60 * 6; i++) {
         const heavy = i % 60 === 0;
-        match.setInput("a", { left: false, right: false, up: false, down: false, light: false, heavy, taunt: false, dodge: false });
+        match.setInput("a", { left: false, right: false, up: false, down: false, light: false, heavy, taunt: false, dodge: false, shield: false });
         bots.tick(match);
         hits += match.step(DT).filter((e) => e.type === "hit" && e.targetId === id).length;
         // Il giocatore resta fermo dov'è: si riavvicina al bot per il prossimo colpo
@@ -176,7 +176,7 @@ describe("bot", () => {
         attack: null,
       });
       for (let i = 0; i < 60 * 6; i++) {
-        match.setInput("a", { left: false, right: false, up: false, down: false, light: false, heavy: false, taunt: false, dodge: false });
+        match.setInput("a", { left: false, right: false, up: false, down: false, light: false, heavy: false, taunt: false, dodge: false, shield: false });
         bots.tick(match);
         const getup = match.step(DT).find((e) => e.type === "ledgeGetup" && e.id === id);
         if (getup?.type === "ledgeGetup") {
