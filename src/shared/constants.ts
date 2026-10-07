@@ -229,6 +229,13 @@ export const AUDIO = {
   hitLoudPercent: 120, // da questa percentuale in su i colpi suonano al massimo
   voices: 0.8, // volume di partenza delle voci (E13): personaggi e annunciatore
   musicFadeMs: 1500, // dissolvenza tra la musica della lobby e quella della partita
+  duckDb: -8, // di quanto scende la musica su un KO (E13), decibel
+  duckMs: 1200, // in quanto tempo risale dopo il KO
+  sameSoundMax: 3, // copie dello stesso suono che possono partire insieme...
+  sameSoundWindowMs: 60, // ...entro questi ms: nelle mischie a 4 il resto si salta
+  targetLufs: -16, // loudness integrata a cui devono stare i file (npm run audio:check)
+  lufsTolerance: 2, // LU di scarto accettati
+  maxPeakDb: -1, // picco massimo dei file, dBTP
 };
 
 // Rete lato client: si disegna il passato di qualche ms e si interpola tra due snapshot,

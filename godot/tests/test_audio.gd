@@ -53,3 +53,28 @@ func test_con_i_campioni_alterna_le_varianti() -> void:
 		runner.check(next == one or next == two, "solo i campioni")
 		prev = next
 	a.free()
+
+
+func test_al_massimo_tre_suoni_uguali_insieme() -> void:
+	var recent := []
+	var started := 0
+	for i in 6: # sei colpi nello stesso istante
+		if Audio.may_start(recent, 1000, 3, 60):
+			recent.append(1000)
+			started += 1
+	runner.check(started == 3, "partiti %d" % started)
+	runner.check(Audio.may_start(recent, 1060, 3, 60), "dopo 60 ms si riparte")
+	runner.check(recent.is_empty(), "gli avvii vecchi si dimenticano")
+
+
+func test_il_ko_abbassa_la_musica() -> void:
+	var a := _audio()
+	var bus := AudioServer.get_bus_index("Musica")
+	a.set_volumes(1.0, 1.0, 0.5, true)
+	var before := AudioServer.get_bus_volume_db(bus)
+	a.on_event({"type": "ko", "id": "a", "x": 100, "y": 100, "stocksLeft": 2})
+	runner.check(a.music_duck_db() == -8.0, "musica abbassata di 8 dB")
+	runner.check(is_equal_approx(AudioServer.get_bus_volume_db(bus), before - 8.0), "sul bus")
+	a.set_volumes(1.0, 1.0, 0.5, true) # cambiare il volume nelle opzioni non perde l'abbassamento
+	runner.check(is_equal_approx(AudioServer.get_bus_volume_db(bus), before - 8.0), "resta abbassata")
+	a.free()
