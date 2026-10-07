@@ -14,7 +14,7 @@ var _info := "" # riga in alto a sinistra: stanza, arena, modalità
 var _stage: Dictionary = {}
 var _snap: Dictionary = {}
 var _stats := {} # id -> { kos, falls, damage, flags }: la classifica di fine partita, dagli eventi
-var _font: Font = ThemeDB.fallback_font
+var _font: Font = UI.font()
 var _last_percent := {} # id -> percentuale dell'ultimo snapshot, per accorgersi dei colpi presi
 var _jolts := {} # id -> { ms, amp }: la percentuale trema per un attimo dopo un colpo
 

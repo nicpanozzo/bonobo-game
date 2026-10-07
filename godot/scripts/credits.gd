@@ -18,23 +18,23 @@ func setup() -> void:
 	var parts := UI.overlay(540)
 	add_child(parts[0])
 	var box: VBoxContainer = parts[1]
-	box.add_child(UI.label("Crediti", 28, UI.ACCENT))
-	box.add_child(UI.label("Bonobo Game è fatto dal nostro canale Discord", 13, Color(UI.TEXT, 0.7)))
+	box.add_child(UI.header("Crediti"))
+	box.add_child(UI.note("Bonobo Game è fatto dal nostro canale Discord"))
 	var scroll := ScrollContainer.new()
 	scroll.custom_minimum_size = Vector2(0, 320)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	var list := VBoxContainer.new()
 	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	list.add_theme_constant_override("separation", 12)
+	list.add_theme_constant_override("separation", UI.GAP_L)
 	scroll.add_child(list)
 	for p in PEOPLE:
-		var who := UI.label("%s · %s" % [p[0], p[1]], 17)
+		var who := UI.label("%s · %s" % [p[0], p[1]])
 		list.add_child(who)
-		var what := UI.label(p[2], 14, Color(UI.TEXT, 0.75))
+		var what := UI.label(p[2], UI.SIZE_SMALL, Color(UI.TEXT, 0.75))
 		what.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		list.add_child(what)
 	box.add_child(scroll)
-	box.add_child(UI.label("Asset e licenze: public/assets/CREDITS.md", 13, Color(UI.TEXT, 0.7)))
+	box.add_child(UI.note("Asset e licenze: public/assets/CREDITS.md"))
 	var actions := HBoxContainer.new()
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL

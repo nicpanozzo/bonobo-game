@@ -21,7 +21,7 @@ func setup(s: Settings, room_link: String) -> void:
 	_dim = parts[0]
 	add_child(_dim)
 	var box: VBoxContainer = parts[1]
-	box.add_child(UI.label("Menu", 28, UI.ACCENT))
+	box.add_child(UI.header("Menu"))
 	var resume_button := UI.button("Riprendi", resume, true)
 	box.add_child(resume_button)
 	_options_button = UI.button("Opzioni", _open_options)
@@ -32,11 +32,11 @@ func setup(s: Settings, room_link: String) -> void:
 	box.add_child(UI.button("Esci alla lobby", func():
 		queue_free()
 		left.emit()))
-	_note = UI.label("La partita continua mentre il menu è aperto.", 13, Color(UI.TEXT, 0.7))
+	_note = UI.note("La partita continua mentre il menu è aperto.")
 	_note.autowrap_mode = TextServer.AUTOWRAP_WORD
 	box.add_child(_note)
 	var game = JSON.parse_string(FileAccess.get_file_as_string("res://data/game.json"))
-	box.add_child(UI.label(UI.version_text(game if game is Dictionary else {}), 13, Color(UI.TEXT, 0.5)))
+	box.add_child(UI.note(UI.version_text(game if game is Dictionary else {}), 0.5))
 	UI.keep_focus(self, resume_button)
 
 
