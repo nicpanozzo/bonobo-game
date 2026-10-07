@@ -217,6 +217,7 @@
     "dustPuffs": 5,
     "trailSpeed": 900,
     "trailLength": 6,
+    "tumbleSpeed": 650,
     "koBeamMs": 750,
     "koBeamLength": 1400,
     "koBeamWidth": 150,
@@ -695,7 +696,7 @@
       "name": "Bonobot",
       "sprite": {
         "path": "assets/characters/bonobot/bonobot.png",
-        "frameWidth": 236,
+        "frameWidth": 256,
         "frameHeight": 240,
         "columns": 24,
         "scale": 0.5,
@@ -741,6 +742,18 @@
             "frames": 8,
             "fps": 24,
             "loop": false
+          },
+          "doubleJump": {
+            "row": 7,
+            "frames": 9,
+            "fps": 24,
+            "loop": false
+          },
+          "tumble": {
+            "row": 8,
+            "frames": 12,
+            "fps": 24,
+            "loop": true
           }
         }
       }

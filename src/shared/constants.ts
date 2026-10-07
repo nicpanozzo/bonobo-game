@@ -270,6 +270,7 @@ export const EFFECTS = {
   dustPuffs: 5, // sbuffi di polvere per atterraggio
   trailSpeed: 900, // px/s: chi vola più veloce di così lascia una scia
   trailLength: 6, // posizioni ricordate per la scia (una per frame)
+  tumbleSpeed: 650, // px/s: in hitstun e in aria, chi vola più veloce di così si disegna con l'animazione tumble (#103)
   koBeamMs: 750, // durata del raggio colorato di un KO
   koBeamLength: 1400, // pixel: quanto entra nello schermo il raggio del KO
   koBeamWidth: 150, // pixel: larghezza del raggio dove finisce (all'uscita è una punta)

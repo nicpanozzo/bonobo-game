@@ -29,6 +29,7 @@ var _font: Font = ThemeDB.fallback_font
 var view_rect := Rect2(0, 0, 1280, 720) # la parte di mondo che si vede, decisa dalla telecamera in main.gd
 var _textures := {} # id personaggio -> Texture2D dello spritesheet
 var _anims := {} # id giocatore -> { name, since }: animazione in corso e da quando
+var _air_jumps := {} # id giocatore -> quando ha fatto il doppio salto (ms), per l'animazione doubleJump (#103)
 
 
 func setup(game_data: Dictionary) -> void:
@@ -49,6 +50,7 @@ func reset() -> void:
 	player_ids = []
 	positions = {}
 	_anims = {}
+	_air_jumps = {}
 	_sparks = []
 	_beams = []
 	_shards = []
@@ -143,6 +145,8 @@ func on_event(e: Dictionary) -> void:
 		"jump":
 			if not e.get("air", false):
 				_puff(e.x, e.y)
+			else:
+				_air_jumps[e.id] = Time.get_ticks_msec()
 		"ko":
 			_shake = game.effects.shakeKo
 			_sparks.append({"x": clampf(e.x, 0, game.world.width), "y": clampf(e.y, 0, game.world.height), "age": 0.0, "size": 90.0, "color": Color(1, 0.4, 0.3)})
@@ -529,10 +533,23 @@ func _draw_sprite(p: Dictionary, character: Dictionary, now: float) -> void:
 		var prev: Dictionary = sheet.animations[prev_name]
 		if (now - float(state.since)) / 1000.0 * float(prev.fps) < float(prev.frames):
 			name = prev_name
+	# Animazioni facoltative (#103): chi non le ha nello spritesheet resta su jump e hit
+	var anims: Dictionary = sheet.animations
+	var flying: bool = p.hitstun and not p.onGround
+	if name == "hit" and anims.has("tumble") and flying:
+		# Una volta lanciato si continua a rotolare finché dura lo stordimento, anche rallentando
+		if prev_name == "tumble" or Vector2(p.vx, p.vy).length() > float(game.effects.tumbleSpeed):
+			name = "tumble"
+	var air_jump: float = float(_air_jumps.get(p.id, -1.0))
+	if (name == "jump" or name == "fall") and anims.has("doubleJump") and air_jump >= 0.0:
+		var dj: Dictionary = anims.doubleJump
+		if (now - air_jump) / 1000.0 * float(dj.fps) < float(dj.frames):
+			name = "doubleJump"
 	var attacking: bool = p.attack != null
 	var new_attack: bool = attacking and not bool(state.get("attacking", false))
 	if state.get("name") != name or new_attack:
-		state = {"name": name, "since": now}
+		# La capriola parte dal momento del doppio salto, non da quando la si disegna
+		state = {"name": name, "since": air_jump if name == "doubleJump" else now}
 		_anims[p.id] = state
 	state["attacking"] = attacking
 	var a: Dictionary = sheet.animations[available_animation(sheet.animations, name)]

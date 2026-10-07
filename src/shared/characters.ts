@@ -4,6 +4,14 @@
 import { CHARACTER_STATS } from "./constants";
 
 export type AnimationName = "idle" | "walk" | "jump" | "fall" | "light" | "heavy" | "hit";
+// Animazioni facoltative (#103): chi non le ha usa al loro posto jump (doppio salto) e hit (lanciato)
+export type OptionalAnimationName = "doubleJump" | "tumble";
+export interface SpriteAnimation {
+  row: number;
+  frames: number;
+  fps: number;
+  loop: boolean;
+}
 
 export interface SpriteSheetSpec {
   path: string; // relativo alla radice del sito
@@ -12,7 +20,7 @@ export interface SpriteSheetSpec {
   columns: number; // fotogrammi per riga nel PNG
   scale?: number; // grandezza a schermo rispetto al PNG: 0.5 per i disegni fatti a 2x (manca = 1)
   // Riga del PNG, numero di fotogrammi e velocità di ogni animazione (fotogrammi/s)
-  animations: Record<AnimationName, { row: number; frames: number; fps: number; loop: boolean }>;
+  animations: Record<AnimationName, SpriteAnimation> & Partial<Record<OptionalAnimationName, SpriteAnimation>>;
 }
 
 // Moltiplicatori dei numeri di FIGHTER (1 = come Bonobot, il metro), tra CHARACTER_STATS.min e max
@@ -70,7 +78,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     name: "Bonobot",
     sprite: {
       path: "assets/characters/bonobot/bonobot.png",
-      frameWidth: 236,
+      frameWidth: 256,
       frameHeight: 240,
       columns: 24,
       scale: 0.5,
@@ -82,6 +90,8 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         light: { row: 4, frames: 7, fps: 24, loop: false }, // schiaffo di rovescio: colpisce nei fotogrammi 2-4
         heavy: { row: 5, frames: 18, fps: 24, loop: false }, // martello a due pugni: colpisce nei fotogrammi 7-10
         hit: { row: 6, frames: 8, fps: 24, loop: false },
+        doubleJump: { row: 7, frames: 9, fps: 24, loop: false }, // capriola in avanti che si apre verso la caduta
+        tumble: { row: 8, frames: 12, fps: 24, loop: true }, // rotola all'indietro quando vola via dopo un colpo forte
       },
     },
   },
