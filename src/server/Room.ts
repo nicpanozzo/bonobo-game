@@ -42,6 +42,7 @@ export class Room {
   readonly seats: Seats; // token e posti tenuti per la riconnessione (#107)
   private errors = 0; // errori di fila nel passo: al terzo la stanza si chiude
   onClose?: () => void; // chi tiene l'elenco delle stanze (game.ts) la toglie quando si chiude da sola
+  private speed = 1; // allenamento (#113): l'orologio corre più piano, il passo resta TICK_MS
   lastHumanInput = Date.now(); // ms dell'ultimo ingresso o tasto di un umano: senza, la stanza si chiude (ROOM_IDLE_MS)
 
   constructor(
@@ -109,6 +110,11 @@ export class Room {
     this.lastHumanInput = Date.now();
   }
 
+  // Rallentatore: cambia solo quanti passi fissi si fanno al secondo, la fisica resta deterministica
+  setSpeed(speed: number) {
+    this.speed = speed;
+  }
+
   requestRematch() {
     this.match.requestRematch();
   }
@@ -120,8 +126,13 @@ export class Room {
   private pump() {
     if (this.seats.heldCount > 0 && this.expireSeats(Date.now())) return;
     const now = performance.now();
-    this.accumulator += now - this.lastTime;
+    this.advance(now - this.lastTime);
     this.lastTime = now;
+  }
+
+  // Fa i passi maturati in elapsedMs di orologio vero (pubblico per i test)
+  advance(elapsedMs: number) {
+    this.accumulator += elapsedMs * this.speed;
     // Dopo un blocco lungo (debugger, server sovraccarico) non si recupera tutto in un colpo
     this.accumulator = Math.min(this.accumulator, TICK_MS * MAX_CATCHUP_TICKS);
     while (this.accumulator >= TICK_MS) {

@@ -3,7 +3,7 @@
 // girare in locale (allenamento, predizione) e un porting su un altro motore parte da qui.
 
 import { getCharacter } from "./characters";
-import { COLORS, FIGHTER, MATCH_RESTART_MS, MAX_PLAYERS_PER_ROOM, RECONNECT_RESUME_INVULNERABLE_MS, TEAM_COLORS } from "./constants";
+import { COLORS, FIGHTER, MATCH_RESTART_MS, MAX_PLAYERS_PER_ROOM, RECONNECT_RESUME_INVULNERABLE_MS, TEAM_COLORS, TRAINING } from "./constants";
 import { bufferPresses, createFighter, emptyInput, resetForMatch, stepWorld, type Fighter, type PhysicsContext } from "./physics";
 import { createItemWorld, handleItemInput, itemStates, resetItems, stepItems, type ItemWorld } from "./physics/items";
 import { canHitWithRules, flagWinnerTeam, isTeamMode, lastStanding, leaderOnTime, sanitizeRules } from "./rules";
@@ -46,7 +46,7 @@ export class Match {
       stage: this.stage,
       events: [],
       canHit: (a, t) => canHitWithRules(rules, a.team, t.team),
-      unlimitedStocks: rules.mode === "flag" || rules.mode === "race",
+      unlimitedStocks: rules.mode === "flag" || rules.mode === "race" || rules.mode === "training",
     };
     this.items = rules.mode === "ffa" || rules.mode === "teams" ? createItemWorld(seedOf(this.stage.id)) : null;
   }
@@ -130,6 +130,17 @@ export class Match {
   // A fine partita chiunque può ricominciare subito, senza aspettare il conto alla rovescia
   requestRematch() {
     if (this.winnerId) this.restartMatch();
+  }
+
+  // Allenamento (#113): la percentuale di un lottatore, scelta dal pannello (fuori dalla fisica)
+  setPercent(id: string, value: number) {
+    const f = this.fighters.get(id);
+    if (f && Number.isFinite(value)) f.percent = Math.max(0, Math.min(TRAINING.maxPercent, Math.round(value)));
+  }
+
+  // Allenamento: tutti tornano al loro posto come a inizio partita
+  reset() {
+    this.restartMatch();
   }
 
   // Un passo di simulazione; restituisce gli eventi nati da allora (anche fuori dal passo, es. la rivincita)

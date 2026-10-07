@@ -2,7 +2,7 @@
 # schede con percentuale e vite, tempo, punti della Bandiera, vincitore e classifica di fine partita.
 extends Control
 
-const MODE_NAMES := {"ffa": "Tutti contro tutti", "teams": "Squadre", "flag": "Bandiera", "race": "Corsa"}
+const MODE_NAMES := {"ffa": "Tutti contro tutti", "teams": "Squadre", "flag": "Bandiera", "race": "Corsa", "training": "Allenamento"}
 const LAST_SECONDS := 10 # il tempo diventa rosso negli ultimi secondi
 
 var game: Dictionary
@@ -148,7 +148,7 @@ func _draw_cards(w: float, h: float, flag: bool) -> void:
 			# Bandiera: le vite sono infinite, si segna chi porta la bandiera
 			if p.get("carrier", false):
 				draw_colored_polygon(PackedVector2Array([Vector2(x + card_w - 34, h - 44), Vector2(x + card_w - 14, h - 37), Vector2(x + card_w - 34, h - 30)]), col)
-		else:
+		elif rules.get("mode", "ffa") != "training": # in allenamento le vite sono infinite
 			for k in int(rules.get("stocks", 3)):
 				var c := Vector2(x + card_w - 24 - k * 13, h - 34)
 				if k < int(p.stocks):

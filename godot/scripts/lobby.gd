@@ -10,7 +10,7 @@ signal credits_requested
 signal back_requested # Indietro, Esc o B: torna al titolo (E14)
 
 const MAX_SEED := 999999 # come stageGenerator.ts: "casuale-<seme>" e "corsa-<seme>"
-const MODES := [["ffa", "Tutti contro tutti"], ["teams", "Squadre"], ["flag", "Bandiera (a squadre)"], ["race", "Corsa (platformer)"]]
+const MODES := [["ffa", "Tutti contro tutti"], ["teams", "Squadre"], ["flag", "Bandiera (a squadre)"], ["race", "Corsa (platformer)"], ["training", "Allenamento (col manichino)"]]
 const TIMES := [[0, "Senza tempo"], [120, "2 minuti"], [180, "3 minuti"], [300, "5 minuti"]]
 # Avversari del server per giocare da soli (#20, src/server/bot.ts)
 # "Nome a caso" per chi usa il pad e non vuole scrivere
@@ -265,12 +265,16 @@ func restore_focus() -> void:
 
 
 # Il fuoco amico ha senso solo a squadre; in Bandiera le vite diventano i punti per vincere;
-# in Corsa le vite non contano e l'arena è un percorso generato
+# in Corsa le vite non contano e l'arena è un percorso generato; in Allenamento non ci sono né vite né tempo
 func _sync_rules() -> void:
 	var mode: String = MODES[_mode.selected][0]
 	_ff.visible = mode == "teams" or mode == "flag"
 	var race := mode == "race"
-	_stocks.visible = not race
+	var training := mode == "training"
+	_stocks.visible = not race and not training
+	_time.visible = not training
+	if training and _bot.selected == 0:
+		_bot.select(1) # in palestra serve qualcuno da colpire: il manichino
 	_stage_label.visible = not race
 	_stages.visible = not race
 	_course_note.visible = race
@@ -387,13 +391,14 @@ func _choice(bot: String) -> Dictionary:
 		get_viewport().gui_release_focus() # così i tasti tornano alla partita
 	return {
 		"name": _name.text.strip_edges().left(16) if _name.text.strip_edges() != "" else "Bonobo",
-		"room": room if room != "" else _random_room(),
+		# La palestra è solo tua: chi la crea ne apre una nuova, così i comandi dell'allenamento valgono
+		"room": _random_room() if mode == "training" and _creating else (room if room != "" else _random_room()),
 		"char": _character,
 		# Chi entra in una stanza che non c'è ancora la crea con le regole di questa pagina
 		"stage": _new_id("corsa-") if mode == "race" else _stage,
 		"rules": {"mode": mode, "stocks": _stocks.selected + 1, "timeLimitSec": TIMES[_time.selected][0], "friendlyFire": _ff.button_pressed},
 		"server": _server.text.strip_edges(),
-		"bot": bot, # conta solo se la stanza è nuova
+		"bot": "manichino" if mode == "training" and bot == "" else bot, # conta solo se la stanza è nuova
 	}
 
 

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { MAX_PLAYERS_PER_ROOM, RECONNECT_RESUME_INVULNERABLE_MS, RESPAWN_MS, TICK_RATE } from "./constants";
+import { MAX_PLAYERS_PER_ROOM, RECONNECT_RESUME_INVULNERABLE_MS, RESPAWN_MS, TICK_RATE, TRAINING } from "./constants";
 import type { Fighter } from "./physics";
 import { Match } from "./match";
 import type { GameEvent } from "./types";
@@ -216,3 +216,42 @@ describe("partita", () => {
     assert.equal("alreadyHit" in p, false);
   });
 });
+
+describe("allenamento (#113)", () => {
+  it("vite infinite, niente tempo e percentuale impostata dal pannello", () => {
+    const m = new Match({ rules: { mode: "training", stocks: 1, timeLimitSec: 60 } });
+    m.addPlayer("a", "A");
+    m.addPlayer("b", "B");
+    assert.equal(m.rules.timeLimitSec, 0);
+    m.setPercent("b", 100);
+    assert.equal(m.snapshot([], 0).players.find((p) => p.id === "b")?.percent, 100);
+    m.setPercent("b", 5000);
+    assert.equal(m.players.find((p) => p.id === "b")?.percent, TRAINING.maxPercent);
+    const b = m.players.find((p) => p.id === "b")!;
+    b.x = m.stage.blastZone.right + 100;
+    const events = run(m, 2);
+    assert.ok(events.some((e) => e.type === "ko"));
+    assert.equal(b.stocks, 1);
+    assert.equal(b.eliminated, false);
+    assert.ok(!events.some((e) => e.type === "matchEnd"));
+  });
+
+  it("reset rimette tutti al loro posto", () => {
+    const m = new Match({ rules: { mode: "training" } });
+    m.addPlayer("a", "A");
+    m.setPercent("a", 80);
+    m.reset();
+    assert.equal(m.players[0].percent, 0);
+    assert.ok(run(m, 1).some((e) => e.type === "matchStart"));
+  });
+
+  it("la schivata produce l'evento dodge", () => {
+    const m = new Match({ rules: { mode: "training" } });
+    m.addPlayer("a", "A");
+    run(m, 60); // atterra
+    m.setInput("a", { left: false, right: true, up: false, down: false, light: false, heavy: false, taunt: false, dodge: true, shield: false });
+    const dodge = run(m, 1).find((e) => e.type === "dodge");
+    assert.ok(dodge && dodge.type === "dodge" && dodge.id === "a" && dodge.air === false);
+  });
+});
+

@@ -59,7 +59,7 @@ export interface ItemState {
 
 // Regole della partita, scelte da chi crea la stanza (#17). Default in src/shared/rules.ts
 export interface MatchRules {
-  mode: "ffa" | "teams" | "flag" | "race"; // tutti contro tutti, squadre, Bandiera (#56) o Corsa (#57)
+  mode: "ffa" | "teams" | "flag" | "race" | "training"; // tutti contro tutti, squadre, Bandiera (#56), Corsa (#57) o Allenamento (#113)
   stocks: number; // vite a testa; in Bandiera i punti per vincere; in Corsa non conta (vite infinite)
   timeLimitSec: number; // 0 = senza limite di tempo
   friendlyFire: boolean; // nelle squadre, se ci si può colpire tra compagni
@@ -85,6 +85,7 @@ export type GameEvent =
     }
   | { type: "ko"; id: string; byId: string | null; x: number; y: number; stocksLeft: number } // uscito dall'arena
   | { type: "respawn"; id: string }
+  | { type: "dodge"; id: string; x: number; y: number; air: boolean } // parte una schivata (#113)
   | { type: "taunt"; id: string }
   | { type: "flag"; scoringTeam: number; byId: string | null; team: number; carrierId: string | null } // portabandiera di "team" buttato fuori: punto a scoringTeam, la bandiera passa a carrierId
   | { type: "checkpoint"; id: string; index: number } // in Corsa: nuovo punto da cui si riparte
@@ -139,4 +140,7 @@ export interface ClientToServer {
   join: (data: { room: string; name: string; characterId?: string; stageId?: string; rules?: Partial<MatchRules>; bot?: string; token?: string; version?: string; protocol?: number }) => void;
   input: (input: InputState) => void;
   rematch: () => void; // a fine partita, ricomincia subito (#17)
+  // Allenamento (#113): percentuale degli avversari, velocità dell'orologio (TRAINING.speeds), si ricomincia da capo.
+  // Il server li accetta solo in una stanza "training" con un solo umano
+  training: (data: { percent?: number; speed?: number; reset?: boolean }) => void;
 }
