@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Editor delle arene · Bonobo Game</title>
+  <meta name="description" content="Disegna un'arena di Bonobo Game nel browser e copiala nel gioco.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦍</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="editor.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../">🦍 Bonobo Game</a>
+    <nav><a href="https://github.com/nicpanozzo/bonobo-game/blob/main/docs/arene.md">Come si fa un'arena</a></nav>
+  </header>
+
+  <main class="editor">
+    <h2>Editor delle arene</h2>
+    <p class="muted small">Parti da un'arena, trascina blocchi e piattaforme, allarga dal quadratino. Le partenze (i cerchi numerati) si mettono da sole. Una piattaforma rossa non si raggiunge saltando. Quando è a posto premi <b>Copia</b> e incolla il testo in <code>src/shared/stages.ts</code>.</p>
+
+    <div class="toolbar">
+      <label>Parti da <select id="base"></select></label>
+      <label>Nome <input id="name" value="Nuova arena" maxlength="40"></label>
+      <span class="muted small">id <code id="id">nuova-arena</code></span>
+    </div>
+    <div class="toolbar">
+      <button class="btn" id="add-solid">+ Blocco</button>
+      <button class="btn" id="add-platform">+ Piattaforma</button>
+      <button class="btn" id="delete" disabled>Elimina</button>
+      <button class="btn btn-primary" id="copy">Copia per stages.ts</button>
+      <span id="copied" class="small muted" aria-live="polite"></span>
+    </div>
+
+    <canvas id="stage" width="1280" height="720" tabindex="0" aria-label="L'arena: trascina blocchi e piattaforme"></canvas>
+    <p id="selection" class="small muted">Clicca un blocco o una piattaforma per sceglierlo. Frecce: sposta di 10 pixel. Canc: elimina.</p>
+
+    <ul id="problems" class="problems" aria-live="polite"></ul>
+    <details>
+      <summary>Il testo da incollare</summary>
+      <textarea id="output" readonly rows="16" spellcheck="false"></textarea>
+    </details>
+  </main>
+
+  <script type="module" src="editor.js"></script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+/* Editor delle arene (E12): usa il tema di ../style.css */
+.editor { max-width: 1320px; margin: 0 auto; padding: 16px; }
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin: 0 0 12px; }
+.toolbar label { display: flex; align-items: center; gap: 8px; font-weight: 700; }
+.toolbar input, .toolbar select {
+  font: inherit; color: var(--text); background: var(--card);
+  border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px;
+}
+.toolbar .btn { padding: 8px 16px; font-size: .95rem; }
+.toolbar .btn:disabled { opacity: .45; cursor: default; }
+#stage {
+  display: block; width: 100%; height: auto; aspect-ratio: 16 / 9;
+  border: 2px solid var(--line); border-radius: var(--radius); touch-action: none; cursor: default;
+}
+#stage:focus-visible { outline: 3px solid var(--banana); outline-offset: 2px; }
+.problems { margin: 12px 0; padding-left: 1.2em; color: var(--red); font-weight: 700; }
+.problems.ok { color: var(--green); list-style: none; padding-left: 0; }
+#output {
+  width: 100%; margin-top: 8px; font: 13px/1.4 ui-monospace, monospace;
+  color: var(--text); background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 10px;
+}

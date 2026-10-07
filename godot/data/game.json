@@ -142,6 +142,11 @@
   "shield": {
     "maxHp": 50
   },
+  "stageCheck": {
+    "jumpHeight": 160.7826086956522,
+    "doubleJumpHeight": 293.0434782608696,
+    "sideReach": 250
+  },
   "net": {
     "interpolationDelayMs": 80,
     "teleportDistance": 300,

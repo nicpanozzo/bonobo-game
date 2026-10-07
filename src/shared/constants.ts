@@ -374,3 +374,8 @@ export const BALANCE = {
   generatedStages: 20, // arene casuali giocate oltre a quelle fisse, con semi 1, 2, 3...
   maxMatchSec: 300, // s simulati prima di dare la partita per pari
 };
+
+// Controllo delle arene (stageCheck.ts): usato dai test e dall'editor sul sito (E12)
+export const STAGE_CHECK = {
+  sideReach: 250, // pixel in orizzontale che si coprono comodamente durante un salto
+};

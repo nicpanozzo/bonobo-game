@@ -1,28 +1,12 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { CHARACTERS, characterStats } from "./characters";
-import { FIGHTER, MAX_PLAYERS_PER_ROOM, TICK_RATE, WORLD } from "./constants";
+import { MAX_PLAYERS_PER_ROOM, TICK_RATE, WORLD } from "./constants";
 import { createFighter, stepWorld, type PhysicsContext } from "./physics";
 import { courseSteps, generateCourse } from "./courseGenerator";
 import { generateStage, seedFromStageId } from "./stageGenerator";
+import { JUMP_HEIGHT, reachable, SIDE_REACH, stageCheckData } from "./stageCheck";
 import { getStage, STAGES, stageWidth, type StageSpec } from "./stages";
-
-// Un salto sale di v²/2g pixel; con il doppio salto si arriva alla somma dei due
-const JUMP_HEIGHT = (FIGHTER.jumpSpeed * FIGHTER.jumpSpeed) / (2 * FIGHTER.gravity);
-const DOUBLE_JUMP_HEIGHT = JUMP_HEIGHT + (FIGHTER.doubleJumpSpeed * FIGHTER.doubleJumpSpeed) / (2 * FIGHTER.gravity);
-const SIDE_REACH = 250; // pixel in orizzontale che si coprono comodamente durante un salto
-
-// Una piattaforma si raggiunge da una superficie più bassa vicina con un salto,
-// o da una superficie proprio sotto con il doppio salto
-// heightScale: per i personaggi con salto o gravità diversi (E11) l'altezza è jump² / gravity volte quella di base
-function reachable(stage: StageSpec, p: { x: number; y: number; width: number }, heightScale = 1): boolean {
-  return [...stage.solids, ...stage.platforms].some((s) => {
-    if (s.y <= p.y) return false;
-    const gap = Math.max(0, s.x - (p.x + p.width), p.x - (s.x + s.width));
-    const rise = s.y - p.y;
-    return (gap <= SIDE_REACH && rise <= JUMP_HEIGHT * heightScale) || (gap === 0 && rise <= DOUBLE_JUMP_HEIGHT * heightScale * 0.9);
-  });
-}
 
 function checkStage(stage: StageSpec) {
   for (const p of [...stage.solids, ...stage.platforms]) {
@@ -130,5 +114,47 @@ describe("arene", () => {
       }
       assert.ok(f.x >= stage.goal!.x, `corsa-${seed}: arrivato a ${Math.round(f.x)} di ${stage.goal!.x}, cadute ${falls}`);
     }
+  });
+
+  // L'editor sul sito (E12) è JavaScript senza tipi: lo si carica a runtime, per questo è any
+  const loadEditor = (): Promise<any> => import(new URL("../../site/editor/arena.js", import.meta.url).href);
+
+  it("l'editor delle arene fa lo stesso controllo di raggiungibilità dei test (E12)", async () => {
+    const editor = await loadEditor();
+    const check = stageCheckData();
+    const stages = [...Object.values(STAGES), ...Array.from({ length: 100 }, (_, seed) => generateStage(seed))];
+    for (const stage of stages) {
+      // Ogni piattaforma, anche spostata più in alto, dà la stessa risposta
+      for (const p of stage.platforms) {
+        for (const dy of [0, 60, 120, 200]) {
+          const q = { ...p, y: p.y - dy };
+          assert.equal(editor.reachable(stage, q, check), reachable(stage, q), `${stage.id}: ${q.x},${q.y}`);
+        }
+      }
+    }
+  });
+
+  it("un'arena copiata dall'editor si incolla in stages.ts e passa i controlli (E12)", async () => {
+    const editor = await loadEditor();
+    for (const base of [...Object.values(STAGES), generateStage(3), generateStage(17)]) {
+      const model = { ...base, id: "nuova", name: "Nuova arena" };
+      const spec = editor.toStageSpec(model);
+      assert.deepEqual(editor.problems(spec, stageCheckData(), Object.keys(STAGES)), [], base.id);
+      // Il testo copiato, valutato come in stages.ts, ridà la stessa arena
+      const text: string = editor.toStagesTs(spec);
+      const pasted = new Function("WORLD", `return {${text}}`)(WORLD) as Record<string, StageSpec>;
+      assert.deepEqual(pasted.nuova, spec);
+      checkStage(pasted.nuova);
+    }
+  });
+
+  it("l'editor segnala le piattaforme irraggiungibili e le partenze impossibili (E12)", async () => {
+    const editor = await loadEditor();
+    const palco = STAGES.palco;
+    const high = editor.toStageSpec({ ...palco, id: "alta", platforms: [...palco.platforms, { x: 100, width: 100, y: 60 }] });
+    assert.equal(editor.problems(high, stageCheckData()).length, 1);
+    const lopsided = editor.toStageSpec({ ...palco, id: "storta", solids: [{ x: 0, y: 560, width: 500, height: 80 }] });
+    assert.deepEqual(lopsided.spawns, []);
+    assert.equal(editor.slug("La Città Più Bella!"), "la-citta-piu-bella");
   });
 });
