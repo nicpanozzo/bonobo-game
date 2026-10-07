@@ -2,9 +2,9 @@
 // Chi tiene dà colpetti col leggero o lancia nella direzione tenuta; chi è tenuto preme tasti per liberarsi.
 // Il triangolo: l'attacco batte la presa (un colpo nello stesso tick vince), la presa batte lo scudo.
 
-import { ATTACKS, GRAB } from "../constants";
+import { GRAB } from "../constants";
 import type { AttackKind, InputState } from "../types";
-import { attackBox, bodyBox, canBeHit, launch, overlap, startAttack } from "./attacks";
+import { attackBox, attackSpecFor, bodyBox, canBeHit, launch, overlap, startAttack } from "./attacks";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
 import { clearStun } from "./shield";
 
@@ -23,7 +23,8 @@ export function grabbing(f: Fighter, dtMs: number, ctx: PhysicsContext): boolean
   startAttack(f, "grab", ctx);
   f.shielding = false; // la presa parte anche dallo scudo alzato
   f.shieldTimer = 0;
-  f.grabLagTimer = ATTACKS.grab.startupMs + ATTACKS.grab.activeMs + GRAB.whiffLagMs;
+  const spec = attackSpecFor(f, "grab");
+  f.grabLagTimer = spec.startupMs + spec.activeMs + GRAB.whiffLagMs;
   f.vx = 0;
   return true;
 }
@@ -138,7 +139,7 @@ function throwTarget(holder: Fighter, target: Fighter, kind: AttackKind, ctx: Ph
   holder.holding = null;
   target.grabbedBy = null;
   startAttack(holder, kind, ctx);
-  holder.grabLagTimer = ATTACKS[kind].cooldownMs; // fermi mentre si lancia
+  holder.grabLagTimer = attackSpecFor(holder, kind).cooldownMs; // fermi mentre si lancia
   // throwBack ha l'angolo oltre 90°: con lo stesso verso di chi tiene, il bersaglio vola dietro di lui
   launch(target, holder, kind, Math.round(target.x), Math.round(target.y - 40), ctx);
 }

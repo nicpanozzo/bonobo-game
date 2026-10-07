@@ -1,7 +1,7 @@
 // I personaggi giocabili. Aggiungerne uno = un blocco qui e una cartella in public/assets/characters/<id>/.
 // Cambiano aspetto e statistiche (E11 passo B); le mosse proprie arrivano con le speciali (E10).
 
-import { CHARACTER_STATS } from "./constants";
+import { CHARACTER_STATS, DEFAULT_SPECIALS, RECOVERY, type AttackSpec } from "./constants";
 
 // Gli stati che ogni lottatore con sprite deve avere
 export const ANIMATION_NAMES = ["idle", "walk", "jump", "fall", "light", "heavy", "hit"] as const;
@@ -136,11 +136,61 @@ export interface CharacterStats {
   gravity: number; // caduta: più alta, si scende prima e si salta meno in alto
 }
 
+// Mosse speciali (E10, #111): tasto speciale da fermi (neutral), con una direzione (side) o con giù (down).
+// Il colpo di ogni speciale si legge come un attacco: percentuale, knockback, angolo e rettangolo davanti
+export type SpecialHit = Pick<AttackSpec, "damage" | "baseKnockback" | "knockbackGrowth" | "angleDeg" | "range" | "height" | "boxX" | "boxY">;
+export type SpecialSlot = "neutral" | "side" | "down";
+export const SPECIAL_SLOTS: readonly SpecialSlot[] = ["neutral", "side", "down"];
+
+interface SpecialBase {
+  name: string; // come si chiama nei menu e nel tutorial
+}
+// Proiettile: parte dopo startupMs e vola dritto (gravity 0) o ad arco; il rettangolo è il proiettile
+export interface ProjectileSpecial extends SpecialBase, SpecialHit {
+  type: "projectile";
+  startupMs: number;
+  cooldownMs: number; // dall'inizio della mossa a quando si può attaccare di nuovo
+  speed: number; // pixel/s in orizzontale
+  gravity: number; // pixel/s²: 0 = dritto
+  lifeMs: number; // dopo quanto sparisce da solo
+  maxAlive: number; // proiettili dello stesso giocatore in volo insieme
+}
+// Scatto: si corre in avanti colpendo, in aria una volta sola fino all'atterraggio
+export interface DashSpecial extends SpecialBase, SpecialHit {
+  type: "dash";
+  startupMs: number;
+  durationMs: number; // per quanto si scatta, colpendo
+  speed: number; // pixel/s
+  endLagMs: number; // fermi dopo lo scatto
+}
+// Carica: si tiene premuto da minMs a maxMs, al rilascio il colpo cresce fino a maxMultiplier
+export interface ChargeSpecial extends SpecialBase, SpecialHit {
+  type: "charge";
+  minMs: number;
+  maxMs: number;
+  maxMultiplier: number; // danno e knockback alla carica piena
+  activeMs: number; // per quanto resta attivo il colpo dopo il rilascio
+  endLagMs: number;
+}
+// Contrattacco: un colpo preso nella finestra non fa danno e si risponde col colpo di questa speciale
+export interface CounterSpecial extends SpecialBase, Omit<SpecialHit, "damage"> {
+  type: "counter";
+  startupMs: number;
+  windowMs: number;
+  endLagMs: number; // fermi se va a vuoto
+  minDamage: number; // danno minimo della risposta...
+  multiplier: number; // ...altrimenti il danno parato moltiplicato per questo
+}
+export type SpecialSpec = ProjectileSpecial | DashSpecial | ChargeSpecial | CounterSpecial;
+export type SpecialSet = Record<SpecialSlot, SpecialSpec>;
+
 export interface CharacterSpec {
   id: string;
   name: string;
   sprite?: SpriteSheetSpec | SpriteFolderSpec; // senza sprite si disegna il rettangolo colorato
   stats?: Partial<CharacterStats>; // quelle che mancano valgono 1
+  specials?: Partial<SpecialSet>; // quelle che mancano sono DEFAULT_SPECIALS (E10)
+  recovery?: Partial<AttackSpec & typeof RECOVERY>; // numeri propri del recupero (#11): quelli che mancano restano i soliti
 }
 
 export const DEFAULT_CHARACTER_ID = "default";
@@ -221,4 +271,9 @@ export function characterStats(id: string | undefined): CharacterStats {
     statsCache.set(c.id, stats);
   }
   return stats;
+}
+
+// Le tre speciali di un personaggio: le sue, e per quelle che mancano DEFAULT_SPECIALS
+export function specialsFor(id: string | undefined): SpecialSet {
+  return { ...DEFAULT_SPECIALS, ...getCharacter(id).specials };
 }

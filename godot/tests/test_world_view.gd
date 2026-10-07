@@ -101,3 +101,12 @@ func test_schegge_a_raggiera() -> void:
 	for s in v:
 		sum += s
 	runner.check(v.size() == 10 and sum.y < 0, "10 schegge, in media verso l'alto: %s" % sum)
+
+
+func test_numeri_degli_attacchi_per_personaggio() -> void:
+	var game := {"attacks": {"light": {"range": 52}, "recovery": {"range": 40, "height": 70}}, "characters": {"a": {"recovery": {"range": 60}}, "b": {}}}
+	runner.check(WorldView.attack_spec(game, "a", "light").range == 52, "leggero uguale per tutti")
+	runner.check(WorldView.attack_spec(game, "a", "recovery").range == 60, "recupero ritoccato")
+	runner.check(WorldView.attack_spec(game, "a", "recovery").height == 70, "il resto resta")
+	runner.check(WorldView.attack_spec(game, "b", "recovery").range == 40, "senza ritocchi")
+	runner.check(WorldView.attack_spec(game, "b", "nuovo").is_empty(), "attacco sconosciuto")

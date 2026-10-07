@@ -558,8 +558,8 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 
 	# Colpo in corso: la stessa hitbox di attackBox() in src/shared/physics/attacks.ts,
 	# spostata da boxX/boxY per le varianti direzionali (#2)
-	if p.attack != null:
-		var spec: Dictionary = game.attacks[p.attack]
+	var spec := attack_spec(game, p.characterId, str(p.attack)) if p.attack != null else {}
+	if not spec.is_empty(): # un attacco che questa versione non conosce non ha rettangolo
 		var front: float = spec.get("boxX", fw / 2)
 		var x: float = p.x + front if p.facing == 1 else p.x - front - spec.range
 		var y: float = p.y + spec.get("boxY", -fh * 0.7)
@@ -600,7 +600,7 @@ func _draw_sprite(p: Dictionary, character: Dictionary, now: float) -> void:
 	# se si resta fermi a terra lasciamo finire l'animazione del colpo
 	var prev_kind: String = state.get("kind", "")
 	if name == "idle" and kind == "" and prev_kind != "" and anims.has(prev_name):
-		if now - float(state.since) < animation_ms(anims[prev_name], game.attacks.get(prev_kind, {})):
+		if now - float(state.since) < animation_ms(anims[prev_name], attack_spec(game, p.characterId, prev_kind)):
 			name = prev_name
 	# Gli stati di passaggio si mostrano solo a chi li ha disegnati: il ripiego fermerebbe la corsa o il salto
 	var flying: bool = p.hitstun and not p.onGround
@@ -631,7 +631,7 @@ func _draw_sprite(p: Dictionary, character: Dictionary, now: float) -> void:
 		_anims[p.id] = state
 	state["attacking"] = p.attack != null
 	var a: Dictionary = anims[name]
-	var attack: Dictionary = game.attacks.get(str(state.get("kind", "")), {})
+	var attack := attack_spec(game, p.characterId, str(state.get("kind", "")))
 	var frame := sprite_frame(a, now - float(state.since), attack)
 	var fw: float = sheet.frameWidth
 	var fh: float = sheet.frameHeight
@@ -645,6 +645,17 @@ func _draw_sprite(p: Dictionary, character: Dictionary, now: float) -> void:
 	draw_set_transform(Vector2(p.x, p.y), 0, Vector2(p.facing * scale, scale))
 	draw_texture_rect_region(texture, Rect2(-fw / 2, -fh, fw, fh), src, Color(1, 1, 1, away_alpha(p)))
 	draw_set_transform(Vector2.ZERO)
+
+
+# I numeri di un attacco per un personaggio, come attackSpecFor() in src/shared/physics/attacks.ts:
+# quelli di ATTACKS con i ritocchi del personaggio (il recupero). {} se l'attacco non esiste
+static func attack_spec(game_data: Dictionary, character_id: String, kind: String) -> Dictionary:
+	var spec: Dictionary = game_data.attacks.get(kind, {})
+	if kind != "recovery" or spec.is_empty():
+		return spec
+	var character: Dictionary = game_data.characters.get(character_id, {})
+	var own: Variant = character.get("recovery")
+	return spec.merged(own, true) if own is Dictionary else spec
 
 
 # Il personaggio ha il disegno di questo stato, non quello del ripiego

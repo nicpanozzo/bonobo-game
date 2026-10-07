@@ -1,6 +1,7 @@
 // Numeri del gioco condivisi tra client e server.
 // Vuoi un gioco più veloce o salti più alti? Si parte da qui.
 
+import type { SpecialSet } from "./characters";
 import type { AttackKind } from "./types";
 
 export const WORLD = {
@@ -111,6 +112,14 @@ export const GRAB = {
   pummelEveryMs: 300, // ms minimi tra due colpetti
   releaseSpeed: 300, // pixel/s con cui ci si allontana quando la presa finisce senza lancio
   holdDistance: 56, // pixel tra il centro di chi tiene e quello di chi è tenuto: un po' di spazio per il braccio
+};
+
+// Mosse speciali di chi non ne ha di sue (E10, #111): i numeri della specifica, da playtest (#22).
+// I personaggi le cambiano in characters.ts (specials); il tasto e il motore arrivano nei passi 2 e 3
+export const DEFAULT_SPECIALS: SpecialSet = {
+  neutral: { type: "projectile", name: "Tiro", startupMs: 216, cooldownMs: 550, speed: 700, gravity: 0, lifeMs: 1200, maxAlive: 1, range: 24, height: 16, damage: 6, baseKnockback: 220, knockbackGrowth: 3.5, angleDeg: 30 },
+  side: { type: "dash", name: "Scatto", startupMs: 100, durationMs: 250, speed: 900, endLagMs: 300, range: 40, height: 50, damage: 9, baseKnockback: 360, knockbackGrowth: 8, angleDeg: 35 },
+  down: { type: "counter", name: "Contrattacco", startupMs: 50, windowMs: 400, endLagMs: 450, minDamage: 8, multiplier: 1.3, range: 60, height: 60, baseKnockback: 450, knockbackGrowth: 9, angleDeg: 40 },
 };
 
 // Mossa di recupero (#11): in aria K + su dà una spinta verso l'alto, una volta finché

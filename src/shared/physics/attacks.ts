@@ -1,7 +1,7 @@
 // Attacchi: inizio, finestra attiva, hitbox e cosa succede a chi viene colpito.
 
-import { characterStats } from "../characters";
-import { ATTACKS, FIGHTER, HITSTOP, HITSTUN_PER_KNOCKBACK } from "../constants";
+import { characterStats, getCharacter } from "../characters";
+import { ATTACKS, FIGHTER, HITSTOP, HITSTUN_PER_KNOCKBACK, type AttackSpec } from "../constants";
 import type { AttackKind } from "../types";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
 import { clearStun, hitShield } from "./shield";
@@ -20,10 +20,18 @@ export function variant(f: Fighter, base: "light" | "heavy"): AttackKind {
   return base;
 }
 
+// I numeri di un attacco per questo lottatore (E10): quelli di ATTACKS, con i ritocchi del suo personaggio
+// (per ora il recupero, characters.ts). Tutta la fisica degli attacchi li legge da qui
+export function attackSpecFor(f: Fighter, kind: AttackKind | null = f.attack): AttackSpec {
+  const base = ATTACKS[kind ?? "light"];
+  const recovery = kind === "recovery" ? getCharacter(f.characterId).recovery : undefined;
+  return recovery ? { ...base, ...recovery } : base;
+}
+
 export function startAttack(f: Fighter, kind: AttackKind, ctx: PhysicsContext) {
   f.attack = kind;
   f.attackTimer = 0;
-  f.cooldownTimer = ATTACKS[kind].cooldownMs;
+  f.cooldownTimer = attackSpecFor(f, kind).cooldownMs;
   f.alreadyHit.clear();
   consume(f, "light", "heavy"); // anche il recupero e l'attacco dal bordo passano da qui
   ctx.events.push({ type: "attack", id: f.id, kind });
@@ -34,7 +42,7 @@ export function updateAttack(f: Fighter, dtMs: number): void {
     f.attackActive = false;
     return;
   }
-  const spec = ATTACKS[f.attack];
+  const spec = attackSpecFor(f);
   f.attackTimer += dtMs;
   f.attackActive = f.attackTimer >= spec.startupMs && f.attackTimer < spec.startupMs + spec.activeMs;
   if (f.attackTimer >= spec.startupMs + spec.activeMs) {
@@ -47,7 +55,7 @@ type Box = { x: number; y: number; w: number; h: number };
 
 // Rettangolo del colpo, dalla parte in cui si guarda (boxX/boxY lo spostano per le varianti)
 export function attackBox(f: Fighter): Box {
-  const spec = ATTACKS[f.attack ?? "light"];
+  const spec = attackSpecFor(f);
   const front = spec.boxX ?? FIGHTER.width / 2;
   const x = f.facing === 1 ? f.x + front : f.x - front - spec.range;
   const y = f.y + (spec.boxY ?? -FIGHTER.height * 0.7);
@@ -71,7 +79,7 @@ export function resolveHits(fighters: Fighter[], ctx: PhysicsContext): void {
   for (const attacker of fighters) {
     if (!attacker.attackActive || !attacker.attack || attacker.eliminated || attacker.respawning) continue;
     if (isGrabKind(attacker.attack)) continue; // presa e lanci non colpiscono col rettangolo (grab.ts)
-    const spec = ATTACKS[attacker.attack];
+    const spec = attackSpecFor(attacker);
     const box = attackBox(attacker);
     for (const target of fighters) {
       if (target === attacker || !canBeHit(target) || attacker.alreadyHit.has(target.id)) continue;
@@ -101,7 +109,7 @@ export function resolveHits(fighters: Fighter[], ctx: PhysicsContext): void {
 
 // Il colpo vero: percentuale e volo nella direzione in cui guarda chi colpisce. Lo usano anche i lanci della presa
 export function launch(target: Fighter, attacker: Fighter, kind: AttackKind, x: number, y: number, ctx: PhysicsContext): void {
-  const spec = ATTACKS[kind];
+  const spec = attackSpecFor(attacker, kind);
   // Stile Smash/Brawlhalla: il danno non toglie vita, fa volare più lontano
   target.percent = Math.min(999, target.percent + spec.damage);
   const knockback = (spec.baseKnockback + spec.knockbackGrowth * target.percent) / characterStats(target.characterId).weight; // E11

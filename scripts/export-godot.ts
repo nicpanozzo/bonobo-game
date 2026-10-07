@@ -6,7 +6,7 @@
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { basename, dirname, extname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { CHARACTERS, DEFAULT_CHARACTER_ID, isSpriteFolder, resolvedAnimations, spriteStatePath } from "../src/shared/characters";
+import { CHARACTERS, DEFAULT_CHARACTER_ID, isSpriteFolder, resolvedAnimations, specialsFor, spriteStatePath } from "../src/shared/characters";
 import { ATTACKS, AUDIO, CAMERA, COLORS, EFFECTS, FIGHTER, INPUT, ITEM_RULES, LEDGE, NET, PROTOCOL_VERSION, RUMBLE, SHIELD, TEAM_COLORS, TEAM_NAMES, WORLD } from "../src/shared/constants";
 import { RECONNECT, RECONNECT_HOLD_MS } from "../src/shared/constants";
 import { COLORS_COLORBLIND, TEAM_COLORS_COLORBLIND } from "../src/shared/constants";
@@ -59,7 +59,9 @@ function pngSize(file: string): { width: number; height: number } {
 const spriteFiles: string[] = [];
 const spriteErrors: string[] = [];
 const characters: Record<string, unknown> = {};
-for (const [id, c] of Object.entries(CHARACTERS)) {
+for (const [id, spec] of Object.entries(CHARACTERS)) {
+  // Le speciali (E10) arrivano già complete: le sue e, per quelle che mancano, DEFAULT_SPECIALS
+  const c = { ...spec, specials: specialsFor(id) };
   characters[id] = c;
   if (!c.sprite) continue;
   // In game.json ogni stato c'è, con i dati del disegno che lo mostra (src): il ripiego si decide qui,
