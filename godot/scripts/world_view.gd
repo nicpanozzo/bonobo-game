@@ -18,6 +18,7 @@ var _shake := 0.0
 var _flash := 0.0 # ms di lampo bianco rimasti
 var _dust: Array = [] # [{ x, y, dx, age }] sbuffi di polvere
 var _trails := {} # id -> Array[Vector2] delle ultime posizioni, per la scia di chi vola
+var effects := true # scie e polvere (opzioni → Video), main.gd lo legge dalle preferenze
 var _beams: Array = [] # [{ x, y, age, color }] raggi dei KO, dal punto di uscita verso il centro
 var _items: Array = [] # oggetti dell'ultimo snapshot (#17)
 var _item_pos := {} # id oggetto -> Vector2 disegnata, che insegue quella dello snapshot
@@ -135,6 +136,8 @@ func on_event(e: Dictionary) -> void:
 
 # Sbuffi di polvere ai piedi, a destra e a sinistra
 func _puff(x: float, y: float) -> void:
+	if not effects:
+		return
 	var n := int(game.effects.dustPuffs)
 	for i in n:
 		var dx := (float(i) / maxf(1, n - 1) - 0.5) * 2.0 # da -1 a 1
@@ -268,6 +271,8 @@ func _draw_item(kind: String, base: Vector2, spin: float) -> void:
 
 # Chi vola veloce (lanciato lontano) lascia dietro di sé delle sagome che sbiadiscono
 func _draw_trail(id: String, p: Dictionary) -> void:
+	if not effects:
+		return
 	var fx: Dictionary = game.effects
 	var fast: bool = not p.onGround and Vector2(p.vx, p.vy).length() > fx.trailSpeed and not p.respawning
 	var trail: Array = _trails.get(id, [])

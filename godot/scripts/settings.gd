@@ -46,6 +46,14 @@ const DEFAULT_PAD_BINDINGS := {
 	"dodge": [JOY_BUTTON_LEFT_SHOULDER, JOY_BUTTON_RIGHT_SHOULDER, AXIS_BASE + JOY_AXIS_TRIGGER_LEFT * 2 + 1, AXIS_BASE + JOY_AXIS_TRIGGER_RIGHT * 2 + 1],
 }
 const MAX_PAD := 4 # pulsanti per azione
+# Video (E14): solo su desktop, nel web decide il browser. Si applicano con Video.apply()
+const VIDEO_DEFAULTS := {
+	"fullscreen": false,
+	"window": 0, # indice in Video.WINDOW_SIZES
+	"vsync": true,
+	"max_fps": 0, # indice in Video.FPS_LIMITS (0 = senza limite)
+	"effects": true, # scie e polvere
+}
 
 var master := 0.8
 var sfx := 0.7
@@ -56,6 +64,7 @@ var pad_bindings := {}
 var rumble := Rumble.STRONG # vibrazione del pad: Rumble.OFF, WEAK o STRONG
 var stick_deadzone := 0.35 # main.gd mette INPUT.stickDeadzone di game.json
 var profile := {} # name, room, char, stage, rules, server
+var video := {} # come VIDEO_DEFAULTS
 
 var _defaults := {}
 var _path := PATH
@@ -85,6 +94,10 @@ func _init(audio_defaults: Dictionary, path := PATH) -> void:
 		var pad: Variant = cfg.get_value("pad", a) if cfg.has_section_key("pad", a) else null
 		if pad is Array and pad.all(func(k): return k is int and k >= 0):
 			pad_bindings[a] = pad.slice(0, MAX_PAD)
+	for k in VIDEO_DEFAULTS:
+		var v: Variant = cfg.get_value("video", k) if cfg.has_section_key("video", k) else null
+		if typeof(v) == typeof(VIDEO_DEFAULTS[k]):
+			video[k] = v
 	var p: Variant = cfg.get_value("profile", "last", {})
 	if p is Dictionary:
 		profile = p
@@ -96,6 +109,7 @@ func reset(notify := true) -> void:
 	music = _defaults.music
 	music_on = true
 	rumble = Rumble.STRONG
+	video = VIDEO_DEFAULTS.duplicate()
 	reset_bindings(false, false)
 	reset_bindings(true, false)
 	if notify:
@@ -122,6 +136,8 @@ func save() -> void:
 	for a in ACTIONS:
 		cfg.set_value("keys", a, bindings[a])
 		cfg.set_value("pad", a, pad_bindings[a])
+	for k in video:
+		cfg.set_value("video", k, video[k])
 	cfg.set_value("profile", "last", profile)
 	cfg.save(_path) # se non si può salvare, le preferenze valgono solo per questa volta
 	changed.emit()

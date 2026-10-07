@@ -73,6 +73,7 @@ static func theme() -> Theme:
 	# Le caselle ereditano dai pulsanti: senza questo una casella spuntata ha il riquadro di "premuto"
 	for state in ["normal", "pressed", "hover", "hover_pressed"]:
 		t.set_stylebox(state, "CheckBox", StyleBoxEmpty.new())
+		t.set_stylebox(state, "CheckButton", StyleBoxEmpty.new())
 	# Lo stesso contorno di fuoco, spesso e bianco, su tutto quello che si sceglie col pad (E6)
 	for type in ["Button", "OptionButton", "CheckBox", "CheckButton", "HSlider"]:
 		t.set_stylebox("focus", type, focus_box(RADIUS))
@@ -167,8 +168,8 @@ static func small_button(text: String, on_press: Callable) -> Button:
 
 
 # Interruttore sì/no con la sua scritta
-static func toggle(text: String, on: bool, on_change: Callable) -> CheckBox:
-	var c := CheckBox.new()
+static func toggle(text: String, on: bool, on_change: Callable) -> CheckButton:
+	var c := CheckButton.new()
 	c.text = text
 	c.button_pressed = on
 	c.toggled.connect(on_change)
