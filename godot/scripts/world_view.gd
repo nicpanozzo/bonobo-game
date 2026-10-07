@@ -32,6 +32,7 @@ var _state_textures := {} # id personaggio -> { stato: Texture2D }, solo per il 
 var _anims := {} # id giocatore -> { name, since }: animazione in corso e da quando
 var show_hitboxes := false # allenamento (E15): corpo dei lottatori visibile anche sopra gli sprite
 var _air_jumps := {} # id giocatore -> quando ha fatto il doppio salto (ms), per l'animazione doubleJump (#103)
+var _taunts := {} # id giocatore -> quando ha provocato (ms), per l'animazione taunt (E7)
 
 
 func setup(game_data: Dictionary) -> void:
@@ -41,15 +42,37 @@ func setup(game_data: Dictionary) -> void:
 		var c: Dictionary = game.characters[id]
 		if c.get("sprite") == null:
 			continue
+		var filter: String = c.sprite.get("filter", "linear")
 		if c.sprite.has("dir"):
-			# Formato cartella: un PNG per stato, <dir>/<stato>.png, con i fotogrammi in fila
+			# Formato cartella: un PNG per stato, <dir>/<stato>.png, con i fotogrammi in fila.
+			# Nella tabella ci sono tutti gli stati; quelli senza disegno puntano a quello del ripiego (src)
 			var states := {}
 			for state in c.sprite.animations:
-				states[state] = load("res://data/%s/%s.png" % [c.sprite.dir, state])
+				var src: String = c.sprite.animations[state].src
+				if not states.has(src):
+					states[src] = _sprite_texture("res://data/%s/%s.png" % [c.sprite.dir, src], filter)
 			_state_textures[id] = states
 			_textures[id] = states.idle
 		else:
-			_textures[id] = load("res://data/" + c.sprite.path)
+			_textures[id] = _sprite_texture("res://data/" + c.sprite.path, filter)
+
+
+# La texture di uno sprite con il suo filtro: lineare con mipmap per l'illustrato, così rimpicciolito
+# dalla telecamera non sfarfalla; nearest per la pixel art, che resta a quadretti netti (E7 passo 3)
+static func _sprite_texture(path: String, filter: String) -> Texture2D:
+	var tex: Texture2D = load(path)
+	var canvas := CanvasTexture.new()
+	if filter == "nearest":
+		canvas.diffuse_texture = tex
+		canvas.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		return canvas
+	var img := tex.get_image()
+	if img == null or img.is_compressed(): # una texture compressa per la GPU non si rifà: resta senza mipmap
+		return tex
+	img.generate_mipmaps()
+	canvas.diffuse_texture = ImageTexture.create_from_image(img)
+	canvas.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	return canvas
 
 
 # Si torna alla lobby: via i giocatori della stanza di prima
@@ -62,6 +85,7 @@ func reset() -> void:
 	positions = {}
 	_anims = {}
 	_air_jumps = {}
+	_taunts = {}
 	_sparks = []
 	_beams = []
 	_shards = []
@@ -153,6 +177,8 @@ func on_event(e: Dictionary) -> void:
 				var p: Variant = buffer.sample(e.id, Time.get_ticks_msec())
 				if p != null:
 					_puff(p.x, p.y - float(game.ledge.hangOffsetY)) # polvere sullo spigolo, da dove parte la rotolata
+		"taunt":
+			_taunts[e.id] = Time.get_ticks_msec()
 		"jump":
 			if not e.get("air", false):
 				_puff(e.x, e.y)
@@ -475,7 +501,7 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 
 	# Appeso al bordo (#110): il braccio arriva fino allo spigolo, sopra la testa.
 	# Chi ha l'animazione ledge nello spritesheet (#171) ha già la mano disegnata sullo spigolo.
-	var own_hang: bool = _textures.has(character.id) and (character.sprite.animations as Dictionary).has("ledge")
+	var own_hang: bool = _textures.has(character.id) and has_own(character.sprite.animations, "ledge")
 	if str(p.get("ledge", "")) == "hang" and not own_hang:
 		var hand := Vector2(p.x + p.facing * fw / 2, p.y - float(game.ledge.hangOffsetY))
 		var shoulder := Vector2(p.x + p.facing * fw * 0.2, p.y - fh * 0.55)
@@ -541,45 +567,55 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 # e girato dalla parte in cui guarda (come FighterViews in src/client/render/fighters.ts)
 func _draw_sprite(p: Dictionary, character: Dictionary, now: float) -> void:
 	var sheet: Dictionary = character.sprite
+	var anims: Dictionary = sheet.animations # tutti gli stati, già risolti con il ripiego (export:godot)
 	var name := _animation_for(p)
 	var state: Dictionary = _anims.get(p.id, {})
+	var prev_name: String = state.get("name", "")
+	var kind: String = str(p.attack) if p.attack != null else ""
 	# Sul server il colpo finisce quando la hitbox si spegne, prima del recupero disegnato:
 	# se si resta fermi a terra lasciamo finire l'animazione del colpo
-	var prev_name: String = state.get("name", "")
-	if name == "idle" and (prev_name == "light" or prev_name == "heavy"):
-		var prev: Dictionary = sheet.animations[prev_name]
-		if (now - float(state.since)) / 1000.0 * float(prev.fps) < float(prev.frames):
+	var prev_kind: String = state.get("kind", "")
+	if name == "idle" and kind == "" and prev_kind != "" and anims.has(prev_name):
+		if now - float(state.since) < animation_ms(anims[prev_name], game.attacks.get(prev_kind, {})):
 			name = prev_name
-	# Animazioni facoltative (#103): chi non le ha nello spritesheet resta su jump e hit
-	var anims: Dictionary = sheet.animations
+	# Gli stati di passaggio si mostrano solo a chi li ha disegnati: il ripiego fermerebbe la corsa o il salto
 	var flying: bool = p.hitstun and not p.onGround
-	if name == "hit" and anims.has("tumble") and flying:
+	if name == "hit" and has_own(anims, "tumble") and flying:
 		# Una volta lanciato si continua a rotolare finché dura lo stordimento, anche rallentando
 		if prev_name == "tumble" or Vector2(p.vx, p.vy).length() > float(game.effects.tumbleSpeed):
 			name = "tumble"
 	var air_jump: float = float(_air_jumps.get(p.id, -1.0))
-	if (name == "jump" or name == "fall") and anims.has("doubleJump") and air_jump >= 0.0:
-		var dj: Dictionary = anims.doubleJump
-		if (now - air_jump) / 1000.0 * float(dj.fps) < float(dj.frames):
+	if (name == "jump" or name == "fall") and has_own(anims, "doubleJump") and air_jump >= 0.0:
+		if now - air_jump < animation_ms(anims.doubleJump):
 			name = "doubleJump"
-	var attacking: bool = p.attack != null
-	var new_attack: bool = attacking and not bool(state.get("attacking", false))
-	if state.get("name") != name or new_attack:
-		# La capriola parte dal momento del doppio salto, non da quando la si disegna
-		state = {"name": name, "since": air_jump if name == "doubleJump" else now}
+	var since := now
+	if (name == "idle" or name == "walk") and has_own(anims, "land"):
+		# Atterraggio: dal passaggio aria -> terra dello stato disegnato, non dall'evento che arriva prima
+		if prev_name in ["jump", "fall", "doubleJump", "recovery", "tumble"]:
+			name = "land"
+		elif prev_name == "land" and now - float(state.since) < animation_ms(anims.land):
+			name = "land"
+	var taunted: float = float(_taunts.get(p.id, -1.0))
+	if name == "idle" and has_own(anims, "taunt") and taunted >= 0.0 and now - taunted < animation_ms(anims.taunt):
+		name = "taunt"
+		since = taunted
+	elif name == "doubleJump":
+		since = air_jump # la capriola parte dal momento del doppio salto, non da quando la si disegna
+	var new_attack: bool = p.attack != null and not bool(state.get("attacking", false))
+	if prev_name != name or new_attack:
+		state = {"name": name, "since": since, "kind": kind}
 		_anims[p.id] = state
-	state["attacking"] = attacking
-	var shown := available_animation(sheet.animations, name)
-	var a: Dictionary = sheet.animations[shown]
-	var frame := int((now - state.since) / 1000.0 * a.fps)
-	frame = frame % int(a.frames) if a.loop else mini(frame, int(a.frames) - 1)
+	state["attacking"] = p.attack != null
+	var a: Dictionary = anims[name]
+	var attack: Dictionary = game.attacks.get(str(state.get("kind", "")), {})
+	var frame := sprite_frame(a, now - float(state.since), attack)
 	var fw: float = sheet.frameWidth
 	var fh: float = sheet.frameHeight
 	# Nel foglio unico ogni animazione è una riga; nel formato cartella è un PNG a sé, con una riga sola
 	var texture: Texture2D = _textures[character.id]
 	var row: float = a.get("row", 0)
 	if _state_textures.has(character.id):
-		texture = _state_textures[character.id][shown]
+		texture = _state_textures[character.id][a.src]
 	var src := Rect2(frame * fw, row * fh, fw, fh)
 	var scale: float = sheet.get("scale", 1.0) # 0.5 per i disegni fatti a 2x
 	draw_set_transform(Vector2(p.x, p.y), 0, Vector2(p.facing * scale, scale))
@@ -587,12 +623,38 @@ func _draw_sprite(p: Dictionary, character: Dictionary, now: float) -> void:
 	draw_set_transform(Vector2.ZERO)
 
 
+# Il personaggio ha il disegno di questo stato, non quello del ripiego
+static func has_own(animations: Dictionary, name: String) -> bool:
+	return animations.has(name) and str(animations[name].get("src", name)) == name
+
+
+# Il fotogramma da mostrare dopo elapsed_ms. Negli attacchi con hitFrame il fotogramma d'impatto cade quando
+# la hitbox si accende (startupMs) e l'animazione finisce con cooldownMs; senza, si va a fps.
+static func sprite_frame(a: Dictionary, elapsed_ms: float, attack: Dictionary = {}) -> int:
+	var frames := int(a.frames)
+	if attack.is_empty() or not a.has("hitFrame"):
+		var f := int(elapsed_ms / 1000.0 * float(a.fps))
+		return f % frames if a.loop else mini(f, frames - 1)
+	var hit := int(a.hitFrame)
+	var startup: float = attack.startupMs
+	if elapsed_ms < startup:
+		return int(elapsed_ms / startup * hit)
+	var rest := maxf(1.0, animation_ms(a, attack) - startup)
+	return mini(hit + int((elapsed_ms - startup) / rest * (frames - hit)), frames - 1)
+
+
+# Quanto dura un giro dell'animazione, in ms
+static func animation_ms(a: Dictionary, attack: Dictionary = {}) -> float:
+	if not attack.is_empty() and a.has("hitFrame"):
+		return maxf(float(attack.cooldownMs), float(attack.startupMs) + float(attack.activeMs))
+	return float(a.frames) / float(a.fps) * 1000.0
+
+
 # Chi ha perso la rete (#107) si vede semitrasparente finché rientra o il suo posto scade
 static func away_alpha(p: Dictionary) -> float:
 	return 0.4 if p.get("away", false) else 1.0
 
 
-# Le animazioni del bordo (#110) sono facoltative: chi non le ha nello spritesheet usa quella del salto
 # Stellina a quattro punte
 func _draw_star(c: Vector2, r: float, color: Color) -> void:
 	var pts := PackedVector2Array()
@@ -618,23 +680,14 @@ static func shield_radius(hp: float, max_hp: float, fighter_height: float) -> fl
 	return lerpf(full / 3.0, full, clampf(hp / max_hp, 0.0, 1.0))
 
 
-const ANIMATION_FALLBACK := {"ledge": "jump", "climb": "jump"}
-
-
-static func available_animation(animations: Dictionary, name: String) -> String:
-	if animations.has(name):
-		return name
-	return ANIMATION_FALLBACK.get(name, "idle")
-
-
 # Quale animazione mostrare, dai soli campi dello snapshot (animationFor in fighters.ts)
 static func _animation_for(p: Dictionary) -> String:
 	if p.hitstun or p.get("stunned", false): # lo stordito dopo lo scudo rotto (#109) ha la posa di chi è colpito
 		return "hit"
 	if p.attack != null:
-		if p.attack == "recovery":
-			return "jump" # il recupero (#11) usa l'animazione del salto
-		return "heavy" if str(p.attack).begins_with("heavy") else "light" # le varianti usano l'animazione del colpo base
+		# Lo stato del colpo preciso (lightUp, heavyAir, recovery...): chi non l'ha disegnato mostra il ripiego.
+		# L'attacco dal bordo (#110) non ha uno stato suo: usa il colpo leggero
+		return "light" if p.attack == "ledgeAttack" else str(p.attack)
 	var ledge := str(p.get("ledge", ""))
 	if ledge == "hang":
 		return "ledge" # appeso al bordo (#110)
@@ -642,6 +695,8 @@ static func _animation_for(p: Dictionary) -> String:
 		return "climb"
 	if ledge == "roll":
 		return "walk"
+	if p.get("shielding", false):
+		return "shield" # scudo (#109): chi non l'ha disegnato resta fermo, dentro la bolla
 	if not p.onGround:
 		return "jump" if p.vy < 0 else "fall"
 	if absf(p.vx) > 20:

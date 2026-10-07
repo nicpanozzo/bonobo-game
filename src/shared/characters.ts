@@ -6,10 +6,8 @@ import { CHARACTER_STATS } from "./constants";
 // Gli stati che ogni lottatore con sprite deve avere
 export const ANIMATION_NAMES = ["idle", "walk", "jump", "fall", "light", "heavy", "hit"] as const;
 export type AnimationName = (typeof ANIMATION_NAMES)[number];
-// Animazioni facoltative (#103): chi non le ha usa al loro posto jump (doppio salto) e hit (lanciato);
-// per il bordo (#110, #171) appeso e risalita usano jump.
-// Gli stati di E7 passo 2 (atterraggio, varianti dei colpi, recupero, provocazione) hanno già il nome;
-// shield, grab e special sono posti per E8, E9 ed E10. Finché il passo 3 non porta il ripiego, Godot non li usa.
+// Stati facoltativi (E7): chi non li ha mostra quello di ANIMATION_FALLBACK.
+// shield, grab e special sono posti per scudo, presa e speciali (E8, E9, E10).
 export const OPTIONAL_ANIMATION_NAMES = [
   "doubleJump",
   "tumble",
@@ -29,11 +27,36 @@ export const OPTIONAL_ANIMATION_NAMES = [
   "special",
 ] as const;
 export type OptionalAnimationName = (typeof OPTIONAL_ANIMATION_NAMES)[number];
+export type SpriteState = AnimationName | OptionalAnimationName;
+export const SPRITE_STATES: readonly SpriteState[] = [...ANIMATION_NAMES, ...OPTIONAL_ANIMATION_NAMES];
+
+// Ripiego (E7 passo 3): lo stato da mostrare quando manca il disegno. Si segue la catena finché si trova
+// uno stato che c'è; ogni catena finisce in uno obbligatorio (lo controlla characters.test.ts).
+export const ANIMATION_FALLBACK: Record<OptionalAnimationName, SpriteState> = {
+  doubleJump: "jump",
+  tumble: "hit",
+  ledge: "jump",
+  climb: "jump",
+  land: "idle",
+  lightUp: "light",
+  lightDown: "light",
+  lightAir: "light",
+  heavyUp: "heavy",
+  heavyDown: "heavy",
+  heavyAir: "heavy",
+  recovery: "jump",
+  taunt: "idle",
+  shield: "idle",
+  grab: "light",
+  special: "heavy",
+};
+
 export interface SpriteAnimation {
   row: number;
   frames: number;
   fps: number;
   loop: boolean;
+  hitFrame?: number; // solo negli attacchi, vedi SpriteStateSpec
 }
 
 // Formato a foglio unico: un PNG con una riga per animazione (Egiainuso, Bonobot)
@@ -43,21 +66,30 @@ export interface SpriteSheetSpec {
   frameHeight: number;
   columns: number; // fotogrammi per riga nel PNG
   scale?: number; // grandezza a schermo rispetto al PNG: 0.5 per i disegni fatti a 2x (manca = 1)
+  filter?: SpriteFilter;
   // Riga del PNG, numero di fotogrammi e velocità di ogni animazione (fotogrammi/s)
   animations: Record<AnimationName, SpriteAnimation> & Partial<Record<OptionalAnimationName, SpriteAnimation>>;
 }
+
+// Come si ingrandisce e rimpicciolisce il disegno: "linear" (con mipmap) per l'illustrato, "nearest" per la pixel art
+export type SpriteFilter = "linear" | "nearest";
 
 // Formato cartella (E7 passo 2): un PNG per stato, <dir>/<stato>.png, con i fotogrammi in fila da sinistra.
 // Il numero di fotogrammi lo ricava npm run export:godot dalla larghezza del PNG. Guida: public/assets/characters/README.md
 export interface SpriteStateSpec {
   fps: number; // fotogrammi al secondo
   loop: boolean; // true = ricomincia, false = si ferma sull'ultimo fotogramma
+  // Negli attacchi: il fotogramma (da 0) in cui arriva il colpo. Il gioco lo fa cadere quando la hitbox si
+  // accende (startupMs di ATTACKS) e fa finire l'animazione con cooldownMs, anche nelle varianti che la usano
+  // come ripiego. Senza hitFrame l'animazione va a fps.
+  hitFrame?: number;
 }
 export interface SpriteFolderSpec {
   dir: string; // cartella relativa alla radice del sito, es. "assets/characters/<id>"
   frameWidth: number; // pixel, uguale in tutti i PNG
   frameHeight: number;
   scale?: number; // come in SpriteSheetSpec: 0.5 per i disegni fatti a 2x
+  filter?: SpriteFilter;
   animations: Record<AnimationName, SpriteStateSpec> & Partial<Record<OptionalAnimationName, SpriteStateSpec>>;
 }
 
@@ -66,8 +98,29 @@ export function isSpriteFolder(sprite: SpriteSheetSpec | SpriteFolderSpec): spri
 }
 
 // Il PNG di uno stato nel formato cartella
-export function spriteStatePath(sprite: SpriteFolderSpec, state: AnimationName | OptionalAnimationName): string {
+export function spriteStatePath(sprite: SpriteFolderSpec, state: SpriteState): string {
   return `${sprite.dir}/${state}.png`;
+}
+
+// Lo stato che si disegna davvero al posto di "state", seguendo il ripiego
+export function resolveAnimation(animations: Partial<Record<SpriteState, unknown>>, state: SpriteState): SpriteState {
+  let s = state;
+  for (let i = 0; i <= OPTIONAL_ANIMATION_NAMES.length && !Object.hasOwn(animations, s); i++) {
+    if (!Object.hasOwn(ANIMATION_FALLBACK, s)) break; // obbligatorio mancante: lo segnala characters.test.ts
+    s = ANIMATION_FALLBACK[s as OptionalAnimationName];
+  }
+  return s;
+}
+
+// La tabella completa per Godot: ogni stato, con i dati del disegno che lo mostra e il suo nome in src
+export function resolvedAnimations<T extends object>(animations: Partial<Record<SpriteState, T>>): Record<SpriteState, T & { src: SpriteState }> {
+  const out = {} as Record<SpriteState, T & { src: SpriteState }>;
+  for (const state of SPRITE_STATES) {
+    const src = resolveAnimation(animations, state);
+    const a = animations[src];
+    if (a) out[state] = { ...a, src };
+  }
+  return out;
 }
 
 // Moltiplicatori dei numeri di FIGHTER (1 = come Bonobot, il metro), tra CHARACTER_STATS.min e max
@@ -106,6 +159,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       frameWidth: 64,
       frameHeight: 96,
       columns: 6,
+      filter: "nearest", // pixel art: senza sfumare i pixel
       animations: {
         idle: { row: 0, frames: 4, fps: 4, loop: true },
         walk: { row: 1, frames: 6, fps: 10, loop: true },
@@ -134,8 +188,8 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         walk: { row: 1, frames: 10, fps: 24, loop: true }, // galoppo sulle nocche alla velocità di groundSpeed
         jump: { row: 2, frames: 7, fps: 24, loop: false },
         fall: { row: 3, frames: 12, fps: 24, loop: true },
-        light: { row: 4, frames: 7, fps: 24, loop: false }, // schiaffo di rovescio: colpisce nei fotogrammi 2-4
-        heavy: { row: 5, frames: 18, fps: 24, loop: false }, // martello a due pugni: colpisce nei fotogrammi 7-10
+        light: { row: 4, frames: 7, fps: 24, loop: false, hitFrame: 1 }, // schiaffo di rovescio: colpisce nei fotogrammi 2-4
+        heavy: { row: 5, frames: 18, fps: 24, loop: false, hitFrame: 6 }, // martello a due pugni: colpisce nei fotogrammi 7-10
         hit: { row: 6, frames: 8, fps: 24, loop: false },
         doubleJump: { row: 7, frames: 9, fps: 24, loop: false }, // capriola in avanti che si apre verso la caduta
         tumble: { row: 8, frames: 12, fps: 24, loop: true }, // rotola all'indietro quando vola via dopo un colpo forte

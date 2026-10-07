@@ -26,12 +26,49 @@ func test_server_vecchio_senza_campo_ledge() -> void:
 	runner.check(WorldView._animation_for(p) == "fall", "senza ledge si cade come prima")
 
 
-func test_animazioni_del_bordo_facoltative() -> void:
-	var only_base := {"idle": {}, "jump": {}, "walk": {}}
-	runner.check(WorldView.available_animation(only_base, "ledge") == "jump", "ledge -> jump")
-	runner.check(WorldView.available_animation(only_base, "climb") == "jump", "climb -> jump")
-	runner.check(WorldView.available_animation({"ledge": {}, "jump": {}}, "ledge") == "ledge", "se c'è si usa")
-	runner.check(WorldView.available_animation(only_base, "walk") == "walk", "le altre restano")
+func test_stato_preciso_dei_colpi() -> void:
+	runner.check(WorldView._animation_for(_player({"attack": "lightUp"})) == "lightUp", "variante leggera")
+	runner.check(WorldView._animation_for(_player({"attack": "heavyAir", "onGround": false})) == "heavyAir", "variante pesante in aria")
+	runner.check(WorldView._animation_for(_player({"attack": "recovery", "onGround": false})) == "recovery", "recupero")
+	runner.check(WorldView._animation_for(_player({"shielding": true})) == "shield", "scudo")
+
+
+func test_disegno_proprio_o_ripiego() -> void:
+	# In game.json ogni stato c'è già risolto: src dice di chi è il disegno (E7 passo 3)
+	var anims := {"jump": {"src": "jump"}, "ledge": {"src": "jump"}, "taunt": {"src": "taunt"}}
+	runner.check(not WorldView.has_own(anims, "ledge"), "ledge col disegno del salto non è suo")
+	runner.check(WorldView.has_own(anims, "taunt"), "taunt disegnato è suo")
+	runner.check(not WorldView.has_own(anims, "land"), "uno stato assente non è suo")
+	runner.check(WorldView.has_own({"ledge": {}}, "ledge"), "senza src (dati vecchi) conta come suo")
+
+
+func test_fotogrammi_a_fps() -> void:
+	var walk := {"frames": 10, "fps": 20, "loop": true}
+	runner.check(WorldView.sprite_frame(walk, 0) == 0, "si parte dal primo")
+	runner.check(WorldView.sprite_frame(walk, 260) == 5, "a 20 fps, 260 ms = fotogramma 5")
+	runner.check(WorldView.sprite_frame(walk, 560) == 1, "in ciclo ricomincia")
+	var jump := {"frames": 4, "fps": 20, "loop": false}
+	runner.check(WorldView.sprite_frame(jump, 5000) == 3, "senza ciclo resta sull'ultimo")
+	runner.check(is_equal_approx(WorldView.animation_ms(walk), 500.0), "10 fotogrammi a 20 fps = 500 ms")
+
+
+func test_fotogramma_d_impatto_con_la_hitbox() -> void:
+	# Martello di 18 fotogrammi con l'impatto nel 6: cade a startupMs e l'animazione finisce con cooldownMs
+	var heavy := {"frames": 18, "fps": 24, "loop": false, "hitFrame": 6}
+	var spec := {"startupMs": 260, "activeMs": 120, "cooldownMs": 750}
+	runner.check(WorldView.sprite_frame(heavy, 0, spec) == 0, "si parte dal primo")
+	runner.check(WorldView.sprite_frame(heavy, 259, spec) == 5, "un attimo prima della hitbox: %d" % WorldView.sprite_frame(heavy, 259, spec))
+	runner.check(WorldView.sprite_frame(heavy, 260, spec) == 6, "con la hitbox accesa: impatto")
+	runner.check(WorldView.sprite_frame(heavy, 749, spec) == 17, "alla fine: ultimo")
+	runner.check(WorldView.sprite_frame(heavy, 2000, spec) == 17, "dopo resta sull'ultimo")
+	runner.check(is_equal_approx(WorldView.animation_ms(heavy, spec), 750.0), "dura cooldownMs")
+	# La variante con un avvio più lungo stira lo stesso disegno
+	var slow := {"startupMs": 400, "activeMs": 120, "cooldownMs": 900}
+	runner.check(WorldView.sprite_frame(heavy, 399, slow) == 5 and WorldView.sprite_frame(heavy, 400, slow) == 6, "impatto a 400 ms")
+	# Avvio zero (recupero): si parte dall'impatto
+	runner.check(WorldView.sprite_frame(heavy, 0, {"startupMs": 0, "activeMs": 250, "cooldownMs": 0}) == 6, "avvio zero")
+	# Senza hitFrame si va a fps anche negli attacchi
+	runner.check(WorldView.sprite_frame({"frames": 3, "fps": 20, "loop": false}, 100, spec) == 2, "senza hitFrame: fps")
 
 
 func test_disconnesso_semitrasparente() -> void:
