@@ -1,4 +1,4 @@
-# Il menu opzioni (come src/client/OptionsPanel.ts): volumi, musica e comandi.
+# Il menu opzioni (come src/client/OptionsPanel.ts), a schede: Audio, Comandi e Video (E14, solo nell'app).
 # Lo aprono la lobby e il menu di pausa. I comandi hanno due schede, Tastiera e Pad (E6).
 extends Control
 
@@ -17,6 +17,9 @@ var _tabs := {} # false/true -> pulsante della scheda
 var _notice := HBoxContainer.new() # "B tolto da Attacco pesante" con Annulla, o l'avviso di azione senza tasti
 var _hint := ""
 var _undo := {} # tasti prima dell'ultimo spostamento, per Annulla
+var _pages := {} # "audio", "keys", "video" -> contenuto della scheda
+var _page_tabs := {} # stesse chiavi -> pulsante della scheda
+var _reset_keys: Button
 
 
 func setup(s: Settings) -> void:
@@ -25,18 +28,61 @@ func setup(s: Settings) -> void:
 	var parts := UI.overlay(680)
 	add_child(parts[0])
 	_box = parts[1]
-	_box.add_child(UI.header("Opzioni"))
-	_box.add_child(UI.heading("Audio"))
+	# Titolo e schede sulla stessa riga: il menu deve stare in 720 pixel
+	var top := HBoxContainer.new()
+	top.add_theme_constant_override("separation", UI.GAP_S)
+	var title := UI.header("Opzioni")
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top.add_child(title)
+	_box.add_child(top)
+	var pages := [["audio", "Audio", _audio_page()], ["keys", "Comandi", _keys_page()]]
+	if Video.available():
+		pages.append(["video", "Video", _video_page()])
+	for page in pages:
+		var b := UI.button(page[1], func(): _show_page(page[0]))
+		b.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		_page_tabs[page[0]] = b
+		top.add_child(b)
+		_pages[page[0]] = page[2]
+		_box.add_child(page[2])
+	var actions := HBoxContainer.new()
+	_reset_keys = UI.button("Ripristina", func():
+		settings.reset_bindings(_pad)
+		_waiting = {}
+		_set_notice("")
+		_draw_keys())
+	actions.add_child(_reset_keys)
+	var spacer := Control.new()
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	actions.add_child(spacer)
+	var done := UI.button("Fatto", close, true)
+	actions.add_child(done)
+	_box.add_child(actions)
+	_show_tab(false)
+	_show_page("audio")
+	UI.keep_focus(self, done)
+
+
+# Una scheda alla volta: Audio, Comandi o Video
+func _show_page(id: String) -> void:
+	for p in _pages:
+		_pages[p].visible = p == id
+		UI.set_selected(_page_tabs[p], p == id)
+	_reset_keys.visible = id == "keys" # Ripristina vale solo per i tasti
+	if not _waiting.is_empty(): # si cambia scheda mentre si aspettava un tasto: si annulla
+		_waiting = {}
+		_draw_keys()
+
+
+func _audio_page() -> VBoxContainer:
+	var page := VBoxContainer.new()
 	for v in [["master", "Generale"], ["sfx", "Effetti"], ["music", "Musica"]]:
-		_box.add_child(_volume_row(v[0], v[1]))
-	var music := UI.toggle("Musica accesa (anche con M)", settings.music_on, func(on):
+		page.add_child(_volume_row(v[0], v[1]))
+	page.add_child(UI.toggle("Musica accesa (anche con M)", settings.music_on, func(on):
 		settings.music_on = on
-		settings.save())
-	# Vibrazione del pad sulla stessa riga della musica: il menu deve stare in 720 pixel
+		settings.save()))
 	var row := HBoxContainer.new()
-	music.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_child(music)
-	row.add_child(UI.label("Vibrazione"))
+	row.add_child(UI.label("Vibrazione del pad"))
 	var rumble := OptionButton.new()
 	for name in Rumble.LEVEL_NAMES:
 		rumble.add_item(name)
@@ -45,36 +91,52 @@ func setup(s: Settings) -> void:
 		settings.rumble = i
 		settings.save())
 	row.add_child(rumble)
-	_box.add_child(row)
-	# Titoletto e schede sulla stessa riga: il menu deve stare in 720 pixel
+	page.add_child(row)
+	return page
+
+
+func _keys_page() -> VBoxContainer:
+	var page := VBoxContainer.new()
 	var tabs := HBoxContainer.new()
-	var heading := UI.heading("Comandi")
-	heading.custom_minimum_size = Vector2(160, 0)
-	tabs.add_child(heading)
 	for pad in [false, true]:
 		var t := UI.button("Pad" if pad else "Tastiera", func(): _show_tab(pad))
 		_tabs[pad] = t
 		tabs.add_child(t)
-	_box.add_child(tabs)
+	page.add_child(tabs)
 	_keys.add_theme_constant_override("h_separation", UI.GAP_M)
-	_box.add_child(_keys)
+	page.add_child(_keys)
 	_notice.add_theme_constant_override("separation", UI.GAP_L)
 	_notice.custom_minimum_size = Vector2(0, 36)
-	_box.add_child(_notice)
-	var actions := HBoxContainer.new()
-	actions.add_child(UI.button("Ripristina", func():
-		settings.reset_bindings(_pad)
-		_waiting = {}
-		_set_notice("")
-		_draw_keys()))
-	var spacer := Control.new()
-	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	actions.add_child(spacer)
-	var done := UI.button("Fatto", close, true)
-	actions.add_child(done)
-	_box.add_child(actions)
-	_show_tab(false)
-	UI.keep_focus(self, done)
+	page.add_child(_notice)
+	return page
+
+
+# Solo nell'app: nel browser finestra e frequenza le decide la pagina
+func _video_page() -> VBoxContainer:
+	var page := VBoxContainer.new()
+	var save := func(key: String, value: Variant) -> void:
+		settings.video[key] = value
+		settings.save()
+	page.add_child(UI.toggle("Schermo intero (anche con F11)", settings.video.fullscreen, func(on): save.call("fullscreen", on)))
+	page.add_child(_choice_row("Finestra", Video.WINDOW_NAMES, settings.video.window, func(i): save.call("window", i)))
+	page.add_child(UI.toggle("Sincronizza con lo schermo (vsync)", settings.video.vsync, func(on): save.call("vsync", on)))
+	page.add_child(_choice_row("FPS massimi", Video.FPS_NAMES, settings.video.max_fps, func(i): save.call("max_fps", i)))
+	page.add_child(UI.toggle("Scie e polvere", settings.video.effects, func(on): save.call("effects", on)))
+	return page
+
+
+func _choice_row(text: String, names: Array, selected: int, on_select: Callable) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	var l := UI.label(text)
+	l.custom_minimum_size = Vector2(140, 0)
+	row.add_child(l)
+	var choice := OptionButton.new()
+	for n in names:
+		choice.add_item(n)
+	choice.select(clampi(selected, 0, names.size() - 1))
+	choice.item_selected.connect(on_select)
+	row.add_child(choice)
+	return row
 
 
 func _show_tab(pad: bool) -> void:

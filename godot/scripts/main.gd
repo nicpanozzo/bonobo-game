@@ -144,6 +144,8 @@ func _flash_status(text: String) -> void:
 func _apply_volumes() -> void:
 	audio.set_volumes(settings.master, settings.sfx, settings.music, settings.music_on)
 	rumble.level = settings.rumble
+	world.effects = settings.video.effects
+	Video.apply(settings)
 
 
 # Il link da mandare agli amici porta la stanza (e il server, se la pagina non sta sul server)
@@ -393,6 +395,9 @@ func _unhandled_input(event: InputEvent) -> void:
 func _toggle_fullscreen() -> void:
 	var full := DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
 	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED if full else DisplayServer.WINDOW_MODE_FULLSCREEN)
+	if Video.available(): # sull'app resta anche al prossimo avvio (opzioni → Video)
+		settings.video.fullscreen = not full
+		settings.save()
 
 
 # Esc: il menu spegne i tasti di chi lo apre, ma la partita online va avanti
