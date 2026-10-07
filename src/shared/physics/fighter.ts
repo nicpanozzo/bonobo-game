@@ -35,6 +35,10 @@ export interface Fighter extends PlayerState {
   shieldDropTimer: number; // ms fermi dopo averlo abbassato
   shieldStunTimer: number; // ms fermi sullo scudo dopo un colpo parato
   stunTimer: number; // ms storditi dopo la rottura dello scudo
+  holding: string | null; // id di chi si tiene con la presa (#109)
+  grabLagTimer: number; // ms fermi per la presa: avvio, finestra attiva e attesa se va a vuoto
+  grabTimer: number; // per chi è tenuto: ms prima di liberarsi da solo (i tasti premuti lo accorciano)
+  pummelTimer: number; // per chi tiene: ms prima del prossimo colpetto
 }
 
 // Quello che serve alla fisica oltre ai lottatori: l'arena e dove scrivere gli eventi
@@ -96,6 +100,7 @@ export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
     shielding: false,
     shieldHp: SHIELD.maxHp,
     stunned: false,
+    grabbedBy: null,
     input: emptyInput(),
     prevInput: emptyInput(),
     buffer: emptyBuffer(),
@@ -125,6 +130,10 @@ export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
     shieldDropTimer: 0,
     shieldStunTimer: 0,
     stunTimer: 0,
+    holding: null,
+    grabLagTimer: 0,
+    grabTimer: 0,
+    pummelTimer: 0,
   };
 }
 

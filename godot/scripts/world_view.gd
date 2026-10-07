@@ -684,6 +684,10 @@ static func shield_radius(hp: float, max_hp: float, fighter_height: float) -> fl
 static func _animation_for(p: Dictionary) -> String:
 	if p.hitstun or p.get("stunned", false): # lo stordito dopo lo scudo rotto (#109) ha la posa di chi è colpito
 		return "hit"
+	if p.get("grabbedBy") != null:
+		return "hit" # tenuto con la presa (#109): finché non c'è una posa sua (E8 passo 3)
+	if p.attack != null and str(p.attack).begins_with("throw"):
+		return "grab" # i lanci usano la posa della presa
 	if p.attack != null:
 		# Lo stato del colpo preciso (lightUp, heavyAir, recovery...): chi non l'ha disegnato mostra il ripiego.
 		# L'attacco dal bordo (#110) non ha uno stato suo: usa il colpo leggero

@@ -188,6 +188,7 @@ export class Match {
         shielding: f.shielding,
         shieldHp: Math.round(f.shieldHp),
         stunned: f.stunned,
+        grabbedBy: f.grabbedBy,
       });
     }
     const teamScores = this.rules.mode === "flag" ? { ...this.scores } : null;

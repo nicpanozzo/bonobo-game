@@ -15,7 +15,23 @@ export interface InputState {
 }
 
 // Le varianti direzionali (#2): su tenendo su, giù tenendo giù a terra, Air in aria; recovery: K + su in aria (#11)
-export type AttackKind = "light" | "heavy" | "lightUp" | "lightDown" | "lightAir" | "heavyUp" | "heavyDown" | "heavyAir" | "recovery" | "ledgeAttack";
+// grab: scudo + leggero (#109); throw*: i lanci dalla presa nella direzione tenuta
+export type AttackKind =
+  | "light"
+  | "heavy"
+  | "lightUp"
+  | "lightDown"
+  | "lightAir"
+  | "heavyUp"
+  | "heavyDown"
+  | "heavyAir"
+  | "recovery"
+  | "ledgeAttack"
+  | "grab"
+  | "throwForward"
+  | "throwBack"
+  | "throwUp"
+  | "throwDown";
 
 export interface PlayerState {
   id: string;
@@ -43,6 +59,7 @@ export interface PlayerState {
   shielding: boolean; // scudo alzato (#109)
   shieldHp: number; // punti di scudo, da 0 a SHIELD.maxHp: la bolla è grande in proporzione
   stunned: boolean; // stordito dopo che lo scudo si è rotto: fermo e colpibile
+  grabbedBy: string | null; // id di chi lo tiene con la presa (#109), null se libero
 }
 
 // Un oggetto nell'arena (#17): a terra, in volo o in mano a qualcuno
@@ -97,6 +114,8 @@ export type GameEvent =
   | { type: "ledgeGetup"; id: string; option: "climb" | "attack" | "jump" | "roll" | "drop" } // come lascia il bordo (#110)
   | { type: "shield"; id: string; attackerId: string; damage: number; shieldHp: number; x: number; y: number } // colpo parato (#109)
   | { type: "shieldBreak"; id: string; x: number; y: number } // lo scudo di id si è rotto
+  | { type: "grab"; id: string; targetId: string; x: number; y: number } // id afferra targetId (#109)
+  | { type: "grabRelease"; id: string; targetId: string } // la presa finisce senza lancio: targetId si è liberato
   | { type: "matchStart" }
   | { type: "away"; id: string } // id si è disconnesso: il suo posto resta tenuto per un po' (#107)
   | { type: "back"; id: string } // id è rientrato nel suo posto
