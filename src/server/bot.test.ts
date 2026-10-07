@@ -220,4 +220,22 @@ describe("bot", () => {
     assert.ok(hard.parried > 0);
     assert.equal(blocks("semplice").parried, 0);
   });
+
+  it("due bot dello stesso livello si fanno almeno 3 KO in 5 minuti, su ogni arena fissa (E11)", () => {
+    // Prima si attraversavano restando girati al contrario, o aspettavano per sempre sotto una piattaforma
+    for (const stageId of ["palco", "isole", "fabbrica"]) {
+      for (const level of ["facile", "semplice", "difficile"] as const) {
+        const match = new Match({ stageId });
+        const bots = new Bots();
+        bots.add(match, level);
+        bots.add(match, level);
+        let kos = 0;
+        for (let tick = 0; tick < 300 * TICK_RATE; tick++) {
+          bots.tick(match);
+          kos += match.step(DT).filter((e) => e.type === "ko").length;
+        }
+        assert.ok(kos >= 3, `${level} su ${stageId}: ${kos} KO`);
+      }
+    }
+  });
 });
