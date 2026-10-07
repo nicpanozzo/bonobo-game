@@ -346,6 +346,98 @@
       }
     ]
   },
+  "challenges": [
+    {
+      "id": "primo-ko",
+      "title": "Primo KO",
+      "text": "Il manichino parte da 0%: buttalo fuori il prima possibile.",
+      "stage": "palco",
+      "bot": "manichino",
+      "botPercent": 0,
+      "goal": "koTime",
+      "limitSec": 60,
+      "medals": [
+        12,
+        7,
+        5
+      ]
+    },
+    {
+      "id": "colpo-di-grazia",
+      "title": "Colpo di grazia",
+      "text": "Il manichino è già al 150%: un colpo pesante ben dato basta.",
+      "stage": "palestra",
+      "bot": "manichino",
+      "botPercent": 150,
+      "goal": "koTime",
+      "limitSec": 20,
+      "medals": [
+        5,
+        3,
+        2
+      ]
+    },
+    {
+      "id": "palleggio",
+      "title": "Palleggio",
+      "text": "Lancia in alto il manichino e colpiscilo di fila prima che tocchi terra.",
+      "stage": "palestra",
+      "bot": "manichino",
+      "botPercent": 0,
+      "goal": "juggle",
+      "limitSec": 30,
+      "medals": [
+        3,
+        5,
+        7
+      ]
+    },
+    {
+      "id": "mitraglia",
+      "title": "Mitraglia",
+      "text": "Più danno possibile al manichino in 15 secondi.",
+      "stage": "palestra",
+      "bot": "manichino",
+      "botPercent": 0,
+      "goal": "damage",
+      "limitSec": 15,
+      "medals": [
+        60,
+        85,
+        100
+      ]
+    },
+    {
+      "id": "sparring",
+      "title": "Contro lo sparring",
+      "text": "Lo sparring risponde: buttalo fuori partendo dal 50%.",
+      "stage": "palestra",
+      "bot": "sparring",
+      "botPercent": 50,
+      "goal": "koTime",
+      "limitSec": 60,
+      "medals": [
+        12,
+        7,
+        4
+      ]
+    },
+    {
+      "id": "resisti",
+      "title": "Resisti",
+      "text": "Il bot difficile ti dà la caccia: resta in piedi 60 secondi.",
+      "stage": "palco",
+      "bot": "difficile",
+      "botPercent": 0,
+      "goal": "survive",
+      "limitSec": 60,
+      "medals": [
+        20,
+        40,
+        60
+      ]
+    }
+  ],
   "camera": {
     "margin": 140,
     "minZoom": 0.7,
