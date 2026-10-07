@@ -260,6 +260,11 @@ export const EFFECTS = {
   percentShakeMs: 280, // durata del tremolio della percentuale dopo un colpo
   percentShakePerDamage: 0.6, // pixel di tremolio per ogni punto di danno preso
   percentShakeMax: 9, // pixel: tremolio massimo della percentuale
+  shieldFlashMs: 120, // la bolla dello scudo si illumina per tanto dopo un colpo parato (#109)
+  shieldBreakShake: 10, // pixel di scossa quando uno scudo si rompe
+  shardMs: 550, // durata delle schegge della bolla rotta
+  shards: 10, // schegge della bolla rotta
+  stunStars: 3, // stelline che girano sopra chi è stordito
 };
 
 // Bot del server (#20, src/server/bot.ts): quanto è svelto e quando attacca

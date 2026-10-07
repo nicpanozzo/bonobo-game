@@ -20,6 +20,8 @@ var _dust: Array = [] # [{ x, y, dx, age }] sbuffi di polvere
 var _trails := {} # id -> Array[Vector2] delle ultime posizioni, per la scia di chi vola
 var effects := true # scie e polvere (opzioni → Video), main.gd lo legge dalle preferenze
 var _beams: Array = [] # [{ x, y, age, color }] raggi dei KO, dal punto di uscita verso il centro
+var _shards: Array = [] # [{ x, y, vx, vy, age, color }] schegge di uno scudo rotto (#109)
+var _shield_hits := {} # id giocatore -> ms da quando lo scudo ha parato un colpo
 var _items: Array = [] # oggetti dell'ultimo snapshot (#17)
 var _item_pos := {} # id oggetto -> Vector2 disegnata, che insegue quella dello snapshot
 var _facings := {} # id giocatore -> verso, per mettere in mano gli oggetti
@@ -49,6 +51,8 @@ func reset() -> void:
 	_anims = {}
 	_sparks = []
 	_beams = []
+	_shards = []
+	_shield_hits = {}
 	_items = []
 	_item_pos = {}
 	_dust = []
@@ -113,6 +117,20 @@ func on_event(e: Dictionary) -> void:
 			_shake = maxf(_shake, minf(game.effects.shakeMax, float(e.knockback) * game.effects.shakePerKnockback))
 		"land":
 			_puff(e.x, e.y)
+		"shield":
+			# Colpo parato (#109): scintilla piccola del colore di chi para e bolla che si illumina
+			var p: Variant = buffer.sample(e.id, Time.get_ticks_msec())
+			var col: Color = Access.color(p.color).lightened(0.5) if p != null else Color.WHITE
+			_sparks.append({"x": e.x, "y": e.y, "age": 0.0, "size": 16.0 + float(e.damage), "color": col})
+			_shield_hits[e.id] = 0.0
+		"shieldBreak":
+			# Scudo rotto: scossa e schegge della bolla che volano via
+			_shake = maxf(_shake, float(game.effects.shieldBreakShake))
+			var p: Variant = buffer.sample(e.id, Time.get_ticks_msec())
+			var col: Color = Access.color(p.color).lightened(0.3) if p != null else Color.WHITE
+			var center := Vector2(e.x, e.y - float(game.fighter.height) / 2)
+			for s in shard_velocities(int(game.effects.shards)):
+				_shards.append({"x": center.x, "y": center.y, "vx": s.x, "vy": s.y, "age": 0.0, "color": col})
 		"ledgeGrab":
 			# Lampo bianco sullo spigolo se la presa è invulnerabile (#110), così chi difende sa che non serve colpire
 			if e.get("invulnerable", false):
@@ -155,6 +173,16 @@ func _process(delta: float) -> void:
 	for b in _beams:
 		b.age += delta * 1000.0
 	_beams = _beams.filter(func(b): return b.age < fx.koBeamMs)
+	for s in _shards:
+		s.age += delta * 1000.0
+		s.x += s.vx * delta
+		s.y += s.vy * delta
+		s.vy += 900.0 * delta # le schegge ricadono
+	_shards = _shards.filter(func(s): return s.age < fx.shardMs)
+	for id in _shield_hits.keys():
+		_shield_hits[id] += delta * 1000.0
+		if _shield_hits[id] >= fx.shieldFlashMs:
+			_shield_hits.erase(id)
 	if Access.calm: # meno scossa e lampi (opzioni → Accessibilità): niente tremolio né lampo bianco
 		_shake = 0.0
 		_flash = 0.0
@@ -208,6 +236,12 @@ func _draw() -> void:
 
 	for b in _beams:
 		_draw_beam(b)
+
+	for s in _shards:
+		var c: Color = s.color
+		c.a = 1.0 - s.age / game.effects.shardMs
+		var tip := Vector2(s.vx, s.vy).normalized() * 12.0
+		draw_line(Vector2(s.x, s.y) - tip, Vector2(s.x, s.y) + tip, c, 4.0)
 
 	if _flash > 0:
 		draw_rect(view_rect.grow(40), Color(1, 1, 1, 0.45 * _flash / float(game.effects.flashMs)))
@@ -413,7 +447,7 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 		_draw_sprite(p, character, now)
 	else:
 		var color := Access.color(p.color)
-		if p.hitstun:
+		if p.hitstun or p.get("stunned", false):
 			color = color.lightened(0.5)
 		color.a = away_alpha(p)
 		var body := Rect2(p.x - fw / 2, p.y - fh, fw, fh)
@@ -435,12 +469,21 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 	# Scudo (#109): una bolla del colore del giocatore che rimpicciolisce con i punti rimasti
 	if p.get("shielding", false):
 		var r := shield_radius(float(p.get("shieldHp", 0)), float(game.shield.maxHp), fh)
-		var bubble := _color(p.color).lightened(0.3)
-		bubble.a = 0.35 * away_alpha(p)
+		var bubble := Access.color(p.color).lightened(0.3)
+		var lit: float = 1.0 - float(_shield_hits[p.id]) / game.effects.shieldFlashMs if _shield_hits.has(p.id) else 0.0
+		bubble = bubble.lerp(Color.WHITE, 0.6 * lit) # si illumina quando para un colpo
+		bubble.a = (0.35 + 0.3 * lit) * away_alpha(p)
 		var center := Vector2(p.x, p.y - fh / 2)
 		draw_circle(center, r, bubble)
 		bubble.a = 0.9 * away_alpha(p)
 		draw_arc(center, r, 0, TAU, 40, bubble, 3.0)
+
+	# Stordito dopo la rottura dello scudo: stelline che girano sopra la testa
+	if p.get("stunned", false):
+		for i in int(game.effects.stunStars):
+			var a := now / 300.0 + TAU * i / float(game.effects.stunStars)
+			var star := Vector2(p.x + cos(a) * fw * 0.6, p.y - head - 18 - Access.px(16) + sin(a) * 6) # sopra il nome
+			_draw_star(star, 6.0, Color(1, 0.9, 0.3))
 
 	# Colpo in corso: la stessa hitbox di attackBox() in src/shared/physics/attacks.ts,
 	# spostata da boxX/boxY per le varianti direzionali (#2)
@@ -510,6 +553,25 @@ static func away_alpha(p: Dictionary) -> float:
 
 
 # Le animazioni del bordo (#110) sono facoltative: chi non le ha nello spritesheet usa quella del salto
+# Stellina a quattro punte
+func _draw_star(c: Vector2, r: float, color: Color) -> void:
+	var pts := PackedVector2Array()
+	for k in 8:
+		var rr := r if k % 2 == 0 else r * 0.4
+		var a := TAU * k / 8.0
+		pts.append(c + Vector2(cos(a), sin(a)) * rr)
+	draw_colored_polygon(pts, color)
+
+
+# Velocità delle schegge della bolla rotta: a raggiera, un po' più verso l'alto
+static func shard_velocities(n: int) -> Array:
+	var out := []
+	for i in n:
+		var a := TAU * i / float(n)
+		out.append(Vector2(cos(a), sin(a) - 0.5) * 320.0)
+	return out
+
+
 # Raggio della bolla: copre il lottatore con lo scudo pieno, a vuoto ne resta un terzo
 static func shield_radius(hp: float, max_hp: float, fighter_height: float) -> float:
 	var full := fighter_height * 0.62
@@ -527,7 +589,7 @@ static func available_animation(animations: Dictionary, name: String) -> String:
 
 # Quale animazione mostrare, dai soli campi dello snapshot (animationFor in fighters.ts)
 static func _animation_for(p: Dictionary) -> String:
-	if p.hitstun:
+	if p.hitstun or p.get("stunned", false): # lo stordito dopo lo scudo rotto (#109) ha la posa di chi è colpito
 		return "hit"
 	if p.attack != null:
 		if p.attack == "recovery":

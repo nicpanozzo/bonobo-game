@@ -202,7 +202,12 @@
     "koBeamWidth": 150,
     "percentShakeMs": 280,
     "percentShakePerDamage": 0.6,
-    "percentShakeMax": 9
+    "percentShakeMax": 9,
+    "shieldFlashMs": 120,
+    "shieldBreakShake": 10,
+    "shardMs": 550,
+    "shards": 10,
+    "stunStars": 3
   },
   "items": {
     "banana": {
