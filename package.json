@@ -1,6 +1,6 @@
 {
   "name": "bonobo-game",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Picchiaduro multiplayer online nel browser, fatto tra amici",
   "type": "module",

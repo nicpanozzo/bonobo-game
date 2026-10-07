@@ -299,3 +299,7 @@ export const INPUT = {
   stickDeadzone: 0.35, // da 0 a 1: sotto questa inclinazione la levetta (o il grilletto) non conta
   padToastMs: 2000, // millisecondi di "Pad collegato: <nome>" sullo schermo
 };
+
+// Versione del protocollo (E2, #106): sale solo quando types.ts cambia in modo che client e server
+// vecchi e nuovi non si capiscono più. La versione del gioco invece sta in package.json.
+export const PROTOCOL_VERSION = 1;

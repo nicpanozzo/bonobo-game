@@ -140,6 +140,10 @@ jobs:
           cat godot/data/build.json
       - name: Esporta per Windows, Mac e Linux
         run: |
+          # La versione del Mac da package.json (E2, #106): solo nel runner, non si committa
+          V=$(node -p "require('./package.json').version")
+          sed -i "s/^application\/short_version=.*/application\/short_version=\"$V\"/; s/^application\/version=.*/application\/version=\"${{ github.run_number }}\"/" godot/export_presets.cfg
+          grep -n "^application/.*version" godot/export_presets.cfg
           mkdir -p godot/build/windows godot/build/macos godot/build/linux out
           ~/godot/godot --headless --path godot --import
           ~/godot/godot --headless --path godot --export-release Windows build/windows/bonobo-game.exe

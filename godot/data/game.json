@@ -1,4 +1,6 @@
 {
+  "version": "0.2.0",
+  "protocol": 1,
   "world": {
     "width": 1280,
     "height": 720
