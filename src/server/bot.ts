@@ -11,12 +11,14 @@ import type { RoomHooks } from "./Room";
 // manichino: sta fermo e incassa, per provare colpi e combo (passo 1)
 // semplice: insegue, attacca e torna sul palco quando viene lanciato fuori (passo 2)
 // facile e difficile: lo stesso bot, più lento o più svelto, e il difficile schiva (passo 3)
+// sparring: compagno del tutorial (E15), fermo, si gira verso di te e attacca piano a ritmo fisso
 type BotLevel = keyof typeof BOT_LEVELS;
-export type BotKind = "manichino" | BotLevel;
+export type BotKind = "manichino" | "sparring" | BotLevel;
 
 // TODO community: nomi nostri per i bot (es. un membro che si offre volontario)
 const BOT_NAMES: Record<BotKind, string> = {
   manichino: "Manichino",
+  sparring: "Sparring", // TODO community: un nome nostro per il compagno di allenamento
   facile: "Bot facile",
   semplice: "Bot",
   difficile: "Bot difficile",
@@ -72,7 +74,8 @@ export class Bots {
     for (const f of players) {
       const mem = this.bots.get(f.id);
       if (!mem) continue;
-      const input = mem.kind === "manichino" ? emptyInput() : decideSimple(f, players, match.stage, mem, mem.kind);
+      const input =
+        mem.kind === "manichino" ? emptyInput() : mem.kind === "sparring" ? decideSparring(f, players, mem) : decideSimple(f, players, match.stage, mem, mem.kind);
       mem.last = input;
       match.setInput(f.id, input);
     }
@@ -114,6 +117,25 @@ function nearestSolidX(stage: StageSpec, x: number): number {
     if (Math.abs(cx - x) < Math.abs(best - x)) best = cx;
   }
   return best;
+}
+
+// Sparring: non si muove, guarda il giocatore più vicino e ogni BOT.sparringEveryMs fa un attacco leggero
+// se è a portata. Un ritmo fisso e prevedibile, così chi impara ha il tempo di alzare lo scudo.
+function decideSparring(self: Fighter, players: readonly Fighter[], mem: BotMemory): InputState {
+  const input = emptyInput();
+  mem.ticks++;
+  if (self.eliminated || self.respawning || self.ledge) return input;
+  const target = players.filter((p) => p !== self && !p.eliminated && !p.respawning).sort((a, b) => Math.abs(a.x - self.x) - Math.abs(b.x - self.x))[0];
+  if (!target) return input;
+  const dx = target.x - self.x;
+  const every = Math.max(1, Math.round((BOT.sparringEveryMs * TICK_RATE) / 1000));
+  // Un tick prima dell'attacco si gira (un tocco breve non lo sposta), poi colpisce
+  if (mem.ticks % every === every - 1 && Math.sign(dx) !== self.facing) {
+    if (dx < 0) input.left = true;
+    else input.right = true;
+  }
+  if (mem.ticks % every === 0 && Math.abs(dx) <= BOT.sparringRange && !mem.last.light) input.light = true;
+  return input;
 }
 
 function decideSimple(self: Fighter, players: readonly Fighter[], stage: StageSpec, mem: BotMemory, level: BotLevel): InputState {

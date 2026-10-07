@@ -292,6 +292,8 @@ export const BOT = {
   ledgeRollNear: 200, // pixel: il difficile preferisce la rotolata se il bersaglio è più vicino di così al bordo
   shieldHoldMs: 300, // ms: il difficile tiene lo scudo per tanto dopo aver visto partire un attacco vicino (#109)
   shieldMinHp: 15, // punti di scudo: sotto questi il difficile non si para più, così non se lo fa rompere
+  sparringEveryMs: 1800, // ms tra un attacco e l'altro dello sparring del tutorial (E15): il tempo di alzare lo scudo
+  sparringRange: 140, // pixel: lo sparring attacca solo se sei così vicino
 };
 
 // Livelli di difficoltà dei bot (#20 passo 3): ?bot=facile, ?bot=semplice, ?bot=difficile
