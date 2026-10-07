@@ -5,7 +5,7 @@ Personaggio di test per mosse e abilità, manichino da allenamento (#20) e perso
 ## Spritesheet: `bonobot.png`
 
 - Fotogrammi da **256×240 px**, disegnati a 2x: nel gioco si mostrano a metà (`scale: 0.5`), 128×120 px.
-- Griglia di 24 colonne, **una riga per animazione**, fotogrammi da sinistra, sfondo trasparente.
+- Griglia di 24 colonne e 11 righe, **una riga per animazione**, fotogrammi da sinistra, sfondo trasparente.
 - Guarda **a destra**: per andare a sinistra il client lo specchia.
 - Il centro del corpo è al centro del fotogramma e i piedi toccano il bordo in basso. Il fotogramma è largo perché il braccio teso dell'attacco leggero arriva lontano.
 
@@ -20,6 +20,8 @@ Personaggio di test per mosse e abilità, manichino da allenamento (#20) e perso
 | 6 | hit | 8 | 24 | no | contraccolpo, testa e braccia in ritardo |
 | 7 | doubleJump | 9 | 24 | no | capriola in avanti che si apre verso la caduta (parte con l'evento `jump` in aria) |
 | 8 | tumble | 12 | 24 | sì | rotola all'indietro quando vola via in hitstun, oltre `EFFECTS.tumbleSpeed` |
+| 9 | ledge | 24 | 12 | sì | appeso allo spigolo con le mani sopra il bordo e i piedi contro la parete; dondola piano |
+| 10 | climb | 10 | 24 | no | si tira su, ginocchio sul palco e in piedi in `LEDGE.climbMs` (400 ms); l'ultimo fotogramma è la posa di riposo |
 
 I tempi dei colpi seguono `light` e `heavy` di `ATTACKS` in `constants.ts`: se cambiano, le animazioni vanno rifatte.
 

@@ -463,8 +463,10 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 		draw_circle(Vector2(p.x + p.facing * fw * 0.22, p.y - fh * 0.78), 5.0, Color.WHITE)
 		draw_circle(Vector2(p.x + p.facing * fw * 0.27, p.y - fh * 0.78), 2.5, Color.BLACK)
 
-	# Appeso al bordo (#110): il braccio arriva fino allo spigolo, sopra la testa
-	if str(p.get("ledge", "")) == "hang":
+	# Appeso al bordo (#110): il braccio arriva fino allo spigolo, sopra la testa.
+	# Chi ha l'animazione ledge nello spritesheet (#171) ha già la mano disegnata sullo spigolo.
+	var own_hang: bool = _textures.has(character.id) and (character.sprite.animations as Dictionary).has("ledge")
+	if str(p.get("ledge", "")) == "hang" and not own_hang:
 		var hand := Vector2(p.x + p.facing * fw / 2, p.y - float(game.ledge.hangOffsetY))
 		var shoulder := Vector2(p.x + p.facing * fw * 0.2, p.y - fh * 0.55)
 		var arm := Access.color(p.color).darkened(0.2)
