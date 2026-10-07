@@ -38,6 +38,7 @@ interface BotMemory {
   last: InputState; // tasti del tick precedente: un tasto "premuto" deve prima essere rilasciato
   ledgeTicks: number; // tick passati appesi al bordo
   getups: number; // risalite fatte, per cambiarle a rotazione
+  shieldTicks: number; // tick in cui tenere ancora lo scudo (#109)
 }
 
 // Le risalite dal bordo (#110), nell'ordine in cui il bot le alterna
@@ -61,7 +62,7 @@ export class Bots {
     if (match.isFull) return null;
     const id = `bot-${kind}-${++this.count}`;
     match.addPlayer(id, BOT_NAMES[kind]);
-    this.bots.set(id, { kind, ticks: 0, attacks: 0, hold: emptyInput(), last: emptyInput(), ledgeTicks: 0, getups: 0 });
+    this.bots.set(id, { kind, ticks: 0, attacks: 0, hold: emptyInput(), last: emptyInput(), ledgeTicks: 0, getups: 0, shieldTicks: 0 });
     return id;
   }
 
@@ -161,7 +162,18 @@ function decideSimple(self: Fighter, players: readonly Fighter[], stage: StageSp
   }
 
   // Sul palco: si rivede la scelta ogni tot tick (il tempo di reazione), nel frattempo si tengono i tasti di movimento
+  // (o lo scudo, che si tiene fermo: un tasto di direzione nuovo farebbe rotolare)
   mem.ticks++;
+  // Il difficile si para dagli attacchi a portata non pesanti (quelli li schiva), finché lo scudo regge (#109).
+  // Lo guarda a ogni tick: un leggero parte in 40 ms, meno del suo tempo di reazione
+  if (mem.shieldTicks > 0) mem.shieldTicks--;
+  if (skill.shields && self.onGround && !self.attack && self.shieldHp >= BOT.shieldMinHp) {
+    if (pokeIncoming(self, players)) mem.shieldTicks = Math.round((BOT.shieldHoldMs * TICK_RATE) / 1000);
+    if (mem.shieldTicks > 0) {
+      input.shield = true;
+      if (!dodgeThreat(self, players)) return input;
+    }
+  } else mem.shieldTicks = 0;
   if (mem.ticks % reactionTicks(level) !== 0) {
     input.left = mem.hold.left;
     input.right = mem.hold.right;
@@ -182,6 +194,7 @@ function decideSimple(self: Fighter, players: readonly Fighter[], stage: StageSp
   const threat = target.attack?.startsWith("heavy") && !target.attackActive && Math.abs(dx) <= reach + FIGHTER.width;
   if (skill.dodges && threat && self.onGround && self.dodgeCooldown === 0) {
     tap("dodge");
+    input.shield = self.shielding; // dallo scudo la schivata parte subito, senza l'attesa di quando lo si abbassa
     input.left = dx > 0;
     input.right = dx < 0;
     return input;
@@ -222,4 +235,19 @@ function chooseGetup(self: Fighter, players: readonly Fighter[], mem: BotMemory,
   const target = nearestTarget(self, players);
   if (level === "difficile" && target?.onGround && Math.abs(target.x - self.x) < BOT.ledgeRollNear && mem.getups % 2 === 0) return "roll";
   return GETUPS[mem.getups % GETUPS.length];
+}
+
+// Un avversario girato verso di noi ha un attacco non pesante a portata
+function pokeIncoming(self: Fighter, players: readonly Fighter[]): boolean {
+  return players.some((p) => {
+    if (p === self || p.eliminated || p.respawning || !p.attack || p.attack.startsWith("heavy")) return false;
+    if (self.team && p.team === self.team) return false;
+    const dx = self.x - p.x;
+    return p.facing === Math.sign(dx) && Math.abs(dx) <= FIGHTER.width * 2 + ATTACKS.heavy.range && Math.abs(self.y - p.y) < FIGHTER.height;
+  });
+}
+
+// Un pesante che carica a portata: quello il difficile lo schiva invece di pararlo
+function dodgeThreat(self: Fighter, players: readonly Fighter[]): boolean {
+  return players.some((p) => p !== self && !!p.attack?.startsWith("heavy") && !p.attackActive && Math.abs(p.x - self.x) <= FIGHTER.width * 2 + ATTACKS.heavy.range);
 }
