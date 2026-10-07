@@ -97,6 +97,7 @@ func _ready() -> void:
 
 
 func _show_lobby() -> void:
+	audio.play_music("lobby")
 	lobby = preload("res://scripts/lobby.gd").new()
 	lobby.theme = UI.theme()
 	ui_layer.add_child(lobby)
@@ -128,6 +129,7 @@ func _show_lobby() -> void:
 
 # Titolo e menu principale (E14): Gioca online porta alla lobby. skip_press: si torna dalla lobby, niente "Premi un tasto"
 func _show_title(skip_press := false) -> void:
+	audio.play_music("lobby")
 	title = preload("res://scripts/title.gd").new()
 	title.theme = UI.theme()
 	ui_layer.add_child(title)
@@ -215,7 +217,7 @@ func _flash_status(text: String) -> void:
 
 
 func _apply_volumes() -> void:
-	audio.set_volumes(settings.master, settings.sfx, settings.music, settings.music_on)
+	audio.set_volumes(settings.master, settings.sfx, settings.music, settings.music_on, settings.voices)
 	rumble.level = settings.rumble
 	world.effects = settings.video.effects
 	Video.apply(settings)
@@ -353,6 +355,7 @@ func _on_connect_failed() -> void:
 func _on_event(name: String, data: Variant) -> void:
 	match name:
 		"welcome":
+			audio.play_music("match")
 			_token = str(data.get("token", ""))
 			_token_room = str(params.room)
 			# Dopo una caduta: o si torna nello stesso lottatore, o il posto era già scaduto

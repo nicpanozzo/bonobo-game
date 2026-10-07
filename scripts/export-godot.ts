@@ -3,8 +3,8 @@
 // Copia anche gli spritesheet dei personaggi in godot/data/<path>, perché Godot vede solo la sua cartella.
 // Da rilanciare quando cambiano stages.ts, characters.ts o constants.ts: npm run export:godot
 
-import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname } from "node:path";
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { basename, dirname, extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { CHARACTERS, DEFAULT_CHARACTER_ID } from "../src/shared/characters";
 import { ATTACKS, AUDIO, CAMERA, COLORS, EFFECTS, FIGHTER, INPUT, ITEM_RULES, LEDGE, NET, PROTOCOL_VERSION, RUMBLE, SHIELD, TEAM_COLORS, TEAM_NAMES, WORLD } from "../src/shared/constants";
@@ -16,6 +16,33 @@ import { stageCheckData } from "../src/shared/stageCheck";
 
 // La versione del gioco ha una fonte sola, package.json (E2, #106)
 const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")) as { version: string };
+
+// Audio registrato (E13): public/assets/{sfx,music,announcer}/<nome>_<n>.ogg e characters/<id>/voice/.
+// Si copia in godot/data/assets e l'elenco va in game.json (audioFiles), perché Godot non elenca bene
+// le cartelle dentro il gioco esportato. Senza file per un suono, Godot usa quello sintetizzato.
+const AUDIO_EXT = new Set([".ogg", ".wav"]);
+const publicDir = fileURLToPath(new URL("../public/", import.meta.url));
+const godotData = fileURLToPath(new URL("../godot/data/", import.meta.url));
+
+// I file audio di una cartella raggruppati per nome: hitHeavy_1.ogg e hitHeavy_2.ogg sono varianti di hitHeavy
+function audioGroup(dir: string): Record<string, string[]> {
+  const groups: Record<string, string[]> = {};
+  const abs = publicDir + dir;
+  if (!existsSync(abs)) return groups;
+  for (const file of readdirSync(abs).sort()) {
+    if (!AUDIO_EXT.has(extname(file))) continue;
+    const name = basename(file, extname(file)).replace(/_\d+$/, "");
+    (groups[name] ??= []).push(`${dir}/${file}`);
+  }
+  return groups;
+}
+
+const voices: Record<string, Record<string, string[]>> = {};
+for (const id of existsSync(publicDir + "assets/characters") ? readdirSync(publicDir + "assets/characters") : []) {
+  const group = audioGroup(`assets/characters/${id}/voice`);
+  if (Object.keys(group).length) voices[id] = group;
+}
+const audioFiles = { sfx: audioGroup("assets/sfx"), music: audioGroup("assets/music"), announcer: audioGroup("assets/announcer"), voices };
 
 const data = {
   version: pkg.version,
@@ -29,6 +56,7 @@ const data = {
   net: NET,
   reconnect: { ...RECONNECT, holdMs: RECONNECT_HOLD_MS }, // riconnessione dopo un calo di rete (#107)
   audio: AUDIO,
+  audioFiles,
   input: INPUT,
   rumble: RUMBLE,
   camera: CAMERA,
@@ -57,4 +85,14 @@ for (const c of Object.values(CHARACTERS)) {
   mkdirSync(dirname(to), { recursive: true });
   copyFileSync(from, to);
   console.log(`Copiato ${c.sprite.path}`);
+}
+
+// I file audio: la cartella di destinazione si rifà da zero, così un file tolto sparisce anche da Godot
+for (const dir of ["assets/sfx", "assets/music", "assets/announcer"]) rmSync(godotData + dir, { recursive: true, force: true });
+for (const group of [audioFiles.sfx, audioFiles.music, audioFiles.announcer, ...Object.values(voices)]) {
+  for (const path of Object.values(group).flat()) {
+    mkdirSync(dirname(godotData + path), { recursive: true });
+    copyFileSync(publicDir + path, godotData + path);
+    console.log(`Copiato ${path}`);
+  }
 }

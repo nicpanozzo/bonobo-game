@@ -167,7 +167,15 @@
     "sfx": 0.7,
     "music": 0.35,
     "musicBpm": 132,
-    "hitLoudPercent": 120
+    "hitLoudPercent": 120,
+    "voices": 0.8,
+    "musicFadeMs": 1500
+  },
+  "audioFiles": {
+    "sfx": {},
+    "music": {},
+    "announcer": {},
+    "voices": {}
   },
   "input": {
     "stickDeadzone": 0.35,
