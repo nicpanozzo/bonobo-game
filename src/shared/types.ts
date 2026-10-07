@@ -11,6 +11,7 @@ export interface InputState {
   heavy: boolean; // attacco pesante
   taunt: boolean; // provocazione (#16): per ora produce solo l'evento
   dodge: boolean; // schivata (#3): invulnerabili per un attimo, spostandosi nella direzione tenuta
+  shield: boolean; // scudo (#109): tenuto a terra para i colpi e si consuma; con una direzione rotola, con su si salta fuori
 }
 
 // Le varianti direzionali (#2): su tenendo su, giù tenendo giù a terra, Air in aria; recovery: K + su in aria (#11)
@@ -39,6 +40,9 @@ export interface PlayerState {
   carrier: boolean; // porta la bandiera della sua squadra (modalità "flag", #56)
   ledge: "hang" | "climb" | "roll" | null; // appeso al bordo del palco o in risalita (#110), null altrimenti
   away: boolean; // disconnesso, posto tenuto per la riconnessione: fermo e intoccabile (#107)
+  shielding: boolean; // scudo alzato (#109)
+  shieldHp: number; // punti di scudo, da 0 a SHIELD.maxHp: la bolla è grande in proporzione
+  stunned: boolean; // stordito dopo che lo scudo si è rotto: fermo e colpibile
 }
 
 // Un oggetto nell'arena (#17): a terra, in volo o in mano a qualcuno
@@ -90,6 +94,8 @@ export type GameEvent =
   | { type: "itemThrow"; itemId: number; id: string; x: number; y: number }
   | { type: "ledgeGrab"; id: string; x: number; y: number; invulnerable: boolean } // si aggrappa al bordo (#110)
   | { type: "ledgeGetup"; id: string; option: "climb" | "attack" | "jump" | "roll" | "drop" } // come lascia il bordo (#110)
+  | { type: "shield"; id: string; attackerId: string; damage: number; shieldHp: number; x: number; y: number } // colpo parato (#109)
+  | { type: "shieldBreak"; id: string; x: number; y: number } // lo scudo di id si è rotto
   | { type: "matchStart" }
   | { type: "away"; id: string } // id si è disconnesso: il suo posto resta tenuto per un po' (#107)
   | { type: "back"; id: string } // id è rientrato nel suo posto

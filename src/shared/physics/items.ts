@@ -10,6 +10,7 @@ import type { ItemState } from "../types";
 import { bodyBox } from "./attacks";
 import { moverPosition } from "./elements";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
+import { clearStun, hitShield } from "./shield";
 
 export interface Item extends ItemState {
   onGround: boolean;
@@ -198,6 +199,14 @@ function hitWithItem(item: Item, fighters: Fighter[], ctx: PhysicsContext) {
     if (!(box.x < body.x + body.w && box.x + box.w > body.x && box.y < body.y + body.h && box.y + box.h > body.y)) continue;
 
     const dir = item.vx !== 0 ? (Math.sign(item.vx) as 1 | -1) : target.x >= item.x ? 1 : -1;
+    item.lifeMs = 0; // sparisce al prossimo filtro
+    // Lo scudo para anche gli oggetti lanciati (#109): l'oggetto si consuma lo stesso
+    if (target.shielding) {
+      hitShield(target, item.thrownBy ?? "", spec.damage, dir, Math.round(item.x), Math.round(item.y - spec.height / 2), ctx);
+      item.thrownBy = null;
+      item.thrown = false;
+      return;
+    }
     target.percent = Math.min(999, target.percent + spec.damage);
     const knockback = spec.knockback + ITEM_RULES.knockbackGrowth * target.percent;
     const angle = (ITEM_RULES.angleDeg * Math.PI) / 180;
@@ -209,6 +218,7 @@ function hitWithItem(item: Item, fighters: Fighter[], ctx: PhysicsContext) {
     target.attackActive = false;
     target.facing = (-dir) as 1 | -1;
     target.lastHitById = item.thrownBy;
+    clearStun(target);
     target.hitstopTimer = Math.max(target.hitstopTimer, Math.min(HITSTOP.maxMs, HITSTOP.baseMs + HITSTOP.perDamageMs * spec.damage));
     ctx.events.push({
       type: "hit",
@@ -222,7 +232,6 @@ function hitWithItem(item: Item, fighters: Fighter[], ctx: PhysicsContext) {
       x: Math.round(item.x),
       y: Math.round(item.y - spec.height / 2),
     });
-    item.lifeMs = 0; // sparisce al prossimo filtro
     item.thrownBy = null;
     item.thrown = false;
     return;

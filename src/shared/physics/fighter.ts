@@ -1,7 +1,7 @@
 // Lo stato completo di un lottatore sul server: quello che vedono i client (PlayerState)
 // più i timer interni che non viaggiano in rete.
 
-import { FIGHTER, INPUT } from "../constants";
+import { FIGHTER, INPUT, SHIELD } from "../constants";
 import type { StageSpec } from "../stages";
 import type { GameEvent, InputState, PlayerState } from "../types";
 
@@ -31,6 +31,10 @@ export interface Fighter extends PlayerState {
   ledgeTimer: number; // ms passati appesi
   ledgeGrabs: number; // prese del bordo da quando si è toccato terra o si è stati colpiti
   regrabTimer: number; // ms prima di potersi aggrappare di nuovo
+  shieldTimer: number; // ms da quando si tiene lo scudo (#109): para da SHIELD.raiseMs
+  shieldDropTimer: number; // ms fermi dopo averlo abbassato
+  shieldStunTimer: number; // ms fermi sullo scudo dopo un colpo parato
+  stunTimer: number; // ms storditi dopo la rottura dello scudo
 }
 
 // Quello che serve alla fisica oltre ai lottatori: l'arena e dove scrivere gli eventi
@@ -51,6 +55,7 @@ export const emptyInput = (): InputState => ({
   heavy: false,
   taunt: false,
   dodge: false,
+  shield: false,
 });
 
 export interface FighterSetup {
@@ -88,6 +93,9 @@ export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
     carrier: false,
     ledge: null,
     away: false,
+    shielding: false,
+    shieldHp: SHIELD.maxHp,
+    stunned: false,
     input: emptyInput(),
     prevInput: emptyInput(),
     buffer: emptyBuffer(),
@@ -113,6 +121,10 @@ export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
     ledgeTimer: 0,
     ledgeGrabs: 0,
     regrabTimer: 0,
+    shieldTimer: 0,
+    shieldDropTimer: 0,
+    shieldStunTimer: 0,
+    stunTimer: 0,
   };
 }
 

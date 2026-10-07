@@ -8,7 +8,7 @@ signal changed
 
 const PATH := "user://bonobo.cfg"
 # Le azioni che si possono assegnare a un tasto (le stesse di InputState)
-const ACTIONS := ["left", "right", "up", "down", "light", "heavy", "taunt", "dodge"]
+const ACTIONS := ["left", "right", "up", "down", "light", "heavy", "taunt", "dodge", "shield"]
 const LABELS := {
 	"left": "Sinistra",
 	"right": "Destra",
@@ -18,6 +18,7 @@ const LABELS := {
 	"heavy": "Attacco pesante",
 	"taunt": "Provocazione",
 	"dodge": "Schivata",
+	"shield": "Scudo",
 }
 # I tasti di default del gioco web (DEFAULT_BINDINGS), come tasti fisici: non dipendono dalla lingua della tastiera
 const DEFAULT_BINDINGS := {
@@ -29,6 +30,7 @@ const DEFAULT_BINDINGS := {
 	"heavy": [KEY_K],
 	"taunt": [KEY_T],
 	"dodge": [KEY_L],
+	"shield": [KEY_I], # scudo (#109)
 }
 const MAX_KEYS := 3 # tasti per azione
 # Pad (E6): un pulsante è il suo JOY_BUTTON_*; una levetta o un grilletto inclinati
@@ -43,7 +45,9 @@ const DEFAULT_PAD_BINDINGS := {
 	"heavy": [JOY_BUTTON_B],
 	"taunt": [JOY_BUTTON_BACK],
 	# Y resta libero per la speciale (E10)
-	"dodge": [JOY_BUTTON_LEFT_SHOULDER, JOY_BUTTON_RIGHT_SHOULDER, AXIS_BASE + JOY_AXIS_TRIGGER_LEFT * 2 + 1, AXIS_BASE + JOY_AXIS_TRIGGER_RIGHT * 2 + 1],
+	"dodge": [JOY_BUTTON_LEFT_SHOULDER, JOY_BUTTON_RIGHT_SHOULDER],
+	# Lo scudo (#109) sui grilletti, come nei platform fighter
+	"shield": [AXIS_BASE + JOY_AXIS_TRIGGER_LEFT * 2 + 1, AXIS_BASE + JOY_AXIS_TRIGGER_RIGHT * 2 + 1],
 }
 const MAX_PAD := 4 # pulsanti per azione
 # Video (E14): solo su desktop, nel web decide il browser. Si applicano con Video.apply()
@@ -109,6 +113,15 @@ func _init(audio_defaults: Dictionary, path := PATH) -> void:
 		var v: Variant = cfg.get_value("access", k) if cfg.has_section_key("access", k) else null
 		if typeof(v) == typeof(ACCESS_DEFAULTS[k]):
 			access[k] = v
+	# Un'azione nuova che non era salvata (es. lo scudo) prende i suoi tasti di default anche se
+	# le preferenze vecchie li davano a un'altra: un tasto fa una sola azione
+	for a in ACTIONS:
+		for section in ["keys", "pad"]:
+			if not cfg.has_section_key(section, a):
+				var all: Dictionary = bindings if section == "keys" else pad_bindings
+				for other in ACTIONS:
+					if other != a:
+						all[other] = all[other].filter(func(k): return not all[a].has(k))
 	var p: Variant = cfg.get_value("profile", "last", {})
 	if p is Dictionary:
 		profile = p

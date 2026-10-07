@@ -7,12 +7,14 @@
 //   stage.ts     contatto con l'arena, KO e respawn (#14)
 //   elements.ts  ascensori e trappole (#14)
 //   ledge.ts     bordo del palco (#110)
+//   shield.ts    scudo e stordimento (#109)
 
 import { resolveHits, tryStartAttack, updateAttack } from "./attacks";
 import { carryRider, resolveHazards } from "./elements";
 import { tickBuffer, type Fighter, type PhysicsContext } from "./fighter";
 import { holdLedge, tryGrabLedge } from "./ledge";
 import { applyControls, applyGravity } from "./movement";
+import { holdShield } from "./shield";
 import { collideWithStage, loseStock, outOfBlastZone, respawn } from "./stage";
 
 export * from "./fighter";
@@ -70,8 +72,11 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
   }
 
   updateAttack(f, dtMs);
-  applyControls(f, dt, ctx);
-  tryStartAttack(f, ctx);
+  // Sullo scudo o storditi niente controlli né attacchi
+  if (!holdShield(f, dtMs, ctx)) {
+    applyControls(f, dt, ctx);
+    tryStartAttack(f, ctx);
+  }
   applyGravity(f, dt);
 
   const prevY = f.y;

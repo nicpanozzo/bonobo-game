@@ -38,3 +38,11 @@ func test_disconnesso_semitrasparente() -> void:
 	runner.check(WorldView.away_alpha(_player({"away": true})) < 1.0, "away: trasparente")
 	runner.check(WorldView.away_alpha(_player({"away": false})) == 1.0, "collegato: pieno")
 	runner.check(WorldView.away_alpha(_player()) == 1.0, "server vecchio senza away: pieno")
+
+
+func test_bolla_dello_scudo_rimpicciolisce() -> void:
+	var full := WorldView.shield_radius(50, 50, 88)
+	var half := WorldView.shield_radius(25, 50, 88)
+	var empty := WorldView.shield_radius(0, 50, 88)
+	runner.check(full > half and half > empty and empty > 0, "raggi: %s %s %s" % [full, half, empty])
+	runner.check(full >= 88 / 2.0, "piena copre il lottatore: %s" % full)

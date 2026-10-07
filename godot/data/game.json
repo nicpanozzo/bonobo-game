@@ -139,6 +139,9 @@
   "ledge": {
     "hangOffsetY": 56
   },
+  "shield": {
+    "maxHp": 50
+  },
   "net": {
     "interpolationDelayMs": 80,
     "teleportDistance": 300,

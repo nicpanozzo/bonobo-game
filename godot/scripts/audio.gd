@@ -87,6 +87,12 @@ func on_event(e: Dictionary) -> void:
 				_play("roll", {"volume": 0.5})
 			elif e.option == "climb":
 				_play("land", {"volume": 0.3, "pitch": 1.3})
+		"shield":
+			# Colpo parato (#109): più grave quando lo scudo sta per rompersi
+			var left: float = clampf(e.shieldHp / float(game.shield.maxHp), 0.0, 1.0)
+			_play("shield", {"volume": 0.6, "x": e.x, "pitch": 0.75 + 0.35 * left})
+		"shieldBreak":
+			_play("shieldBreak", {"x": e.x})
 		"ko":
 			_play("ko", {"x": e.x})
 		"checkpoint":
@@ -176,6 +182,15 @@ func _build_sounds() -> void:
 		s.noise(0, "lowpass", 600, 150, 0.05, 0.5))
 	# Rotolata dal bordo: un fruscio che scende
 	_sounds.roll = make.call(0.3, func(s): s.noise(0, "bandpass", 900, 350, 0.26, 0.4))
+	# Scudo colpito (#109): un "tonk" metallico e corto
+	_sounds.shield = make.call(0.18, func(s):
+		s.tone(0, "triangle", 520, 480, 0.15, 0.35)
+		s.noise(0, "bandpass", 2500, 1500, 0.06, 0.3))
+	# Scudo rotto: vetro che si spezza e un tonfo che scende
+	_sounds.shieldBreak = make.call(0.6, func(s):
+		s.noise(0, "highpass", 6000, 2500, 0.35, 0.6)
+		s.tone(0, "square", 900, 120, 0.5, 0.25)
+		s.tone(0.02, "sine", 160, 50, 0.45, 0.5))
 	# Fuori dall'arena: esplosione e fischio che scende
 	_sounds.ko = make.call(0.95, func(s):
 		s.noise(0, "lowpass", 2500, 60, 0.9, 1.0)
