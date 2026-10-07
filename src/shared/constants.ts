@@ -298,10 +298,11 @@ export const PING_INTERVAL_MS = 5000; // ogni quanto il server manda un ping (So
 export const PING_TIMEOUT_MS = 5000; // senza risposta al ping per tanto il client è dato per perso (predefinito 20 s)
 export const ROOM_IDLE_MS = 15 * 60_000; // millisecondi senza tasti umani dopo cui una stanza si chiude come se fosse vuota
 
-// Comandi col pad (E6, #108): numeri che usa solo il client Godot, esportati in game.json
+// Comandi (E6, #108): levetta e avvisi per il client Godot (esportati in game.json), buffer per il server
 export const INPUT = {
   stickDeadzone: 0.35, // da 0 a 1: sotto questa inclinazione la levetta (o il grilletto) non conta
   padToastMs: 2000, // millisecondi di "Pad collegato: <nome>" sullo schermo
+  bufferMs: 100, // ms in cui un tasto appena premuto (attacchi, salto, schivata) vale ancora se l'azione non può partire subito
 };
 
 // Versione del protocollo (E2, #106): sale solo quando types.ts cambia in modo che client e server

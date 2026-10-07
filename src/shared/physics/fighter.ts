@@ -1,13 +1,14 @@
 // Lo stato completo di un lottatore sul server: quello che vedono i client (PlayerState)
 // più i timer interni che non viaggiano in rete.
 
-import { FIGHTER } from "../constants";
+import { FIGHTER, INPUT } from "../constants";
 import type { StageSpec } from "../stages";
 import type { GameEvent, InputState, PlayerState } from "../types";
 
 export interface Fighter extends PlayerState {
   input: InputState;
   prevInput: InputState; // per riconoscere quando un tasto viene appena premuto
+  buffer: Record<BufferedKey, number>; // ms in cui una pressione vale ancora (E6): si consuma quando l'azione parte
   jumpsLeft: number;
   dropTimer: number; // ms in cui si ignorano le piattaforme sottili
   attackTimer: number; // ms dall'inizio dell'attacco in corso
@@ -89,6 +90,7 @@ export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
     away: false,
     input: emptyInput(),
     prevInput: emptyInput(),
+    buffer: emptyBuffer(),
     jumpsLeft: FIGHTER.maxJumps,
     dropTimer: 0,
     attackTimer: 0,
@@ -122,4 +124,26 @@ export function resetForMatch(f: Fighter, index: number, stocks: number, stage: 
 
 export const isAlive = (f: Fighter) => !f.eliminated;
 
-export const pressed = (f: Fighter, key: keyof InputState) => f.input[key] && !f.prevInput[key];
+// Tasti col buffer (E6): una pressione più corta di un tick, o arrivata un attimo prima che l'azione
+// possa partire (fine del colpo, atterraggio), conta lo stesso per INPUT.bufferMs
+export const BUFFERED_KEYS = ["light", "heavy", "up", "dodge"] as const;
+export type BufferedKey = (typeof BUFFERED_KEYS)[number];
+const isBuffered = (key: keyof InputState): key is BufferedKey => (BUFFERED_KEYS as readonly string[]).includes(key);
+export const emptyBuffer = (): Record<BufferedKey, number> => ({ light: 0, heavy: 0, up: 0, dodge: 0 });
+
+export const pressed = (f: Fighter, key: keyof InputState) =>
+  (f.input[key] && !f.prevInput[key]) || (isBuffered(key) && f.buffer[key] > 0);
+
+// Un tasto nuovo arrivato dalla rete (Match.setInput): i fronti di salita finiscono nel buffer
+export function bufferPresses(f: Fighter, next: InputState): void {
+  for (const key of BUFFERED_KEYS) if (next[key] && !f.input[key]) f.buffer[key] = INPUT.bufferMs;
+}
+
+// L'azione è partita: la pressione è usata e non fa partire niente altro
+export function consume(f: Fighter, ...keys: BufferedKey[]): void {
+  for (const key of keys) f.buffer[key] = 0;
+}
+
+export function tickBuffer(f: Fighter, dtMs: number): void {
+  for (const key of BUFFERED_KEYS) f.buffer[key] = Math.max(0, f.buffer[key] - dtMs);
+}

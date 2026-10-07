@@ -2,7 +2,7 @@
 
 import { DODGE, FIGHTER, FLAG, HITSTUN_AIR_DRAG, RECOVERY } from "../constants";
 import { startAttack } from "./attacks";
-import { pressed, type Fighter, type PhysicsContext } from "./fighter";
+import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
 
 // Cosa fa il lottatore con i tasti premuti (solo se non è stordito)
 export function applyControls(f: Fighter, dt: number, ctx: PhysicsContext): void {
@@ -16,6 +16,7 @@ export function applyControls(f: Fighter, dt: number, ctx: PhysicsContext): void
   // Schivata (#3): mentre dura si scivola alla velocità decisa all'inizio, senza controlli né attacchi
   if (f.dodgeTimer > 0) return;
   if (pressed(f, "dodge") && !f.attack && f.dodgeCooldown === 0 && (f.onGround || !f.airDodgeUsed)) {
+    consume(f, "dodge");
     f.dodgeTimer = DODGE.durationMs;
     f.dodgeCooldown = DODGE.cooldownMs;
     f.invulnerableTimer = Math.max(f.invulnerableTimer, DODGE.durationMs);
@@ -54,6 +55,7 @@ export function applyControls(f: Fighter, dt: number, ctx: PhysicsContext): void
 
   // Salto e doppio salto
   if (pressed(f, "up") && f.jumpsLeft > 0) {
+    consume(f, "up"); // una pressione = un salto solo
     ctx.events.push({ type: "jump", id: f.id, x: Math.round(f.x), y: Math.round(f.y), air: !f.onGround });
     f.vy = -(f.onGround ? FIGHTER.jumpSpeed : FIGHTER.doubleJumpSpeed);
     f.jumpsLeft -= 1;
