@@ -46,3 +46,18 @@ func test_bolla_dello_scudo_rimpicciolisce() -> void:
 	var empty := WorldView.shield_radius(0, 50, 88)
 	runner.check(full > half and half > empty and empty > 0, "raggi: %s %s %s" % [full, half, empty])
 	runner.check(full >= 88 / 2.0, "piena copre il lottatore: %s" % full)
+
+
+func test_stordito_ha_la_posa_del_colpo() -> void:
+	var p := {"hitstun": false, "stunned": true, "attack": null, "onGround": true, "vx": 0, "vy": 0}
+	runner.check(WorldView._animation_for(p) == "hit", "posa: %s" % WorldView._animation_for(p))
+	p.stunned = false
+	runner.check(WorldView._animation_for(p) == "idle", "senza stordimento: %s" % WorldView._animation_for(p))
+
+
+func test_schegge_a_raggiera() -> void:
+	var v := WorldView.shard_velocities(10)
+	var sum := Vector2.ZERO
+	for s in v:
+		sum += s
+	runner.check(v.size() == 10 and sum.y < 0, "10 schegge, in media verso l'alto: %s" % sum)
