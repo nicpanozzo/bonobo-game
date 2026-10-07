@@ -3,6 +3,7 @@
 //   handleItemInput() prima di stepWorld: J o K vicino a un oggetto lo raccoglie, con l'oggetto in mano lo lancia
 //   stepItems() dopo stepWorld: comparsa, caduta, oggetti in mano e colpi di quelli lanciati
 
+import { characterStats } from "../characters";
 import { FIGHTER, HITSTOP, HITSTUN_PER_KNOCKBACK, ITEM_RULES } from "../constants";
 import { ITEMS } from "../items";
 import { rng } from "../stageGenerator";
@@ -208,7 +209,7 @@ function hitWithItem(item: Item, fighters: Fighter[], ctx: PhysicsContext) {
       return;
     }
     target.percent = Math.min(999, target.percent + spec.damage);
-    const knockback = spec.knockback + ITEM_RULES.knockbackGrowth * target.percent;
+    const knockback = (spec.knockback + ITEM_RULES.knockbackGrowth * target.percent) / characterStats(target.characterId).weight; // E11
     const angle = (ITEM_RULES.angleDeg * Math.PI) / 180;
     target.vx = dir * Math.cos(angle) * knockback;
     target.vy = -Math.sin(angle) * knockback;

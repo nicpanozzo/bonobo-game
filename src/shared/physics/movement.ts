@@ -1,5 +1,6 @@
 // Corsa, controllo in aria, salti, caduta veloce e gravità.
 
+import { characterStats } from "../characters";
 import { DODGE, FIGHTER, FLAG, HITSTUN_AIR_DRAG, RECOVERY } from "../constants";
 import { startAttack } from "./attacks";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
@@ -29,13 +30,14 @@ export function applyControls(f: Fighter, dt: number, ctx: PhysicsContext): void
     if (dir !== 0) f.facing = dir as 1 | -1;
     return;
   }
+  const stats = characterStats(f.characterId);
   const speed = f.carrier ? FLAG.carrierSpeed : 1; // la bandiera pesa
   // Durante un attacco da terra si resta fermi, in aria si mantiene lo slancio
   if (f.onGround) {
-    f.vx = f.attack ? 0 : dir * FIGHTER.groundSpeed * speed;
+    f.vx = f.attack ? 0 : dir * FIGHTER.groundSpeed * stats.speed * speed;
   } else if (dir !== 0) {
     f.vx += dir * FIGHTER.airAccel * dt;
-    const max = FIGHTER.airSpeed * speed;
+    const max = FIGHTER.airSpeed * stats.airSpeed * speed;
     f.vx = Math.max(-max, Math.min(max, f.vx));
   } else {
     const slow = FIGHTER.airFriction * dt;
@@ -57,7 +59,7 @@ export function applyControls(f: Fighter, dt: number, ctx: PhysicsContext): void
   if (pressed(f, "up") && f.jumpsLeft > 0) {
     consume(f, "up"); // una pressione = un salto solo
     ctx.events.push({ type: "jump", id: f.id, x: Math.round(f.x), y: Math.round(f.y), air: !f.onGround });
-    f.vy = -(f.onGround ? FIGHTER.jumpSpeed : FIGHTER.doubleJumpSpeed);
+    f.vy = -(f.onGround ? FIGHTER.jumpSpeed : FIGHTER.doubleJumpSpeed) * stats.jump;
     f.jumpsLeft -= 1;
     f.onGround = false;
   }
@@ -72,6 +74,6 @@ export function applyControls(f: Fighter, dt: number, ctx: PhysicsContext): void
 export function applyGravity(f: Fighter, dt: number): void {
   const fastFall = f.input.down && !f.hitstun;
   const maxFall = fastFall ? FIGHTER.fastFallSpeed : FIGHTER.maxFallSpeed;
-  f.vy = Math.min(f.vy + FIGHTER.gravity * dt, f.hitstun ? Infinity : maxFall);
+  f.vy = Math.min(f.vy + FIGHTER.gravity * characterStats(f.characterId).gravity * dt, f.hitstun ? Infinity : maxFall);
   if (fastFall && !f.onGround && f.vy > 0) f.vy = Math.max(f.vy, maxFall * 0.8);
 }

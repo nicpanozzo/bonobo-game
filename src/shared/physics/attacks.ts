@@ -1,5 +1,6 @@
 // Attacchi: inizio, finestra attiva, hitbox e cosa succede a chi viene colpito.
 
+import { characterStats } from "../characters";
 import { ATTACKS, FIGHTER, HITSTOP, HITSTUN_PER_KNOCKBACK } from "../constants";
 import type { AttackKind } from "../types";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
@@ -91,7 +92,7 @@ export function resolveHits(fighters: Fighter[], ctx: PhysicsContext): void {
 
       // Stile Smash/Brawlhalla: il danno non toglie vita, fa volare più lontano
       target.percent = Math.min(999, target.percent + spec.damage);
-      const knockback = spec.baseKnockback + spec.knockbackGrowth * target.percent;
+      const knockback = (spec.baseKnockback + spec.knockbackGrowth * target.percent) / characterStats(target.characterId).weight; // E11
       const angle = (spec.angleDeg * Math.PI) / 180;
       target.vx = attacker.facing * Math.cos(angle) * knockback;
       target.vy = -Math.sin(angle) * knockback;

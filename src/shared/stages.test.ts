@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { CHARACTERS, characterStats } from "./characters";
 import { FIGHTER, MAX_PLAYERS_PER_ROOM, TICK_RATE, WORLD } from "./constants";
 import { createFighter, stepWorld, type PhysicsContext } from "./physics";
 import { courseSteps, generateCourse } from "./courseGenerator";
@@ -13,12 +14,13 @@ const SIDE_REACH = 250; // pixel in orizzontale che si coprono comodamente duran
 
 // Una piattaforma si raggiunge da una superficie più bassa vicina con un salto,
 // o da una superficie proprio sotto con il doppio salto
-function reachable(stage: StageSpec, p: { x: number; y: number; width: number }): boolean {
+// heightScale: per i personaggi con salto o gravità diversi (E11) l'altezza è jump² / gravity volte quella di base
+function reachable(stage: StageSpec, p: { x: number; y: number; width: number }, heightScale = 1): boolean {
   return [...stage.solids, ...stage.platforms].some((s) => {
     if (s.y <= p.y) return false;
     const gap = Math.max(0, s.x - (p.x + p.width), p.x - (s.x + s.width));
     const rise = s.y - p.y;
-    return (gap <= SIDE_REACH && rise <= JUMP_HEIGHT) || (gap === 0 && rise <= DOUBLE_JUMP_HEIGHT * 0.9);
+    return (gap <= SIDE_REACH && rise <= JUMP_HEIGHT * heightScale) || (gap === 0 && rise <= DOUBLE_JUMP_HEIGHT * heightScale * 0.9);
   });
 }
 
@@ -44,6 +46,16 @@ function checkStage(stage: StageSpec) {
 describe("arene", () => {
   it("le arene fatte a mano sono valide", () => {
     for (const stage of Object.values(STAGES)) checkStage(stage);
+  });
+
+  it("ogni personaggio raggiunge tutte le piattaforme delle arene fatte a mano (E11)", () => {
+    for (const id of Object.keys(CHARACTERS)) {
+      const { jump, gravity } = characterStats(id);
+      for (const stage of Object.values(STAGES)) {
+        if (stage.goal) continue;
+        for (const p of stage.platforms) assert.ok(reachable(stage, p, (jump * jump) / gravity), `${id} su ${stage.id}: piattaforma a ${p.x},${p.y} irraggiungibile`);
+      }
+    }
   });
 
   it("un'arena generata è sempre la stessa per lo stesso seme", () => {
