@@ -38,6 +38,8 @@ var _try_hint := "" # prova del primo avvio (E14): si mostra appena si entra nel
 var _last_snapshot := 0 # ms dell'ultimo snapshot: in partita il silenzio dice che la rete è caduta
 var training: Control # pannello dell'allenamento (E15), solo nelle stanze "training"
 var tutorial: Control # riquadro del tutorial a tappe (E15), solo se si è entrati da "Tutorial"
+var challenge_run: Control # sfida in corso (E15 passo 3), solo se si è entrati da "Sfide"
+var _picked: Dictionary = {} # sfida appena scelta nell'elenco
 
 
 func _ready() -> void:
@@ -158,6 +160,10 @@ func _show_title(skip_press := false) -> void:
 	title.training_requested.connect(func():
 		title.queue_free()
 		_join_gym(false))
+	title.challenges_requested.connect(func():
+		_show_challenges(func():
+			title.queue_free()
+			_join_challenge.call_deferred(_picked), title.restore_focus))
 	title.credits_requested.connect(func():
 		var credits := preload("res://scripts/credits.gd").new()
 		credits.theme = UI.theme()
@@ -191,6 +197,7 @@ func _show_first_run() -> void:
 func _join(choice: Dictionary) -> void:
 	params.merge(choice, true)
 	params.tutorial = choice.get("tutorial", false) # vale solo per questa entrata
+	params.challenge = choice.get("challenge", {})
 	if params.server == "":
 		params.server = _default_server()
 	# La palestra (E15) non diventa l'ultima scelta: la lobby resta com'era
@@ -215,6 +222,7 @@ func _leave() -> void:
 	hud.reset()
 	_set_training(false)
 	_set_tutorial(false)
+	_set_challenge(false)
 	camera.position = Vector2.ZERO
 	camera.zoom = Vector2.ONE
 	_hide_connecting()
@@ -389,8 +397,10 @@ func _on_event(name: String, data: Variant) -> void:
 			else:
 				world.set_stage(data.stageId)
 			hud.on_welcome(data, world.stage)
-			_set_training(data.get("rules", {}).get("mode", "") == "training")
+			# In una sfida niente pannello: rallentatore e percentuale cambierebbero il risultato
+			_set_training(data.get("rules", {}).get("mode", "") == "training" and params.get("challenge", {}).is_empty())
 			_set_tutorial(params.get("tutorial", false))
+			_set_challenge(not params.get("challenge", {}).is_empty())
 			_check_server_version(str(data.get("serverVersion", "")))
 			camera.position = Vector2.ZERO
 			camera.zoom = Vector2.ONE
@@ -408,6 +418,8 @@ func _on_event(name: String, data: Variant) -> void:
 			hud.on_snapshot(data)
 			if is_instance_valid(training):
 				training.on_snapshot(data)
+			if is_instance_valid(challenge_run):
+				challenge_run.on_snapshot(data)
 		"roomFull":
 			_show_connecting("Stanza piena!", "Prova con un'altra stanza: Annulla torna alla lobby.")
 		"refused": # il server non ci fa entrare e dice perché (E2): si torna alla lobby con il messaggio
@@ -636,3 +648,55 @@ func _set_tutorial(on: bool) -> void:
 	tutorial.setup(settings, game)
 	# "Fatto!": lo stesso suono di un punto
 	tutorial.lesson_done.connect(func(_i: int): audio.on_event({"type": "flag"}))
+
+
+# Elenco delle sfide (E15 passo 3) sopra il titolo o la lobby; on_pick parte con la sfida in _picked
+func _show_challenges(on_pick: Callable, on_close: Callable) -> void:
+	var list := preload("res://scripts/challenges.gd").new()
+	list.theme = UI.theme()
+	ui_layer.add_child(list)
+	list.setup(game, settings)
+	list.chosen.connect(func(c: Dictionary):
+		_picked = c
+		list.queue_free()
+		on_pick.call())
+	list.closed.connect(on_close)
+
+
+# Ogni sfida in una palestra nuova tutta propria, col suo bot e la sua arena
+func _join_challenge(c: Dictionary) -> void:
+	var player_name := str(settings.profile.get("name", ""))
+	_join({
+		"name": player_name if player_name != "" else "Bonobo",
+		"room": "sfida-" + str(randi() % 100000),
+		"char": settings.profile.get("char", ""),
+		"stage": str(c.stage),
+		"rules": {"mode": "training"},
+		"bot": str(c.bot),
+		"challenge": c,
+		"gym": true,
+	})
+
+
+func _set_challenge(on: bool) -> void:
+	if is_instance_valid(challenge_run):
+		challenge_run.queue_free()
+		challenge_run = null
+	if not on:
+		return
+	challenge_run = preload("res://scripts/challenge_run.gd").new()
+	challenge_run.theme = UI.theme()
+	challenge_run.my_id = world.my_id
+	ui_layer.add_child(challenge_run)
+	challenge_run.setup(params.challenge, settings)
+	_start_challenge()
+	challenge_run.retry_requested.connect(_start_challenge)
+	challenge_run.back_requested.connect(func():
+		_leave()
+		_show_challenges(func(): _join_challenge.call_deferred(_picked), func(): pass))
+
+
+# Tutti al loro posto e il bot alla percentuale della sfida (comandi dell'allenamento), poi si riparte
+func _start_challenge() -> void:
+	socket.emit("training", {"reset": true, "percent": float(params.challenge.get("botPercent", 0))})
+	challenge_run.start()

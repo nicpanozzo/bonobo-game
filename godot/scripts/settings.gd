@@ -78,6 +78,7 @@ var profile := {} # name, room, char, stage, rules, server
 var first_run_done := false # primo avvio guidato (E14) già fatto o saltato: Ripristina non lo rimette
 var video := {} # come VIDEO_DEFAULTS
 var access := {} # come ACCESS_DEFAULTS
+var medals := {} # sfide (E15): id → {"medal": 1-3, "best": punteggio migliore}, sezione [medals]
 
 var _defaults := {}
 var _path := PATH
@@ -129,6 +130,11 @@ func _init(audio_defaults: Dictionary, path := PATH) -> void:
 	var p: Variant = cfg.get_value("profile", "last", {})
 	if p is Dictionary:
 		profile = p
+	if cfg.has_section("medals"):
+		for id in cfg.get_section_keys("medals"):
+			var m: Variant = cfg.get_value("medals", id)
+			if m is Dictionary:
+				medals[id] = m
 
 
 func reset(notify := true) -> void:
@@ -173,8 +179,22 @@ func save() -> void:
 		cfg.set_value("access", k, access[k])
 	cfg.set_value("profile", "last", profile)
 	cfg.set_value("first_run", "done", first_run_done)
+	for id in medals:
+		cfg.set_value("medals", id, medals[id])
 	cfg.save(_path) # se non si può salvare, le preferenze valgono solo per questa volta
 	changed.emit()
+
+
+# Un tentativo di sfida finito: tiene il punteggio migliore e la medaglia migliore, e salva.
+# Restituisce true se è il nuovo record. Ripristina nelle opzioni non tocca le medaglie
+func record_medal(id: String, medal: int, score: float, lower_is_better: bool) -> bool:
+	var old: Dictionary = medals.get(id, {})
+	var best: bool = old.is_empty() or (score < float(old.best) if lower_is_better else score > float(old.best))
+	if not best and medal <= int(old.get("medal", 0)):
+		return false
+	medals[id] = {"medal": maxi(medal, int(old.get("medal", 0))), "best": score if best else float(old.best)}
+	save()
+	return best
 
 
 # Tastiera o qualsiasi pad collegato
