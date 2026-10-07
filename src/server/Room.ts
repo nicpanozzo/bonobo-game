@@ -92,6 +92,12 @@ export class Room {
     this.seats.hold(id, Date.now());
   }
 
+  // Rientro con il token: lo stesso lottatore torna in gioco
+  resumePlayer(id: string) {
+    this.match.setAway(id, false);
+    this.lastHumanInput = Date.now();
+  }
+
   removePlayer(id: string) {
     this.match.removePlayer(id);
     this.humans.delete(id);

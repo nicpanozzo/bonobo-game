@@ -11,6 +11,7 @@ export interface JoinData {
   stageId?: string;
   rules?: Partial<MatchRules>;
   bot?: string;
+  token?: string; // token del welcome per rientrare dopo una caduta di rete (#107)
 }
 
 const isObject = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
@@ -42,6 +43,8 @@ export function parseJoin(raw: unknown): JoinData | null {
     stageId: shortString(raw.stageId),
     rules,
     bot: shortString(raw.bot),
+    // I token che diamo noi sono 22 caratteri base64url: qualunque altra cosa non è un token
+    token: typeof raw.token === "string" && /^[A-Za-z0-9_-]{1,32}$/.test(raw.token) ? raw.token : undefined,
   };
 }
 
