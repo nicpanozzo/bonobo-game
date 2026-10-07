@@ -101,7 +101,7 @@ func _show_lobby() -> void:
 	lobby = preload("res://scripts/lobby.gd").new()
 	lobby.theme = UI.theme()
 	ui_layer.add_child(lobby)
-	lobby.setup(game, params, room_link)
+	lobby.setup(game, params, room_link, url_params.has("room"))
 	UI.fade_in(lobby)
 	lobby.join_requested.connect(_join)
 	lobby.back_requested.connect(func():

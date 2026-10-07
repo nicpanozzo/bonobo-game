@@ -79,11 +79,18 @@ func _open_menu() -> void:
 	_first.grab_focus.call_deferred()
 
 
-# Un tasto, un pulsante del pad o un clic: compare il menu (il tasto non fa altro)
+# Il clic se lo prendono i controlli della schermata e a _unhandled_input non arriva: risale fin qui
+func _gui_input(event: InputEvent) -> void:
+	if _press.visible and event is InputEventMouseButton and event.is_pressed():
+		accept_event()
+		_open_menu()
+
+
+# Un tasto o un pulsante del pad: compare il menu (il tasto non fa altro)
 func _unhandled_input(event: InputEvent) -> void:
 	if not _press.visible or not is_visible_in_tree():
 		return
-	var pressed := (event is InputEventKey or event is InputEventJoypadButton or event is InputEventMouseButton) and event.is_pressed()
+	var pressed := (event is InputEventKey or event is InputEventJoypadButton) and event.is_pressed()
 	if pressed:
 		get_viewport().set_input_as_handled()
 		_open_menu()
