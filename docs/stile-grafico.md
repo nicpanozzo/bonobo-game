@@ -59,8 +59,9 @@ Usati poco, come piccoli accenti (una brace, un bottone), vanno bene.
 - **Strumento: Blender** (gratis). Bonobot è fatto così: un piano per pezzo su un'armatura di 19 ossa, un'azione per animazione, e nel file lo script `esporta_spritesheet.py` che rifà il PNG. Il `.blend` di Bonobot per ora sta sul PC di Riccardo; se metterlo nella repo come sorgente si decide con il gruppo.
 - **Movenze naturali, non meccaniche:** anticipo prima dei colpi, inerzia (testa, mani e capelli arrivano un attimo dopo il corpo), piedi e mani che restano piantati a terra mentre il corpo si muove, archi nei movimenti.
 - **Velocità:** 24 fotogrammi al secondo; le animazioni lente in ciclo (fermo, appeso) possono stare a 12.
+- **Colpi a tempo:** negli attacchi si segna `hitFrame`, il fotogramma dell'impatto; il gioco lo fa cadere quando la hitbox si accende.
 - **Animazioni obbligatorie** (`AnimationName`): `idle`, `walk`, `jump`, `fall`, `light`, `heavy`, `hit`.
-- **Facoltative** (`OptionalAnimationName`; senza si usa quella di ripiego): `doubleJump` (→ `jump`), `tumble` (→ `hit`), `ledge` e `climb` (→ `jump`), più gli stati che il passo 3 di E7 metterà in gioco (`land`, `taunt`, varianti degli attacchi...). L'elenco completo è nel [README dei personaggi](../public/assets/characters/README.md).
+- **Facoltative** (`OptionalAnimationName`; senza si usa quella di ripiego): `doubleJump` (→ `jump`), `tumble` (→ `hit`), `ledge` e `climb` (→ `jump`), `land` e `taunt` (→ `idle`), le varianti degli attacchi (→ `light` o `heavy`)... L'elenco completo è nel [README dei personaggi](../public/assets/characters/README.md).
 - **Formato:** una cartella per personaggio con **un PNG per stato** (`idle.png`, `walk.png`...), fotogrammi in fila da sinistra; nel blocco del personaggio in `characters.ts` si scrivono solo `fps` e ciclo di ogni stato. Il vecchio formato a foglio unico (una riga per animazione, come Bonobot oggi) funziona ancora. Istruzioni: `public/assets/characters/README.md`.
 
 ## 7. Arene

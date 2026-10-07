@@ -6,7 +6,7 @@
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { basename, dirname, extname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { CHARACTERS, DEFAULT_CHARACTER_ID, isSpriteFolder, spriteStatePath } from "../src/shared/characters";
+import { CHARACTERS, DEFAULT_CHARACTER_ID, isSpriteFolder, resolvedAnimations, spriteStatePath } from "../src/shared/characters";
 import { ATTACKS, AUDIO, CAMERA, COLORS, EFFECTS, FIGHTER, INPUT, ITEM_RULES, LEDGE, NET, PROTOCOL_VERSION, RUMBLE, SHIELD, TEAM_COLORS, TEAM_NAMES, WORLD } from "../src/shared/constants";
 import { RECONNECT, RECONNECT_HOLD_MS } from "../src/shared/constants";
 import { COLORS_COLORBLIND, TEAM_COLORS_COLORBLIND } from "../src/shared/constants";
@@ -62,12 +62,15 @@ const characters: Record<string, unknown> = {};
 for (const [id, c] of Object.entries(CHARACTERS)) {
   characters[id] = c;
   if (!c.sprite) continue;
+  // In game.json ogni stato c'è, con i dati del disegno che lo mostra (src): il ripiego si decide qui,
+  // una volta sola, e Godot non controlla cosa manca (E7 passo 3)
   if (!isSpriteFolder(c.sprite)) {
     spriteFiles.push(c.sprite.path);
+    characters[id] = { ...c, sprite: { ...c.sprite, animations: resolvedAnimations(c.sprite.animations) } };
     continue;
   }
   const sprite = c.sprite;
-  const animations: Record<string, unknown> = {};
+  const animations: Record<string, object> = {};
   for (const [state, a] of Object.entries(sprite.animations)) {
     const path = spriteStatePath(sprite, state as keyof typeof sprite.animations);
     if (!existsSync(publicDir + path)) {
@@ -79,7 +82,11 @@ for (const [id, c] of Object.entries(CHARACTERS)) {
       spriteErrors.push(`${id}: public/${path} è ${width}×${height}, ma i fotogrammi sono ${sprite.frameWidth}×${sprite.frameHeight}: la larghezza dev'essere un multiplo di ${sprite.frameWidth} e l'altezza ${sprite.frameHeight}`);
       continue;
     }
-    animations[state] = { ...a, frames: width / sprite.frameWidth };
+    const frames = width / sprite.frameWidth;
+    if (a.hitFrame !== undefined && (a.hitFrame < 0 || a.hitFrame >= frames)) {
+      spriteErrors.push(`${id}: hitFrame ${a.hitFrame} di "${state}" è fuori dai ${frames} fotogrammi di public/${path} (si conta da 0)`);
+    }
+    animations[state] = { ...a, frames };
     spriteFiles.push(path);
   }
   // Un PNG nella cartella che il blocco non nomina non si usa: lo si dice, potrebbe essere un nome sbagliato
@@ -88,7 +95,7 @@ for (const [id, c] of Object.entries(CHARACTERS)) {
       console.warn(`Attenzione: ${sprite.dir}/${file} non è uno stato di ${id} in characters.ts, non si usa`);
     }
   }
-  characters[id] = { ...c, sprite: { ...sprite, animations } };
+  characters[id] = { ...c, sprite: { ...sprite, animations: resolvedAnimations(animations) } };
 }
 if (spriteErrors.length) {
   console.error(`Sprite dei personaggi da correggere:\n- ${spriteErrors.join("\n- ")}`);

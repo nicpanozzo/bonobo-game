@@ -46,7 +46,9 @@ mario: {
 
 - `fps`: fotogrammi al secondo. 24 per i movimenti, 12 va bene per le animazioni lente in ciclo.
 - `loop`: `true` ricomincia (fermo, corsa, caduta), `false` si ferma sull'ultimo fotogramma (salto, colpi).
-- Se un PNG manca, oppure la larghezza o l'altezza non tornano, `npm run export:godot` si ferma e dice quale file e perché. Un PNG nella cartella che il blocco non nomina viene segnalato e non si usa.
+- `hitFrame` (facoltativo, solo negli attacchi): il fotogramma, contando da 0, in cui la mano o l'arma arriva sul bersaglio. Il gioco lo fa cadere nell'istante in cui la hitbox si accende (`startupMs` di `ATTACKS`) e fa finire l'animazione con `cooldownMs`. Così il colpo è sempre a tempo, anche quando cambiano i numeri o quando una variante (`lightUp`...) usa il disegno di `light`. Senza `hitFrame` l'animazione va a `fps`.
+- `filter` (facoltativo, accanto a `scale`): `"linear"` (di base) per i disegni illustrati, che il gioco rimpicciolisce con le mipmap senza sfarfallare; `"nearest"` per la pixel art, che resta a quadretti netti.
+- Se un PNG manca, la larghezza o l'altezza non tornano o `hitFrame` è fuori dai fotogrammi, `npm run export:godot` si ferma e dice quale file e perché. Un PNG nella cartella che il blocco non nomina viene segnalato e non si usa.
 
 ## Formato a foglio unico: una riga per animazione
 
@@ -66,7 +68,7 @@ Obbligatori (`ANIMATION_NAMES` in `characters.ts`):
 | `heavy` | attacco pesante (lo stesso, con `ATTACKS.heavy`) |
 | `hit` | colpito, durante lo stordimento |
 
-Facoltativi (`OPTIONAL_ANIMATION_NAMES`). Chi non li ha usa quello della colonna "Al suo posto":
+Facoltativi (`OPTIONAL_ANIMATION_NAMES`). Chi non li ha usa quello della colonna "Al suo posto" (`ANIMATION_FALLBACK`):
 
 | Stato | Quando | Al suo posto |
 |---|---|---|
@@ -79,9 +81,10 @@ Facoltativi (`OPTIONAL_ANIMATION_NAMES`). Chi non li ha usa quello della colonna
 | `heavyUp`, `heavyDown`, `heavyAir` | varianti dell'attacco pesante | `heavy` |
 | `recovery` | il salto di recupero | `jump` |
 | `taunt` | provocazione | `idle` |
-| `shield`, `grab`, `special` | posti per scudo, presa e mosse speciali (E8, E9, E10) | - |
+| `shield` | con lo scudo alzato, dentro la bolla | `idle` |
+| `grab`, `special` | posti per presa e mosse speciali (E9, E10): il gioco non li usa ancora | `light`, `heavy` |
 
-I primi quattro si vedono già. Gli altri hanno il nome pronto, ma il gioco li userà con il passo 3 di E7 (#41): si possono già disegnare e mettere nella cartella.
+Il ripiego si decide una volta sola: `npm run export:godot` scrive in `godot/data/game.json` la tabella completa, con tutti gli stati. Le animazioni di passaggio (`doubleJump`, `tumble`, `land`, `taunt`) si vedono solo se sono disegnate: col ripiego interromperebbero la corsa o il salto.
 
 ## Provare un personaggio
 
