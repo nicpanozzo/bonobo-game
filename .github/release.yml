@@ -1,0 +1,14 @@
+# Categorie delle note automatiche delle Release app-N (E2, #106): app.yml usa --generate-notes,
+# che elenca i titoli delle PR unite dall'ultima Release raggruppati per etichetta.
+changelog:
+  exclude:
+    authors:
+      - dependabot
+      - github-actions
+  categories:
+    - title: Per chi gioca
+      labels:
+        - per-giocatori
+    - title: Altri cambiamenti
+      labels:
+        - "*"

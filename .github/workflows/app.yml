@@ -167,6 +167,7 @@ jobs:
           pattern: bonobo-server-*
           path: out
           merge-multiple: true
+      # Le note: il paragrafo di installazione e sotto, da sole, le PR unite dall'ultima Release (.github/release.yml)
       - name: Pubblica la Release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -185,4 +186,4 @@ jobs:
 
           Tutto spiegato passo per passo: https://nicpanozzo.github.io/bonobo-game/#gioca
           EOF
-          gh release create "$TAG" out/*.zip out/bonobo-game.pck out/bonobo-game-version.json --target "$GITHUB_SHA" --title "Bonobo Game ($TAG)" --notes-file /tmp/note.md --latest
+          gh release create "$TAG" out/*.zip out/bonobo-game.pck out/bonobo-game-version.json --target "$GITHUB_SHA" --title "Bonobo Game ($TAG)" --notes-file /tmp/note.md --generate-notes --latest
