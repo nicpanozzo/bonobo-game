@@ -31,6 +31,7 @@ var _token := "" # segreto del welcome: solo in memoria, vale per la stanza _tok
 var _token_room := ""
 var _lost_at := -1 # ms in cui la connessione è caduta durante la partita, -1 se siamo collegati (#107)
 var _attempt := 0 # tentativi di riconnessione da quando è caduta
+var _try_hint := "" # prova del primo avvio (E14): si mostra appena si entra nella stanza
 var _last_snapshot := 0 # ms dell'ultimo snapshot: in partita il silenzio dice che la rete è caduta
 
 
@@ -73,7 +74,11 @@ func _ready() -> void:
 	layer.add_child(hud)
 	ui_layer.layer = 2 # menu sopra l'HUD
 	add_child(ui_layer)
-	_show_lobby()
+	# Prima volta: nome, comandi e una prova col manichino (E14). Con un link a una stanza si entra e basta
+	if not settings.first_run_done and not (url_params.has("room") and url_params.has("name")):
+		_show_first_run()
+	else:
+		_show_lobby()
 
 	Input.joy_connection_changed.connect(_on_joy_changed)
 	socket.connected.connect(_on_connected)
@@ -110,6 +115,27 @@ func _show_lobby() -> void:
 		ui_layer.add_child(credits)
 		credits.setup()
 		credits.closed.connect(lobby.restore_focus))
+
+
+func _show_first_run() -> void:
+	var first := preload("res://scripts/first_run.gd").new()
+	first.theme = UI.theme()
+	ui_layer.add_child(first)
+	first.setup(settings)
+	var done := func(player_name: String) -> void:
+		settings.first_run_done = true
+		settings.profile["name"] = player_name
+		params.name = player_name
+		first.queue_free()
+	first.skipped.connect(func(player_name: String):
+		done.call(player_name)
+		settings.save()
+		_show_lobby())
+	first.try_requested.connect(func(player_name: String):
+		done.call(player_name)
+		# Stanza nuova tutta sua, regole di sempre, con il manichino fermo da colpire (bot.ts, #20)
+		_try_hint = "Prova: colpisci il manichino! Esc per tornare alla lobby"
+		_join({"name": player_name, "room": "prova-" + str(randi() % 100000), "char": "", "stage": "", "rules": {}, "bot": "manichino"}))
 
 
 func _join(choice: Dictionary) -> void:
@@ -256,6 +282,9 @@ func _on_event(name: String, data: Variant) -> void:
 				_flash_status("Posto perso, sei rientrato da capo")
 			_lost_at = -1
 			_attempt = 0
+			if _try_hint != "":
+				_flash_status(_try_hint)
+				_try_hint = ""
 			world.my_id = data.id
 			hud.my_id = data.id
 			rumble.my_id = data.id
