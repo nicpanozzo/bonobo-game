@@ -7,7 +7,7 @@ import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { CHARACTERS, DEFAULT_CHARACTER_ID } from "../src/shared/characters";
-import { ATTACKS, AUDIO, CAMERA, COLORS, EFFECTS, FIGHTER, INPUT, ITEM_RULES, LEDGE, NET, PROTOCOL_VERSION, TEAM_COLORS, TEAM_NAMES, WORLD } from "../src/shared/constants";
+import { ATTACKS, AUDIO, CAMERA, COLORS, EFFECTS, FIGHTER, INPUT, ITEM_RULES, LEDGE, NET, PROTOCOL_VERSION, RUMBLE, TEAM_COLORS, TEAM_NAMES, WORLD } from "../src/shared/constants";
 import { ITEMS } from "../src/shared/items";
 import { DEFAULT_STAGE_ID, STAGES } from "../src/shared/stages";
 
@@ -24,6 +24,7 @@ const data = {
   net: NET,
   audio: AUDIO,
   input: INPUT,
+  rumble: RUMBLE,
   camera: CAMERA,
   effects: EFFECTS,
   items: ITEMS,

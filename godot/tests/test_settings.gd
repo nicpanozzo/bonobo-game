@@ -126,3 +126,16 @@ func test_nomi_dei_pulsanti() -> void:
 	runner.check(Settings.pad_label(JOY_BUTTON_A, "switch") == "B", "A su Switch")
 	runner.check(Settings.pad_label(Settings.axis_input(JOY_AXIS_TRIGGER_RIGHT, true), "ps") == "R2", "grilletto destro")
 	runner.check(Settings.pad_label(Settings.axis_input(JOY_AXIS_LEFT_Y, false)) == "LS su", "levetta su")
+
+
+func test_vibrazione_salvata() -> void:
+	var s := _fresh()
+	runner.check(s.rumble == Rumble.STRONG, "forte di default")
+	s.rumble = Rumble.OFF
+	s.save()
+	runner.check(Settings.new(AUDIO, PATH).rumble == Rumble.OFF, "spenta ricaricata")
+	var cfg := ConfigFile.new()
+	cfg.set_value("pad_options", "rumble", 9)
+	cfg.save(PATH)
+	runner.check(Settings.new(AUDIO, PATH).rumble == Rumble.STRONG, "valore sbagliato: default")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(PATH))

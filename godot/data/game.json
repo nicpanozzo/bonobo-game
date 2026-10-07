@@ -155,6 +155,15 @@
     "stickDeadzone": 0.35,
     "padToastMs": 2000
   },
+  "rumble": {
+    "hitMs": 120,
+    "hitMinStrength": 0.25,
+    "hitMaxKnockback": 1400,
+    "attackerScale": 0.5,
+    "koMs": 450,
+    "koStrength": 1,
+    "weakScale": 0.5
+  },
   "camera": {
     "margin": 140,
     "minZoom": 0.7,
