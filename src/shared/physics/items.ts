@@ -9,7 +9,7 @@ import { rng } from "../stageGenerator";
 import type { ItemState } from "../types";
 import { bodyBox } from "./attacks";
 import { moverPosition } from "./elements";
-import { pressed, type Fighter, type PhysicsContext } from "./fighter";
+import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
 
 export interface Item extends ItemState {
   onGround: boolean;
@@ -42,6 +42,7 @@ const busy = (f: Fighter) =>
 // Il tasto usato per l'oggetto non deve far partire anche un attacco: lo si segna come già premuto
 function consumeAttackKeys(f: Fighter) {
   f.prevInput = { ...f.prevInput, light: f.input.light, heavy: f.input.heavy };
+  consume(f, "light", "heavy");
 }
 
 export function handleItemInput(world: ItemWorld, fighters: Fighter[], ctx: PhysicsContext): void {

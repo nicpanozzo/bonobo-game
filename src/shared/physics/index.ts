@@ -10,7 +10,7 @@
 
 import { resolveHits, tryStartAttack, updateAttack } from "./attacks";
 import { carryRider, resolveHazards } from "./elements";
-import type { Fighter, PhysicsContext } from "./fighter";
+import { tickBuffer, type Fighter, type PhysicsContext } from "./fighter";
 import { holdLedge, tryGrabLedge } from "./ledge";
 import { applyControls, applyGravity } from "./movement";
 import { collideWithStage, loseStock, outOfBlastZone, respawn } from "./stage";
@@ -36,6 +36,7 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
   if (f.respawning) {
     f.respawnTimer -= dtMs;
     if (f.respawnTimer <= 0) respawn(f, ctx);
+    tickBuffer(f, dtMs); // un tasto premuto mentre si rientra non scatta molto dopo
     f.prevInput = f.input;
     return;
   }
@@ -57,6 +58,7 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
   f.dodgeCooldown = Math.max(0, f.dodgeCooldown - dtMs);
   f.hazardTimer = Math.max(0, f.hazardTimer - dtMs);
   f.regrabTimer = Math.max(0, f.regrabTimer - dtMs);
+  tickBuffer(f, dtMs);
   f.hitstun = f.hitstunTimer > 0;
   f.invulnerable = f.invulnerableTimer > 0;
   if (f.hitstun) f.ledgeGrabs = 0; // un colpo ridà le prese del bordo (#110)

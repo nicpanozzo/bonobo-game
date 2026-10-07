@@ -5,7 +5,7 @@
 import { ATTACKS, FIGHTER, LEDGE } from "../constants";
 import { startAttack, updateAttack } from "./attacks";
 import type { StageSpec } from "../stages";
-import { pressed, type Fighter, type PhysicsContext } from "./fighter";
+import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
 
 export interface Ledge {
   x: number; // spigolo
@@ -163,6 +163,7 @@ export function holdLedge(f: Fighter, dtMs: number, ctx: PhysicsContext): boolea
     const away = f.facing === 1 ? "left" : "right";
     // Su: salto dal bordo, il salto in aria resta
     if (pressed(f, "up")) {
+      consume(f, "up");
       ctx.events.push({ type: "ledgeGetup", id: f.id, option: "jump" });
       releaseLedge(f);
       f.vy = -FIGHTER.jumpSpeed;
@@ -176,6 +177,7 @@ export function holdLedge(f: Fighter, dtMs: number, ctx: PhysicsContext): boolea
       return true;
     }
     if (pressed(f, "dodge")) {
+      consume(f, "dodge");
       startGetup(f, "roll", ctx);
       return true;
     }

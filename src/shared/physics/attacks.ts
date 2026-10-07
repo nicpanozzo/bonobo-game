@@ -2,7 +2,7 @@
 
 import { ATTACKS, FIGHTER, HITSTOP, HITSTUN_PER_KNOCKBACK } from "../constants";
 import type { AttackKind } from "../types";
-import { pressed, type Fighter, type PhysicsContext } from "./fighter";
+import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
 
 export function tryStartAttack(f: Fighter, ctx: PhysicsContext): void {
   if (f.hitstun || f.attack || f.cooldownTimer > 0 || f.helpless || f.dodgeTimer > 0) return;
@@ -23,6 +23,7 @@ export function startAttack(f: Fighter, kind: AttackKind, ctx: PhysicsContext) {
   f.attackTimer = 0;
   f.cooldownTimer = ATTACKS[kind].cooldownMs;
   f.alreadyHit.clear();
+  consume(f, "light", "heavy"); // anche il recupero e l'attacco dal bordo passano da qui
   ctx.events.push({ type: "attack", id: f.id, kind });
 }
 

@@ -4,7 +4,7 @@
 
 import { getCharacter } from "./characters";
 import { COLORS, FIGHTER, MATCH_RESTART_MS, MAX_PLAYERS_PER_ROOM, RECONNECT_RESUME_INVULNERABLE_MS, TEAM_COLORS } from "./constants";
-import { createFighter, emptyInput, resetForMatch, stepWorld, type Fighter, type PhysicsContext } from "./physics";
+import { bufferPresses, createFighter, emptyInput, resetForMatch, stepWorld, type Fighter, type PhysicsContext } from "./physics";
 import { createItemWorld, handleItemInput, itemStates, resetItems, stepItems, type ItemWorld } from "./physics/items";
 import { canHitWithRules, flagWinnerTeam, isTeamMode, lastStanding, leaderOnTime, sanitizeRules } from "./rules";
 import { COURSE_PREFIX, seedFromCourseId } from "./courseGenerator";
@@ -93,7 +93,7 @@ export class Match {
   setInput(id: string, input: InputState) {
     const f = this.fighters.get(id);
     if (!f || f.away) return;
-    f.input = {
+    const next: InputState = {
       left: !!input.left,
       right: !!input.right,
       up: !!input.up,
@@ -103,6 +103,8 @@ export class Match {
       taunt: !!input.taunt,
       dodge: !!input.dodge,
     };
+    bufferPresses(f, next); // una pressione più corta di un tick non si perde (E6)
+    f.input = next;
   }
 
   // Caduta di rete (#107): il lottatore resta fermo e intoccabile finché il giocatore rientra o il posto scade.
