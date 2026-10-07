@@ -3,7 +3,7 @@
 
 import { ATTACKS, BOT, BOT_LEVELS, FIGHTER, TICK_RATE } from "../shared/constants";
 import type { Match } from "../shared/match";
-import { emptyInput, type Fighter } from "../shared/physics";
+import { emptyInput, ledgesOf, type Fighter } from "../shared/physics";
 import type { StageSpec } from "../shared/stages";
 import type { InputState } from "../shared/types";
 import type { RoomHooks } from "./Room";
@@ -36,7 +36,13 @@ interface BotMemory {
   attacks: number; // attacchi fatti, per alternare leggero e pesante
   hold: InputState; // tasti di movimento tenuti fino alla prossima decisione
   last: InputState; // tasti del tick precedente: un tasto "premuto" deve prima essere rilasciato
+  ledgeTicks: number; // tick passati appesi al bordo
+  getups: number; // risalite fatte, per cambiarle a rotazione
 }
+
+// Le risalite dal bordo (#110), nell'ordine in cui il bot le alterna
+const GETUPS = ["climb", "jump", "attack", "roll"] as const;
+type Getup = (typeof GETUPS)[number];
 
 // I bot di una stanza. hooks va passato alla Room, add() li fa entrare in partita.
 export class Bots {
@@ -55,7 +61,7 @@ export class Bots {
     if (match.isFull) return null;
     const id = `bot-${kind}-${++this.count}`;
     match.addPlayer(id, BOT_NAMES[kind]);
-    this.bots.set(id, { kind, ticks: 0, attacks: 0, hold: emptyInput(), last: emptyInput() });
+    this.bots.set(id, { kind, ticks: 0, attacks: 0, hold: emptyInput(), last: emptyInput(), ledgeTicks: 0, getups: 0 });
     return id;
   }
 
@@ -88,7 +94,18 @@ function groundUnder(stage: StageSpec, x: number) {
   return stage.solids.find((s) => x >= s.x && x <= s.x + s.width);
 }
 
-// Il punto del palco più vicino a x, dove tornare dopo un lancio
+// Dove tornare dopo un lancio: lo spigolo più vicino, a cui aggrapparsi (#110).
+// Senza spigoli (palchi fatti solo di piattaforme) il punto del palco più vicino.
+function homeX(stage: StageSpec, x: number, y: number): number {
+  let best: { x: number; d: number } | null = null;
+  for (const l of ledgesOf(stage)) {
+    const d = Math.hypot(l.x - x, l.y - y);
+    if (!best || d < best.d) best = { x: l.x, d };
+  }
+  return best ? best.x : nearestSolidX(stage, x);
+}
+
+// Il punto del palco più vicino a x
 function nearestSolidX(stage: StageSpec, x: number): number {
   let best = stage.respawn.x;
   for (const s of stage.solids) {
@@ -107,20 +124,32 @@ function decideSimple(self: Fighter, players: readonly Fighter[], stage: StageSp
     if (!mem.last[key]) input[key] = true;
   };
 
-  // Appeso al bordo (#110): per ora sale sempre con il salto, verso il palco
+  // Appeso al bordo (#110): si aspetta un po' (il difficile un tempo variabile), poi si risale
   if (self.ledge) {
-    tap("up");
-    input.left = self.facing === -1;
-    input.right = self.facing === 1;
+    if (self.ledge !== "hang") return input; // risalita in corso
+    mem.ledgeTicks++;
+    if (mem.ledgeTicks < ledgeWaitTicks(mem, level)) return input;
+    const getup = chooseGetup(self, players, mem, level);
+    const key = getup === "climb" ? (self.facing === 1 ? "right" : "left") : getup === "jump" ? "up" : getup === "attack" ? "light" : "dodge";
+    if (mem.last[key]) return input; // il tasto era già giù: prima si rilascia
+    input[key] = true;
+    if (getup === "jump") {
+      // Dopo il salto si va verso il palco
+      input.left = self.facing === -1;
+      input.right = self.facing === 1;
+    }
+    mem.getups++;
+    mem.ledgeTicks = 0;
     return input;
   }
+  mem.ledgeTicks = 0;
 
   // Fuori dal palco: si torna verso il blocco più vicino, salti e recupero quando si sta cadendo
   const ground = groundUnder(stage, self.x);
   if (!self.onGround && (!ground || self.y > ground.y)) {
-    const homeX = nearestSolidX(stage, self.x);
-    input.left = homeX < self.x;
-    input.right = homeX > self.x;
+    const toX = homeX(stage, self.x, self.y);
+    input.left = toX < self.x;
+    input.right = toX > self.x;
     if (self.vy > 0 && !self.hitstun) {
       if (self.jumpsLeft > 0) tap("up");
       else if (!self.recoveryUsed && !mem.last.heavy) {
@@ -180,4 +209,17 @@ function decideSimple(self: Fighter, players: readonly Fighter[], stage: StageSp
   input.left = mem.hold.left;
   input.right = mem.hold.right;
   return input;
+}
+
+// Quanto resta appeso prima di risalire: il difficile varia, così non si legge
+function ledgeWaitTicks(mem: BotMemory, level: BotLevel): number {
+  const ms = level === "difficile" ? (((mem.getups * 3) % 5) / 4) * BOT.ledgeWaitMaxMs : BOT_LEVELS[level].reactionMs;
+  return Math.max(1, Math.round((ms * TICK_RATE) / 1000));
+}
+
+// A rotazione; il difficile rotola oltre il bersaglio che lo aspetta sopra il bordo
+function chooseGetup(self: Fighter, players: readonly Fighter[], mem: BotMemory, level: BotLevel): Getup {
+  const target = nearestTarget(self, players);
+  if (level === "difficile" && target?.onGround && Math.abs(target.x - self.x) < BOT.ledgeRollNear && mem.getups % 2 === 0) return "roll";
+  return GETUPS[mem.getups % GETUPS.length];
 }

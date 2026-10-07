@@ -240,6 +240,8 @@ export const EFFECTS = {
 export const BOT = {
   jumpAtHeight: 90, // pixel: se il bersaglio sta più in alto di così, salta
   edgeMargin: 40, // pixel: a terra non si avvicina al bordo del palco più di così
+  ledgeWaitMaxMs: 1500, // ms: il bot difficile resta appeso al bordo da 0 a tanto prima di risalire (#110)
+  ledgeRollNear: 200, // pixel: il difficile preferisce la rotolata se il bersaglio è più vicino di così al bordo
 };
 
 // Livelli di difficoltà dei bot (#20 passo 3): ?bot=facile, ?bot=semplice, ?bot=difficile

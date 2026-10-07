@@ -1,8 +1,9 @@
 // Test dei bot (#20): girano su una Match senza rete, come nel server.
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { FIGHTER, TICK_RATE } from "../shared/constants";
+import { ATTACKS, FIGHTER, HITSTUN_PER_KNOCKBACK, LEDGE, TICK_RATE } from "../shared/constants";
 import { Match } from "../shared/match";
+import { ledgesOf } from "../shared/physics";
 import { Bots, parseBotKind } from "./bot";
 
 const DT = 1000 / TICK_RATE;
@@ -103,5 +104,88 @@ describe("bot", () => {
     };
     const [hard, easy] = [hitsBy("difficile"), hitsBy("facile")];
     assert.ok(hard < easy, "il difficile ne prende meno");
+  });
+
+  it("il bot semplice lanciato fuori da 80% torna sul palco almeno 15 volte su 20 (#110)", () => {
+    // 20 lanci: cinque colpi veri, dai due bordi, dallo spigolo o un po' più dentro
+    const launches = (["light", "heavy", "lightAir", "heavyAir", "heavyDown"] as const).flatMap((kind) =>
+      [1, -1].flatMap((side) => [30, 130].map((inset) => ({ kind, side, inset }))),
+    );
+    let back = 0;
+    for (const { kind, side, inset } of launches) {
+      const match = new Match();
+      const bots = new Bots();
+      match.addPlayer("a", "A");
+      const id = bots.add(match, "semplice")!;
+      const a = match.players.find((p) => p.id === "a")!;
+      const bot = match.players.find((p) => p.id === id)!;
+      const ground = match.stage.solids[0];
+      // Come in resolveHits: spinta e stordimento del colpo a 80%
+      const spec = ATTACKS[kind];
+      const knockback = spec.baseKnockback + spec.knockbackGrowth * 80;
+      const angle = (spec.angleDeg * Math.PI) / 180;
+      a.x = ground.x + ground.width / 2;
+      Object.assign(bot, {
+        x: side === 1 ? ground.x + ground.width - inset : ground.x + inset,
+        y: ground.y,
+        percent: 80,
+        vx: side * Math.cos(angle) * knockback,
+        vy: -Math.sin(angle) * knockback,
+        onGround: false,
+        hitstunTimer: knockback * HITSTUN_PER_KNOCKBACK,
+        facing: -side,
+      });
+      const stocks = bot.stocks;
+      for (let i = 0; i < 60 * 8 && bot.stocks === stocks; i++) {
+        bots.tick(match);
+        match.step(DT);
+        if (bot.onGround) {
+          back++;
+          break;
+        }
+      }
+    }
+    assert.equal(launches.length, 20);
+    assert.ok(back >= 15, `tornato ${back} volte su 20`);
+  });
+
+  it("il bot difficile usa almeno 3 risalite diverse dal bordo in 20 prove (#110)", () => {
+    const match = new Match();
+    const bots = new Bots();
+    match.addPlayer("a", "A");
+    const id = bots.add(match, "difficile")!;
+    const a = match.players.find((p) => p.id === "a")!;
+    const bot = match.players.find((p) => p.id === id)!;
+    const [left] = ledgesOf(match.stage);
+    const options = new Set<string>();
+    for (let n = 0; n < 20; n++) {
+      // Il giocatore a volte aspetta sopra il bordo, a volte sta lontano
+      Object.assign(a, { x: n % 3 === 0 ? left.x + 80 : left.x + 500, y: left.y, vx: 0, vy: 0, percent: 0 });
+      // Il bot cade accanto al bordo sinistro
+      Object.assign(bot, {
+        x: left.x - FIGHTER.width / 2,
+        y: left.y - 20 + LEDGE.hangOffsetY,
+        vx: 0,
+        vy: 0,
+        onGround: false,
+        ledge: null,
+        ledgeIndex: -1,
+        ledgeGrabs: 0,
+        regrabTimer: 0,
+        hitstunTimer: 0,
+        attack: null,
+      });
+      for (let i = 0; i < 60 * 6; i++) {
+        match.setInput("a", { left: false, right: false, up: false, down: false, light: false, heavy: false, taunt: false, dodge: false });
+        bots.tick(match);
+        const getup = match.step(DT).find((e) => e.type === "ledgeGetup" && e.id === id);
+        if (getup?.type === "ledgeGetup") {
+          options.add(getup.option);
+          break;
+        }
+      }
+    }
+    assert.ok(options.size >= 3, `risalite usate: ${[...options].join(", ")}`);
+    assert.ok(!options.has("drop"), "non si lascia cadere");
   });
 });
