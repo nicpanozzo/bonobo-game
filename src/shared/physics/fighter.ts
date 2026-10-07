@@ -86,6 +86,7 @@ export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
     eliminated: false,
     carrier: false,
     ledge: null,
+    away: false,
     input: emptyInput(),
     prevInput: emptyInput(),
     jumpsLeft: FIGHTER.maxJumps,

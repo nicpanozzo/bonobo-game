@@ -89,7 +89,8 @@ export function attachGame(io: Server<ClientToServer, ServerToClient>, deps: Gam
       socket.join(code);
       const name = sanitizeName(data.name, r.match.players.map((p) => p.name));
       r.addPlayer(socket.id, name, characterId);
-      socket.emit("welcome", { id: socket.id, room: code, stageId: r.stage.id, rules: r.rules, stage: r.stage });
+      const token = r.seats.issue(socket.id);
+      socket.emit("welcome", { id: socket.id, room: code, stageId: r.stage.id, rules: r.rules, stage: r.stage, token, resumed: false });
       console.log(`[${code}] entra ${socket.id}`);
     });
 

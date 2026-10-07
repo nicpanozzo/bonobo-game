@@ -38,6 +38,7 @@ export interface PlayerState {
   eliminated: boolean; // vite finite
   carrier: boolean; // porta la bandiera della sua squadra (modalità "flag", #56)
   ledge: "hang" | "climb" | "roll" | null; // appeso al bordo del palco o in risalita (#110), null altrimenti
+  away: boolean; // disconnesso, posto tenuto per la riconnessione: fermo e intoccabile (#107)
 }
 
 // Un oggetto nell'arena (#17): a terra, in volo o in mano a qualcuno
@@ -90,6 +91,8 @@ export type GameEvent =
   | { type: "ledgeGrab"; id: string; x: number; y: number; invulnerable: boolean } // si aggrappa al bordo (#110)
   | { type: "ledgeGetup"; id: string; option: "climb" | "attack" | "jump" | "roll" | "drop" } // come lascia il bordo (#110)
   | { type: "matchStart" }
+  | { type: "away"; id: string } // id si è disconnesso: il suo posto resta tenuto per un po' (#107)
+  | { type: "back"; id: string } // id è rientrato nel suo posto
   | { type: "matchEnd"; winnerId: string | null; winnerTeam: number; durationMs: number };
 
 export interface GameSnapshot {
@@ -107,7 +110,9 @@ export interface GameSnapshot {
 export interface ServerToClient {
   // stage è l'arena intera: chi non ha il codice di src/shared (client Godot, #59) non sa rigenerare
   // le arene casuali e i percorsi della Corsa dal loro id
-  welcome: (data: { id: string; room: string; stageId: string; rules: MatchRules; stage: StageSpec }) => void;
+  // token: segreto di questo giocatore in questa stanza, mai negli snapshot; si rimanda nel join per rientrare (#107)
+  // resumed: true = rientrato nel posto tenuto, con lo stesso lottatore
+  welcome: (data: { id: string; room: string; stageId: string; rules: MatchRules; stage: StageSpec; token: string; resumed: boolean }) => void;
   snapshot: (snap: GameSnapshot) => void;
   roomFull: () => void;
 }
@@ -115,7 +120,8 @@ export interface ServerToClient {
 export interface ClientToServer {
   // stageId e rules contano solo per chi crea la stanza; gli altri entrano in quella che c'è
   // bot: chi crea la stanza può aggiungere un avversario del server, es. "manichino" (#20)
-  join: (data: { room: string; name: string; characterId?: string; stageId?: string; rules?: Partial<MatchRules>; bot?: string }) => void;
+  // token: quello del welcome, dopo una caduta di rete; se il posto è ancora tenuto si rientra nello stesso lottatore (#107)
+  join: (data: { room: string; name: string; characterId?: string; stageId?: string; rules?: Partial<MatchRules>; bot?: string; token?: string }) => void;
   input: (input: InputState) => void;
   rematch: () => void; // a fine partita, ricomincia subito (#17)
 }
