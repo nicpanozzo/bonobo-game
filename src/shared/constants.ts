@@ -291,6 +291,7 @@ export const NET_LIMITS = {
   newRoomsPerIpPerMinute: 5, // stanze nuove che lo stesso IP può creare in un minuto
   maxNameLength: 16, // caratteri veri (emoji comprese) di un nome
 };
+export const ROOM_MAX_ERRORS = 3; // errori di fila nel passo di una stanza dopo cui la stanza si chiude
 export const ROOM_IDLE_MS = 15 * 60_000; // millisecondi senza tasti umani dopo cui una stanza si chiude come se fosse vuota
 
 // Comandi col pad (E6, #108): numeri che usa solo il client Godot, esportati in game.json

@@ -77,6 +77,7 @@ export function attachGame(io: Server<ClientToServer, ServerToClient>, deps: Gam
         const discord = discordHooks(deps.discordWebhookUrl, (id) => bots.isBot(id), deps.leaderboard);
         r = new Room(code, io, { stageId, rules }, combineHooks(bots.hooks, discord));
         rooms.set(code, r);
+        r.onClose = () => rooms.delete(code);
         const kind = parseBotKind(bot);
         if (kind) bots.add(r.match, kind);
       }
