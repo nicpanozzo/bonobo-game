@@ -59,12 +59,12 @@ static func font(weight := WEIGHT_BODY) -> Font:
 static func theme() -> Theme:
 	var t := Theme.new()
 	t.default_font = font()
-	t.default_font_size = SIZE_BODY
+	t.default_font_size = Access.px(SIZE_BODY) # testo più grande: opzioni → Accessibilità
 	t.set_stylebox("panel", "PanelContainer", _box(Color(CARD, 0.95), BORDER, RADIUS_PANEL, 22))
 	for state in ["normal", "focus"]:
 		t.set_stylebox(state, "LineEdit", _box(FIELD, BORDER if state == "normal" else ACCENT, RADIUS, 8))
 	t.set_color("font_color", "LineEdit", Color.WHITE)
-	t.set_font_size("font_size", "LineEdit", SIZE_BODY + 1)
+	t.set_font_size("font_size", "LineEdit", Access.px(SIZE_BODY + 1))
 	t.set_stylebox("normal", "Button", _box(BORDER, BORDER, RADIUS, 8))
 	t.set_stylebox("hover", "Button", _box(BORDER.lightened(0.2), BORDER.lightened(0.2), RADIUS, 8))
 	t.set_stylebox("pressed", "Button", _box(BORDER.darkened(0.2), ACCENT, RADIUS, 8))
@@ -103,7 +103,7 @@ static func _box(bg: Color, border: Color, radius: int, pad: int) -> StyleBoxFla
 static func label(text: String, size := SIZE_BODY, color := TEXT) -> Label:
 	var l := Label.new()
 	l.text = text
-	l.add_theme_font_size_override("font_size", size)
+	l.add_theme_font_size_override("font_size", Access.px(size))
 	l.add_theme_color_override("font_color", color)
 	return l
 
@@ -153,7 +153,7 @@ static func button(text: String, on_press: Callable, primary := false) -> Button
 	if primary:
 		b.add_theme_stylebox_override("normal", _box(PRIMARY, PRIMARY, RADIUS, 12))
 		b.add_theme_stylebox_override("hover", _box(PRIMARY.lightened(0.15), PRIMARY.lightened(0.15), RADIUS, 12))
-		b.add_theme_font_size_override("font_size", SIZE_BIG)
+		b.add_theme_font_size_override("font_size", Access.px(SIZE_BIG))
 		b.add_theme_font_override("font", font(WEIGHT_BOLD))
 	return b
 
@@ -161,7 +161,7 @@ static func button(text: String, on_press: Callable, primary := false) -> Button
 # Pulsante piccolo e basso (i tasti nella tabella delle opzioni)
 static func small_button(text: String, on_press: Callable) -> Button:
 	var b := button(text, on_press)
-	b.add_theme_font_size_override("font_size", SIZE_SMALL + 1)
+	b.add_theme_font_size_override("font_size", Access.px(SIZE_SMALL + 1))
 	b.add_theme_stylebox_override("normal", _box(BORDER, BORDER, RADIUS, 4))
 	b.add_theme_stylebox_override("hover", _box(BORDER.lightened(0.2), BORDER.lightened(0.2), RADIUS, 4))
 	return b

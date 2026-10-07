@@ -130,7 +130,7 @@ func on_event(e: Dictionary) -> void:
 			_sparks.append({"x": clampf(e.x, 0, game.world.width), "y": clampf(e.y, 0, game.world.height), "age": 0.0, "size": 90.0, "color": Color(1, 0.4, 0.3)})
 			# Il raggio prende il colore di chi è uscito, come in Smash
 			var p: Variant = buffer.sample(e.id, Time.get_ticks_msec())
-			var col: Color = _color(p.color) if p != null else Color(1, 0.4, 0.3)
+			var col: Color = Access.color(p.color) if p != null else Color(1, 0.4, 0.3)
 			_beams.append({"x": e.x, "y": e.y, "age": 0.0, "color": col})
 
 
@@ -155,6 +155,9 @@ func _process(delta: float) -> void:
 	for b in _beams:
 		b.age += delta * 1000.0
 	_beams = _beams.filter(func(b): return b.age < fx.koBeamMs)
+	if Access.calm: # meno scossa e lampi (opzioni → Accessibilità): niente tremolio né lampo bianco
+		_shake = 0.0
+		_flash = 0.0
 	_flash = maxf(0.0, _flash - delta * 1000.0)
 	_shake = maxf(0.0, _shake - fx.shakeDecay * delta)
 	position = Vector2(randf_range(-_shake, _shake), randf_range(-_shake, _shake)) if _shake > 0 else Vector2.ZERO
@@ -284,7 +287,7 @@ func _draw_trail(id: String, p: Dictionary) -> void:
 	_trails[id] = trail
 	var fw: float = game.fighter.width
 	var fh: float = game.fighter.height
-	var col := _color(p.color)
+	var col := Access.color(p.color)
 	for i in range(1, trail.size()):
 		var pos: Vector2 = trail[i]
 		col.a = 0.35 * (1.0 - float(i) / trail.size())
@@ -409,7 +412,7 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 		head = maxf(fh, character.sprite.frameHeight * character.sprite.get("scale", 1.0))
 		_draw_sprite(p, character, now)
 	else:
-		var color := _color(p.color)
+		var color := Access.color(p.color)
 		if p.hitstun:
 			color = color.lightened(0.5)
 		color.a = away_alpha(p)
@@ -425,7 +428,7 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 	if str(p.get("ledge", "")) == "hang":
 		var hand := Vector2(p.x + p.facing * fw / 2, p.y - float(game.ledge.hangOffsetY))
 		var shoulder := Vector2(p.x + p.facing * fw * 0.2, p.y - fh * 0.55)
-		var arm := _color(p.color).darkened(0.2)
+		var arm := Access.color(p.color).darkened(0.2)
 		draw_line(shoulder, hand, arm, 6.0)
 		draw_circle(hand, 6.0, arm)
 
@@ -441,12 +444,12 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 		draw_rect(Rect2(x, y, spec.range, spec.height), c)
 
 	var label := "%s  %d%%" % [p.name, roundi(p.percent)]
-	var size := _font.get_string_size(label, HORIZONTAL_ALIGNMENT_CENTER, -1, 16)
-	draw_string(_font, Vector2(p.x - size.x / 2, p.y - head - 10), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color.WHITE)
+	var size := _font.get_string_size(label, HORIZONTAL_ALIGNMENT_CENTER, -1, Access.px(16))
+	draw_string(_font, Vector2(p.x - size.x / 2, p.y - head - 10), label, HORIZONTAL_ALIGNMENT_LEFT, -1, Access.px(16), Color.WHITE)
 	if away:
 		var note := "disconnesso"
-		var note_size := _font.get_string_size(note, HORIZONTAL_ALIGNMENT_CENTER, -1, 13)
-		draw_string(_font, Vector2(p.x - note_size.x / 2, p.y - head - 28), note, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(1, 0.8, 0.3))
+		var note_size := _font.get_string_size(note, HORIZONTAL_ALIGNMENT_CENTER, -1, Access.px(13))
+		draw_string(_font, Vector2(p.x - note_size.x / 2, p.y - head - 10 - Access.px(18)), note, HORIZONTAL_ALIGNMENT_LEFT, -1, Access.px(13), Color(1, 0.8, 0.3))
 	if p.id == my_id and _textures.has(character.id):
 		# Un triangolino sopra il nome dice chi sei, al posto del bordo bianco del rettangolo
 		var top: float = p.y - head - 30
@@ -456,7 +459,7 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 	if p.get("carrier", false):
 		var top: float = p.y - head - 34
 		draw_rect(Rect2(p.x - 1, top - 30, 3, 30), Color.WHITE)
-		var team_color := Color("e74c3c") if int(p.team) == 1 else Color("3498db")
+		var team_color := Access.team_color(game, int(p.team))
 		draw_colored_polygon(PackedVector2Array([Vector2(p.x + 2, top - 30), Vector2(p.x + 26, top - 22), Vector2(p.x + 2, top - 14)]), team_color)
 
 
@@ -545,7 +548,7 @@ func _draw_offscreen_markers() -> void:
 		var m := Vector2(clampf(cx, inner.position.x, inner.end.x), clampf(cy, inner.position.y, inner.end.y))
 		var dir := (Vector2(cx, cy) - m).normalized()
 		var side := dir.orthogonal() * 9 * s
-		draw_colored_polygon(PackedVector2Array([m + dir * 14 * s, m - dir * 4 * s + side, m - dir * 4 * s - side]), _color(p.color))
+		draw_colored_polygon(PackedVector2Array([m + dir * 14 * s, m - dir * 4 * s + side, m - dir * 4 * s - side]), Access.color(p.color))
 
 
 static func _color(n: Variant) -> Color:

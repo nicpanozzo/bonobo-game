@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 import { CHARACTERS, DEFAULT_CHARACTER_ID } from "../src/shared/characters";
 import { ATTACKS, AUDIO, CAMERA, COLORS, EFFECTS, FIGHTER, INPUT, ITEM_RULES, LEDGE, NET, PROTOCOL_VERSION, RUMBLE, TEAM_COLORS, TEAM_NAMES, WORLD } from "../src/shared/constants";
 import { RECONNECT, RECONNECT_HOLD_MS } from "../src/shared/constants";
+import { COLORS_COLORBLIND, TEAM_COLORS_COLORBLIND } from "../src/shared/constants";
 import { ITEMS } from "../src/shared/items";
 import { DEFAULT_STAGE_ID, STAGES } from "../src/shared/stages";
 
@@ -33,6 +34,8 @@ const data = {
   itemRules: ITEM_RULES,
   colors: COLORS,
   teamColors: TEAM_COLORS,
+  colorsColorblind: COLORS_COLORBLIND,
+  teamColorsColorblind: TEAM_COLORS_COLORBLIND,
   teamNames: TEAM_NAMES,
   defaultStageId: DEFAULT_STAGE_ID,
   stages: STAGES,
