@@ -188,4 +188,36 @@ describe("bot", () => {
     assert.ok(options.size >= 3, `risalite usate: ${[...options].join(", ")}`);
     assert.ok(!options.has("drop"), "non si lascia cadere");
   });
+
+  it("il bot difficile si para da almeno metà dei leggeri, il semplice no (#109)", () => {
+    const blocks = (kind: "semplice" | "difficile") => {
+      const match = new Match();
+      const bots = new Bots();
+      match.addPlayer("a", "A");
+      const id = bots.add(match, kind)!;
+      const a = match.players.find((p) => p.id === "a")!;
+      const bot = match.players.find((p) => p.id === id)!;
+      let hits = 0;
+      let parried = 0;
+      // Il giocatore tira un leggero ogni 25 tick per 6 secondi, sempre attaccato al bot
+      for (let i = 0; i < 60 * 6; i++) {
+        if (i % 25 === 0) {
+          a.x = bot.x - (FIGHTER.width + 20);
+          a.facing = 1;
+        }
+        const light = i % 25 === 0;
+        match.setInput("a", { left: false, right: false, up: false, down: false, light, heavy: false, taunt: false, dodge: false, shield: false });
+        bots.tick(match);
+        for (const e of match.step(DT)) {
+          if (e.type === "hit" && e.targetId === id) hits++;
+          if (e.type === "shield" && e.id === id) parried++;
+        }
+      }
+      return { hits, parried };
+    };
+    const hard = blocks("difficile");
+    assert.ok(hard.parried >= hard.hits, `difficile: ${hard.parried} parati, ${hard.hits} presi`);
+    assert.ok(hard.parried > 0);
+    assert.equal(blocks("semplice").parried, 0);
+  });
 });

@@ -273,13 +273,15 @@ export const BOT = {
   edgeMargin: 40, // pixel: a terra non si avvicina al bordo del palco più di così
   ledgeWaitMaxMs: 1500, // ms: il bot difficile resta appeso al bordo da 0 a tanto prima di risalire (#110)
   ledgeRollNear: 200, // pixel: il difficile preferisce la rotolata se il bersaglio è più vicino di così al bordo
+  shieldHoldMs: 300, // ms: il difficile tiene lo scudo per tanto dopo aver visto partire un attacco vicino (#109)
+  shieldMinHp: 15, // punti di scudo: sotto questi il difficile non si para più, così non se lo fa rompere
 };
 
 // Livelli di difficoltà dei bot (#20 passo 3): ?bot=facile, ?bot=semplice, ?bot=difficile
 export const BOT_LEVELS = {
-  facile: { reactionMs: 320, heavyEvery: 5, dodges: false }, // reactionMs: ogni quanto rivede le scelte
-  semplice: { reactionMs: 180, heavyEvery: 3, dodges: false }, // heavyEvery: un pesante ogni tanti attacchi
-  difficile: { reactionMs: 90, heavyEvery: 2, dodges: true }, // dodges: schiva i pesanti che vede arrivare
+  facile: { reactionMs: 320, heavyEvery: 5, dodges: false, shields: false }, // reactionMs: ogni quanto rivede le scelte
+  semplice: { reactionMs: 180, heavyEvery: 3, dodges: false, shields: false }, // heavyEvery: un pesante ogni tanti attacchi
+  difficile: { reactionMs: 90, heavyEvery: 2, dodges: true, shields: true }, // dodges: schiva i pesanti; shields: si para dagli altri colpi
 };
 
 // Elementi dinamici delle arene (#14): ascensori e trappole. I loro numeri stanno nei dati dell'arena.
