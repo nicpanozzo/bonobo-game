@@ -16,6 +16,7 @@ export interface GameDeps {
   discordWebhookUrl?: string;
   limits?: Partial<typeof NET_LIMITS>; // per i test: limiti diversi da quelli di constants.ts
   roomIdleMs?: number;
+  reconnectHoldMs?: number; // per i test: posto tenuto più corto di RECONNECT_HOLD_MS
 }
 
 // Collega il gioco al server Socket.IO e restituisce le stanze aperte (per /health e per i test)
@@ -75,7 +76,7 @@ export function attachGame(io: Server<ClientToServer, ServerToClient>, deps: Gam
         // Arena, regole e bot li decide chi crea la stanza
         const bots = new Bots();
         const discord = discordHooks(deps.discordWebhookUrl, (id) => bots.isBot(id), deps.leaderboard);
-        r = new Room(code, io, { stageId, rules }, combineHooks(bots.hooks, discord));
+        r = new Room(code, io, { stageId, rules }, combineHooks(bots.hooks, discord), deps.reconnectHoldMs);
         rooms.set(code, r);
         r.onClose = () => rooms.delete(code);
         const kind = parseBotKind(bot);
@@ -103,9 +104,16 @@ export function attachGame(io: Server<ClientToServer, ServerToClient>, deps: Gam
       if (room && allow(rematchBucket)) room.requestRematch();
     });
 
-    socket.on("disconnect", () => {
+    socket.on("disconnect", (reason) => {
       perIp.disconnect(ip);
       if (!room || rooms.get(room.code) !== room) return;
+      // Chi esce apposta (il client chiude il namespace) libera subito il posto;
+      // chi perde la rete lo ritrova tenuto per RECONNECT_HOLD_MS (#107)
+      if (reason !== "client namespace disconnect" && reason !== "server namespace disconnect") {
+        room.holdPlayer(socket.id);
+        console.log(`[${room.code}] perso ${socket.id} (${reason}): posto tenuto`);
+        return;
+      }
       room.removePlayer(socket.id);
       console.log(`[${room.code}] esce ${socket.id}`);
       if (room.isEmpty) {

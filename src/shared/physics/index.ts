@@ -25,6 +25,14 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
   const dt = dtMs / 1000;
 
   if (f.eliminated) return;
+  // Disconnesso con il posto tenuto (#107): fermo dov'è, intoccabile, nessun timer avanza
+  if (f.away) {
+    f.vx = f.vy = 0;
+    f.attackActive = false;
+    f.invulnerable = true;
+    f.prevInput = f.input;
+    return;
+  }
   if (f.respawning) {
     f.respawnTimer -= dtMs;
     if (f.respawnTimer <= 0) respawn(f, ctx);
@@ -81,7 +89,7 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
 export function stepWorld(fighters: Fighter[], dtMs: number, ctx: PhysicsContext): void {
   ctx.timeMs = (ctx.timeMs ?? 0) + dtMs;
   for (const f of fighters) stepFighter(f, dtMs, ctx);
-  for (const f of fighters) tryGrabLedge(f, fighters, ctx);
+  for (const f of fighters) if (!f.away) tryGrabLedge(f, fighters, ctx);
   resolveHits(fighters, ctx);
   resolveHazards(fighters, ctx);
 }

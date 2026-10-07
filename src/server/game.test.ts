@@ -222,3 +222,28 @@ test("stanza senza tasti per troppo tempo: si chiude e scollega chi è dentro", 
   await until(() => !c.connected);
   assert.equal(server.rooms.has("ferma"), false);
 });
+
+test("caduta di rete: il lottatore resta fermo nel posto tenuto, poi esce (#107)", LIMIT, async () => {
+  const server = await startServer({ reconnectHoldMs: 300 });
+  const a = await client(server.url);
+  const b = await client(server.url);
+  assert.equal(await join(a, "caduta", "A"), "welcome");
+  assert.equal(await join(b, "caduta", "B"), "welcome");
+  const room = server.rooms.get("caduta")!;
+  const lost = a.id!;
+  const away = new Promise<void>((resolve) =>
+    b.on("snapshot", (s) => {
+      if (s.events.some((e) => e.type === "away" && e.id === lost)) resolve();
+    }),
+  );
+  a.io.engine.close(); // la rete cade: niente uscita dal namespace
+  await away;
+  assert.equal(room.match.players.find((p) => p.id === lost)?.away, true);
+  await until(() => !room.match.players.some((p) => p.id === lost));
+  assert.ok(server.rooms.has("caduta"), "chi resta continua a giocare");
+  // Se cade anche l'ultimo, la stanza aspetta il suo posto e poi si chiude
+  b.io.engine.close();
+  await sleep(50);
+  assert.ok(server.rooms.has("caduta"));
+  await until(() => !server.rooms.has("caduta"));
+});

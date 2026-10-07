@@ -293,6 +293,9 @@ export const NET_LIMITS = {
 };
 export const ROOM_MAX_ERRORS = 3; // errori di fila nel passo di una stanza dopo cui la stanza si chiude
 export const RECONNECT_HOLD_MS = 20_000; // millisecondi in cui il posto di chi perde la rete resta tenuto (#107)
+export const RECONNECT_RESUME_INVULNERABLE_MS = 1500; // millisecondi di invulnerabilità al rientro dopo una caduta di rete
+export const PING_INTERVAL_MS = 5000; // ogni quanto il server manda un ping (Socket.IO, predefinito 25 s)
+export const PING_TIMEOUT_MS = 5000; // senza risposta al ping per tanto il client è dato per perso (predefinito 20 s)
 export const ROOM_IDLE_MS = 15 * 60_000; // millisecondi senza tasti umani dopo cui una stanza si chiude come se fosse vuota
 
 // Comandi col pad (E6, #108): numeri che usa solo il client Godot, esportati in game.json

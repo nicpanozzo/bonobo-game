@@ -3,8 +3,8 @@
 // girare in locale (allenamento, predizione) e un porting su un altro motore parte da qui.
 
 import { getCharacter } from "./characters";
-import { COLORS, FIGHTER, MATCH_RESTART_MS, MAX_PLAYERS_PER_ROOM, TEAM_COLORS } from "./constants";
-import { createFighter, resetForMatch, stepWorld, type Fighter, type PhysicsContext } from "./physics";
+import { COLORS, FIGHTER, MATCH_RESTART_MS, MAX_PLAYERS_PER_ROOM, RECONNECT_RESUME_INVULNERABLE_MS, TEAM_COLORS } from "./constants";
+import { createFighter, emptyInput, resetForMatch, stepWorld, type Fighter, type PhysicsContext } from "./physics";
 import { createItemWorld, handleItemInput, itemStates, resetItems, stepItems, type ItemWorld } from "./physics/items";
 import { canHitWithRules, flagWinnerTeam, isTeamMode, lastStanding, leaderOnTime, sanitizeRules } from "./rules";
 import { COURSE_PREFIX, seedFromCourseId } from "./courseGenerator";
@@ -92,7 +92,7 @@ export class Match {
   // I dati arrivano dalla rete: si tengono solo booleani
   setInput(id: string, input: InputState) {
     const f = this.fighters.get(id);
-    if (!f) return;
+    if (!f || f.away) return;
     f.input = {
       left: !!input.left,
       right: !!input.right,
@@ -103,6 +103,25 @@ export class Match {
       taunt: !!input.taunt,
       dodge: !!input.dodge,
     };
+  }
+
+  // Caduta di rete (#107): il lottatore resta fermo e intoccabile finché il giocatore rientra o il posto scade.
+  // Al rientro è invulnerabile ancora un attimo, per riprendere la mano
+  setAway(id: string, away: boolean) {
+    const f = this.fighters.get(id);
+    if (!f || f.away === away) return;
+    f.away = away;
+    f.input = emptyInput();
+    f.prevInput = emptyInput();
+    if (away) {
+      f.vx = f.vy = 0;
+      f.attackActive = false;
+      f.invulnerable = true;
+    } else {
+      f.invulnerableTimer = Math.max(f.invulnerableTimer, RECONNECT_RESUME_INVULNERABLE_MS);
+      f.invulnerable = true;
+    }
+    this.ctx.events.push({ type: away ? "away" : "back", id });
   }
 
   // A fine partita chiunque può ricominciare subito, senza aspettare il conto alla rovescia

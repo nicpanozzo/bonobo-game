@@ -45,6 +45,8 @@ func is_joined() -> bool:
 
 func close() -> void:
 	_connecting = false
+	if _joined:
+		_ws.send_text("41") # uscita voluta: il server libera subito il posto invece di tenerlo per la riconnessione (#107)
 	_ws.close()
 
 
