@@ -169,7 +169,14 @@
     "musicBpm": 132,
     "hitLoudPercent": 120,
     "voices": 0.8,
-    "musicFadeMs": 1500
+    "musicFadeMs": 1500,
+    "duckDb": -8,
+    "duckMs": 1200,
+    "sameSoundMax": 3,
+    "sameSoundWindowMs": 60,
+    "targetLufs": -16,
+    "lufsTolerance": 2,
+    "maxPeakDb": -1
   },
   "audioFiles": {
     "sfx": {},

@@ -31,6 +31,10 @@ var _synth_music: AudioStreamWAV # la musica sintetizzata, pronta quando _music_
 var _track := "" # "lobby" o "match"
 var _music_files := {} # traccia -> AudioStream
 var _fade: Tween
+var _started := {} # nome -> ms di avvio delle ultime copie (tetto ai suoni uguali)
+var _music_volume := 1.0 # volume della musica scelto nelle opzioni, da 0 a 1
+var _duck_db := 0.0 # quanto è abbassata adesso la musica (0 = niente)
+var _duck: Tween
 
 
 func setup(game_data: Dictionary) -> void:
@@ -62,7 +66,8 @@ func set_volumes(master: float, sfx: float, music: float, music_on: bool, voices
 	AudioServer.set_bus_volume_db(0, linear_to_db(master))
 	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Voci"), linear_to_db(voices))
 	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Effetti"), linear_to_db(sfx))
-	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Musica"), linear_to_db(music))
+	_music_volume = music
+	_apply_music_volume()
 	AudioServer.set_bus_mute(AudioServer.get_bus_index("Musica"), not music_on)
 
 
@@ -106,6 +111,7 @@ func on_event(e: Dictionary) -> void:
 			_play("shieldBreak", {"x": e.x})
 		"ko":
 			_play("ko", {"x": e.x})
+			duck()
 		"checkpoint":
 			_play("point", {"volume": 0.5, "pitch": 1.3})
 		"flag":
@@ -124,6 +130,12 @@ func on_event(e: Dictionary) -> void:
 
 
 func _play(name: String, opts := {}) -> void:
+	var now := Time.get_ticks_msec()
+	var recent: Array = _started.get(name, [])
+	if not may_start(recent, now, game.audio.get("sameSoundMax", 3), game.audio.get("sameSoundWindowMs", 60)):
+		return
+	recent.append(now)
+	_started[name] = recent
 	var p := _pool[_next]
 	_next = (_next + 1) % _pool.size()
 	p.stream = stream_for(name)
@@ -147,6 +159,37 @@ func _process(_delta: float) -> void:
 			if not _music.playing:
 				_switch_music(_synth_music)
 			return
+
+
+# Tetto ai suoni uguali (E13): parte solo se entro window ms ne sono partite meno di max copie.
+# Toglie da recent gli avvii vecchi
+static func may_start(recent: Array, now: int, max_copies: int, window: int) -> bool:
+	while not recent.is_empty() and now - int(recent[0]) >= window:
+		recent.pop_front()
+	return recent.size() < max_copies
+
+
+# Sul KO (e quando parlerà l'annunciatore) la musica scende di colpo e risale piano
+func duck() -> void:
+	if _duck:
+		_duck.kill()
+	_set_duck(float(game.audio.get("duckDb", -8)))
+	if is_inside_tree():
+		_duck = create_tween()
+		_duck.tween_method(_set_duck, _duck_db, 0.0, game.audio.get("duckMs", 1200) / 1000.0).set_ease(Tween.EASE_IN)
+
+
+func music_duck_db() -> float:
+	return _duck_db
+
+
+func _set_duck(db: float) -> void:
+	_duck_db = db
+	_apply_music_volume()
+
+
+func _apply_music_volume() -> void:
+	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Musica"), linear_to_db(_music_volume) + _duck_db)
 
 
 # Il suono da far partire: una variante registrata (mai la stessa due volte di fila), o la ricetta
