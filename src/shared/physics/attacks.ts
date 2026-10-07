@@ -58,15 +58,19 @@ export function bodyBox(f: Fighter): Box {
   return { x: f.x - FIGHTER.width / 2, y: f.y - FIGHTER.height, w: FIGHTER.width, h: FIGHTER.height };
 }
 
-function overlap(a: Box, b: Box): boolean {
+export function overlap(a: Box, b: Box): boolean {
   return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 }
 
-const canBeHit = (f: Fighter) => !f.eliminated && !f.respawning && !f.invulnerable;
+// La presa e i lanci (#109): niente hitbox, li gestisce grab.ts
+export const isGrabKind = (kind: AttackKind) => kind === "grab" || kind.startsWith("throw");
+
+export const canBeHit = (f: Fighter) => !f.eliminated && !f.respawning && !f.invulnerable;
 
 export function resolveHits(fighters: Fighter[], ctx: PhysicsContext): void {
   for (const attacker of fighters) {
     if (!attacker.attackActive || !attacker.attack || attacker.eliminated || attacker.respawning) continue;
+    if (isGrabKind(attacker.attack)) continue; // presa e lanci non colpiscono col rettangolo (grab.ts)
     const spec = ATTACKS[attacker.attack];
     const box = attackBox(attacker);
     for (const target of fighters) {
@@ -90,33 +94,39 @@ export function resolveHits(fighters: Fighter[], ctx: PhysicsContext): void {
         continue;
       }
 
-      // Stile Smash/Brawlhalla: il danno non toglie vita, fa volare più lontano
-      target.percent = Math.min(999, target.percent + spec.damage);
-      const knockback = (spec.baseKnockback + spec.knockbackGrowth * target.percent) / characterStats(target.characterId).weight; // E11
-      const angle = (spec.angleDeg * Math.PI) / 180;
-      target.vx = attacker.facing * Math.cos(angle) * knockback;
-      target.vy = -Math.sin(angle) * knockback;
-      target.onGround = false;
-      target.hitstunTimer = knockback * HITSTUN_PER_KNOCKBACK;
-      target.attack = null;
-      target.attackActive = false;
-      target.facing = (-attacker.facing) as 1 | -1;
-      target.lastHitById = attacker.id;
-      // Chi viene colpito può di nuovo usare il recupero (#11)
-      target.recoveryUsed = false;
-      target.helpless = false;
-      clearStun(target);
-      ctx.events.push({
-        type: "hit",
-        attackerId: attacker.id,
-        targetId: target.id,
-        kind: attacker.attack,
-        damage: spec.damage,
-        percent: target.percent,
-        knockback: Math.round(knockback),
-        x: Math.round(ix),
-        y: Math.round(iy),
-      });
+      launch(target, attacker, attacker.attack, Math.round(ix), Math.round(iy), ctx);
     }
   }
+}
+
+// Il colpo vero: percentuale e volo nella direzione in cui guarda chi colpisce. Lo usano anche i lanci della presa
+export function launch(target: Fighter, attacker: Fighter, kind: AttackKind, x: number, y: number, ctx: PhysicsContext): void {
+  const spec = ATTACKS[kind];
+  // Stile Smash/Brawlhalla: il danno non toglie vita, fa volare più lontano
+  target.percent = Math.min(999, target.percent + spec.damage);
+  const knockback = (spec.baseKnockback + spec.knockbackGrowth * target.percent) / characterStats(target.characterId).weight; // E11
+  const angle = (spec.angleDeg * Math.PI) / 180;
+  target.vx = attacker.facing * Math.cos(angle) * knockback;
+  target.vy = -Math.sin(angle) * knockback;
+  target.onGround = false;
+  target.hitstunTimer = knockback * HITSTUN_PER_KNOCKBACK;
+  target.attack = null;
+  target.attackActive = false;
+  target.facing = (-attacker.facing) as 1 | -1;
+  target.lastHitById = attacker.id;
+  // Chi viene colpito può di nuovo usare il recupero (#11)
+  target.recoveryUsed = false;
+  target.helpless = false;
+  clearStun(target);
+  ctx.events.push({
+    type: "hit",
+    attackerId: attacker.id,
+    targetId: target.id,
+    kind,
+    damage: spec.damage,
+    percent: target.percent,
+    knockback: Math.round(knockback),
+    x,
+    y,
+  });
 }

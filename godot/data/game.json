@@ -134,6 +134,66 @@
       "height": 40,
       "angleDeg": 30,
       "boxY": -44
+    },
+    "grab": {
+      "damage": 0,
+      "baseKnockback": 0,
+      "knockbackGrowth": 0,
+      "startupMs": 100,
+      "activeMs": 33,
+      "cooldownMs": 633,
+      "range": 40,
+      "height": 40,
+      "angleDeg": 0,
+      "boxY": -60
+    },
+    "throwForward": {
+      "damage": 8,
+      "baseKnockback": 380,
+      "knockbackGrowth": 9,
+      "startupMs": 0,
+      "activeMs": 150,
+      "cooldownMs": 300,
+      "range": 40,
+      "height": 40,
+      "angleDeg": 40,
+      "boxY": -60
+    },
+    "throwBack": {
+      "damage": 10,
+      "baseKnockback": 400,
+      "knockbackGrowth": 10,
+      "startupMs": 0,
+      "activeMs": 150,
+      "cooldownMs": 300,
+      "range": 40,
+      "height": 40,
+      "angleDeg": 135,
+      "boxY": -60
+    },
+    "throwUp": {
+      "damage": 7,
+      "baseKnockback": 360,
+      "knockbackGrowth": 9.5,
+      "startupMs": 0,
+      "activeMs": 150,
+      "cooldownMs": 300,
+      "range": 40,
+      "height": 40,
+      "angleDeg": 88,
+      "boxY": -60
+    },
+    "throwDown": {
+      "damage": 6,
+      "baseKnockback": 300,
+      "knockbackGrowth": 6,
+      "startupMs": 0,
+      "activeMs": 150,
+      "cooldownMs": 300,
+      "range": 40,
+      "height": 40,
+      "angleDeg": 70,
+      "boxY": -60
     }
   },
   "ledge": {

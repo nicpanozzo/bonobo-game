@@ -8,10 +8,12 @@
 //   elements.ts  ascensori e trappole (#14)
 //   ledge.ts     bordo del palco (#110)
 //   shield.ts    scudo e stordimento (#109)
+//   grab.ts      presa, colpetti e lanci (#109)
 
 import { resolveHits, tryStartAttack, updateAttack } from "./attacks";
 import { carryRider, resolveHazards } from "./elements";
 import { tickBuffer, type Fighter, type PhysicsContext } from "./fighter";
+import { grabbing, inGrab, resolveGrabs, stepGrabs } from "./grab";
 import { holdLedge, tryGrabLedge } from "./ledge";
 import { applyControls, applyGravity } from "./movement";
 import { holdShield } from "./shield";
@@ -65,6 +67,12 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
   f.invulnerable = f.invulnerableTimer > 0;
   if (f.hitstun) f.ledgeGrabs = 0; // un colpo ridà le prese del bordo (#110)
 
+  // Nella presa (#109) si sta fermi: la posizione di chi è tenuto la decide stepGrabs
+  if (inGrab(f)) {
+    f.prevInput = f.input;
+    return;
+  }
+
   // Appesi al bordo si resta fermi: niente controlli, attacchi né gravità
   if (holdLedge(f, dtMs, ctx)) {
     f.prevInput = f.input;
@@ -72,8 +80,8 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
   }
 
   updateAttack(f, dtMs);
-  // Sullo scudo o storditi niente controlli né attacchi
-  if (!holdShield(f, dtMs, ctx)) {
+  // Durante la presa, sullo scudo o storditi niente controlli né attacchi
+  if (!grabbing(f, dtMs, ctx) && !holdShield(f, dtMs, ctx)) {
     applyControls(f, dt, ctx);
     tryStartAttack(f, ctx);
   }
@@ -95,8 +103,10 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
 // Un tick intero: l'arena va avanti, tutti si muovono, poi si risolvono i colpi e le trappole
 export function stepWorld(fighters: Fighter[], dtMs: number, ctx: PhysicsContext): void {
   ctx.timeMs = (ctx.timeMs ?? 0) + dtMs;
+  stepGrabs(fighters, dtMs, ctx);
   for (const f of fighters) stepFighter(f, dtMs, ctx);
   for (const f of fighters) if (!f.away) tryGrabLedge(f, fighters, ctx);
   resolveHits(fighters, ctx);
+  resolveGrabs(fighters, ctx); // dopo i colpi: un colpo nello stesso tick vince sulla presa
   resolveHazards(fighters, ctx);
 }

@@ -91,6 +91,26 @@ export const ATTACKS: Record<AttackKind, AttackSpec> = {
   },
   // Risalita con attacco dal bordo (#110): si sale durante l'avvio e si colpisce davanti, in basso
   ledgeAttack: { damage: 7, baseKnockback: 330, knockbackGrowth: 4, startupMs: 300, activeMs: 100, cooldownMs: 600, range: 60, height: 40, angleDeg: 30, boxY: -44 },
+  // Presa (#109, E8 passo 2): scudo + leggero. Non fa danno: chi entra nel rettangolo viene tenuto (physics/grab.ts)
+  grab: { damage: 0, baseKnockback: 0, knockbackGrowth: 0, startupMs: 100, activeMs: 33, cooldownMs: 633, range: 40, height: 40, angleDeg: 0, boxY: -60 },
+  // Lanci dalla presa, nella direzione tenuta. angleDeg oltre 90 = all'indietro. La hitbox non conta:
+  // il lancio parte subito su chi è tenuto, il rettangolo serve solo a disegnare la mossa
+  throwForward: { damage: 8, baseKnockback: 380, knockbackGrowth: 9, startupMs: 0, activeMs: 150, cooldownMs: 300, range: 40, height: 40, angleDeg: 40, boxY: -60 },
+  throwBack: { damage: 10, baseKnockback: 400, knockbackGrowth: 10, startupMs: 0, activeMs: 150, cooldownMs: 300, range: 40, height: 40, angleDeg: 135, boxY: -60 }, // il lancio da KO
+  throwUp: { damage: 7, baseKnockback: 360, knockbackGrowth: 9.5, startupMs: 0, activeMs: 150, cooldownMs: 300, range: 40, height: 40, angleDeg: 88, boxY: -60 },
+  throwDown: { damage: 6, baseKnockback: 300, knockbackGrowth: 6, startupMs: 0, activeMs: 150, cooldownMs: 300, range: 40, height: 40, angleDeg: 70, boxY: -60 }, // apre le combo
+};
+
+// Presa (#109, E8 passo 2): quanto si tiene, come ci si libera, i colpetti
+export const GRAB = {
+  whiffLagMs: 500, // ms fermi dopo una presa andata a vuoto (oltre ad avvio e finestra attiva)
+  holdBaseMs: 1000, // ms per cui si tiene un bersaglio a 0%...
+  holdPerPercentMs: 8, // ...più tanti ms per punto di percentuale
+  mashMs: 60, // ogni tasto nuovo premuto da chi è tenuto toglie questi ms alla tenuta
+  pummelDamage: 1.5, // percentuale di un colpetto (leggero durante la presa)
+  pummelEveryMs: 300, // ms minimi tra due colpetti
+  releaseSpeed: 300, // pixel/s con cui ci si allontana quando la presa finisce senza lancio
+  holdDistance: 44, // pixel tra il centro di chi tiene e quello di chi è tenuto
 };
 
 // Mossa di recupero (#11): in aria K + su dà una spinta verso l'alto, una volta finché
