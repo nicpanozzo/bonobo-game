@@ -136,6 +136,9 @@
       "boxY": -44
     }
   },
+  "ledge": {
+    "hangOffsetY": 56
+  },
   "net": {
     "interpolationDelayMs": 80,
     "teleportDistance": 300,

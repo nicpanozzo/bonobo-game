@@ -112,6 +112,15 @@ func on_event(e: Dictionary) -> void:
 			_shake = maxf(_shake, minf(game.effects.shakeMax, float(e.knockback) * game.effects.shakePerKnockback))
 		"land":
 			_puff(e.x, e.y)
+		"ledgeGrab":
+			# Lampo bianco sullo spigolo se la presa è invulnerabile (#110), così chi difende sa che non serve colpire
+			if e.get("invulnerable", false):
+				_sparks.append({"x": e.x, "y": e.y, "age": 0.0, "size": 30.0, "color": Color.WHITE})
+		"ledgeGetup":
+			if e.option == "roll":
+				var p: Variant = buffer.sample(e.id, Time.get_ticks_msec())
+				if p != null:
+					_puff(p.x, p.y - float(game.ledge.hangOffsetY)) # polvere sullo spigolo, da dove parte la rotolata
 		"jump":
 			if not e.get("air", false):
 				_puff(e.x, e.y)
@@ -405,6 +414,14 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 		draw_circle(Vector2(p.x + p.facing * fw * 0.22, p.y - fh * 0.78), 5.0, Color.WHITE)
 		draw_circle(Vector2(p.x + p.facing * fw * 0.27, p.y - fh * 0.78), 2.5, Color.BLACK)
 
+	# Appeso al bordo (#110): il braccio arriva fino allo spigolo, sopra la testa
+	if str(p.get("ledge", "")) == "hang":
+		var hand := Vector2(p.x + p.facing * fw / 2, p.y - float(game.ledge.hangOffsetY))
+		var shoulder := Vector2(p.x + p.facing * fw * 0.2, p.y - fh * 0.55)
+		var arm := _color(p.color).darkened(0.2)
+		draw_line(shoulder, hand, arm, 6.0)
+		draw_circle(hand, 6.0, arm)
+
 	# Colpo in corso: la stessa hitbox di attackBox() in src/shared/physics/attacks.ts,
 	# spostata da boxX/boxY per le varianti direzionali (#2)
 	if p.attack != null:
@@ -451,7 +468,7 @@ func _draw_sprite(p: Dictionary, character: Dictionary, now: float) -> void:
 		state = {"name": name, "since": now}
 		_anims[p.id] = state
 	state["attacking"] = attacking
-	var a: Dictionary = sheet.animations[name]
+	var a: Dictionary = sheet.animations[available_animation(sheet.animations, name)]
 	var frame := int((now - state.since) / 1000.0 * a.fps)
 	frame = frame % int(a.frames) if a.loop else mini(frame, int(a.frames) - 1)
 	var fw: float = sheet.frameWidth
@@ -463,6 +480,16 @@ func _draw_sprite(p: Dictionary, character: Dictionary, now: float) -> void:
 	draw_set_transform(Vector2.ZERO)
 
 
+# Le animazioni del bordo (#110) sono facoltative: chi non le ha nello spritesheet usa quella del salto
+const ANIMATION_FALLBACK := {"ledge": "jump", "climb": "jump"}
+
+
+static func available_animation(animations: Dictionary, name: String) -> String:
+	if animations.has(name):
+		return name
+	return ANIMATION_FALLBACK.get(name, "idle")
+
+
 # Quale animazione mostrare, dai soli campi dello snapshot (animationFor in fighters.ts)
 static func _animation_for(p: Dictionary) -> String:
 	if p.hitstun:
@@ -472,8 +499,10 @@ static func _animation_for(p: Dictionary) -> String:
 			return "jump" # il recupero (#11) usa l'animazione del salto
 		return "heavy" if str(p.attack).begins_with("heavy") else "light" # le varianti usano l'animazione del colpo base
 	var ledge := str(p.get("ledge", ""))
-	if ledge == "hang" or ledge == "climb":
-		return "jump" # appeso al bordo o in risalita (#110): le pose vere arrivano con il passo 3
+	if ledge == "hang":
+		return "ledge" # appeso al bordo (#110)
+	if ledge == "climb":
+		return "climb"
 	if ledge == "roll":
 		return "walk"
 	if not p.onGround:
