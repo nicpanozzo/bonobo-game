@@ -37,6 +37,7 @@ var _version_warned := false # banner "versione nuova" già mostrato (E2)
 var _try_hint := "" # prova del primo avvio (E14): si mostra appena si entra nella stanza
 var _last_snapshot := 0 # ms dell'ultimo snapshot: in partita il silenzio dice che la rete è caduta
 var training: Control # pannello dell'allenamento (E15), solo nelle stanze "training"
+var tutorial: Control # riquadro del tutorial a tappe (E15), solo se si è entrati da "Tutorial"
 
 
 func _ready() -> void:
@@ -151,6 +152,12 @@ func _show_title(skip_press := false) -> void:
 				_show_title(true)
 			else:
 				title.restore_focus()))
+	title.tutorial_requested.connect(func():
+		title.queue_free()
+		_join_gym(true))
+	title.training_requested.connect(func():
+		title.queue_free()
+		_join_gym(false))
 	title.credits_requested.connect(func():
 		var credits := preload("res://scripts/credits.gd").new()
 		credits.theme = UI.theme()
@@ -183,10 +190,13 @@ func _show_first_run() -> void:
 
 func _join(choice: Dictionary) -> void:
 	params.merge(choice, true)
+	params.tutorial = choice.get("tutorial", false) # vale solo per questa entrata
 	if params.server == "":
 		params.server = _default_server()
-	settings.profile = {"name": params.name, "room": params.room, "char": params.get("char", ""), "stage": params.get("stage", ""), "rules": params.get("rules", {}), "server": params.server}
-	settings.save()
+	# La palestra (E15) non diventa l'ultima scelta: la lobby resta com'era
+	if not choice.get("gym", false):
+		settings.profile = {"name": params.name, "room": params.room, "char": params.get("char", ""), "stage": params.get("stage", ""), "rules": params.get("rules", {}), "server": params.server}
+		settings.save()
 	_set_url(params.room)
 	if is_instance_valid(lobby):
 		lobby.queue_free()
@@ -204,6 +214,7 @@ func _leave() -> void:
 	world.reset()
 	hud.reset()
 	_set_training(false)
+	_set_tutorial(false)
 	camera.position = Vector2.ZERO
 	camera.zoom = Vector2.ONE
 	_hide_connecting()
@@ -379,6 +390,7 @@ func _on_event(name: String, data: Variant) -> void:
 				world.set_stage(data.stageId)
 			hud.on_welcome(data, world.stage)
 			_set_training(data.get("rules", {}).get("mode", "") == "training")
+			_set_tutorial(params.get("tutorial", false))
 			_check_server_version(str(data.get("serverVersion", "")))
 			camera.position = Vector2.ZERO
 			camera.zoom = Vector2.ONE
@@ -390,6 +402,8 @@ func _on_event(name: String, data: Variant) -> void:
 				rumble.on_event(e)
 				if is_instance_valid(training):
 					training.on_event(e, world.my_id)
+				if is_instance_valid(tutorial):
+					tutorial.on_event(e, world.my_id)
 			world.on_snapshot(data)
 			hud.on_snapshot(data)
 			if is_instance_valid(training):
@@ -590,3 +604,35 @@ func _set_training(on: bool) -> void:
 	training.setup(game)
 	training.command.connect(func(data: Dictionary): socket.emit("training", data))
 	training.hitboxes_toggled.connect(func(on_off: bool): world.show_hitboxes = on_off)
+
+
+# Dal titolo (E15): una palestra tutta propria, col tutorial e lo sparring o col manichino.
+# Stanza nuova ogni volta: i comandi dell'allenamento valgono solo da soli
+func _join_gym(with_tutorial: bool) -> void:
+	var tut: Dictionary = game.get("tutorial", {})
+	var player_name := str(settings.profile.get("name", ""))
+	_join({
+		"name": player_name if player_name != "" else "Bonobo",
+		"room": ("tutorial-" if with_tutorial else "palestra-") + str(randi() % 100000),
+		"char": settings.profile.get("char", ""),
+		"stage": str(tut.get("stage", "")) if with_tutorial else "",
+		"rules": {"mode": "training"},
+		"bot": str(tut.get("bot", "manichino")) if with_tutorial else "manichino",
+		"tutorial": with_tutorial,
+		"gym": true,
+	})
+
+
+func _set_tutorial(on: bool) -> void:
+	if on == is_instance_valid(tutorial):
+		return
+	if not on:
+		tutorial.queue_free()
+		tutorial = null
+		return
+	tutorial = preload("res://scripts/tutorial.gd").new()
+	tutorial.theme = UI.theme()
+	ui_layer.add_child(tutorial)
+	tutorial.setup(settings, game)
+	# "Fatto!": lo stesso suono di un punto
+	tutorial.lesson_done.connect(func(_i: int): audio.on_event({"type": "flag"}))

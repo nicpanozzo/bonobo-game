@@ -5,6 +5,8 @@ extends Control
 signal play_requested
 signal options_requested
 signal credits_requested
+signal tutorial_requested # tutorial a tappe con lo sparring (E15)
+signal training_requested # palestra col manichino e il pannello dell'allenamento (E15)
 
 const BLINK_S := 0.6 # mezzo giro del lampeggio di "Premi un tasto"
 
@@ -45,7 +47,8 @@ func setup(game_data: Dictionary, skip_press := false) -> void:
 	_menu.visible = false
 	box.add_child(_menu)
 	_first = _menu_button("Gioca online", func(): play_requested.emit(), true)
-	# TODO E15: "Allenamento" quando la palestra (#113) è in main
+	_menu_button("Tutorial", func(): tutorial_requested.emit())
+	_menu_button("Allenamento", func(): training_requested.emit())
 	_menu_button("Opzioni", func(): options_requested.emit())
 	_menu_button("Crediti", func(): credits_requested.emit())
 	if not OS.has_feature("web"): # nel browser si chiude la scheda
