@@ -394,8 +394,9 @@ func _draw_course() -> void:
 func _draw_fighter(p: Dictionary, now: float) -> void:
 	var fw: float = game.fighter.width
 	var fh: float = game.fighter.height
-	# Chi è appena rientrato lampeggia finché è invulnerabile
-	if p.respawning or (p.invulnerable and int(now / 100) % 2 == 0):
+	# Chi è appena rientrato lampeggia finché è invulnerabile; chi ha perso la rete no, è solo trasparente (#107)
+	var away: bool = p.get("away", false)
+	if p.respawning or (p.invulnerable and not away and int(now / 100) % 2 == 0):
 		return
 	var character: Dictionary = game.characters.get(p.characterId, game.characters[game.defaultCharacterId])
 	var head := fh # altezza della testa sopra i piedi: lo sprite può essere più alto del corpo
@@ -406,6 +407,7 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 		var color := _color(p.color)
 		if p.hitstun:
 			color = color.lightened(0.5)
+		color.a = away_alpha(p)
 		var body := Rect2(p.x - fw / 2, p.y - fh, fw, fh)
 		draw_rect(body, color)
 		if p.id == my_id:
@@ -436,6 +438,10 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 	var label := "%s  %d%%" % [p.name, roundi(p.percent)]
 	var size := _font.get_string_size(label, HORIZONTAL_ALIGNMENT_CENTER, -1, 16)
 	draw_string(_font, Vector2(p.x - size.x / 2, p.y - head - 10), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color.WHITE)
+	if away:
+		var note := "disconnesso"
+		var note_size := _font.get_string_size(note, HORIZONTAL_ALIGNMENT_CENTER, -1, 13)
+		draw_string(_font, Vector2(p.x - note_size.x / 2, p.y - head - 28), note, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(1, 0.8, 0.3))
 	if p.id == my_id and _textures.has(character.id):
 		# Un triangolino sopra il nome dice chi sei, al posto del bordo bianco del rettangolo
 		var top: float = p.y - head - 30
@@ -476,8 +482,13 @@ func _draw_sprite(p: Dictionary, character: Dictionary, now: float) -> void:
 	var src := Rect2(frame * fw, a.row * fh, fw, fh)
 	var scale: float = sheet.get("scale", 1.0) # 0.5 per i disegni fatti a 2x
 	draw_set_transform(Vector2(p.x, p.y), 0, Vector2(p.facing * scale, scale))
-	draw_texture_rect_region(_textures[character.id], Rect2(-fw / 2, -fh, fw, fh), src)
+	draw_texture_rect_region(_textures[character.id], Rect2(-fw / 2, -fh, fw, fh), src, Color(1, 1, 1, away_alpha(p)))
 	draw_set_transform(Vector2.ZERO)
+
+
+# Chi ha perso la rete (#107) si vede semitrasparente finché rientra o il suo posto scade
+static func away_alpha(p: Dictionary) -> float:
+	return 0.4 if p.get("away", false) else 1.0
 
 
 # Le animazioni del bordo (#110) sono facoltative: chi non le ha nello spritesheet usa quella del salto

@@ -29,6 +29,9 @@ var _last_input := {}
 var _retry_at := -1
 var _token := "" # segreto del welcome: solo in memoria, vale per la stanza _token_room (#107)
 var _token_room := ""
+var _lost_at := -1 # ms in cui la connessione è caduta durante la partita, -1 se siamo collegati (#107)
+var _attempt := 0 # tentativi di riconnessione da quando è caduta
+var _last_snapshot := 0 # ms dell'ultimo snapshot: in partita il silenzio dice che la rete è caduta
 
 
 func _ready() -> void:
@@ -120,12 +123,22 @@ func _join(choice: Dictionary) -> void:
 func _leave() -> void:
 	playing = false
 	_retry_at = -1
+	_lost_at = -1
+	_last_snapshot = 0
 	socket.close()
 	world.reset()
 	hud.reset()
 	camera.position = Vector2.ZERO
 	camera.zoom = Vector2.ONE
 	_show_lobby()
+
+
+# Un avviso che sparisce da solo dopo qualche secondo, se nel frattempo non ne è arrivato un altro
+func _flash_status(text: String) -> void:
+	hud.set_status(text)
+	get_tree().create_timer(4.0).timeout.connect(func():
+		if hud.status == text:
+			hud.set_status(""))
 
 
 func _apply_volumes() -> void:
@@ -157,7 +170,8 @@ func _set_url(room: String) -> void:
 
 
 func _connect() -> void:
-	hud.set_status("Mi collego a %s..." % params.server)
+	if _lost_at < 0:
+		hud.set_status("Mi collego a %s..." % params.server)
 	var err := socket.connect_to(params.server)
 	if err != OK:
 		hud.set_status("Non riesco a collegarmi (%s)" % error_string(err))
@@ -166,6 +180,7 @@ func _connect() -> void:
 
 func _on_connected() -> void:
 	hud.set_status("")
+	_last_snapshot = 0
 	var data := {"room": params.room, "name": params.name}
 	if params.get("stage", "") != "":
 		data.stageId = params.stage # conta solo se la stanza è nuova
@@ -184,13 +199,37 @@ func _on_connected() -> void:
 func _on_disconnected() -> void:
 	if not playing:
 		return
-	hud.set_status("Connessione persa, riprovo... (Esc per tornare alla lobby)")
-	_retry_at = Time.get_ticks_msec() + RECONNECT_MS
+	if _lost_at < 0:
+		_lost_at = Time.get_ticks_msec()
+		_attempt = 0
+	_retry_later()
+
+
+# Tentativi con attesa crescente (1, 2, 4, 5, 5... s): presto all'inizio, senza martellare dopo (#107)
+func _retry_later() -> void:
+	var delays: Array = game.reconnect.retryDelaysMs
+	_retry_at = Time.get_ticks_msec() + int(delays[mini(_attempt, delays.size() - 1)])
+	_attempt += 1
+	_show_reconnecting()
+
+
+# "Riconnessione... tentativo 2, posto tenuto ancora 14 s": quanto manca prima che il server liberi il posto
+func _show_reconnecting() -> void:
+	var left := ceili((float(game.reconnect.holdMs) - (Time.get_ticks_msec() - _lost_at)) / 1000.0)
+	var text := "Riconnessione... tentativo %d" % _attempt
+	if left > 0:
+		text += ", posto tenuto ancora %d s" % left
+	text += " (Esc per tornare alla lobby)"
+	if hud.status != text:
+		hud.set_status(text)
 
 
 # Indirizzo sbagliato o server spento: si riprova, ma si dice cosa succede e come uscirne
 func _on_connect_failed() -> void:
 	if not playing:
+		return
+	if _lost_at >= 0:
+		_retry_later() # la rete non è ancora tornata
 		return
 	hud.set_status("Non riesco a raggiungere %s, riprovo... (Esc per cambiare server)" % params.server)
 	_retry_at = Time.get_ticks_msec() + RECONNECT_MS * 2
@@ -201,6 +240,11 @@ func _on_event(name: String, data: Variant) -> void:
 		"welcome":
 			_token = str(data.get("token", ""))
 			_token_room = str(params.room)
+			# Dopo una caduta: o si torna nello stesso lottatore, o il posto era già scaduto
+			if _lost_at >= 0 and not data.get("resumed", false):
+				_flash_status("Posto perso, sei rientrato da capo")
+			_lost_at = -1
+			_attempt = 0
 			world.my_id = data.id
 			hud.my_id = data.id
 			rumble.my_id = data.id
@@ -213,6 +257,7 @@ func _on_event(name: String, data: Variant) -> void:
 			camera.position = Vector2.ZERO
 			camera.zoom = Vector2.ONE
 		"snapshot":
+			_last_snapshot = Time.get_ticks_msec()
 			for e in data.events:
 				world.on_event(e)
 				audio.on_event(e)
@@ -228,6 +273,12 @@ func _process(_delta: float) -> void:
 	if _retry_at > 0 and Time.get_ticks_msec() >= _retry_at:
 		_retry_at = -1
 		_connect()
+	elif _retry_at > 0 and _lost_at >= 0:
+		_show_reconnecting() # il conto alla rovescia del posto tenuto
+	# In partita gli snapshot arrivano 30 volte al secondo: se tacciono la rete è caduta, senza aspettare i ping
+	if playing and _last_snapshot > 0 and Time.get_ticks_msec() - _last_snapshot > int(game.reconnect.snapshotSilenceMs):
+		_last_snapshot = 0
+		socket.drop()
 	if playing:
 		_send_input()
 		if world.stage_width() > game.world.width:

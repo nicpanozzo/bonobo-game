@@ -32,3 +32,9 @@ func test_animazioni_del_bordo_facoltative() -> void:
 	runner.check(WorldView.available_animation(only_base, "climb") == "jump", "climb -> jump")
 	runner.check(WorldView.available_animation({"ledge": {}, "jump": {}}, "ledge") == "ledge", "se c'è si usa")
 	runner.check(WorldView.available_animation(only_base, "walk") == "walk", "le altre restano")
+
+
+func test_disconnesso_semitrasparente() -> void:
+	runner.check(WorldView.away_alpha(_player({"away": true})) < 1.0, "away: trasparente")
+	runner.check(WorldView.away_alpha(_player({"away": false})) == 1.0, "collegato: pieno")
+	runner.check(WorldView.away_alpha(_player()) == 1.0, "server vecchio senza away: pieno")
