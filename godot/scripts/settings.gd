@@ -74,6 +74,7 @@ var pad_bindings := {}
 var rumble := Rumble.STRONG # vibrazione del pad: Rumble.OFF, WEAK o STRONG
 var stick_deadzone := 0.35 # main.gd mette INPUT.stickDeadzone di game.json
 var profile := {} # name, room, char, stage, rules, server
+var first_run_done := false # primo avvio guidato (E14) già fatto o saltato: Ripristina non lo rimette
 var video := {} # come VIDEO_DEFAULTS
 var access := {} # come ACCESS_DEFAULTS
 
@@ -122,6 +123,7 @@ func _init(audio_defaults: Dictionary, path := PATH) -> void:
 				for other in ACTIONS:
 					if other != a:
 						all[other] = all[other].filter(func(k): return not all[a].has(k))
+	first_run_done = cfg.get_value("first_run", "done", false) == true
 	var p: Variant = cfg.get_value("profile", "last", {})
 	if p is Dictionary:
 		profile = p
@@ -166,6 +168,7 @@ func save() -> void:
 	for k in access:
 		cfg.set_value("access", k, access[k])
 	cfg.set_value("profile", "last", profile)
+	cfg.set_value("first_run", "done", first_run_done)
 	cfg.save(_path) # se non si può salvare, le preferenze valgono solo per questa volta
 	changed.emit()
 
