@@ -101,6 +101,7 @@ func _show_lobby() -> void:
 	lobby.theme = UI.theme()
 	ui_layer.add_child(lobby)
 	lobby.setup(game, params, room_link)
+	UI.fade_in(lobby)
 	lobby.join_requested.connect(_join)
 	lobby.back_requested.connect(func():
 		lobby.queue_free()
@@ -131,6 +132,7 @@ func _show_title(skip_press := false) -> void:
 	title.theme = UI.theme()
 	ui_layer.add_child(title)
 	title.setup(game, skip_press)
+	UI.fade_in(title)
 	title.play_requested.connect(func():
 		title.queue_free()
 		_show_lobby())
@@ -159,6 +161,7 @@ func _show_first_run() -> void:
 	first.theme = UI.theme()
 	ui_layer.add_child(first)
 	first.setup(settings)
+	UI.fade_in(first)
 	var done := func(player_name: String) -> void:
 		settings.first_run_done = true
 		settings.profile["name"] = player_name
