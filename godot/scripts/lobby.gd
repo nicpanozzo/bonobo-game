@@ -6,6 +6,7 @@ extends Control
 signal join_requested(choice: Dictionary)
 signal options_requested
 signal credits_requested
+signal back_requested # Indietro, Esc o B: torna al titolo (E14)
 
 const MAX_SEED := 999999 # come stageGenerator.ts: "casuale-<seme>" e "corsa-<seme>"
 const MODES := [["ffa", "Tutti contro tutti"], ["teams", "Squadre"], ["flag", "Bandiera (a squadre)"], ["race", "Corsa (platformer)"]]
@@ -155,6 +156,7 @@ func setup(game_data: Dictionary, params: Dictionary, link: Callable) -> void:
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	foot.add_child(spacer)
 	foot.add_child(UI.note(UI.version_text(game_data), 0.5))
+	foot.add_child(UI.button("Indietro", back_requested.emit))
 	foot.add_child(UI.button("Crediti", func():
 		_back_to = get_viewport().gui_get_focus_owner()
 		credits_requested.emit()))
@@ -164,6 +166,12 @@ func setup(game_data: Dictionary, params: Dictionary, link: Callable) -> void:
 	box.add_child(foot)
 	# Chi ha già un nome salvato (o usa il pad) parte da Gioca; gli altri scrivono il nome
 	(_name if _name.text == "" else _play).call_deferred("grab_focus")
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel"):
+		get_viewport().set_input_as_handled()
+		back_requested.emit()
 
 
 # Chiusi opzioni o crediti, il fuoco torna al pulsante che li ha aperti
