@@ -236,6 +236,12 @@ export const AUDIO = {
   targetLufs: -16, // loudness integrata a cui devono stare i file (npm run audio:check)
   lufsTolerance: 2, // LU di scarto accettati
   maxPeakDb: -1, // picco massimo dei file, dBTP
+  // Annunciatore (E13 passo 4): public/assets/announcer/<frase>.ogg. Più alta la priorità, prima parla;
+  // da announcerInterrupt in su interrompe la frase in corso e svuota la coda
+  announcerPriority: { go: 1, tenSeconds: 1, lastLife: 2, game: 3, draw: 3 } as Record<string, number>,
+  announcerInterrupt: 3,
+  announcerMaxWaitMs: 1500, // una frase rimasta in coda più di così non si dice più: sarebbe fuori tempo
+  announcerTimeWarningMs: 10000, // "Dieci secondi!" quando il tempo rimasto scende sotto questa soglia, ms
 };
 
 // Rete lato client: si disegna il passato di qualche ms e si interpola tra due snapshot,
