@@ -187,6 +187,14 @@ export const FLAG = {
 
 export const TEAM_NAMES: Record<1 | 2, string> = { 1: "Rossa", 2: "Blu" };
 
+// Palette per daltonici (E14, opzioni → Accessibilità), dai colori di Okabe e Ito: il client Godot
+// sostituisce COLORS[i] con COLORS_COLORBLIND[i] (e lo stesso per le squadre). Il server non cambia.
+export const COLORS_COLORBLIND = [0xd55e00, 0x0072b2, 0x009e73, 0xf0e442, 0xcc79a7, 0xe69f00, 0x56b4e9, 0xffffff];
+export const TEAM_COLORS_COLORBLIND: Record<1 | 2, number[]> = {
+  1: [0xd55e00, 0xffd27a, 0x9e5a00, 0xe69f00], // arancioni: il primo è COLORS_COLORBLIND[0], come nell'originale
+  2: [0x0072b2, 0x8ccff5, 0x003f63, 0x56b4e9], // blu
+};
+
 // Audio (#6): volumi di partenza, da 0 a 1. Ognuno poi li cambia nelle opzioni.
 export const AUDIO = {
   master: 0.8,

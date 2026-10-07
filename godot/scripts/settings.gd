@@ -54,6 +54,12 @@ const VIDEO_DEFAULTS := {
 	"max_fps": 0, # indice in Video.FPS_LIMITS (0 = senza limite)
 	"effects": true, # scie e polvere
 }
+# Accessibilità (E14): si applicano con Access.apply()
+const ACCESS_DEFAULTS := {
+	"calm": false, # meno scossa e lampi
+	"colorblind": false, # palette per daltonici
+	"text_size": 0, # indice in Access.TEXT_SCALES
+}
 
 var master := 0.8
 var sfx := 0.7
@@ -65,6 +71,7 @@ var rumble := Rumble.STRONG # vibrazione del pad: Rumble.OFF, WEAK o STRONG
 var stick_deadzone := 0.35 # main.gd mette INPUT.stickDeadzone di game.json
 var profile := {} # name, room, char, stage, rules, server
 var video := {} # come VIDEO_DEFAULTS
+var access := {} # come ACCESS_DEFAULTS
 
 var _defaults := {}
 var _path := PATH
@@ -98,6 +105,10 @@ func _init(audio_defaults: Dictionary, path := PATH) -> void:
 		var v: Variant = cfg.get_value("video", k) if cfg.has_section_key("video", k) else null
 		if typeof(v) == typeof(VIDEO_DEFAULTS[k]):
 			video[k] = v
+	for k in ACCESS_DEFAULTS:
+		var v: Variant = cfg.get_value("access", k) if cfg.has_section_key("access", k) else null
+		if typeof(v) == typeof(ACCESS_DEFAULTS[k]):
+			access[k] = v
 	var p: Variant = cfg.get_value("profile", "last", {})
 	if p is Dictionary:
 		profile = p
@@ -110,6 +121,7 @@ func reset(notify := true) -> void:
 	music_on = true
 	rumble = Rumble.STRONG
 	video = VIDEO_DEFAULTS.duplicate()
+	access = ACCESS_DEFAULTS.duplicate()
 	reset_bindings(false, false)
 	reset_bindings(true, false)
 	if notify:
@@ -138,6 +150,8 @@ func save() -> void:
 		cfg.set_value("pad", a, pad_bindings[a])
 	for k in video:
 		cfg.set_value("video", k, video[k])
+	for k in access:
+		cfg.set_value("access", k, access[k])
 	cfg.set_value("profile", "last", profile)
 	cfg.save(_path) # se non si può salvare, le preferenze valgono solo per questa volta
 	changed.emit()

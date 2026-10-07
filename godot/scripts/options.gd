@@ -1,4 +1,4 @@
-# Il menu opzioni (come src/client/OptionsPanel.ts), a schede: Audio, Comandi e Video (E14, solo nell'app).
+# Il menu opzioni (come src/client/OptionsPanel.ts), a schede: Audio, Comandi, Video (E14, solo nell'app) e Accessibilità.
 # Lo aprono la lobby e il menu di pausa. I comandi hanno due schede, Tastiera e Pad (E6).
 extends Control
 
@@ -17,7 +17,7 @@ var _tabs := {} # false/true -> pulsante della scheda
 var _notice := HBoxContainer.new() # "B tolto da Attacco pesante" con Annulla, o l'avviso di azione senza tasti
 var _hint := ""
 var _undo := {} # tasti prima dell'ultimo spostamento, per Annulla
-var _pages := {} # "audio", "keys", "video" -> contenuto della scheda
+var _pages := {} # "audio", "keys", "video", "access" -> contenuto della scheda
 var _page_tabs := {} # stesse chiavi -> pulsante della scheda
 var _reset_keys: Button
 
@@ -38,6 +38,7 @@ func setup(s: Settings) -> void:
 	var pages := [["audio", "Audio", _audio_page()], ["keys", "Comandi", _keys_page()]]
 	if Video.available():
 		pages.append(["video", "Video", _video_page()])
+	pages.append(["access", "Accessibilità", _access_page()])
 	for page in pages:
 		var b := UI.button(page[1], func(): _show_page(page[0]))
 		b.size_flags_vertical = Control.SIZE_SHRINK_CENTER
@@ -63,7 +64,7 @@ func setup(s: Settings) -> void:
 	UI.keep_focus(self, done)
 
 
-# Una scheda alla volta: Audio, Comandi o Video
+# Una scheda alla volta: Audio, Comandi, Video o Accessibilità
 func _show_page(id: String) -> void:
 	for p in _pages:
 		_pages[p].visible = p == id
@@ -123,6 +124,32 @@ func _video_page() -> VBoxContainer:
 	page.add_child(_choice_row("FPS massimi", Video.FPS_NAMES, settings.video.max_fps, func(i): save.call("max_fps", i)))
 	page.add_child(UI.toggle("Scie e polvere", settings.video.effects, func(on): save.call("effects", on)))
 	return page
+
+
+func _access_page() -> VBoxContainer:
+	var page := VBoxContainer.new()
+	var save := func(key: String, value: Variant) -> void:
+		settings.access[key] = value
+		settings.save()
+	page.add_child(UI.toggle("Meno scossa e lampi", settings.access.calm, func(on): save.call("calm", on)))
+	page.add_child(UI.toggle("Colori per daltonici", settings.access.colorblind, func(on): save.call("colorblind", on)))
+	page.add_child(_choice_row("Testo", Access.TEXT_NAMES, settings.access.text_size, func(i):
+		save.call("text_size", i)
+		_rebuild.call_deferred()))
+	page.add_child(UI.note("La dimensione del testo vale per i menu e per le scritte in partita."))
+	return page
+
+
+# Il testo ha cambiato misura: si rifà il menu con le misure nuove, sulla stessa scheda
+func _rebuild() -> void:
+	var fresh: Control = load("res://scripts/options.gd").new()
+	fresh.theme = UI.theme()
+	for c in closed.get_connections():
+		fresh.closed.connect(c.callable)
+	add_sibling(fresh)
+	fresh.setup(settings)
+	fresh._show_page("access")
+	queue_free() # senza closed: il menu resta aperto, è solo nuovo
 
 
 func _choice_row(text: String, names: Array, selected: int, on_select: Callable) -> HBoxContainer:

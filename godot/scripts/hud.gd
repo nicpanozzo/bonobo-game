@@ -105,12 +105,16 @@ func _draw() -> void:
 		var golden: bool = s == 0 and scores != null and scores["1"] == scores["2"] and _snap.winnerId == null
 		var text := "Punto d'oro!" if golden else "%d:%02d" % [s / 60, s % 60]
 		_centered(text, Vector2(w / 2, y), 28, Color("ff5a4a") if s <= LAST_SECONDS else Color.WHITE)
-		y += 34
+		y += 34 * Access.text_scale
 	if scores != null:
 		var names: Dictionary = game.teamNames
 		_centered("%s %d  –  %d %s" % [names["1"], scores["1"], scores["2"], names["2"]], Vector2(w / 2, y), 24, Color.WHITE)
 
-	_draw_cards(w, h, scores != null)
+	# Con il testo più grande le schede crescono tutte insieme, a partire dal fondo dello schermo
+	var k := Access.text_scale
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2(k, k))
+	_draw_cards(w / k, h / k, scores != null)
+	draw_set_transform(Vector2.ZERO)
 	if _snap.winnerId != null:
 		_draw_results(w, h)
 
@@ -123,7 +127,7 @@ func _draw_cards(w: float, h: float, flag: bool) -> void:
 	for i in players.size():
 		var p: Dictionary = players[i]
 		var x := x0 + i * card_w
-		var col := Color.hex((int(p.color) << 8) | 0xff)
+		var col := Access.color(p.color)
 		draw_rect(Rect2(x + 6, h - 86, card_w - 12, 74), Color(0, 0, 0, 0.45))
 		draw_rect(Rect2(x + 6, h - 86, 6, 74), col)
 		var name: String = p.name + (" (tu)" if p.id == my_id else "")
@@ -131,7 +135,7 @@ func _draw_cards(w: float, h: float, flag: bool) -> void:
 		var pct := "OUT" if p.eliminated else "%d%%" % roundi(p.percent)
 		var pos := Vector2(x + 20, h - 30)
 		var size := 28
-		if _jolts.has(p.id) and not p.eliminated:
+		if _jolts.has(p.id) and not p.eliminated and not Access.calm:
 			var j: Dictionary = _jolts[p.id]
 			var left: float = j.ms / game.effects.percentShakeMs
 			pos += Vector2(randf_range(-1, 1), randf_range(-1, 1)) * j.amp * left
@@ -185,8 +189,8 @@ func _draw_results(w: float, _h: float) -> void:
 		rows.append("%s%s   %sKO %d · cadute %d · danni %d%%" % [crown, p.name, flags, s.kos, s.falls, s.damage])
 	rows.append("")
 	rows.append("%s: rivincita subito" % rematch_key)
-	var line_h := 30.0
-	var panel_w := 620.0
+	var line_h := 30.0 * Access.text_scale
+	var panel_w := 620.0 * Access.text_scale
 	var top := 250.0
 	draw_rect(Rect2(w / 2 - panel_w / 2, top, panel_w, rows.size() * line_h + 28), Color(0, 0, 0, 0.67))
 	for i in rows.size():
@@ -209,10 +213,12 @@ static func _percent_color(percent: float, eliminated: bool) -> Color:
 
 
 func _centered(text: String, pos: Vector2, size: int, color: Color) -> void:
-	var s := _font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, size)
+	var s := _font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, Access.px(size))
 	_outlined(text, Vector2(pos.x - s.x / 2, pos.y), size, color)
 
 
+# size è quella al 100%: la scala del testo scelta nelle opzioni si applica qui
 func _outlined(text: String, pos: Vector2, size: int, color: Color) -> void:
+	size = Access.px(size)
 	draw_string_outline(_font, pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, 4, Color.BLACK)
 	draw_string(_font, pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, color)

@@ -97,7 +97,13 @@ func _show_lobby() -> void:
 		options.theme = UI.theme()
 		ui_layer.add_child(options)
 		options.setup(settings)
-		options.closed.connect(lobby.restore_focus))
+		var scale := Access.text_scale
+		options.closed.connect(func():
+			if Access.text_scale != scale: # testo più grande o più piccolo: la lobby si rifà con le misure nuove
+				lobby.queue_free()
+				_show_lobby()
+			else:
+				lobby.restore_focus()))
 	lobby.credits_requested.connect(func():
 		var credits := preload("res://scripts/credits.gd").new()
 		credits.theme = UI.theme()
@@ -146,6 +152,9 @@ func _apply_volumes() -> void:
 	rumble.level = settings.rumble
 	world.effects = settings.video.effects
 	Video.apply(settings)
+	Access.apply(game, settings.access)
+	if hud != null:
+		hud.queue_redraw()
 
 
 # Il link da mandare agli amici porta la stanza (e il server, se la pagina non sta sul server)
