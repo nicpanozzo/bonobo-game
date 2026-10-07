@@ -45,7 +45,7 @@ func setup(game_data: Dictionary, params: Dictionary, link: Callable) -> void:
 	room_link = link
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var bg := ColorRect.new()
-	bg.color = Color("0d1520")
+	bg.color = UI.BG
 	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 	var scroll := ScrollContainer.new()
@@ -61,15 +61,11 @@ func setup(game_data: Dictionary, params: Dictionary, link: Callable) -> void:
 	center.add_child(panel)
 	var box := VBoxContainer.new()
 	box.custom_minimum_size = Vector2(620, 0)
-	box.add_theme_constant_override("separation", 5)
+	box.add_theme_constant_override("separation", UI.GAP_S)
 	panel.add_child(box)
 
-	var title := UI.label("BONOBO GAME", 34, UI.ACCENT)
-	title.add_theme_color_override("font_shadow_color", Color("7a3b00"))
-	title.add_theme_constant_override("shadow_offset_x", 3)
-	title.add_theme_constant_override("shadow_offset_y", 3)
-	box.add_child(title)
-	box.add_child(UI.label("Il picchiaduro del nostro Discord", 16, Color(UI.TEXT, 0.7)))
+	box.add_child(UI.title("BONOBO GAME"))
+	box.add_child(UI.label("Il picchiaduro del nostro Discord", UI.SIZE_SUBTITLE, Color(UI.TEXT, 0.7)))
 
 	box.add_child(UI.heading("Nome"))
 	_name.max_length = 16
@@ -95,12 +91,12 @@ func setup(game_data: Dictionary, params: Dictionary, link: Callable) -> void:
 		_msg.text = "Link copiato: incollalo sul Discord"
 		_msg.show()))
 	box.add_child(row)
-	_msg = UI.label("", 13, Color("8fd18f"))
+	_msg = UI.label("", UI.SIZE_NOTE, UI.OK)
 	_msg.hide() # compare solo dopo "Copia link"
 	box.add_child(_msg)
 
 	box.add_child(UI.heading("Lottatore"))
-	_chars.add_theme_constant_override("separation", 10)
+	_chars.add_theme_constant_override("separation", UI.GAP_M)
 	box.add_child(_chars)
 	_character = params.get("char", game.defaultCharacterId)
 	if not game.characters.has(_character):
@@ -109,20 +105,20 @@ func setup(game_data: Dictionary, params: Dictionary, link: Callable) -> void:
 
 	_stage_label = UI.heading("Arena (la sceglie chi crea la stanza)")
 	box.add_child(_stage_label)
-	_stages.add_theme_constant_override("h_separation", 10)
+	_stages.add_theme_constant_override("h_separation", UI.GAP_M)
 	box.add_child(_stages)
 	_stage = params.get("stage", game.defaultStageId)
 	_random_stage = _stage if _stage.begins_with("casuale-") else _new_id("casuale-")
 	if not game.stages.has(_stage) and not _stage.begins_with("casuale-"):
 		_stage = game.defaultStageId # i percorsi della Corsa non sono arene da scegliere
 	_draw_stages()
-	_course_note = UI.label("In Corsa si gioca su un percorso lungo, nuovo a ogni stanza: vince chi arriva prima al traguardo.", 14, Color(UI.TEXT, 0.7))
+	_course_note = UI.label("In Corsa si gioca su un percorso lungo, nuovo a ogni stanza: vince chi arriva prima al traguardo.", UI.SIZE_SMALL, Color(UI.TEXT, 0.7))
 	_course_note.autowrap_mode = TextServer.AUTOWRAP_WORD
 	box.add_child(_course_note)
 
 	box.add_child(UI.heading("Regole (anche queste le sceglie chi crea la stanza)"))
 	var rules := HBoxContainer.new()
-	rules.add_theme_constant_override("separation", 8)
+	rules.add_theme_constant_override("separation", UI.GAP_M)
 	var saved: Dictionary = params.get("rules", {}) if params.get("rules") is Dictionary else {}
 	for m in MODES:
 		_mode.add_item(m[1])
@@ -154,11 +150,11 @@ func setup(game_data: Dictionary, params: Dictionary, link: Callable) -> void:
 	_play = UI.button("Gioca", _submit, true)
 	box.add_child(_play)
 	var foot := HBoxContainer.new()
-	foot.add_child(UI.label("Mandate a tutti lo stesso link per giocare insieme", 13, Color(UI.TEXT, 0.7)))
+	foot.add_child(UI.note("Mandate a tutti lo stesso link per giocare insieme"))
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	foot.add_child(spacer)
-	foot.add_child(UI.label(UI.version_text(game_data), 13, Color(UI.TEXT, 0.5)))
+	foot.add_child(UI.note(UI.version_text(game_data), 0.5))
 	foot.add_child(UI.button("Crediti", func():
 		_back_to = get_viewport().gui_get_focus_owner()
 		credits_requested.emit()))
@@ -226,7 +222,7 @@ func _draw_chars() -> void:
 			r.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			boxc.add_child(r)
 			v.add_child(boxc)
-		var l := UI.label(c.name, 14)
+		var l := UI.label(c.name, UI.SIZE_SMALL)
 		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		v.add_child(l)
 		b.set_meta("id", id)
@@ -264,7 +260,7 @@ func _stage_card(id: String, text: String, spec: Dictionary) -> Button:
 	preview.custom_minimum_size = Vector2(116, 56)
 	preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	v.add_child(preview)
-	var l := UI.label(text, 13)
+	var l := UI.label(text, UI.SIZE_NOTE)
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(l)
 	b.set_meta("id", id)

@@ -6,7 +6,7 @@ signal closed
 
 const SLOTS := 2 # tasti per azione mostrati nel menu
 const PAD_SLOTS := Settings.MAX_PAD # sul pad la schivata ne ha 4 di default: si vedono tutti
-const WARN := Color("ff6b6b")
+const WARN := UI.WARN
 
 var settings: Settings
 var _keys := GridContainer.new()
@@ -25,14 +25,11 @@ func setup(s: Settings) -> void:
 	var parts := UI.overlay(680)
 	add_child(parts[0])
 	_box = parts[1]
-	_box.add_child(UI.label("Opzioni", 28, UI.ACCENT))
+	_box.add_child(UI.header("Opzioni"))
 	_box.add_child(UI.heading("Audio"))
 	for v in [["master", "Generale"], ["sfx", "Effetti"], ["music", "Musica"]]:
 		_box.add_child(_volume_row(v[0], v[1]))
-	var music := CheckBox.new()
-	music.text = "Musica accesa (anche con M)"
-	music.button_pressed = settings.music_on
-	music.toggled.connect(func(on):
+	var music := UI.toggle("Musica accesa (anche con M)", settings.music_on, func(on):
 		settings.music_on = on
 		settings.save())
 	# Vibrazione del pad sulla stessa riga della musica: il menu deve stare in 720 pixel
@@ -59,9 +56,9 @@ func setup(s: Settings) -> void:
 		_tabs[pad] = t
 		tabs.add_child(t)
 	_box.add_child(tabs)
-	_keys.add_theme_constant_override("h_separation", 8)
+	_keys.add_theme_constant_override("h_separation", UI.GAP_M)
 	_box.add_child(_keys)
-	_notice.add_theme_constant_override("separation", 12)
+	_notice.add_theme_constant_override("separation", UI.GAP_L)
 	_notice.custom_minimum_size = Vector2(0, 36)
 	_box.add_child(_notice)
 	var actions := HBoxContainer.new()
@@ -98,9 +95,9 @@ func _set_notice(text: String, color := UI.TEXT, can_undo := false) -> void:
 		_notice.remove_child(c)
 		c.queue_free()
 	if text == "": # senza niente da dire, la riga spiega come si cambia un tasto
-		_notice.add_child(UI.label(_hint, 13, Color(UI.TEXT, 0.7)))
+		_notice.add_child(UI.note(_hint))
 		return
-	_notice.add_child(UI.label(text, 15, color))
+	_notice.add_child(UI.label(text, UI.SIZE_SMALL + 1, color))
 	if can_undo:
 		var b := UI.button("Annulla", func():
 			settings.bindings = _undo.keys
@@ -121,20 +118,16 @@ func _volume_row(key: String, text: String) -> HBoxContainer:
 	var l := UI.label(text)
 	l.custom_minimum_size = Vector2(140, 0)
 	row.add_child(l)
-	var slider := HSlider.new()
-	slider.min_value = 0
-	slider.max_value = 100
-	slider.value = roundf(settings.get(key) * 100)
-	slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	slider.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	row.add_child(slider)
-	var value := UI.label(str(int(slider.value)))
-	value.custom_minimum_size = Vector2(40, 0)
-	row.add_child(value)
-	slider.value_changed.connect(func(v):
+	var value := UI.label(str(roundi(settings.get(key) * 100)))
+	var slider := UI.slider(roundf(settings.get(key) * 100), func(v):
 		value.text = str(int(v))
 		settings.set(key, v / 100.0)
 		settings.save())
+	slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	slider.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(slider)
+	value.custom_minimum_size = Vector2(40, 0)
+	row.add_child(value)
 	return row
 
 
@@ -153,7 +146,7 @@ func _draw_keys() -> void:
 		if list.is_empty():
 			empty.append(Settings.LABELS[action])
 		# Un'azione senza tasti resta in rosso finché non se ne assegna uno
-		var name := UI.label(Settings.LABELS[action], 15, WARN if list.is_empty() else UI.TEXT)
+		var name := UI.label(Settings.LABELS[action], UI.SIZE_SMALL + 1, WARN if list.is_empty() else UI.TEXT)
 		name.custom_minimum_size = Vector2(160, 0)
 		_keys.add_child(name)
 		for slot in (PAD_SLOTS if _pad else SLOTS):
@@ -163,15 +156,12 @@ func _draw_keys() -> void:
 				text = "Premi..." if _pad else "Premi un tasto..."
 			elif slot < list.size():
 				text = Settings.pad_label(list[slot], kind) if _pad else Settings.key_label(list[slot])
-			var b := UI.button(text, func():
+			# Riquadri più bassi del solito, così otto righe di comandi stanno nello schermo
+			var b := UI.small_button(text, func():
 				_waiting = {"action": action, "slot": slot}
 				_draw_keys())
 			b.custom_minimum_size = Vector2(110 if _pad else 160, 0)
 			b.clip_text = true
-			b.add_theme_font_size_override("font_size", 15)
-			# Riquadri più bassi del solito, così otto righe di comandi stanno nello schermo
-			b.add_theme_stylebox_override("normal", UI._box(UI.BORDER, UI.BORDER, 8, 4))
-			b.add_theme_stylebox_override("hover", UI._box(UI.BORDER.lightened(0.2), UI.BORDER.lightened(0.2), 8, 4))
 			# Spazio e invio non arrivano al pulsante (li prende _input come tasti da assegnare),
 			# ma il pad ci si muove sopra e lo preme con A
 			b.set_meta("slot", "%s:%d" % [action, slot])
