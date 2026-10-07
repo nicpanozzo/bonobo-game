@@ -9,6 +9,7 @@ var game: Dictionary
 var my_id := ""
 var rules: Dictionary = {}
 var status := ""
+var rematch_key := "R" # o il pulsante del pad, se si gioca col pad (main.gd)
 var _info := "" # riga in alto a sinistra: stanza, arena, modalità
 var _stage: Dictionary = {}
 var _snap: Dictionary = {}
@@ -183,7 +184,7 @@ func _draw_results(w: float, _h: float) -> void:
 		var flags := "bandiere %d · " % s.flags if flag else ""
 		rows.append("%s%s   %sKO %d · cadute %d · danni %d%%" % [crown, p.name, flags, s.kos, s.falls, s.damage])
 	rows.append("")
-	rows.append("R: rivincita subito")
+	rows.append("%s: rivincita subito" % rematch_key)
 	var line_h := 30.0
 	var panel_w := 620.0
 	var top := 250.0

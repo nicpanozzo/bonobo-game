@@ -39,8 +39,10 @@ func setup() -> void:
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	actions.add_child(spacer)
-	actions.add_child(UI.button("Chiudi", close, true))
+	var close_button := UI.button("Chiudi", close, true)
+	actions.add_child(close_button)
 	box.add_child(actions)
+	UI.keep_focus(self, close_button)
 
 
 func close() -> void:

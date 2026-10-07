@@ -70,6 +70,8 @@ static func set_selected(b: Button, selected: bool) -> void:
 	b.add_theme_stylebox_override("normal", _box(bg, border, 10, 6))
 	b.add_theme_stylebox_override("hover", _box(bg.lightened(0.1), border, 10, 6))
 	b.add_theme_stylebox_override("pressed", _box(bg, ACCENT, 10, 6))
+	# Il fuoco del pad (E6) si distingue dalla scelta: bordo bianco invece che giallo
+	b.add_theme_stylebox_override("focus", _box(Color.TRANSPARENT, Color.WHITE, 10, 6))
 
 
 # Schermo scuro con un riquadro centrato, per pausa e opzioni
@@ -87,6 +89,18 @@ static func overlay(width: float) -> Array:
 	box.add_theme_constant_override("separation", 10)
 	panel.add_child(box)
 	return [dim, box]
+
+
+# Menu sopra altri menu (opzioni sopra la lobby): col pad il fuoco non deve scappare
+# sui controlli di sotto. Dà il fuoco a first e ce lo riporta se esce dal menu.
+static func keep_focus(menu: Control, first: Control) -> void:
+	first.grab_focus.call_deferred()
+	var viewport := menu.get_viewport()
+	var back := func(c: Control) -> void:
+		if is_instance_valid(menu) and not menu.is_queued_for_deletion() and not menu.is_ancestor_of(c):
+			first.grab_focus.call_deferred()
+	viewport.gui_focus_changed.connect(back)
+	menu.tree_exiting.connect(func(): viewport.gui_focus_changed.disconnect(back))
 
 
 # Copia negli appunti (nel browser passa da navigator.clipboard)

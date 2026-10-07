@@ -11,6 +11,9 @@ const MAX_SEED := 999999 # come stageGenerator.ts: "casuale-<seme>" e "corsa-<se
 const MODES := [["ffa", "Tutti contro tutti"], ["teams", "Squadre"], ["flag", "Bandiera (a squadre)"], ["race", "Corsa (platformer)"]]
 const TIMES := [[0, "Senza tempo"], [120, "2 minuti"], [180, "3 minuti"], [300, "5 minuti"]]
 # Avversari del server per giocare da soli (#20, src/server/bot.ts)
+# "Nome a caso" per chi usa il pad e non vuole scrivere
+# TODO community: soprannomi e tormentoni del canale
+const RANDOM_NAMES := ["Bonobo", "Scimmione", "Banana", "Liana", "Gorilla", "Babbuino", "Orango"]
 const BOTS := [["", "Nessun bot"], ["manichino", "Manichino"], ["facile", "Bot facile"], ["semplice", "Bot"], ["difficile", "Bot difficile"]]
 
 var game: Dictionary
@@ -33,6 +36,8 @@ var _character := ""
 var _stage := ""
 var _random_stage := ""
 var _server_len := 0 # per riconoscere un link incollato nel campo del server
+var _play: Button
+var _back_to: Control # dove torna il fuoco quando si chiudono opzioni o crediti
 
 
 func setup(game_data: Dictionary, params: Dictionary, link: Callable) -> void:
@@ -46,6 +51,7 @@ func setup(game_data: Dictionary, params: Dictionary, link: Callable) -> void:
 	var scroll := ScrollContainer.new()
 	scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.follow_focus = true # col pad la pagina scorre fino al controllo scelto
 	add_child(scroll)
 	var center := CenterContainer.new()
 	center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -69,7 +75,12 @@ func setup(game_data: Dictionary, params: Dictionary, link: Callable) -> void:
 	_name.max_length = 16
 	_name.text = params.get("name", "")
 	_name.text_submitted.connect(func(_t): _submit())
-	box.add_child(_name)
+	_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var name_row := HBoxContainer.new()
+	name_row.add_child(_name)
+	name_row.add_child(UI.button("Nome a caso", func():
+		_name.text = "%s%d" % [RANDOM_NAMES[randi() % RANDOM_NAMES.size()], randi() % 100]))
+	box.add_child(name_row)
 
 	box.add_child(UI.heading("Stanza"))
 	var row := HBoxContainer.new()
@@ -140,18 +151,28 @@ func setup(game_data: Dictionary, params: Dictionary, link: Callable) -> void:
 	_server.text_changed.connect(_on_server_text)
 	box.add_child(_server)
 
-	var play := UI.button("Gioca", _submit, true)
-	box.add_child(play)
+	_play = UI.button("Gioca", _submit, true)
+	box.add_child(_play)
 	var foot := HBoxContainer.new()
 	foot.add_child(UI.label("Mandate a tutti lo stesso link per giocare insieme", 13, Color(UI.TEXT, 0.7)))
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	foot.add_child(spacer)
-	foot.add_child(UI.button("Crediti", func(): credits_requested.emit()))
-	foot.add_child(UI.button("Opzioni", func(): options_requested.emit()))
+	foot.add_child(UI.button("Crediti", func():
+		_back_to = get_viewport().gui_get_focus_owner()
+		credits_requested.emit()))
+	foot.add_child(UI.button("Opzioni", func():
+		_back_to = get_viewport().gui_get_focus_owner()
+		options_requested.emit()))
 	box.add_child(foot)
-	if _name.text == "":
-		_name.call_deferred("grab_focus")
+	# Chi ha già un nome salvato (o usa il pad) parte da Gioca; gli altri scrivono il nome
+	(_name if _name.text == "" else _play).call_deferred("grab_focus")
+
+
+# Chiusi opzioni o crediti, il fuoco torna al pulsante che li ha aperti
+func restore_focus() -> void:
+	if is_instance_valid(_back_to):
+		_back_to.grab_focus()
 
 
 # Il fuoco amico ha senso solo a squadre; in Bandiera le vite diventano i punti per vincere;
@@ -207,10 +228,17 @@ func _draw_chars() -> void:
 		var l := UI.label(c.name, 14)
 		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		v.add_child(l)
+		b.set_meta("id", id)
 		b.pressed.connect(func():
 			_character = id
-			_draw_chars())
+			_select_cards(_chars, _character))
 		_chars.add_child(b)
+
+
+# Cambia solo il bordo dei riquadri, senza rifarli: così il fuoco del pad resta dov'è
+func _select_cards(cards: Control, selected: String) -> void:
+	for b in cards.get_children():
+		UI.set_selected(b, b.get_meta("id") == selected)
 
 
 # Le arene di stages.ts più una generata a caso: cliccandola di nuovo se ne genera un'altra
@@ -238,11 +266,14 @@ func _stage_card(id: String, text: String, spec: Dictionary) -> Button:
 	var l := UI.label(text, 13)
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(l)
+	b.set_meta("id", id)
 	b.pressed.connect(func():
-		if id == _random_stage and _stage == _random_stage:
-			_random_stage = _new_id("casuale-")
+		if id.begins_with("casuale-"):
+			if _stage == _random_stage:
+				_random_stage = _new_id("casuale-")
+			b.set_meta("id", _random_stage)
 		_stage = _random_stage if id.begins_with("casuale-") else id
-		_draw_stages())
+		_select_cards(_stages, _stage))
 	return b
 
 

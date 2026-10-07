@@ -8,6 +8,7 @@ extends Node2D
 const DEFAULT_SERVER := "http://localhost:3000" # npm run dev
 const PRODUCTION_SERVER := "https://bonobo-game.onrender.com" # server fisso (render.yaml, #19): lo usa il gioco esportato
 const RECONNECT_MS := 1500 # attesa prima di riprovare a collegarsi
+const REMATCH_PAD_BUTTON := JOY_BUTTON_Y # rivincita dal pad: Y è libero finché non arriva la speciale (E10)
 const PAGES_URL := "https://nicpanozzo.github.io/bonobo-game/godot/" # dove sta la versione web (pages.yml)
 
 var game: Dictionary
@@ -31,6 +32,13 @@ func _ready() -> void:
 	game = JSON.parse_string(FileAccess.get_file_as_string("res://data/game.json"))
 	settings = Settings.new(game.audio)
 	settings.stick_deadzone = game.input.stickDeadzone
+	# Menu col pad (E6): A conferma e B torna indietro, oltre a Invio ed Esc.
+	# Le frecce del pad e la levetta muovono già il fuoco (ui_up, ui_down... di Godot)
+	for pair in [["ui_accept", JOY_BUTTON_A], ["ui_cancel", JOY_BUTTON_B]]:
+		var e := InputEventJoypadButton.new()
+		e.button_index = pair[1]
+		e.device = -1 # tutti i pad
+		InputMap.action_add_event(pair[0], e)
 	url_params = _read_params()
 	# Si riparte dall'ultima scelta; l'indirizzo vince
 	params = settings.profile.duplicate()
@@ -81,12 +89,14 @@ func _show_lobby() -> void:
 		var options := preload("res://scripts/options.gd").new()
 		options.theme = UI.theme()
 		ui_layer.add_child(options)
-		options.setup(settings))
+		options.setup(settings)
+		options.closed.connect(lobby.restore_focus))
 	lobby.credits_requested.connect(func():
 		var credits := preload("res://scripts/credits.gd").new()
 		credits.theme = UI.theme()
 		ui_layer.add_child(credits)
-		credits.setup())
+		credits.setup()
+		credits.closed.connect(lobby.restore_focus))
 
 
 func _join(choice: Dictionary) -> void:
@@ -296,6 +306,25 @@ func _on_joy_changed(device: int, connected: bool) -> void:
 	ui_layer.add_child(toast)
 	toast.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP, Control.PRESET_MODE_MINSIZE, 12)
 	get_tree().create_timer(game.input.padToastMs / 1000.0).timeout.connect(toast.queue_free)
+
+
+# L'HUD mostra il tasto di rivincita del dispositivo usato per ultimo
+func _input(event: InputEvent) -> void:
+	var pad: bool = event is InputEventJoypadButton or (event is InputEventJoypadMotion and absf(event.axis_value) > settings.stick_deadzone)
+	if pad or event is InputEventKey:
+		var kind := Settings.pad_kind(Input.get_joy_name(event.device))
+		hud.rematch_key = Settings.pad_label(REMATCH_PAD_BUTTON, kind) if pad else "R"
+
+
+# Pad in partita: Start apre il menu, il pulsante di rivincita la chiede a partita finita
+func _unhandled_input(event: InputEvent) -> void:
+	var b := event as InputEventJoypadButton
+	if b == null or not b.pressed or not playing:
+		return
+	if b.button_index == JOY_BUTTON_START and not is_instance_valid(pause_menu):
+		_open_pause()
+	elif b.button_index == REMATCH_PAD_BUTTON:
+		socket.emit("rematch") # il server lo accetta solo a partita finita
 
 
 # F11: schermo intero e ritorno, sia nell'app sia nel browser

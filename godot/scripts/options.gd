@@ -43,7 +43,6 @@ func setup(s: Settings) -> void:
 	tabs.add_child(heading)
 	for pad in [false, true]:
 		var t := UI.button("Pad" if pad else "Tastiera", func(): _show_tab(pad))
-		t.focus_mode = Control.FOCUS_NONE
 		_tabs[pad] = t
 		tabs.add_child(t)
 	_box.add_child(tabs)
@@ -61,9 +60,11 @@ func setup(s: Settings) -> void:
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	actions.add_child(spacer)
-	actions.add_child(UI.button("Fatto", close, true))
+	var done := UI.button("Fatto", close, true)
+	actions.add_child(done)
 	_box.add_child(actions)
 	_show_tab(false)
+	UI.keep_focus(self, done)
 
 
 func _show_tab(pad: bool) -> void:
@@ -94,7 +95,6 @@ func _set_notice(text: String, color := UI.TEXT, can_undo := false) -> void:
 			settings.save()
 			_set_notice("")
 			_draw_keys())
-		b.focus_mode = Control.FOCUS_NONE
 		_notice.add_child(b)
 
 
@@ -126,6 +126,9 @@ func _volume_row(key: String, text: String) -> HBoxContainer:
 
 
 func _draw_keys() -> void:
+	# Col pad il fuoco resta sul riquadro appena cambiato, anche se i pulsanti si rifanno
+	var had := get_viewport().gui_get_focus_owner()
+	var keep: String = had.get_meta("slot", "") if had != null and _keys.is_ancestor_of(had) else ""
 	for c in _keys.get_children():
 		_keys.remove_child(c)
 		c.queue_free()
@@ -156,7 +159,11 @@ func _draw_keys() -> void:
 			# Riquadri più bassi del solito, così otto righe di comandi stanno nello schermo
 			b.add_theme_stylebox_override("normal", UI._box(UI.BORDER, UI.BORDER, 8, 4))
 			b.add_theme_stylebox_override("hover", UI._box(UI.BORDER.lightened(0.2), UI.BORDER.lightened(0.2), 8, 4))
-			b.focus_mode = Control.FOCUS_NONE # così spazio e invio diventano tasti da assegnare
+			# Spazio e invio non arrivano al pulsante (li prende _input come tasti da assegnare),
+			# ma il pad ci si muove sopra e lo preme con A
+			b.set_meta("slot", "%s:%d" % [action, slot])
+			if b.get_meta("slot") == keep:
+				b.grab_focus.call_deferred()
 			if waiting:
 				b.add_theme_color_override("font_color", UI.ACCENT)
 			elif list.is_empty() and slot == 0:
@@ -193,6 +200,15 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 			_assign(code)
 			return
+	# B sul pad: annulla l'attesa o chiude, come Esc
+	if (event is InputEventJoypadButton or event is InputEventJoypadMotion) and event.is_action_pressed("ui_cancel"):
+		get_viewport().set_input_as_handled()
+		if _waiting.is_empty():
+			close()
+		else:
+			_waiting = {}
+			_draw_keys()
+		return
 	var key := event as InputEventKey
 	if key == null or not key.pressed or key.echo:
 		return
