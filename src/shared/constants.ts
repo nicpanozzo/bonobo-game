@@ -89,6 +89,8 @@ export const ATTACKS: Record<AttackKind, AttackSpec> = {
     boxX: -20, // centrata sul personaggio
     boxY: -100, // dalla testa in su: colpisce chi sta sopra mentre si sale
   },
+  // Risalita con attacco dal bordo (#110): si sale durante l'avvio e si colpisce davanti, in basso
+  ledgeAttack: { damage: 7, baseKnockback: 330, knockbackGrowth: 4, startupMs: 300, activeMs: 100, cooldownMs: 600, range: 60, height: 40, angleDeg: 30, boxY: -44 },
 };
 
 // Mossa di recupero (#11): in aria K + su dà una spinta verso l'alto, una volta finché
@@ -116,6 +118,13 @@ export const LEDGE = {
   maxGrabs: 3, // prese senza toccare terra: alla successiva non ci si aggrappa più
   regrabMs: 300, // dopo essersi staccati non ci si riaggrappa per questo tempo
   maxHangMs: 5000, // dopo tanto tempo appesi si cade
+  actionableMs: 66, // da appesi i tasti contano solo dopo questo tempo (4 frame)
+  climbMs: 400, // risalita normale, tenendo verso il palco
+  climbInvulnMs: 300,
+  jumpInvulnMs: 100, // salto dal bordo
+  rollMs: 500, // rotolata sul palco, con la schivata
+  rollDistance: 150, // pixel oltre il bordo dove finisce la rotolata
+  rollInvulnMs: 400,
 };
 
 export const HITSTUN_PER_KNOCKBACK = 0.35; // ms di stordimento per ogni pixel/s di knockback

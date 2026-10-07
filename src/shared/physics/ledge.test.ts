@@ -2,7 +2,7 @@
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { FIGHTER, LEDGE, TICK_RATE } from "../constants";
+import { ATTACKS, FIGHTER, LEDGE, TICK_RATE } from "../constants";
 import { getStage, type StageSpec } from "../stages";
 import type { InputState } from "../types";
 import { createFighter, emptyInput, ledgesOf, stepWorld, type Fighter, type PhysicsContext } from "./index";
@@ -203,5 +203,115 @@ describe("presa del bordo", () => {
     assert.equal(f.ledge, null);
     assert.equal(f.ledgeGrabs, 0);
     assert.ok(f.x < left.x - FIGHTER.width / 2);
+  });
+});
+
+describe("risalite dal bordo", () => {
+  // Appeso al bordo sinistro da abbastanza tempo per poter agire
+  function hanging(count = 1) {
+    const { ctx, fighters } = setup(count);
+    besideLedge(fighters[0]);
+    run(fighters, ctx, 30);
+    assert.equal(fighters[0].ledge, "hang");
+    run(fighters, ctx, Math.ceil(LEDGE.invulnMs / DT)); // finisce l'invulnerabilità della presa
+    assert.equal(fighters[0].invulnerable, false);
+    ctx.events = [];
+    return { ctx, fighters, f: fighters[0] };
+  }
+  const ticks = (ms: number) => Math.ceil(ms / DT);
+  const near = (a: number, b: number) => assert.ok(Math.abs(a - b) <= 4, `${a} non è vicino a ${b}`);
+  const getups = (ctx: PhysicsContext) => ctx.events.flatMap((e) => (e.type === "ledgeGetup" ? [e.option] : []));
+
+  it("verso il palco: risalita normale, in piedi appena dentro il bordo, invulnerabile all'inizio", () => {
+    const { ctx, fighters, f } = hanging();
+    press(f, { right: true });
+    run(fighters, ctx, 1);
+    assert.equal(f.ledge, "climb");
+    run(fighters, ctx, ticks(LEDGE.climbInvulnMs) - 2);
+    assert.equal(f.invulnerable, true);
+    run(fighters, ctx, 3);
+    assert.equal(f.invulnerable, false);
+    press(f, {});
+    run(fighters, ctx, ticks(LEDGE.climbMs - LEDGE.climbInvulnMs) + 2);
+    assert.equal(f.ledge, null);
+    assert.equal(f.onGround, true);
+    assert.equal(f.y, left.y);
+    near(f.x, left.x + FIGHTER.width / 2);
+    assert.deepEqual(getups(ctx), ["climb"]);
+  });
+
+  it("schivata: rotolata sul palco di rollDistance pixel, invulnerabile per rollInvulnMs", () => {
+    const { ctx, fighters, f } = hanging();
+    press(f, { dodge: true });
+    run(fighters, ctx, ticks(LEDGE.rollInvulnMs) - 1);
+    assert.equal(f.ledge, "roll");
+    assert.equal(f.invulnerable, true);
+    run(fighters, ctx, 2);
+    assert.equal(f.invulnerable, false);
+    run(fighters, ctx, ticks(LEDGE.rollMs - LEDGE.rollInvulnMs) + 2);
+    assert.equal(f.ledge, null);
+    assert.equal(f.onGround, true);
+    near(f.x, left.x + FIGHTER.width / 2 + LEDGE.rollDistance);
+    // La schivata vera non parte: si resta fermi dove finisce la rotolata
+    const x = f.x;
+    press(f, {});
+    run(fighters, ctx, 20);
+    near(f.x, x);
+    assert.deepEqual(getups(ctx), ["roll"]);
+  });
+
+  it("attacco: si sale invulnerabili fino all'uscita del colpo, che prende chi sta sul bordo", () => {
+    const { ctx, fighters, f } = hanging(2);
+    const b = fighters[1];
+    b.x = left.x + FIGHTER.width / 2 + 50;
+    b.y = left.y;
+    b.vx = 0;
+    run(fighters, ctx, 5); // b si ferma sul palco
+    ctx.events = [];
+    press(f, { light: true });
+    run(fighters, ctx, ticks(ATTACKS.ledgeAttack.startupMs) - 2);
+    assert.equal(f.ledge, "climb");
+    assert.equal(f.invulnerable, true);
+    run(fighters, ctx, 4);
+    assert.equal(f.ledge, null);
+    assert.equal(f.onGround, true);
+    const hit = ctx.events.find((e) => e.type === "hit");
+    assert.ok(hit && hit.type === "hit" && hit.kind === "ledgeAttack" && hit.targetId === "p1");
+    assert.deepEqual(getups(ctx), ["attack"]);
+  });
+
+  it("su: salto dal bordo invulnerabile per jumpInvulnMs, con il salto in aria ancora a disposizione", () => {
+    const { ctx, fighters, f } = hanging();
+    press(f, { up: true });
+    run(fighters, ctx, 1);
+    assert.equal(f.ledge, null);
+    assert.equal(f.invulnerable, true);
+    assert.ok(f.vy < 0);
+    assert.equal(f.jumpsLeft, FIGHTER.maxJumps - 1);
+    run(fighters, ctx, ticks(LEDGE.jumpInvulnMs) + 1);
+    assert.equal(f.invulnerable, false);
+    assert.deepEqual(getups(ctx), ["jump"]);
+  });
+
+  it("i tasti premuti appena aggrappati non contano", () => {
+    const { ctx, fighters } = setup();
+    const [f] = fighters;
+    besideLedge(f);
+    for (let i = 0; i < 40 && !f.ledge; i++) run(fighters, ctx, 1);
+    assert.equal(f.ledge, "hang");
+    press(f, { right: true });
+    run(fighters, ctx, 1);
+    assert.equal(f.ledge, "hang");
+  });
+
+  it("chi risale tiene il bordo: un altro non lo prende finché non è finita", () => {
+    const { ctx, fighters, f } = hanging(2);
+    press(f, { right: true });
+    run(fighters, ctx, 1);
+    const b = fighters[1];
+    besideLedge(b);
+    run(fighters, ctx, 10);
+    assert.equal(b.ledge, null);
+    assert.equal(f.ledge, "climb");
   });
 });
