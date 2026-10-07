@@ -35,7 +35,8 @@ static func score_text(c: Dictionary, score: Variant) -> String:
 			return "%d%%" % roundi(float(score))
 		"juggle":
 			return "%d colpi" % int(score)
-	return "%.1f s" % float(score)
+	var s := float(score)
+	return ("%d s" % roundi(s)) if is_equal_approx(s, roundf(s)) else ("%.1f s" % s)
 
 
 # Le soglie in chiaro: "Oro 5 s · Argento 7 s · Bronzo 12 s"
