@@ -326,3 +326,31 @@ test("rientro con il token: stesso lottatore, stesse vite e percentuale (#107)",
   assert.notEqual(fresh.id, first.id);
   for (const c of [b, a4]) c.disconnect();
 });
+
+// Allenamento (#113): i comandi valgono solo in palestra e da soli
+test("allenamento: percentuale al bot da soli, comandi ignorati con due umani o fuori dalla palestra", LIMIT, async () => {
+  const a = await client();
+  const me = (await joinWith(a, { room: "palestra", name: "A", rules: { mode: "training" }, bot: "manichino" })).id;
+  const bot = () => rooms.get("palestra")!.match.players.find((f) => f.id !== me);
+  a.emit("training", { percent: 100 });
+  await until(() => bot()?.percent === 100);
+  const snap = await new Promise<number | undefined>((resolve) => a.once("snapshot", (s) => resolve(s.players.find((p) => p.id !== me)?.percent)));
+  assert.equal(snap, 100);
+  assert.equal(rooms.get("palestra")!.match.players.find((f) => f.id === me)?.percent, 0, "la propria percentuale non cambia");
+
+  const b = await client();
+  await joinWith(b, { room: "palestra", name: "B" });
+  a.emit("training", { percent: 0, reset: true });
+  await roundTrip("palestra");
+  assert.equal(bot()?.percent, 100, "con due umani il comando non vale");
+  b.disconnect();
+  a.disconnect();
+
+  const c = await client();
+  await joinWith(c, { room: "non-palestra", name: "C", bot: "manichino" });
+  c.emit("training", { percent: 100 });
+  await roundTrip("non-palestra");
+  assert.ok(rooms.get("non-palestra")!.match.players.every((f) => f.percent === 0), "fuori dall'allenamento il comando non vale");
+  c.disconnect();
+});
+

@@ -336,6 +336,7 @@ export const NET_LIMITS = {
   inputPerSecond: 120, // messaggi "input" al secondo concessi a un client (il client ne manda solo quando cambia un tasto)
   inputBurst: 30, // messaggi "input" che possono arrivare tutti insieme
   rematchPerSecond: 2, // richieste di rivincita al secondo
+  trainingPerSecond: 10, // comandi dell'allenamento al secondo (#113): un cursore della percentuale ne manda tanti
   floodCloseMs: 10_000, // millisecondi di fila oltre il limite dopo cui il client viene chiuso
   maxConnectionsPerIp: 8, // connessioni aperte insieme dallo stesso IP (una stanza piena da una sola casa)
   maxRooms: 50, // stanze aperte in tutto sul server
@@ -387,4 +388,10 @@ export const BALANCE = {
 // Controllo delle arene (stageCheck.ts): usato dai test e dall'editor sul sito (E12)
 export const STAGE_CHECK = {
   sideReach: 250, // pixel in orizzontale che si coprono comodamente durante un salto
+};
+
+// Allenamento (E15, #113): comandi della palestra, accettati solo con un umano nella stanza
+export const TRAINING = {
+  speeds: [1, 0.5, 0.25], // velocità dell'orologio ammesse: 1 normale, 0.5 e 0.25 rallentatore
+  maxPercent: 999, // percentuale massima che si può dare al bot
 };

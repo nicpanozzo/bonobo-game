@@ -20,10 +20,12 @@ export function sanitizeRules(raw: Partial<MatchRules> | undefined): MatchRules 
   const r = raw && typeof raw === "object" ? raw : {};
   const int = (v: unknown, min: number, max: number, fallback: number) =>
     typeof v === "number" && Number.isFinite(v) ? Math.max(min, Math.min(max, Math.round(v))) : fallback;
+  const mode = r.mode === "teams" || r.mode === "flag" || r.mode === "race" || r.mode === "training" ? r.mode : "ffa";
   return {
-    mode: r.mode === "teams" || r.mode === "flag" || r.mode === "race" ? r.mode : "ffa",
+    mode,
     stocks: int(r.stocks, 1, RULE_LIMITS.maxStocks, DEFAULT_RULES.stocks),
-    timeLimitSec: int(r.timeLimitSec, 0, RULE_LIMITS.maxTimeLimitSec, DEFAULT_RULES.timeLimitSec),
+    // In allenamento non c'è tempo: si resta in palestra finché si vuole
+    timeLimitSec: mode === "training" ? 0 : int(r.timeLimitSec, 0, RULE_LIMITS.maxTimeLimitSec, DEFAULT_RULES.timeLimitSec),
     friendlyFire: typeof r.friendlyFire === "boolean" ? r.friendlyFire : DEFAULT_RULES.friendlyFire,
   };
 }

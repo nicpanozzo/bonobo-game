@@ -9,7 +9,7 @@ import { discordHooks } from "./discord";
 import type { Leaderboard } from "./leaderboard";
 import { clientIp, Flood, IpLimits, TokenBucket } from "./rateLimit";
 import { combineHooks, Room } from "./Room";
-import { parseInput, parseJoin, sanitizeName } from "./validate";
+import { parseInput, parseJoin, parseTraining, sanitizeName } from "./validate";
 import { checkProtocol, ROOM_FULL, SERVER_VERSION, TOO_MANY_ROOMS } from "./version";
 
 export interface GameDeps {
@@ -135,6 +135,17 @@ export function attachGame(io: Server<ClientToServer, ServerToClient>, deps: Gam
     });
     socket.on("rematch", () => {
       if (room && allow(rematchBucket)) room.requestRematch();
+    });
+    // Allenamento (#113): solo in palestra e da soli, altrimenti si rallenterebbero gli altri
+    const trainingBucket = new TokenBucket(NET_LIMITS.trainingPerSecond, NET_LIMITS.trainingPerSecond, Date.now());
+    socket.on("training", (raw: unknown) => {
+      if (!room || room.rules.mode !== "training" || room.humanCount !== 1 || !allow(trainingBucket)) return;
+      const cmd = parseTraining(raw);
+      if (!cmd) return;
+      if (cmd.reset) room.match.reset();
+      if (cmd.speed !== undefined) room.setSpeed(cmd.speed);
+      // La percentuale è quella degli avversari (il bot), non la propria
+      if (cmd.percent !== undefined) for (const f of room.match.players) if (f.id !== playerId) room.match.setPercent(f.id, cmd.percent);
     });
 
     socket.on("disconnect", (reason) => {

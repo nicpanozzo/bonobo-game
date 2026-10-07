@@ -1,7 +1,7 @@
 // Tutto quello che arriva dalla rete è sconosciuto (#105): un client vecchio, buggato o malevolo
 // può mandare null, numeri, array o stringhe enormi. Queste funzioni restituiscono dati puliti
 // o null, così i gestori di index.ts non si fidano mai di quello che ricevono.
-import { NET_LIMITS } from "../shared/constants";
+import { NET_LIMITS, TRAINING } from "../shared/constants";
 import type { InputState, MatchRules } from "../shared/types";
 
 export interface JoinData {
@@ -66,6 +66,21 @@ export function parseInput(raw: unknown): InputState | null {
     dodge: raw.dodge === true,
     shield: raw.shield === true,
   };
+}
+
+export interface TrainingData {
+  percent?: number;
+  speed?: number;
+  reset: boolean;
+}
+
+// Comandi dell'allenamento (#113): percentuale tra 0 e TRAINING.maxPercent, velocità solo tra quelle ammesse
+export function parseTraining(raw: unknown): TrainingData | null {
+  if (!isObject(raw)) return null;
+  const percent =
+    typeof raw.percent === "number" && Number.isFinite(raw.percent) ? Math.max(0, Math.min(TRAINING.maxPercent, Math.round(raw.percent))) : undefined;
+  const speed = typeof raw.speed === "number" && TRAINING.speeds.includes(raw.speed) ? raw.speed : undefined;
+  return { percent, speed, reset: raw.reset === true };
 }
 
 // Caratteri invisibili o che girano il testo (controllo, larghezza zero, RTL, mezze emoji tagliate dal limite

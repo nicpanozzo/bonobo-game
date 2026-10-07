@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { Server } from "socket.io";
-import { ROOM_MAX_ERRORS } from "../shared/constants";
+import { ROOM_MAX_ERRORS, TICK_RATE } from "../shared/constants";
 import type { ClientToServer, ServerToClient } from "../shared/types";
 import { Room } from "./Room";
 
@@ -64,4 +64,25 @@ test("un errore isolato non chiude la stanza", async () => {
   }
   assert.deepEqual(kicked, []);
   assert.ok((sent.get("inciampo") ?? 0) > 3);
+});
+
+// Orologio della stanza (#113): il rallentatore fa meno passi fissi al secondo
+
+function ticksIn(ms: number, speed: number): number {
+  let ticks = 0;
+  const room = new Room("orologio", fakeIo().io, { rules: { mode: "training" } }, { onTick: () => ticks++ });
+  room.destroy(); // niente timer veri: l'orologio lo muove la prova
+  room.setSpeed(speed);
+  for (let t = 0; t < ms; t += 10) room.advance(10);
+  room.advance(0.5); // le somme di 16,67 ms perdono qualche decimale: mezzo ms in più per arrivare al passo esatto
+  return ticks;
+}
+
+test("a velocità 1 si fanno TICK_RATE passi al secondo", () => {
+  assert.equal(ticksIn(1000, 1), TICK_RATE);
+});
+
+test("a velocità 0.5 servono 2 s per 60 passi, a 0.25 ne servono 4", () => {
+  assert.equal(ticksIn(2000, 0.5), 60);
+  assert.equal(ticksIn(4000, 0.25), 60);
 });

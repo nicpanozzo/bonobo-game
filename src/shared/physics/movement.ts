@@ -28,6 +28,7 @@ export function applyControls(f: Fighter, dt: number, ctx: PhysicsContext): void
       f.vy = 0; // in aria ci si ferma un attimo, come in Brawlhalla
     }
     if (dir !== 0) f.facing = dir as 1 | -1;
+    ctx.events.push({ type: "dodge", id: f.id, x: Math.round(f.x), y: Math.round(f.y), air: !f.onGround });
     return;
   }
   const stats = characterStats(f.characterId);

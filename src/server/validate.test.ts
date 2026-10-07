@@ -1,8 +1,8 @@
 // Test della validazione dei messaggi in arrivo (#105): niente di quello che arriva dalla rete deve far cadere il server
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { NET_LIMITS } from "../shared/constants";
-import { parseInput, parseJoin, parseRoomCode, sanitizeName } from "./validate";
+import { NET_LIMITS, TRAINING } from "../shared/constants";
+import { parseInput, parseJoin, parseRoomCode, parseTraining, sanitizeName } from "./validate";
 
 const JUNK: unknown[] = [null, undefined, 42, "ciao", true, [], [1, 2], () => 1];
 
@@ -101,3 +101,17 @@ describe("sanitizeName", () => {
     assert.equal(sanitizeName("x".repeat(16), ["x".repeat(16)]), `${"x".repeat(14)} 2`);
   });
 });
+
+describe("parseTraining", () => {
+  it("tiene solo valori ammessi", () => {
+    assert.deepEqual(parseTraining({ percent: 42.4, speed: 0.5, reset: true }), { percent: 42, speed: 0.5, reset: true });
+    assert.deepEqual(parseTraining({ percent: 1e9, speed: 3, reset: "sì" }), { percent: TRAINING.maxPercent, speed: undefined, reset: false });
+    assert.deepEqual(parseTraining({ percent: -5, speed: NaN }), { percent: 0, speed: undefined, reset: false });
+    assert.deepEqual(parseTraining({ percent: "100" }), { percent: undefined, speed: undefined, reset: false });
+  });
+
+  it("scarta ciò che non è un oggetto", () => {
+    for (const raw of [null, 7, "veloce", [0.5]]) assert.equal(parseTraining(raw), null);
+  });
+});
+

@@ -5,7 +5,7 @@ import type { GameSnapshot, MatchRules } from "../../shared/types";
 import type { MatchInfo, RenderModule } from "./module";
 
 const HUD_Y = WORLD.height - 56;
-const MODE_NAMES: Record<MatchRules["mode"], string> = { ffa: "Tutti contro tutti", teams: "Squadre", flag: "Bandiera", race: "Corsa" };
+const MODE_NAMES: Record<MatchRules["mode"], string> = { ffa: "Tutti contro tutti", teams: "Squadre", flag: "Bandiera", race: "Corsa", training: "Allenamento" };
 
 // Scritte sopra il gioco: stato della connessione, riquadri con percentuale e vite, vincitore
 export class Hud implements RenderModule {
