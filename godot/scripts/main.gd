@@ -25,6 +25,7 @@ var rumble: Rumble
 var hud: Control
 var lobby: Control
 var title: Control # schermata del titolo (E14)
+var connecting: Control # schermata "Mi collego..." (E14), null quando si è dentro
 var playing := false
 var _last_input := {}
 var _retry_at := -1
@@ -198,6 +199,7 @@ func _leave() -> void:
 	hud.reset()
 	camera.position = Vector2.ZERO
 	camera.zoom = Vector2.ONE
+	_hide_connecting()
 	_show_lobby()
 
 
@@ -244,10 +246,10 @@ func _set_url(room: String) -> void:
 
 func _connect() -> void:
 	if _lost_at < 0:
-		hud.set_status("Mi collego a %s..." % params.server)
+		_show_connecting("Mi collego...", "Stanza %s su %s" % [params.room, params.server])
 	var err := socket.connect_to(params.server)
 	if err != OK:
-		hud.set_status("Non riesco a collegarmi (%s)" % error_string(err))
+		_show_connecting("Non riesco a collegarmi", "%s (%s). Riprovo tra poco." % [params.server, error_string(err)])
 		_retry_at = Time.get_ticks_msec() + RECONNECT_MS
 
 
@@ -311,12 +313,27 @@ func _retry_later() -> void:
 # "Riconnessione... tentativo 2, posto tenuto ancora 14 s": quanto manca prima che il server liberi il posto
 func _show_reconnecting() -> void:
 	var left := ceili((float(game.reconnect.holdMs) - (Time.get_ticks_msec() - _lost_at)) / 1000.0)
-	var text := "Riconnessione... tentativo %d" % _attempt
+	var text := "Tentativo %d" % _attempt
 	if left > 0:
-		text += ", posto tenuto ancora %d s" % left
-	text += " (Esc per tornare alla lobby)"
-	if hud.status != text:
-		hud.set_status(text)
+		text += ", il tuo posto è tenuto ancora %d s" % left
+	_show_connecting("Riconnessione...", text)
+
+
+# Schermata di collegamento: si crea la prima volta e poi si aggiorna il testo
+func _show_connecting(title_text: String, detail := "") -> void:
+	if not is_instance_valid(connecting):
+		connecting = preload("res://scripts/connecting.gd").new()
+		connecting.theme = UI.theme()
+		ui_layer.add_child(connecting)
+		connecting.setup()
+		connecting.cancelled.connect(_leave)
+	connecting.show_text(title_text, detail)
+
+
+func _hide_connecting() -> void:
+	if is_instance_valid(connecting):
+		connecting.queue_free()
+	connecting = null
 
 
 # Indirizzo sbagliato o server spento: si riprova, ma si dice cosa succede e come uscirne
@@ -326,7 +343,7 @@ func _on_connect_failed() -> void:
 	if _lost_at >= 0:
 		_retry_later() # la rete non è ancora tornata
 		return
-	hud.set_status("Non riesco a raggiungere %s, riprovo... (Esc per cambiare server)" % params.server)
+	_show_connecting("Il server non risponde", "Non riesco a raggiungere %s: riprovo. Con Annulla torni alla lobby e puoi cambiare server." % params.server)
 	_retry_at = Time.get_ticks_msec() + RECONNECT_MS * 2
 
 
@@ -340,6 +357,7 @@ func _on_event(name: String, data: Variant) -> void:
 				_flash_status("Posto perso, sei rientrato da capo")
 			_lost_at = -1
 			_attempt = 0
+			_hide_connecting()
 			if _try_hint != "":
 				_flash_status(_try_hint)
 				_try_hint = ""
@@ -364,7 +382,7 @@ func _on_event(name: String, data: Variant) -> void:
 			world.on_snapshot(data)
 			hud.on_snapshot(data)
 		"roomFull":
-			hud.set_status("Stanza piena! Prova con un'altra stanza")
+			_show_connecting("Stanza piena!", "Prova con un'altra stanza: Annulla torna alla lobby.")
 		"refused": # il server non ci fa entrare e dice perché (E2): si torna alla lobby con il messaggio
 			_leave()
 			add_child(UI.banner(str(data.get("message", "Il server non ti fa entrare")), "", Callable(), 15.0))
