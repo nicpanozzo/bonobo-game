@@ -139,3 +139,16 @@ func test_vibrazione_salvata() -> void:
 	cfg.save(PATH)
 	runner.check(Settings.new(AUDIO, PATH).rumble == Rumble.STRONG, "valore sbagliato: default")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(PATH))
+
+
+func test_scudo_nuovo_con_preferenze_vecchie() -> void:
+	# Preferenze salvate prima dello scudo (#109): la schivata aveva anche i grilletti
+	var cfg := ConfigFile.new()
+	var triggers := [Settings.axis_input(JOY_AXIS_TRIGGER_LEFT, true), Settings.axis_input(JOY_AXIS_TRIGGER_RIGHT, true)]
+	cfg.set_value("pad", "dodge", [JOY_BUTTON_LEFT_SHOULDER] + triggers)
+	cfg.set_value("keys", "dodge", [KEY_L, KEY_I])
+	cfg.save(PATH)
+	var s := Settings.new(AUDIO, PATH)
+	runner.check(s.pad_bindings.shield == triggers, "scudo sui grilletti: %s" % [s.pad_bindings.shield])
+	runner.check(s.pad_bindings.dodge == [JOY_BUTTON_LEFT_SHOULDER], "schivata senza grilletti: %s" % [s.pad_bindings.dodge])
+	runner.check(s.bindings.shield == [KEY_I] and s.bindings.dodge == [KEY_L], "I passa allo scudo: %s %s" % [s.bindings.shield, s.bindings.dodge])

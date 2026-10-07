@@ -432,6 +432,16 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 		draw_line(shoulder, hand, arm, 6.0)
 		draw_circle(hand, 6.0, arm)
 
+	# Scudo (#109): una bolla del colore del giocatore che rimpicciolisce con i punti rimasti
+	if p.get("shielding", false):
+		var r := shield_radius(float(p.get("shieldHp", 0)), float(game.shield.maxHp), fh)
+		var bubble := _color(p.color).lightened(0.3)
+		bubble.a = 0.35 * away_alpha(p)
+		var center := Vector2(p.x, p.y - fh / 2)
+		draw_circle(center, r, bubble)
+		bubble.a = 0.9 * away_alpha(p)
+		draw_arc(center, r, 0, TAU, 40, bubble, 3.0)
+
 	# Colpo in corso: la stessa hitbox di attackBox() in src/shared/physics/attacks.ts,
 	# spostata da boxX/boxY per le varianti direzionali (#2)
 	if p.attack != null:
@@ -500,6 +510,12 @@ static func away_alpha(p: Dictionary) -> float:
 
 
 # Le animazioni del bordo (#110) sono facoltative: chi non le ha nello spritesheet usa quella del salto
+# Raggio della bolla: copre il lottatore con lo scudo pieno, a vuoto ne resta un terzo
+static func shield_radius(hp: float, max_hp: float, fighter_height: float) -> float:
+	var full := fighter_height * 0.62
+	return lerpf(full / 3.0, full, clampf(hp / max_hp, 0.0, 1.0))
+
+
 const ANIMATION_FALLBACK := {"ledge": "jump", "climb": "jump"}
 
 
