@@ -92,6 +92,11 @@ test("join: welcome con id, stanza e arena", LIMIT, async () => {
   assert.equal(w.id, c.id);
   assert.equal(w.room, "provauno");
   assert.ok(w.stage);
+  assert.equal(typeof w.token, "string");
+  assert.equal(w.resumed, false);
+  const snap = await new Promise<Parameters<ServerToClient["snapshot"]>[0]>((resolve) => c.once("snapshot", resolve));
+  assert.equal(snap.players.find((p) => p.id === c.id)?.away, false);
+  assert.ok(!JSON.stringify(snap).includes(w.token), "il token non finisce mai negli snapshot");
   assert.ok(rooms.get("provauno")?.match.players.some((p) => p.id === c.id));
   c.disconnect();
 });

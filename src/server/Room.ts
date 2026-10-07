@@ -3,10 +3,11 @@
 // e manda a tutti lo stato.
 
 import type { Server } from "socket.io";
-import { MAX_CATCHUP_TICKS, ROOM_MAX_ERRORS, SEND_RATE, TICK_RATE } from "../shared/constants";
+import { MAX_CATCHUP_TICKS, RECONNECT_HOLD_MS, ROOM_MAX_ERRORS, SEND_RATE, TICK_RATE } from "../shared/constants";
 import { Match, type MatchEndEvent, type MatchOptions } from "../shared/match";
 import type { Fighter } from "../shared/physics";
 import type { ClientToServer, GameEvent, InputState, ServerToClient } from "../shared/types";
+import { Seats } from "./seats";
 
 export type RoomOptions = MatchOptions;
 
@@ -38,6 +39,7 @@ export class Room {
   private accumulator = 0;
   private pendingEvents: GameEvent[] = []; // eventi accumulati fino al prossimo snapshot
   private humans = new Set<string>(); // i bot (#20) non tengono aperta la stanza
+  readonly seats = new Seats(RECONNECT_HOLD_MS); // token e posti tenuti per la riconnessione (#107)
   private errors = 0; // errori di fila nel passo: al terzo la stanza si chiude
   onClose?: () => void; // chi tiene l'elenco delle stanze (game.ts) la toglie quando si chiude da sola
   lastHumanInput = Date.now(); // ms dell'ultimo ingresso o tasto di un umano: senza, la stanza si chiude (ROOM_IDLE_MS)
@@ -84,6 +86,7 @@ export class Room {
   removePlayer(id: string) {
     this.match.removePlayer(id);
     this.humans.delete(id);
+    this.seats.release(id);
   }
 
   setInput(id: string, input: InputState) {

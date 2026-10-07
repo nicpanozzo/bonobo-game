@@ -26,6 +26,8 @@ var lobby: Control
 var playing := false
 var _last_input := {}
 var _retry_at := -1
+var _token := "" # segreto del welcome: solo in memoria, vale per la stanza _token_room (#107)
+var _token_room := ""
 
 
 func _ready() -> void:
@@ -170,6 +172,8 @@ func _on_connected() -> void:
 		data.rules = params.rules # contano solo se la stanza è nuova
 	if params.get("bot", "") != "":
 		data.bot = params.bot
+	if _token != "" and _token_room == str(params.room):
+		data.token = _token # dopo una caduta di rete: rientra nello stesso lottatore se il posto è tenuto (#107)
 	socket.emit("join", data)
 	_last_input = {}
 
@@ -192,6 +196,8 @@ func _on_connect_failed() -> void:
 func _on_event(name: String, data: Variant) -> void:
 	match name:
 		"welcome":
+			_token = str(data.get("token", ""))
+			_token_room = str(params.room)
 			world.my_id = data.id
 			hud.my_id = data.id
 			# Server vecchi non mandano l'arena intera: allora si cerca tra quelle fisse per id

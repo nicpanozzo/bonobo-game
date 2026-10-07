@@ -151,6 +151,7 @@ export class Match {
         eliminated: f.eliminated,
         carrier: f.carrier,
         ledge: f.ledge,
+        away: f.away,
       });
     }
     const teamScores = this.rules.mode === "flag" ? { ...this.scores } : null;
