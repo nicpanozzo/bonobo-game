@@ -29,6 +29,7 @@ var _font: Font = ThemeDB.fallback_font
 var view_rect := Rect2(0, 0, 1280, 720) # la parte di mondo che si vede, decisa dalla telecamera in main.gd
 var _textures := {} # id personaggio -> Texture2D dello spritesheet
 var _anims := {} # id giocatore -> { name, since }: animazione in corso e da quando
+var show_hitboxes := false # allenamento (E15): corpo dei lottatori visibile anche sopra gli sprite
 var _air_jumps := {} # id giocatore -> quando ha fatto il doppio salto (ms), per l'animazione doubleJump (#103)
 
 
@@ -488,6 +489,10 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 			var a := now / 300.0 + TAU * i / float(game.effects.stunStars)
 			var star := Vector2(p.x + cos(a) * fw * 0.6, p.y - head - 18 - Access.px(16) + sin(a) * 6) # sopra il nome
 			_draw_star(star, 6.0, Color(1, 0.9, 0.3))
+
+	# Allenamento: il corpo che si può colpire, lo stesso rettangolo della fisica
+	if show_hitboxes:
+		draw_rect(Rect2(p.x - fw / 2, p.y - fh, fw, fh), Color(0.3, 1, 0.5, 0.9), false, 2.0)
 
 	# Colpo in corso: la stessa hitbox di attackBox() in src/shared/physics/attacks.ts,
 	# spostata da boxX/boxY per le varianti direzionali (#2)
