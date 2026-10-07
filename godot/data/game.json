@@ -206,6 +206,146 @@
     ],
     "maxPercent": 999
   },
+  "tutorial": {
+    "stage": "palestra",
+    "bot": "sparring",
+    "lessons": [
+      {
+        "id": "salto",
+        "title": "Muoviti e salta",
+        "text": "Corri a destra e a sinistra, poi salta.",
+        "actions": [
+          "left",
+          "right",
+          "up"
+        ],
+        "event": "jump",
+        "who": "id",
+        "match": {
+          "air": false
+        }
+      },
+      {
+        "id": "doppio",
+        "title": "Doppio salto",
+        "text": "In aria puoi saltare una seconda volta.",
+        "actions": [
+          "up"
+        ],
+        "event": "jump",
+        "who": "id",
+        "match": {
+          "air": true
+        }
+      },
+      {
+        "id": "leggero",
+        "title": "Attacco leggero",
+        "text": "Veloce e debole: fai un attacco leggero.",
+        "actions": [
+          "light"
+        ],
+        "event": "attack",
+        "who": "id",
+        "match": {
+          "kind": "light"
+        }
+      },
+      {
+        "id": "pesante",
+        "title": "Attacco pesante",
+        "text": "Lento ma forte: fai un attacco pesante.",
+        "actions": [
+          "heavy"
+        ],
+        "event": "attack",
+        "who": "id",
+        "match": {
+          "kind": "heavy"
+        }
+      },
+      {
+        "id": "su",
+        "title": "Attacco in su",
+        "text": "Tieni su mentre attacchi per colpire sopra la testa.",
+        "actions": [
+          "up",
+          "light"
+        ],
+        "event": "attack",
+        "who": "id",
+        "match": {
+          "kind": "lightUp"
+        }
+      },
+      {
+        "id": "colpo",
+        "title": "Colpisci lo sparring",
+        "text": "Avvicinati al compagno di allenamento e colpiscilo.",
+        "actions": [
+          "light",
+          "heavy"
+        ],
+        "event": "hit",
+        "who": "attackerId"
+      },
+      {
+        "id": "schivata",
+        "title": "Schivata",
+        "text": "Per un attimo nessuno ti può colpire.",
+        "actions": [
+          "dodge"
+        ],
+        "event": "dodge",
+        "who": "id"
+      },
+      {
+        "id": "scudo",
+        "title": "Scudo",
+        "text": "Tieni lo scudo quando lo sparring attacca: para il colpo.",
+        "actions": [
+          "shield"
+        ],
+        "event": "shield",
+        "who": "id"
+      },
+      {
+        "id": "recupero",
+        "title": "Recupero",
+        "text": "In aria, attacco leggero tenendo su: ti riporta verso l'alto.",
+        "actions": [
+          "up",
+          "light"
+        ],
+        "event": "attack",
+        "who": "id",
+        "match": {
+          "kind": "recovery"
+        }
+      },
+      {
+        "id": "bordo",
+        "title": "Aggrappati al bordo",
+        "text": "Cadi oltre il bordo del palco e torna verso lo spigolo: ti ci aggrappi.",
+        "actions": [
+          "left",
+          "right"
+        ],
+        "event": "ledgeGrab",
+        "who": "id"
+      },
+      {
+        "id": "fuori",
+        "title": "Buttalo fuori",
+        "text": "Più la percentuale è alta più si vola: lancia lo sparring fuori dall'arena.",
+        "actions": [
+          "heavy"
+        ],
+        "event": "ko",
+        "who": "byId"
+      }
+    ]
+  },
   "camera": {
     "margin": 140,
     "minZoom": 0.7,
@@ -630,6 +770,75 @@
         "solid": 4869975,
         "solidEdge": 15844367,
         "platform": 12633804
+      }
+    },
+    "palestra": {
+      "id": "palestra",
+      "name": "La Palestra",
+      "solids": [
+        {
+          "x": 290,
+          "y": 560,
+          "width": 700,
+          "height": 80
+        }
+      ],
+      "platforms": [
+        {
+          "x": 540,
+          "width": 200,
+          "y": 420
+        }
+      ],
+      "blastZone": {
+        "left": -250,
+        "right": 1530,
+        "top": -350,
+        "bottom": 920
+      },
+      "spawns": [
+        {
+          "x": 500,
+          "y": 560
+        },
+        {
+          "x": 780,
+          "y": 560
+        },
+        {
+          "x": 605,
+          "y": 560
+        },
+        {
+          "x": 675,
+          "y": 560
+        },
+        {
+          "x": 430,
+          "y": 560
+        },
+        {
+          "x": 850,
+          "y": 560
+        },
+        {
+          "x": 549,
+          "y": 560
+        },
+        {
+          "x": 731,
+          "y": 560
+        }
+      ],
+      "respawn": {
+        "x": 640,
+        "y": 160
+      },
+      "colors": {
+        "sky": 2761779,
+        "solid": 7032634,
+        "solidEdge": 14262374,
+        "platform": 12101004
       }
     }
   },

@@ -1,7 +1,7 @@
 // Test dei bot (#20): girano su una Match senza rete, come nel server.
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { ATTACKS, FIGHTER, HITSTUN_PER_KNOCKBACK, LEDGE, TICK_RATE } from "../shared/constants";
+import { ATTACKS, BOT, FIGHTER, HITSTUN_PER_KNOCKBACK, LEDGE, TICK_RATE } from "../shared/constants";
 import { Match } from "../shared/match";
 import { ledgesOf } from "../shared/physics";
 import { Bots, parseBotKind } from "./bot";
@@ -9,6 +9,29 @@ import { Bots, parseBotKind } from "./bot";
 const DT = 1000 / TICK_RATE;
 
 describe("bot", () => {
+  it("lo sparring del tutorial attacca a ritmo fisso verso di te, e lo scudo para il colpo (E15)", () => {
+    const match = new Match({ stageId: "palestra", rules: { mode: "training" } });
+    const bots = new Bots();
+    match.addPlayer("a", "A");
+    bots.add(match, "sparring");
+    const [a, sparring] = match.players;
+    for (let i = 0; i < 60; i++) match.step(DT); // atterrano
+    a.x = sparring.x - FIGHTER.width - 20; // a sinistra, dentro la portata
+    const startX = sparring.x;
+    const seconds = 4;
+    const events = [];
+    match.setInput("a", { left: false, right: false, up: false, down: false, light: false, heavy: false, taunt: false, dodge: false, shield: true });
+    for (let i = 0; i < seconds * TICK_RATE; i++) {
+      bots.tick(match);
+      events.push(...match.step(DT));
+    }
+    const attacks = events.filter((e) => e.type === "attack" && e.id === sparring.id).length;
+    assert.equal(attacks, Math.floor((seconds * 1000) / BOT.sparringEveryMs), "un attacco ogni sparringEveryMs");
+    assert.equal(sparring.facing, -1, "si è girato verso il giocatore");
+    assert.ok(Math.abs(sparring.x - startX) < FIGHTER.width, "resta più o meno dov'era");
+    assert.ok(events.some((e) => e.type === "shield" && e.id === "a"), "lo scudo del giocatore para il colpo");
+  });
+
   it("accetta solo i tipi conosciuti", () => {
     assert.equal(parseBotKind("manichino"), "manichino");
     assert.equal(parseBotKind("boh"), null);

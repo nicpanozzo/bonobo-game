@@ -152,6 +152,19 @@ export const STAGES: Record<string, StageSpec> = {
     respawn: { x: WORLD.width / 2, y: 160 },
     colors: { sky: 0x22201f, solid: 0x4a4f57, solidEdge: 0xf1c40f, platform: 0xc0c6cc },
   },
+
+  // Palestra del tutorial (E15): un palco con due bordi a cui aggrapparsi e una piattaforma bassa per i salti.
+  // TODO community: la palestra di qualcuno del canale?
+  palestra: {
+    id: "palestra",
+    name: "La Palestra",
+    solids: [{ x: 290, y: 560, width: 700, height: 80 }],
+    platforms: [{ x: 540, width: 200, y: 420 }],
+    blastZone: { left: -250, right: WORLD.width + 250, top: -350, bottom: WORLD.height + 200 },
+    spawns: [0.3, 0.7, 0.45, 0.55, 0.2, 0.8, 0.37, 0.63].map((f) => ({ x: 290 + 700 * f, y: 560 })),
+    respawn: { x: WORLD.width / 2, y: 160 },
+    colors: { sky: 0x2a2433, solid: 0x6b4f3a, solidEdge: 0xd9a066, platform: 0xb8a58c },
+  },
 };
 
 // Le arene generate si ricreano dal seme; si tengono le ultime per non rigenerarle a ogni chiamata

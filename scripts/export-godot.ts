@@ -11,6 +11,7 @@ import { ATTACKS, AUDIO, CAMERA, COLORS, EFFECTS, FIGHTER, INPUT, ITEM_RULES, LE
 import { RECONNECT, RECONNECT_HOLD_MS } from "../src/shared/constants";
 import { COLORS_COLORBLIND, TEAM_COLORS_COLORBLIND } from "../src/shared/constants";
 import { TRAINING } from "../src/shared/constants";
+import { LESSONS, TUTORIAL_BOT, TUTORIAL_STAGE_ID } from "../src/shared/tutorial";
 import { ITEMS } from "../src/shared/items";
 import { DEFAULT_STAGE_ID, STAGES } from "../src/shared/stages";
 import { stageCheckData } from "../src/shared/stageCheck";
@@ -61,6 +62,7 @@ const data = {
   input: INPUT,
   rumble: RUMBLE,
   training: TRAINING, // allenamento (E15): velocità ammesse e percentuale massima del pannello
+  tutorial: { stage: TUTORIAL_STAGE_ID, bot: TUTORIAL_BOT, lessons: LESSONS }, // tutorial a tappe (E15 passo 2)
   camera: CAMERA,
   effects: EFFECTS,
   items: ITEMS,
