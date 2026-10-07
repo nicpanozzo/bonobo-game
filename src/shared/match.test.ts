@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { MAX_PLAYERS_PER_ROOM, RESPAWN_MS, TICK_RATE } from "./constants";
+import { MAX_PLAYERS_PER_ROOM, RECONNECT_RESUME_INVULNERABLE_MS, RESPAWN_MS, TICK_RATE } from "./constants";
 import type { Fighter } from "./physics";
 import { Match } from "./match";
 import type { GameEvent } from "./types";
@@ -179,6 +179,33 @@ describe("partita", () => {
     assert.equal(p.name.length, 16);
     assert.equal(p.input.left, true);
     assert.equal(p.input.up, false);
+  });
+
+  it("disconnesso: fermo, tasti ignorati, resta tale nella rivincita, al rientro un attimo invulnerabile (#107)", () => {
+    const m = new Match();
+    m.addPlayer("a", "A");
+    m.addPlayer("b", "B");
+    const b = m.players.find((p) => p.id === "b")!;
+    m.setAway("b", true);
+    m.setAway("b", true); // due volte: un evento solo
+    let events = run(m, 1);
+    assert.deepEqual(events.filter((e) => e.type === "away"), [{ type: "away", id: "b" }]);
+    m.setInput("b", { left: true } as never);
+    assert.equal(b.input.left, false);
+    assert.equal(m.snapshot([], 0).players.find((p) => p.id === "b")?.away, true);
+
+    knockOut(m, "a");
+    m.requestRematch();
+    run(m, 1);
+    assert.equal(b.away, true, "la rivincita non rimette in campo chi è disconnesso");
+
+    m.setAway("b", false);
+    events = run(m, 1);
+    assert.ok(events.some((e) => e.type === "back" && e.id === "b"));
+    assert.equal(b.away, false);
+    assert.equal(b.invulnerable, true);
+    run(m, Math.ceil(RECONNECT_RESUME_INVULNERABLE_MS / DT) + 1);
+    assert.equal(b.invulnerable, false);
   });
 
   it("lo snapshot non porta i campi interni della fisica", () => {

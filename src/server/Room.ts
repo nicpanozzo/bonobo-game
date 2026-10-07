@@ -39,7 +39,7 @@ export class Room {
   private accumulator = 0;
   private pendingEvents: GameEvent[] = []; // eventi accumulati fino al prossimo snapshot
   private humans = new Set<string>(); // i bot (#20) non tengono aperta la stanza
-  readonly seats = new Seats(RECONNECT_HOLD_MS); // token e posti tenuti per la riconnessione (#107)
+  readonly seats: Seats; // token e posti tenuti per la riconnessione (#107)
   private errors = 0; // errori di fila nel passo: al terzo la stanza si chiude
   onClose?: () => void; // chi tiene l'elenco delle stanze (game.ts) la toglie quando si chiude da sola
   lastHumanInput = Date.now(); // ms dell'ultimo ingresso o tasto di un umano: senza, la stanza si chiude (ROOM_IDLE_MS)
@@ -49,8 +49,10 @@ export class Room {
     private io: Server<ClientToServer, ServerToClient>,
     options: RoomOptions = {},
     private hooks: RoomHooks = {},
+    holdMs = RECONNECT_HOLD_MS,
   ) {
     this.match = new Match(options);
+    this.seats = new Seats(holdMs);
     // setInterval da solo sbanda di qualche ms a ogni giro: controlliamo l'orologio
     // più spesso e facciamo tanti passi fissi quanti ne sono maturati (fixed timestep)
     this.loop = setInterval(() => this.pump(), TICK_MS / 2);
@@ -83,6 +85,13 @@ export class Room {
     this.lastHumanInput = Date.now();
   }
 
+  // Caduta di rete (#107): il lottatore resta fermo nel suo posto finché scade RECONNECT_HOLD_MS.
+  // Intanto conta ancora tra gli umani, così la stanza non si chiude
+  holdPlayer(id: string) {
+    this.match.setAway(id, true);
+    this.seats.hold(id, Date.now());
+  }
+
   removePlayer(id: string) {
     this.match.removePlayer(id);
     this.humans.delete(id);
@@ -103,6 +112,7 @@ export class Room {
   }
 
   private pump() {
+    if (this.seats.heldCount > 0 && this.expireSeats(Date.now())) return;
     const now = performance.now();
     this.accumulator += now - this.lastTime;
     this.lastTime = now;
@@ -120,6 +130,18 @@ export class Room {
         return;
       }
     }
+  }
+
+  // Posti scaduti: il lottatore esce come oggi; se non resta nessuno la stanza si chiude
+  private expireSeats(now: number): boolean {
+    for (const id of this.seats.expired(now)) {
+      this.removePlayer(id);
+      console.log(`[${this.code}] posto scaduto ${id}`);
+    }
+    if (!this.isEmpty) return false;
+    this.destroy();
+    this.onClose?.();
+    return true;
   }
 
   // Chiusura per errori: la stanza sparisce dall'elenco e chi c'era dentro viene scollegato

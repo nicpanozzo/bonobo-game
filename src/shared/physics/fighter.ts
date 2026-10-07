@@ -117,7 +117,7 @@ export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
 // Riporta un lottatore all'inizio partita, tenendo i tasti che sta premendo
 export function resetForMatch(f: Fighter, index: number, stocks: number, stage: StageSpec): void {
   const fresh = createFighter({ ...f, index, stocks }, stage);
-  Object.assign(f, fresh, { input: f.input, prevInput: f.prevInput });
+  Object.assign(f, fresh, { input: f.input, prevInput: f.prevInput, away: f.away }); // chi è disconnesso resta tale nella rivincita
 }
 
 export const isAlive = (f: Fighter) => !f.eliminated;

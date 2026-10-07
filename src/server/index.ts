@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import express from "express";
 import { Server } from "socket.io";
-import { NET_LIMITS } from "../shared/constants";
+import { NET_LIMITS, PING_INTERVAL_MS, PING_TIMEOUT_MS } from "../shared/constants";
 import type { ClientToServer, ServerToClient } from "../shared/types";
 import { attachGame } from "./game";
 import { health } from "./health";
@@ -18,6 +18,9 @@ const io = new Server<ClientToServer, ServerToClient>(http, {
   cors: { origin: "*" },
   perMessageDeflate: { threshold: 256 },
   maxHttpBufferSize: NET_LIMITS.maxMessageBytes,
+  // Un client sparito si vede in ~10 s invece di 45 (#107): intanto il suo lottatore resta fermo nel posto tenuto
+  pingInterval: PING_INTERVAL_MS,
+  pingTimeout: PING_TIMEOUT_MS,
 });
 
 // In produzione lo stesso server serve anche il gioco già compilato (npm run build)

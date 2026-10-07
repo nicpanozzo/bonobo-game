@@ -310,3 +310,41 @@ describe("KO e respawn", () => {
     assert.equal(ofType(ctx.events, "ko")[0].stocksLeft, 0);
   });
 });
+
+describe("disconnesso con il posto tenuto (#107)", () => {
+  // Come in "attacchi": a colpirebbe b con il leggero, ma b è away
+  function awayPair() {
+    const s = setup(2);
+    const [a, b] = s.fighters;
+    a.x = 600;
+    b.x = 600 + FIGHTER.width + 20;
+    a.facing = 1;
+    b.away = true;
+    return { ...s, a, b };
+  }
+
+  it("non prende colpi e non attacca", () => {
+    const { ctx, fighters, a, b } = awayPair();
+    press(a, { light: true });
+    press(b, { heavy: true });
+    run(fighters, ctx, 15);
+    assert.equal(ofType(ctx.events, "hit").length, 0);
+    assert.equal(b.percent, 0);
+    assert.equal(b.invulnerable, true);
+    assert.equal(ofType(ctx.events, "attack").filter((e) => e.id === b.id).length, 0);
+  });
+
+  it("resta fermo anche in aria e fuori dall'arena non perde vite", () => {
+    const { ctx, fighters, b } = awayPair();
+    b.y -= 200;
+    b.vx = 300;
+    press(b, { right: true });
+    const start = { x: b.x, y: b.y };
+    run(fighters, ctx, 30);
+    assert.deepEqual({ x: b.x, y: b.y }, start);
+    b.x = stage.blastZone.right + 100;
+    run(fighters, ctx, 30);
+    assert.equal(b.stocks, 3);
+    assert.equal(ofType(ctx.events, "ko").length, 0);
+  });
+});
