@@ -297,9 +297,10 @@ func _draw_chars() -> void:
 		v.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		b.add_child(v)
 		if c.get("sprite") != null:
-			# Primo fotogramma dello spritesheet, ridotto per stare nel riquadro
+			# Primo fotogramma dello spritesheet (nel formato cartella, di idle.png), ridotto per stare nel riquadro
+			var path: String = "%s/idle.png" % c.sprite.dir if c.sprite.has("dir") else c.sprite.path
 			var atlas := AtlasTexture.new()
-			atlas.atlas = load("res://data/" + c.sprite.path)
+			atlas.atlas = load("res://data/" + path)
 			atlas.region = Rect2(0, 0, c.sprite.frameWidth, c.sprite.frameHeight)
 			var pic := TextureRect.new()
 			pic.texture = atlas

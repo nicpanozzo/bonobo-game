@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { CHARACTERS, getCharacter, type AnimationName } from "../../shared/characters";
+import { CHARACTERS, getCharacter, isSpriteFolder, type AnimationName } from "../../shared/characters";
 import { ATTACKS, FIGHTER, TEAM_COLORS, WORLD } from "../../shared/constants";
 import type { GameSnapshot, PlayerState } from "../../shared/types";
 import { SnapshotBuffer } from "../interpolation";
@@ -20,7 +20,7 @@ interface FighterView {
 // Da chiamare in preload() della scena
 export function preloadCharacters(scene: Phaser.Scene) {
   for (const c of Object.values(CHARACTERS)) {
-    if (!c.sprite) continue;
+    if (!c.sprite || isSpriteFolder(c.sprite)) continue; // il formato cartella (E7) c'è solo in Godot: qui resta il rettangolo
     scene.load.spritesheet(c.id, c.sprite.path, { frameWidth: c.sprite.frameWidth, frameHeight: c.sprite.frameHeight });
   }
 }
@@ -33,11 +33,12 @@ export class FighterViews implements RenderModule {
   constructor(private scene: Phaser.Scene) {
     // Un'animazione per riga dello spritesheet, con chiave "<personaggio>-<animazione>"
     for (const c of Object.values(CHARACTERS)) {
-      if (!c.sprite) continue;
-      for (const [name, a] of Object.entries(c.sprite.animations)) {
+      if (!c.sprite || isSpriteFolder(c.sprite)) continue;
+      const sheet = c.sprite;
+      for (const [name, a] of Object.entries(sheet.animations)) {
         const key = `${c.id}-${name}`;
         if (scene.anims.exists(key)) continue; // la scena può ripartire: le animazioni sono globali
-        const start = a.row * c.sprite.columns;
+        const start = a.row * sheet.columns;
         scene.anims.create({
           key,
           frames: scene.anims.generateFrameNumbers(c.id, { start, end: start + a.frames - 1 }),

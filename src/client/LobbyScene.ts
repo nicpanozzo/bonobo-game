@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { CHARACTERS, getCharacter, type CharacterSpec } from "../shared/characters";
+import { CHARACTERS, getCharacter, isSpriteFolder, type CharacterSpec } from "../shared/characters";
 import { WORLD } from "../shared/constants";
 import { sanitizeRules } from "../shared/rules";
 import { randomCourseId } from "../shared/courseGenerator";
@@ -266,8 +266,8 @@ function charCard(c: CharacterSpec, selected: boolean): HTMLButtonElement {
   el.className = `char${selected ? " sel" : ""}`;
   el.dataset.char = c.id;
   const pic = document.createElement("div");
-  if (c.sprite) {
-    // Primo fotogramma dello spritesheet, ridotto per stare nel riquadro
+  if (c.sprite && !isSpriteFolder(c.sprite)) {
+    // Primo fotogramma dello spritesheet, ridotto per stare nel riquadro (il formato cartella di E7 c'è solo in Godot)
     const scale = Math.min(64 / c.sprite.frameWidth, 72 / c.sprite.frameHeight);
     pic.className = "pic";
     pic.style.backgroundImage = `url("${c.sprite.path}")`;

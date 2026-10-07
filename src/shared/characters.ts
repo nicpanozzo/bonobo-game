@@ -3,10 +3,32 @@
 
 import { CHARACTER_STATS } from "./constants";
 
-export type AnimationName = "idle" | "walk" | "jump" | "fall" | "light" | "heavy" | "hit";
+// Gli stati che ogni lottatore con sprite deve avere
+export const ANIMATION_NAMES = ["idle", "walk", "jump", "fall", "light", "heavy", "hit"] as const;
+export type AnimationName = (typeof ANIMATION_NAMES)[number];
 // Animazioni facoltative (#103): chi non le ha usa al loro posto jump (doppio salto) e hit (lanciato);
-// per il bordo (#110, #171) appeso e risalita usano jump
-export type OptionalAnimationName = "doubleJump" | "tumble" | "ledge" | "climb";
+// per il bordo (#110, #171) appeso e risalita usano jump.
+// Gli stati di E7 passo 2 (atterraggio, varianti dei colpi, recupero, provocazione) hanno già il nome;
+// shield, grab e special sono posti per E8, E9 ed E10. Finché il passo 3 non porta il ripiego, Godot non li usa.
+export const OPTIONAL_ANIMATION_NAMES = [
+  "doubleJump",
+  "tumble",
+  "ledge",
+  "climb",
+  "land",
+  "lightUp",
+  "lightDown",
+  "lightAir",
+  "heavyUp",
+  "heavyDown",
+  "heavyAir",
+  "recovery",
+  "taunt",
+  "shield",
+  "grab",
+  "special",
+] as const;
+export type OptionalAnimationName = (typeof OPTIONAL_ANIMATION_NAMES)[number];
 export interface SpriteAnimation {
   row: number;
   frames: number;
@@ -14,6 +36,7 @@ export interface SpriteAnimation {
   loop: boolean;
 }
 
+// Formato a foglio unico: un PNG con una riga per animazione (Egiainuso, Bonobot)
 export interface SpriteSheetSpec {
   path: string; // relativo alla radice del sito
   frameWidth: number; // pixel
@@ -22,6 +45,29 @@ export interface SpriteSheetSpec {
   scale?: number; // grandezza a schermo rispetto al PNG: 0.5 per i disegni fatti a 2x (manca = 1)
   // Riga del PNG, numero di fotogrammi e velocità di ogni animazione (fotogrammi/s)
   animations: Record<AnimationName, SpriteAnimation> & Partial<Record<OptionalAnimationName, SpriteAnimation>>;
+}
+
+// Formato cartella (E7 passo 2): un PNG per stato, <dir>/<stato>.png, con i fotogrammi in fila da sinistra.
+// Il numero di fotogrammi lo ricava npm run export:godot dalla larghezza del PNG. Guida: public/assets/characters/README.md
+export interface SpriteStateSpec {
+  fps: number; // fotogrammi al secondo
+  loop: boolean; // true = ricomincia, false = si ferma sull'ultimo fotogramma
+}
+export interface SpriteFolderSpec {
+  dir: string; // cartella relativa alla radice del sito, es. "assets/characters/<id>"
+  frameWidth: number; // pixel, uguale in tutti i PNG
+  frameHeight: number;
+  scale?: number; // come in SpriteSheetSpec: 0.5 per i disegni fatti a 2x
+  animations: Record<AnimationName, SpriteStateSpec> & Partial<Record<OptionalAnimationName, SpriteStateSpec>>;
+}
+
+export function isSpriteFolder(sprite: SpriteSheetSpec | SpriteFolderSpec): sprite is SpriteFolderSpec {
+  return "dir" in sprite;
+}
+
+// Il PNG di uno stato nel formato cartella
+export function spriteStatePath(sprite: SpriteFolderSpec, state: AnimationName | OptionalAnimationName): string {
+  return `${sprite.dir}/${state}.png`;
 }
 
 // Moltiplicatori dei numeri di FIGHTER (1 = come Bonobot, il metro), tra CHARACTER_STATS.min e max
@@ -36,7 +82,7 @@ export interface CharacterStats {
 export interface CharacterSpec {
   id: string;
   name: string;
-  sprite?: SpriteSheetSpec; // senza sprite si disegna il rettangolo colorato
+  sprite?: SpriteSheetSpec | SpriteFolderSpec; // senza sprite si disegna il rettangolo colorato
   stats?: Partial<CharacterStats>; // quelle che mancano valgono 1
 }
 

@@ -60,8 +60,8 @@ Usati poco, come piccoli accenti (una brace, un bottone), vanno bene.
 - **Movenze naturali, non meccaniche:** anticipo prima dei colpi, inerzia (testa, mani e capelli arrivano un attimo dopo il corpo), piedi e mani che restano piantati a terra mentre il corpo si muove, archi nei movimenti.
 - **Velocità:** 24 fotogrammi al secondo; le animazioni lente in ciclo (fermo, appeso) possono stare a 12.
 - **Animazioni obbligatorie** (`AnimationName`): `idle`, `walk`, `jump`, `fall`, `light`, `heavy`, `hit`.
-- **Facoltative** (`OptionalAnimationName`; senza si usa quella di ripiego): `doubleJump` (→ `jump`), `tumble` (→ `hit`), `ledge` e `climb` (→ `jump`). Il passo 2 di E7 porta il formato "un PNG per stato" e gli stati nuovi (`land`, `taunt`, varianti degli attacchi...).
-- **Formato di oggi:** un PNG con **una riga per animazione**, fotogrammi da sinistra; righe, numero di fotogrammi, fps e ciclo si scrivono nel blocco del personaggio in `characters.ts`. Esempio completo: `public/assets/characters/bonobot/README.md`.
+- **Facoltative** (`OptionalAnimationName`; senza si usa quella di ripiego): `doubleJump` (→ `jump`), `tumble` (→ `hit`), `ledge` e `climb` (→ `jump`), più gli stati che il passo 3 di E7 metterà in gioco (`land`, `taunt`, varianti degli attacchi...). L'elenco completo è nel [README dei personaggi](../public/assets/characters/README.md).
+- **Formato:** una cartella per personaggio con **un PNG per stato** (`idle.png`, `walk.png`...), fotogrammi in fila da sinistra; nel blocco del personaggio in `characters.ts` si scrivono solo `fps` e ciclo di ogni stato. Il vecchio formato a foglio unico (una riga per animazione, come Bonobot oggi) funziona ancora. Istruzioni: `public/assets/characters/README.md`.
 
 ## 7. Arene
 

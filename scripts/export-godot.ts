@@ -1,12 +1,12 @@
 // Esporta in JSON i dati del gioco che servono al client Godot (godot/data/game.json):
 // arene, personaggi e numeri. Così Godot li legge invece di ricopiarli a mano.
-// Copia anche gli spritesheet dei personaggi in godot/data/<path>, perché Godot vede solo la sua cartella.
+// Copia anche gli sprite dei personaggi in godot/data/ (foglio unico o un PNG per stato), perché Godot vede solo la sua cartella.
 // Da rilanciare quando cambiano stages.ts, characters.ts o constants.ts: npm run export:godot
 
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { basename, dirname, extname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { CHARACTERS, DEFAULT_CHARACTER_ID } from "../src/shared/characters";
+import { CHARACTERS, DEFAULT_CHARACTER_ID, isSpriteFolder, spriteStatePath } from "../src/shared/characters";
 import { ATTACKS, AUDIO, CAMERA, COLORS, EFFECTS, FIGHTER, INPUT, ITEM_RULES, LEDGE, NET, PROTOCOL_VERSION, RUMBLE, SHIELD, TEAM_COLORS, TEAM_NAMES, WORLD } from "../src/shared/constants";
 import { RECONNECT, RECONNECT_HOLD_MS } from "../src/shared/constants";
 import { COLORS_COLORBLIND, TEAM_COLORS_COLORBLIND } from "../src/shared/constants";
@@ -47,6 +47,54 @@ for (const id of existsSync(publicDir + "assets/characters") ? readdirSync(publi
 }
 const audioFiles = { sfx: audioGroup("assets/sfx"), music: audioGroup("assets/music"), announcer: audioGroup("assets/announcer"), voices };
 
+// Larghezza e altezza di un PNG, lette dall'intestazione (IHDR)
+function pngSize(file: string): { width: number; height: number } {
+  const head = readFileSync(file).subarray(0, 24);
+  if (head.toString("latin1", 12, 16) !== "IHDR") throw new Error(`${file} non è un PNG`);
+  return { width: head.readUInt32BE(16), height: head.readUInt32BE(20) };
+}
+
+// Gli sprite dei personaggi (E7 passo 2). Nel formato cartella ogni stato è un PNG a sé: il numero di
+// fotogrammi si ricava dalla larghezza e va in game.json, così Godot non deve aprire i file per saperlo.
+const spriteFiles: string[] = [];
+const spriteErrors: string[] = [];
+const characters: Record<string, unknown> = {};
+for (const [id, c] of Object.entries(CHARACTERS)) {
+  characters[id] = c;
+  if (!c.sprite) continue;
+  if (!isSpriteFolder(c.sprite)) {
+    spriteFiles.push(c.sprite.path);
+    continue;
+  }
+  const sprite = c.sprite;
+  const animations: Record<string, unknown> = {};
+  for (const [state, a] of Object.entries(sprite.animations)) {
+    const path = spriteStatePath(sprite, state as keyof typeof sprite.animations);
+    if (!existsSync(publicDir + path)) {
+      spriteErrors.push(`${id}: manca public/${path} (lo stato "${state}" è nel blocco del personaggio)`);
+      continue;
+    }
+    const { width, height } = pngSize(publicDir + path);
+    if (height !== sprite.frameHeight || width % sprite.frameWidth !== 0 || width === 0) {
+      spriteErrors.push(`${id}: public/${path} è ${width}×${height}, ma i fotogrammi sono ${sprite.frameWidth}×${sprite.frameHeight}: la larghezza dev'essere un multiplo di ${sprite.frameWidth} e l'altezza ${sprite.frameHeight}`);
+      continue;
+    }
+    animations[state] = { ...a, frames: width / sprite.frameWidth };
+    spriteFiles.push(path);
+  }
+  // Un PNG nella cartella che il blocco non nomina non si usa: lo si dice, potrebbe essere un nome sbagliato
+  for (const file of existsSync(publicDir + sprite.dir) ? readdirSync(publicDir + sprite.dir) : []) {
+    if (extname(file) === ".png" && !Object.hasOwn(sprite.animations, basename(file, ".png"))) {
+      console.warn(`Attenzione: ${sprite.dir}/${file} non è uno stato di ${id} in characters.ts, non si usa`);
+    }
+  }
+  characters[id] = { ...c, sprite: { ...sprite, animations } };
+}
+if (spriteErrors.length) {
+  console.error(`Sprite dei personaggi da correggere:\n- ${spriteErrors.join("\n- ")}`);
+  process.exit(1);
+}
+
 const data = {
   version: pkg.version,
   protocol: PROTOCOL_VERSION,
@@ -77,20 +125,17 @@ const data = {
   defaultStageId: DEFAULT_STAGE_ID,
   stages: STAGES,
   defaultCharacterId: DEFAULT_CHARACTER_ID,
-  characters: CHARACTERS,
+  characters, // CHARACTERS, con i fotogrammi degli sprite in formato cartella
 };
 
 const out = new URL("../godot/data/game.json", import.meta.url);
 writeFileSync(out, JSON.stringify(data, null, 2) + "\n");
 console.log(`Scritto ${out.pathname}`);
 
-for (const c of Object.values(CHARACTERS)) {
-  if (!c.sprite) continue;
-  const from = fileURLToPath(new URL(`../public/${c.sprite.path}`, import.meta.url));
-  const to = fileURLToPath(new URL(`../godot/data/${c.sprite.path}`, import.meta.url));
-  mkdirSync(dirname(to), { recursive: true });
-  copyFileSync(from, to);
-  console.log(`Copiato ${c.sprite.path}`);
+for (const path of spriteFiles) {
+  mkdirSync(dirname(godotData + path), { recursive: true });
+  copyFileSync(publicDir + path, godotData + path);
+  console.log(`Copiato ${path}`);
 }
 
 // I file audio: la cartella di destinazione si rifà da zero, così un file tolto sparisce anche da Godot
