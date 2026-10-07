@@ -33,6 +33,7 @@ var _anims := {} # id giocatore -> { name, since }: animazione in corso e da qua
 var show_hitboxes := false # allenamento (E15): corpo dei lottatori visibile anche sopra gli sprite
 var _air_jumps := {} # id giocatore -> quando ha fatto il doppio salto (ms), per l'animazione doubleJump (#103)
 var _taunts := {} # id giocatore -> quando ha provocato (ms), per l'animazione taunt (E7)
+var _holding := {} # id di chi tiene qualcuno con la presa (#109), dall'ultimo snapshot
 
 
 func setup(game_data: Dictionary) -> void:
@@ -128,6 +129,10 @@ func stage_width() -> float:
 func on_snapshot(snap: Dictionary) -> void:
 	buffer.push(snap.t, Time.get_ticks_msec(), snap.players, float(snap.get("stageMs", 0)))
 	player_ids = snap.players.map(func(p): return p.id)
+	_holding = {}
+	for p in snap.players:
+		if p.get("grabbedBy") != null:
+			_holding[p.grabbedBy] = true
 	_items = snap.get("items", [])
 
 
@@ -168,6 +173,15 @@ func on_event(e: Dictionary) -> void:
 			var center := Vector2(e.x, e.y - float(game.fighter.height) / 2)
 			for s in shard_velocities(int(game.effects.shards)):
 				_shards.append({"x": center.x, "y": center.y, "vx": s.x, "vy": s.y, "age": 0.0, "color": col})
+		"grab":
+			# Presa (#109): un lampo bianco dove la mano afferra
+			_sparks.append({"x": e.x, "y": float(e.y) - float(game.fighter.height) * 0.55, "age": 0.0, "size": 24.0, "color": Color.WHITE})
+		"grabRelease":
+			# Liberato: polvere ai piedi di tutti e due
+			for id in [e.id, e.targetId]:
+				var p: Variant = buffer.sample(id, Time.get_ticks_msec())
+				if p != null:
+					_puff(p.x, p.y)
 		"ledgeGrab":
 			# Lampo bianco sullo spigolo se la presa è invulnerabile (#110), così chi difende sa che non serve colpire
 			if e.get("invulnerable", false):
@@ -488,7 +502,7 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 		_draw_sprite(p, character, now)
 	else:
 		var color := Access.color(p.color)
-		if p.hitstun or p.get("stunned", false):
+		if p.hitstun or p.get("stunned", false) or p.get("grabbedBy") != null:
 			color = color.lightened(0.5)
 		color.a = away_alpha(p)
 		var body := Rect2(p.x - fw / 2, p.y - fh, fw, fh)
@@ -508,6 +522,16 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 		var arm := Access.color(p.color).darkened(0.2)
 		draw_line(shoulder, hand, arm, 6.0)
 		draw_circle(hand, 6.0, arm)
+
+	# Presa (#109): il braccio di chi tiene arriva a chi è tenuto, se lo sprite non ha la sua posa
+	var own_grab: bool = _textures.has(character.id) and has_own(character.sprite.animations, "grab")
+	if _holding.has(p.id) and not own_grab:
+		var reach: float = fw / 2 + float(game.attacks.grab.range) * 0.6
+		var hand := Vector2(p.x + p.facing * reach, p.y - fh * 0.55)
+		var arm := Access.color(p.color).darkened(0.2)
+		arm.a = away_alpha(p)
+		draw_line(Vector2(p.x + p.facing * fw * 0.2, p.y - fh * 0.55), hand, arm, 6.0)
+		draw_circle(hand, 7.0, arm)
 
 	# Scudo (#109): una bolla del colore del giocatore che rimpicciolisce con i punti rimasti
 	if p.get("shielding", false):
@@ -568,7 +592,7 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 func _draw_sprite(p: Dictionary, character: Dictionary, now: float) -> void:
 	var sheet: Dictionary = character.sprite
 	var anims: Dictionary = sheet.animations # tutti gli stati, già risolti con il ripiego (export:godot)
-	var name := _animation_for(p)
+	var name := _animation_for(p, _holding.has(p.id))
 	var state: Dictionary = _anims.get(p.id, {})
 	var prev_name: String = state.get("name", "")
 	var kind: String = str(p.attack) if p.attack != null else ""
@@ -681,13 +705,15 @@ static func shield_radius(hp: float, max_hp: float, fighter_height: float) -> fl
 
 
 # Quale animazione mostrare, dai soli campi dello snapshot (animationFor in fighters.ts)
-static func _animation_for(p: Dictionary) -> String:
+static func _animation_for(p: Dictionary, holding := false) -> String:
 	if p.hitstun or p.get("stunned", false): # lo stordito dopo lo scudo rotto (#109) ha la posa di chi è colpito
 		return "hit"
 	if p.get("grabbedBy") != null:
-		return "hit" # tenuto con la presa (#109): finché non c'è una posa sua (E8 passo 3)
+		return "grabbed" # tenuto con la presa (#109); senza disegno, la posa di chi è colpito
+	if holding:
+		return "grab" # chi tiene resta nella posa della presa
 	if p.attack != null and str(p.attack).begins_with("throw"):
-		return "grab" # i lanci usano la posa della presa
+		return "throw" # i quattro lanci; senza disegno, la posa della presa
 	if p.attack != null:
 		# Lo stato del colpo preciso (lightUp, heavyAir, recovery...): chi non l'ha disegnato mostra il ripiego.
 		# L'attacco dal bordo (#110) non ha uno stato suo: usa il colpo leggero

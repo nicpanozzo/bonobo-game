@@ -7,7 +7,7 @@ import { CHARACTER_STATS } from "./constants";
 export const ANIMATION_NAMES = ["idle", "walk", "jump", "fall", "light", "heavy", "hit"] as const;
 export type AnimationName = (typeof ANIMATION_NAMES)[number];
 // Stati facoltativi (E7): chi non li ha mostra quello di ANIMATION_FALLBACK.
-// shield, grab e special sono posti per scudo, presa e speciali (E8, E9, E10).
+// shield, grab, throw, grabbed e special sono posti per scudo, presa, lanci e speciali (E8, E10).
 export const OPTIONAL_ANIMATION_NAMES = [
   "doubleJump",
   "tumble",
@@ -24,6 +24,8 @@ export const OPTIONAL_ANIMATION_NAMES = [
   "taunt",
   "shield",
   "grab",
+  "throw",
+  "grabbed",
   "special",
 ] as const;
 export type OptionalAnimationName = (typeof OPTIONAL_ANIMATION_NAMES)[number];
@@ -47,7 +49,9 @@ export const ANIMATION_FALLBACK: Record<OptionalAnimationName, SpriteState> = {
   recovery: "jump",
   taunt: "idle",
   shield: "idle",
-  grab: "light",
+  grab: "light", // presa e chi tiene (#109)
+  throw: "grab", // i quattro lanci
+  grabbed: "hit", // chi è tenuto
   special: "heavy",
 };
 
