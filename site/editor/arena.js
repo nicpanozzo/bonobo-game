@@ -138,3 +138,55 @@ export function slug(name) {
 }
 
 export const snap = (v) => Math.round(v / GRID) * GRID;
+
+// Come moverPosition in src/shared/physics/elements.ts: dove sta una piattaforma mobile al tempo t (ms)
+export function moverPosition(m, t) {
+  const pts = m.path;
+  if (pts.length < 2) return pts[0] ?? { x: 0, y: 0 };
+  const route = m.loop ? [...pts, pts[0]] : [...pts, ...pts.slice(0, -1).reverse()];
+  const segments = route.length - 1;
+  const pause = m.pauseMs ?? 0;
+  const lengths = route.slice(1).map((p, i) => Math.hypot(p.x - route[i].x, p.y - route[i].y));
+  const total = lengths.reduce((a, b) => a + b, 0);
+  const travel = Math.max(1, m.periodMs - pause * segments);
+  let left = mod(t + (m.offsetMs ?? 0), m.periodMs);
+  for (let i = 0; i < segments; i++) {
+    if (left < pause) return route[i];
+    left -= pause;
+    const segMs = total > 0 ? (travel * lengths[i]) / total : travel / segments;
+    if (left < segMs) {
+      const k = left / segMs;
+      return { x: route[i].x + (route[i + 1].x - route[i].x) * k, y: route[i].y + (route[i + 1].y - route[i].y) * k };
+    }
+    left -= segMs;
+  }
+  return route[segments];
+}
+
+// Come hazardActive in src/shared/physics/elements.ts
+export function hazardActive(h, t) {
+  if (!h.periodMs) return true;
+  return mod(t + (h.offsetMs ?? 0), h.periodMs) < (h.activeMs ?? h.periodMs / 2);
+}
+
+const mod = (a, n) => ((a % n) + n) % n;
+
+// Gli elementi nuovi partono da questi numeri, gli stessi della Fabbrica
+export const TEMPLATES = {
+  ascensore: () => ({ width: 140, path: [{ x: 570, y: 540 }, { x: 570, y: 300 }], periodMs: 7000, pauseMs: 1200 }),
+  navetta: () => ({ width: 150, path: [{ x: 300, y: 400 }, { x: 830, y: 400 }], periodMs: 9000, pauseMs: 600 }),
+  spuntoni: () => ({ kind: "spuntoni", x: 600, y: 540, width: 80, height: 20, damage: 10, knockback: 500, knockbackGrowth: 6, angleDeg: 60 }),
+  fuoco: () => ({ kind: "fuoco", x: 560, y: 610, width: 160, height: 30, damage: 8, knockback: 600, knockbackGrowth: 4, angleDeg: 80, periodMs: 4000, activeMs: 1500 }),
+};
+
+// "Proponi": il modulo Arena nuova su GitHub con nome e dati già scritti (i campi si riempiono dal loro id)
+export function proposeUrl(spec) {
+  const params = new URLSearchParams({
+    template: "arena.yml",
+    title: `Arena: ${spec.name}`,
+    nome: spec.name,
+    forma: "Disegnata con l'editor delle arene: i numeri sono in Dati.",
+    dati: JSON.stringify(spec, null, 2),
+  });
+  return `https://github.com/nicpanozzo/bonobo-game/issues/new?${params}`;
+}

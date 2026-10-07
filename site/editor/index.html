@@ -20,7 +20,7 @@
 
   <main class="editor">
     <h2>Editor delle arene</h2>
-    <p class="muted small">Parti da un'arena, trascina blocchi e piattaforme, allarga dal quadratino. Le partenze (i cerchi numerati) si mettono da sole. Una piattaforma rossa non si raggiunge saltando. Quando è a posto premi <b>Copia</b> e incolla il testo in <code>src/shared/stages.ts</code>.</p>
+    <p class="muted small">Parti da un'arena, trascina blocchi, piattaforme e trappole, allarga dal quadratino. Le piattaforme mobili si muovono lungo i punti numerati: trascina i punti per cambiare il percorso. Le partenze (i cerchi numerati) si mettono da sole. Una piattaforma rossa non si raggiunge saltando. Quando è a posto premi <b>Proponi</b>, oppure <b>Copia</b> e incolla il testo in <code>src/shared/stages.ts</code>.</p>
 
     <div class="toolbar">
       <label>Parti da <select id="base"></select></label>
@@ -30,13 +30,23 @@
     <div class="toolbar">
       <button class="btn" id="add-solid">+ Blocco</button>
       <button class="btn" id="add-platform">+ Piattaforma</button>
+      <button class="btn" id="add-ascensore">+ Ascensore</button>
+      <button class="btn" id="add-navetta">+ Navetta</button>
+      <button class="btn" id="add-spuntoni">+ Spuntoni</button>
+      <button class="btn" id="add-fuoco">+ Fuoco</button>
       <button class="btn" id="delete" disabled>Elimina</button>
-      <button class="btn btn-primary" id="copy">Copia per stages.ts</button>
-      <span id="copied" class="small muted" aria-live="polite"></span>
     </div>
 
     <canvas id="stage" width="1280" height="720" tabindex="0" aria-label="L'arena: trascina blocchi e piattaforme"></canvas>
-    <p id="selection" class="small muted">Clicca un blocco o una piattaforma per sceglierlo. Frecce: sposta di 10 pixel. Canc: elimina.</p>
+    <p id="selection" class="small muted">Clicca un pezzo per sceglierlo. Frecce: sposta di 10 pixel. Canc: elimina.</p>
+    <div id="props" class="toolbar"></div>
+
+    <div class="toolbar">
+      <a class="btn btn-primary" id="propose" target="_blank" rel="noopener">Proponi l'arena</a>
+      <button class="btn" id="copy">Copia per stages.ts</button>
+      <span id="copied" class="small muted" aria-live="polite"></span>
+    </div>
+    <p class="small muted">"Proponi" apre su GitHub il modulo Arena nuova con i numeri già scritti: aggiungi il posto o la battuta dietro l'arena e invia. Serve un account GitHub.</p>
 
     <ul id="problems" class="problems" aria-live="polite"></ul>
     <details>
