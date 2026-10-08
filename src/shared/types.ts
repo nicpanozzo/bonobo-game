@@ -68,7 +68,20 @@ export interface PlayerState {
   shieldHp: number; // punti di scudo, da 0 a SHIELD.maxHp: la bolla è grande in proporzione
   stunned: boolean; // stordito dopo che lo scudo si è rotto: fermo e colpibile
   grabbedBy: string | null; // id di chi lo tiene con la presa (#109), null se libero
+  charge: number; // carica della speciale in corso (E10), da 0 a 1; 0 se non si carica
   supreme: number; // barra della suprema (#101), da 0 a SUPREME.max: piena, il tasto suprema la lancia
+}
+
+// Un proiettile in volo (E10): lo tira una speciale e colpisce come un attacco
+export interface ProjectileState {
+  id: number;
+  ownerId: string; // chi l'ha tirato (o chi l'ha rimandato indietro col contrattacco)
+  kind: SpecialKind; // quale speciale l'ha tirato
+  characterId: string; // il personaggio di chi l'ha tirato: da qui il client prende forma e colore
+  x: number; // centro
+  y: number;
+  vx: number;
+  vy: number;
 }
 
 // Un oggetto nell'arena (#17): a terra, in volo o in mano a qualcuno
@@ -126,6 +139,8 @@ export type GameEvent =
   | { type: "grab"; id: string; targetId: string; x: number; y: number } // id afferra targetId (#109)
   | { type: "grabRelease"; id: string; targetId: string } // la presa finisce senza lancio: targetId si è liberato
   | { type: "counter"; id: string; attackerId: string; x: number; y: number } // id para il colpo di attackerId col contrattacco (E10) e risponde
+  | { type: "projectile"; id: string; projectileId: number; x: number; y: number } // id tira un proiettile (E10)
+  | { type: "projectileEnd"; projectileId: number; reason: "hit" | "blocked" | "expired" | "wall"; x: number; y: number } // il proiettile sparisce
   | { type: "matchStart" }
   | { type: "away"; id: string } // id si è disconnesso: il suo posto resta tenuto per un po' (#107)
   | { type: "back"; id: string } // id è rientrato nel suo posto
@@ -138,6 +153,7 @@ export interface GameSnapshot {
   timeLeftMs: number | null; // null se la partita non ha limite di tempo
   teamScores: Record<1 | 2, number> | null; // punti delle squadre in Bandiera, null nelle altre modalità
   items: ItemState[]; // oggetti nell'arena (#17)
+  projectiles: ProjectileState[]; // proiettili in volo (E10)
   events: GameEvent[]; // tutto quello che è successo dallo snapshot precedente
   stageMs: number; // tempo dell'arena: da qui il client calcola dove sono ascensori e trappole (#14)
 }

@@ -7,6 +7,7 @@ import type { AttackKind, InputState } from "../types";
 import { attackBox, attackSpecFor, bodyBox, canBeHit, launch, overlap, startAttack } from "./attacks";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
 import { clearStun } from "./shield";
+import { cancelSpecial } from "./specials";
 import { chargeFromHit } from "./supreme";
 
 // Si tiene qualcuno o si è tenuti: la posizione la decide stepGrabs, il resto del passo salta
@@ -76,7 +77,7 @@ function connect(f: Fighter, t: Fighter, ctx: PhysicsContext): void {
   t.attack = null;
   t.attackActive = false;
   t.dodgeTimer = 0;
-  t.specialTimer = 0; // la presa batte anche il contrattacco (E10)
+  cancelSpecial(t); // la presa batte anche il contrattacco e la carica (E10)
   t.shielding = false;
   t.shieldTimer = 0;
   t.shieldStunTimer = 0;

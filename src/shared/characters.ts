@@ -287,7 +287,8 @@ export function specialAttackSpec(sp: SpecialSpec): AttackSpec {
     case "counter":
       return { ...hit, damage: sp.minDamage, startupMs: sp.startupMs, activeMs: sp.windowMs, cooldownMs: sp.startupMs + sp.windowMs + sp.endLagMs };
     case "projectile":
-      return { ...hit, damage: sp.damage, startupMs: sp.startupMs, activeMs: sp.lifeMs, cooldownMs: sp.cooldownMs };
+      // Niente rettangolo davanti a chi tira: colpisce il proiettile (projectiles.ts), che parte a fine avvio
+      return { ...hit, damage: sp.damage, startupMs: sp.startupMs, activeMs: 0, cooldownMs: sp.cooldownMs };
     case "charge":
       return { ...hit, damage: sp.damage, startupMs: sp.minMs, activeMs: sp.activeMs, cooldownMs: sp.maxMs + sp.activeMs + sp.endLagMs };
   }
