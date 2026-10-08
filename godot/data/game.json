@@ -1005,6 +1005,10 @@
     }
   },
   "defaultCharacterId": "default",
+  "characterStats": {
+    "min": 0.8,
+    "max": 1.2
+  },
   "characters": {
     "default": {
       "id": "default",
@@ -1057,6 +1061,13 @@
           "angleDeg": 40
         }
       },
+      "stats": {
+        "speed": 1,
+        "airSpeed": 1,
+        "jump": 1,
+        "weight": 1,
+        "gravity": 1
+      },
       "specialAttacks": {
         "specialNeutral": {
           "baseKnockback": 240,
@@ -1097,10 +1108,11 @@
       "id": "egiainuso",
       "name": "Egiainuso",
       "stats": {
-        "weight": 1.05,
         "speed": 0.9,
         "airSpeed": 0.95,
-        "jump": 0.95
+        "jump": 0.95,
+        "weight": 1.05,
+        "gravity": 1
       },
       "specials": {
         "neutral": {
@@ -1567,6 +1579,13 @@
             "src": "heavy"
           }
         }
+      },
+      "stats": {
+        "speed": 1,
+        "airSpeed": 1,
+        "jump": 1,
+        "weight": 1,
+        "gravity": 1
       },
       "specials": {
         "neutral": {
