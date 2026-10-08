@@ -108,7 +108,7 @@ describe("arene", () => {
           left = f.x > aim + 40;
           up = f.vy > 0 && f.jumpsLeft > 0 && f.y > next.y - 20 && f.x < next.x;
         }
-        f.input = { ...f.input, right, left, up: up && !f.prevInput.up };
+        f.input = { ...f.input, right, left, jump: up && !f.prevInput.jump };
         stepWorld([f], 1000 / TICK_RATE, ctx);
         if (ctx.events.some((e) => e.type === "ko")) falls++;
         ctx.events = [];

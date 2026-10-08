@@ -59,12 +59,15 @@ export function parseInput(raw: unknown): InputState | null {
     left: raw.left === true,
     right: raw.right === true,
     up: raw.up === true,
+    // I client di prima di E10 non mandano jump: per loro su salta ancora
+    jump: raw.jump === undefined ? raw.up === true : raw.jump === true,
     down: raw.down === true,
     light: raw.light === true,
     heavy: raw.heavy === true,
     taunt: raw.taunt === true,
     dodge: raw.dodge === true,
     shield: raw.shield === true,
+    special: raw.special === true,
   };
 }
 

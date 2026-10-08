@@ -136,13 +136,14 @@ export class FighterViews implements RenderModule {
     }
 
     // Il colpo si vede già durante la preparazione (più trasparente), pieno quando può colpire
-    if (t.attack && !hidden) {
-      const spec = ATTACKS[t.attack];
+    // Le speciali (E10) dipendono dal personaggio: il vecchio client, congelato, non le disegna
+    const spec = t.attack && t.attack in ATTACKS ? ATTACKS[t.attack as keyof typeof ATTACKS] : null;
+    if (spec && !hidden) {
       v.fist.setVisible(true);
       v.fist.setSize(spec.range, spec.height);
       v.fist.setDisplaySize(spec.range, spec.height);
       v.fist.setAlpha(t.attackActive ? 1 : 0.3);
-      v.fist.setFillStyle(t.attack.startsWith("heavy") ? 0xff9f43 : 0xffffff);
+      v.fist.setFillStyle(t.attack?.startsWith("heavy") ? 0xff9f43 : 0xffffff);
       v.fist.x = v.body.x + t.facing * (FIGHTER.width / 2 + spec.range / 2);
       v.fist.y = top + FIGHTER.height * 0.3 + spec.height / 2;
     } else {

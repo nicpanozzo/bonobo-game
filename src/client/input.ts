@@ -27,12 +27,14 @@ export class KeyboardInput {
       left: on("left"),
       right: on("right"),
       up: on("up"),
+      jump: on("up"), // il vecchio client salta con su, come prima di E10
       down: on("down"),
       light: on("light"),
       heavy: on("heavy"),
       taunt: on("taunt"),
       dodge: on("dodge"),
       shield: false, // il vecchio client è congelato: niente scudo (#109)
+      special: false, // né speciali (E10)
     };
   }
 

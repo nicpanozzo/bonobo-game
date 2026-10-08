@@ -75,6 +75,7 @@ function connect(f: Fighter, t: Fighter, ctx: PhysicsContext): void {
   t.attack = null;
   t.attackActive = false;
   t.dodgeTimer = 0;
+  t.specialTimer = 0; // la presa batte anche il contrattacco (E10)
   t.shielding = false;
   t.shieldTimer = 0;
   t.shieldStunTimer = 0;

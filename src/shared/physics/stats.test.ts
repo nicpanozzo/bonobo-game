@@ -56,7 +56,7 @@ function jumpHeight(characterId: string): number {
   const f = fighter(characterId);
   run([f], ctx, 5);
   const ground = f.y;
-  f.input = { ...emptyInput(), up: true };
+  f.input = { ...emptyInput(), jump: true };
   let top = f.y;
   for (let i = 0; i < 90; i++) {
     run([f], ctx, 1);

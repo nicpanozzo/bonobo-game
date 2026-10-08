@@ -68,8 +68,14 @@ describe("parseInput", () => {
   });
 
   it("conta come premuto solo true", () => {
-    const input = parseInput({ left: true, right: 1, up: "true", down: {}, light: true, shield: 1, extra: true });
-    assert.deepEqual(input, { left: true, right: false, up: false, down: false, light: true, heavy: false, taunt: false, dodge: false, shield: false });
+    const input = parseInput({ left: true, right: 1, up: "true", down: {}, light: true, shield: 1, special: true, extra: true });
+    assert.deepEqual(input, { left: true, right: false, up: false, jump: false, down: false, light: true, heavy: false, taunt: false, dodge: false, shield: false, special: true });
+  });
+
+  it("senza jump (client di prima di E10) si salta con su", () => {
+    assert.equal(parseInput({ up: true })?.jump, true);
+    assert.equal(parseInput({ up: true, jump: false })?.jump, false);
+    assert.equal(parseInput({ jump: true })?.up, false);
   });
 });
 

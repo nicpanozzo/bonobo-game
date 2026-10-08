@@ -19,8 +19,8 @@ export const TUTORIAL_STAGE_ID = "palestra";
 export const TUTORIAL_BOT = "sparring";
 
 export const LESSONS: Lesson[] = [
-  { id: "salto", title: "Muoviti e salta", text: "Corri a destra e a sinistra, poi salta.", actions: ["left", "right", "up"], event: "jump", who: "id", match: { air: false } },
-  { id: "doppio", title: "Doppio salto", text: "In aria puoi saltare una seconda volta.", actions: ["up"], event: "jump", who: "id", match: { air: true } },
+  { id: "salto", title: "Muoviti e salta", text: "Corri a destra e a sinistra, poi salta.", actions: ["left", "right", "jump"], event: "jump", who: "id", match: { air: false } },
+  { id: "doppio", title: "Doppio salto", text: "In aria puoi saltare una seconda volta.", actions: ["jump"], event: "jump", who: "id", match: { air: true } },
   { id: "leggero", title: "Attacco leggero", text: "Veloce e debole: fai un attacco leggero.", actions: ["light"], event: "attack", who: "id", match: { kind: "light" } },
   { id: "pesante", title: "Attacco pesante", text: "Lento ma forte: fai un attacco pesante.", actions: ["heavy"], event: "attack", who: "id", match: { kind: "heavy" } },
   { id: "su", title: "Attacco in su", text: "Tieni su mentre attacchi per colpire sopra la testa.", actions: ["up", "light"], event: "attack", who: "id", match: { kind: "lightUp" } },

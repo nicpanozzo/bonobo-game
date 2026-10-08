@@ -78,10 +78,10 @@ describe("buffer degli input", () => {
 
   it("una pressione fa un solo salto, anche tenendo premuto", () => {
     const { m } = setup();
-    m.setInput("a", { ...emptyInput(), up: true });
+    m.setInput("a", { ...emptyInput(), jump: true });
     assert.equal(jumps(run(m, 40)).length, 1);
     m.setInput("a", emptyInput());
-    tap(m, { up: true });
+    tap(m, { jump: true });
     assert.equal(jumps(run(m, 10)).length, 1, "il tocco in aria fa il doppio salto, uno solo");
   });
 

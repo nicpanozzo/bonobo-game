@@ -147,13 +147,22 @@ function decideSimple(self: Fighter, players: readonly Fighter[], stage: StageSp
     if (!mem.last[key]) input[key] = true;
   };
 
+  // Tiene qualcuno (E8): lo lancia verso il bordo più vicino del blocco su cui sta
+  if (self.holding !== null) {
+    const ground = groundUnder(stage, self.x);
+    const left = !!ground && self.x - ground.x < ground.x + ground.width - self.x;
+    input.left = left;
+    input.right = !left;
+    return input;
+  }
+
   // Appeso al bordo (#110): si aspetta un po' (il difficile un tempo variabile), poi si risale
   if (self.ledge) {
     if (self.ledge !== "hang") return input; // risalita in corso
     mem.ledgeTicks++;
     if (mem.ledgeTicks < ledgeWaitTicks(mem, level)) return input;
     const getup = chooseGetup(self, players, mem, level);
-    const key = getup === "climb" ? (self.facing === 1 ? "right" : "left") : getup === "jump" ? "up" : getup === "attack" ? "light" : "dodge";
+    const key = getup === "climb" ? (self.facing === 1 ? "right" : "left") : getup === "jump" ? "jump" : getup === "attack" ? "light" : "dodge";
     if (mem.last[key]) return input; // il tasto era già giù: prima si rilascia
     input[key] = true;
     if (getup === "jump") {
@@ -176,7 +185,7 @@ function decideSimple(self: Fighter, players: readonly Fighter[], stage: StageSp
     input.left = toX < self.x;
     input.right = toX > self.x;
     if (self.vy > 0 && !self.hitstun) {
-      if (self.jumpsLeft > 0) tap("up");
+      if (self.jumpsLeft > 0) tap("jump");
       else if (!self.recoveryUsed && !mem.last.heavy) {
         input.up = true;
         input.heavy = true;
@@ -241,6 +250,15 @@ function decideSimple(self: Fighter, players: readonly Fighter[], stage: StageSp
       input.left = dx < 0;
       input.right = dx > 0;
       return input;
+    } else if (skill.grabs && target.shielding && target.shieldTimer >= BOT.grabShieldMs) {
+      // Chi si para da un po' si afferra, la presa passa lo scudo (E8): scudo + leggero, da vicino
+      if (Math.abs(dx) <= FIGHTER.width / 2 + ATTACKS.grab.range) {
+        input.shield = true;
+        tap("light");
+      } else {
+        mem.hold.left = dx < 0;
+        mem.hold.right = dx > 0;
+      }
     } else {
       mem.attacks++;
       tap(mem.attacks % skill.heavyEvery === 0 ? "heavy" : "light");
@@ -255,7 +273,7 @@ function decideSimple(self: Fighter, players: readonly Fighter[], stage: StageSp
   }
   // Bersaglio su una piattaforma: si salta, e se non basta si usa il secondo salto mentre si ricade.
   // Bersaglio sotto: giù fa scendere dalla piattaforma sottile
-  if (-dy > BOT.jumpAtHeight && Math.abs(dx) < 200 && (self.onGround || (self.vy >= 0 && self.jumpsLeft > 0))) tap("up");
+  if (-dy > BOT.jumpAtHeight && Math.abs(dx) < 200 && (self.onGround || (self.vy >= 0 && self.jumpsLeft > 0))) tap("jump");
   if (dy > BOT.jumpAtHeight && Math.abs(dx) < 200 && self.onGround) tap("down");
 
   input.left = mem.hold.left;

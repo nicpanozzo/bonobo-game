@@ -97,12 +97,14 @@ export class Match {
       left: !!input.left,
       right: !!input.right,
       up: !!input.up,
+      jump: !!input.jump,
       down: !!input.down,
       light: !!input.light,
       heavy: !!input.heavy,
       taunt: !!input.taunt,
       dodge: !!input.dodge,
       shield: !!input.shield,
+      special: !!input.special,
     };
     bufferPresses(f, next); // una pressione più corta di un tick non si perde (E6)
     f.input = next;

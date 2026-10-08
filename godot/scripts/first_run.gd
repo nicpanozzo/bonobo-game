@@ -8,7 +8,7 @@ signal skipped(player_name: String)
 
 const STEPS := 3
 # Le azioni mostrate nello schema dei comandi, nell'ordine in cui servono la prima volta
-const SHOWN := ["left", "right", "up", "light", "heavy", "dodge"]
+const SHOWN := ["left", "right", "jump", "light", "heavy", "dodge"]
 
 var settings: Settings
 var _step := 0
