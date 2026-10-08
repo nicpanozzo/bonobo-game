@@ -17,6 +17,7 @@ var _stats := {} # id -> { kos, falls, damage, flags }: la classifica di fine pa
 var _font: Font = UI.font()
 var _last_percent := {} # id -> percentuale dell'ultimo snapshot, per accorgersi dei colpi presi
 var _jolts := {} # id -> { ms, amp }: la percentuale trema per un attimo dopo un colpo
+var _supreme_full := false # qualcuno ha la barra della suprema piena (#101): la barra pulsa, si ridisegna sempre
 
 
 func reset() -> void:
@@ -27,6 +28,7 @@ func reset() -> void:
 	_stats = {}
 	_last_percent = {}
 	_jolts = {}
+	_supreme_full = false
 	queue_redraw()
 
 
@@ -64,10 +66,16 @@ func on_snapshot(snap: Dictionary) -> void:
 			var amp: float = minf(fx.percentShakeMax, (p.percent - before) * fx.percentShakePerDamage)
 			_jolts[p.id] = {"ms": float(fx.percentShakeMs), "amp": maxf(amp, _jolts.get(p.id, {}).get("amp", 0.0))}
 		_last_percent[p.id] = p.percent
+	_supreme_full = false
+	for p in snap.players:
+		if not p.eliminated and float(p.get("supreme", 0)) >= _supreme_max():
+			_supreme_full = true
 	queue_redraw()
 
 
 func _process(delta: float) -> void:
+	if _supreme_full:
+		queue_redraw() # la barra piena pulsa
 	if _jolts.is_empty():
 		return
 	for id in _jolts.keys():
@@ -141,6 +149,8 @@ func _draw_cards(w: float, h: float, flag: bool) -> void:
 			pos += Vector2(randf_range(-1, 1), randf_range(-1, 1)) * j.amp * left
 			size = roundi(28 * (1.0 + 0.3 * left * j.amp / game.effects.percentShakeMax))
 		draw_string(_font, pos, pct, HORIZONTAL_ALIGNMENT_LEFT, -1, size, _percent_color(p.percent, p.eliminated))
+		if not p.eliminated:
+			_draw_supreme(Rect2(x + 20, h - 23, card_w - 40, 5), float(p.get("supreme", 0)))
 		if _stage.get("goal") != null:
 			# Corsa: quanta strada si è fatta
 			draw_string(_font, Vector2(x + card_w - 62, h - 30), "%d%%" % _progress(p.x), HORIZONTAL_ALIGNMENT_LEFT, -1, 16, UI.ACCENT)
@@ -155,6 +165,24 @@ func _draw_cards(w: float, h: float, flag: bool) -> void:
 					draw_circle(c, 5, col)
 				else:
 					draw_arc(c, 5, 0, TAU, 12, col, 1.5)
+
+
+# Barra della suprema (#101) sotto la percentuale. Piena diventa dorata, più spessa e pulsa
+# (ferma con l'opzione "calma"), con la scritta del tasto da premere sopra
+func _draw_supreme(r: Rect2, value: float) -> void:
+	var t := clampf(value / _supreme_max(), 0.0, 1.0)
+	draw_rect(r, Color(1, 1, 1, 0.18))
+	if t < 1.0:
+		draw_rect(Rect2(r.position, Vector2(r.size.x * t, r.size.y)), Color("8fd3ff"))
+		return
+	var pulse := 1.0 if Access.calm else 0.65 + 0.35 * sin(Time.get_ticks_msec() / 110.0)
+	draw_rect(r.grow(2), Color(UI.ACCENT, 0.45 * pulse))
+	draw_rect(r, Color(UI.ACCENT, pulse).lerp(Color.WHITE, 0.25 * pulse))
+	draw_string(_font, Vector2(r.position.x + r.size.x - 58, r.position.y - 4), "SUPREMA!", HORIZONTAL_ALIGNMENT_RIGHT, 58, 11, UI.ACCENT)
+
+
+func _supreme_max() -> float:
+	return float(game.get("supreme", {}).get("max", 100))
 
 
 # Vincitore e classifica: chi ha vinto in cima, poi bandiere, KO e danni (come results.ts)

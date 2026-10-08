@@ -8,7 +8,7 @@ signal changed
 
 const PATH := "user://bonobo.cfg"
 # Le azioni che si possono assegnare a un tasto (le stesse di InputState)
-const ACTIONS := ["left", "right", "up", "jump", "down", "light", "heavy", "taunt", "dodge", "shield", "special"]
+const ACTIONS := ["left", "right", "up", "jump", "down", "light", "heavy", "taunt", "dodge", "shield", "special", "supreme"]
 const LABELS := {
 	"left": "Sinistra",
 	"right": "Destra",
@@ -21,6 +21,7 @@ const LABELS := {
 	"dodge": "Schivata",
 	"shield": "Scudo",
 	"special": "Speciale",
+	"supreme": "Suprema",
 }
 # I tasti di default del gioco web (DEFAULT_BINDINGS), come tasti fisici: non dipendono dalla lingua della tastiera
 const DEFAULT_BINDINGS := {
@@ -35,6 +36,7 @@ const DEFAULT_BINDINGS := {
 	"dodge": [KEY_L],
 	"shield": [KEY_I], # scudo (#109)
 	"special": [KEY_U], # mosse speciali (E10)
+	"supreme": [KEY_O], # suprema con la barra piena (#101): I è già lo scudo
 }
 const MAX_KEYS := 3 # tasti per azione
 # Pad (E6): un pulsante è il suo JOY_BUTTON_*; una levetta o un grilletto inclinati
@@ -51,6 +53,7 @@ const DEFAULT_PAD_BINDINGS := {
 	"heavy": [JOY_BUTTON_B],
 	"taunt": [JOY_BUTTON_BACK],
 	"special": [JOY_BUTTON_Y], # mosse speciali (E10)
+	"supreme": [JOY_BUTTON_LEFT_STICK], # suprema (#101): levetta sinistra premuta, R3 apre il pannello dell'allenamento
 	"dodge": [JOY_BUTTON_LEFT_SHOULDER, JOY_BUTTON_RIGHT_SHOULDER],
 	# Lo scudo (#109) sui grilletti, come nei platform fighter
 	"shield": [AXIS_BASE + JOY_AXIS_TRIGGER_LEFT * 2 + 1, AXIS_BASE + JOY_AXIS_TRIGGER_RIGHT * 2 + 1],

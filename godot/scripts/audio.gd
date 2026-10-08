@@ -99,6 +99,8 @@ func on_event(e: Dictionary) -> void:
 				_play("shield", {"volume": 0.5, "pitch": 1.4}) # il contrattacco si alza: un "tink" di guardia
 			elif kind.begins_with("throw"):
 				_play("throw") # lancio dalla presa (#109)
+			elif kind == "supreme":
+				_play("heavy", {"volume": 1.0, "pitch": 0.7}) # la suprema (#101): il pesante, più grave e pieno
 			elif kind == "grab":
 				_play("light", {"volume": 0.4, "pitch": 0.8}) # la mano che parte: un fruscio corto
 			else:
