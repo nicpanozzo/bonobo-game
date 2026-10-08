@@ -52,7 +52,7 @@ mario: {
 
 ## Formato a foglio unico: una riga per animazione
 
-È il formato di Egiainuso e, per ora, di Bonobot: un PNG solo, con una riga per animazione. Nel blocco si scrivono `path`, `columns` (fotogrammi per riga) e, per ogni animazione, `row` e `frames` oltre a `fps` e `loop`. Esempio completo: [bonobot/README.md](bonobot/README.md). Funziona ancora, ma per i personaggi nuovi conviene la cartella: si aggiunge uno stato senza rifare il foglio.
+È il formato di Capt. OrsoBlu e, per ora, di Bonobot: un PNG solo, con una riga per animazione. Nel blocco si scrivono `path`, `columns` (fotogrammi per riga) e, per ogni animazione, `row` e `frames` oltre a `fps` e `loop`. Esempio completo: [bonobot/README.md](bonobot/README.md). Funziona ancora, ma per i personaggi nuovi conviene la cartella: si aggiunge uno stato senza rifare il foglio.
 
 ## Gli stati
 

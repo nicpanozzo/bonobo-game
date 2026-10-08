@@ -2,7 +2,7 @@
 
 | File | Autore | Fonte | Licenza |
 |---|---|---|---|
-| `characters/egiainuso/egiainuso.png` | Claude Code per Nicola, idea di @MauroGrecchi (#37) | fatto da noi | CC0 |
+| `characters/orsoblu/orsoblu.png` (Capt. OrsoBlu, prima Egiainuso) | Claude Code per Nicola, idea di @MauroGrecchi (#37) | fatto da noi | CC0 |
 | `characters/bonobot/bonobot.png` | Claude per Riccardo (GiovannifRana) | fatto da noi | CC0 |
 | `characters/bonobot/omar/` (orsogufo e gnomo della suprema, #102) | Claude per Riccardo (GiovannifRana), provvisori disegnati col codice; orsogufo: fan art ispirata a Baldur's Gate 3, nessun file del gioco | fatto da noi | CC0 |
 | `characters/bonobot/rig/` (pezzi dello scheletro nuovo, #195) | Claude per Riccardo (GiovannifRana), provvisori disegnati col codice | fatto da noi | CC0 |

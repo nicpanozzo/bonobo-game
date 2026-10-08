@@ -4,7 +4,7 @@ Gatto rasta grassottello: berretto a righe, dreadlock, canna sempre accesa, panc
 
 ## Eccezione provvisoria alla style guide
 
-Come Egiainuso, Elvedeo per ora **non segue** [docs/stile-grafico.md](../../../../docs/stile-grafico.md):
+Come Capt. OrsoBlu, Elvedeo per ora **non segue** [docs/stile-grafico.md](../../../../docs/stile-grafico.md):
 
 - **risoluzione bassa:** il foglio originale ha lottatori alti circa 72 px, qui ingranditi 2,5 volte con un filtro morbido; da vicino si vede sgranato;
 - **stile diverso:** proporzioni chibi, linea e ombre dipinte invece di inchiostro e due toni piatti;

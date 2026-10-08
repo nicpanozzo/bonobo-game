@@ -156,7 +156,7 @@ export const SPECIAL_MOVES = {
 };
 
 // La carica di esempio della specifica E10 (10% · 400 + 10/% · 42°, fino a 1.8 = 18%): la useranno i
-// personaggi del passo 5 (es. Egiainuso, giù) e i test
+// personaggi del passo 5 (es. Capt. OrsoBlu, giù) e i test
 export const CHARGE_EXAMPLE: ChargeSpecial = { type: "charge", name: "Carica", minMs: 200, maxMs: 1200, maxMultiplier: 1.8, activeMs: 100, endLagMs: 350, range: 50, height: 50, damage: 10, baseKnockback: 400, knockbackGrowth: 10, angleDeg: 42 };
 
 // Mossa di recupero (#11): in aria K + su dà una spinta verso l'alto, una volta finché

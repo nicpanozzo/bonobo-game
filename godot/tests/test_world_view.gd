@@ -127,8 +127,8 @@ func test_colore_dei_proiettili_e_alone_della_carica() -> void:
 	var tiro := WorldView.projectile_color(game, "bonobot", "specialNeutral")
 	runner.check(tiro.is_equal_approx(Color.hex(0xffd84aff)), "il Tiro è giallo: %s" % tiro)
 	runner.check(WorldView.projectile_color(game, "sconosciuto", "specialNeutral").is_equal_approx(WorldView.projectile_color(game, "default", "specialNeutral")), "personaggio sconosciuto: quello di Bonobo")
-	var schizzo := WorldView.projectile_color(game, "egiainuso", "specialNeutral")
-	runner.check(schizzo.is_equal_approx(Color.hex(0x6ec8ffff)), "lo Schizzo di Egiainuso è azzurro: %s" % schizzo)
+	var schizzo := WorldView.projectile_color(game, "orsoblu", "specialNeutral")
+	runner.check(schizzo.is_equal_approx(Color.hex(0x6ec8ffff)), "lo Schizzo di Capt. OrsoBlu è azzurro: %s" % schizzo)
 	runner.check(WorldView.charge_radius(88, 1.0) > WorldView.charge_radius(88, 0.2), "l'alone cresce con la carica")
 	runner.check(WorldView.charge_radius(88, 5.0) == WorldView.charge_radius(88, 1.0), "oltre la carica piena non cresce")
 
@@ -137,7 +137,7 @@ func test_stesso_personaggio_colori_diversi() -> void:
 	var players := [
 		{"id": "a", "characterId": "bonobot", "color": 0x3498db},
 		{"id": "b", "characterId": "bonobot", "color": 0xe74c3c},
-		{"id": "c", "characterId": "egiainuso", "color": 0x2ecc71},
+		{"id": "c", "characterId": "orsoblu", "color": 0x2ecc71},
 		{"id": "d", "characterId": "bonobot", "color": 0x2ecc71, "eliminated": true},
 	]
 	var ranks := WorldView.variant_ranks(players)
