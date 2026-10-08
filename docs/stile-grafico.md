@@ -9,7 +9,7 @@ La guida per chi disegna lottatori e arene. Serve a far uscire ogni personaggio 
 - **Come Brawlhalla:** disegni 2D illustrati, proporzionati e poco cartoon, con linea pulita e ombre a due toni.
 - **Niente pixel art:** la camera zooma (`CAMERA.minZoom` 0.7, `maxZoom` 1.3 in `constants.ts`) e la pixel art si scala male; i volti, che contano nei ritratti, si perdono.
 - **Niente 3D:** troppo lavoro per un gruppo di amici e per un gioco che gira nel browser.
-- **Eccezione:** Egiainuso (#40) è in pixel art 64×96 ed è un esempio provvisorio. Ridisegnarlo o tenerlo come eccezione si decide con @MauroGrecchi.
+- **Eccezione:** Capt. OrsoBlu (#40, prima si chiamava Egiainuso) è in pixel art 64×96 ed è un esempio provvisorio. Ridisegnarlo o tenerlo come eccezione si decide con @MauroGrecchi.
 
 ## 2. Linea, ombre e colori
 

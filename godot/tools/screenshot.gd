@@ -91,7 +91,7 @@ func _partita() -> void:
 
 
 func _snapshot(frame: int) -> Dictionary:
-	var spots := [[420, "default", 0xe74c3c, 0.0], [560, "egiainuso", 0x3498db, 0.7], [760, "bonobot", 0x2ecc71, 0.0], [880, "bonobot", 0xf1c40f, 0.0]]
+	var spots := [[420, "default", 0xe74c3c, 0.0], [560, "orsoblu", 0x3498db, 0.7], [760, "bonobot", 0x2ecc71, 0.0], [880, "bonobot", 0xf1c40f, 0.0]]
 	var players := []
 	for i in spots.size():
 		players.append({

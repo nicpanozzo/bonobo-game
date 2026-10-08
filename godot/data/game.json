@@ -1124,9 +1124,9 @@
       },
       "supremeAttack": null
     },
-    "egiainuso": {
-      "id": "egiainuso",
-      "name": "Egiainuso",
+    "orsoblu": {
+      "id": "orsoblu",
+      "name": "Capt. OrsoBlu",
       "stats": {
         "speed": 0.9,
         "airSpeed": 0.95,
@@ -1183,7 +1183,7 @@
         }
       },
       "sprite": {
-        "path": "assets/characters/egiainuso/egiainuso.png",
+        "path": "assets/characters/orsoblu/orsoblu.png",
         "frameWidth": 64,
         "frameHeight": 96,
         "columns": 6,

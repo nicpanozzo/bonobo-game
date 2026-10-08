@@ -1,8 +1,8 @@
-# Egiainuso
+# Capt. OrsoBlu
 
-Creatura blu su una barchetta, con un remo. Proposto da @MauroGrecchi in #37.
+Creatura blu su una barchetta, con un remo. Proposto da @MauroGrecchi in #37 con il nome Egiainuso, rinominato con #178.
 
-## Spritesheet: `egiainuso.png`
+## Spritesheet: `orsoblu.png`
 
 - Fotogrammi da **64×96 px** (pixel art disegnata a 32×48 e ingrandita ×2), sfondo trasparente.
 - Griglia di 6 colonne × 7 righe, una riga per animazione, fotogrammi da sinistra.

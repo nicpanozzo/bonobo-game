@@ -68,7 +68,7 @@ export interface SpriteAnimation {
   hitFrame?: number; // solo negli attacchi, vedi SpriteStateSpec
 }
 
-// Formato a foglio unico: un PNG con una riga per animazione (Egiainuso, Bonobot)
+// Formato a foglio unico: un PNG con una riga per animazione (Capt. OrsoBlu, Bonobot)
 export interface SpriteSheetSpec {
   path: string; // relativo alla radice del sito
   frameWidth: number; // pixel
@@ -254,10 +254,11 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     },
   },
 
-  // Creatura blu sulla barchetta col remo, proposta da @MauroGrecchi (#37)
-  egiainuso: {
-    id: "egiainuso",
-    name: "Egiainuso",
+  // Creatura blu sulla barchetta col remo, proposta da @MauroGrecchi (#37).
+  // Si chiamava Egiainuso: rinominata Capt. OrsoBlu con #178, il nome passa al nuovo personaggio
+  orsoblu: {
+    id: "orsoblu",
+    name: "Capt. OrsoBlu",
     // Con la barchetta addosso è un po' più pesante e lento di Bonobot (E11)
     // TODO community: statistiche provvisorie, da confermare con @MauroGrecchi
     stats: { weight: 1.05, speed: 0.9, airSpeed: 0.95, jump: 0.95 },
@@ -269,7 +270,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       down: { ...CHARGE_EXAMPLE, name: "Colpo di remo" },
     },
     sprite: {
-      path: "assets/characters/egiainuso/egiainuso.png",
+      path: "assets/characters/orsoblu/orsoblu.png",
       frameWidth: 64,
       frameHeight: 96,
       columns: 6,
@@ -350,7 +351,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
   },
 
   // Gatto rasta grassottello col bong, proposto da @MauroGrecchi (#168). Provvisorio: è il suo foglio ritagliato
-  // e ingrandito, un'eccezione alla style guide come Egiainuso (vedi public/assets/characters/elvedeo/README.md).
+  // e ingrandito, un'eccezione alla style guide come Capt. OrsoBlu (vedi public/assets/characters/elvedeo/README.md).
   elvedeo: {
     id: "elvedeo",
     name: "Elvedeo",

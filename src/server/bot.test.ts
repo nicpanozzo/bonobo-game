@@ -347,14 +347,14 @@ describe("bot", () => {
     assert.ok(counters > 0, "nessun contrattacco");
   });
 
-  it("Bonobo ed Egiainuso col bot semplice: nessuno vince oltre il 60% in 20 partite (E10)", () => {
+  it("Bonobo e Capt. OrsoBlu col bot semplice: nessuno vince oltre il 60% in 20 partite (E10)", () => {
     const stages = ["palco", "isole", "fabbrica", "palestra", "casuale-1"];
-    const wins = { default: 0, egiainuso: 0 };
+    const wins = { default: 0, orsoblu: 0 };
     for (let i = 0; i < 20; i++) {
       const match = new Match({ stageId: stages[i % stages.length] });
       const bots = new Bots();
       // Metà delle partite con i lati scambiati
-      const order = i % 2 === 0 ? (["default", "egiainuso"] as const) : (["egiainuso", "default"] as const);
+      const order = i % 2 === 0 ? (["default", "orsoblu"] as const) : (["orsoblu", "default"] as const);
       const ids = order.map((c) => bots.add(match, "semplice", c)!);
       let winner: string | null = null;
       for (let tick = 0; tick < 300 * TICK_RATE && winner === null; tick++) {
@@ -364,7 +364,7 @@ describe("bot", () => {
       const w = ids.indexOf(winner ?? "");
       if (w >= 0) wins[order[w]]++;
     }
-    assert.ok(wins.default <= 12 && wins.egiainuso <= 12, `Bonobo ${wins.default}, Egiainuso ${wins.egiainuso} su 20`);
+    assert.ok(wins.default <= 12 && wins.orsoblu <= 12, `Bonobo ${wins.default}, Capt. OrsoBlu ${wins.orsoblu} su 20`);
   });
 
   it("due bot dello stesso livello si fanno almeno 3 KO in 5 minuti, su ogni arena fissa (E11)", () => {
