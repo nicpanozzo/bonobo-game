@@ -17,6 +17,8 @@ import { CHALLENGES } from "../src/shared/challenges";
 import { ITEMS } from "../src/shared/items";
 import { DEFAULT_STAGE_ID, STAGES } from "../src/shared/stages";
 import { stageCheckData } from "../src/shared/stageCheck";
+import { characterStats } from "../src/shared/characters";
+import { CHARACTER_STATS } from "../src/shared/constants";
 
 // La versione del gioco ha una fonte sola, package.json (E2, #106)
 const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")) as { version: string };
@@ -65,7 +67,12 @@ for (const [id, spec] of Object.entries(CHARACTERS)) {
   // specialAttacks: le stesse speciali lette come attacchi (specialAttackSpec), per disegnare il colpo in Godot
   const specials = specialsFor(id);
   const specialAttacks = Object.fromEntries(SPECIAL_SLOTS.map((slot) => [SPECIAL_KINDS[slot], specialAttackSpec(specials[slot])]));
-  const c = { ...spec, specials, specialAttacks };
+  // stats: tutte e cinque, già dentro i limiti (E11 passo C: le barre della lobby)
+  // portrait: il ritratto della lobby, se c'è public/assets/characters/<id>/portrait.png
+  const portraitPath = `assets/characters/${id}/portrait.png`;
+  const portrait = existsSync(publicDir + portraitPath) ? portraitPath : undefined;
+  if (portrait) spriteFiles.push(portrait);
+  const c = { ...spec, stats: characterStats(id), portrait, specials, specialAttacks };
   characters[id] = c;
   if (!c.sprite) continue;
   // In game.json ogni stato c'è, con i dati del disegno che lo mostra (src): il ripiego si decide qui,
@@ -139,6 +146,7 @@ const data = {
   defaultStageId: DEFAULT_STAGE_ID,
   stages: STAGES,
   defaultCharacterId: DEFAULT_CHARACTER_ID,
+  characterStats: CHARACTER_STATS, // limiti delle statistiche, per le barre della lobby (E11)
   characters, // CHARACTERS, con i fotogrammi degli sprite in formato cartella
 };
 

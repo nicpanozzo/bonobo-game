@@ -276,6 +276,74 @@ describe("bot", () => {
     assert.equal(grabs("facile").grabbed, false);
   });
 
+  it("il bot tira da lontano e scatta per avvicinarsi, il facile no (E10)", () => {
+    const uses = (kind: "facile" | "semplice") => {
+      const match = new Match();
+      const bots = new Bots();
+      match.addPlayer("a", "A");
+      const id = bots.add(match, kind)!;
+      const a = match.players.find((p) => p.id === "a")!;
+      let shots = 0;
+      let dashes = 0;
+      for (let i = 0; i < 60 * 15; i++) {
+        if (i % 120 === 0) {
+          const bot = match.players.find((p) => p.id === id)!;
+          a.x = bot.x < 640 ? 1000 : 280; // lontano, dall'altra parte del palco
+        }
+        match.setInput("a", emptyInput());
+        bots.tick(match);
+        for (const e of match.step(DT)) {
+          if (e.type === "projectile" && e.id === id) shots++;
+          if (e.type === "attack" && e.id === id && e.kind === "specialSide") dashes++;
+        }
+      }
+      return { shots, dashes };
+    };
+    const simple = uses("semplice");
+    assert.ok(simple.shots > 0 && simple.dashes > 0, `semplice: ${simple.shots} tiri, ${simple.dashes} scatti`);
+    assert.deepEqual(uses("facile"), { shots: 0, dashes: 0 });
+  });
+
+  it("il bot difficile contrattacca qualche pesante che vede arrivare (E10)", () => {
+    const match = new Match();
+    const bots = new Bots();
+    match.addPlayer("a", "A");
+    const id = bots.add(match, "difficile")!;
+    const a = match.players.find((p) => p.id === "a")!;
+    const bot = match.players.find((p) => p.id === id)!;
+    let counters = 0;
+    for (let i = 0; i < 60 * 10; i++) {
+      if (i % 60 === 0) {
+        a.x = bot.x - (FIGHTER.width + 30);
+        a.facing = 1;
+      }
+      match.setInput("a", { ...emptyInput(), heavy: i % 60 === 0 });
+      bots.tick(match);
+      counters += match.step(DT).filter((e) => e.type === "counter" && e.id === id).length;
+    }
+    assert.ok(counters > 0, "nessun contrattacco");
+  });
+
+  it("Bonobo ed Egiainuso col bot semplice: nessuno vince oltre il 60% in 20 partite (E10)", () => {
+    const stages = ["palco", "isole", "fabbrica", "palestra", "casuale-1"];
+    const wins = { default: 0, egiainuso: 0 };
+    for (let i = 0; i < 20; i++) {
+      const match = new Match({ stageId: stages[i % stages.length] });
+      const bots = new Bots();
+      // Metà delle partite con i lati scambiati
+      const order = i % 2 === 0 ? (["default", "egiainuso"] as const) : (["egiainuso", "default"] as const);
+      const ids = order.map((c) => bots.add(match, "semplice", c)!);
+      let winner: string | null = null;
+      for (let tick = 0; tick < 300 * TICK_RATE && winner === null; tick++) {
+        bots.tick(match);
+        for (const e of match.step(DT)) if (e.type === "matchEnd") winner = e.winnerId;
+      }
+      const w = ids.indexOf(winner ?? "");
+      if (w >= 0) wins[order[w]]++;
+    }
+    assert.ok(wins.default <= 12 && wins.egiainuso <= 12, `Bonobo ${wins.default}, Egiainuso ${wins.egiainuso} su 20`);
+  });
+
   it("due bot dello stesso livello si fanno almeno 3 KO in 5 minuti, su ogni arena fissa (E11)", () => {
     // Prima si attraversavano restando girati al contrario, o aspettavano per sempre sotto una piattaforma
     for (const stageId of ["palco", "isole", "fabbrica"]) {
