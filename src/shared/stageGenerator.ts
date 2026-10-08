@@ -4,7 +4,7 @@
 // nessuno parte avvantaggiato.
 
 import { STAGE_GEN, WORLD } from "./constants";
-import type { Rect, StageSpec, ThinPlatform } from "./stages";
+import type { Rect, StageArt, StageSpec, ThinPlatform } from "./stages";
 
 export const RANDOM_STAGE_PREFIX = "casuale-";
 export const MAX_SEED = 999_999;
@@ -16,6 +16,16 @@ export const PALETTES: StageSpec["colors"][] = [
   { sky: 0x3a2418, solid: 0x6a3a1e, solidEdge: 0xc07a3a, platform: 0xf0c890 },
   { sky: 0x0e1a2e, solid: 0x2a3550, solidEdge: 0x5a7ab0, platform: 0x9ad0f0 },
 ];
+
+// Sfondo condiviso dalle arene casuali (E12): sagome nere semitrasparenti, che prendono il colore del cielo
+// di ogni palette. Non dipende dal seme, così le arene generate restano quelle di prima
+export const RANDOM_STAGE_ART: StageArt = {
+  dir: "generica",
+  layers: [
+    { file: "sfondo-0.png", parallax: 0.15 },
+    { file: "sfondo-1.png", parallax: 0.5 },
+  ],
+};
 
 export function randomStageId(): string {
   return `${RANDOM_STAGE_PREFIX}${Math.floor(Math.random() * MAX_SEED)}`;
@@ -107,5 +117,6 @@ export function generateStage(seed: number): StageSpec {
     spawns: spawns.map((x) => ({ x: Math.round(x), y: groundY })),
     respawn: { x: cx, y: Math.max(100, Math.min(200, top - 130)) },
     colors: PALETTES[Math.floor(r.next() * PALETTES.length)],
+    art: RANDOM_STAGE_ART,
   };
 }

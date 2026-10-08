@@ -106,6 +106,7 @@ Facoltativo: senza, l'arena si disegna con i colori di `colors`. I PNG vanno in 
 | `foreground` | facoltativo, uno strato davanti ai lottatori: quasi tutto trasparente |
 | `preview` | immagine 16:9 dell'arena per la lobby |
 | `scale` | pixel di mondo per pixel dell'immagine (1 se manca) |
+| `dir` | cartella in `public/assets/stages/` se diversa dall'id dell'arena: le arene casuali usano tutte `generica` |
 
 Gli strati sono centrati sul centro dell'arena. Con la telecamera più lontana (`CAMERA.minZoom`) si vedono circa 1830×1030 pixel di mondo: uno strato di 1920×1080 copre tutto se è lontano; gli strati vicini sfumano ai lati nel colore `sky`. In tutto al massimo 4 MB per arena (lo controlla `npm test`).
 

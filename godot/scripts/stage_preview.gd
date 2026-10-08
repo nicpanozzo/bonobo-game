@@ -40,7 +40,7 @@ static func preview_texture(stage: Dictionary) -> Texture2D:
 	var file: String = stage.get("art", {}).get("preview", "")
 	if file == "":
 		return null
-	var path := "res://data/assets/stages/%s/%s" % [stage.id, file]
+	var path := "res://data/assets/stages/%s/%s" % [stage.get("art", {}).get("dir", stage.id), file]
 	if not _previews.has(path):
 		_previews[path] = load(path) if ResourceLoader.exists(path) else null
 	return _previews[path]

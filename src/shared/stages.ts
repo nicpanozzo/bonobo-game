@@ -65,6 +65,7 @@ export interface StageArt {
   foreground?: StageLayer; // davanti ai lottatori: leggero e quasi tutto trasparente, per non coprire il gioco
   preview?: string; // immagine 16:9 dell'arena per la lobby
   scale?: number; // pixel di mondo per pixel dell'immagine (1 se manca)
+  dir?: string; // cartella in public/assets/stages/ se diversa dall'id dell'arena (sfondi condivisi)
 }
 
 export interface StageSpec {
