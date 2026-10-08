@@ -247,6 +247,7 @@
     "musicBpmMax": 190,
     "hitLoudPercent": 120,
     "voices": 0.8,
+    "tauntVoiceCooldownMs": 1500,
     "musicFadeMs": 1500,
     "duckDb": -8,
     "duckMs": 1200,
