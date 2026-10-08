@@ -60,3 +60,15 @@ func test_parte_da_entra_con_il_link() -> void:
 	runner.check(not lobby._advanced.visible, "Avanzate chiuso")
 	runner.check(_last_choice(lobby, lobby._submit).room == "serata", "la stanza del link")
 	lobby.free()
+
+
+func test_barre_delle_statistiche() -> void:
+	var limits := {"min": 0.8, "max": 1.2}
+	runner.check(is_equal_approx(Lobby.stat_fill(1.0, limits), 0.5), "il metro sta a metà")
+	runner.check(is_equal_approx(Lobby.stat_fill(1.2, limits), 1.0), "il massimo riempie")
+	runner.check(Lobby.stat_fill(0.5, limits) == 0.0, "sotto il minimo: vuota")
+	runner.check(Lobby.stat_fill(1.05, limits) > Lobby.stat_fill(0.9, limits), "più alto, più pieno")
+	runner.check(is_equal_approx(Lobby.stat_fill(1.0, {}), 0.5), "dati vecchi senza limiti")
+	var game: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/game.json"))
+	runner.check(Lobby.stats_text(game.characters.egiainuso) == "Velocità 90% · Salto 95% · Peso 105%", Lobby.stats_text(game.characters.egiainuso))
+	runner.check(Lobby.stats_text({}) == "Velocità 100% · Salto 100% · Peso 100%", "senza stats: come Bonobot")
