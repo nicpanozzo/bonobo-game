@@ -1,0 +1,966 @@
+{
+  "effects": [
+    {
+      "type": "smoke",
+      "bone": "joint",
+      "at": "tail"
+    }
+  ],
+  "character": "bonobot",
+  "version": 2,
+  "units": "pixel a 2x, origine ai piedi al centro, y in giù, guarda a destra",
+  "scale": 0.5,
+  "bones": [
+    {
+      "name": "root",
+      "parent": null,
+      "head": [
+        0,
+        0
+      ],
+      "tail": [
+        0,
+        -20
+      ],
+      "deform": true
+    },
+    {
+      "name": "hips",
+      "parent": "root",
+      "head": [
+        -8,
+        -74
+      ],
+      "tail": [
+        -4,
+        -94
+      ],
+      "deform": true
+    },
+    {
+      "name": "spine_1",
+      "parent": "hips",
+      "head": [
+        -4,
+        -94
+      ],
+      "tail": [
+        4,
+        -114
+      ],
+      "deform": true
+    },
+    {
+      "name": "spine_2",
+      "parent": "spine_1",
+      "head": [
+        4,
+        -114
+      ],
+      "tail": [
+        14,
+        -132
+      ],
+      "deform": true
+    },
+    {
+      "name": "spine_3",
+      "parent": "spine_2",
+      "head": [
+        14,
+        -132
+      ],
+      "tail": [
+        24,
+        -146
+      ],
+      "deform": true
+    },
+    {
+      "name": "neck",
+      "parent": "spine_3",
+      "head": [
+        24,
+        -146
+      ],
+      "tail": [
+        36,
+        -154
+      ],
+      "deform": true
+    },
+    {
+      "name": "head",
+      "parent": "neck",
+      "head": [
+        36,
+        -154
+      ],
+      "tail": [
+        50,
+        -172
+      ],
+      "deform": true
+    },
+    {
+      "name": "jaw",
+      "parent": "head",
+      "head": [
+        48,
+        -156
+      ],
+      "tail": [
+        68,
+        -150
+      ],
+      "deform": true
+    },
+    {
+      "name": "brow",
+      "parent": "head",
+      "head": [
+        50,
+        -172
+      ],
+      "tail": [
+        64,
+        -170
+      ],
+      "deform": true
+    },
+    {
+      "name": "lid",
+      "parent": "head",
+      "head": [
+        55,
+        -167
+      ],
+      "tail": [
+        62,
+        -166
+      ],
+      "deform": true
+    },
+    {
+      "name": "tuft_back",
+      "parent": "head",
+      "head": [
+        34,
+        -176
+      ],
+      "tail": [
+        16,
+        -168
+      ],
+      "deform": true
+    },
+    {
+      "name": "tuft_front",
+      "parent": "head",
+      "head": [
+        46,
+        -184
+      ],
+      "tail": [
+        60,
+        -188
+      ],
+      "deform": true
+    },
+    {
+      "name": "joint",
+      "parent": "jaw",
+      "head": [
+        66,
+        -151
+      ],
+      "tail": [
+        86,
+        -147
+      ],
+      "deform": true
+    },
+    {
+      "name": "smoke_1",
+      "parent": "joint",
+      "head": [
+        86,
+        -147
+      ],
+      "tail": [
+        90,
+        -168
+      ],
+      "deform": true
+    },
+    {
+      "name": "smoke_2",
+      "parent": "smoke_1",
+      "head": [
+        90,
+        -168
+      ],
+      "tail": [
+        86,
+        -190
+      ],
+      "deform": true
+    },
+    {
+      "name": "clavicle_R",
+      "parent": "spine_3",
+      "head": [
+        18,
+        -140
+      ],
+      "tail": [
+        26,
+        -134
+      ],
+      "deform": true
+    },
+    {
+      "name": "upper_arm_R",
+      "parent": "clavicle_R",
+      "head": [
+        26,
+        -134
+      ],
+      "tail": [
+        32,
+        -94
+      ],
+      "deform": true
+    },
+    {
+      "name": "forearm_R",
+      "parent": "upper_arm_R",
+      "head": [
+        32,
+        -94
+      ],
+      "tail": [
+        38,
+        -54
+      ],
+      "deform": true
+    },
+    {
+      "name": "hand_R",
+      "parent": "forearm_R",
+      "head": [
+        38,
+        -54
+      ],
+      "tail": [
+        42,
+        -36
+      ],
+      "deform": true
+    },
+    {
+      "name": "fingers_R",
+      "parent": "hand_R",
+      "head": [
+        42,
+        -36
+      ],
+      "tail": [
+        46,
+        -22
+      ],
+      "deform": true
+    },
+    {
+      "name": "thumb_R",
+      "parent": "hand_R",
+      "head": [
+        41,
+        -47
+      ],
+      "tail": [
+        50,
+        -41
+      ],
+      "deform": true
+    },
+    {
+      "name": "thigh_R",
+      "parent": "hips",
+      "head": [
+        -8,
+        -74
+      ],
+      "tail": [
+        4,
+        -42
+      ],
+      "deform": true
+    },
+    {
+      "name": "shin_R",
+      "parent": "thigh_R",
+      "head": [
+        4,
+        -42
+      ],
+      "tail": [
+        -2,
+        -12
+      ],
+      "deform": true
+    },
+    {
+      "name": "foot_R",
+      "parent": "shin_R",
+      "head": [
+        -2,
+        -12
+      ],
+      "tail": [
+        18,
+        -3
+      ],
+      "deform": true
+    },
+    {
+      "name": "toes_R",
+      "parent": "foot_R",
+      "head": [
+        18,
+        -3
+      ],
+      "tail": [
+        30,
+        -2
+      ],
+      "deform": true
+    },
+    {
+      "name": "clavicle_L",
+      "parent": "spine_3",
+      "head": [
+        4,
+        -142
+      ],
+      "tail": [
+        12,
+        -136
+      ],
+      "deform": true
+    },
+    {
+      "name": "upper_arm_L",
+      "parent": "clavicle_L",
+      "head": [
+        12,
+        -136
+      ],
+      "tail": [
+        18,
+        -96
+      ],
+      "deform": true
+    },
+    {
+      "name": "forearm_L",
+      "parent": "upper_arm_L",
+      "head": [
+        18,
+        -96
+      ],
+      "tail": [
+        24,
+        -56
+      ],
+      "deform": true
+    },
+    {
+      "name": "hand_L",
+      "parent": "forearm_L",
+      "head": [
+        24,
+        -56
+      ],
+      "tail": [
+        28,
+        -38
+      ],
+      "deform": true
+    },
+    {
+      "name": "fingers_L",
+      "parent": "hand_L",
+      "head": [
+        28,
+        -38
+      ],
+      "tail": [
+        32,
+        -24
+      ],
+      "deform": true
+    },
+    {
+      "name": "thumb_L",
+      "parent": "hand_L",
+      "head": [
+        27,
+        -49
+      ],
+      "tail": [
+        36,
+        -43
+      ],
+      "deform": true
+    },
+    {
+      "name": "thigh_L",
+      "parent": "hips",
+      "head": [
+        -22,
+        -74
+      ],
+      "tail": [
+        -10,
+        -42
+      ],
+      "deform": true
+    },
+    {
+      "name": "shin_L",
+      "parent": "thigh_L",
+      "head": [
+        -10,
+        -42
+      ],
+      "tail": [
+        -16,
+        -12
+      ],
+      "deform": true
+    },
+    {
+      "name": "foot_L",
+      "parent": "shin_L",
+      "head": [
+        -16,
+        -12
+      ],
+      "tail": [
+        4,
+        -3
+      ],
+      "deform": true
+    },
+    {
+      "name": "toes_L",
+      "parent": "foot_L",
+      "head": [
+        4,
+        -3
+      ],
+      "tail": [
+        16,
+        -2
+      ],
+      "deform": true
+    },
+    {
+      "name": "ik_hand_R",
+      "parent": "root",
+      "head": [
+        38,
+        -54
+      ],
+      "tail": [
+        46,
+        -54
+      ],
+      "deform": false
+    },
+    {
+      "name": "pole_arm_R",
+      "parent": "root",
+      "head": [
+        10,
+        -96
+      ],
+      "tail": [
+        16,
+        -96
+      ],
+      "deform": false
+    },
+    {
+      "name": "ik_foot_R",
+      "parent": "root",
+      "head": [
+        -2,
+        -12
+      ],
+      "tail": [
+        6,
+        -12
+      ],
+      "deform": false
+    },
+    {
+      "name": "pole_leg_R",
+      "parent": "root",
+      "head": [
+        40,
+        -44
+      ],
+      "tail": [
+        46,
+        -44
+      ],
+      "deform": false
+    },
+    {
+      "name": "ik_hand_L",
+      "parent": "root",
+      "head": [
+        24,
+        -56
+      ],
+      "tail": [
+        32,
+        -56
+      ],
+      "deform": false
+    },
+    {
+      "name": "pole_arm_L",
+      "parent": "root",
+      "head": [
+        -4,
+        -98
+      ],
+      "tail": [
+        2,
+        -98
+      ],
+      "deform": false
+    },
+    {
+      "name": "ik_foot_L",
+      "parent": "root",
+      "head": [
+        -16,
+        -12
+      ],
+      "tail": [
+        -8,
+        -12
+      ],
+      "deform": false
+    },
+    {
+      "name": "pole_leg_L",
+      "parent": "root",
+      "head": [
+        26,
+        -44
+      ],
+      "tail": [
+        32,
+        -44
+      ],
+      "deform": false
+    }
+  ],
+  "ik": [
+    {
+      "chain": [
+        "upper_arm_R",
+        "forearm_R"
+      ],
+      "target": "ik_hand_R",
+      "pole": "pole_arm_R"
+    },
+    {
+      "chain": [
+        "thigh_R",
+        "shin_R"
+      ],
+      "target": "ik_foot_R",
+      "pole": "pole_leg_R"
+    },
+    {
+      "chain": [
+        "upper_arm_L",
+        "forearm_L"
+      ],
+      "target": "ik_hand_L",
+      "pole": "pole_arm_L"
+    },
+    {
+      "chain": [
+        "thigh_L",
+        "shin_L"
+      ],
+      "target": "ik_foot_L",
+      "pole": "pole_leg_L"
+    }
+  ],
+  "pieces": [
+    {
+      "name": "upper_arm_L",
+      "bone": "upper_arm_L",
+      "z": 0,
+      "image": "pezzi/upper_arm_L.png",
+      "x": -16,
+      "y": -164,
+      "width": 59,
+      "height": 93,
+      "ink": "pezzi/upper_arm_L_ink.png",
+      "inkZ": -100
+    },
+    {
+      "name": "forearm_L",
+      "bone": "forearm_L",
+      "z": 1,
+      "image": "pezzi/forearm_L.png",
+      "x": -7,
+      "y": -121,
+      "width": 54,
+      "height": 88,
+      "ink": "pezzi/forearm_L_ink.png",
+      "inkZ": -100
+    },
+    {
+      "name": "thumb_L",
+      "bone": "thumb_L",
+      "z": 2,
+      "image": "pezzi/thumb_L.png",
+      "x": 9,
+      "y": -67,
+      "width": 44,
+      "height": 41,
+      "ink": "pezzi/thumb_L_ink.png",
+      "inkZ": -100
+    },
+    {
+      "name": "hand_L",
+      "bone": "hand_L",
+      "z": 3,
+      "image": "pezzi/hand_L.png",
+      "x": 1,
+      "y": -79,
+      "width": 51,
+      "height": 65,
+      "ink": "pezzi/hand_L_ink.png",
+      "inkZ": -100
+    },
+    {
+      "name": "fingers_L",
+      "bone": "fingers_L",
+      "z": 4,
+      "image": "pezzi/fingers_L.png",
+      "x": 5,
+      "y": -61,
+      "width": 48,
+      "height": 58,
+      "ink": "pezzi/fingers_L_ink.png",
+      "inkZ": -100
+    },
+    {
+      "name": "thigh_L",
+      "bone": "thigh_L",
+      "z": 6,
+      "image": "pezzi/thigh_L.png",
+      "x": -51,
+      "y": -103,
+      "width": 66,
+      "height": 86,
+      "ink": "pezzi/thigh_L_ink.png",
+      "inkZ": -100
+    },
+    {
+      "name": "shin_L",
+      "bone": "shin_L",
+      "z": 7,
+      "image": "pezzi/shin_L.png",
+      "x": -38,
+      "y": -67,
+      "width": 53,
+      "height": 77,
+      "ink": "pezzi/shin_L_ink.png",
+      "inkZ": -100
+    },
+    {
+      "name": "foot_L",
+      "bone": "foot_L",
+      "z": 8,
+      "image": "pezzi/foot_L.png",
+      "x": -38,
+      "y": -34,
+      "width": 63,
+      "height": 52,
+      "ink": "pezzi/foot_L_ink.png",
+      "inkZ": -100
+    },
+    {
+      "name": "toes_L",
+      "bone": "toes_L",
+      "z": 9,
+      "image": "pezzi/toes_L.png",
+      "x": -17,
+      "y": -24,
+      "width": 52,
+      "height": 42,
+      "ink": "pezzi/toes_L_ink.png",
+      "inkZ": -100
+    },
+    {
+      "name": "pelvis",
+      "bone": "hips",
+      "z": 20,
+      "image": "pezzi/pelvis.png",
+      "x": -44,
+      "y": -114,
+      "width": 76,
+      "height": 68,
+      "ink": "pezzi/pelvis_ink.png",
+      "inkZ": -100
+    },
+    {
+      "name": "belly",
+      "bone": "spine_1",
+      "z": 21,
+      "image": "pezzi/belly.png",
+      "x": -39,
+      "y": -142,
+      "width": 78,
+      "height": 76,
+      "ink": "pezzi/belly_ink.png",
+      "inkZ": -100
+    },
+    {
+      "name": "chest",
+      "bone": "spine_2",
+      "z": 22,
+      "image": "pezzi/chest.png",
+      "x": -30,
+      "y": -170,
+      "width": 88,
+      "height": 84,
+      "ink": "pezzi/chest_ink.png",
+      "inkZ": -100
+    },
+    {
+      "name": "shoulders",
+      "bone": "spine_3",
+      "z": 23,
+      "image": "pezzi/shoulders.png",
+      "x": -12,
+      "y": -173,
+      "width": 68,
+      "height": 58,
+      "ink": "pezzi/shoulders_ink.png",
+      "inkZ": -100
+    },
+    {
+      "name": "neck",
+      "bone": "neck",
+      "z": 24,
+      "image": "pezzi/neck.png",
+      "x": -2,
+      "y": -180,
+      "width": 64,
+      "height": 60,
+      "ink": "pezzi/neck_ink.png",
+      "inkZ": -100
+    },
+    {
+      "name": "thigh_R",
+      "bone": "thigh_R",
+      "z": 30,
+      "image": "pezzi/thigh_R.png",
+      "x": -37,
+      "y": -103,
+      "width": 66,
+      "height": 86,
+      "ink": "pezzi/thigh_R_ink.png",
+      "inkZ": 29.5
+    },
+    {
+      "name": "shin_R",
+      "bone": "shin_R",
+      "z": 31,
+      "image": "pezzi/shin_R.png",
+      "x": -24,
+      "y": -67,
+      "width": 53,
+      "height": 77,
+      "ink": "pezzi/shin_R_ink.png",
+      "inkZ": 30.5
+    },
+    {
+      "name": "foot_R",
+      "bone": "foot_R",
+      "z": 32,
+      "image": "pezzi/foot_R.png",
+      "x": -24,
+      "y": -34,
+      "width": 63,
+      "height": 52,
+      "ink": "pezzi/foot_R_ink.png",
+      "inkZ": 31.5
+    },
+    {
+      "name": "toes_R",
+      "bone": "toes_R",
+      "z": 33,
+      "image": "pezzi/toes_R.png",
+      "x": -3,
+      "y": -24,
+      "width": 52,
+      "height": 42,
+      "ink": "pezzi/toes_R_ink.png",
+      "inkZ": 32.5
+    },
+    {
+      "name": "tuft_back",
+      "bone": "tuft_back",
+      "z": 38,
+      "image": "pezzi/tuft_back.png",
+      "x": 0,
+      "y": -196,
+      "width": 50,
+      "height": 43,
+      "ink": "pezzi/tuft_back_ink.png",
+      "inkZ": -100
+    },
+    {
+      "name": "jaw",
+      "bone": "jaw",
+      "z": 39,
+      "image": "pezzi/jaw.png",
+      "x": 29,
+      "y": -176,
+      "width": 59,
+      "height": 45,
+      "ink": "pezzi/jaw_ink.png",
+      "inkZ": -100
+    },
+    {
+      "name": "head",
+      "bone": "head",
+      "z": 40,
+      "image": "pezzi/head.png",
+      "x": 7,
+      "y": -201,
+      "width": 78,
+      "height": 66,
+      "ink": "pezzi/head_ink.png",
+      "inkZ": -100
+    },
+    {
+      "name": "lid",
+      "bone": "lid",
+      "z": 42,
+      "image": "pezzi/lid.png",
+      "x": 39,
+      "y": -183,
+      "width": 34,
+      "height": 26
+    },
+    {
+      "name": "brow",
+      "bone": "brow",
+      "z": 43,
+      "image": "pezzi/brow.png",
+      "x": 35,
+      "y": -190,
+      "width": 44,
+      "height": 31
+    },
+    {
+      "name": "tuft_front",
+      "bone": "tuft_front",
+      "z": 44,
+      "image": "pezzi/tuft_front.png",
+      "x": 31,
+      "y": -203,
+      "width": 45,
+      "height": 37,
+      "ink": "pezzi/tuft_front_ink.png",
+      "inkZ": -100
+    },
+    {
+      "name": "joint",
+      "bone": "joint",
+      "z": 45,
+      "image": "pezzi/joint.png",
+      "x": 50,
+      "y": -167,
+      "width": 54,
+      "height": 38,
+      "ink": "pezzi/joint_ink.png",
+      "inkZ": 44.5
+    },
+    {
+      "name": "upper_arm_R",
+      "bone": "upper_arm_R",
+      "z": 50,
+      "image": "pezzi/upper_arm_R.png",
+      "x": -2,
+      "y": -162,
+      "width": 59,
+      "height": 93,
+      "ink": "pezzi/upper_arm_R_ink.png",
+      "inkZ": 49.5
+    },
+    {
+      "name": "forearm_R",
+      "bone": "forearm_R",
+      "z": 51,
+      "image": "pezzi/forearm_R.png",
+      "x": 7,
+      "y": -119,
+      "width": 54,
+      "height": 88,
+      "ink": "pezzi/forearm_R_ink.png",
+      "inkZ": 50.5
+    },
+    {
+      "name": "thumb_R",
+      "bone": "thumb_R",
+      "z": 52,
+      "image": "pezzi/thumb_R.png",
+      "x": 23,
+      "y": -65,
+      "width": 44,
+      "height": 41,
+      "ink": "pezzi/thumb_R_ink.png",
+      "inkZ": 51.5
+    },
+    {
+      "name": "hand_R",
+      "bone": "hand_R",
+      "z": 53,
+      "image": "pezzi/hand_R.png",
+      "x": 15,
+      "y": -77,
+      "width": 51,
+      "height": 65,
+      "ink": "pezzi/hand_R_ink.png",
+      "inkZ": 52.5
+    },
+    {
+      "name": "fingers_R",
+      "bone": "fingers_R",
+      "z": 54,
+      "image": "pezzi/fingers_R.png",
+      "x": 19,
+      "y": -59,
+      "width": 48,
+      "height": 58,
+      "ink": "pezzi/fingers_R_ink.png",
+      "inkZ": 53.5
+    }
+  ]
+}
