@@ -52,7 +52,7 @@ describe("arene", () => {
 
   it("gli sfondi delle arene ci sono e restano leggeri (E12)", () => {
     const MAX_BYTES = 4 * 1024 * 1024; // per arena, per non appesantire la versione web (rischi in E12)
-    const withArt = Object.values(STAGES).filter((s) => s.art);
+    const withArt = [...Object.values(STAGES), generateStage(1)].filter((s) => s.art);
     assert.ok(withArt.length >= 1, "almeno Il Palco ha uno sfondo");
     for (const stage of withArt) {
       const art = stage.art!;
@@ -61,8 +61,9 @@ describe("arene", () => {
       for (const l of layers) assert.ok(l.parallax >= 0 && l.parallax <= 1, `${stage.id}: parallasse di ${l.file} tra 0 e 1`);
       let bytes = 0;
       for (const file of [...layers.map((l) => l.file), ...(art.preview ? [art.preview] : [])]) {
-        const url = new URL(`../../public/assets/stages/${stage.id}/${file}`, import.meta.url);
-        assert.ok(existsSync(url), `${stage.id}: manca public/assets/stages/${stage.id}/${file}`);
+        const dir = art.dir ?? stage.id;
+        const url = new URL(`../../public/assets/stages/${dir}/${file}`, import.meta.url);
+        assert.ok(existsSync(url), `${stage.id}: manca public/assets/stages/${dir}/${file}`);
         bytes += statSync(url).size;
       }
       assert.ok(bytes <= MAX_BYTES, `${stage.id}: sfondo di ${(bytes / 1048576).toFixed(1)} MB, oltre i 4 MB`);

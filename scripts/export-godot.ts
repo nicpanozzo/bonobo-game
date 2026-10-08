@@ -17,6 +17,7 @@ import { CHALLENGES } from "../src/shared/challenges";
 import { ITEMS } from "../src/shared/items";
 import { DEFAULT_STAGE_ID, STAGES } from "../src/shared/stages";
 import { stageCheckData } from "../src/shared/stageCheck";
+import { RANDOM_STAGE_ART } from "../src/shared/stageGenerator";
 import { characterStats } from "../src/shared/characters";
 import { CHARACTER_STATS, PERF_BUDGET } from "../src/shared/constants";
 
@@ -119,12 +120,11 @@ for (const [id, spec] of Object.entries(CHARACTERS)) {
   characters[id] = { ...c, sprite: { ...sprite, animations: resolvedAnimations(animations) } };
 }
 // Sfondi delle arene (E12 passo 3): ogni file nominato in art deve esserci
-for (const [id, stage] of Object.entries(STAGES)) {
-  const art = stage.art;
+for (const [id, art] of [...Object.entries(STAGES).map(([id, s]) => [id, s.art] as const), ["casuali", RANDOM_STAGE_ART] as const]) {
   const files = art ? [...art.layers, ...(art.foreground ? [art.foreground] : [])].map((l) => l.file) : [];
   if (art?.preview) files.push(art.preview);
   for (const file of files) {
-    const path = `assets/stages/${id}/${file}`;
+    const path = `assets/stages/${art!.dir ?? id}/${file}`;
     if (existsSync(publicDir + path)) spriteFiles.push(path);
     else spriteErrors.push(`arena ${id}: manca public/${path} (sfondo in stages.ts)`);
   }

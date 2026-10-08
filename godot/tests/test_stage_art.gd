@@ -47,3 +47,16 @@ func test_anteprima_nella_lobby() -> void:
 	var game := _game()
 	runner.check(StagePreview.preview_texture(game.stages.palco) is Texture2D, "Il Palco ha l'anteprima disegnata")
 	runner.check(StagePreview.preview_texture(game.stages.isole) == null, "Le Isole no")
+
+
+func test_arena_casuale_con_lo_sfondo_condiviso() -> void:
+	var game := _game()
+	var w: Node2D = WorldView.new()
+	w.setup(game)
+	# Come arriva dal server nel benvenuto (generateStage): la cartella è quella condivisa, non l'id
+	var spec: Dictionary = game.stages.palco.duplicate(true)
+	spec.id = "casuale-42"
+	spec.art = {"dir": "generica", "layers": [{"file": "sfondo-0.png", "parallax": 0.15}, {"file": "sfondo-1.png", "parallax": 0.5}]}
+	w.set_stage_spec(spec)
+	runner.check(w._layers.size() == 2, "due strati: %d" % w._layers.size())
+	w.free()

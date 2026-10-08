@@ -129,11 +129,11 @@ func set_stage_spec(spec: Dictionary) -> void:
 	_foreground = []
 	var art: Dictionary = spec.get("art", {})
 	for l in art.get("layers", []):
-		var layer := _stage_layer(spec.id, l)
+		var layer := _stage_layer(art.get("dir", spec.id), l)
 		if not layer.is_empty():
 			_layers.append(layer)
 	if art.has("foreground"):
-		_foreground = _stage_layer(spec.id, art.foreground)
+		_foreground = _stage_layer(art.get("dir", spec.id), art.foreground)
 	_layer_scale = art.get("scale", 1.0)
 	_supreme_view.stage = spec
 	_reached = 0
@@ -141,8 +141,8 @@ func set_stage_spec(spec: Dictionary) -> void:
 
 
 # Uno strato dello sfondo (E12): [texture, parallasse], o [] se il file non c'è (si vede il colore del cielo)
-static func _stage_layer(stage_id: String, layer: Dictionary) -> Array:
-	var path := "res://data/assets/stages/%s/%s" % [stage_id, layer.file]
+static func _stage_layer(dir: String, layer: Dictionary) -> Array:
+	var path := "res://data/assets/stages/%s/%s" % [dir, layer.file]
 	if not ResourceLoader.exists(path):
 		push_warning("Sfondo mancante: " + path)
 		return []
