@@ -17,6 +17,8 @@ const TIMES := [[0, "Senza tempo"], [120, "2 minuti"], [180, "3 minuti"], [300, 
 # TODO community: soprannomi e tormentoni del canale
 const RANDOM_NAMES := ["Bonobo", "Scimmione", "Banana", "Liana", "Gorilla", "Babbuino", "Orango"]
 const BOTS := [["", "Nessun bot"], ["manichino", "Manichino"], ["facile", "Bot facile"], ["semplice", "Bot"], ["difficile", "Bot difficile"]]
+const STAT_BARS := [["speed", "Vel.", "Velocità"], ["jump", "Salto", "Salto"], ["weight", "Peso", "Peso"]] # barre sotto il ritratto (E11)
+const BAR_W := 44.0 # larghezza delle barre, pixel
 const QUICK_BOT := "semplice" # "Contro un bot" quando nelle regole non ne è scelto nessuno
 
 var game: Dictionary
@@ -290,13 +292,23 @@ func _draw_chars() -> void:
 	for id in game.characters:
 		var c: Dictionary = game.characters[id]
 		var b := Button.new()
-		b.custom_minimum_size = Vector2(96, 98)
+		b.custom_minimum_size = Vector2(104, 148)
+		b.tooltip_text = stats_text(c)
 		UI.set_selected(b, id == _character)
 		var v := VBoxContainer.new()
 		v.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		v.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		b.add_child(v)
-		if c.get("sprite") != null:
+		if c.get("portrait") != null:
+			# Il ritratto disegnato (E11 passo C): public/assets/characters/<id>/portrait.png
+			var face := TextureRect.new()
+			face.texture = load("res://data/" + str(c.portrait))
+			face.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			face.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			face.custom_minimum_size = Vector2(56, 62)
+			face.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			v.add_child(face)
+		elif c.get("sprite") != null:
 			# Primo fotogramma dello spritesheet (nel formato cartella, di idle.png), ridotto per stare nel riquadro
 			var path: String = "%s/idle.png" % c.sprite.dir if c.sprite.has("dir") else c.sprite.path
 			var atlas := AtlasTexture.new()
@@ -322,11 +334,58 @@ func _draw_chars() -> void:
 		var l := UI.label(c.name, UI.SIZE_SMALL)
 		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		v.add_child(l)
+		v.add_child(_stat_bars(c))
 		b.set_meta("id", id)
 		b.pressed.connect(func():
 			_character = id
 			_select_cards(_chars, _character))
 		_chars.add_child(b)
+
+
+# Le tre barre sotto il nome: a metà è Bonobot, il metro (statistiche a 1)
+func _stat_bars(c: Dictionary) -> Control:
+	var rows := VBoxContainer.new()
+	rows.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	rows.add_theme_constant_override("separation", 1)
+	var stats: Dictionary = c.get("stats", {})
+	for s in STAT_BARS:
+		var row := HBoxContainer.new()
+		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.alignment = BoxContainer.ALIGNMENT_CENTER
+		var l := UI.label(s[1], 11, Color(UI.TEXT, 0.7))
+		l.custom_minimum_size = Vector2(38, 0)
+		row.add_child(l)
+		var track := ColorRect.new()
+		track.color = UI.BORDER
+		track.custom_minimum_size = Vector2(BAR_W, 6)
+		track.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		track.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var fill := ColorRect.new()
+		fill.color = UI.ACCENT
+		fill.size = Vector2(maxf(2.0, BAR_W * stat_fill(float(stats.get(s[0], 1.0)), game.get("characterStats", {}))), 6)
+		fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		track.add_child(fill)
+		row.add_child(track)
+		rows.add_child(row)
+	return rows
+
+
+# Da statistica a riempimento della barra, tra i limiti di CHARACTER_STATS (0,8 - 1,2): 1 sta a metà
+static func stat_fill(value: float, limits: Dictionary) -> float:
+	var lo: float = limits.get("min", 0.8)
+	var hi: float = limits.get("max", 1.2)
+	if hi <= lo:
+		return 0.5
+	return clampf((value - lo) / (hi - lo), 0.0, 1.0)
+
+
+# Il suggerimento sul riquadro: i numeri esatti, in percentuale rispetto a Bonobot
+static func stats_text(c: Dictionary) -> String:
+	var stats: Dictionary = c.get("stats", {})
+	var parts := []
+	for s in STAT_BARS:
+		parts.append("%s %d%%" % [s[2], roundi(float(stats.get(s[0], 1.0)) * 100)])
+	return " · ".join(parts)
 
 
 # Cambia solo il bordo dei riquadri, senza rifarli: così il fuoco del pad resta dov'è

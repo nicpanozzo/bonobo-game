@@ -38,7 +38,7 @@ export function fire(f: Fighter, kind: SpecialKind, sp: ProjectileSpecial, ctx: 
     x: f.x + f.facing * (FIGHTER.width / 2 + sp.range / 2),
     y: f.y - SPECIAL_MOVES.projectileY,
     vx: f.facing * sp.speed,
-    vy: 0,
+    vy: -(sp.lift ?? 0),
     ageMs: 0,
   };
   world.list.push(p);
