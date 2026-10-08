@@ -147,6 +147,15 @@ function decideSimple(self: Fighter, players: readonly Fighter[], stage: StageSp
     if (!mem.last[key]) input[key] = true;
   };
 
+  // Tiene qualcuno (E8): lo lancia verso il bordo più vicino del blocco su cui sta
+  if (self.holding !== null) {
+    const ground = groundUnder(stage, self.x);
+    const left = !!ground && self.x - ground.x < ground.x + ground.width - self.x;
+    input.left = left;
+    input.right = !left;
+    return input;
+  }
+
   // Appeso al bordo (#110): si aspetta un po' (il difficile un tempo variabile), poi si risale
   if (self.ledge) {
     if (self.ledge !== "hang") return input; // risalita in corso
@@ -241,6 +250,15 @@ function decideSimple(self: Fighter, players: readonly Fighter[], stage: StageSp
       input.left = dx < 0;
       input.right = dx > 0;
       return input;
+    } else if (skill.grabs && target.shielding && target.shieldTimer >= BOT.grabShieldMs) {
+      // Chi si para da un po' si afferra, la presa passa lo scudo (E8): scudo + leggero, da vicino
+      if (Math.abs(dx) <= FIGHTER.width / 2 + ATTACKS.grab.range) {
+        input.shield = true;
+        tap("light");
+      } else {
+        mem.hold.left = dx < 0;
+        mem.hold.right = dx > 0;
+      }
     } else {
       mem.attacks++;
       tap(mem.attacks % skill.heavyEvery === 0 ? "heavy" : "light");
