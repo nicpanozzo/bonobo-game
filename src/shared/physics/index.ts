@@ -9,6 +9,7 @@
 //   ledge.ts     bordo del palco (#110)
 //   shield.ts    scudo e stordimento (#109)
 //   grab.ts      presa, colpetti e lanci (#109)
+//   specials.ts  mosse speciali per personaggio (E10)
 
 import { resolveHits, tryStartAttack, updateAttack } from "./attacks";
 import { carryRider, resolveHazards } from "./elements";
@@ -17,6 +18,7 @@ import { grabbing, inGrab, resolveGrabs, stepGrabs } from "./grab";
 import { holdLedge, tryGrabLedge } from "./ledge";
 import { applyControls, applyGravity } from "./movement";
 import { holdShield } from "./shield";
+import { specialing } from "./specials";
 import { collideWithStage, loseStock, outOfBlastZone, respawn } from "./stage";
 
 export * from "./fighter";
@@ -38,6 +40,7 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
     return;
   }
   if (f.respawning) {
+    f.specialTimer = 0; // si rientra liberi, anche dopo essere usciti con uno scatto
     f.respawnTimer -= dtMs;
     if (f.respawnTimer <= 0) respawn(f, ctx);
     tickBuffer(f, dtMs); // un tasto premuto mentre si rientra non scatta molto dopo
@@ -81,7 +84,7 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
 
   updateAttack(f, dtMs);
   // Durante la presa, sullo scudo o storditi niente controlli né attacchi
-  if (!grabbing(f, dtMs, ctx) && !holdShield(f, dtMs, ctx)) {
+  if (!grabbing(f, dtMs, ctx) && !specialing(f, dtMs) && !holdShield(f, dtMs, ctx)) {
     applyControls(f, dt, ctx);
     tryStartAttack(f, ctx);
   }

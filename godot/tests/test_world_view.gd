@@ -34,6 +34,7 @@ func test_stato_preciso_dei_colpi() -> void:
 	runner.check(WorldView._animation_for(_player({"grabbedBy": "b"})) == "grabbed", "tenuto con la presa")
 	runner.check(WorldView._animation_for(_player({}), true) == "grab", "chi tiene")
 	runner.check(WorldView._animation_for(_player({"attack": "throwBack"})) == "throw", "lancio")
+	runner.check(WorldView._animation_for(_player({"attack": "specialSide"})) == "special", "speciale")
 
 
 func test_disegno_proprio_o_ripiego() -> void:
@@ -110,3 +111,12 @@ func test_numeri_degli_attacchi_per_personaggio() -> void:
 	runner.check(WorldView.attack_spec(game, "a", "recovery").height == 70, "il resto resta")
 	runner.check(WorldView.attack_spec(game, "b", "recovery").range == 40, "senza ritocchi")
 	runner.check(WorldView.attack_spec(game, "b", "nuovo").is_empty(), "attacco sconosciuto")
+
+
+func test_numeri_delle_speciali_dal_personaggio() -> void:
+	var game: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/game.json"))
+	for id in game.characters:
+		for kind in ["specialNeutral", "specialSide", "specialDown"]:
+			var spec := WorldView.attack_spec(game, id, kind)
+			runner.check(spec.get("range", 0) > 0 and spec.get("cooldownMs", 0) > 0, "%s: %s senza numeri" % [id, kind])
+	runner.check(not WorldView.attack_spec(game, "sconosciuto", "specialSide").is_empty(), "personaggio sconosciuto: quello base")

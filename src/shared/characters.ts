@@ -2,6 +2,7 @@
 // Cambiano aspetto e statistiche (E11 passo B); le mosse proprie arrivano con le speciali (E10).
 
 import { CHARACTER_STATS, DEFAULT_SPECIALS, RECOVERY, type AttackSpec } from "./constants";
+import type { SpecialKind } from "./types";
 
 // Gli stati che ogni lottatore con sprite deve avere
 export const ANIMATION_NAMES = ["idle", "walk", "jump", "fall", "light", "heavy", "hit"] as const;
@@ -271,6 +272,23 @@ export function characterStats(id: string | undefined): CharacterStats {
     statsCache.set(c.id, stats);
   }
   return stats;
+}
+
+// Da speciale a numeri di un attacco (E10), per la fisica e per Godot: avvio, finestra attiva, attesa totale
+// (cooldownMs) e il colpo. Per il contrattacco la finestra è quella in cui para, e il danno è quello minimo
+export const SPECIAL_KINDS: Record<SpecialSlot, SpecialKind> = { neutral: "specialNeutral", side: "specialSide", down: "specialDown" };
+export function specialAttackSpec(sp: SpecialSpec): AttackSpec {
+  const hit = { baseKnockback: sp.baseKnockback, knockbackGrowth: sp.knockbackGrowth, angleDeg: sp.angleDeg, range: sp.range, height: sp.height, boxX: sp.boxX, boxY: sp.boxY };
+  switch (sp.type) {
+    case "dash":
+      return { ...hit, damage: sp.damage, startupMs: sp.startupMs, activeMs: sp.durationMs, cooldownMs: sp.startupMs + sp.durationMs + sp.endLagMs };
+    case "counter":
+      return { ...hit, damage: sp.minDamage, startupMs: sp.startupMs, activeMs: sp.windowMs, cooldownMs: sp.startupMs + sp.windowMs + sp.endLagMs };
+    case "projectile":
+      return { ...hit, damage: sp.damage, startupMs: sp.startupMs, activeMs: sp.lifeMs, cooldownMs: sp.cooldownMs };
+    case "charge":
+      return { ...hit, damage: sp.damage, startupMs: sp.minMs, activeMs: sp.activeMs, cooldownMs: sp.maxMs + sp.activeMs + sp.endLagMs };
+  }
 }
 
 // Le tre speciali di un personaggio: le sue, e per quelle che mancano DEFAULT_SPECIALS

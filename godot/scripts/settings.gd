@@ -8,7 +8,7 @@ signal changed
 
 const PATH := "user://bonobo.cfg"
 # Le azioni che si possono assegnare a un tasto (le stesse di InputState)
-const ACTIONS := ["left", "right", "up", "down", "light", "heavy", "taunt", "dodge", "shield"]
+const ACTIONS := ["left", "right", "up", "down", "light", "heavy", "taunt", "dodge", "shield", "special"]
 const LABELS := {
 	"left": "Sinistra",
 	"right": "Destra",
@@ -19,6 +19,7 @@ const LABELS := {
 	"taunt": "Provocazione",
 	"dodge": "Schivata",
 	"shield": "Scudo",
+	"special": "Speciale",
 }
 # I tasti di default del gioco web (DEFAULT_BINDINGS), come tasti fisici: non dipendono dalla lingua della tastiera
 const DEFAULT_BINDINGS := {
@@ -31,6 +32,7 @@ const DEFAULT_BINDINGS := {
 	"taunt": [KEY_T],
 	"dodge": [KEY_L],
 	"shield": [KEY_I], # scudo (#109)
+	"special": [KEY_U], # mosse speciali (E10)
 }
 const MAX_KEYS := 3 # tasti per azione
 # Pad (E6): un pulsante è il suo JOY_BUTTON_*; una levetta o un grilletto inclinati
@@ -44,7 +46,7 @@ const DEFAULT_PAD_BINDINGS := {
 	"light": [JOY_BUTTON_X],
 	"heavy": [JOY_BUTTON_B],
 	"taunt": [JOY_BUTTON_BACK],
-	# Y resta libero per la speciale (E10)
+	"special": [JOY_BUTTON_Y], # mosse speciali (E10)
 	"dodge": [JOY_BUTTON_LEFT_SHOULDER, JOY_BUTTON_RIGHT_SHOULDER],
 	# Lo scudo (#109) sui grilletti, come nei platform fighter
 	"shield": [AXIS_BASE + JOY_AXIS_TRIGGER_LEFT * 2 + 1, AXIS_BASE + JOY_AXIS_TRIGGER_RIGHT * 2 + 1],

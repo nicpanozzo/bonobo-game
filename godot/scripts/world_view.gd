@@ -176,6 +176,10 @@ func on_event(e: Dictionary) -> void:
 		"grab":
 			# Presa (#109): un lampo bianco dove la mano afferra
 			_sparks.append({"x": e.x, "y": float(e.y) - float(game.fighter.height) * 0.55, "age": 0.0, "size": 24.0, "color": Color.WHITE})
+		"counter":
+			# Contrattacco (E10): lampo azzurro grande dove para, così si capisce perché l'altro vola via
+			_sparks.append({"x": e.x, "y": e.y, "age": 0.0, "size": 46.0, "color": Color(0.55, 0.85, 1)})
+			_flash = maxf(_flash, float(game.effects.flashMs) * 0.5)
 		"grabRelease":
 			# Liberato: polvere ai piedi di tutti e due
 			for id in [e.id, e.targetId]:
@@ -650,6 +654,9 @@ func _draw_sprite(p: Dictionary, character: Dictionary, now: float) -> void:
 # I numeri di un attacco per un personaggio, come attackSpecFor() in src/shared/physics/attacks.ts:
 # quelli di ATTACKS con i ritocchi del personaggio (il recupero). {} se l'attacco non esiste
 static func attack_spec(game_data: Dictionary, character_id: String, kind: String) -> Dictionary:
+	if kind.begins_with("special"): # le speciali (E10) sono del personaggio
+		var c: Dictionary = game_data.characters.get(character_id, game_data.characters.get(game_data.get("defaultCharacterId", ""), {}))
+		return c.get("specialAttacks", {}).get(kind, {})
 	var spec: Dictionary = game_data.attacks.get(kind, {})
 	if kind != "recovery" or spec.is_empty():
 		return spec
@@ -725,6 +732,8 @@ static func _animation_for(p: Dictionary, holding := false) -> String:
 		return "grab" # chi tiene resta nella posa della presa
 	if p.attack != null and str(p.attack).begins_with("throw"):
 		return "throw" # i quattro lanci; senza disegno, la posa della presa
+	if p.attack != null and str(p.attack).begins_with("special"):
+		return "special" # le speciali (E10); senza disegno, la posa del pesante
 	if p.attack != null:
 		# Lo stato del colpo preciso (lightUp, heavyAir, recovery...): chi non l'ha disegnato mostra il ripiego.
 		# L'attacco dal bordo (#110) non ha uno stato suo: usa il colpo leggero

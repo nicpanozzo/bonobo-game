@@ -68,8 +68,8 @@ describe("parseInput", () => {
   });
 
   it("conta come premuto solo true", () => {
-    const input = parseInput({ left: true, right: 1, up: "true", down: {}, light: true, shield: 1, extra: true });
-    assert.deepEqual(input, { left: true, right: false, up: false, down: false, light: true, heavy: false, taunt: false, dodge: false, shield: false });
+    const input = parseInput({ left: true, right: 1, up: "true", down: {}, light: true, shield: 1, special: true, extra: true });
+    assert.deepEqual(input, { left: true, right: false, up: false, down: false, light: true, heavy: false, taunt: false, dodge: false, shield: false, special: true });
   });
 });
 

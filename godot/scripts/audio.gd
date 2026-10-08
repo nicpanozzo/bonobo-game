@@ -93,6 +93,10 @@ func on_event(e: Dictionary) -> void:
 			var tilt := 0.12 if kind.ends_with("Up") else (-0.12 if kind.ends_with("Down") else 0.0)
 			if kind == "recovery":
 				_play("doubleJump", {"volume": 0.7}) # il recupero (#11) suona come un doppio salto
+			elif kind == "specialSide":
+				_play("heavy", {"volume": 0.8, "pitch": 1.3}) # lo scatto: un fruscio lungo e acuto
+			elif kind == "specialDown":
+				_play("shield", {"volume": 0.5, "pitch": 1.4}) # il contrattacco si alza: un "tink" di guardia
 			elif kind.begins_with("throw"):
 				_play("throw") # lancio dalla presa (#109)
 			elif kind == "grab":
@@ -128,6 +132,8 @@ func on_event(e: Dictionary) -> void:
 			_play("shieldBreak", {"x": e.x})
 		"grab":
 			_play("grab", {"x": e.x})
+		"counter":
+			_play("counter", {"x": e.x})
 		"grabRelease":
 			_play("roll", {"volume": 0.4, "pitch": 1.2})
 		"ko":
@@ -424,6 +430,11 @@ func _build_sounds() -> void:
 	_sounds.grab = make.call(0.16, func(s):
 		s.tone(0, "sine", 220, 110, 0.1, 0.6)
 		s.noise(0, "bandpass", 1800, 900, 0.08, 0.45))
+	# Contrattacco (E10): un colpo di metallo che risuona, poi uno schiocco
+	_sounds.counter = make.call(0.5, func(s):
+		s.tone(0, "triangle", 1320, 1250, 0.4, 0.3)
+		s.tone(0, "square", 660, 640, 0.12, 0.12)
+		s.noise(0.06, "lowpass", 4000, 600, 0.12, 0.6))
 	# Lancio: un "whoop" che sale, come qualcosa che parte in aria
 	_sounds.throw = make.call(0.32, func(s):
 		s.noise(0, "bandpass", 600, 2600, 0.28, 0.55)

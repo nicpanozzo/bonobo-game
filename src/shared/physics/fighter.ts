@@ -39,6 +39,8 @@ export interface Fighter extends PlayerState {
   grabLagTimer: number; // ms fermi per la presa: avvio, finestra attiva e attesa se va a vuoto
   grabTimer: number; // per chi è tenuto: ms prima di liberarsi da solo (i tasti premuti lo accorciano)
   pummelTimer: number; // per chi tiene: ms prima del prossimo colpetto
+  specialTimer: number; // ms fermi per la speciale in corso (E10): avvio, scatto o finestra, attesa finale
+  airDashUsed: boolean; // lo scatto in aria si fa una volta sola fino all'atterraggio
 }
 
 // Quello che serve alla fisica oltre ai lottatori: l'arena e dove scrivere gli eventi
@@ -60,6 +62,7 @@ export const emptyInput = (): InputState => ({
   taunt: false,
   dodge: false,
   shield: false,
+  special: false,
 });
 
 export interface FighterSetup {
@@ -134,6 +137,8 @@ export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
     grabLagTimer: 0,
     grabTimer: 0,
     pummelTimer: 0,
+    specialTimer: 0,
+    airDashUsed: false,
   };
 }
 
@@ -147,10 +152,10 @@ export const isAlive = (f: Fighter) => !f.eliminated;
 
 // Tasti col buffer (E6): una pressione più corta di un tick, o arrivata un attimo prima che l'azione
 // possa partire (fine del colpo, atterraggio), conta lo stesso per INPUT.bufferMs
-export const BUFFERED_KEYS = ["light", "heavy", "up", "dodge"] as const;
+export const BUFFERED_KEYS = ["light", "heavy", "up", "dodge", "special"] as const;
 export type BufferedKey = (typeof BUFFERED_KEYS)[number];
 const isBuffered = (key: keyof InputState): key is BufferedKey => (BUFFERED_KEYS as readonly string[]).includes(key);
-export const emptyBuffer = (): Record<BufferedKey, number> => ({ light: 0, heavy: 0, up: 0, dodge: 0 });
+export const emptyBuffer = (): Record<BufferedKey, number> => ({ light: 0, heavy: 0, up: 0, dodge: 0, special: 0 });
 
 export const pressed = (f: Fighter, key: keyof InputState) =>
   (f.input[key] && !f.prevInput[key]) || (isBuffered(key) && f.buffer[key] > 0);
