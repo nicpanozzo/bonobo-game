@@ -53,3 +53,14 @@ func test_colore_della_percentuale() -> void:
 	runner.check(mid.r == 1.0 and mid.g < 1.0 and mid.b == 0.0, "giallo-arancio a 75%%: %s" % mid)
 	runner.check(Hud._percent_color(500, false) == Hud._percent_color(150, false), "oltre 150% non cambia")
 	runner.check(Hud._percent_color(50, true) == Color("777777"), "grigio se eliminato")
+
+
+func test_ritratto_ritagliato_e_proporzionato() -> void:
+	var img := Image.create(64, 96, false, Image.FORMAT_RGBA8)
+	img.fill_rect(Rect2i(20, 10, 24, 80), Color.RED) # una figura alta e stretta
+	var r := Hud.used_region(img, Rect2(0, 0, 64, 96))
+	runner.check(r == Rect2(20, 10, 24, 24), "testa e spalle: %s" % r)
+	var empty := Image.create(64, 96, false, Image.FORMAT_RGBA8)
+	runner.check(Hud.used_region(empty, Rect2(0, 0, 64, 96)) == Rect2(0, 0, 64, 96), "fotogramma vuoto: tutto")
+	var fit := Hud.fit_rect(Vector2(20, 40), Rect2(0, 0, 40, 40))
+	runner.check(fit == Rect2(10, 0, 20, 40), "proporzioni tenute, centrato: %s" % fit)

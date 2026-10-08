@@ -18,6 +18,19 @@ var _font: Font = UI.font()
 var _last_percent := {} # id -> percentuale dell'ultimo snapshot, per accorgersi dei colpi presi
 var _jolts := {} # id -> { ms, amp }: la percentuale trema per un attimo dopo un colpo
 var _supreme_full := false # qualcuno ha la barra della suprema piena (#101): la barra pulsa, si ridisegna sempre
+var _portraits := {} # id personaggio -> [Texture2D, Rect2] del ritratto, o [] se non ha disegni (E11)
+var _variants := {} # id giocatore -> variante di colore, come in world_view.gd
+
+const WorldView := preload("res://scripts/world_view.gd")
+const PORTRAIT := 40.0 # lato del ritratto che spunta sopra la scheda, pixel
+const PORTRAIT_ROW := 26.0 # lato del ritratto accanto al nome nella classifica
+
+
+func _ready() -> void:
+	# Lo stesso shader dei lottatori: il ritratto ha i colori alternativi di chi ha lo stesso personaggio
+	var palette := ShaderMaterial.new()
+	palette.shader = load("res://shaders/palette.gdshader")
+	material = palette
 
 
 func reset() -> void:
@@ -66,6 +79,7 @@ func on_snapshot(snap: Dictionary) -> void:
 			var amp: float = minf(fx.percentShakeMax, (p.percent - before) * fx.percentShakePerDamage)
 			_jolts[p.id] = {"ms": float(fx.percentShakeMs), "amp": maxf(amp, _jolts.get(p.id, {}).get("amp", 0.0))}
 		_last_percent[p.id] = p.percent
+	_variants = WorldView.variant_ranks(snap.players)
 	_supreme_full = false
 	for p in snap.players:
 		if not p.get("eliminated", false) and float(p.get("supreme", 0)) >= _supreme_max():
@@ -136,6 +150,8 @@ func _draw_cards(w: float, h: float, flag: bool) -> void:
 		var p: Dictionary = players[i]
 		var x := x0 + i * card_w
 		var col := Access.color(p.color)
+		# Il ritratto spunta sopra l'angolo destro della scheda, come nei picchiaduro (E11 passo C)
+		_draw_portrait(p, Rect2(x + card_w - 12 - PORTRAIT, h - 86 - PORTRAIT * 0.8, PORTRAIT, PORTRAIT))
 		draw_rect(Rect2(x + 6, h - 86, card_w - 12, 74), Color(0, 0, 0, 0.45))
 		draw_rect(Rect2(x + 6, h - 86, 6, 74), col)
 		var name: String = p.name + (" (tu)" if p.id == my_id else "")
@@ -227,6 +243,63 @@ func _draw_results(w: float, _h: float) -> void:
 	draw_rect(Rect2(w / 2 - panel_w / 2, top, panel_w, rows.size() * line_h + 28), Color(0, 0, 0, 0.67))
 	for i in rows.size():
 		_centered(rows[i], Vector2(w / 2, top + 36 + i * line_h), 20, Color.WHITE)
+	# Il ritratto di ognuno a sinistra della sua riga
+	for i in players.size():
+		_draw_portrait(players[i], Rect2(w / 2 - panel_w / 2 + 14, top + 36 + i * line_h - PORTRAIT_ROW * 0.8, PORTRAIT_ROW, PORTRAIT_ROW))
+
+
+# Il ritratto di un giocatore dentro r, con i suoi colori; niente per i personaggi senza disegni
+func _draw_portrait(p: Dictionary, r: Rect2) -> void:
+	var src := _portrait(str(p.get("characterId", "")))
+	if src.is_empty():
+		return
+	var tex: Texture2D = src[0]
+	var region: Rect2 = src[1]
+	var fit := fit_rect(region.size, r)
+	var alpha := 0.35 if p.get("eliminated", false) else 1.0
+	draw_texture_rect_region(tex, fit, region, WorldView.sprite_modulate(int(_variants.get(p.id, 0)), alpha))
+
+
+# Da dove prendere il ritratto: portrait.png se c'è, altrimenti il primo fotogramma di idle,
+# ritagliato sulla parte disegnata (i fotogrammi hanno molto vuoto intorno)
+func _portrait(character_id: String) -> Array:
+	if _portraits.has(character_id):
+		return _portraits[character_id]
+	var c: Dictionary = game.characters.get(character_id, game.characters.get(game.get("defaultCharacterId", ""), {}))
+	var out := []
+	if c.get("portrait") != null:
+		var tex: Texture2D = load("res://data/" + str(c.portrait))
+		if tex != null:
+			out = [tex, Rect2(Vector2.ZERO, tex.get_size())]
+	elif c.get("sprite") != null:
+		var path: String = "%s/idle.png" % c.sprite.dir if c.sprite.has("dir") else c.sprite.path
+		var tex: Texture2D = load("res://data/" + path)
+		if tex != null:
+			var frame := Rect2(0, 0, c.sprite.frameWidth, c.sprite.frameHeight)
+			out = [tex, used_region(tex.get_image(), frame)]
+	_portraits[character_id] = out
+	return out
+
+
+# La parte disegnata (non trasparente) di frame, tagliata in basso a un quadrato: testa e spalle
+static func used_region(image: Image, frame: Rect2) -> Rect2:
+	if image == null:
+		return frame
+	if image.is_compressed():
+		image.decompress()
+	var used := image.get_region(Rect2i(frame)).get_used_rect()
+	if used.size.x <= 0 or used.size.y <= 0:
+		return frame
+	return Rect2(frame.position + Vector2(used.position), Vector2(used.size.x, mini(used.size.y, used.size.x)))
+
+
+# Il rettangolo più grande con le proporzioni di size che sta dentro r, centrato
+static func fit_rect(size: Vector2, r: Rect2) -> Rect2:
+	if size.x <= 0 or size.y <= 0:
+		return r
+	var k := minf(r.size.x / size.x, r.size.y / size.y)
+	var s := size * k
+	return Rect2(r.position + (r.size - s) / 2, s)
 
 
 # Strada fatta in un percorso della Corsa, da 0 (partenza) a 100 (traguardo)
