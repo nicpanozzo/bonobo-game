@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { ATTACKS, BOT, FIGHTER, HITSTUN_PER_KNOCKBACK, LEDGE, TICK_RATE } from "../shared/constants";
 import { Match } from "../shared/match";
-import { ledgesOf } from "../shared/physics";
+import { emptyInput, ledgesOf } from "../shared/physics";
 import { Bots, parseBotKind } from "./bot";
 
 const DT = 1000 / TICK_RATE;
@@ -242,6 +242,38 @@ describe("bot", () => {
     assert.ok(hard.parried >= hard.hits, `difficile: ${hard.parried} parati, ${hard.hits} presi`);
     assert.ok(hard.parried > 0);
     assert.equal(blocks("semplice").parried, 0);
+  });
+
+  it("semplice e difficile afferrano chi tiene lo scudo e lo lanciano verso il bordo più vicino, il facile no (E8)", () => {
+    const grabs = (kind: "facile" | "semplice" | "difficile") => {
+      const match = new Match();
+      const bots = new Bots();
+      match.addPlayer("a", "A");
+      const id = bots.add(match, kind)!;
+      const a = match.players.find((p) => p.id === "a")!;
+      const bot = match.players.find((p) => p.id === id)!;
+      const ground = match.stage.solids.find((s) => bot.x >= s.x && bot.x <= s.x + s.width)!;
+      const towardLeft = bot.x - ground.x < ground.x + ground.width - bot.x;
+      a.x = bot.x + (towardLeft ? 1 : -1) * (FIGHTER.width + 10); // dalla parte del palco: il lancio va verso il bordo
+      let grabbed = false;
+      let thrown: number | null = null; // vx di A appena lanciato
+      for (let i = 0; i < 60 * 4 && thrown === null; i++) {
+        match.setInput("a", { ...emptyInput(), shield: true });
+        bots.tick(match);
+        for (const e of match.step(DT)) {
+          if (e.type === "grab" && e.id === id) grabbed = true;
+          if (e.type === "hit" && e.targetId === "a" && e.kind.startsWith("throw")) thrown = a.vx;
+        }
+      }
+      return { grabbed, thrown, towardLeft };
+    };
+    for (const kind of ["semplice", "difficile"] as const) {
+      const r = grabs(kind);
+      assert.ok(r.grabbed, `${kind}: non afferra`);
+      assert.ok(r.thrown !== null, `${kind}: non lancia`);
+      assert.equal(r.thrown! < 0, r.towardLeft, `${kind}: lanciato dalla parte sbagliata (vx ${r.thrown})`);
+    }
+    assert.equal(grabs("facile").grabbed, false);
   });
 
   it("due bot dello stesso livello si fanno almeno 3 KO in 5 minuti, su ogni arena fissa (E11)", () => {
