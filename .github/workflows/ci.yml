@@ -53,3 +53,15 @@ jobs:
       # Test degli script del client (godot/tests, #83): un test che fallisce fa uscire con 1
       - name: Test del client
         run: ~/godot/godot --headless --path godot --script res://tests/run_tests.gd
+      # Screenshot di lobby e partita finta (#83): si scaricano dalla pagina della CI; rosso se uno è tutto di un colore
+      - name: Screenshot
+        run: |
+          command -v xvfb-run || (sudo apt-get update -qq && sudo apt-get install -y -qq xvfb)
+          xvfb-run -a -s "-screen 0 1280x720x24" ~/godot/godot --path godot --script res://tools/screenshot.gd -- --out=$RUNNER_TEMP/screenshot
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshot
+          path: ${{ runner.temp }}/screenshot
+          if-no-files-found: ignore
+          retention-days: 14
