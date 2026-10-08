@@ -6,5 +6,6 @@
 | `characters/bonobot/bonobot.png` | Claude per Riccardo (GiovannifRana) | fatto da noi | CC0 |
 | `characters/bonobot/omar/` (orsogufo e gnomo della suprema, #102) | Claude per Riccardo (GiovannifRana), provvisori disegnati col codice; orsogufo: fan art ispirata a Baldur's Gate 3, nessun file del gioco | fatto da noi | CC0 |
 | `characters/bonobot/rig/` (pezzi dello scheletro nuovo, #195) | Claude per Riccardo (GiovannifRana), provvisori disegnati col codice | fatto da noi | CC0 |
+| `stages/palco/` (sfondo a tre strati e anteprima del Palco, E12) | Claude Code per Nicola, disegnati col codice | fatto da noi | CC0 |
 | `characters/elvedeo/*.png` | Mauro Grecchi (@MauroGrecchi), ritaglio e pulizia di Claude per Riccardo (GiovannifRana) | foglio in #168, strumento da chiedere a Mauro | da chiedere a Mauro |
 | `godot/assets/fonts/Nunito.ttf` (font dei menu e dell'HUD) | The Nunito Project Authors | [google/fonts](https://github.com/google/fonts/tree/main/ofl/nunito) | SIL Open Font License 1.1 (`godot/assets/fonts/OFL.txt`) |

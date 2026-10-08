@@ -53,6 +53,20 @@ export type StageMusicLead = "square" | "triangle" | "sawtooth" | "sine";
 export const STAGE_MUSIC_LEADS: StageMusicLead[] = ["square", "triangle", "sawtooth", "sine"];
 export const CHORD_NAME = /^[A-G][#b]?m?$/;
 
+// Uno strato disegnato di un'arena (E12 passo 3): un PNG in public/assets/stages/<id>/
+export interface StageLayer {
+  file: string; // nome del file nella cartella dell'arena, es. "sfondo-0.png"
+  parallax: number; // da 0 (fermo con la telecamera, lontanissimo) a 1 (si muove con il palco)
+}
+
+// Lo sfondo illustrato di un'arena: senza, si disegna con i colori di colors
+export interface StageArt {
+  layers: StageLayer[]; // dal più lontano al più vicino, tutti dietro al palco; centrati sul centro dell'arena
+  foreground?: StageLayer; // davanti ai lottatori: leggero e quasi tutto trasparente, per non coprire il gioco
+  preview?: string; // immagine 16:9 dell'arena per la lobby
+  scale?: number; // pixel di mondo per pixel dell'immagine (1 se manca)
+}
+
 export interface StageSpec {
   id: string;
   name: string;
@@ -70,6 +84,7 @@ export interface StageSpec {
   movers?: MovingPlatform[];
   hazards?: Hazard[];
   music?: StageMusic; // musica della partita (E12 passo 4)
+  art?: StageArt; // sfondo a strati (E12 passo 3)
 }
 
 // Larghezza del mondo di un'arena: lo schermo, o di più per i percorsi
@@ -94,6 +109,15 @@ export const STAGES: Record<string, StageSpec> = {
     spawns: [0.3, 0.7, 0.45, 0.55, 0.2, 0.8, 0.37, 0.63].map((f) => ({ x: MAIN.x + MAIN.width * f, y: MAIN.y })),
     respawn: { x: WORLD.width / 2, y: 160 },
     colors: { sky: 0x1d2b3a, solid: 0x5a3d26, solidEdge: 0x8b6a45, platform: 0xa0a8b8 },
+    // Un concerto di notte: cielo e città, tralicci con i fari, il pubblico sotto al palco
+    art: {
+      layers: [
+        { file: "sfondo-0.png", parallax: 0.15 },
+        { file: "sfondo-1.png", parallax: 0.45 },
+        { file: "sfondo-2.png", parallax: 0.75 },
+      ],
+      preview: "anteprima.png",
+    },
   },
 
   // Due isole con un vuoto in mezzo e un ponte sottile sopra: chi cade nel buco perde una vita.

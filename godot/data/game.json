@@ -716,6 +716,23 @@
         "solid": 5913894,
         "solidEdge": 9136709,
         "platform": 10528952
+      },
+      "art": {
+        "layers": [
+          {
+            "file": "sfondo-0.png",
+            "parallax": 0.15
+          },
+          {
+            "file": "sfondo-1.png",
+            "parallax": 0.45
+          },
+          {
+            "file": "sfondo-2.png",
+            "parallax": 0.75
+          }
+        ],
+        "preview": "anteprima.png"
       }
     },
     "isole": {
