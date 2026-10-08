@@ -235,17 +235,15 @@ for nm, base, tip, z in (("tuft_back", (34, -176), (14, -168), 38), ("tuft_front
     nx, ny = (ty - by) * 0.3, -(tx - bx) * 0.3
     pts = [(bx - nx, by - ny), ((bx + tx) / 2 - nx * 0.5, (by + ty) / 2 - ny * 0.5), (tx, ty), ((bx + tx) / 2 + nx * 0.5 + 2, (by + ty) / 2 + ny * 0.5 + 2), (bx + nx, by + ny)]
     piece(nm, nm, z, shaded(pts, FUR, FUR_SH, light=(1, -1.5), rim=RIM))
-# canna: carta chiara, brace arancio sulla punta
+# canna: cono di carta chiara, stretto in bocca e largo in punta, con la piega della carta e la brace arancio
 a, b = H["joint"], T["joint"]
-s = shaded(capsule(a, b, 2.8, 3.3), "#efe6d6", "#c9bda8", light=(0.5, -0.8))
-s += circle(b, 3.6, "#e8743a", w=1.8) + circle((b[0] + 0.8, b[1] - 0.8), 1.6, "#ffd27a", stroke=False)
+s = shaded(capsule(a, b, 2.0, 4.4, n=10), "#efe6d6", "#c9bda8", light=(0.5, -0.9))
+mx, my = (a[0] * 0.45 + b[0] * 0.55), (a[1] * 0.45 + b[1] * 0.55)
+s += line((mx - 1, my - 2.6), (b[0] - 3, b[1] - 3.6), "#cfc2ac", 1.2)  # piega della carta
+s += f'<ellipse cx="{b[0] + OX:.1f}" cy="{b[1] + OY:.1f}" rx="2.6" ry="4.4" transform="rotate({math.degrees(math.atan2(b[1]-a[1], b[0]-a[0])):.1f} {b[0]+OX:.1f} {b[1]+OY:.1f})" fill="#e8743a" stroke="{INK}" stroke-width="1.6"/>'
+s += circle((b[0] + 0.6, b[1] - 1.2), 1.5, "#ffd27a", stroke=False)
 piece("joint", "joint", 45, s, own=True)
-# fumo: sbuffi grigi semitrasparenti (senza inchiostro)
-for nm, c, r in (("smoke_1", (88, -160), 6), ("smoke_2", (89, -181), 8)):
-    s = f'<g opacity="0.7">' + circle(c, r, "#dcd8d0", stroke=False) + circle((c[0] - r * 0.3, c[1] + r * 0.25), r * 0.55, "#b9b5ac", stroke=False) + "</g>"
-    piece(nm, nm, 46, s)
-    _shapes.clear()
-    PIECES[-1] = PIECES[-1][:4] + ([], True)
+# il fumo non è un pezzo disegnato: è un effetto di particelle che parte dalla punta della canna (rig.json: effects)
 # braccio vicino davanti a tutto
 arm_pieces("R", 50)
 
@@ -293,6 +291,7 @@ for ik in IK:
     bones_json.append({"name": ik["pole"], "parent": "root", "head": ik["poleAt"], "tail": [ik["poleAt"][0] + 6, ik["poleAt"][1]], "deform": False})
 
 rig = {
+    "effects": [{"type": "smoke", "bone": "joint", "at": "tail"}],  # fumo della canna, fatto da chi disegna (Godot, Blender)
     "character": "bonobot",
     "version": 2,
     "units": "pixel a 2x, origine ai piedi al centro, y in giù, guarda a destra",

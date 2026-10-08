@@ -1,4 +1,11 @@
 {
+  "effects": [
+    {
+      "type": "smoke",
+      "bone": "joint",
+      "at": "tail"
+    }
+  ],
   "character": "bonobot",
   "version": 2,
   "units": "pixel a 2x, origine ai piedi al centro, y in giù, guarda a destra",
@@ -890,30 +897,10 @@
       "image": "pezzi/joint.png",
       "x": 59,
       "y": -158,
-      "width": 35,
-      "height": 19,
+      "width": 36,
+      "height": 20,
       "ink": "pezzi/joint_ink.png",
       "inkZ": 44.5
-    },
-    {
-      "name": "smoke_1",
-      "bone": "smoke_1",
-      "z": 46,
-      "image": "pezzi/smoke_1.png",
-      "x": 81,
-      "y": -167,
-      "width": 14,
-      "height": 14
-    },
-    {
-      "name": "smoke_2",
-      "bone": "smoke_2",
-      "z": 46,
-      "image": "pezzi/smoke_2.png",
-      "x": 80,
-      "y": -190,
-      "width": 18,
-      "height": 18
     },
     {
       "name": "upper_arm_R",
