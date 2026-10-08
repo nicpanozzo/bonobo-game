@@ -1064,7 +1064,7 @@
           "height": 16,
           "damage": 6,
           "startupMs": 216,
-          "activeMs": 1200,
+          "activeMs": 0,
           "cooldownMs": 550
         },
         "specialSide": {
@@ -1339,7 +1339,7 @@
           "height": 16,
           "damage": 6,
           "startupMs": 216,
-          "activeMs": 1200,
+          "activeMs": 0,
           "cooldownMs": 550
         },
         "specialSide": {
@@ -1619,7 +1619,7 @@
           "height": 16,
           "damage": 6,
           "startupMs": 216,
-          "activeMs": 1200,
+          "activeMs": 0,
           "cooldownMs": 550
         },
         "specialSide": {
@@ -1879,7 +1879,7 @@
           "height": 16,
           "damage": 6,
           "startupMs": 216,
-          "activeMs": 1200,
+          "activeMs": 0,
           "cooldownMs": 550
         },
         "specialSide": {
