@@ -10,6 +10,7 @@ import { rng } from "../stageGenerator";
 import type { ItemState } from "../types";
 import { bodyBox } from "./attacks";
 import { moverPosition } from "./elements";
+import { chargeFromHit } from "./supreme";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
 import { clearStun, hitShield } from "./shield";
 
@@ -209,6 +210,7 @@ function hitWithItem(item: Item, fighters: Fighter[], ctx: PhysicsContext) {
       return;
     }
     target.percent = Math.min(999, target.percent + spec.damage);
+    chargeFromHit(thrower, target, spec.damage); // #101
     const knockback = (spec.knockback + ITEM_RULES.knockbackGrowth * target.percent) / characterStats(target.characterId).weight; // E11
     const angle = (ITEM_RULES.angleDeg * Math.PI) / 180;
     target.vx = dir * Math.cos(angle) * knockback;

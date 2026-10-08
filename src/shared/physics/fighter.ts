@@ -64,6 +64,7 @@ export const emptyInput = (): InputState => ({
   dodge: false,
   shield: false,
   special: false,
+  supreme: false,
 });
 
 export interface FighterSetup {
@@ -105,6 +106,7 @@ export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
     shieldHp: SHIELD.maxHp,
     stunned: false,
     grabbedBy: null,
+    supreme: 0,
     input: emptyInput(),
     prevInput: emptyInput(),
     buffer: emptyBuffer(),
@@ -153,10 +155,10 @@ export const isAlive = (f: Fighter) => !f.eliminated;
 
 // Tasti col buffer (E6): una pressione più corta di un tick, o arrivata un attimo prima che l'azione
 // possa partire (fine del colpo, atterraggio), conta lo stesso per INPUT.bufferMs
-export const BUFFERED_KEYS = ["light", "heavy", "up", "jump", "dodge", "special"] as const;
+export const BUFFERED_KEYS = ["light", "heavy", "up", "jump", "dodge", "special", "supreme"] as const;
 export type BufferedKey = (typeof BUFFERED_KEYS)[number];
 const isBuffered = (key: keyof InputState): key is BufferedKey => (BUFFERED_KEYS as readonly string[]).includes(key);
-export const emptyBuffer = (): Record<BufferedKey, number> => ({ light: 0, heavy: 0, up: 0, jump: 0, dodge: 0, special: 0 });
+export const emptyBuffer = (): Record<BufferedKey, number> => ({ light: 0, heavy: 0, up: 0, jump: 0, dodge: 0, special: 0, supreme: 0 });
 
 export const pressed = (f: Fighter, key: keyof InputState) =>
   (f.input[key] && !f.prevInput[key]) || (isBuffered(key) && f.buffer[key] > 0);

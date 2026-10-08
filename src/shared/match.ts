@@ -105,6 +105,7 @@ export class Match {
       dodge: !!input.dodge,
       shield: !!input.shield,
       special: !!input.special,
+      supreme: !!input.supreme,
     };
     bufferPresses(f, next); // una pressione più corta di un tick non si perde (E6)
     f.input = next;
@@ -191,6 +192,7 @@ export class Match {
         shieldHp: Math.round(f.shieldHp),
         stunned: f.stunned,
         grabbedBy: f.grabbedBy,
+        supreme: Math.floor(f.supreme), // per difetto: 100 solo quando è davvero piena
       });
     }
     const teamScores = this.rules.mode === "flag" ? { ...this.scores } : null;

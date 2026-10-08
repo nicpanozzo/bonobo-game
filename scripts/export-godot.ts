@@ -11,6 +11,7 @@ import { ATTACKS, AUDIO, CAMERA, COLORS, EFFECTS, FIGHTER, INPUT, ITEM_RULES, LE
 import { RECONNECT, RECONNECT_HOLD_MS } from "../src/shared/constants";
 import { COLORS_COLORBLIND, TEAM_COLORS_COLORBLIND } from "../src/shared/constants";
 import { TRAINING } from "../src/shared/constants";
+import { SUPREME } from "../src/shared/constants";
 import { LESSONS, TUTORIAL_BOT, TUTORIAL_STAGE_ID } from "../src/shared/tutorial";
 import { CHALLENGES } from "../src/shared/challenges";
 import { ITEMS } from "../src/shared/items";
@@ -115,6 +116,7 @@ const data = {
   attacks: ATTACKS,
   ledge: { hangOffsetY: LEDGE.hangOffsetY }, // bordo del palco (#110): dove sta la mano di chi è appeso
   shield: { maxHp: SHIELD.maxHp }, // scudo (#109): la bolla è grande in proporzione ai punti rimasti
+  supreme: { max: SUPREME.max }, // barra della suprema (#101): piena a questo valore
   stageCheck: stageCheckData(), // altezze di salto per il controllo delle arene nell'editor (E12)
   net: NET,
   reconnect: { ...RECONNECT, holdMs: RECONNECT_HOLD_MS }, // riconnessione dopo un calo di rete (#107)
