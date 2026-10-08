@@ -68,6 +68,7 @@ export interface PlayerState {
   shieldHp: number; // punti di scudo, da 0 a SHIELD.maxHp: la bolla è grande in proporzione
   stunned: boolean; // stordito dopo che lo scudo si è rotto: fermo e colpibile
   grabbedBy: string | null; // id di chi lo tiene con la presa (#109), null se libero
+  dashing: boolean; // scatta o corre dopo un doppio tocco (#199)
   charge: number; // carica della speciale in corso (E10), da 0 a 1; 0 se non si carica
   supreme: number; // barra della suprema (#101), da 0 a SUPREME.max: piena, il tasto suprema la lancia
 }
@@ -141,6 +142,7 @@ export type GameEvent =
   | { type: "counter"; id: string; attackerId: string; x: number; y: number } // id para il colpo di attackerId col contrattacco (E10) e risponde
   | { type: "projectile"; id: string; projectileId: number; x: number; y: number } // id tira un proiettile (E10)
   | { type: "projectileEnd"; projectileId: number; reason: "hit" | "blocked" | "expired" | "wall"; x: number; y: number } // il proiettile sparisce
+  | { type: "dash"; id: string; x: number; y: number } // parte uno scatto con il doppio tocco (#199)
   | { type: "matchStart" }
   | { type: "away"; id: string } // id si è disconnesso: il suo posto resta tenuto per un po' (#107)
   | { type: "back"; id: string } // id è rientrato nel suo posto

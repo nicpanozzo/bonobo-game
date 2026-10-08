@@ -88,6 +88,8 @@ func music_on() -> bool:
 
 func on_event(e: Dictionary) -> void:
 	match e.type:
+		"dash":
+			_play("doubleJump", {"volume": 0.45, "pitch": 0.75}) # scatto (#199): uno slancio più grave del doppio salto
 		"attack":
 			# Le varianti direzionali (#2) usano il suono del colpo base, un po' più acuto in su e più grave in giù
 			var kind: String = e.kind

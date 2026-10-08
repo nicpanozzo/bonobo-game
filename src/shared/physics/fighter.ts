@@ -52,6 +52,11 @@ export interface Fighter extends PlayerState {
   supremeX: number; // dove sta la liana, centro dell'impatto
   supremeY: number; // terreno dell'impatto: i piedi alla partenza
   supremeBusyMs: number; // ms che restano della suprema in corso, attesa finale compresa: intanto la barra non si carica col tempo
+  dashTimer: number; // ms di scatto rimasti (#199); finito, se si tiene la direzione si corre
+  dashTapDir: number; // direzione dell'ultimo tocco, per riconoscere il doppio tocco
+  dashTapTimer: number; // ms entro cui un secondo tocco nella stessa direzione fa scattare
+  dashHoldMs: number; // ms per cui si è tenuto l'ultimo tocco: oltre DASH.tapMaxMs non vale come tocco
+  dashByTap: boolean; // il doppio tocco fa scattare (i bot no: i loro tocchi brevi scatterebbero per sbaglio)
 }
 
 // Quello che serve alla fisica oltre ai lottatori: l'arena e dove scrivere gli eventi
@@ -118,6 +123,12 @@ export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
     shieldHp: SHIELD.maxHp,
     stunned: false,
     grabbedBy: null,
+    dashing: false,
+    dashTimer: 0,
+    dashTapDir: 0,
+    dashTapTimer: 0,
+    dashHoldMs: 0,
+    dashByTap: true,
     supreme: 0,
     input: emptyInput(),
     prevInput: emptyInput(),
@@ -171,7 +182,7 @@ export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
 // Riporta un lottatore all'inizio partita, tenendo i tasti che sta premendo
 export function resetForMatch(f: Fighter, index: number, stocks: number, stage: StageSpec): void {
   const fresh = createFighter({ ...f, index, stocks }, stage);
-  Object.assign(f, fresh, { input: f.input, prevInput: f.prevInput, away: f.away }); // chi è disconnesso resta tale nella rivincita
+  Object.assign(f, fresh, { input: f.input, prevInput: f.prevInput, away: f.away, dashByTap: f.dashByTap }); // chi è disconnesso resta tale nella rivincita
 }
 
 export const isAlive = (f: Fighter) => !f.eliminated;

@@ -22,6 +22,7 @@ import { applyControls, applyGravity } from "./movement";
 import { holdShield } from "./shield";
 import { stepProjectiles } from "./projectiles";
 import { cancelSpecial, specialing } from "./specials";
+import { endDash } from "./dash";
 import { collideWithStage, loseStock, outOfBlastZone, respawn } from "./stage";
 import { supreming, tickSupreme } from "./supreme";
 
@@ -91,6 +92,7 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
   updateAttack(f, dtMs);
   // Suprema propria (#102): appesi alla liana, fermi dove si è
   if (supreming(f, dtMs)) {
+    endDash(f); // la suprema ferma lo scatto (#199)
     f.prevInput = f.input;
     return;
   }
@@ -98,7 +100,7 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
   if (!grabbing(f, dtMs, ctx) && !specialing(f, dtMs, ctx) && !holdShield(f, dtMs, ctx)) {
     applyControls(f, dt, ctx);
     tryStartAttack(f, ctx);
-  }
+  } else endDash(f); // scudo, presa o speciale fermano lo scatto (#199)
   applyGravity(f, dt);
 
   const prevY = f.y;

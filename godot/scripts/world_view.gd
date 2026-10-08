@@ -227,6 +227,12 @@ func on_event(e: Dictionary) -> void:
 				var p: Variant = buffer.sample(e.id, Time.get_ticks_msec())
 				if p != null:
 					_supreme_view.start(p, game.characters.get(p.characterId, {}))
+		"dash":
+			# Scatto (#199): uno sbuffo di polvere dove parte e uno un po' indietro
+			_puff(e.x, e.y)
+			var p: Variant = buffer.sample(e.id, Time.get_ticks_msec())
+			if p != null:
+				_puff(float(e.x) - float(p.facing) * 26.0, float(e.y))
 		"jump":
 			if not e.get("air", false):
 				_puff(e.x, e.y)
@@ -879,6 +885,8 @@ static func _animation_for(p: Dictionary, holding := false) -> String:
 		return "shield" # scudo (#109): chi non l'ha disegnato resta fermo, dentro la bolla
 	if not p.onGround:
 		return "jump" if p.vy < 0 else "fall"
+	if p.get("dashing", false):
+		return "dash" # scatto e corsa (#199); senza disegno, la camminata
 	if absf(p.vx) > 20:
 		return "walk"
 	return "idle"

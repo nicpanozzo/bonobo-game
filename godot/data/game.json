@@ -1364,6 +1364,13 @@
             "loop": false,
             "src": "heavy"
           },
+          "dash": {
+            "row": 1,
+            "frames": 6,
+            "fps": 10,
+            "loop": true,
+            "src": "walk"
+          },
           "supreme": {
             "row": 5,
             "frames": 4,
@@ -1637,6 +1644,13 @@
             "loop": false,
             "hitFrame": 6,
             "src": "heavy"
+          },
+          "dash": {
+            "row": 1,
+            "frames": 10,
+            "fps": 24,
+            "loop": true,
+            "src": "walk"
           },
           "supreme": {
             "row": 5,
@@ -1928,6 +1942,12 @@
             "hitFrame": 6,
             "frames": 8,
             "src": "heavy"
+          },
+          "dash": {
+            "fps": 20,
+            "loop": true,
+            "frames": 10,
+            "src": "walk"
           },
           "supreme": {
             "fps": 24,
