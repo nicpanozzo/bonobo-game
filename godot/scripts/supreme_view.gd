@@ -91,8 +91,10 @@ func _draw_run(r: Dictionary, ms: float) -> void:
 	var ground: float = r.ground
 	var top := view_rect.position.y - 60.0
 
-	# Liana: scende dall'alto mentre Bonobot salta, resta finché l'orsogufo arriva a terra
-	if ms < impact + float(sp.impactMs):
+	# Liana: scende dall'alto mentre Bonobot salta e la afferra. Quando la tira, dall'alto arriva
+	# l'orsogufo legato alla liana: da lì la liana va dall'alto fino a lui, e sparisce col puff
+	var fall_from := impact - float(sp.fallMs)
+	if ms < fall_from:
 		var k := clampf(ms / float(sp.leapMs), 0.0, 1.0)
 		var tip := lerpf(top, r.hand, _ease_out(k))
 		_draw_vine(Vector2(x, top), Vector2(x, tip), ms)
@@ -107,14 +109,14 @@ func _draw_run(r: Dictionary, ms: float) -> void:
 		var pulse := 0.5 + 0.5 * sin(ms / 70.0)
 		_ellipse_outline(Vector2(x, ground), Vector2(float(sp.width) / 2, 14.0), Color(1, 0.3, 0.25, 0.35 + 0.4 * pulse * k))
 
-	# Orsogufo: cade negli ultimi fallMs dell'ombra, schiacciato durante l'impatto
-	var fall_from := impact - float(sp.fallMs)
+	# Orsogufo: cade negli ultimi fallMs dell'ombra, legato alla liana, schiacciato durante l'impatto
 	if ms >= fall_from and after < 0:
 		var k := clampf((ms - fall_from) / float(sp.fallMs), 0.0, 1.0)
 		var feet := lerpf(top, ground, k * k) # accelera cadendo
 		var squash := 1.0
 		if ms >= impact:
 			squash = 0.75 # schiacciato a terra
+		_draw_vine(Vector2(x, top - 400.0), Vector2(x, feet - BEAR_H * squash * 0.9), ms) # legato alla liana
 		_draw_bear(Vector2(x, feet), squash)
 		_draw_label(str(sp.label), Vector2(x, feet - BEAR_H * squash - 26)) # sopra le orecchie
 
