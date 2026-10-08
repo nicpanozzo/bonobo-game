@@ -14,6 +14,7 @@ export interface InputState {
   dodge: boolean; // schivata (#3): invulnerabili per un attimo, spostandosi nella direzione tenuta
   shield: boolean; // scudo (#109): tenuto a terra para i colpi e si consuma; con una direzione rotola, con su si salta fuori
   special: boolean; // mossa speciale (E10): da fermi, con una direzione o con giù, diversa per ogni personaggio
+  supreme: boolean; // suprema (#101): parte solo con la barra piena (PlayerState.supreme)
 }
 
 // Le varianti direzionali (#2): su tenendo su, giù tenendo giù a terra, Air in aria; recovery: K + su in aria (#11)
@@ -34,6 +35,7 @@ export type AttackKind =
   | "throwBack"
   | "throwUp"
   | "throwDown"
+  | "supreme" // suprema (#101): con la barra piena, poi la barra torna a 0
   | SpecialKind;
 
 // Le mosse speciali (E10): i numeri dipendono dal personaggio (specialsFor in characters.ts)
@@ -68,6 +70,7 @@ export interface PlayerState {
   grabbedBy: string | null; // id di chi lo tiene con la presa (#109), null se libero
   dashing: boolean; // scatta o corre dopo un doppio tocco (#199)
   charge: number; // carica della speciale in corso (E10), da 0 a 1; 0 se non si carica
+  supreme: number; // barra della suprema (#101), da 0 a SUPREME.max: piena, il tasto suprema la lancia
 }
 
 // Un proiettile in volo (E10): lo tira una speciale e colpisce come un attacco

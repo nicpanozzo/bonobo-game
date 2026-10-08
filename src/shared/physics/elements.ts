@@ -5,6 +5,7 @@
 import { FIGHTER, HAZARD, HITSTOP, HITSTUN_PER_KNOCKBACK } from "../constants";
 import type { Hazard, MovingPlatform } from "../stages";
 import type { Fighter, PhysicsContext } from "./fighter";
+import { chargeFromHit } from "./supreme";
 
 const mod = (a: number, b: number) => ((a % b) + b) % b;
 
@@ -88,6 +89,7 @@ export function resolveHazards(fighters: Fighter[], ctx: PhysicsContext): void {
       const touching = f.x + half > h.x && f.x - half < h.x + h.width && f.y > h.y && f.y - FIGHTER.height < h.y + h.height;
       if (!touching) continue;
       f.percent = Math.min(999, f.percent + h.damage);
+      chargeFromHit(null, f, h.damage); // #101: la trappola carica solo chi la prende
       const knockback = h.knockback + h.knockbackGrowth * f.percent;
       const angle = (h.angleDeg * Math.PI) / 180;
       const away = f.x < h.x + h.width / 2 ? -1 : 1;

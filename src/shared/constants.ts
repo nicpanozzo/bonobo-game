@@ -111,6 +111,21 @@ export const ATTACKS: Record<Exclude<AttackKind, SpecialKind>, AttackSpec> = {
   throwBack: { damage: 10, baseKnockback: 400, knockbackGrowth: 10, startupMs: 0, activeMs: 150, cooldownMs: 300, range: 40, height: 40, angleDeg: 135, boxY: -60 }, // il lancio da KO
   throwUp: { damage: 7, baseKnockback: 360, knockbackGrowth: 9.5, startupMs: 0, activeMs: 150, cooldownMs: 300, range: 40, height: 40, angleDeg: 88, boxY: -60 },
   throwDown: { damage: 6, baseKnockback: 300, knockbackGrowth: 6, startupMs: 0, activeMs: 150, cooldownMs: 300, range: 40, height: 40, angleDeg: 70, boxY: -60 }, // apre le combo
+  // Suprema di base (#101), di tutti finché il personaggio non ha la sua (Bonobot: #102): un colpo largo
+  // che prende davanti e un po' dietro, con un avvio lungo in cui si è invulnerabili (SUPREME.invulnerableMs)
+  supreme: { damage: 20, baseKnockback: 620, knockbackGrowth: 12, startupMs: 350, activeMs: 200, cooldownMs: 1000, range: 190, height: 130, angleDeg: 45, boxX: -60, boxY: -130 },
+};
+
+// Barra della suprema (#101): da 0 a max. Valori provvisori pensati per arrivare piena circa una volta per vita
+// (come la Final Smash con la barra in Smash Ultimate): in una vita si danno e si prendono circa 100 punti di percentuale
+// in circa un minuto, cioè 100 * 0.5 + 100 * 0.3 + 60 * 0.3 = 98. Da rivedere al playtest (#22)
+export const SUPREME = {
+  max: 100,
+  perDamageDealt: 0.5, // carica per ogni punto di percentuale dato
+  perDamageTaken: 0.3, // carica per ogni punto di percentuale preso: chi è in svantaggio recupera, ma meno di chi colpisce
+  perSecond: 0.3, // carica al secondo stando in gioco: da sola riempie la barra in 5 minuti e mezzo
+  keepOnKo: true, // la barra resta quando si perde una vita (proposta in #101, da confermare)
+  invulnerableMs: 350, // ms invulnerabili dall'inizio della suprema: nessuno la interrompe durante l'avvio
 };
 
 // Presa (#109, E8 passo 2): quanto si tiene, come ci si libera, i colpetti
