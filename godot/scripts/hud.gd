@@ -139,7 +139,12 @@ func _draw_cards(w: float, h: float, flag: bool) -> void:
 		draw_rect(Rect2(x + 6, h - 86, card_w - 12, 74), Color(0, 0, 0, 0.45))
 		draw_rect(Rect2(x + 6, h - 86, 6, 74), col)
 		var name: String = p.name + (" (tu)" if p.id == my_id else "")
-		draw_string(_font, Vector2(x + 20, h - 64), name, HORIZONTAL_ALIGNMENT_LEFT, card_w - 30, 15, Color.WHITE)
+		# Barra della suprema piena: "SUPREMA!" sta sulla riga del nome, a destra (sotto c'erano le vite)
+		var supreme_full: bool = not p.eliminated and float(p.get("supreme", 0)) >= _supreme_max()
+		var name_w := card_w - 30 - (62.0 if supreme_full else 0.0)
+		draw_string(_font, Vector2(x + 20, h - 64), name, HORIZONTAL_ALIGNMENT_LEFT, name_w, 15, Color.WHITE)
+		if supreme_full:
+			draw_string(_font, Vector2(x + card_w - 72, h - 65), "SUPREMA!", HORIZONTAL_ALIGNMENT_RIGHT, 58, 11, UI.ACCENT)
 		var pct := "OUT" if p.eliminated else "%d%%" % roundi(p.percent)
 		var pos := Vector2(x + 20, h - 30)
 		var size := 28
@@ -168,7 +173,7 @@ func _draw_cards(w: float, h: float, flag: bool) -> void:
 
 
 # Barra della suprema (#101) sotto la percentuale. Piena diventa dorata, più spessa e pulsa
-# (ferma con l'opzione "calma"), con la scritta del tasto da premere sopra
+# (ferma con l'opzione "calma"); la scritta "SUPREMA!" la mette la scheda, sulla riga del nome
 func _draw_supreme(r: Rect2, value: float) -> void:
 	var t := clampf(value / _supreme_max(), 0.0, 1.0)
 	draw_rect(r, Color(1, 1, 1, 0.18))
@@ -178,7 +183,6 @@ func _draw_supreme(r: Rect2, value: float) -> void:
 	var pulse := 1.0 if Access.calm else 0.65 + 0.35 * sin(Time.get_ticks_msec() / 110.0)
 	draw_rect(r.grow(2), Color(UI.ACCENT, 0.45 * pulse))
 	draw_rect(r, Color(UI.ACCENT, pulse).lerp(Color.WHITE, 0.25 * pulse))
-	draw_string(_font, Vector2(r.position.x + r.size.x - 58, r.position.y - 4), "SUPREMA!", HORIZONTAL_ALIGNMENT_RIGHT, 58, 11, UI.ACCENT)
 
 
 func _supreme_max() -> float:

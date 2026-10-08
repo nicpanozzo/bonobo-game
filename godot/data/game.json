@@ -1025,6 +1025,9 @@
     "min": 0.8,
     "max": 1.2
   },
+  "perfBudget": {
+    "clientScriptUs": 6000
+  },
   "characters": {
     "default": {
       "id": "default",
@@ -1748,6 +1751,276 @@
         "boxY": -140,
         "outward": true
       }
+    },
+    "elvedeo": {
+      "id": "elvedeo",
+      "name": "Elvedeo",
+      "stats": {
+        "speed": 0.85,
+        "airSpeed": 0.95,
+        "jump": 0.9,
+        "weight": 1.15,
+        "gravity": 1
+      },
+      "sprite": {
+        "dir": "assets/characters/elvedeo",
+        "frameWidth": 360,
+        "frameHeight": 200,
+        "scale": 0.5,
+        "animations": {
+          "idle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "walk": {
+            "fps": 20,
+            "loop": true,
+            "frames": 10,
+            "src": "walk"
+          },
+          "jump": {
+            "fps": 24,
+            "loop": false,
+            "frames": 7,
+            "src": "jump"
+          },
+          "fall": {
+            "fps": 6,
+            "loop": true,
+            "frames": 2,
+            "src": "fall"
+          },
+          "light": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "frames": 6,
+            "src": "light"
+          },
+          "heavy": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 6,
+            "frames": 8,
+            "src": "heavy"
+          },
+          "hit": {
+            "fps": 24,
+            "loop": false,
+            "frames": 8,
+            "src": "hit"
+          },
+          "doubleJump": {
+            "fps": 24,
+            "loop": false,
+            "frames": 7,
+            "src": "jump"
+          },
+          "tumble": {
+            "fps": 24,
+            "loop": true,
+            "frames": 12,
+            "src": "tumble"
+          },
+          "ledge": {
+            "fps": 24,
+            "loop": false,
+            "frames": 7,
+            "src": "jump"
+          },
+          "climb": {
+            "fps": 24,
+            "loop": false,
+            "frames": 7,
+            "src": "jump"
+          },
+          "land": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "lightUp": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "frames": 6,
+            "src": "light"
+          },
+          "lightDown": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "frames": 6,
+            "src": "light"
+          },
+          "lightAir": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "frames": 6,
+            "src": "light"
+          },
+          "heavyUp": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 6,
+            "frames": 8,
+            "src": "heavy"
+          },
+          "heavyDown": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 6,
+            "frames": 8,
+            "src": "heavy"
+          },
+          "heavyAir": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 6,
+            "frames": 8,
+            "src": "heavy"
+          },
+          "recovery": {
+            "fps": 24,
+            "loop": false,
+            "frames": 7,
+            "src": "jump"
+          },
+          "taunt": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "shield": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "grab": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "frames": 6,
+            "src": "light"
+          },
+          "throw": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "frames": 6,
+            "src": "light"
+          },
+          "grabbed": {
+            "fps": 24,
+            "loop": false,
+            "frames": 8,
+            "src": "hit"
+          },
+          "special": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 6,
+            "frames": 8,
+            "src": "heavy"
+          },
+          "supreme": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 6,
+            "frames": 8,
+            "src": "heavy"
+          }
+        }
+      },
+      "specials": {
+        "neutral": {
+          "type": "projectile",
+          "name": "Tiro",
+          "startupMs": 216,
+          "cooldownMs": 550,
+          "speed": 700,
+          "gravity": 0,
+          "lifeMs": 1200,
+          "maxAlive": 1,
+          "range": 24,
+          "height": 16,
+          "damage": 6,
+          "baseKnockback": 220,
+          "knockbackGrowth": 3.5,
+          "angleDeg": 30,
+          "color": 16767050
+        },
+        "side": {
+          "type": "dash",
+          "name": "Scatto",
+          "startupMs": 100,
+          "durationMs": 250,
+          "speed": 900,
+          "endLagMs": 300,
+          "range": 40,
+          "height": 50,
+          "damage": 9,
+          "baseKnockback": 360,
+          "knockbackGrowth": 8,
+          "angleDeg": 35
+        },
+        "down": {
+          "type": "counter",
+          "name": "Contrattacco",
+          "startupMs": 50,
+          "windowMs": 400,
+          "endLagMs": 450,
+          "minDamage": 8,
+          "multiplier": 1.3,
+          "range": 60,
+          "height": 60,
+          "baseKnockback": 450,
+          "knockbackGrowth": 9,
+          "angleDeg": 40
+        }
+      },
+      "specialAttacks": {
+        "specialNeutral": {
+          "baseKnockback": 220,
+          "knockbackGrowth": 3.5,
+          "angleDeg": 30,
+          "range": 24,
+          "height": 16,
+          "damage": 6,
+          "startupMs": 216,
+          "activeMs": 0,
+          "cooldownMs": 550
+        },
+        "specialSide": {
+          "baseKnockback": 360,
+          "knockbackGrowth": 8,
+          "angleDeg": 35,
+          "range": 40,
+          "height": 50,
+          "damage": 9,
+          "startupMs": 100,
+          "activeMs": 250,
+          "cooldownMs": 650
+        },
+        "specialDown": {
+          "baseKnockback": 450,
+          "knockbackGrowth": 9,
+          "angleDeg": 40,
+          "range": 60,
+          "height": 60,
+          "damage": 8,
+          "startupMs": 50,
+          "activeMs": 400,
+          "cooldownMs": 900
+        }
+      },
+      "supremeAttack": null
     }
   }
 }

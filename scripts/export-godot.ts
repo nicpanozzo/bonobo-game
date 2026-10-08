@@ -18,7 +18,7 @@ import { ITEMS } from "../src/shared/items";
 import { DEFAULT_STAGE_ID, STAGES } from "../src/shared/stages";
 import { stageCheckData } from "../src/shared/stageCheck";
 import { characterStats } from "../src/shared/characters";
-import { CHARACTER_STATS } from "../src/shared/constants";
+import { CHARACTER_STATS, PERF_BUDGET } from "../src/shared/constants";
 
 // La versione del gioco ha una fonte sola, package.json (E2, #106)
 const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")) as { version: string };
@@ -155,6 +155,7 @@ const data = {
   stages: STAGES,
   defaultCharacterId: DEFAULT_CHARACTER_ID,
   characterStats: CHARACTER_STATS, // limiti delle statistiche, per le barre della lobby (E11)
+  perfBudget: { clientScriptUs: PERF_BUDGET.clientScriptUs }, // budget del client per bench_client.gd --check (E3)
   characters, // CHARACTERS, con i fotogrammi degli sprite in formato cartella
 };
 
