@@ -1,25 +1,34 @@
-# Suprema "drop" (#102), quella di Bonobot: la liana scende un po' davanti a lui, Bonobot salta ad
-# afferrarla e la tira, l'ombra avvisa, l'orsogufo Omar cade in verticale sulla liana mentre Bonobot
-# fa la capriola indietro, schiaccia, fa puff e diventa uno gnomo che scappa verso il bordo più vicino.
-# Il salto e la capriola li muove il server: qui si disegna il resto.
-# Solo disegno: parte dall'evento attack con kind "supreme" e segue i tempi del personaggio in game.json
-# (characters.<id>.supreme). Il colpo vero lo decide il server. Le forme sono provvisorie: quando ci
-# saranno i disegni di Riccardo (liana, orsogufo, puff, gnomo) si sostituiscono qui.
+# Suprema "drop" (#102), quella di Bonobot. Bonobot salta ad afferrare la liana che scende un po' davanti
+# a lui e la tira (il salto e la capriola indietro li muove il server). Dall'alto l'orsogufo Omar, legato
+# all'altro capo, cade di peso in verticale sulla liana, con la liana che gli sventola dietro; schiaccia,
+# resta a terra stordito, fa puff e al suo posto compare lo gnomo Omar che scappa verso il bordo più
+# vicino. Col puff sparisce anche la liana.
+# Solo disegno: parte dall'evento attack con kind "supreme" e segue i tempi e i disegni del personaggio in
+# game.json (characters.<id>.supreme). Il colpo vero lo decide il server.
 extends Node2D
 
-const PUFF_MS := 320.0 # durata della nuvola del puff
-const GNOME_DELAY_MS := 120.0 # lo gnomo esce dalla nuvola un attimo dopo
-const GNOME_MAX_MS := 3000.0 # oltre, anche se non è uscito dallo schermo, sparisce
-const BEAR_W := 92.0 # sagoma provvisoria dell'orsogufo, pixel
-const BEAR_H := 104.0
-const GNOME_H := 52.0
+signal impact(strength: float) # l'orsogufo tocca terra: world_view fa tremare lo schermo
+
+const PUFF_MS := 380.0 # durata della nuvola del puff
+const RUNNER_DELAY_MS := 140.0 # lo gnomo esce dalla nuvola un attimo dopo
+const RUNNER_MAX_MS := 3000.0 # oltre, anche se non è uscito dallo schermo, sparisce
+const SQUASH_MS := 160.0 # rimbalzo dell'orsogufo quando tocca terra
+const ROPE_TAIL := 240.0 # pixel di liana che sventola sopra l'orsogufo mentre cade
+const IMPACT_SHAKE := 12.0
+const INK := Color("221c1a")
+const ROPE := Color("557f2e")
+const ROPE_SH := Color("36571c")
+const LEAF := Color("6f9a3c")
+const CLOUD := Color("eef2ea")
+const CLOUD_SH := Color("bccab6")
 
 var game: Dictionary
 var stage: Dictionary
-var view_rect := Rect2(0, 0, 1280, 720) # lo aggiorna world_view, per sapere quando lo gnomo è uscito
-var _runs: Array = [] # [{ id, sp, x, ground, hand, t0, dir }]
-var _font: Font = ThemeDB.fallback_font
+var view_rect := Rect2(0, 0, 1280, 720) # lo aggiorna world_view: da qui cade l'orsogufo e lì esce lo gnomo
 var fixed_now := -1.0 # per i test e le anteprime: se >= 0 è l'orologio in ms al posto di quello vero
+var _runs: Array = [] # [{ id, sp, x, ground, hand, t0, dir, shook }]
+var _tex := {} # percorso -> Texture2D
+var _font: Font = ThemeDB.fallback_font
 
 
 func _now() -> float:
@@ -41,6 +50,7 @@ func start(p: Dictionary, character: Dictionary) -> void:
 		"hand": y - float(sp.leapDy) - float(game.fighter.height) * 0.95, # dove la mano prende la liana
 		"t0": _now(),
 		"dir": escape_dir(stage, x),
+		"shook": false,
 	})
 
 
@@ -48,11 +58,11 @@ func clear() -> void:
 	_runs = []
 
 
-# Chi sta facendo la suprema non lampeggia per l'invulnerabilità: è appeso alla liana
+# Chi sta facendo la suprema non lampeggia per l'invulnerabilità
 func holds(id: String, now: float) -> bool:
 	for r in _runs:
 		var sp: Dictionary = r.sp
-		if r.id == id and now - r.t0 < _impact_at(sp) + float(sp.impactMs) + float(sp.recoverMs):
+		if r.id == id and now - r.t0 < impact_at(sp) + float(sp.impactMs) + float(sp.recoverMs):
 			return true
 	return false
 
@@ -69,7 +79,11 @@ func _process(_delta: float) -> void:
 	if _runs.is_empty():
 		return
 	var now := _now()
-	_runs = _runs.filter(func(r): return now - r.t0 < _impact_at(r.sp) + float(r.sp.impactMs) + GNOME_DELAY_MS + GNOME_MAX_MS)
+	for r in _runs:
+		if not r.shook and now - r.t0 >= impact_at(r.sp):
+			r.shook = true
+			impact.emit(IMPACT_SHAKE)
+	_runs = _runs.filter(func(r): return now - r.t0 < puff_at(r.sp) + RUNNER_DELAY_MS + RUNNER_MAX_MS)
 	queue_redraw()
 
 
@@ -79,119 +93,193 @@ func _draw() -> void:
 		_draw_run(r, now - r.t0)
 
 
-static func _impact_at(sp: Dictionary) -> float:
+static func impact_at(sp: Dictionary) -> float:
 	return float(sp.leapMs) + float(sp.pullMs) + float(sp.warnMs)
+
+
+# Il puff arriva alla fine dell'attesa: l'orsogufo resta a terra stordito per impactMs + recoverMs
+static func puff_at(sp: Dictionary) -> float:
+	return impact_at(sp) + float(sp.impactMs) + float(sp.recoverMs) * 0.6
 
 
 func _draw_run(r: Dictionary, ms: float) -> void:
 	var sp: Dictionary = r.sp
-	var impact := _impact_at(sp)
-	var after := ms - impact - float(sp.impactMs) # ms dalla fine dell'impatto
+	var art: Dictionary = sp.get("art", {})
 	var x: float = r.x
 	var ground: float = r.ground
-	var top := view_rect.position.y - 60.0
-
-	# Liana: scende dall'alto mentre Bonobot salta e la afferra. Quando la tira, dall'alto arriva
-	# l'orsogufo legato alla liana: da lì la liana va dall'alto fino a lui, e sparisce col puff
+	var top := view_rect.position.y - 40.0
+	var impact := impact_at(sp)
+	var puff := puff_at(sp)
 	var fall_from := impact - float(sp.fallMs)
+	var pulled := float(sp.leapMs) + float(sp.pullMs)
+
+	# 1. La liana scende mentre Bonobot salta, lui la tira, poi resta a penzolare finché parte l'orsogufo
 	if ms < fall_from:
 		var k := clampf(ms / float(sp.leapMs), 0.0, 1.0)
-		var tip := lerpf(top, r.hand, _ease_out(k))
-		_draw_vine(Vector2(x, top), Vector2(x, tip), ms)
+		var tip := lerpf(top, r.hand, 1.0 - (1.0 - k) * (1.0 - k))
+		var pull := 0.0
+		if ms >= float(sp.leapMs) and ms < pulled:
+			pull = sin((ms - float(sp.leapMs)) / float(sp.pullMs) * PI) * 18.0 # la tira giù
+		var sway := 0.0 if ms < pulled else sin((ms - pulled) / 90.0) * 10.0 # lasciata, oscilla
+		_draw_rope([Vector2(x, top), Vector2(x + sway * 0.4, (top + tip) / 2), Vector2(x + sway, tip + pull)], ms, true)
 
-	# Ombra a terra: compare quando tira la liana, si allarga e scurisce fino all'impatto
-	var pulled := float(sp.leapMs) + float(sp.pullMs)
+	# 2. Ombra: compare quando la tira, si allarga e scurisce fino all'impatto
 	if ms >= pulled and ms < impact + float(sp.impactMs):
 		var k := clampf((ms - pulled) / float(sp.warnMs), 0.0, 1.0)
-		var w := float(sp.width) * (0.35 + 0.65 * k)
-		_ellipse(Vector2(x, ground), Vector2(w / 2, 9.0 + 5.0 * k), Color(0, 0, 0, 0.18 + 0.32 * k))
-		# Un bordo rosso che pulsa: si capisce che lì sta per cadere qualcosa
-		var pulse := 0.5 + 0.5 * sin(ms / 70.0)
-		_ellipse_outline(Vector2(x, ground), Vector2(float(sp.width) / 2, 14.0), Color(1, 0.3, 0.25, 0.35 + 0.4 * pulse * k))
+		var w := float(sp.width) * (0.3 + 0.7 * k * k)
+		_ellipse(Vector2(x, ground), Vector2(w / 2, 6.0 + 7.0 * k), Color(0, 0, 0, 0.15 + 0.35 * k))
+		var pulse := 0.5 + 0.5 * sin(ms / 60.0)
+		_ellipse_outline(Vector2(x, ground), Vector2(float(sp.width) / 2, 14.0), Color(1, 0.3, 0.25, (0.3 + 0.45 * pulse) * k), 2.5)
 
-	# Orsogufo: cade negli ultimi fallMs dell'ombra, legato alla liana, schiacciato durante l'impatto
-	if ms >= fall_from and after < 0:
-		var k := clampf((ms - fall_from) / float(sp.fallMs), 0.0, 1.0)
-		var feet := lerpf(top, ground, k * k) # accelera cadendo
-		var squash := 1.0
-		if ms >= impact:
-			squash = 0.75 # schiacciato a terra
-		_draw_vine(Vector2(x, top - 400.0), Vector2(x, feet - BEAR_H * squash * 0.9), ms) # legato alla liana
-		_draw_bear(Vector2(x, feet), squash)
-		_draw_label(str(sp.label), Vector2(x, feet - BEAR_H * squash - 26)) # sopra le orecchie
+	var scale: float = float(art.get("scale", 0.5))
+	var falling := _texture(art, "falling")
+	var landed := _texture(art, "landed")
 
-	# Impatto: un anello che si allarga sul terreno
-	if ms >= impact and after < 250.0:
-		var k := clampf((ms - impact) / (float(sp.impactMs) + 250.0), 0.0, 1.0)
-		var ring := Color(1, 0.95, 0.8, 1.0 - k)
-		_ellipse_outline(Vector2(x, ground), Vector2(float(sp.width) / 2 * (0.8 + 0.6 * k), 18.0 * (0.8 + 0.6 * k)), ring, 5.0)
+	# 3. Caduta di peso: parte ferma da sopra lo schermo e accelera fino a terra (moto uniformemente accelerato),
+	# allungata dalla velocità, con la liana legata che le sventola sopra
+	if ms >= fall_from and ms < impact and falling != null:
+		var size := falling.get_size() * scale
+		var k := (ms - fall_from) / float(sp.fallMs)
+		var start_feet := top - 30.0
+		var feet := lerpf(start_feet, ground, k * k)
+		var stretch := 1.0 + 0.16 * k
+		var knot := Vector2(x, feet - size.y * stretch * 0.62)
+		var flap := sin(ms / 45.0) * (8.0 + 22.0 * k)
+		_draw_rope([knot, knot + Vector2(flap * 0.5, -ROPE_TAIL * 0.5), knot + Vector2(-flap, -ROPE_TAIL)], ms, false)
+		_draw_texture_at(falling, Vector2(x, feet), Vector2(scale / stretch, scale * stretch))
+		_draw_label(str(sp.label), Vector2(x, feet - size.y * stretch - 6))
 
-	# Puff: nuvola verde-grigia che si gonfia e svanisce
-	if after >= 0 and after < PUFF_MS:
-		var k := after / PUFF_MS
-		for i in 7:
-			var a := TAU * i / 7.0 + 0.4
-			var c := Vector2(x, ground - BEAR_H * 0.45) + Vector2(cos(a), sin(a) * 0.7) * (22.0 + 40.0 * k)
-			draw_circle(c, 20.0 + 14.0 * k, Color(0.82, 0.9, 0.8, 0.85 * (1.0 - k)))
+	# 4. A terra: schiacciato col rimbalzo, stordito, con la liana afflosciata accanto, fino al puff
+	if ms >= impact and ms < puff:
+		var since := ms - impact
+		var k := clampf(since / SQUASH_MS, 0.0, 1.0)
+		var squash := 1.0 - 0.32 * exp(-5.0 * k) * cos(k * PI * 2.5) # schiacciato, poi si assesta
+		_draw_slack_rope(x + float(r.dir) * 20.0, ground, int(r.dir), ms)
+		if landed != null:
+			var size := landed.get_size() * scale
+			_draw_texture_at(landed, Vector2(x, ground + 6), Vector2(scale * (2.0 - squash), scale * squash))
+			_draw_label(str(sp.label), Vector2(x, ground - size.y * squash - 2))
 
-	# Gnomo: esce dalla nuvola e corre verso il bordo più vicino, con l'etichetta sopra
-	var run_ms := after - GNOME_DELAY_MS
-	if run_ms >= 0:
+	# 5. Impatto: anello sul terreno, polvere e sassolini
+	if ms >= impact and ms < impact + 420.0:
+		var k := (ms - impact) / 420.0
+		_ellipse_outline(Vector2(x, ground), Vector2(float(sp.width) * (0.55 + 0.5 * k), 16.0 * (1.0 + k)), Color(1, 0.95, 0.85, 1.0 - k), 5.0 * (1.0 - k) + 1.0)
+		for i in 10:
+			var a := PI + PI * (i + 0.5) / 10.0
+			var d := 30.0 + 120.0 * k
+			var p := Vector2(x + cos(a) * d * 1.3, ground + sin(a) * d * 0.55 + 260.0 * k * k)
+			draw_circle(p, 4.0 * (1.0 - k) + 1.0, Color(0.55, 0.45, 0.35, 1.0 - k))
+		for side in [-1.0, 1.0]:
+			for i in 3:
+				var c := Vector2(x + side * (40.0 + 60.0 * k + i * 18.0), ground - 8.0 - i * 6.0)
+				draw_circle(c, (10.0 + i * 3.0) * (0.6 + k), Color(0.9, 0.85, 0.75, 0.75 * (1.0 - k)))
+
+	# 6. Puff: nuvola a 2 toni con l'inchiostro, che si gonfia e svanisce; si porta via orsogufo e liana
+	if ms >= puff and ms < puff + PUFF_MS:
+		_draw_puff(Vector2(x, ground - 46.0), (ms - puff) / PUFF_MS)
+
+	# 7. Lo gnomo Omar esce dalla nuvola e scappa verso il bordo più vicino
+	var run_ms := ms - puff - RUNNER_DELAY_MS
+	var runner := _texture(art, "runner")
+	if run_ms >= 0 and runner != null:
+		var frames := int(art.get("runnerFrames", 1))
+		var fw := runner.get_size().x / frames
+		var fh := runner.get_size().y
 		var gx: float = x + float(r.dir) * float(sp.runSpeed) * run_ms / 1000.0
-		if gx > view_rect.position.x - 80 and gx < view_rect.end.x + 80:
-			var bob := absf(sin(run_ms / 55.0)) * 4.0 # saltella correndo
-			_draw_gnome(Vector2(gx, ground - bob), int(r.dir), run_ms)
-			_draw_label(str(sp.label), Vector2(gx, ground - bob - GNOME_H - 10))
+		if gx > view_rect.position.x - fw and gx < view_rect.end.x + fw:
+			var frame := int(run_ms / 1000.0 * float(art.get("runnerFps", 12))) % frames
+			draw_set_transform(Vector2(gx, ground), 0, Vector2(float(r.dir) * scale, scale))
+			draw_texture_rect_region(runner, Rect2(-fw / 2, -fh, fw, fh), Rect2(frame * fw, 0, fw, fh))
+			draw_set_transform(Vector2.ZERO)
+			_draw_label(str(sp.label), Vector2(gx, ground - fh * scale - 6))
 
 
-func _draw_vine(a: Vector2, b: Vector2, ms: float) -> void:
-	var green := Color("3f6b2a")
-	draw_line(a, b, green, 6.0)
-	# Foglie a intervalli, che ondeggiano appena
-	var n := int((b.y - a.y) / 46.0)
-	for i in n:
-		var p := a.lerp(b, (i + 0.5) / maxf(1.0, n))
+# Una texture con i piedi (il centro del bordo basso) in feet
+func _draw_texture_at(tex: Texture2D, feet: Vector2, s: Vector2) -> void:
+	var size := tex.get_size()
+	draw_set_transform(feet, 0, s)
+	draw_texture(tex, Vector2(-size.x / 2, -size.y))
+	draw_set_transform(Vector2.ZERO)
+
+
+# La liana: una corda a 2 toni con l'inchiostro lungo una curva che passa per i punti, con le foglie
+func _draw_rope(points: Array, ms: float, leaves: bool) -> void:
+	var pts := PackedVector2Array()
+	var n := 16
+	for i in n + 1:
+		pts.append(_bezier(points, float(i) / n))
+	draw_polyline(pts, INK, 11.0, true)
+	draw_polyline(pts, ROPE, 6.0, true)
+	var shade := PackedVector2Array()
+	for p in pts:
+		shade.append(p + Vector2(1.5, 0))
+	draw_polyline(shade, ROPE_SH, 2.0, true)
+	if not leaves:
+		return
+	var length := pts[0].distance_to(pts[n])
+	var count := int(length / 52.0)
+	for i in count:
+		var p := _bezier(points, (i + 0.6) / maxf(1.0, count))
 		var side := 1.0 if i % 2 == 0 else -1.0
-		var sway := sin(ms / 160.0 + i) * 3.0
-		draw_colored_polygon(PackedVector2Array([p, p + Vector2(side * 16 + sway, -6), p + Vector2(side * 8, 6)]), Color("5b8f3a"))
+		var sway := sin(ms / 150.0 + i) * 0.25
+		_leaf(p, side, sway)
 
 
-# Sagoma provvisoria: corpo bianco tondo, orecchie a ciuffo, becco giallo, occhi grandi
-func _draw_bear(feet: Vector2, squash: float) -> void:
-	var w := BEAR_W / squash * 0.9 + BEAR_W * 0.1
-	var h := BEAR_H * squash
-	var body := Vector2(feet.x, feet.y - h * 0.45)
-	_ellipse(body, Vector2(w / 2, h * 0.45), Color("f2efe8"))
-	_ellipse_outline(body, Vector2(w / 2, h * 0.45), Color("2b2622"), 3.0)
-	var head := Vector2(feet.x, feet.y - h * 0.8)
-	draw_circle(head, w * 0.3, Color("f2efe8"))
-	draw_arc(head, w * 0.3, 0, TAU, 24, Color("2b2622"), 3.0)
-	for s in [-1.0, 1.0]:
-		var ear := head + Vector2(s * w * 0.2, -w * 0.25)
-		draw_colored_polygon(PackedVector2Array([ear + Vector2(-8, 6), ear + Vector2(s * 6, -14), ear + Vector2(8, 6)]), Color("d9d3c7"))
-		draw_circle(head + Vector2(s * w * 0.11, -2), 7.0, Color("1d1a17"))
-		draw_circle(head + Vector2(s * w * 0.11 + 2, -4), 2.0, Color.WHITE)
-	draw_colored_polygon(PackedVector2Array([head + Vector2(-6, 6), head + Vector2(6, 6), head + Vector2(0, 17)]), Color("e0a526"))
+func _leaf(p: Vector2, side: float, sway: float) -> void:
+	var a := (-0.6 + sway) * side
+	var d := Vector2(cos(a) * side, sin(a)) * 18.0
+	var nrm := Vector2(-d.y, d.x).normalized() * 6.0
+	var poly := PackedVector2Array([p, p + d * 0.5 + nrm, p + d, p + d * 0.5 - nrm])
+	draw_colored_polygon(poly, LEAF)
+	poly.append(p)
+	draw_polyline(poly, INK, 2.0, true)
 
 
-# Sagoma provvisoria: gnomo pelato, pelle nero perlato, armatura di cuoio, gambe che corrono
-func _draw_gnome(feet: Vector2, dir: int, ms: float) -> void:
-	var skin := Color("26232b")
-	var leather := Color("7a4a26")
-	var step := sin(ms / 55.0) * 7.0
-	draw_line(feet + Vector2(-4, -14), feet + Vector2(-4 + step, 0), skin, 5.0)
-	draw_line(feet + Vector2(4, -14), feet + Vector2(4 - step, 0), skin, 5.0)
-	draw_rect(Rect2(feet.x - 11, feet.y - 36, 22, 24), leather)
-	draw_rect(Rect2(feet.x - 11, feet.y - 36, 22, 24), Color("3b2412"), false, 2.0)
-	var head := feet + Vector2(dir * 2, -GNOME_H + 9)
-	draw_circle(head, 11.0, skin)
-	draw_circle(head + Vector2(-dir * 3, -5), 3.0, Color(1, 1, 1, 0.35)) # la pelle perlata luccica
-	draw_circle(head + Vector2(dir * 5, -1), 2.0, Color.WHITE)
+# La liana afflosciata a terra accanto all'orsogufo, a riccioli
+func _draw_slack_rope(x: float, ground: float, dir: int, ms: float) -> void:
+	var pts := PackedVector2Array()
+	for i in 13:
+		var t := float(i) / 12.0
+		pts.append(Vector2(x + dir * (t * 90.0 + sin(t * 9.0) * 10.0), ground - 4.0 - absf(sin(t * 9.0)) * 9.0))
+	draw_polyline(pts, INK, 11.0, true)
+	draw_polyline(pts, ROPE, 6.0, true)
+
+
+func _draw_puff(c: Vector2, k: float) -> void:
+	var grow := 1.0 - (1.0 - k) * (1.0 - k)
+	var alpha := 1.0 if k < 0.6 else (1.0 - k) / 0.4
+	var blobs := [Vector2(0, 0), Vector2(-42, 10), Vector2(42, 8), Vector2(-24, -30), Vector2(26, -32), Vector2(0, -50), Vector2(-50, -18), Vector2(52, -16)]
+	for pass_i in 3: # inchiostro, tono base, ombra
+		for i in blobs.size():
+			var b: Vector2 = blobs[i]
+			var r := (22.0 + (i % 3) * 5.0) * (0.5 + 0.8 * grow)
+			var p := c + b * (0.6 + 0.7 * grow)
+			if pass_i == 0:
+				draw_circle(p, r + 3.0, Color(INK, alpha))
+			elif pass_i == 1:
+				draw_circle(p, r, Color(CLOUD, alpha))
+			else:
+				draw_circle(p + Vector2(r * 0.25, r * 0.3), r * 0.6, Color(CLOUD_SH, alpha * 0.9))
+	for i in 5: # scintille
+		var a := TAU * i / 5.0 + k * 2.0
+		var p := c + Vector2(cos(a), sin(a)) * (40.0 + 70.0 * grow)
+		draw_circle(p, 4.0 * (1.0 - k) + 1.0, Color(1, 0.95, 0.6, alpha))
 
 
 func _draw_label(text: String, at: Vector2) -> void:
-	var size := _font.get_string_size(text, HORIZONTAL_ALIGNMENT_CENTER, -1, Access.px(16))
-	draw_string(_font, Vector2(at.x - size.x / 2, at.y), text, HORIZONTAL_ALIGNMENT_LEFT, -1, Access.px(16), Color.WHITE)
+	var px := Access.px(16)
+	var size := _font.get_string_size(text, HORIZONTAL_ALIGNMENT_CENTER, -1, px)
+	draw_string_outline(_font, Vector2(at.x - size.x / 2, at.y), text, HORIZONTAL_ALIGNMENT_LEFT, -1, px, 4, Color(0, 0, 0, 0.7))
+	draw_string(_font, Vector2(at.x - size.x / 2, at.y), text, HORIZONTAL_ALIGNMENT_LEFT, -1, px, Color.WHITE)
+
+
+func _texture(art: Dictionary, key: String) -> Texture2D:
+	if not art.has(key) or not art.has("dir"):
+		return null
+	var path := "res://data/%s/%s" % [art.dir, art[key]]
+	if not _tex.has(path):
+		_tex[path] = load(path) if ResourceLoader.exists(path) else null
+	return _tex[path]
 
 
 func _ellipse(c: Vector2, r: Vector2, color: Color) -> void:
@@ -201,22 +289,30 @@ func _ellipse(c: Vector2, r: Vector2, color: Color) -> void:
 func _ellipse_outline(c: Vector2, r: Vector2, color: Color, width := 2.0) -> void:
 	var pts := _ellipse_points(c, r)
 	pts.append(pts[0])
-	draw_polyline(pts, color, width)
+	draw_polyline(pts, color, width, true)
 
 
 static func _ellipse_points(c: Vector2, r: Vector2) -> PackedVector2Array:
 	var pts := PackedVector2Array()
-	for i in 28:
-		var a := TAU * i / 28.0
+	for i in 32:
+		var a := TAU * i / 32.0
 		pts.append(c + Vector2(cos(a) * r.x, sin(a) * r.y))
 	return pts
 
 
-static func _ease_out(k: float) -> float:
-	return 1.0 - (1.0 - k) * (1.0 - k)
+# Curva che passa vicino ai punti (Bézier di grado qualsiasi)
+static func _bezier(points: Array, t: float) -> Vector2:
+	var pts := points.duplicate()
+	while pts.size() > 1:
+		var next := []
+		for i in pts.size() - 1:
+			next.append((pts[i] as Vector2).lerp(pts[i + 1], t))
+		pts = next
+	return pts[0]
 
 
-# Il terreno sotto x da y in giù: il bordo alto del blocco o della piattaforma più vicina. Senza, y
+# Il terreno sotto x da y in giù: il bordo alto del blocco o della piattaforma più vicina. Senza, y.
+# Come groundBelow() in src/shared/physics/supreme.ts
 static func ground_y(stage_spec: Dictionary, x: float, y: float) -> float:
 	var best := INF
 	for list in [stage_spec.get("solids", []), stage_spec.get("platforms", [])]:
@@ -226,14 +322,12 @@ static func ground_y(stage_spec: Dictionary, x: float, y: float) -> float:
 	return y if best == INF else best
 
 
-# Da che parte scappa lo gnomo: verso il bordo più vicino del blocco su cui si è (o del più vicino)
+# Da che parte scappa lo gnomo: verso il bordo più vicino dei blocchi pieni
 static func escape_dir(stage_spec: Dictionary, x: float) -> int:
 	var best_d := INF
 	var dir := 1
 	for s in stage_spec.get("solids", []):
-		var left: float = float(s.x)
-		var right: float = float(s.x) + float(s.width)
-		for edge in [left, right]:
+		for edge in [float(s.x), float(s.x) + float(s.width)]:
 			var d := absf(edge - x)
 			if d < best_d:
 				best_d = d

@@ -210,6 +210,17 @@ export interface DropSupreme {
   knockbackGrowth: number;
   angleDeg: number; // verso l'alto e lontano dal centro
   runSpeed: number; // pixel/s dello gnomo che scappa dopo il puff (solo disegno)
+  art?: DropSupremeArt; // i disegni; senza, Godot non disegna la scena
+}
+// I disegni della suprema "drop", in dir sotto public/: si sostituiscono i PNG e il codice resta uguale
+export interface DropSupremeArt {
+  dir: string;
+  falling: string; // quello che cade, appeso alla liana dall'alto: nodo della liana in alto al centro
+  landed: string; // a terra dopo l'impatto, fino al puff
+  runner: string; // chi scappa dopo il puff: fotogrammi in fila, guarda a destra, piedi in basso al centro
+  runnerFrames: number;
+  runnerFps: number;
+  scale: number; // 0.5 per i disegni fatti a 2x
 }
 export type SupremeSpec = DropSupreme;
 
@@ -276,7 +287,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       leapDy: 110,
       pullMs: 150,
       warnMs: 500,
-      fallMs: 250,
+      fallMs: 300,
       flipMs: 350,
       flipDx: 130,
       flipArc: 50,
@@ -289,6 +300,16 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       knockbackGrowth: 11,
       angleDeg: 70,
       runSpeed: 520,
+      // Disegni provvisori fatti col codice (sorgenti SVG accanto), da sostituire con quelli di Riccardo
+      art: {
+        dir: "assets/characters/bonobot/omar",
+        falling: "orsogufo-cade.png",
+        landed: "orsogufo-a-terra.png",
+        runner: "gnomo-corre.png",
+        runnerFrames: 4,
+        runnerFps: 12,
+        scale: 0.5,
+      },
     },
     sprite: {
       path: "assets/characters/bonobot/bonobot.png",

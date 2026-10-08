@@ -43,6 +43,7 @@ func setup(game_data: Dictionary) -> void:
 	game = game_data
 	_supreme_view = preload("res://scripts/supreme_view.gd").new()
 	_supreme_view.game = game
+	_supreme_view.impact.connect(func(strength: float): _shake = maxf(_shake, strength)) # l'orsogufo tocca terra
 	add_child(_supreme_view)
 	reset()
 	for id in game.characters:

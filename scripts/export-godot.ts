@@ -68,6 +68,13 @@ for (const [id, spec] of Object.entries(CHARACTERS)) {
   // supremeAttack: la suprema propria letta come attacco (#102), null per chi usa quella di base
   const c = { ...spec, specials, specialAttacks, supremeAttack: supremeAttackSpec(id) };
   characters[id] = c;
+  // I disegni della suprema propria (#102): si copiano come gli sprite
+  const art = spec.supreme?.art;
+  for (const file of art ? [art.falling, art.landed, art.runner] : []) {
+    const path = `${art!.dir}/${file}`;
+    if (existsSync(publicDir + path)) spriteFiles.push(path);
+    else spriteErrors.push(`${id}: manca public/${path} (disegni della suprema in characters.ts)`);
+  }
   if (!c.sprite) continue;
   // In game.json ogni stato c'è, con i dati del disegno che lo mostra (src): il ripiego si decide qui,
   // una volta sola, e Godot non controlla cosa manca (E7 passo 3)

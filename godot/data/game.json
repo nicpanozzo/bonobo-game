@@ -1403,7 +1403,7 @@
         "leapDy": 110,
         "pullMs": 150,
         "warnMs": 500,
-        "fallMs": 250,
+        "fallMs": 300,
         "flipMs": 350,
         "flipDx": 130,
         "flipArc": 50,
@@ -1415,7 +1415,16 @@
         "baseKnockback": 600,
         "knockbackGrowth": 11,
         "angleDeg": 70,
-        "runSpeed": 520
+        "runSpeed": 520,
+        "art": {
+          "dir": "assets/characters/bonobot/omar",
+          "falling": "orsogufo-cade.png",
+          "landed": "orsogufo-a-terra.png",
+          "runner": "gnomo-corre.png",
+          "runnerFrames": 4,
+          "runnerFps": 12,
+          "scale": 0.5
+        }
       },
       "sprite": {
         "path": "assets/characters/bonobot/bonobot.png",
