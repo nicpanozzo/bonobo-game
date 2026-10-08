@@ -287,7 +287,7 @@
         "actions": [
           "left",
           "right",
-          "up"
+          "jump"
         ],
         "event": "jump",
         "who": "id",
@@ -300,7 +300,7 @@
         "title": "Doppio salto",
         "text": "In aria puoi saltare una seconda volta.",
         "actions": [
-          "up"
+          "jump"
         ],
         "event": "jump",
         "who": "id",

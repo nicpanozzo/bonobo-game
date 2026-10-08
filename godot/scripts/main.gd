@@ -572,6 +572,7 @@ func _send_input() -> void:
 	var off := get_viewport().gui_get_focus_owner() != null or is_instance_valid(pause_menu)
 	for action in Settings.ACTIONS:
 		input[action] = not off and settings.is_pressed(action)
+	input.jump = not off and settings.jump_pressed()
 	# Come il client web: si manda l'input solo quando cambia (== confronta i contenuti)
 	if input != _last_input and socket.is_joined():
 		_last_input = input

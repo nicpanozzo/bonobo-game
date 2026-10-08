@@ -153,7 +153,7 @@ function decideSimple(self: Fighter, players: readonly Fighter[], stage: StageSp
     mem.ledgeTicks++;
     if (mem.ledgeTicks < ledgeWaitTicks(mem, level)) return input;
     const getup = chooseGetup(self, players, mem, level);
-    const key = getup === "climb" ? (self.facing === 1 ? "right" : "left") : getup === "jump" ? "up" : getup === "attack" ? "light" : "dodge";
+    const key = getup === "climb" ? (self.facing === 1 ? "right" : "left") : getup === "jump" ? "jump" : getup === "attack" ? "light" : "dodge";
     if (mem.last[key]) return input; // il tasto era già giù: prima si rilascia
     input[key] = true;
     if (getup === "jump") {
@@ -176,7 +176,7 @@ function decideSimple(self: Fighter, players: readonly Fighter[], stage: StageSp
     input.left = toX < self.x;
     input.right = toX > self.x;
     if (self.vy > 0 && !self.hitstun) {
-      if (self.jumpsLeft > 0) tap("up");
+      if (self.jumpsLeft > 0) tap("jump");
       else if (!self.recoveryUsed && !mem.last.heavy) {
         input.up = true;
         input.heavy = true;
@@ -255,7 +255,7 @@ function decideSimple(self: Fighter, players: readonly Fighter[], stage: StageSp
   }
   // Bersaglio su una piattaforma: si salta, e se non basta si usa il secondo salto mentre si ricade.
   // Bersaglio sotto: giù fa scendere dalla piattaforma sottile
-  if (-dy > BOT.jumpAtHeight && Math.abs(dx) < 200 && (self.onGround || (self.vy >= 0 && self.jumpsLeft > 0))) tap("up");
+  if (-dy > BOT.jumpAtHeight && Math.abs(dx) < 200 && (self.onGround || (self.vy >= 0 && self.jumpsLeft > 0))) tap("jump");
   if (dy > BOT.jumpAtHeight && Math.abs(dx) < 200 && self.onGround) tap("down");
 
   input.left = mem.hold.left;

@@ -44,19 +44,32 @@ describe("movimento", () => {
   it("salto e doppio salto, non un terzo", () => {
     const { ctx, fighters } = setup();
     const [f] = fighters;
-    press(f, { up: true });
+    press(f, { jump: true });
     run(fighters, ctx, 1);
     press(f, {});
     run(fighters, ctx, 5);
-    press(f, { up: true });
+    press(f, { jump: true });
     run(fighters, ctx, 1);
     press(f, {});
     run(fighters, ctx, 5);
-    press(f, { up: true });
+    press(f, { jump: true });
     run(fighters, ctx, 1);
     const jumps = ofType(ctx.events, "jump");
     assert.equal(jumps.length, 2);
     assert.deepEqual(jumps.map((j) => j.air), [false, true]);
+  });
+
+  it("su da solo non fa saltare: salta solo il tasto salto (E10)", () => {
+    const { ctx, fighters } = setup();
+    const [f] = fighters;
+    press(f, { up: true });
+    run(fighters, ctx, 10);
+    assert.equal(ofType(ctx.events, "jump").length, 0);
+    assert.equal(f.onGround, true);
+    press(f, { up: true, light: true });
+    run(fighters, ctx, 1);
+    assert.equal(ofType(ctx.events, "attack")[0]?.kind, "lightUp", "l'attacco in su parte da terra");
+    assert.equal(ofType(ctx.events, "jump").length, 0);
   });
 
   it("dopo il salto riatterra sul palco con l'evento land", () => {
@@ -64,7 +77,7 @@ describe("movimento", () => {
     const [f] = fighters;
     f.x = stage.solids[0].x + 30; // lontano dalle piattaforme sottili
     const groundY = f.y;
-    press(f, { up: true });
+    press(f, { jump: true });
     run(fighters, ctx, 1);
     press(f, {});
     run(fighters, ctx, 120);
@@ -119,7 +132,7 @@ describe("attacchi", () => {
     }
     const { ctx, fighters } = setup();
     const [f] = fighters;
-    press(f, { up: true });
+    press(f, { jump: true });
     run(fighters, ctx, 1);
     press(f, {});
     run(fighters, ctx, 5);
@@ -132,7 +145,6 @@ describe("attacchi", () => {
   it("l'attacco in su lancia in verticale chi sta sopra la testa", () => {
     const { ctx, fighters, a, b } = facingPair();
     b.x = a.x + 10;
-    a.prevInput = { ...emptyInput(), up: true }; // su tenuto da prima: niente salto
     press(a, { up: true, light: true });
     run(fighters, ctx, 10);
     const hits = ofType(ctx.events, "hit");
