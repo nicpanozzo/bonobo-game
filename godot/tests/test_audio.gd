@@ -88,3 +88,18 @@ func test_presa_e_lancio_hanno_il_loro_suono() -> void:
 	for e in [{"type": "grab", "id": "a", "targetId": "b", "x": 0, "y": 0}, {"type": "grabRelease", "id": "a", "targetId": "b"}, {"type": "attack", "id": "a", "kind": "throwUp"}, {"type": "hit", "kind": "grab", "x": 0, "percent": 3}, {"type": "counter", "id": "a", "attackerId": "b", "x": 0, "y": 0}, {"type": "attack", "id": "a", "kind": "specialDown"}]:
 		a.on_event(e)
 	a.free()
+
+
+func test_proiettili_e_carica_hanno_il_loro_suono() -> void:
+	var a: Node = _audio()
+	for name in ["projectile", "projectilePop", "charge", "chargeFull"]:
+		runner.check(a.stream_for(name) is AudioStreamWAV, "manca il suono %s" % name)
+	runner.check(Audio.charge_cue(0.0, 0.05) == "charge", "la carica parte")
+	runner.check(Audio.charge_cue(0.5, 0.6) == "", "mentre sale non si ripete")
+	runner.check(Audio.charge_cue(0.95, 1.0) == "chargeFull", "carica piena")
+	runner.check(Audio.charge_cue(1.0, 1.0) == "", "piena una volta sola")
+	runner.check(Audio.charge_cue(1.0, 0.0) == "", "rilasciata: silenzio")
+	for e in [{"type": "projectile", "id": "a", "projectileId": 1, "x": 0, "y": 0}, {"type": "projectileEnd", "projectileId": 1, "reason": "wall", "x": 0, "y": 0}]:
+		a.on_event(e)
+	a.on_snapshot({"timeLeftMs": null, "winnerId": null, "players": [{"id": "a", "x": 0, "charge": 0.3}]})
+	a.free()
