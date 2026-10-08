@@ -7,13 +7,11 @@ extends Node2D
 const PLAYERS := 12 # suoni che possono sovrapporsi
 const MUSIC_STEPS_PER_FRAME := 4 # la musica si calcola un pezzo per frame, senza bloccare il gioco
 const STEPS := 16 # sedicesimi in una battuta
-# Giro di quattro accordi (La minore, Fa, Do, Sol): note in Hz, come in music.ts
-const CHORDS := [
-	[220.0, 261.6, 329.6],
-	[174.6, 220.0, 261.6],
-	[261.6, 329.6, 392.0],
-	[196.0, 246.9, 293.7],
-]
+# Giro di quattro accordi della musica di sempre (La minore, Fa, Do, Sol), come in music.ts.
+# Le arene possono averne un altro (E12 passo 4, StageSpec.music in stages.ts)
+const DEFAULT_CHORDS := ["Am", "F", "C", "G"]
+const NOTES := {"C": 0, "D": 2, "E": 4, "F": 5, "G": 7, "A": 9, "B": 11} # semitoni sopra il Do
+const LEAD_VOLUME := {"square": 0.05, "sawtooth": 0.04, "triangle": 0.09, "sine": 0.09} # le onde morbide si sentono meno
 
 var game: Dictionary
 var view_left := 0.0 # per sapere da che lato dello schermo arriva un suono
@@ -25,9 +23,14 @@ var _files := {} # nome -> Array[AudioStream] dei campioni registrati
 var _last := {} # nome -> indice dell'ultima variante suonata
 var _music := AudioStreamPlayer.new() # la musica che si sente
 var _music_out := AudioStreamPlayer.new() # quella che sta sfumando
-var _music_synth: Synth
+var _music_synth: Synth # la musica che si sta calcolando, un pezzo per frame
 var _music_step := 0
-var _synth_music: AudioStreamWAV # la musica sintetizzata, pronta quando _music_step < 0
+var _music_chords: Array # accordi in Hz della musica che si sta calcolando
+var _synth_music: AudioStreamWAV # la musica sintetizzata di sempre, quando è pronta
+var _to_render: Array[Dictionary] = [] # preset da calcolare: il primo è in corso
+var _rendered := {} # chiave del preset -> AudioStreamWAV in loop
+var _default_key := ""
+var _stage_key := "" # preset dell'arena della partita ("" = la musica di sempre)
 var _track := "" # "lobby" o "match"
 var _music_files := {} # traccia -> AudioStream
 var _fade: Tween
@@ -68,8 +71,9 @@ func setup(game_data: Dictionary) -> void:
 	_queue = AnnouncerQueue.new(game.audio.get("announcerPriority", {}), game.audio.get("announcerInterrupt", 3), game.audio.get("announcerMaxWaitMs", 1500))
 	_build_sounds()
 	_load_files(game.get("audioFiles", {}))
-	var bar: float = 60.0 / game.audio.musicBpm / 4.0 * STEPS
-	_music_synth = Synth.new(bar * CHORDS.size())
+	var preset := normalize_music({}, game.audio)
+	_default_key = music_key(preset)
+	_queue_music(preset)
 
 
 # Volumi da 0 a 1, come nelle opzioni del gioco web
@@ -252,16 +256,20 @@ func _play(name: String, opts := {}) -> void:
 
 
 func _process(_delta: float) -> void:
-	if _music_step < 0:
+	if _to_render.is_empty():
 		return
+	var preset := _to_render[0]
 	for i in MUSIC_STEPS_PER_FRAME:
-		_music_play_step(_music_step)
+		_music_play_step(_music_step, preset)
 		_music_step += 1
-		if _music_step >= STEPS * CHORDS.size():
-			_synth_music = _music_synth.to_stream(true)
-			_music_step = -1 # finita: da qui in poi gira in loop
-			if not _music.playing:
-				_switch_music(_synth_music)
+		if _music_step >= STEPS * _music_chords.size():
+			var key := music_key(preset)
+			_rendered[key] = _music_synth.to_stream(true) # finita: da qui in poi gira in loop
+			if key == _default_key:
+				_synth_music = _rendered[key]
+			_to_render.pop_front()
+			_start_render()
+			_update_music()
 			return
 
 
@@ -360,14 +368,96 @@ static func _set_loop(stream: AudioStream) -> void:
 		wav.loop_end = int(wav.get_length() * wav.mix_rate)
 
 
-# Musica della lobby o della partita: da file se c'è, altrimenti quella sintetizzata (uguale per tutte e due)
+# Musica della lobby o della partita: da file se c'è, altrimenti quella sintetizzata (uguale per tutte e due).
+# In partita vince la musica dell'arena, se ne ha una (set_stage_music)
 func play_music(track: String) -> void:
 	if track == _track:
 		return
 	_track = track
-	var stream: AudioStream = _music_files.get(track, _synth_music)
+	_update_music()
+
+
+# La musica dell'arena della partita (E12 passo 4): il preset di StageSpec.music, o null per quella di sempre.
+# Si calcola un pezzo per frame; finché non è pronta continua quella che suona
+func set_stage_music(preset: Variant) -> void:
+	_stage_key = ""
+	if preset is Dictionary:
+		var p := normalize_music(preset, game.audio)
+		_stage_key = music_key(p)
+		_queue_music(p)
+	_update_music()
+
+
+func stage_music_ready() -> bool:
+	return _stage_key == "" or _rendered.has(_stage_key)
+
+
+func _update_music() -> void:
+	var stream: AudioStream = _music_files.get(_track, _synth_music)
+	if _track == "match" and _stage_key != "":
+		stream = _rendered.get(_stage_key)
 	if stream and stream != _music.stream:
 		_switch_music(stream)
+
+
+func _queue_music(preset: Dictionary) -> void:
+	var key := music_key(preset)
+	if _rendered.has(key) or _to_render.any(func(q: Dictionary) -> bool: return music_key(q) == key):
+		return
+	_to_render.append(preset)
+	if _to_render.size() == 1:
+		_start_render()
+
+
+# Prepara il calcolo del primo preset in coda
+func _start_render() -> void:
+	if _to_render.is_empty():
+		return
+	var preset := _to_render[0]
+	_music_chords = preset.chords.map(chord_hz)
+	var bar: float = 60.0 / preset.bpm / 4.0 * STEPS
+	_music_synth = Synth.new(bar * _music_chords.size())
+	_music_step = 0
+
+
+# Il preset completo: quello che manca o non va prende il valore della musica di sempre
+static func normalize_music(preset: Dictionary, audio: Dictionary) -> Dictionary:
+	var bpm := clampf(float(preset.get("bpm", audio.musicBpm)), audio.get("musicBpmMin", 70), audio.get("musicBpmMax", 190))
+	var chords: Array = []
+	for c: Variant in preset.get("chords", []):
+		if c is String and not chord_hz(c).is_empty():
+			chords.append(c)
+	if chords.is_empty():
+		chords = DEFAULT_CHORDS.duplicate()
+	var lead: String = preset.get("lead", "square")
+	if not LEAD_VOLUME.has(lead):
+		lead = "square"
+	return {"bpm": bpm, "chords": chords, "lead": lead}
+
+
+static func music_key(preset: Dictionary) -> String:
+	return "%d|%s|%s" % [roundi(preset.bpm), ",".join(preset.chords), preset.lead]
+
+
+# Le tre note in Hz di un accordo per nome ("Am", "F#", "Bbm"), o [] se il nome non va.
+# Fondamentale tra Fa3 e Mi4, come il giro di sempre (La3, Fa3, Do4, Sol3)
+static func chord_hz(name: String) -> Array:
+	if name.is_empty() or not NOTES.has(name[0]):
+		return []
+	var rest := name.substr(1)
+	var semi: int = NOTES[name[0]]
+	if rest.begins_with("#"):
+		semi += 1
+		rest = rest.substr(1)
+	elif rest.begins_with("b"):
+		semi -= 1
+		rest = rest.substr(1)
+	if rest != "" and rest != "m":
+		return []
+	semi = posmod(semi, 12)
+	var root := 261.63 * pow(2.0, (semi - (12 if semi >= 5 else 0)) / 12.0)
+	var third := 3 if rest == "m" else 4
+	return [root, root * pow(2.0, third / 12.0), root * pow(2.0, 7 / 12.0)]
 
 
 func music_track() -> String:
@@ -400,10 +490,10 @@ func _switch_music(stream: AudioStream) -> void:
 
 
 # Un sedicesimo della musica: cassa, rullante, charleston, basso e accordi (playStep in music.ts)
-func _music_play_step(step: int) -> void:
+func _music_play_step(step: int, preset: Dictionary) -> void:
 	var s := _music_synth
-	var t: float = step * 60.0 / game.audio.musicBpm / 4.0
-	var chord: Array = CHORDS[step / STEPS]
+	var t: float = step * 60.0 / preset.bpm / 4.0
+	var chord: Array = _music_chords[step / STEPS]
 	var k := step % STEPS
 	if k % 4 == 0:
 		s.tone(t, "sine", 140, 40, 0.15, 0.7, true) # cassa
@@ -415,7 +505,7 @@ func _music_play_step(step: int) -> void:
 		s.tone(t, "triangle", chord[0] / 2, chord[0] / 2, 0.18, 0.35, true)
 	if k in [0, 3, 6, 10, 12]:
 		var f: float = chord[int(k / 3.0) % 3] * 2
-		s.tone(t, "square", f, f, 0.09, 0.05, true)
+		s.tone(t, preset.lead, f, f, 0.09, LEAD_VOLUME[preset.lead], true)
 
 
 # Le ricette di src/client/audio/sfx.ts

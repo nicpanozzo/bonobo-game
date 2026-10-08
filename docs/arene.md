@@ -81,6 +81,20 @@ Un rettangolo che, quando è acceso, aggiunge percentuale e lancia via chi lo to
 { kind: "fuoco", x: 440, y: 610, width: 400, height: 30, damage: 8, knockback: 600, knockbackGrowth: 4, angleDeg: 80, periodMs: 4000, activeMs: 1500 }
 ```
 
+### Musica (`music`)
+
+Facoltativa: senza, in partita si sente la musica di sempre. È un preset per il sintetizzatore del gioco (`audio.gd`), non un file.
+
+| Campo | Cosa fa |
+|---|---|
+| `bpm` | velocità, tra `AUDIO.musicBpmMin` e `AUDIO.musicBpmMax` (in `constants.ts`) |
+| `chords` | da 1 a 8 accordi per nome, uno per battuta: `"C"`, `"F#"`, `"Bb"`, con `m` se minore (`"Am"`) |
+| `lead` | timbro della melodia: `"square"`, `"triangle"`, `"sawtooth"` o `"sine"` |
+
+```ts
+music: { bpm: 108, chords: ["C", "Am", "F", "G"], lead: "triangle" } // Le Isole
+```
+
 ## Come funzionano dentro (per chi aggiunge un elemento)
 
 - Ascensori e trappole dipendono solo dal **tempo dell'arena** (`ctx.timeMs`, che `stepWorld` fa avanzare). Il server lo manda nello snapshot (`stageMs`) e Godot rifà gli stessi calcoli (`mover_position` e `hazard_active` in `world_view.gd`): niente posizioni in rete, e il movimento è fluido perché si interpola il tempo.

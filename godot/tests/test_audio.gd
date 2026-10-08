@@ -103,3 +103,45 @@ func test_proiettili_e_carica_hanno_il_loro_suono() -> void:
 		a.on_event(e)
 	a.on_snapshot({"timeLeftMs": null, "winnerId": null, "players": [{"id": "a", "x": 0, "charge": 0.3}]})
 	a.free()
+
+
+func test_accordi_per_nome() -> void:
+	# Il giro di sempre (La minore, Fa, Do, Sol), in Hz come in music.ts
+	var old := [[220.0, 261.6, 329.6], [174.6, 220.0, 261.6], [261.6, 329.6, 392.0], [196.0, 246.9, 293.7]]
+	for i in old.size():
+		var hz := Audio.chord_hz(Audio.DEFAULT_CHORDS[i])
+		for j in 3:
+			runner.check(absf(hz[j] - old[i][j]) < 0.2, "%s nota %d: %.1f invece di %.1f" % [Audio.DEFAULT_CHORDS[i], j, hz[j], old[i][j]])
+	runner.check(absf(Audio.chord_hz("Bbm")[0] - 233.1) < 0.2, "Si bemolle")
+	runner.check(absf(Audio.chord_hz("F#")[0] - 185.0) < 0.2, "Fa diesis")
+	runner.check(Audio.chord_hz("H").is_empty() and Audio.chord_hz("Cmaj7").is_empty() and Audio.chord_hz("").is_empty(), "nomi sbagliati")
+
+
+func test_preset_incompleto_prende_la_musica_di_sempre() -> void:
+	var audio := {"musicBpm": 132, "musicBpmMin": 70, "musicBpmMax": 190}
+	var p := Audio.normalize_music({"bpm": 400, "chords": ["X", "Dm"], "lead": "organo"}, audio)
+	runner.check(p.bpm == 190.0 and p.chords == ["Dm"] and p.lead == "square", "%s" % p)
+	var d := Audio.normalize_music({}, audio)
+	runner.check(d.bpm == 132.0 and d.chords == Audio.DEFAULT_CHORDS and d.lead == "square", "%s" % d)
+
+
+func test_ogni_arena_la_sua_musica() -> void:
+	var a := _audio()
+	var game: Dictionary = a.game
+	runner.check(game.stages.isole.has("music") and not game.stages.palco.has("music"), "Le Isole hanno la loro musica, Il Palco no")
+	a.set_stage_music(game.stages.isole.music)
+	a.play_music("match")
+	runner.check(not a.stage_music_ready(), "si calcola un pezzo per frame")
+	for i in 100:
+		a._process(0.016)
+	runner.check(a.stage_music_ready(), "pronta")
+	var isole: AudioStream = a._music.stream
+	runner.check(isole is AudioStreamWAV and isole != a._synth_music, "in partita suona la musica delle Isole")
+	runner.check(a._synth_music != null, "anche quella di sempre è pronta")
+	a.set_stage_music(game.stages.palco.get("music"))
+	runner.check(a._music.stream == a._synth_music, "su Il Palco torna quella di sempre")
+	a.set_stage_music(game.stages.isole.music)
+	runner.check(a._music.stream == isole, "la seconda volta è già pronta")
+	a.play_music("lobby")
+	runner.check(a._music.stream == a._synth_music, "nella lobby quella di sempre")
+	a.free()

@@ -292,6 +292,8 @@ export const AUDIO = {
   sfx: 0.7,
   music: 0.35,
   musicBpm: 132, // velocità della musica sintetizzata, battiti al minuto
+  musicBpmMin: 70, // limiti alla velocità della musica di un'arena (E12, StageSpec.music)
+  musicBpmMax: 190,
   hitLoudPercent: 120, // da questa percentuale in su i colpi suonano al massimo
   voices: 0.8, // volume di partenza delle voci (E13): personaggi e annunciatore
   musicFadeMs: 1500, // dissolvenza tra la musica della lobby e quella della partita
