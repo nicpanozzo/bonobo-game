@@ -1012,20 +1012,21 @@
       "specials": {
         "neutral": {
           "type": "projectile",
-          "name": "Tiro",
-          "startupMs": 216,
-          "cooldownMs": 550,
-          "speed": 700,
-          "gravity": 0,
-          "lifeMs": 1200,
+          "name": "Banana",
+          "startupMs": 233,
+          "cooldownMs": 600,
+          "speed": 560,
+          "gravity": 1800,
+          "lift": 520,
+          "lifeMs": 1400,
           "maxAlive": 1,
-          "range": 24,
-          "height": 16,
-          "damage": 6,
-          "baseKnockback": 220,
+          "range": 26,
+          "height": 18,
+          "damage": 7,
+          "baseKnockback": 240,
           "knockbackGrowth": 3.5,
-          "angleDeg": 30,
-          "color": 16767050
+          "angleDeg": 50,
+          "color": 15913786
         },
         "side": {
           "type": "dash",
@@ -1058,15 +1059,15 @@
       },
       "specialAttacks": {
         "specialNeutral": {
-          "baseKnockback": 220,
+          "baseKnockback": 240,
           "knockbackGrowth": 3.5,
-          "angleDeg": 30,
-          "range": 24,
-          "height": 16,
-          "damage": 6,
-          "startupMs": 216,
+          "angleDeg": 50,
+          "range": 26,
+          "height": 18,
+          "damage": 7,
+          "startupMs": 233,
           "activeMs": 0,
-          "cooldownMs": 550
+          "cooldownMs": 600
         },
         "specialSide": {
           "baseKnockback": 360,
@@ -1100,6 +1101,54 @@
         "speed": 0.9,
         "airSpeed": 0.95,
         "jump": 0.95
+      },
+      "specials": {
+        "neutral": {
+          "type": "projectile",
+          "name": "Schizzo",
+          "startupMs": 200,
+          "cooldownMs": 500,
+          "speed": 900,
+          "gravity": 0,
+          "lifeMs": 550,
+          "maxAlive": 2,
+          "range": 20,
+          "height": 12,
+          "damage": 4,
+          "baseKnockback": 180,
+          "knockbackGrowth": 3,
+          "angleDeg": 25,
+          "color": 7260415
+        },
+        "side": {
+          "type": "dash",
+          "name": "Remata",
+          "startupMs": 120,
+          "durationMs": 300,
+          "speed": 760,
+          "endLagMs": 320,
+          "range": 46,
+          "height": 50,
+          "damage": 10,
+          "baseKnockback": 380,
+          "knockbackGrowth": 8,
+          "angleDeg": 30
+        },
+        "down": {
+          "type": "charge",
+          "name": "Colpo di remo",
+          "minMs": 200,
+          "maxMs": 1200,
+          "maxMultiplier": 1.8,
+          "activeMs": 100,
+          "endLagMs": 350,
+          "range": 50,
+          "height": 50,
+          "damage": 10,
+          "baseKnockback": 400,
+          "knockbackGrowth": 10,
+          "angleDeg": 42
+        }
       },
       "sprite": {
         "path": "assets/characters/egiainuso/egiainuso.png",
@@ -1285,86 +1334,39 @@
           }
         }
       },
-      "specials": {
-        "neutral": {
-          "type": "projectile",
-          "name": "Tiro",
-          "startupMs": 216,
-          "cooldownMs": 550,
-          "speed": 700,
-          "gravity": 0,
-          "lifeMs": 1200,
-          "maxAlive": 1,
-          "range": 24,
-          "height": 16,
-          "damage": 6,
-          "baseKnockback": 220,
-          "knockbackGrowth": 3.5,
-          "angleDeg": 30,
-          "color": 16767050
-        },
-        "side": {
-          "type": "dash",
-          "name": "Scatto",
-          "startupMs": 100,
-          "durationMs": 250,
-          "speed": 900,
-          "endLagMs": 300,
-          "range": 40,
-          "height": 50,
-          "damage": 9,
-          "baseKnockback": 360,
-          "knockbackGrowth": 8,
-          "angleDeg": 35
-        },
-        "down": {
-          "type": "counter",
-          "name": "Contrattacco",
-          "startupMs": 50,
-          "windowMs": 400,
-          "endLagMs": 450,
-          "minDamage": 8,
-          "multiplier": 1.3,
-          "range": 60,
-          "height": 60,
-          "baseKnockback": 450,
-          "knockbackGrowth": 9,
-          "angleDeg": 40
-        }
-      },
       "specialAttacks": {
         "specialNeutral": {
-          "baseKnockback": 220,
-          "knockbackGrowth": 3.5,
-          "angleDeg": 30,
-          "range": 24,
-          "height": 16,
-          "damage": 6,
-          "startupMs": 216,
+          "baseKnockback": 180,
+          "knockbackGrowth": 3,
+          "angleDeg": 25,
+          "range": 20,
+          "height": 12,
+          "damage": 4,
+          "startupMs": 200,
           "activeMs": 0,
-          "cooldownMs": 550
+          "cooldownMs": 500
         },
         "specialSide": {
-          "baseKnockback": 360,
+          "baseKnockback": 380,
           "knockbackGrowth": 8,
-          "angleDeg": 35,
-          "range": 40,
+          "angleDeg": 30,
+          "range": 46,
           "height": 50,
-          "damage": 9,
-          "startupMs": 100,
-          "activeMs": 250,
-          "cooldownMs": 650
+          "damage": 10,
+          "startupMs": 120,
+          "activeMs": 300,
+          "cooldownMs": 740
         },
         "specialDown": {
-          "baseKnockback": 450,
-          "knockbackGrowth": 9,
-          "angleDeg": 40,
-          "range": 60,
-          "height": 60,
-          "damage": 8,
-          "startupMs": 50,
-          "activeMs": 400,
-          "cooldownMs": 900
+          "baseKnockback": 400,
+          "knockbackGrowth": 10,
+          "angleDeg": 42,
+          "range": 50,
+          "height": 50,
+          "damage": 10,
+          "startupMs": 200,
+          "activeMs": 100,
+          "cooldownMs": 1650
         }
       }
     },

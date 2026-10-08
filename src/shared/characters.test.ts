@@ -152,8 +152,10 @@ describe("mosse speciali (E10 passo 1)", () => {
   });
 
   it("chi non ne ha di sue usa quelle di base, e un id sconosciuto quelle del personaggio base", () => {
-    assert.deepEqual(specialsFor("default"), DEFAULT_SPECIALS);
+    assert.deepEqual(specialsFor("bonobot"), DEFAULT_SPECIALS);
     assert.deepEqual(specialsFor("nessuno"), specialsFor("default"));
+    assert.equal(specialsFor("default").neutral.name, "Banana");
+    assert.deepEqual(specialsFor("default").side, DEFAULT_SPECIALS.side, "le speciali che mancano sono quelle di base");
   });
 
   it("il controllo trova i numeri sbagliati", () => {

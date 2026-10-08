@@ -3,6 +3,7 @@
 
 import { ATTACKS, BOT, BOT_LEVELS, FIGHTER, TICK_RATE } from "../shared/constants";
 import type { Match } from "../shared/match";
+import { specialsFor } from "../shared/characters";
 import { emptyInput, ledgesOf, type Fighter } from "../shared/physics";
 import type { StageSpec } from "../shared/stages";
 import type { InputState } from "../shared/types";
@@ -41,6 +42,8 @@ interface BotMemory {
   ledgeTicks: number; // tick passati appesi al bordo
   getups: number; // risalite fatte, per cambiarle a rotazione
   shieldTicks: number; // tick in cui tenere ancora lo scudo (#109)
+  specialTicks: number; // tick prima della prossima speciale (E10)
+  threats: number; // pesanti visti arrivare, per alternare schivata e contrattacco
 }
 
 // Le risalite dal bordo (#110), nell'ordine in cui il bot le alterna
@@ -60,11 +63,12 @@ export class Bots {
     return this.bots.has(id);
   }
 
-  add(match: Match, kind: BotKind): string | null {
+  // characterId: il personaggio del bot (E10, per provare le speciali); senza, quello base
+  add(match: Match, kind: BotKind, characterId?: string): string | null {
     if (match.isFull) return null;
     const id = `bot-${kind}-${++this.count}`;
-    match.addPlayer(id, BOT_NAMES[kind]);
-    this.bots.set(id, { kind, ticks: 0, attacks: 0, hold: emptyInput(), last: emptyInput(), ledgeTicks: 0, getups: 0, shieldTicks: 0 });
+    match.addPlayer(id, BOT_NAMES[kind], characterId);
+    this.bots.set(id, { kind, ticks: 0, attacks: 0, hold: emptyInput(), last: emptyInput(), ledgeTicks: 0, getups: 0, shieldTicks: 0, specialTicks: 0, threats: 0 });
     return id;
   }
 
@@ -197,6 +201,7 @@ function decideSimple(self: Fighter, players: readonly Fighter[], stage: StageSp
   // Sul palco: si rivede la scelta ogni tot tick (il tempo di reazione), nel frattempo si tengono i tasti di movimento
   // (o lo scudo, che si tiene fermo: un tasto di direzione nuovo farebbe rotolare)
   mem.ticks++;
+  if (mem.specialTicks > 0) mem.specialTicks--;
   // Il difficile si para dagli attacchi a portata non pesanti (quelli li schiva), finché lo scudo regge (#109).
   // Lo guarda a ogni tick: un leggero parte in 40 ms, meno del suo tempo di reazione
   if (mem.shieldTicks > 0) mem.shieldTicks--;
@@ -229,8 +234,16 @@ function decideSimple(self: Fighter, players: readonly Fighter[], stage: StageSp
   const reach = FIGHTER.width / 2 + spec.range;
   const facingTarget = Math.sign(dx) === self.facing || dx === 0;
 
-  // Il difficile schiva un attacco pesante che sta caricando a portata, allontanandosi
+  // Il difficile schiva un attacco pesante che sta caricando a portata, allontanandosi; uno su due lo contrattacca (E10)
   const threat = target.attack?.startsWith("heavy") && !target.attackActive && Math.abs(dx) <= reach + FIGHTER.width;
+  const specials = specialsFor(self.characterId);
+  const specialEvery = Math.round((BOT.specialEveryMs * TICK_RATE) / 1000);
+  if (skill.counters && threat && self.onGround && specials.down.type === "counter" && mem.specialTicks === 0 && mem.threats++ % 2 === 0) {
+    input.down = true;
+    tap("special");
+    mem.specialTicks = specialEvery;
+    return input;
+  }
   if (skill.dodges && threat && self.onGround && self.dodgeCooldown === 0) {
     tap("dodge");
     input.shield = self.shielding; // dallo scudo la schivata parte subito, senza l'attesa di quando lo si abbassa
@@ -263,6 +276,12 @@ function decideSimple(self: Fighter, players: readonly Fighter[], stage: StageSp
       mem.attacks++;
       tap(mem.attacks % skill.heavyEvery === 0 ? "heavy" : "light");
     }
+  } else if (skill.specials && mem.specialTicks === 0 && self.onGround && facingTarget && Math.abs(dy) < FIGHTER.height && Math.abs(dx) > BOT.dashFrom && usableSpecial(specials, Math.abs(dx))) {
+    // Da lontano il proiettile, a mezza distanza lo scatto verso il bersaglio (E10)
+    if (Math.abs(dx) <= BOT.shootFrom) input[dx > 0 ? "right" : "left"] = true;
+    tap("special");
+    mem.specialTicks = specialEvery;
+    return input;
   } else {
     // Si insegue, ma senza buttarsi giù dal palco dietro a chi sta volando via
     const wantX = nearestSolidX(stage, target.x);
@@ -302,6 +321,11 @@ function pokeIncoming(self: Fighter, players: readonly Fighter[]): boolean {
     const dx = self.x - p.x;
     return p.facing === Math.sign(dx) && Math.abs(dx) <= FIGHTER.width * 2 + ATTACKS.heavy.range && Math.abs(self.y - p.y) < FIGHTER.height;
   });
+}
+
+// La speciale giusta per la distanza: il proiettile da lontano, lo scatto da vicino
+function usableSpecial(specials: ReturnType<typeof specialsFor>, distance: number): boolean {
+  return distance > BOT.shootFrom ? specials.neutral.type === "projectile" : specials.side.type === "dash";
 }
 
 // Un pesante che carica a portata: quello il difficile lo schiva invece di pararlo
