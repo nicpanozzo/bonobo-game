@@ -124,8 +124,10 @@ func test_numeri_delle_speciali_dal_personaggio() -> void:
 
 func test_colore_dei_proiettili_e_alone_della_carica() -> void:
 	var game: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/game.json"))
-	var tiro := WorldView.projectile_color(game, "default", "specialNeutral")
+	var tiro := WorldView.projectile_color(game, "bonobot", "specialNeutral")
 	runner.check(tiro.is_equal_approx(Color.hex(0xffd84aff)), "il Tiro è giallo: %s" % tiro)
-	runner.check(WorldView.projectile_color(game, "sconosciuto", "specialNeutral").is_equal_approx(tiro), "personaggio sconosciuto: quello base")
+	runner.check(WorldView.projectile_color(game, "sconosciuto", "specialNeutral").is_equal_approx(WorldView.projectile_color(game, "default", "specialNeutral")), "personaggio sconosciuto: quello di Bonobo")
+	var schizzo := WorldView.projectile_color(game, "egiainuso", "specialNeutral")
+	runner.check(schizzo.is_equal_approx(Color.hex(0x6ec8ffff)), "lo Schizzo di Egiainuso è azzurro: %s" % schizzo)
 	runner.check(WorldView.charge_radius(88, 1.0) > WorldView.charge_radius(88, 0.2), "l'alone cresce con la carica")
 	runner.check(WorldView.charge_radius(88, 5.0) == WorldView.charge_radius(88, 1.0), "oltre la carica piena non cresce")

@@ -11,17 +11,18 @@ import { createFighter, emptyInput, stepWorld, type Fighter, type PhysicsContext
 
 const DT = 1000 / TICK_RATE;
 const stage = getStage(undefined); // il palco di base: un blocco da x 240 a 1040, in alto a y 560
-const shot = specialsFor("default").neutral;
-const counter = specialsFor("default").down;
+// Bonobot ha le speciali di base: il Tiro dritto (Bonobo tira la Banana ad arco)
+const shot = specialsFor("bonobot").neutral;
+const counter = specialsFor("bonobot").down;
 if (shot.type !== "projectile" || counter.type !== "counter") throw new Error("il personaggio base deve avere tiro e contrattacco");
 // Un personaggio solo per i test, con la carica di esempio sotto giù
 CHARACTERS["prova-carica"] = { id: "prova-carica", name: "Prova carica", specials: { down: CHARGE_EXAMPLE } };
 
 // a guarda a destra, b gli sta davanti girato verso di lui, a gap pixel
-function setup(gap: number, characterId = "default") {
+function setup(gap: number, characterId = "bonobot") {
   const ctx: PhysicsContext = { stage, events: [] };
   const fighters = [0, 1].map((i) =>
-    createFighter({ id: `p${i}`, name: `P${i}`, characterId: i === 0 ? characterId : "default", color: 0, team: 0, index: i, stocks: 3 }, stage),
+    createFighter({ id: `p${i}`, name: `P${i}`, characterId: i === 0 ? characterId : "bonobot", color: 0, team: 0, index: i, stocks: 3 }, stage),
   );
   const [a, b] = fighters;
   a.x = 400;
@@ -118,6 +119,24 @@ describe("proiettili", () => {
     assert.equal(b.percent, 0);
     assert.equal(a.percent, shot.damage);
     assert.equal(ofType(ctx.events, "hit")[0]?.attackerId, b.id);
+  });
+
+  it("la Banana di Bonobo va ad arco e cade sul palco", () => {
+    const { ctx, fighters, a, b } = setup(0, "default");
+    b.x = 1000;
+    tap(fighters, ctx, a);
+    let startY = Infinity;
+    let top = Infinity;
+    for (let i = 0; i < 120 && !ofType(ctx.events, "projectileEnd").length; i++) {
+      run(fighters, ctx, 1);
+      const p = ctx.projectiles?.list[0];
+      if (p) {
+        startY = Math.min(startY, ofType(ctx.events, "projectile")[0]?.y ?? Infinity);
+        top = Math.min(top, p.y);
+      }
+    }
+    assert.ok(top < startY - 30, `sale prima di cadere: da ${startY} a ${top}`);
+    assert.equal(ofType(ctx.events, "projectileEnd")[0]?.reason, "wall", "finisce sul palco");
   });
 
   it("lo stesso input dà le stesse posizioni in due partite", () => {
