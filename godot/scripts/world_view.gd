@@ -23,6 +23,8 @@ var _beams: Array = [] # [{ x, y, age, color }] raggi dei KO, dal punto di uscit
 var _shards: Array = [] # [{ x, y, vx, vy, age, color }] schegge di uno scudo rotto (#109)
 var _shield_hits := {} # id giocatore -> ms da quando lo scudo ha parato un colpo
 var _items: Array = [] # oggetti dell'ultimo snapshot (#17)
+var _projectiles: Array = [] # proiettili delle speciali dell'ultimo snapshot (E10)
+var _projectiles_ms := 0 # quando è arrivato: tra uno snapshot e l'altro volano con la loro velocità
 var _item_pos := {} # id oggetto -> Vector2 disegnata, che insegue quella dello snapshot
 var _facings := {} # id giocatore -> verso, per mettere in mano gli oggetti
 var _font: Font = ThemeDB.fallback_font
@@ -92,6 +94,7 @@ func reset() -> void:
 	_shards = []
 	_shield_hits = {}
 	_items = []
+	_projectiles = []
 	_item_pos = {}
 	_dust = []
 	_trails = {}
@@ -134,6 +137,8 @@ func on_snapshot(snap: Dictionary) -> void:
 		if p.get("grabbedBy") != null:
 			_holding[p.grabbedBy] = true
 	_items = snap.get("items", [])
+	_projectiles = snap.get("projectiles", [])
+	_projectiles_ms = Time.get_ticks_msec()
 
 
 func on_event(e: Dictionary) -> void:
@@ -280,6 +285,7 @@ func _draw() -> void:
 				_draw_fighter(p, now)
 
 	_draw_items(now)
+	_draw_projectiles()
 	_draw_offscreen_markers()
 
 	for d in _dust:
@@ -329,6 +335,19 @@ func _draw_beam(b: Dictionary) -> void:
 
 # Oggetti (#17): in mano seguono il lottatore disegnato (che è interpolato), gli altri
 # inseguono la posizione dello snapshot; in volo girano su se stessi
+# Per ora un ovale chiaro della misura del colpo; forma, colore e sprite arrivano col passo 4 di E10
+func _draw_projectiles() -> void:
+	var dt := (Time.get_ticks_msec() - _projectiles_ms) / 1000.0
+	for pr in _projectiles:
+		var spec := attack_spec(game, str(pr.characterId), str(pr.kind))
+		var size := Vector2(float(spec.get("range", 24)), float(spec.get("height", 16)))
+		var c := Vector2(pr.x, pr.y) + Vector2(pr.vx, pr.vy) * minf(dt, 0.1)
+		draw_set_transform(c, 0.0, size / size.y)
+		draw_circle(Vector2.ZERO, size.y / 2, Color(1, 0.95, 0.6))
+		draw_arc(Vector2.ZERO, size.y / 2, 0, TAU, 16, Color(0.55, 0.35, 0.1), 2.0 * size.y / size.x)
+		draw_set_transform(Vector2.ZERO)
+
+
 func _draw_items(now: int) -> void:
 	var seen := {}
 	for it in _items:

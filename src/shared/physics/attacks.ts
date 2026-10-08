@@ -25,7 +25,10 @@ export function variant(f: Fighter, base: "light" | "heavy"): AttackKind {
 // I numeri di un attacco per questo lottatore (E10): quelli di ATTACKS, con i ritocchi del suo personaggio
 // (per ora il recupero, characters.ts). Tutta la fisica degli attacchi li legge da qui
 export function attackSpecFor(f: Fighter, kind: AttackKind | null = f.attack): AttackSpec {
-  if (kind && isSpecialKind(kind)) return specialSpecFor(f.characterId, kind);
+  if (kind && isSpecialKind(kind)) {
+    const spec = specialSpecFor(f.characterId, kind);
+    return kind === f.attack && f.chargeMultiplier !== 1 ? charged(spec, f.chargeMultiplier) : spec;
+  }
   const base = ATTACKS[kind ?? "light"];
   const recovery = kind === "recovery" ? getCharacter(f.characterId).recovery : undefined;
   return recovery ? { ...base, ...recovery } : base;
@@ -36,6 +39,11 @@ const SLOT_OF = Object.fromEntries(Object.entries(SPECIAL_KINDS).map(([slot, kin
 
 // Le speciali si convertono una volta per personaggio: la fisica le legge a ogni tick
 const specialCache = new Map<string, AttackSpec>();
+// Il colpo caricato (E10): danno e knockback moltiplicati
+function charged(spec: AttackSpec, m: number): AttackSpec {
+  return { ...spec, damage: Math.round(spec.damage * m * 10) / 10, baseKnockback: spec.baseKnockback * m, knockbackGrowth: spec.knockbackGrowth * m };
+}
+
 function specialSpecFor(characterId: string, kind: SpecialKind): AttackSpec {
   const key = `${characterId}:${kind}`;
   let spec = specialCache.get(key);
@@ -49,6 +57,7 @@ function specialSpecFor(characterId: string, kind: SpecialKind): AttackSpec {
 export function startAttack(f: Fighter, kind: AttackKind, ctx: PhysicsContext) {
   f.attack = kind;
   f.attackTimer = 0;
+  f.chargeMultiplier = 1; // solo il rilascio della carica lo cambia, dopo questa chiamata
   f.cooldownTimer = attackSpecFor(f, kind).cooldownMs;
   f.alreadyHit.clear();
   consume(f, "light", "heavy", "special"); // anche il recupero, l'attacco dal bordo e le speciali passano da qui

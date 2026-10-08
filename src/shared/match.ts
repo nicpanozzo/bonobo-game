@@ -6,6 +6,7 @@ import { getCharacter } from "./characters";
 import { COLORS, FIGHTER, MATCH_RESTART_MS, MAX_PLAYERS_PER_ROOM, RECONNECT_RESUME_INVULNERABLE_MS, TEAM_COLORS, TRAINING } from "./constants";
 import { bufferPresses, createFighter, emptyInput, resetForMatch, stepWorld, type Fighter, type PhysicsContext } from "./physics";
 import { createItemWorld, handleItemInput, itemStates, resetItems, stepItems, type ItemWorld } from "./physics/items";
+import { createProjectileWorld, projectileStates, type ProjectileWorld } from "./physics/projectiles";
 import { canHitWithRules, flagWinnerTeam, isTeamMode, lastStanding, leaderOnTime, sanitizeRules } from "./rules";
 import { COURSE_PREFIX, seedFromCourseId } from "./courseGenerator";
 import { seedFromStageId } from "./stageGenerator";
@@ -37,6 +38,7 @@ export class Match {
   private ctx: PhysicsContext;
   private scores: Record<1 | 2, number> = { 1: 0, 2: 0 }; // solo in Bandiera
   private items: ItemWorld | null; // oggetti (#17): solo in Tutti contro tutti e Squadre
+  private projectiles: ProjectileWorld = createProjectileWorld(); // proiettili delle speciali (E10)
 
   constructor(options: MatchOptions = {}) {
     this.rules = sanitizeRules(options.rules);
@@ -47,6 +49,7 @@ export class Match {
       events: [],
       canHit: (a, t) => canHitWithRules(rules, a.team, t.team),
       unlimitedStocks: rules.mode === "flag" || rules.mode === "race" || rules.mode === "training",
+      projectiles: this.projectiles,
     };
     this.items = rules.mode === "ffa" || rules.mode === "teams" ? createItemWorld(seedOf(this.stage.id)) : null;
   }
@@ -191,12 +194,14 @@ export class Match {
         shieldHp: Math.round(f.shieldHp),
         stunned: f.stunned,
         grabbedBy: f.grabbedBy,
+        charge: f.charge,
       });
     }
     const teamScores = this.rules.mode === "flag" ? { ...this.scores } : null;
     const stageMs = Math.round(this.ctx.timeMs ?? 0);
     const items = this.items ? itemStates(this.items) : [];
-    return { t, players, winnerId: this.winnerId, timeLeftMs: this.timeLeftMs(), teamScores, items, events, stageMs };
+    const projectiles = projectileStates(this.projectiles);
+    return { t, players, winnerId: this.winnerId, timeLeftMs: this.timeLeftMs(), teamScores, items, projectiles, events, stageMs };
   }
 
   // Si entra nella squadra con meno giocatori (a parità, la Rossa)
@@ -312,6 +317,7 @@ export class Match {
     this.matchTimeMs = 0;
     this.scores = { 1: 0, 2: 0 };
     if (this.items) resetItems(this.items);
+    this.projectiles.list = []; // gli id continuano: un client non confonde un proiettile vecchio con uno nuovo
     for (const f of this.fighters.values()) resetForMatch(f, this.slots.get(f.id) ?? 0, this.rules.stocks, this.stage);
     this.assignFlags(); // si riparte dal primo di ogni squadra
     this.ctx.events.push({ type: "matchStart" });
