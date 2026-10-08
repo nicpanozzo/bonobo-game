@@ -165,7 +165,7 @@ heavy = anim(L, False, {
 }, {"root": lambda t: (keyed([(0, 0), (0.26, -4), (0.32, 8), (0.45, 6), (0.75, 0)])(t),
                        keyed([(0, 0), (0.18, -8), (0.26, -9), (0.32, 12), (0.45, 9), (0.75, 0)])(t))})
 
-# Scatto (#198): galoppo sulle nocche come la camminata dello spritesheet di oggi. Il busto si piega in avanti,
+# Scatto (#199): galoppo sulle nocche come la camminata dello spritesheet di oggi. Il busto si piega in avanti,
 # mani e piedi si appoggiano davvero a terra: le pose di braccia e gambe si calcolano con una IK a due ossa
 # dai punti d'appoggio (a terra scorrono indietro, in aria tornano avanti ad arco), come farebbe Blender
 RIG = json.load(open(f"{OUT}/rig.json"))
