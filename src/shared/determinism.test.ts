@@ -28,6 +28,7 @@ function inputs(seed: number) {
     dodge: rand() < 0.04,
     shield: rand() < 0.06,
     special: rand() < 0.06,
+    supreme: rand() < 0.02, // suprema (#101): parte solo a barra piena
   });
 }
 

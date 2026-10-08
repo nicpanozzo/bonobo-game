@@ -6,9 +6,11 @@ import type { AttackKind, SpecialKind } from "../types";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
 import { clearStun, hitShield } from "./shield";
 import { counterHit, isCountering, tryStartSpecial } from "./specials";
+import { chargeFromHit, tryStartSupreme } from "./supreme";
 
 export function tryStartAttack(f: Fighter, ctx: PhysicsContext): void {
   if (f.hitstun || f.attack || f.cooldownTimer > 0 || f.helpless || f.dodgeTimer > 0) return;
+  if (tryStartSupreme(f, ctx)) return; // #101: solo con la barra piena
   if (pressed(f, "special")) tryStartSpecial(f, ctx); // E10
   else if (pressed(f, "heavy")) startAttack(f, variant(f, "heavy"), ctx);
   else if (pressed(f, "light")) startAttack(f, variant(f, "light"), ctx);
@@ -147,6 +149,7 @@ export function launch(target: Fighter, attacker: Fighter, kind: AttackKind, x: 
   const spec = damage === undefined ? attackSpecFor(attacker, kind) : { ...attackSpecFor(attacker, kind), damage };
   // Stile Smash/Brawlhalla: il danno non toglie vita, fa volare più lontano
   target.percent = Math.min(999, target.percent + spec.damage);
+  chargeFromHit(attacker, target, spec.damage); // #101
   const knockback = (spec.baseKnockback + spec.knockbackGrowth * target.percent) / characterStats(target.characterId).weight; // E11
   const angle = (spec.angleDeg * Math.PI) / 180;
   target.vx = attacker.facing * Math.cos(angle) * knockback;

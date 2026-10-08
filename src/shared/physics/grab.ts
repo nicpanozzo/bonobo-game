@@ -8,6 +8,7 @@ import { attackBox, attackSpecFor, bodyBox, canBeHit, launch, overlap, startAtta
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
 import { clearStun } from "./shield";
 import { cancelSpecial } from "./specials";
+import { chargeFromHit } from "./supreme";
 
 // Si tiene qualcuno o si è tenuti: la posizione la decide stepGrabs, il resto del passo salta
 export const inGrab = (f: Fighter) => f.holding !== null || f.grabbedBy !== null;
@@ -150,6 +151,7 @@ function pummel(holder: Fighter, target: Fighter, ctx: PhysicsContext): void {
   consume(holder, "light");
   holder.pummelTimer = GRAB.pummelEveryMs;
   target.percent = Math.min(999, target.percent + GRAB.pummelDamage);
+  chargeFromHit(holder, target, GRAB.pummelDamage); // #101
   ctx.events.push({
     type: "hit",
     attackerId: holder.id,

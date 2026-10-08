@@ -249,7 +249,7 @@ describe("allenamento (#113)", () => {
     const m = new Match({ rules: { mode: "training" } });
     m.addPlayer("a", "A");
     run(m, 60); // atterra
-    m.setInput("a", { left: false, right: true, up: false, jump: false, down: false, light: false, heavy: false, taunt: false, dodge: true, shield: false, special: false });
+    m.setInput("a", { left: false, right: true, up: false, jump: false, down: false, light: false, heavy: false, taunt: false, dodge: true, shield: false, special: false, supreme: false });
     const dodge = run(m, 1).find((e) => e.type === "dodge");
     assert.ok(dodge && dodge.type === "dodge" && dodge.id === "a" && dodge.air === false);
   });
@@ -258,7 +258,7 @@ describe("allenamento (#113)", () => {
     const m = new Match({ rules: { mode: "training" } });
     m.addPlayer("a", "A");
     run(m, 60); // atterra
-    m.setInput("a", { left: false, right: true, up: false, jump: false, down: false, light: false, heavy: false, taunt: false, dodge: false, shield: false, special: true });
+    m.setInput("a", { left: false, right: true, up: false, jump: false, down: false, light: false, heavy: false, taunt: false, dodge: false, shield: false, special: true, supreme: false });
     const attack = run(m, 1).find((e) => e.type === "attack");
     assert.ok(attack && attack.type === "attack" && attack.kind === "specialSide");
   });

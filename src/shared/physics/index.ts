@@ -11,6 +11,7 @@
 //   grab.ts      presa, colpetti e lanci (#109)
 //   specials.ts  mosse speciali per personaggio (E10)
 //   projectiles.ts  proiettili delle speciali (E10)
+//   supreme.ts   barra della suprema (#101)
 
 import { resolveHits, tryStartAttack, updateAttack } from "./attacks";
 import { carryRider, resolveHazards } from "./elements";
@@ -22,6 +23,7 @@ import { holdShield } from "./shield";
 import { stepProjectiles } from "./projectiles";
 import { cancelSpecial, specialing } from "./specials";
 import { collideWithStage, loseStock, outOfBlastZone, respawn } from "./stage";
+import { tickSupreme } from "./supreme";
 
 export * from "./fighter";
 export { resolveHits } from "./attacks";
@@ -67,6 +69,7 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
   f.dodgeCooldown = Math.max(0, f.dodgeCooldown - dtMs);
   f.hazardTimer = Math.max(0, f.hazardTimer - dtMs);
   f.regrabTimer = Math.max(0, f.regrabTimer - dtMs);
+  tickSupreme(f, dtMs); // #101: anche il tempo carica la barra
   tickBuffer(f, dtMs);
   f.hitstun = f.hitstunTimer > 0;
   f.invulnerable = f.invulnerableTimer > 0;

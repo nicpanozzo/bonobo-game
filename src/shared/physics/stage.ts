@@ -1,6 +1,6 @@
 // Contatto con l'arena: blocchi pieni, piattaforme sottili, zone di espulsione, vite e ritorno in gioco.
 
-import { COURSE, FIGHTER, RESPAWN_INVULNERABLE_MS, RESPAWN_MS } from "../constants";
+import { COURSE, FIGHTER, RESPAWN_INVULNERABLE_MS, RESPAWN_MS, SUPREME } from "../constants";
 import { landOnMover } from "./elements";
 import type { Fighter, PhysicsContext } from "./fighter";
 import { resetShield } from "./shield";
@@ -89,6 +89,7 @@ export function loseStock(f: Fighter, ctx: PhysicsContext): void {
   f.hitstunTimer = 0;
   f.hitstun = false;
   f.lastHitById = null;
+  if (!SUPREME.keepOnKo) f.supreme = 0; // #101
   if (f.stocks <= 0) {
     f.eliminated = true;
     return;
