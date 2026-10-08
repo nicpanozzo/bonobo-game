@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { existsSync, statSync } from "node:fs";
 import { describe, it } from "node:test";
 import { CHARACTERS, characterStats } from "./characters";
 import { AUDIO, MAX_PLAYERS_PER_ROOM, TICK_RATE, WORLD } from "./constants";
@@ -47,6 +48,25 @@ describe("arene", () => {
     const withMusic = Object.values(STAGES).filter((s) => s.music);
     assert.ok(withMusic.length >= 2);
     for (const stage of withMusic) assert.deepEqual(musicProblems(stage.music!), [], stage.id);
+  });
+
+  it("gli sfondi delle arene ci sono e restano leggeri (E12)", () => {
+    const MAX_BYTES = 4 * 1024 * 1024; // per arena, per non appesantire la versione web (rischi in E12)
+    const withArt = Object.values(STAGES).filter((s) => s.art);
+    assert.ok(withArt.length >= 1, "almeno Il Palco ha uno sfondo");
+    for (const stage of withArt) {
+      const art = stage.art!;
+      assert.ok(art.layers.length >= 1, `${stage.id}: almeno uno strato`);
+      const layers = [...art.layers, ...(art.foreground ? [art.foreground] : [])];
+      for (const l of layers) assert.ok(l.parallax >= 0 && l.parallax <= 1, `${stage.id}: parallasse di ${l.file} tra 0 e 1`);
+      let bytes = 0;
+      for (const file of [...layers.map((l) => l.file), ...(art.preview ? [art.preview] : [])]) {
+        const url = new URL(`../../public/assets/stages/${stage.id}/${file}`, import.meta.url);
+        assert.ok(existsSync(url), `${stage.id}: manca public/assets/stages/${stage.id}/${file}`);
+        bytes += statSync(url).size;
+      }
+      assert.ok(bytes <= MAX_BYTES, `${stage.id}: sfondo di ${(bytes / 1048576).toFixed(1)} MB, oltre i 4 MB`);
+    }
   });
 
   it("il controllo della musica se ne accorge davvero (E12)", () => {

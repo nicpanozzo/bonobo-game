@@ -95,6 +95,24 @@ Facoltativa: senza, in partita si sente la musica di sempre. È un preset per il
 music: { bpm: 108, chords: ["C", "Am", "F", "G"], lead: "triangle" } // Le Isole
 ```
 
+### Sfondo a strati (`art`)
+
+Facoltativo: senza, l'arena si disegna con i colori di `colors`. I PNG vanno in `public/assets/stages/<id>/` e arrivano a Godot con `npm run export:godot`, che si ferma se ne manca uno. Le regole di stile (fondale più spento dei lottatori, bordo calpestabile chiaro) sono nella sezione 7 di [stile-grafico.md](stile-grafico.md).
+
+| Campo | Cosa fa |
+|---|---|
+| `layers` | gli strati dietro al palco, dal più lontano: `{ file, parallax }` |
+| `parallax` | da 0 (fermo con la telecamera, lontanissimo) a 1 (si muove con il palco) |
+| `foreground` | facoltativo, uno strato davanti ai lottatori: quasi tutto trasparente |
+| `preview` | immagine 16:9 dell'arena per la lobby |
+| `scale` | pixel di mondo per pixel dell'immagine (1 se manca) |
+
+Gli strati sono centrati sul centro dell'arena. Con la telecamera più lontana (`CAMERA.minZoom`) si vedono circa 1830×1030 pixel di mondo: uno strato di 1920×1080 copre tutto se è lontano; gli strati vicini sfumano ai lati nel colore `sky`. In tutto al massimo 4 MB per arena (lo controlla `npm test`).
+
+```ts
+art: { layers: [{ file: "sfondo-0.png", parallax: 0.15 }, { file: "sfondo-1.png", parallax: 0.45 }, { file: "sfondo-2.png", parallax: 0.75 }], preview: "anteprima.png" } // Il Palco
+```
+
 ## Come funzionano dentro (per chi aggiunge un elemento)
 
 - Ascensori e trappole dipendono solo dal **tempo dell'arena** (`ctx.timeMs`, che `stepWorld` fa avanzare). Il server lo manda nello snapshot (`stageMs`) e Godot rifà gli stessi calcoli (`mover_position` e `hazard_active` in `world_view.gd`): niente posizioni in rete, e il movimento è fluido perché si interpola il tempo.

@@ -118,6 +118,17 @@ for (const [id, spec] of Object.entries(CHARACTERS)) {
   }
   characters[id] = { ...c, sprite: { ...sprite, animations: resolvedAnimations(animations) } };
 }
+// Sfondi delle arene (E12 passo 3): ogni file nominato in art deve esserci
+for (const [id, stage] of Object.entries(STAGES)) {
+  const art = stage.art;
+  const files = art ? [...art.layers, ...(art.foreground ? [art.foreground] : [])].map((l) => l.file) : [];
+  if (art?.preview) files.push(art.preview);
+  for (const file of files) {
+    const path = `assets/stages/${id}/${file}`;
+    if (existsSync(publicDir + path)) spriteFiles.push(path);
+    else spriteErrors.push(`arena ${id}: manca public/${path} (sfondo in stages.ts)`);
+  }
+}
 if (spriteErrors.length) {
   console.error(`Sprite dei personaggi da correggere:\n- ${spriteErrors.join("\n- ")}`);
   process.exit(1);

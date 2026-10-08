@@ -6,6 +6,7 @@ const WORLD_WIDTH := 1280.0 # WORLD.width
 const WORLD_HEIGHT := 720.0 # WORLD.height
 
 var spec: Dictionary
+static var _previews := {} # percorso -> Texture2D, le anteprime già caricate (E12)
 
 
 func _draw() -> void:
@@ -20,6 +21,9 @@ func _draw() -> void:
 	var k := minf(size.x / WORLD_WIDTH, size.y / WORLD_HEIGHT)
 	var o := Vector2((size.x - WORLD_WIDTH * k) / 2, (size.y - WORLD_HEIGHT * k) / 2)
 	draw_rect(r, _c(spec.colors.sky))
+	var preview := preview_texture(spec)
+	if preview:
+		draw_texture_rect(preview, Rect2(o, Vector2(WORLD_WIDTH, WORLD_HEIGHT) * k), false)
 	for s in spec.solids:
 		draw_rect(Rect2(o + Vector2(s.x, s.y) * k, Vector2(s.width, s.height) * k), _c(spec.colors.solid))
 	for p in spec.platforms:
@@ -29,6 +33,17 @@ func _draw() -> void:
 		draw_rect(Rect2(o + Vector2(m.path[0].x, m.path[0].y) * k, Vector2(m.width * k, 3)), Color("f1c40f"))
 	for h in spec.get("hazards", []):
 		draw_rect(Rect2(o + Vector2(h.x, h.y) * k, Vector2(h.width, h.height) * k), Color(1, 0.25, 0.2))
+
+
+# L'immagine dell'arena disegnata (StageSpec.art.preview), o null
+static func preview_texture(stage: Dictionary) -> Texture2D:
+	var file: String = stage.get("art", {}).get("preview", "")
+	if file == "":
+		return null
+	var path := "res://data/assets/stages/%s/%s" % [stage.id, file]
+	if not _previews.has(path):
+		_previews[path] = load(path) if ResourceLoader.exists(path) else null
+	return _previews[path]
 
 
 static func _c(n: Variant) -> Color:

@@ -29,6 +29,9 @@ var _item_pos := {} # id oggetto -> Vector2 disegnata, che insegue quella dello 
 var _facings := {} # id giocatore -> verso, per mettere in mano gli oggetti
 var _font: Font = ThemeDB.fallback_font
 var view_rect := Rect2(0, 0, 1280, 720) # la parte di mondo che si vede, decisa dalla telecamera in main.gd
+var _layers: Array = [] # strati dello sfondo dell'arena (E12), dal più lontano: [texture, parallasse]
+var _foreground: Array = [] # strato davanti ai lottatori, o []
+var _layer_scale := 1.0 # pixel di mondo per pixel delle immagini degli strati
 var _textures := {} # id personaggio -> Texture2D dello spritesheet (nel formato cartella, quella di idle)
 var _state_textures := {} # id personaggio -> { stato: Texture2D }, solo per il formato cartella (E7 passo 2)
 var _anims := {} # id giocatore -> { name, since }: animazione in corso e da quando
@@ -122,9 +125,41 @@ func set_stage(stage_id: String) -> void:
 # L'arena intera arriva dal server nel benvenuto: così si vedono anche le arene casuali e i percorsi
 func set_stage_spec(spec: Dictionary) -> void:
 	stage = spec
+	_layers = []
+	_foreground = []
+	var art: Dictionary = spec.get("art", {})
+	for l in art.get("layers", []):
+		var layer := _stage_layer(spec.id, l)
+		if not layer.is_empty():
+			_layers.append(layer)
+	if art.has("foreground"):
+		_foreground = _stage_layer(spec.id, art.foreground)
+	_layer_scale = art.get("scale", 1.0)
 	_supreme_view.stage = spec
 	_reached = 0
 	queue_redraw()
+
+
+# Uno strato dello sfondo (E12): [texture, parallasse], o [] se il file non c'è (si vede il colore del cielo)
+static func _stage_layer(stage_id: String, layer: Dictionary) -> Array:
+	var path := "res://data/assets/stages/%s/%s" % [stage_id, layer.file]
+	if not ResourceLoader.exists(path):
+		push_warning("Sfondo mancante: " + path)
+		return []
+	return [_sprite_texture(path, "linear"), clampf(layer.parallax, 0.0, 1.0)]
+
+
+func _draw_layer(layer: Array) -> void:
+	var tex: Texture2D = layer[0]
+	var center := Vector2(stage_width() / 2.0, game.world.height / 2.0)
+	draw_texture_rect(tex, layer_rect(tex.get_size() * _layer_scale, layer[1], center, view_rect.get_center()), false)
+
+
+# Dove sta uno strato: centrato sull'arena, poi trascinato verso il centro della vista tanto più quanto è lontano.
+# parallax 1 = fermo con il palco, 0 = fermo con la telecamera
+static func layer_rect(size: Vector2, parallax: float, world_center: Vector2, view_center: Vector2) -> Rect2:
+	var center := world_center + (view_center - world_center) * (1.0 - parallax)
+	return Rect2(center - size / 2.0, size)
 
 
 # Piedi dei lottatori in gioco (non eliminati), per la telecamera
@@ -293,6 +328,8 @@ func _draw() -> void:
 	var w: float = game.world.width
 	var h: float = game.world.height
 	draw_rect(Rect2(-400, -400, stage_width() + 800, h + 800), _color(stage.colors.sky))
+	for l in _layers:
+		_draw_layer(l)
 	for s in stage.solids:
 		draw_rect(Rect2(s.x, s.y, s.width, s.height), _color(stage.colors.solid))
 		draw_rect(Rect2(s.x, s.y, s.width, 6), _color(stage.colors.solidEdge))
@@ -319,6 +356,8 @@ func _draw() -> void:
 	_supreme_view.view_rect = view_rect
 	_draw_items(now)
 	_draw_projectiles()
+	if not _foreground.is_empty():
+		_draw_layer(_foreground)
 	_draw_offscreen_markers()
 
 	for d in _dust:
