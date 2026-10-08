@@ -26,6 +26,8 @@ jobs:
       - run: npm run test --if-present
       # godot/data/game.json è generato dai dati del gioco: deve restare allineato (#59)
       - run: npm run export:godot && git diff --exit-code godot/data
+      # Budget di prestazioni del server (#83, PERF_BUDGET in constants.ts): i numeri finiscono nel riassunto del job
+      - run: npm run bench -- --check
 
   # Il client Godot è il gioco ufficiale: i suoi script devono caricarsi senza errori
   godot:
@@ -53,6 +55,9 @@ jobs:
       # Test degli script del client (godot/tests, #83): un test che fallisce fa uscire con 1
       - name: Test del client
         run: ~/godot/godot --headless --path godot --script res://tests/run_tests.gd
+      # Budget di prestazioni del client (#83): costo degli script per frame, migliore di 3 giri
+      - name: Prestazioni del client
+        run: ~/godot/godot --headless --path godot --script res://tools/bench_client.gd -- --check
       # Screenshot di lobby e partita finta (#83): si scaricano dalla pagina della CI; rosso se uno è tutto di un colore
       - name: Screenshot
         run: |
