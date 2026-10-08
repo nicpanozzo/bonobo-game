@@ -1,13 +1,13 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { CHARACTERS, characterStats } from "./characters";
-import { MAX_PLAYERS_PER_ROOM, TICK_RATE, WORLD } from "./constants";
+import { AUDIO, MAX_PLAYERS_PER_ROOM, TICK_RATE, WORLD } from "./constants";
 import { createFighter, stepWorld, type PhysicsContext } from "./physics";
 import { hazardActive, moverPosition } from "./physics/elements";
 import { courseSteps, generateCourse } from "./courseGenerator";
 import { generateStage, seedFromStageId } from "./stageGenerator";
 import { JUMP_HEIGHT, reachable, SIDE_REACH, stageCheckData } from "./stageCheck";
-import { getStage, STAGES, stageWidth, type StageSpec } from "./stages";
+import { CHORD_NAME, getStage, STAGE_MUSIC_LEADS, STAGES, stageWidth, type StageMusic, type StageSpec } from "./stages";
 
 function checkStage(stage: StageSpec) {
   for (const p of [...stage.solids, ...stage.platforms]) {
@@ -28,9 +28,31 @@ function checkStage(stage: StageSpec) {
   for (const f of fighters) assert.ok(f.onGround && !f.respawning, `${stage.id}: partenza ${f.id} sul palco`);
 }
 
+// La musica di un'arena (E12 passo 4): i problemi, uno per riga, o niente se il preset è valido
+function musicProblems(music: StageMusic): string[] {
+  const problems: string[] = [];
+  if (!(music.bpm >= AUDIO.musicBpmMin && music.bpm <= AUDIO.musicBpmMax)) problems.push(`bpm ${music.bpm} fuori da ${AUDIO.musicBpmMin}-${AUDIO.musicBpmMax}`);
+  if (music.chords.length < 1 || music.chords.length > 8) problems.push("da 1 a 8 accordi");
+  for (const c of music.chords) if (!CHORD_NAME.test(c)) problems.push(`accordo "${c}" sconosciuto (es. "C", "F#", "Bbm")`);
+  if (!STAGE_MUSIC_LEADS.includes(music.lead)) problems.push(`timbro "${music.lead}" sconosciuto`);
+  return problems;
+}
+
 describe("arene", () => {
   it("le arene fatte a mano sono valide", () => {
     for (const stage of Object.values(STAGES)) checkStage(stage);
+  });
+
+  it("la musica delle arene è un preset valido, e almeno due arene ne hanno una (E12)", () => {
+    const withMusic = Object.values(STAGES).filter((s) => s.music);
+    assert.ok(withMusic.length >= 2);
+    for (const stage of withMusic) assert.deepEqual(musicProblems(stage.music!), [], stage.id);
+  });
+
+  it("il controllo della musica se ne accorge davvero (E12)", () => {
+    assert.equal(musicProblems({ bpm: 300, chords: ["H", "Am"], lead: "square" }).length, 2);
+    assert.equal(musicProblems({ bpm: 120, chords: [], lead: "organo" as never }).length, 2);
+    assert.deepEqual(musicProblems({ bpm: 120, chords: ["C#m", "Bb", "F"], lead: "sine" }), []);
   });
 
   it("ogni personaggio raggiunge tutte le piattaforme delle arene fatte a mano (E11)", () => {

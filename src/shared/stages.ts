@@ -41,6 +41,18 @@ export interface Hazard extends Rect {
   offsetMs?: number;
 }
 
+// Musica della partita su un'arena (E12 passo 4): un preset per il sintetizzatore del client Godot (audio.gd).
+// Senza, si sente la musica di sempre (132 bpm, La minore, Fa, Do, Sol, melodia a onda quadra).
+export interface StageMusic {
+  bpm: number; // battiti al minuto, tra AUDIO.musicBpmMin e AUDIO.musicBpmMax
+  chords: string[]; // un accordo per battuta, per nome: "C", "F#", "Bb", con "m" se minore ("Am", "C#m")
+  lead: StageMusicLead; // timbro della melodia
+}
+
+export type StageMusicLead = "square" | "triangle" | "sawtooth" | "sine";
+export const STAGE_MUSIC_LEADS: StageMusicLead[] = ["square", "triangle", "sawtooth", "sine"];
+export const CHORD_NAME = /^[A-G][#b]?m?$/;
+
 export interface StageSpec {
   id: string;
   name: string;
@@ -57,6 +69,7 @@ export interface StageSpec {
   // Elementi dinamici (#14 passo 4)
   movers?: MovingPlatform[];
   hazards?: Hazard[];
+  music?: StageMusic; // musica della partita (E12 passo 4)
 }
 
 // Larghezza del mondo di un'arena: lo schermo, o di più per i percorsi
@@ -111,6 +124,9 @@ export const STAGES: Record<string, StageSpec> = {
     ],
     respawn: { x: WORLD.width / 2, y: 170 },
     colors: { sky: 0x123047, solid: 0x2f5d3a, solidEdge: 0x7cbf6a, platform: 0xe8d9a8 },
+
+    // Più lenta e morbida, da isola. TODO community: un pezzo del canale da rifare?
+    music: { bpm: 108, chords: ["C", "Am", "F", "G"], lead: "triangle" },
   },
 
   // Un capannone con un ascensore in mezzo, una navetta che fa avanti e indietro,
@@ -151,6 +167,9 @@ export const STAGES: Record<string, StageSpec> = {
     ],
     respawn: { x: WORLD.width / 2, y: 160 },
     colors: { sky: 0x22201f, solid: 0x4a4f57, solidEdge: 0xf1c40f, platform: 0xc0c6cc },
+
+    // Veloce e metallica, da capannone
+    music: { bpm: 152, chords: ["Em", "C", "D", "Bm"], lead: "sawtooth" },
   },
 
   // Palestra del tutorial (E15): un palco con due bordi a cui aggrapparsi e una piattaforma bassa per i salti.

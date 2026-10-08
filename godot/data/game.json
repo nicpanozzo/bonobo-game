@@ -243,6 +243,8 @@
     "sfx": 0.7,
     "music": 0.35,
     "musicBpm": 132,
+    "musicBpmMin": 70,
+    "musicBpmMax": 190,
     "hitLoudPercent": 120,
     "voices": 0.8,
     "musicFadeMs": 1500,
@@ -804,6 +806,16 @@
         "solid": 3104058,
         "solidEdge": 8175466,
         "platform": 15260072
+      },
+      "music": {
+        "bpm": 108,
+        "chords": [
+          "C",
+          "Am",
+          "F",
+          "G"
+        ],
+        "lead": "triangle"
       }
     },
     "fabbrica": {
@@ -948,6 +960,16 @@
         "solid": 4869975,
         "solidEdge": 15844367,
         "platform": 12633804
+      },
+      "music": {
+        "bpm": 152,
+        "chords": [
+          "Em",
+          "C",
+          "D",
+          "Bm"
+        ],
+        "lead": "sawtooth"
       }
     },
     "palestra": {
