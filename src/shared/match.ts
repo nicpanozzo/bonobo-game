@@ -97,6 +97,7 @@ export class Match {
       left: !!input.left,
       right: !!input.right,
       up: !!input.up,
+      jump: !!input.jump,
       down: !!input.down,
       light: !!input.light,
       heavy: !!input.heavy,

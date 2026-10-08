@@ -8,11 +8,12 @@ signal changed
 
 const PATH := "user://bonobo.cfg"
 # Le azioni che si possono assegnare a un tasto (le stesse di InputState)
-const ACTIONS := ["left", "right", "up", "down", "light", "heavy", "taunt", "dodge", "shield", "special"]
+const ACTIONS := ["left", "right", "up", "jump", "down", "light", "heavy", "taunt", "dodge", "shield", "special"]
 const LABELS := {
 	"left": "Sinistra",
 	"right": "Destra",
-	"up": "Salto",
+	"up": "Su",
+	"jump": "Salto",
 	"down": "Giù / scendi",
 	"light": "Attacco leggero",
 	"heavy": "Attacco pesante",
@@ -25,7 +26,8 @@ const LABELS := {
 const DEFAULT_BINDINGS := {
 	"left": [KEY_A, KEY_LEFT],
 	"right": [KEY_D, KEY_RIGHT],
-	"up": [KEY_W, KEY_UP, KEY_SPACE],
+	"up": [KEY_W, KEY_UP], # sulla tastiera su fa anche saltare, vedi jump_pressed()
+	"jump": [KEY_SPACE], # salto separato da su (E10)
 	"down": [KEY_S, KEY_DOWN],
 	"light": [KEY_J],
 	"heavy": [KEY_K],
@@ -41,7 +43,9 @@ const AXIS_BASE := 1000
 const DEFAULT_PAD_BINDINGS := {
 	"left": [AXIS_BASE + JOY_AXIS_LEFT_X * 2, JOY_BUTTON_DPAD_LEFT],
 	"right": [AXIS_BASE + JOY_AXIS_LEFT_X * 2 + 1, JOY_BUTTON_DPAD_RIGHT],
-	"up": [JOY_BUTTON_A, AXIS_BASE + JOY_AXIS_LEFT_Y * 2, JOY_BUTTON_DPAD_UP],
+	# Sul pad su è solo una direzione: la levetta in su per un attacco non fa saltare (E10)
+	"up": [AXIS_BASE + JOY_AXIS_LEFT_Y * 2, JOY_BUTTON_DPAD_UP],
+	"jump": [JOY_BUTTON_A],
 	"down": [AXIS_BASE + JOY_AXIS_LEFT_Y * 2 + 1, JOY_BUTTON_DPAD_DOWN],
 	"light": [JOY_BUTTON_X],
 	"heavy": [JOY_BUTTON_B],
@@ -211,6 +215,16 @@ func is_pressed(action: String) -> bool:
 					return true
 			elif Input.is_joy_button_pressed(device, code):
 				return true
+	return false
+
+
+# Il salto: il suo tasto, oppure su dalla tastiera (come in Brawlhalla: chi gioca con W salta con W)
+func jump_pressed() -> bool:
+	if is_pressed("jump"):
+		return true
+	for k in bindings.up:
+		if Input.is_physical_key_pressed(k):
+			return true
 	return false
 
 

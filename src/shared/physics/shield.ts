@@ -34,8 +34,8 @@ export function holdShield(f: Fighter, dtMs: number, ctx: PhysicsContext): boole
   }
 
   if (f.input.shield && f.onGround && !f.attack && f.dodgeTimer === 0) {
-    // Fuori dallo scudo senza attesa: su salta, una direzione o la schivata rotolano (la schivata va nel buffer, E6)
-    if (pressed(f, "up") || pressed(f, "dodge")) {
+    // Fuori dallo scudo senza attesa: il salto salta, una direzione o la schivata rotolano (la schivata va nel buffer, E6)
+    if (pressed(f, "jump") || pressed(f, "dodge")) {
       lower(f);
       return false;
     }

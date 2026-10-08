@@ -5,7 +5,8 @@ import type { StageSpec } from "./stages";
 export interface InputState {
   left: boolean;
   right: boolean;
-  up: boolean; // salto (anche doppio salto in aria)
+  up: boolean; // direzione su: attacchi e lancio verso l'alto, recupero, oggetti in su
+  jump: boolean; // salto (anche doppio salto in aria). Separato da up (E10): col pad un attacco in su non fa saltare
   down: boolean; // scende dalle piattaforme sottili, caduta veloce in aria
   light: boolean; // attacco leggero
   heavy: boolean; // attacco pesante

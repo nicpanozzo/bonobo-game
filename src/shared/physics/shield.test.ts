@@ -93,7 +93,7 @@ describe("scudo", () => {
     run(fighters, ctx, 10);
     assert.equal(ofType(ctx.events, "shieldBreak").length, 1);
     // Tiene destra e salto: non si muove
-    press(b, { right: true, up: true, light: true });
+    press(b, { right: true, jump: true, light: true });
     run(fighters, ctx, 60); // ricade a terra
     assert.equal(b.onGround, true);
     const x = b.x;
@@ -144,12 +144,12 @@ describe("scudo", () => {
     assert.ok(b.shieldHp > low + SHIELD.regenPerSec * 0.9);
   });
 
-  it("con su si salta fuori dallo scudo, con una direzione si rotola", () => {
+  it("col salto si salta fuori dallo scudo, con una direzione si rotola", () => {
     {
       const { ctx, fighters, b } = setup();
       press(b, { shield: true });
       run(fighters, ctx, 10);
-      press(b, { shield: true, up: true });
+      press(b, { shield: true, jump: true });
       run(fighters, ctx, 1);
       assert.equal(ofType(ctx.events, "jump").length, 1);
       assert.equal(b.shielding, false);

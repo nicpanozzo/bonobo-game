@@ -103,8 +103,8 @@ func test_rimappare_il_pad() -> void:
 	runner.check(s.assign("light", 0, JOY_BUTTON_B, true) == "heavy", "B tolto dal pesante")
 	runner.check(s.pad_bindings.light == [JOY_BUTTON_B], "B ora è il leggero: %s" % [s.pad_bindings.light])
 	runner.check(s.bindings == Settings.DEFAULT_BINDINGS, "la tastiera non cambia")
-	s.assign("up", 0, -1, true) # toglie A (che è 0)
-	runner.check(not s.pad_bindings.up.has(JOY_BUTTON_A), "A tolto dal salto: %s" % [s.pad_bindings.up])
+	s.assign("jump", 0, -1, true) # toglie A (che è 0)
+	runner.check(not s.pad_bindings.jump.has(JOY_BUTTON_A), "A tolto dal salto: %s" % [s.pad_bindings.jump])
 	var again := Settings.new(AUDIO, PATH)
 	runner.check(again.pad_bindings.light == [JOY_BUTTON_B], "salvato: %s" % [again.pad_bindings.light])
 
@@ -152,3 +152,15 @@ func test_scudo_nuovo_con_preferenze_vecchie() -> void:
 	runner.check(s.pad_bindings.shield == triggers, "scudo sui grilletti: %s" % [s.pad_bindings.shield])
 	runner.check(s.pad_bindings.dodge == [JOY_BUTTON_LEFT_SHOULDER], "schivata senza grilletti: %s" % [s.pad_bindings.dodge])
 	runner.check(s.bindings.shield == [KEY_I] and s.bindings.dodge == [KEY_L], "I passa allo scudo: %s %s" % [s.bindings.shield, s.bindings.dodge])
+
+
+func test_salto_nuovo_con_preferenze_vecchie() -> void:
+	# Preferenze salvate prima di E10: su aveva anche Spazio e A
+	var cfg := ConfigFile.new()
+	cfg.set_value("keys", "up", [KEY_W, KEY_UP, KEY_SPACE])
+	cfg.set_value("pad", "up", [JOY_BUTTON_A, Settings.axis_input(JOY_AXIS_LEFT_Y, false), JOY_BUTTON_DPAD_UP])
+	cfg.save(PATH)
+	var s := Settings.new(AUDIO, PATH)
+	runner.check(s.bindings.jump == [KEY_SPACE] and s.bindings.up == [KEY_W, KEY_UP], "Spazio passa al salto: %s %s" % [s.bindings.jump, s.bindings.up])
+	runner.check(s.pad_bindings.jump == [JOY_BUTTON_A], "A passa al salto: %s" % [s.pad_bindings.jump])
+	runner.check(not s.pad_bindings.up.has(JOY_BUTTON_A), "su senza A: %s" % [s.pad_bindings.up])

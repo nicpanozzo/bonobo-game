@@ -57,8 +57,8 @@ export function applyControls(f: Fighter, dt: number, ctx: PhysicsContext): void
   }
 
   // Salto e doppio salto
-  if (pressed(f, "up") && f.jumpsLeft > 0) {
-    consume(f, "up"); // una pressione = un salto solo
+  if (pressed(f, "jump") && f.jumpsLeft > 0) {
+    consume(f, "jump"); // una pressione = un salto solo
     ctx.events.push({ type: "jump", id: f.id, x: Math.round(f.x), y: Math.round(f.y), air: !f.onGround });
     f.vy = -(f.onGround ? FIGHTER.jumpSpeed : FIGHTER.doubleJumpSpeed) * stats.jump;
     f.jumpsLeft -= 1;

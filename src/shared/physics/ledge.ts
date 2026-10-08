@@ -162,8 +162,9 @@ export function holdLedge(f: Fighter, dtMs: number, ctx: PhysicsContext): boolea
   if (f.ledgeTimer >= LEDGE.actionableMs) {
     const toward = f.facing === 1 ? "right" : "left";
     const away = f.facing === 1 ? "left" : "right";
-    // Su: salto dal bordo, il salto in aria resta
-    if (pressed(f, "up")) {
+    // Salto (o su, come prima di E10): salto dal bordo, il salto in aria resta
+    if (pressed(f, "jump") || pressed(f, "up")) {
+      consume(f, "jump");
       consume(f, "up");
       ctx.events.push({ type: "ledgeGetup", id: f.id, option: "jump" });
       releaseLedge(f);
