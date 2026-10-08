@@ -70,5 +70,5 @@ func test_barre_delle_statistiche() -> void:
 	runner.check(Lobby.stat_fill(1.05, limits) > Lobby.stat_fill(0.9, limits), "più alto, più pieno")
 	runner.check(is_equal_approx(Lobby.stat_fill(1.0, {}), 0.5), "dati vecchi senza limiti")
 	var game: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/game.json"))
-	runner.check(Lobby.stats_text(game.characters.egiainuso) == "Velocità 90% · Salto 95% · Peso 105%", Lobby.stats_text(game.characters.egiainuso))
+	runner.check(Lobby.stats_text(game.characters.orsoblu) == "Velocità 90% · Salto 95% · Peso 105%", Lobby.stats_text(game.characters.orsoblu))
 	runner.check(Lobby.stats_text({}) == "Velocità 100% · Salto 100% · Peso 100%", "senza stats: come Bonobot")
