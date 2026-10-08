@@ -16,6 +16,7 @@ LIPS = "#c98a8a"
 # Arti dalla parte lontana: un tono più scuri, come in ombra
 FAR = {"#4a3326": "#3a271d", "#2e1f17": "#221610", "#a08268": "#7a6250", "#3a2e29": "#2c231f", "#241b18": "#1a1311"}
 
+PAD = 10  # pixel di margine trasparente attorno a ogni pezzo
 CANVAS = 420  # tela di lavoro: origine dei piedi a (210, 330)
 OX, OY = 210, 330
 
@@ -265,7 +266,9 @@ for name, bone, z, svg, shapes, own in sorted(PIECES, key=lambda p: p[2]):
     if ink_im is not None:
         ib = ink_im.getbbox()
         bbox = (min(bbox[0], ib[0]), min(bbox[1], ib[1]), max(bbox[2], ib[2]), max(bbox[3], ib[3]))
-    x0, y0, x1, y1 = bbox[0] - 1, bbox[1] - 1, bbox[2] + 1, bbox[3] + 1
+    # Margine trasparente attorno a ogni pezzo: chi lo ridisegna ha spazio per pelo, ciuffi e dettagli
+    # senza cambiare misura del PNG né posizione in rig.json
+    x0, y0, x1, y1 = bbox[0] - PAD, bbox[1] - PAD, bbox[2] + PAD, bbox[3] + PAD
     fill_im.crop((x0, y0, x1, y1)).save(f"{OUT}/pezzi/{name}.png")
     entry = {"name": name, "bone": bone, "z": z, "image": f"pezzi/{name}.png", "x": x0 - OX, "y": y0 - OY,
              "width": x1 - x0, "height": y1 - y0}
