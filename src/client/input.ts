@@ -35,6 +35,7 @@ export class KeyboardInput {
       dodge: on("dodge"),
       shield: false, // il vecchio client è congelato: niente scudo (#109)
       special: false, // né speciali (E10)
+      supreme: false, // né suprema (#101)
     };
   }
 

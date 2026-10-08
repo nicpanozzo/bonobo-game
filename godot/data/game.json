@@ -194,6 +194,19 @@
       "height": 40,
       "angleDeg": 70,
       "boxY": -60
+    },
+    "supreme": {
+      "damage": 20,
+      "baseKnockback": 620,
+      "knockbackGrowth": 12,
+      "startupMs": 350,
+      "activeMs": 200,
+      "cooldownMs": 1000,
+      "range": 190,
+      "height": 130,
+      "angleDeg": 45,
+      "boxX": -60,
+      "boxY": -130
     }
   },
   "ledge": {
@@ -201,6 +214,9 @@
   },
   "shield": {
     "maxHp": 50
+  },
+  "supreme": {
+    "max": 100
   },
   "stageCheck": {
     "jumpHeight": 160.7826086956522,
@@ -1346,6 +1362,13 @@
             "fps": 8,
             "loop": false,
             "src": "heavy"
+          },
+          "supreme": {
+            "row": 5,
+            "frames": 4,
+            "fps": 8,
+            "loop": false,
+            "src": "heavy"
           }
         }
       },
@@ -1574,6 +1597,14 @@
             "src": "hit"
           },
           "special": {
+            "row": 5,
+            "frames": 18,
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 6,
+            "src": "heavy"
+          },
+          "supreme": {
             "row": 5,
             "frames": 18,
             "fps": 24,
@@ -1844,6 +1875,13 @@
             "src": "hit"
           },
           "special": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 6,
+            "frames": 8,
+            "src": "heavy"
+          },
+          "supreme": {
             "fps": 24,
             "loop": false,
             "hitFrame": 6,

@@ -20,7 +20,7 @@ describe("bot", () => {
     const startX = sparring.x;
     const seconds = 4;
     const events = [];
-    match.setInput("a", { left: false, right: false, up: false, jump: false, down: false, light: false, heavy: false, taunt: false, dodge: false, shield: true, special: false });
+    match.setInput("a", { left: false, right: false, up: false, jump: false, down: false, light: false, heavy: false, taunt: false, dodge: false, shield: true, special: false, supreme: false });
     for (let i = 0; i < seconds * TICK_RATE; i++) {
       bots.tick(match);
       events.push(...match.step(DT));
@@ -56,7 +56,7 @@ describe("bot", () => {
       match.step(DT);
     }
     assert.deepEqual({ x: dummy.x, y: dummy.y }, start, "da solo non si muove");
-    match.setInput("a", { left: false, right: false, up: false, jump: false, down: false, light: true, heavy: false, taunt: false, dodge: false, shield: false, special: false });
+    match.setInput("a", { left: false, right: false, up: false, jump: false, down: false, light: true, heavy: false, taunt: false, dodge: false, shield: false, special: false, supreme: false });
     for (let i = 0; i < 15; i++) {
       bots.tick(match);
       match.step(DT);
@@ -114,7 +114,7 @@ describe("bot", () => {
       // Il giocatore tira un pesante ogni secondo per 6 secondi
       for (let i = 0; i < 60 * 6; i++) {
         const heavy = i % 60 === 0;
-        match.setInput("a", { left: false, right: false, up: false, jump: false, down: false, light: false, heavy, taunt: false, dodge: false, shield: false, special: false });
+        match.setInput("a", { left: false, right: false, up: false, jump: false, down: false, light: false, heavy, taunt: false, dodge: false, shield: false, special: false, supreme: false });
         bots.tick(match);
         hits += match.step(DT).filter((e) => e.type === "hit" && e.targetId === id).length;
         // Il giocatore resta fermo dov'è: si riavvicina al bot per il prossimo colpo
@@ -199,7 +199,7 @@ describe("bot", () => {
         attack: null,
       });
       for (let i = 0; i < 60 * 6; i++) {
-        match.setInput("a", { left: false, right: false, up: false, jump: false, down: false, light: false, heavy: false, taunt: false, dodge: false, shield: false, special: false });
+        match.setInput("a", { left: false, right: false, up: false, jump: false, down: false, light: false, heavy: false, taunt: false, dodge: false, shield: false, special: false, supreme: false });
         bots.tick(match);
         const getup = match.step(DT).find((e) => e.type === "ledgeGetup" && e.id === id);
         if (getup?.type === "ledgeGetup") {
@@ -229,7 +229,7 @@ describe("bot", () => {
           a.facing = 1;
         }
         const light = i % 25 === 0;
-        match.setInput("a", { left: false, right: false, up: false, jump: false, down: false, light, heavy: false, taunt: false, dodge: false, shield: false, special: false });
+        match.setInput("a", { left: false, right: false, up: false, jump: false, down: false, light, heavy: false, taunt: false, dodge: false, shield: false, special: false, supreme: false });
         bots.tick(match);
         for (const e of match.step(DT)) {
           if (e.type === "hit" && e.targetId === id) hits++;

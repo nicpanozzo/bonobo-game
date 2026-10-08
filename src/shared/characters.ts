@@ -28,6 +28,7 @@ export const OPTIONAL_ANIMATION_NAMES = [
   "throw",
   "grabbed",
   "special",
+  "supreme", // suprema (#101)
 ] as const;
 export type OptionalAnimationName = (typeof OPTIONAL_ANIMATION_NAMES)[number];
 export type SpriteState = AnimationName | OptionalAnimationName;
@@ -54,6 +55,7 @@ export const ANIMATION_FALLBACK: Record<OptionalAnimationName, SpriteState> = {
   throw: "grab", // i quattro lanci
   grabbed: "hit", // chi è tenuto
   special: "heavy",
+  supreme: "special", // senza disegno, la posa della speciale (e poi del pesante)
 };
 
 export interface SpriteAnimation {
