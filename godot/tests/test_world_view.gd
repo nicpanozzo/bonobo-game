@@ -131,3 +131,20 @@ func test_colore_dei_proiettili_e_alone_della_carica() -> void:
 	runner.check(schizzo.is_equal_approx(Color.hex(0x6ec8ffff)), "lo Schizzo di Egiainuso è azzurro: %s" % schizzo)
 	runner.check(WorldView.charge_radius(88, 1.0) > WorldView.charge_radius(88, 0.2), "l'alone cresce con la carica")
 	runner.check(WorldView.charge_radius(88, 5.0) == WorldView.charge_radius(88, 1.0), "oltre la carica piena non cresce")
+
+
+func test_stesso_personaggio_colori_diversi() -> void:
+	var players := [
+		{"id": "a", "characterId": "bonobot", "color": 0x3498db},
+		{"id": "b", "characterId": "bonobot", "color": 0xe74c3c},
+		{"id": "c", "characterId": "egiainuso", "color": 0x2ecc71},
+		{"id": "d", "characterId": "bonobot", "color": 0x2ecc71, "eliminated": true},
+	]
+	var ranks := WorldView.variant_ranks(players)
+	runner.check(ranks.d == 0 and ranks.a == 1 and ranks.b == 2, "in ordine di colore, eliminati compresi: %s" % ranks)
+	runner.check(ranks.c == 0, "da solo col suo personaggio resta originale")
+	runner.check(WorldView.sprite_modulate(0, 0.5) == Color(1, 1, 1, 0.5), "originale: modulate normale")
+	var m := WorldView.sprite_modulate(1, 1.0)
+	runner.check(m.r > 1.5 and m.a == 1.0, "variante: rosso oltre 1 per lo shader")
+	runner.check(WorldView.sprite_modulate(2, 1.0) != m, "varianti diverse, tinte diverse")
+	runner.check(WorldView.sprite_modulate(1 + WorldView.VARIANT_HUES.size(), 1.0) == m, "oltre l'ultima si ricomincia")

@@ -36,11 +36,17 @@ var show_hitboxes := false # allenamento (E15): corpo dei lottatori visibile anc
 var _air_jumps := {} # id giocatore -> quando ha fatto il doppio salto (ms), per l'animazione doubleJump (#103)
 var _taunts := {} # id giocatore -> quando ha provocato (ms), per l'animazione taunt (E7)
 var _holding := {} # id di chi tiene qualcuno con la presa (#109), dall'ultimo snapshot
+var _variants := {} # id giocatore -> variante di colore (0 = originale), ricalcolata a ogni frame (E11)
+const VARIANT_HUES := [0.5, 0.25, 0.75, 0.125, 0.625, 0.375, 0.875] # spostamento della tinta per la variante 1, 2, ...
 
 
 func setup(game_data: Dictionary) -> void:
 	game = game_data
 	reset()
+	if material == null:
+		var palette := ShaderMaterial.new()
+		palette.shader = load("res://shaders/palette.gdshader")
+		material = palette
 	for id in game.characters:
 		var c: Dictionary = game.characters[id]
 		if c.get("sprite") == null:
@@ -280,6 +286,7 @@ func _draw() -> void:
 	var now := Time.get_ticks_msec()
 	_alive = []
 	_sampled = buffer.sample_all(player_ids, now)
+	_variants = variant_ranks(_sampled.values())
 	for id in player_ids:
 		var p: Variant = _sampled.get(id)
 		if p != null:
@@ -718,8 +725,36 @@ func _draw_sprite(p: Dictionary, character: Dictionary, now: float) -> void:
 	var src := Rect2(frame * fw, row * fh, fw, fh)
 	var scale: float = sheet.get("scale", 1.0) # 0.5 per i disegni fatti a 2x
 	draw_set_transform(Vector2(p.x, p.y), 0, Vector2(p.facing * scale, scale))
-	draw_texture_rect_region(texture, Rect2(-fw / 2, -fh, fw, fh), src, Color(1, 1, 1, away_alpha(p)))
+	draw_texture_rect_region(texture, Rect2(-fw / 2, -fh, fw, fh), src, sprite_modulate(int(_variants.get(p.id, 0)), away_alpha(p)))
 	draw_set_transform(Vector2.ZERO)
+
+
+# Chi ha lo stesso personaggio di un altro giocatore prende una variante di colore: il primo in ordine
+# di colore resta originale, gli altri 1, 2, ... Il colore lo dà il server, così ogni client vede lo stesso.
+# Anche gli eliminati contano: chi resta non cambia colore a metà partita
+static func variant_ranks(players: Array) -> Dictionary:
+	var by_character := {}
+	for p in players:
+		if p == null:
+			continue
+		var id: String = str(p.get("characterId", ""))
+		if not by_character.has(id):
+			by_character[id] = []
+		by_character[id].append(p)
+	var ranks := {}
+	for id in by_character:
+		var same: Array = by_character[id]
+		same.sort_custom(func(a, b): return int(a.color) < int(b.color) or (int(a.color) == int(b.color) and str(a.id) < str(b.id)))
+		for i in same.size():
+			ranks[same[i].id] = i
+	return ranks
+
+
+# Il modulate dello sprite: con una variante il rosso oltre 1 dice allo shader di quanto spostare la tinta
+static func sprite_modulate(variant: int, alpha: float) -> Color:
+	if variant <= 0:
+		return Color(1, 1, 1, alpha)
+	return Color(2.0 + VARIANT_HUES[(variant - 1) % VARIANT_HUES.size()], 1, 1, alpha)
 
 
 # I numeri di un attacco per un personaggio, come attackSpecFor() in src/shared/physics/attacks.ts:
