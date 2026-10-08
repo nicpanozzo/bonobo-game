@@ -68,6 +68,9 @@ export class Bots {
     if (match.isFull) return null;
     const id = `bot-${kind}-${++this.count}`;
     match.addPlayer(id, BOT_NAMES[kind], characterId);
+    // Lo scatto col doppio tocco (#199) i bot non lo usano: i loro tocchi brevi lo farebbero partire per sbaglio
+    const fighter = match.players.find((p) => p.id === id);
+    if (fighter) fighter.dashByTap = false;
     this.bots.set(id, { kind, ticks: 0, attacks: 0, hold: emptyInput(), last: emptyInput(), ledgeTicks: 0, getups: 0, shieldTicks: 0, specialTicks: 0, threats: 0 });
     return id;
   }
