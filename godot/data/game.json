@@ -1024,7 +1024,8 @@
           "damage": 6,
           "baseKnockback": 220,
           "knockbackGrowth": 3.5,
-          "angleDeg": 30
+          "angleDeg": 30,
+          "color": 16767050
         },
         "side": {
           "type": "dash",
@@ -1299,7 +1300,8 @@
           "damage": 6,
           "baseKnockback": 220,
           "knockbackGrowth": 3.5,
-          "angleDeg": 30
+          "angleDeg": 30,
+          "color": 16767050
         },
         "side": {
           "type": "dash",
@@ -1579,7 +1581,8 @@
           "damage": 6,
           "baseKnockback": 220,
           "knockbackGrowth": 3.5,
-          "angleDeg": 30
+          "angleDeg": 30,
+          "color": 16767050
         },
         "side": {
           "type": "dash",

@@ -155,6 +155,7 @@ export interface ProjectileSpecial extends SpecialBase, SpecialHit {
   gravity: number; // pixel/s²: 0 = dritto
   lifeMs: number; // dopo quanto sparisce da solo
   maxAlive: number; // proiettili dello stesso giocatore in volo insieme
+  color?: number; // colore del proiettile in Godot (0xRRGGBB); senza, quello del Tiro
 }
 // Scatto: si corre in avanti colpendo, in aria una volta sola fino all'atterraggio
 export interface DashSpecial extends SpecialBase, SpecialHit {

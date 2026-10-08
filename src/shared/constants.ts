@@ -118,7 +118,7 @@ export const GRAB = {
 // Mosse speciali di chi non ne ha di sue (E10, #111): i numeri della specifica, da playtest (#22).
 // I personaggi le cambiano in characters.ts (specials); il tasto e il motore arrivano nei passi 2 e 3
 export const DEFAULT_SPECIALS: SpecialSet = {
-  neutral: { type: "projectile", name: "Tiro", startupMs: 216, cooldownMs: 550, speed: 700, gravity: 0, lifeMs: 1200, maxAlive: 1, range: 24, height: 16, damage: 6, baseKnockback: 220, knockbackGrowth: 3.5, angleDeg: 30 },
+  neutral: { type: "projectile", name: "Tiro", startupMs: 216, cooldownMs: 550, speed: 700, gravity: 0, lifeMs: 1200, maxAlive: 1, range: 24, height: 16, damage: 6, baseKnockback: 220, knockbackGrowth: 3.5, angleDeg: 30, color: 0xffd84a },
   side: { type: "dash", name: "Scatto", startupMs: 100, durationMs: 250, speed: 900, endLagMs: 300, range: 40, height: 50, damage: 9, baseKnockback: 360, knockbackGrowth: 8, angleDeg: 35 },
   down: { type: "counter", name: "Contrattacco", startupMs: 50, windowMs: 400, endLagMs: 450, minDamage: 8, multiplier: 1.3, range: 60, height: 60, baseKnockback: 450, knockbackGrowth: 9, angleDeg: 40 },
 };
