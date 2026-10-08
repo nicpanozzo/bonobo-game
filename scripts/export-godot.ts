@@ -6,7 +6,7 @@
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { basename, dirname, extname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { CHARACTERS, DEFAULT_CHARACTER_ID, isSpriteFolder, resolvedAnimations, SPECIAL_KINDS, SPECIAL_SLOTS, specialAttackSpec, specialsFor, spriteStatePath } from "../src/shared/characters";
+import { CHARACTERS, DEFAULT_CHARACTER_ID, isSpriteFolder, resolvedAnimations, SPECIAL_KINDS, SPECIAL_SLOTS, specialAttackSpec, specialsFor, spriteStatePath, supremeAttackSpec } from "../src/shared/characters";
 import { ATTACKS, AUDIO, CAMERA, COLORS, EFFECTS, FIGHTER, INPUT, ITEM_RULES, LEDGE, NET, PROTOCOL_VERSION, RUMBLE, SHIELD, TEAM_COLORS, TEAM_NAMES, WORLD } from "../src/shared/constants";
 import { RECONNECT, RECONNECT_HOLD_MS } from "../src/shared/constants";
 import { COLORS_COLORBLIND, TEAM_COLORS_COLORBLIND } from "../src/shared/constants";
@@ -72,8 +72,16 @@ for (const [id, spec] of Object.entries(CHARACTERS)) {
   const portraitPath = `assets/characters/${id}/portrait.png`;
   const portrait = existsSync(publicDir + portraitPath) ? portraitPath : undefined;
   if (portrait) spriteFiles.push(portrait);
-  const c = { ...spec, stats: characterStats(id), portrait, specials, specialAttacks };
+  // supremeAttack: la suprema propria letta come attacco (#102), null per chi usa quella di base
+  const c = { ...spec, stats: characterStats(id), portrait, specials, specialAttacks, supremeAttack: supremeAttackSpec(id) };
   characters[id] = c;
+  // I disegni della suprema propria (#102): si copiano come gli sprite
+  const art = spec.supreme?.art;
+  for (const file of art ? [art.falling, art.landed, art.runner] : []) {
+    const path = `${art!.dir}/${file}`;
+    if (existsSync(publicDir + path)) spriteFiles.push(path);
+    else spriteErrors.push(`${id}: manca public/${path} (disegni della suprema in characters.ts)`);
+  }
   if (!c.sprite) continue;
   // In game.json ogni stato c'è, con i dati del disegno che lo mostra (src): il ripiego si decide qui,
   // una volta sola, e Godot non controlla cosa manca (E7 passo 3)

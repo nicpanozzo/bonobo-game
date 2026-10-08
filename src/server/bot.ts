@@ -5,6 +5,7 @@ import { ATTACKS, BOT, BOT_LEVELS, FIGHTER, TICK_RATE } from "../shared/constant
 import type { Match } from "../shared/match";
 import { specialsFor } from "../shared/characters";
 import { emptyInput, ledgesOf, type Fighter } from "../shared/physics";
+import { supremeReach, supremeReady } from "../shared/physics/supreme";
 import type { StageSpec } from "../shared/stages";
 import type { InputState } from "../shared/types";
 import type { RoomHooks } from "./Room";
@@ -236,6 +237,13 @@ function decideSimple(self: Fighter, players: readonly Fighter[], stage: StageSp
   const spec = ATTACKS.heavy;
   const reach = FIGHTER.width / 2 + spec.range;
   const facingTarget = Math.sign(dx) === self.facing || dx === 0;
+
+  // Barra piena e qualcuno a tiro (#102): suprema, guardando il bersaglio (quella di base colpisce davanti,
+  // quella di Bonobot cade sulla liana, un po' davanti a lui)
+  if (skill.supremes && supremeReady(self) && self.onGround && facingTarget && Math.abs(dx) <= supremeReach(self.characterId) && Math.abs(dy) < FIGHTER.height) {
+    tap("supreme");
+    return input;
+  }
 
   // Il difficile schiva un attacco pesante che sta caricando a portata, allontanandosi; uno su due lo contrattacca (E10)
   const threat = target.attack?.startsWith("heavy") && !target.attackActive && Math.abs(dx) <= reach + FIGHTER.width;

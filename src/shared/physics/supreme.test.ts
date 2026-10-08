@@ -1,7 +1,8 @@
-// Test della barra della suprema (#101). Si lanciano con `npm test`.
+// Test della barra della suprema (#101) e della suprema di Bonobot (#102). Si lanciano con `npm test`.
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { getCharacter, supremeAttackSpec } from "../characters";
 import { ATTACKS, FIGHTER, SUPREME, TICK_RATE } from "../constants";
 import { Match } from "../match";
 import { getStage } from "../stages";
@@ -127,5 +128,100 @@ describe("tasto della suprema", () => {
     assert.ok(ATTACKS.light.startupMs + ATTACKS.light.activeMs < SUPREME.invulnerableMs);
     assert.equal(ofType(ctx.events, "hit").filter((e) => e.targetId === a.id).length, 0);
     assert.equal(a.attack, "supreme");
+  });
+});
+
+describe("suprema di Bonobot, Omar (#102)", () => {
+  const omar = getCharacter("bonobot").supreme!;
+  const impactAt = omar.leapMs + omar.pullMs + omar.warnMs;
+  const total = impactAt + omar.impactMs + omar.recoverMs;
+  const vineX = 640 + omar.leapDx; // Bonobot parte da 640 guardando a destra
+
+  // Bonobot guarda a destra; uno a destra e uno a sinistra della liana dentro l'area, uno fuori
+  function omarSetup() {
+    const ctx: PhysicsContext = { stage, events: [] };
+    const fighters = ["bonobot", "default", "default", "default"].map((characterId, i) =>
+      createFighter({ id: `p${i}`, name: `P${i}`, characterId, color: 0, team: 0, index: i, stocks: 3 }, stage),
+    );
+    const [bono, right, left, far] = fighters;
+    bono.x = 640;
+    bono.facing = 1;
+    right.x = vineX + omar.width / 2 - 10;
+    left.x = vineX - omar.width / 2 + 10;
+    far.x = vineX + omar.width + 60;
+    run(fighters, ctx, 10);
+    ctx.events.length = 0;
+    bono.supreme = SUPREME.max;
+    return { ctx, fighters, bono, right, left, far };
+  }
+
+  it("l'orsogufo cade sulla liana: colpisce chi sta lì e non chi è lontano, lanciandoli via dal centro", () => {
+    const { ctx, fighters, bono, right, left, far } = omarSetup();
+    press(bono, { supreme: true });
+    run(fighters, ctx, 1);
+    press(bono, {});
+    assert.equal(bono.attack, "supreme");
+    run(fighters, ctx, ticks(impactAt) - 3);
+    assert.equal(ofType(ctx.events, "hit").length, 0, "niente colpi prima dell'impatto");
+    run(fighters, ctx, ticks(omar.impactMs) + 4);
+    const hits = ofType(ctx.events, "hit");
+    assert.deepEqual(hits.map((h) => h.targetId).sort(), [right.id, left.id].sort());
+    assert.ok(hits.every((h) => h.kind === "supreme" && h.damage === omar.damage));
+    assert.ok(right.vx > 0 && left.vx < 0, "volano via dalla liana");
+    assert.ok(right.vy < 0 && left.vy < 0, "e verso l'alto");
+    assert.equal(far.percent, 0);
+  });
+
+  it("Bonobot salta in avanti alla liana, poi fa la capriola indietro e all'impatto non è sotto l'orsogufo", () => {
+    const { ctx, fighters, bono } = omarSetup();
+    const y0 = bono.y;
+    press(bono, { supreme: true });
+    run(fighters, ctx, 1);
+    press(bono, {});
+    run(fighters, ctx, ticks(omar.leapMs + omar.pullMs / 2));
+    assert.ok(Math.abs(bono.x - vineX) < 1, `appeso alla liana (x ${bono.x})`);
+    assert.ok(Math.abs(bono.y - (y0 - omar.leapDy)) < 1, `in alto (y ${bono.y})`);
+    run(fighters, ctx, ticks(impactAt) - ticks(omar.leapMs + omar.pullMs / 2));
+    assert.ok(Math.abs(bono.x - vineX) > omar.width / 2 + FIGHTER.width / 2, `fuori dall'area all'impatto (x ${bono.x})`);
+    assert.ok(bono.x < vineX, "dietro, dalla parte da cui era partito");
+    assert.ok(bono.onGround, "è già atterrato");
+  });
+
+  it("Bonobot non si può colpire per tutta la suprema e Omar non ricarica la barra", () => {
+    const { ctx, fighters, bono, left } = omarSetup();
+    press(bono, { supreme: true });
+    run(fighters, ctx, 1);
+    press(bono, {});
+    // left gli sta addosso e prova a colpirlo di continuo
+    let hitBono = 0;
+    for (let i = 0; i < ticks(total) - 2; i++) {
+      left.x = bono.x + FIGHTER.width;
+      left.facing = -1;
+      press(left, { light: i % 2 === 0 });
+      run(fighters, ctx, 1);
+      assert.ok(bono.invulnerable, `invulnerabile a ${i} tick`);
+    }
+    hitBono = ofType(ctx.events, "hit").filter((h) => h.targetId === bono.id).length;
+    assert.equal(hitBono, 0);
+    assert.equal(bono.supreme, 0, "la barra resta vuota: Omar non la ricarica");
+  });
+
+  it("lanciata in aria, l'orsogufo cade comunque a terra sotto la liana", () => {
+    const { ctx, fighters, bono } = omarSetup();
+    const ground = bono.y;
+    bono.y = ground - 150;
+    bono.onGround = false;
+    press(bono, { supreme: true });
+    run(fighters, ctx, 1);
+    assert.equal(bono.attack, "supreme");
+    assert.equal(bono.supremeY, ground);
+    assert.ok(bono.y < ground - 140, "il salto parte da dove si era");
+  });
+
+  it("chi non ha una suprema propria usa quella di base", () => {
+    assert.equal(getCharacter("default").supreme, undefined);
+    assert.equal(supremeAttackSpec("default"), null);
+    assert.equal(supremeAttackSpec("bonobot")?.outward, true);
+    assert.ok(omar.flipMs <= omar.warnMs, "la capriola finisce prima dell'impatto");
   });
 });

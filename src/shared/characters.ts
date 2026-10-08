@@ -188,6 +188,46 @@ export interface CounterSpecial extends SpecialBase, Omit<SpecialHit, "damage"> 
   minDamage: number; // danno minimo della risposta...
   multiplier: number; // ...altrimenti il danno parato moltiplicato per questo
 }
+// Suprema propria (#102). "drop": si salta in alto e in avanti ad afferrare una liana che scende, la si tira,
+// e dall'altro capo cade qualcosa in verticale sulla liana. Chi la fa si toglie da sotto con una capriola
+// all'indietro e resta imbersagliabile dall'inizio alla fine. Il colpo è un'area centrata sulla liana.
+// Il movimento lo calcola la fisica (physics/supreme.ts); fallMs, runSpeed e label servono solo a Godot
+export interface DropSupreme {
+  type: "drop";
+  name: string; // come si chiama nei menu
+  label: string; // la scritta sopra quello che cade, come i nomi dei giocatori
+  leapMs: number; // il salto verso la liana, che intanto scende
+  leapDx: number; // pixel in avanti dal punto di partenza: lì sta la liana
+  leapDy: number; // pixel in alto
+  pullMs: number; // appesi, si tira la liana
+  warnMs: number; // dalla tirata all'impatto: l'ombra a terra
+  fallMs: number; // gli ultimi ms dell'ombra in cui si vede cadere (solo disegno)
+  flipMs: number; // la capriola all'indietro, subito dopo la tirata (non più lunga di warnMs)
+  flipDx: number; // pixel dalla liana a dove si atterra: più di metà area, per non stare sotto
+  flipArc: number; // pixel di altezza in più della capriola
+  impactMs: number; // per quanto l'impatto colpisce
+  recoverMs: number; // dopo l'impatto, fermi (puff), sempre imbersagliabili
+  width: number; // area del colpo, pixel, centrata sulla liana
+  height: number; // pixel dal terreno in su
+  damage: number;
+  baseKnockback: number;
+  knockbackGrowth: number;
+  angleDeg: number; // verso l'alto e lontano dal centro
+  runSpeed: number; // pixel/s dello gnomo che scappa dopo il puff (solo disegno)
+  art?: DropSupremeArt; // i disegni; senza, Godot non disegna la scena
+}
+// I disegni della suprema "drop", in dir sotto public/: si sostituiscono i PNG e il codice resta uguale
+export interface DropSupremeArt {
+  dir: string;
+  falling: string; // quello che cade, appeso alla liana dall'alto: nodo della liana in alto al centro
+  landed: string; // a terra dopo l'impatto, fino al puff
+  runner: string; // chi scappa dopo il puff: fotogrammi in fila, guarda a destra, piedi in basso al centro
+  runnerFrames: number;
+  runnerFps: number;
+  scale: number; // 0.5 per i disegni fatti a 2x
+}
+export type SupremeSpec = DropSupreme;
+
 export type SpecialSpec = ProjectileSpecial | DashSpecial | ChargeSpecial | CounterSpecial;
 export type SpecialSet = Record<SpecialSlot, SpecialSpec>;
 
@@ -197,6 +237,7 @@ export interface CharacterSpec {
   sprite?: SpriteSheetSpec | SpriteFolderSpec; // senza sprite si disegna il rettangolo colorato
   stats?: Partial<CharacterStats>; // quelle che mancano valgono 1
   specials?: Partial<SpecialSet>; // quelle che mancano sono DEFAULT_SPECIALS (E10)
+  supreme?: SupremeSpec; // senza, la suprema di base (ATTACKS.supreme, #101)
   recovery?: Partial<AttackSpec & typeof RECOVERY>; // numeri propri del recupero (#11): quelli che mancano restano i soliti
 }
 
@@ -250,6 +291,42 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
   bonobot: {
     id: "bonobot",
     name: "Bonobot",
+    // Suprema "Omar" (#102): Bonobot salta ad afferrare la liana, la tira e fa una capriola indietro;
+    // l'orsogufo Omar cade sulla liana, schiaccia chi sta lì, fa puff e diventa uno gnomo che scappa.
+    // Numeri provvisori dall'issue e da Riccardo (danno 25-30%, area 132 px, dura poco), da rivedere al playtest (#22)
+    supreme: {
+      type: "drop",
+      name: "Omar",
+      label: "Omar",
+      leapMs: 250,
+      leapDx: 60,
+      leapDy: 110,
+      pullMs: 150,
+      warnMs: 500,
+      fallMs: 300,
+      flipMs: 350,
+      flipDx: 130,
+      flipArc: 50,
+      impactMs: 100,
+      recoverMs: 300,
+      width: 132,
+      height: 150,
+      damage: 28,
+      baseKnockback: 600,
+      knockbackGrowth: 11,
+      angleDeg: 70,
+      runSpeed: 520,
+      // Disegni provvisori fatti col codice (sorgenti SVG accanto), da sostituire con quelli di Riccardo
+      art: {
+        dir: "assets/characters/bonobot/omar",
+        falling: "orsogufo-cade.png",
+        landed: "orsogufo-a-terra.png",
+        runner: "gnomo-corre.png",
+        runnerFrames: 4,
+        runnerFps: 12,
+        scale: 0.5,
+      },
+    },
     sprite: {
       path: "assets/characters/bonobot/bonobot.png",
       frameWidth: 256,
@@ -334,6 +411,34 @@ export function specialAttackSpec(sp: SpecialSpec): AttackSpec {
     case "charge":
       return { ...hit, damage: sp.damage, startupMs: sp.minMs, activeMs: sp.activeMs, cooldownMs: sp.maxMs + sp.activeMs + sp.endLagMs };
   }
+}
+
+// La suprema propria letta come un attacco (#102), per la fisica e per Godot. Avvio: salto, tirata e ombra;
+// finestra attiva: l'impatto; attesa totale: fino alla fine del puff. Il rettangolo è centrato sulla liana
+// (attackBox in attacks.ts lo sposta lì). Senza suprema propria, null
+const supremeCache = new Map<string, AttackSpec | null>(); // la fisica la legge a ogni tick
+export function supremeAttackSpec(id: string | undefined): AttackSpec | null {
+  const c = getCharacter(id);
+  if (!supremeCache.has(c.id)) supremeCache.set(c.id, toSupremeAttack(c.supreme));
+  return supremeCache.get(c.id) ?? null;
+}
+function toSupremeAttack(sp: SupremeSpec | undefined): AttackSpec | null {
+  if (!sp) return null;
+  const startupMs = sp.leapMs + sp.pullMs + sp.warnMs;
+  return {
+    damage: sp.damage,
+    baseKnockback: sp.baseKnockback,
+    knockbackGrowth: sp.knockbackGrowth,
+    angleDeg: sp.angleDeg,
+    startupMs,
+    activeMs: sp.impactMs,
+    cooldownMs: startupMs + sp.impactMs + sp.recoverMs,
+    range: sp.width,
+    height: sp.height,
+    boxX: -sp.width / 2, // centrata sulla liana
+    boxY: -sp.height + 10, // fin sotto il terreno: prende anche chi è un po' più in basso
+    outward: true,
+  };
 }
 
 // Le tre speciali di un personaggio: le sue, e per quelle che mancano DEFAULT_SPECIALS

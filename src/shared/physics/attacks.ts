@@ -1,12 +1,12 @@
 // Attacchi: inizio, finestra attiva, hitbox e cosa succede a chi viene colpito.
 
-import { characterStats, getCharacter, SPECIAL_KINDS, specialAttackSpec, specialsFor, type SpecialSlot } from "../characters";
+import { characterStats, getCharacter, SPECIAL_KINDS, specialAttackSpec, specialsFor, supremeAttackSpec, type SpecialSlot } from "../characters";
 import { ATTACKS, FIGHTER, HITSTOP, HITSTUN_PER_KNOCKBACK, type AttackSpec } from "../constants";
 import type { AttackKind, SpecialKind } from "../types";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
 import { clearStun, hitShield } from "./shield";
 import { counterHit, isCountering, tryStartSpecial } from "./specials";
-import { chargeFromHit, tryStartSupreme } from "./supreme";
+import { chargeFromHit, hitOrigin, tryStartSupreme } from "./supreme";
 
 export function tryStartAttack(f: Fighter, ctx: PhysicsContext): void {
   if (f.hitstun || f.attack || f.cooldownTimer > 0 || f.helpless || f.dodgeTimer > 0) return;
@@ -31,6 +31,7 @@ export function attackSpecFor(f: Fighter, kind: AttackKind | null = f.attack): A
     const spec = specialSpecFor(f.characterId, kind);
     return kind === f.attack && f.chargeMultiplier !== 1 ? charged(spec, f.chargeMultiplier) : spec;
   }
+  if (kind === "supreme") return supremeAttackSpec(f.characterId) ?? ATTACKS.supreme; // #102: la sua, se ce l'ha
   const base = ATTACKS[kind ?? "light"];
   const recovery = kind === "recovery" ? getCharacter(f.characterId).recovery : undefined;
   return recovery ? { ...base, ...recovery } : base;
@@ -85,9 +86,10 @@ type Box = { x: number; y: number; w: number; h: number };
 // Rettangolo del colpo, dalla parte in cui si guarda (boxX/boxY lo spostano per le varianti)
 export function attackBox(f: Fighter): Box {
   const spec = attackSpecFor(f);
+  const o = hitOrigin(f); // la suprema di Bonobot colpisce sulla liana, non dove sta lui (#102)
   const front = spec.boxX ?? FIGHTER.width / 2;
-  const x = f.facing === 1 ? f.x + front : f.x - front - spec.range;
-  const y = f.y + (spec.boxY ?? -FIGHTER.height * 0.7);
+  const x = f.facing === 1 ? o.x + front : o.x - front - spec.range;
+  const y = o.y + (spec.boxY ?? -FIGHTER.height * 0.7);
   return { x, y, w: spec.range, h: spec.height };
 }
 
@@ -150,15 +152,17 @@ export function launch(target: Fighter, attacker: Fighter, kind: AttackKind, x: 
   // Stile Smash/Brawlhalla: il danno non toglie vita, fa volare più lontano
   target.percent = Math.min(999, target.percent + spec.damage);
   chargeFromHit(attacker, target, spec.damage); // #101
+  // Colpo ad area (#102): si vola via dal centro di chi colpisce
+  const dir = spec.outward ? ((Math.sign(target.x - hitOrigin(attacker).x) || attacker.facing) as 1 | -1) : attacker.facing;
   const knockback = (spec.baseKnockback + spec.knockbackGrowth * target.percent) / characterStats(target.characterId).weight; // E11
   const angle = (spec.angleDeg * Math.PI) / 180;
-  target.vx = attacker.facing * Math.cos(angle) * knockback;
+  target.vx = dir * Math.cos(angle) * knockback;
   target.vy = -Math.sin(angle) * knockback;
   target.onGround = false;
   target.hitstunTimer = knockback * HITSTUN_PER_KNOCKBACK;
   target.attack = null;
   target.attackActive = false;
-  target.facing = (-attacker.facing) as 1 | -1;
+  target.facing = (-dir) as 1 | -1;
   target.lastHitById = attacker.id;
   // Chi viene colpito può di nuovo usare il recupero (#11)
   target.recoveryUsed = false;

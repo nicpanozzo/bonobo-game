@@ -1121,7 +1121,8 @@
           "activeMs": 400,
           "cooldownMs": 900
         }
-      }
+      },
+      "supremeAttack": null
     },
     "egiainuso": {
       "id": "egiainuso",
@@ -1413,11 +1414,44 @@
           "activeMs": 100,
           "cooldownMs": 1650
         }
-      }
+      },
+      "supremeAttack": null
     },
     "bonobot": {
       "id": "bonobot",
       "name": "Bonobot",
+      "supreme": {
+        "type": "drop",
+        "name": "Omar",
+        "label": "Omar",
+        "leapMs": 250,
+        "leapDx": 60,
+        "leapDy": 110,
+        "pullMs": 150,
+        "warnMs": 500,
+        "fallMs": 300,
+        "flipMs": 350,
+        "flipDx": 130,
+        "flipArc": 50,
+        "impactMs": 100,
+        "recoverMs": 300,
+        "width": 132,
+        "height": 150,
+        "damage": 28,
+        "baseKnockback": 600,
+        "knockbackGrowth": 11,
+        "angleDeg": 70,
+        "runSpeed": 520,
+        "art": {
+          "dir": "assets/characters/bonobot/omar",
+          "falling": "orsogufo-cade.png",
+          "landed": "orsogufo-a-terra.png",
+          "runner": "gnomo-corre.png",
+          "runnerFrames": 4,
+          "runnerFps": 12,
+          "scale": 0.5
+        }
+      },
       "sprite": {
         "path": "assets/characters/bonobot/bonobot.png",
         "frameWidth": 256,
@@ -1716,6 +1750,20 @@
           "activeMs": 400,
           "cooldownMs": 900
         }
+      },
+      "supremeAttack": {
+        "damage": 28,
+        "baseKnockback": 600,
+        "knockbackGrowth": 11,
+        "angleDeg": 70,
+        "startupMs": 900,
+        "activeMs": 100,
+        "cooldownMs": 1300,
+        "range": 132,
+        "height": 150,
+        "boxX": -66,
+        "boxY": -140,
+        "outward": true
       }
     },
     "elvedeo": {
@@ -1991,7 +2039,8 @@
           "activeMs": 400,
           "cooldownMs": 900
         }
-      }
+      },
+      "supremeAttack": null
     }
   }
 }

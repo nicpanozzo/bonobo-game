@@ -46,6 +46,12 @@ export interface Fighter extends PlayerState {
   chargeMs: number; // ms di carica della speciale tenuta premuta (E10), -1 se non si carica
   chargeMultiplier: number; // moltiplicatore del colpo caricato in corso (1 per tutti gli altri)
   pendingSpecial: SpecialKind | null; // la speciale che aspetta: proiettile in uscita o carica tenuta
+  supremeTimer: number; // ms di movimento ancora guidati dalla suprema propria (#102): salto, liana, capriola
+  supremeX0: number; // da dove è partita la suprema propria (piedi)
+  supremeY0: number;
+  supremeX: number; // dove sta la liana, centro dell'impatto
+  supremeY: number; // terreno dell'impatto: i piedi alla partenza
+  supremeBusyMs: number; // ms che restano della suprema in corso, attesa finale compresa: intanto la barra non si carica col tempo
   dashTimer: number; // ms di scatto rimasti (#199); finito, se si tiene la direzione si corre
   dashTapDir: number; // direzione dell'ultimo tocco, per riconoscere il doppio tocco
   dashTapTimer: number; // ms entro cui un secondo tocco nella stessa direzione fa scattare
@@ -164,6 +170,12 @@ export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
     chargeMs: -1,
     chargeMultiplier: 1,
     pendingSpecial: null,
+    supremeTimer: 0,
+    supremeX0: 0,
+    supremeY0: 0,
+    supremeX: 0,
+    supremeY: 0,
+    supremeBusyMs: 0,
   };
 }
 
