@@ -1,7 +1,7 @@
 // Test dei bot (#20): girano su una Match senza rete, come nel server.
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { ATTACKS, BOT, FIGHTER, HITSTUN_PER_KNOCKBACK, LEDGE, TICK_RATE } from "../shared/constants";
+import { ATTACKS, BOT, FIGHTER, HITSTUN_PER_KNOCKBACK, LEDGE, SUPREME, TICK_RATE } from "../shared/constants";
 import { Match } from "../shared/match";
 import { emptyInput, ledgesOf } from "../shared/physics";
 import { Bots, parseBotKind } from "./bot";
@@ -30,6 +30,29 @@ describe("bot", () => {
     assert.equal(sparring.facing, -1, "si è girato verso il giocatore");
     assert.ok(Math.abs(sparring.x - startX) < FIGHTER.width, "resta più o meno dov'era");
     assert.ok(events.some((e) => e.type === "shield" && e.id === "a"), "lo scudo del giocatore para il colpo");
+  });
+
+  it("con la barra piena i bot semplice e difficile lanciano la suprema, il facile no (#102)", () => {
+    for (const [kind, uses] of [["semplice", true], ["difficile", true], ["facile", false]] as const) {
+      const match = new Match();
+      const bots = new Bots();
+      match.addPlayer("a", "A");
+      bots.add(match, kind);
+      const [a, bot] = match.players;
+      bot.characterId = "bonobot";
+      for (let i = 0; i < 60; i++) match.step(DT); // atterrano
+      a.x = 600;
+      bot.x = 600 + FIGHTER.width + 10; // a tiro di Omar
+      a.supreme = 0;
+      bot.supreme = SUPREME.max;
+      const events = [];
+      for (let i = 0; i < TICK_RATE; i++) {
+        bots.tick(match);
+        events.push(...match.step(DT));
+      }
+      const used = events.some((e) => e.type === "attack" && e.id === bot.id && e.kind === "supreme");
+      assert.equal(used, uses, `bot ${kind}`);
+    }
   });
 
   it("accetta solo i tipi conosciuti", () => {

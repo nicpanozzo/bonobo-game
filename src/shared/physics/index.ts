@@ -23,7 +23,7 @@ import { holdShield } from "./shield";
 import { stepProjectiles } from "./projectiles";
 import { cancelSpecial, specialing } from "./specials";
 import { collideWithStage, loseStock, outOfBlastZone, respawn } from "./stage";
-import { tickSupreme } from "./supreme";
+import { supreming, tickSupreme } from "./supreme";
 
 export * from "./fighter";
 export { resolveHits } from "./attacks";
@@ -45,6 +45,7 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
   }
   if (f.respawning) {
     cancelSpecial(f); // si rientra liberi, anche dopo essere usciti con uno scatto o caricando
+    f.supremeTimer = 0;
     f.respawnTimer -= dtMs;
     if (f.respawnTimer <= 0) respawn(f, ctx);
     tickBuffer(f, dtMs); // un tasto premuto mentre si rientra non scatta molto dopo
@@ -88,6 +89,11 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
   }
 
   updateAttack(f, dtMs);
+  // Suprema propria (#102): appesi alla liana, fermi dove si è
+  if (supreming(f, dtMs)) {
+    f.prevInput = f.input;
+    return;
+  }
   // Durante la presa, sullo scudo o storditi niente controlli né attacchi
   if (!grabbing(f, dtMs, ctx) && !specialing(f, dtMs, ctx) && !holdShield(f, dtMs, ctx)) {
     applyControls(f, dt, ctx);

@@ -6,7 +6,7 @@
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { basename, dirname, extname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { CHARACTERS, DEFAULT_CHARACTER_ID, isSpriteFolder, resolvedAnimations, SPECIAL_KINDS, SPECIAL_SLOTS, specialAttackSpec, specialsFor, spriteStatePath } from "../src/shared/characters";
+import { CHARACTERS, DEFAULT_CHARACTER_ID, isSpriteFolder, resolvedAnimations, SPECIAL_KINDS, SPECIAL_SLOTS, specialAttackSpec, specialsFor, spriteStatePath, supremeAttackSpec } from "../src/shared/characters";
 import { ATTACKS, AUDIO, CAMERA, COLORS, EFFECTS, FIGHTER, INPUT, ITEM_RULES, LEDGE, NET, PROTOCOL_VERSION, RUMBLE, SHIELD, TEAM_COLORS, TEAM_NAMES, WORLD } from "../src/shared/constants";
 import { RECONNECT, RECONNECT_HOLD_MS } from "../src/shared/constants";
 import { COLORS_COLORBLIND, TEAM_COLORS_COLORBLIND } from "../src/shared/constants";
@@ -65,7 +65,8 @@ for (const [id, spec] of Object.entries(CHARACTERS)) {
   // specialAttacks: le stesse speciali lette come attacchi (specialAttackSpec), per disegnare il colpo in Godot
   const specials = specialsFor(id);
   const specialAttacks = Object.fromEntries(SPECIAL_SLOTS.map((slot) => [SPECIAL_KINDS[slot], specialAttackSpec(specials[slot])]));
-  const c = { ...spec, specials, specialAttacks };
+  // supremeAttack: la suprema propria letta come attacco (#102), null per chi usa quella di base
+  const c = { ...spec, specials, specialAttacks, supremeAttack: supremeAttackSpec(id) };
   characters[id] = c;
   if (!c.sprite) continue;
   // In game.json ogni stato c'è, con i dati del disegno che lo mostra (src): il ripiego si decide qui,

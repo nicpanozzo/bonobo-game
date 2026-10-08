@@ -44,6 +44,7 @@ export interface AttackSpec {
   angleDeg: number; // angolo di lancio sopra l'orizzontale
   boxX?: number; // pixel dal centro del personaggio, in avanti, dove comincia la hitbox (di base: metà larghezza)
   boxY?: number; // pixel dai piedi in su dove sta il bordo alto della hitbox, negativo (di base: -70% dell'altezza)
+  outward?: boolean; // colpo ad area (#102): lancia lontano dal centro di chi colpisce, non dalla parte in cui guarda
 }
 
 // Le speciali (E10) non sono qui: i loro numeri dipendono dal personaggio (specialAttackSpec in characters.ts)
@@ -360,9 +361,9 @@ export const BOT = {
 
 // Livelli di difficoltà dei bot (#20 passo 3): ?bot=facile, ?bot=semplice, ?bot=difficile
 export const BOT_LEVELS = {
-  facile: { reactionMs: 320, heavyEvery: 5, dodges: false, shields: false, grabs: false }, // reactionMs: ogni quanto rivede le scelte
-  semplice: { reactionMs: 180, heavyEvery: 3, dodges: false, shields: false, grabs: true }, // heavyEvery: un pesante ogni tanti attacchi
-  difficile: { reactionMs: 90, heavyEvery: 2, dodges: true, shields: true, grabs: true }, // dodges: schiva i pesanti; shields: si para dagli altri colpi; grabs: afferra chi si para
+  facile: { reactionMs: 320, heavyEvery: 5, dodges: false, shields: false, grabs: false, supremes: false }, // reactionMs: ogni quanto rivede le scelte
+  semplice: { reactionMs: 180, heavyEvery: 3, dodges: false, shields: false, grabs: true, supremes: true }, // heavyEvery: un pesante ogni tanti attacchi
+  difficile: { reactionMs: 90, heavyEvery: 2, dodges: true, shields: true, grabs: true, supremes: true }, // dodges: schiva i pesanti; shields: si para dagli altri colpi; grabs: afferra chi si para; supremes: lancia la suprema (#102) con qualcuno a tiro
 };
 
 // Elementi dinamici delle arene (#14): ascensori e trappole. I loro numeri stanno nei dati dell'arena.
