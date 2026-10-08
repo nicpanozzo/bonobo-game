@@ -448,3 +448,12 @@ export const TRAINING = {
   speeds: [1, 0.5, 0.25], // velocità dell'orologio ammesse: 1 normale, 0.5 e 0.25 rallentatore
   maxPercent: 999, // percentuale massima che si può dare al bot
 };
+
+// Budget di prestazioni (E3 passo 4, #83): npm run bench -- --check e bench_client.gd --check escono con errore
+// se il migliore di 3 giri lo supera. Largo apposta: le macchine della CI vanno a velocità diverse.
+export const PERF_BUDGET = {
+  serverStepAvgMs: 0.5, // passo medio della fisica con 8 giocatori (oggi circa 0,03-0,05 ms)
+  serverStepWorstMs: 20, // passo peggiore: compresi i picchi di JIT e garbage collector (oggi 2-6 ms)
+  snapshotDeflatedBytes: 1200, // snapshot compresso medio con 8 giocatori (oggi circa 590 B)
+  clientScriptUs: 6000, // script di world_view e hud per frame, in µs (oggi circa 2400; un frame a 60 fps ne ha 16667)
+};

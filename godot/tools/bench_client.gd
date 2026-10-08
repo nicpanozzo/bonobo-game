@@ -3,6 +3,8 @@
 # Uso: godot --headless --path godot --script res://tools/bench_client.gd
 # (con -- --frames=N per cambiare la durata). In headless non si disegna davvero:
 # si misura il costo degli script, che è la parte che scriviamo noi.
+# Con -- --check (E3 passo 4) divide i frame in 3 giri, tiene il migliore ed esce con 1
+# se supera perfBudget.clientScriptUs di game.json (PERF_BUDGET in constants.ts).
 extends SceneTree
 
 const PLAYERS := 8
@@ -16,6 +18,10 @@ var _server_t := 0.0
 var _last_send := -1000.0
 var _rng := RandomNumberGenerator.new()
 var _percent := {} # id -> danno: sale solo ai colpi, come in partita
+var _check := false
+var _budget_us := 0.0
+var _rounds: Array[float] = [] # µs di script per frame di ogni giro (con --check)
+var _round_start_us := 0
 
 
 # Sottoclassi che cronometrano _process e _draw senza toccare gli script veri
@@ -49,8 +55,11 @@ func _initialize() -> void:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--frames="):
 			frames = int(arg.trim_prefix("--frames="))
+		elif arg == "--check":
+			_check = true
 	_rng.seed = 1
 	var game: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/game.json"))
+	_budget_us = float(game.get("perfBudget", {}).get("clientScriptUs", 0))
 	_world = TimedWorld.new()
 	_world.setup(game)
 	_world.my_id = "p0"
@@ -73,15 +82,38 @@ func _process(_delta: float) -> bool:
 		_world.on_snapshot(snap)
 		_hud.on_snapshot(snap)
 	_frame += 1
-	if _frame < frames:
-		return false
 	var w: TimedWorld = _world
 	var h: TimedHud = _hud
+	var round_frames := frames / 3
+	if _check and _frame % round_frames == 0 and _rounds.size() < 3:
+		var total := w.process_us + w.draw_us + h.process_us + h.draw_us
+		_rounds.append((total - _round_start_us) / float(round_frames))
+		_round_start_us = total
+	if _frame < frames:
+		return false
 	print("%d giocatori, %d frame" % [PLAYERS, frames])
 	print("world_view: _process %.1f µs, _draw %.1f µs per frame" % [w.process_us / float(frames), w.draw_us / float(frames)])
 	print("hud:        _process %.1f µs, _draw %.1f µs per frame" % [h.process_us / float(frames), h.draw_us / float(frames)])
 	print("totale script %.1f µs per frame (a 60 fps un frame ne ha 16667)" % [(w.process_us + w.draw_us + h.process_us + h.draw_us) / float(frames)])
+	if _check:
+		quit(check_budget(_rounds, _budget_us))
 	return true
+
+
+# Il migliore dei giri contro il budget: 0 se ci sta, 1 se lo supera. Nella CI scrive anche il riassunto del job
+static func check_budget(rounds: Array[float], budget_us: float) -> int:
+	var best: float = rounds.min() if not rounds.is_empty() else INF
+	var ok := budget_us > 0 and best <= budget_us
+	print("migliore di %d giri: %.1f µs per frame, budget %.0f µs: %s" % [rounds.size(), best, budget_us, "dentro" if ok else "SUPERATO"])
+	var summary := OS.get_environment("GITHUB_STEP_SUMMARY")
+	if summary != "":
+		var f := FileAccess.open(summary, FileAccess.READ_WRITE)
+		if f != null:
+			f.seek_end()
+			f.store_string("### Prestazioni del client Godot\n\n| Misura | Valore | Budget |\n|---|---|---|\n| Script per frame (world_view e hud) | %.0f µs | %.0f µs%s |\n\n" % [best, budget_us, "" if ok else " ❌"])
+	if not ok:
+		printerr("Budget del client superato (PERF_BUDGET.clientScriptUs in constants.ts)")
+	return 0 if ok else 1
 
 
 # Snapshot finto: lottatori che corrono avanti e indietro e saltano, con colpi e KO ogni tanto
