@@ -3,7 +3,8 @@
 
 import { FIGHTER, INPUT, SHIELD } from "../constants";
 import type { StageSpec } from "../stages";
-import type { GameEvent, InputState, PlayerState } from "../types";
+import type { GameEvent, InputState, PlayerState, SpecialKind } from "../types";
+import type { ProjectileWorld } from "./projectiles";
 
 export interface Fighter extends PlayerState {
   input: InputState;
@@ -41,6 +42,10 @@ export interface Fighter extends PlayerState {
   pummelTimer: number; // per chi tiene: ms prima del prossimo colpetto
   specialTimer: number; // ms fermi per la speciale in corso (E10): avvio, scatto o finestra, attesa finale
   airDashUsed: boolean; // lo scatto in aria si fa una volta sola fino all'atterraggio
+  projectileTimer: number; // ms all'uscita del proiettile della speciale in corso (E10), 0 se nessuno
+  chargeMs: number; // ms di carica della speciale tenuta premuta (E10), -1 se non si carica
+  chargeMultiplier: number; // moltiplicatore del colpo caricato in corso (1 per tutti gli altri)
+  pendingSpecial: SpecialKind | null; // la speciale che aspetta: proiettile in uscita o carica tenuta
 }
 
 // Quello che serve alla fisica oltre ai lottatori: l'arena e dove scrivere gli eventi
@@ -50,6 +55,7 @@ export interface PhysicsContext {
   canHit?: (attacker: Fighter, target: Fighter) => boolean; // es. niente fuoco amico (#17)
   unlimitedStocks?: boolean; // chi esce non perde vite (es. Bandiera, #56): torna e basta
   timeMs?: number; // tempo dell'arena in ms: muove ascensori e trappole (#14). Lo fa avanzare stepWorld
+  projectiles?: ProjectileWorld; // proiettili in volo (E10): li crea match.ts, o il primo tiro
 }
 
 export const emptyInput = (): InputState => ({
@@ -140,6 +146,11 @@ export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
     pummelTimer: 0,
     specialTimer: 0,
     airDashUsed: false,
+    charge: 0,
+    projectileTimer: 0,
+    chargeMs: -1,
+    chargeMultiplier: 1,
+    pendingSpecial: null,
   };
 }
 
