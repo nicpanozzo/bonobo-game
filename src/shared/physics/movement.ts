@@ -3,11 +3,13 @@
 import { characterStats } from "../characters";
 import { DODGE, FIGHTER, FLAG, HITSTUN_AIR_DRAG, RECOVERY } from "../constants";
 import { startAttack } from "./attacks";
+import { endDash, stepDash } from "./dash";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
 
 // Cosa fa il lottatore con i tasti premuti (solo se non è stordito)
 export function applyControls(f: Fighter, dt: number, ctx: PhysicsContext): void {
   if (f.hitstun) {
+    endDash(f);
     if (!f.onGround) f.vx *= HITSTUN_AIR_DRAG;
     return;
   }
@@ -15,7 +17,10 @@ export function applyControls(f: Fighter, dt: number, ctx: PhysicsContext): void
   const dir = (f.input.right ? 1 : 0) - (f.input.left ? 1 : 0);
 
   // Schivata (#3): mentre dura si scivola alla velocità decisa all'inizio, senza controlli né attacchi
-  if (f.dodgeTimer > 0) return;
+  if (f.dodgeTimer > 0) {
+    endDash(f);
+    return;
+  }
   if (pressed(f, "dodge") && !f.attack && f.dodgeCooldown === 0 && (f.onGround || !f.airDodgeUsed)) {
     consume(f, "dodge");
     f.dodgeTimer = DODGE.durationMs;
@@ -34,7 +39,10 @@ export function applyControls(f: Fighter, dt: number, ctx: PhysicsContext): void
   const stats = characterStats(f.characterId);
   const speed = f.carrier ? FLAG.carrierSpeed : 1; // la bandiera pesa
   // Durante un attacco da terra si resta fermi, in aria si mantiene lo slancio
-  if (f.onGround) {
+  const dashSpeed = stepDash(f, dir, dt * 1000, ctx); // scatto e corsa (#199)
+  if (f.onGround && dashSpeed !== null) {
+    f.vx = dashSpeed * speed;
+  } else if (f.onGround) {
     f.vx = f.attack ? 0 : dir * FIGHTER.groundSpeed * stats.speed * speed;
   } else if (dir !== 0) {
     f.vx += dir * FIGHTER.airAccel * dt;

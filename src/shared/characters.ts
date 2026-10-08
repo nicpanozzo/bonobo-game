@@ -28,6 +28,7 @@ export const OPTIONAL_ANIMATION_NAMES = [
   "throw",
   "grabbed",
   "special",
+  "dash", // scatto e corsa dopo il doppio tocco (#199)
 ] as const;
 export type OptionalAnimationName = (typeof OPTIONAL_ANIMATION_NAMES)[number];
 export type SpriteState = AnimationName | OptionalAnimationName;
@@ -54,6 +55,7 @@ export const ANIMATION_FALLBACK: Record<OptionalAnimationName, SpriteState> = {
   throw: "grab", // i quattro lanci
   grabbed: "hit", // chi è tenuto
   special: "heavy",
+  dash: "walk", // senza disegno, la camminata (per Bonobot: il galoppo sulle nocche)
 };
 
 export interface SpriteAnimation {

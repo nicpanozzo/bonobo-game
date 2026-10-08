@@ -32,6 +32,16 @@ export const FIGHTER = {
   dropThroughMs: 200, // per quanto si ignorano le piattaforme dopo aver premuto giù
 };
 
+// Scatto con doppio tocco (#199): numeri provvisori, da rivedere al playtest (#22).
+// Lo scatto va avanti per circa speed * durationMs = 270 pixel, poi tenendo la direzione si corre
+export const DASH = {
+  doubleTapMs: 250, // ms entro cui il secondo tocco della stessa direzione fa scattare
+  tapMaxMs: 120, // il primo tocco dev'essere breve: chi tiene la direzione più a lungo (camminando, i bot) non scatta
+  speed: 900, // pixel/s durante lo scatto (la camminata è FIGHTER.groundSpeed, 380)
+  durationMs: 300, // ms di scatto, anche lasciando il tasto
+  runSpeed: 560, // pixel/s di corsa tenendo la direzione dopo lo scatto
+};
+
 export interface AttackSpec {
   damage: number; // percentuale aggiunta al bersaglio
   baseKnockback: number; // pixel/s anche a 0%
