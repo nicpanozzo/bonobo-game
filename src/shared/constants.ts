@@ -2,7 +2,7 @@
 // Vuoi un gioco più veloce o salti più alti? Si parte da qui.
 
 import type { SpecialSet } from "./characters";
-import type { AttackKind } from "./types";
+import type { AttackKind, SpecialKind } from "./types";
 
 export const WORLD = {
   width: 1280, // area visibile, pixel
@@ -46,7 +46,8 @@ export interface AttackSpec {
   boxY?: number; // pixel dai piedi in su dove sta il bordo alto della hitbox, negativo (di base: -70% dell'altezza)
 }
 
-export const ATTACKS: Record<AttackKind, AttackSpec> = {
+// Le speciali (E10) non sono qui: i loro numeri dipendono dal personaggio (specialAttackSpec in characters.ts)
+export const ATTACKS: Record<Exclude<AttackKind, SpecialKind>, AttackSpec> = {
   light: {
     damage: 5,
     baseKnockback: 260,
@@ -120,6 +121,11 @@ export const DEFAULT_SPECIALS: SpecialSet = {
   neutral: { type: "projectile", name: "Tiro", startupMs: 216, cooldownMs: 550, speed: 700, gravity: 0, lifeMs: 1200, maxAlive: 1, range: 24, height: 16, damage: 6, baseKnockback: 220, knockbackGrowth: 3.5, angleDeg: 30 },
   side: { type: "dash", name: "Scatto", startupMs: 100, durationMs: 250, speed: 900, endLagMs: 300, range: 40, height: 50, damage: 9, baseKnockback: 360, knockbackGrowth: 8, angleDeg: 35 },
   down: { type: "counter", name: "Contrattacco", startupMs: 50, windowMs: 400, endLagMs: 450, minDamage: 8, multiplier: 1.3, range: 60, height: 60, baseKnockback: 450, knockbackGrowth: 9, angleDeg: 40 },
+};
+
+// Motore delle speciali (E10): i numeri comuni a tutti i personaggi
+export const SPECIAL_MOVES = {
+  airBrakeHalfLifeMs: 60, // dopo lo scatto in aria la velocità si dimezza ogni tot ms (a terra ci si ferma subito)
 };
 
 // Mossa di recupero (#11): in aria K + su dà una spinta verso l'alto, una volta finché

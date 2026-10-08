@@ -82,9 +82,9 @@ func test_il_ko_abbassa_la_musica() -> void:
 
 func test_presa_e_lancio_hanno_il_loro_suono() -> void:
 	var a: Node = _audio()
-	for name in ["grab", "throw"]:
+	for name in ["grab", "throw", "counter"]:
 		runner.check(a.stream_for(name) is AudioStreamWAV, "manca il suono %s" % name)
 	# Gli eventi della presa non danno errori
-	for e in [{"type": "grab", "id": "a", "targetId": "b", "x": 0, "y": 0}, {"type": "grabRelease", "id": "a", "targetId": "b"}, {"type": "attack", "id": "a", "kind": "throwUp"}, {"type": "hit", "kind": "grab", "x": 0, "percent": 3}]:
+	for e in [{"type": "grab", "id": "a", "targetId": "b", "x": 0, "y": 0}, {"type": "grabRelease", "id": "a", "targetId": "b"}, {"type": "attack", "id": "a", "kind": "throwUp"}, {"type": "hit", "kind": "grab", "x": 0, "percent": 3}, {"type": "counter", "id": "a", "attackerId": "b", "x": 0, "y": 0}, {"type": "attack", "id": "a", "kind": "specialDown"}]:
 		a.on_event(e)
 	a.free()

@@ -1054,6 +1054,41 @@
           "knockbackGrowth": 9,
           "angleDeg": 40
         }
+      },
+      "specialAttacks": {
+        "specialNeutral": {
+          "baseKnockback": 220,
+          "knockbackGrowth": 3.5,
+          "angleDeg": 30,
+          "range": 24,
+          "height": 16,
+          "damage": 6,
+          "startupMs": 216,
+          "activeMs": 1200,
+          "cooldownMs": 550
+        },
+        "specialSide": {
+          "baseKnockback": 360,
+          "knockbackGrowth": 8,
+          "angleDeg": 35,
+          "range": 40,
+          "height": 50,
+          "damage": 9,
+          "startupMs": 100,
+          "activeMs": 250,
+          "cooldownMs": 650
+        },
+        "specialDown": {
+          "baseKnockback": 450,
+          "knockbackGrowth": 9,
+          "angleDeg": 40,
+          "range": 60,
+          "height": 60,
+          "damage": 8,
+          "startupMs": 50,
+          "activeMs": 400,
+          "cooldownMs": 900
+        }
       }
     },
     "egiainuso": {
@@ -1293,6 +1328,41 @@
           "baseKnockback": 450,
           "knockbackGrowth": 9,
           "angleDeg": 40
+        }
+      },
+      "specialAttacks": {
+        "specialNeutral": {
+          "baseKnockback": 220,
+          "knockbackGrowth": 3.5,
+          "angleDeg": 30,
+          "range": 24,
+          "height": 16,
+          "damage": 6,
+          "startupMs": 216,
+          "activeMs": 1200,
+          "cooldownMs": 550
+        },
+        "specialSide": {
+          "baseKnockback": 360,
+          "knockbackGrowth": 8,
+          "angleDeg": 35,
+          "range": 40,
+          "height": 50,
+          "damage": 9,
+          "startupMs": 100,
+          "activeMs": 250,
+          "cooldownMs": 650
+        },
+        "specialDown": {
+          "baseKnockback": 450,
+          "knockbackGrowth": 9,
+          "angleDeg": 40,
+          "range": 60,
+          "height": 60,
+          "damage": 8,
+          "startupMs": 50,
+          "activeMs": 400,
+          "cooldownMs": 900
         }
       }
     },
@@ -1538,6 +1608,41 @@
           "baseKnockback": 450,
           "knockbackGrowth": 9,
           "angleDeg": 40
+        }
+      },
+      "specialAttacks": {
+        "specialNeutral": {
+          "baseKnockback": 220,
+          "knockbackGrowth": 3.5,
+          "angleDeg": 30,
+          "range": 24,
+          "height": 16,
+          "damage": 6,
+          "startupMs": 216,
+          "activeMs": 1200,
+          "cooldownMs": 550
+        },
+        "specialSide": {
+          "baseKnockback": 360,
+          "knockbackGrowth": 8,
+          "angleDeg": 35,
+          "range": 40,
+          "height": 50,
+          "damage": 9,
+          "startupMs": 100,
+          "activeMs": 250,
+          "cooldownMs": 650
+        },
+        "specialDown": {
+          "baseKnockback": 450,
+          "knockbackGrowth": 9,
+          "angleDeg": 40,
+          "range": 60,
+          "height": 60,
+          "damage": 8,
+          "startupMs": 50,
+          "activeMs": 400,
+          "cooldownMs": 900
         }
       }
     }

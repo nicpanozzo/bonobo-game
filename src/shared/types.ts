@@ -12,6 +12,7 @@ export interface InputState {
   taunt: boolean; // provocazione (#16): per ora produce solo l'evento
   dodge: boolean; // schivata (#3): invulnerabili per un attimo, spostandosi nella direzione tenuta
   shield: boolean; // scudo (#109): tenuto a terra para i colpi e si consuma; con una direzione rotola, con su si salta fuori
+  special: boolean; // mossa speciale (E10): da fermi, con una direzione o con giù, diversa per ogni personaggio
 }
 
 // Le varianti direzionali (#2): su tenendo su, giù tenendo giù a terra, Air in aria; recovery: K + su in aria (#11)
@@ -31,7 +32,11 @@ export type AttackKind =
   | "throwForward"
   | "throwBack"
   | "throwUp"
-  | "throwDown";
+  | "throwDown"
+  | SpecialKind;
+
+// Le mosse speciali (E10): i numeri dipendono dal personaggio (specialsFor in characters.ts)
+export type SpecialKind = "specialNeutral" | "specialSide" | "specialDown";
 
 export interface PlayerState {
   id: string;
@@ -116,6 +121,7 @@ export type GameEvent =
   | { type: "shieldBreak"; id: string; x: number; y: number } // lo scudo di id si è rotto
   | { type: "grab"; id: string; targetId: string; x: number; y: number } // id afferra targetId (#109)
   | { type: "grabRelease"; id: string; targetId: string } // la presa finisce senza lancio: targetId si è liberato
+  | { type: "counter"; id: string; attackerId: string; x: number; y: number } // id para il colpo di attackerId col contrattacco (E10) e risponde
   | { type: "matchStart" }
   | { type: "away"; id: string } // id si è disconnesso: il suo posto resta tenuto per un po' (#107)
   | { type: "back"; id: string } // id è rientrato nel suo posto

@@ -1,14 +1,16 @@
 // Attacchi: inizio, finestra attiva, hitbox e cosa succede a chi viene colpito.
 
-import { characterStats, getCharacter } from "../characters";
+import { characterStats, getCharacter, SPECIAL_KINDS, specialAttackSpec, specialsFor, type SpecialSlot } from "../characters";
 import { ATTACKS, FIGHTER, HITSTOP, HITSTUN_PER_KNOCKBACK, type AttackSpec } from "../constants";
-import type { AttackKind } from "../types";
+import type { AttackKind, SpecialKind } from "../types";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
 import { clearStun, hitShield } from "./shield";
+import { counterHit, isCountering, tryStartSpecial } from "./specials";
 
 export function tryStartAttack(f: Fighter, ctx: PhysicsContext): void {
   if (f.hitstun || f.attack || f.cooldownTimer > 0 || f.helpless || f.dodgeTimer > 0) return;
-  if (pressed(f, "heavy")) startAttack(f, variant(f, "heavy"), ctx);
+  if (pressed(f, "special")) tryStartSpecial(f, ctx); // E10
+  else if (pressed(f, "heavy")) startAttack(f, variant(f, "heavy"), ctx);
   else if (pressed(f, "light")) startAttack(f, variant(f, "light"), ctx);
 }
 
@@ -23,9 +25,25 @@ export function variant(f: Fighter, base: "light" | "heavy"): AttackKind {
 // I numeri di un attacco per questo lottatore (E10): quelli di ATTACKS, con i ritocchi del suo personaggio
 // (per ora il recupero, characters.ts). Tutta la fisica degli attacchi li legge da qui
 export function attackSpecFor(f: Fighter, kind: AttackKind | null = f.attack): AttackSpec {
+  if (kind && isSpecialKind(kind)) return specialSpecFor(f.characterId, kind);
   const base = ATTACKS[kind ?? "light"];
   const recovery = kind === "recovery" ? getCharacter(f.characterId).recovery : undefined;
   return recovery ? { ...base, ...recovery } : base;
+}
+
+export const isSpecialKind = (kind: AttackKind): kind is SpecialKind => kind.startsWith("special");
+const SLOT_OF = Object.fromEntries(Object.entries(SPECIAL_KINDS).map(([slot, kind]) => [kind, slot])) as Record<SpecialKind, SpecialSlot>;
+
+// Le speciali si convertono una volta per personaggio: la fisica le legge a ogni tick
+const specialCache = new Map<string, AttackSpec>();
+function specialSpecFor(characterId: string, kind: SpecialKind): AttackSpec {
+  const key = `${characterId}:${kind}`;
+  let spec = specialCache.get(key);
+  if (!spec) {
+    spec = specialAttackSpec(specialsFor(characterId)[SLOT_OF[kind]]);
+    specialCache.set(key, spec);
+  }
+  return spec;
 }
 
 export function startAttack(f: Fighter, kind: AttackKind, ctx: PhysicsContext) {
@@ -33,7 +51,7 @@ export function startAttack(f: Fighter, kind: AttackKind, ctx: PhysicsContext) {
   f.attackTimer = 0;
   f.cooldownTimer = attackSpecFor(f, kind).cooldownMs;
   f.alreadyHit.clear();
-  consume(f, "light", "heavy"); // anche il recupero e l'attacco dal bordo passano da qui
+  consume(f, "light", "heavy", "special"); // anche il recupero, l'attacco dal bordo e le speciali passano da qui
   ctx.events.push({ type: "attack", id: f.id, kind });
 }
 
@@ -79,6 +97,7 @@ export function resolveHits(fighters: Fighter[], ctx: PhysicsContext): void {
   for (const attacker of fighters) {
     if (!attacker.attackActive || !attacker.attack || attacker.eliminated || attacker.respawning) continue;
     if (isGrabKind(attacker.attack)) continue; // presa e lanci non colpiscono col rettangolo (grab.ts)
+    if (isCountering(attacker)) continue; // il contrattacco para, non colpisce (specials.ts)
     const spec = attackSpecFor(attacker);
     const box = attackBox(attacker);
     for (const target of fighters) {
@@ -96,6 +115,12 @@ export function resolveHits(fighters: Fighter[], ctx: PhysicsContext): void {
       const ix = (Math.max(box.x, body.x) + Math.min(box.x + box.w, body.x + body.w)) / 2;
       const iy = (Math.max(box.y, body.y) + Math.min(box.y + box.h, body.y + body.h)) / 2;
 
+      // Contrattacco (E10): chi lo fa non prende niente e risponde
+      if (isCountering(target)) {
+        counterHit(target, attacker, spec.damage, Math.round(ix), Math.round(iy), ctx);
+        break; // l'attacco di attacker è finito lì
+      }
+
       // Sullo scudo (#109): niente percentuale né knockback, solo punti di scudo
       if (target.shielding) {
         hitShield(target, attacker.id, spec.damage, attacker.facing, Math.round(ix), Math.round(iy), ctx);
@@ -108,8 +133,9 @@ export function resolveHits(fighters: Fighter[], ctx: PhysicsContext): void {
 }
 
 // Il colpo vero: percentuale e volo nella direzione in cui guarda chi colpisce. Lo usano anche i lanci della presa
-export function launch(target: Fighter, attacker: Fighter, kind: AttackKind, x: number, y: number, ctx: PhysicsContext): void {
-  const spec = attackSpecFor(attacker, kind);
+// damage cambia il danno della mossa (la risposta del contrattacco dipende dal colpo parato)
+export function launch(target: Fighter, attacker: Fighter, kind: AttackKind, x: number, y: number, ctx: PhysicsContext, damage?: number): void {
+  const spec = damage === undefined ? attackSpecFor(attacker, kind) : { ...attackSpecFor(attacker, kind), damage };
   // Stile Smash/Brawlhalla: il danno non toglie vita, fa volare più lontano
   target.percent = Math.min(999, target.percent + spec.damage);
   const knockback = (spec.baseKnockback + spec.knockbackGrowth * target.percent) / characterStats(target.characterId).weight; // E11
