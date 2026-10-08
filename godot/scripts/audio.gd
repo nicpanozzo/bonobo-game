@@ -43,6 +43,10 @@ var _phrases := {} # frase -> Array[AudioStream] (game.audioFiles.announcer)
 var _queue: AnnouncerQueue
 var _time_left := -1.0 # tempo rimasto nell'ultimo snapshot, ms (-1 = senza limite)
 var _charges := {} # id -> carica della speciale nell'ultimo snapshot (E10)
+var _voices := {} # id personaggio -> battuta (taunt, ko, victory) -> Array[AudioStream] (E13 passo 3)
+var _characters := {} # id giocatore -> id personaggio, dagli snapshot
+var _voice_players := {} # id giocatore -> AudioStreamPlayer2D: una voce per giocatore alla volta
+var _taunted := {} # id giocatore -> ms dell'ultima voce di provocazione
 
 const AnnouncerQueue := preload("res://scripts/announcer_queue.gd")
 
@@ -153,6 +157,7 @@ func on_event(e: Dictionary) -> void:
 			_play("roll", {"volume": 0.4, "pitch": 1.2})
 		"ko":
 			_play("ko", {"x": e.x})
+			voice(str(e.get("id", "")), "ko", e.x)
 			duck()
 			if int(e.get("stocksLeft", 0)) == 1:
 				announce("lastLife")
@@ -161,7 +166,9 @@ func on_event(e: Dictionary) -> void:
 		"flag":
 			_play("point")
 		"taunt":
-			_play("taunt")
+			# La voce del personaggio se c'è (e non ha appena parlato), altrimenti la ricetta di sempre
+			if not voice(e.id, "taunt"):
+				_play("taunt")
 		# Oggetti (#17): finché non hanno suoni loro, si riusano quelli che ci sono
 		"itemPick":
 			_play("point", {"volume": 0.4, "pitch": 1.6})
@@ -175,6 +182,8 @@ func on_event(e: Dictionary) -> void:
 			announce("go")
 		"matchEnd":
 			_play("victory")
+			if e.get("winnerId") != null:
+				voice(e.winnerId, "victory")
 			# Il server oggi decide sempre un vincitore; "draw" è pronta per quando ci sarà il pareggio
 			announce("game" if e.get("winnerId") != null else "draw")
 
@@ -186,6 +195,8 @@ func on_snapshot(data: Dictionary) -> void:
 	if crosses_warning(_time_left, left, warning) and data.get("winnerId") == null:
 		announce("tenSeconds")
 	_time_left = left
+	for p in data.get("players", []):
+		_characters[p.id] = p.get("characterId", "default")
 	# La carica (E10) non ha eventi: si sente quando parte e quando è piena
 	for p in data.get("players", []):
 		var now := float(p.get("charge", 0.0))
@@ -202,6 +213,52 @@ static func charge_cue(before: float, now: float) -> String:
 	if before < 0.99 and now >= 0.99:
 		return "chargeFull"
 	return ""
+
+
+# La voce di un giocatore (E13 passo 3): taunt, ko o victory del suo personaggio, o di quello base se il suo non
+# ce l'ha. Una sola voce per giocatore: la nuova taglia quella di prima. Vero se è partita
+func voice(player_id: String, line: String, x: Variant = null) -> bool:
+	var files := voice_files(_voices, str(_characters.get(player_id, "default")), line)
+	if files.is_empty():
+		return false
+	var now := Time.get_ticks_msec()
+	if line == "taunt":
+		if not may_taunt(_taunted.get(player_id, -1), now, game.audio.get("tauntVoiceCooldownMs", 1500)):
+			return true # ha appena parlato: niente voce e niente ricetta, contro lo spam del tasto
+		_taunted[player_id] = now
+	var p: AudioStreamPlayer2D = _voice_players.get(player_id)
+	if p == null:
+		p = AudioStreamPlayer2D.new()
+		p.bus = "Voci"
+		p.max_distance = 100000
+		p.attenuation = 0
+		add_child(p)
+		_voice_players[player_id] = p
+	var key := "voice:%s:%s" % [player_id, line]
+	var i := pick_variant(files.size(), _last.get(key, -1), randi())
+	_last[key] = i
+	p.stream = files[i]
+	var w: float = game.world.width
+	p.position = Vector2(clampf(x if x != null else view_left + w / 2, view_left, view_left + w), game.world.height / 2.0)
+	if p.is_inside_tree():
+		p.play()
+	return true
+
+
+func voice_stream(player_id: String) -> AudioStream:
+	var p: AudioStreamPlayer2D = _voice_players.get(player_id)
+	return p.stream if p else null
+
+
+# I file di una battuta: del personaggio, altrimenti di quello base, altrimenti nessuno
+static func voice_files(voices: Dictionary, character_id: String, line: String) -> Array:
+	var own: Array = voices.get(character_id, {}).get(line, [])
+	return own if not own.is_empty() else voices.get("default", {}).get(line, [])
+
+
+# Una nuova provocazione parla solo se dall'ultima sono passati almeno cooldown ms
+static func may_taunt(last: int, now: int, cooldown: int) -> bool:
+	return last < 0 or now - last >= cooldown
 
 
 # Il tempo è appena sceso sotto la soglia (e non era già sotto, né la partita è senza tempo o finita)
@@ -342,6 +399,19 @@ func _load_files(files: Dictionary) -> void:
 				loaded.append(stream)
 		if not loaded.is_empty():
 			_phrases[phrase] = loaded
+	var voices: Dictionary = files.get("voices", {})
+	for character: String in voices:
+		var lines := {}
+		for line: String in voices[character]:
+			var loaded: Array[AudioStream] = []
+			for path: String in voices[character][line]:
+				var stream := _load_stream(path)
+				if stream:
+					loaded.append(stream)
+			if not loaded.is_empty():
+				lines[line] = loaded
+		if not lines.is_empty():
+			_voices[character] = lines
 	var music: Dictionary = files.get("music", {})
 	for track: String in music:
 		var paths: Array = music[track]

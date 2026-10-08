@@ -145,3 +145,34 @@ func test_ogni_arena_la_sua_musica() -> void:
 	a.play_music("lobby")
 	runner.check(a._music.stream == a._synth_music, "nella lobby quella di sempre")
 	a.free()
+
+
+func test_voce_del_personaggio_o_di_quello_base() -> void:
+	var a := AudioStreamWAV.new()
+	var b := AudioStreamWAV.new()
+	var voices := {"default": {"taunt": [a], "ko": [a]}, "bonobot": {"taunt": [b]}}
+	runner.check(Audio.voice_files(voices, "bonobot", "taunt") == [b], "la sua")
+	runner.check(Audio.voice_files(voices, "bonobot", "ko") == [a], "il ko di quello base")
+	runner.check(Audio.voice_files(voices, "egiainuso", "taunt") == [a], "senza voce: quello base")
+	runner.check(Audio.voice_files(voices, "bonobot", "victory").is_empty(), "nessuno ha la vittoria")
+	runner.check(Audio.may_taunt(-1, 100, 1500) and not Audio.may_taunt(100, 1599, 1500) and Audio.may_taunt(100, 1600, 1500), "attesa tra due provocazioni")
+
+
+func test_provocazione_ko_e_vittoria_con_la_voce() -> void:
+	var au := _audio()
+	var taunt := AudioStreamWAV.new()
+	var ko := AudioStreamWAV.new()
+	var win := AudioStreamWAV.new()
+	au._voices = {"bonobot": {"taunt": [taunt], "ko": [ko], "victory": [win]}}
+	au.on_snapshot({"players": [{"id": "p1", "characterId": "bonobot", "x": 100, "charge": 0}, {"id": "p2", "characterId": "egiainuso", "x": 300, "charge": 0}]})
+	au.on_event({"type": "taunt", "id": "p1"})
+	runner.check(au.voice_stream("p1") == taunt, "provocazione con la voce di Bonobot")
+	au.on_event({"type": "ko", "id": "p1", "x": 50, "y": 0, "stocksLeft": 2, "byId": null})
+	runner.check(au.voice_stream("p1") == ko, "l'urlo del KO taglia la provocazione")
+	au.on_event({"type": "taunt", "id": "p1"})
+	runner.check(au.voice_stream("p1") == ko, "seconda provocazione troppo presto: niente voce")
+	au.on_event({"type": "taunt", "id": "p2"})
+	runner.check(au.voice_stream("p2") == null, "Egiainuso senza voce (e niente voce base): resta la ricetta")
+	au.on_event({"type": "matchEnd", "winnerId": "p1", "winnerTeam": 0, "durationMs": 1000})
+	runner.check(au.voice_stream("p1") == win, "frase di vittoria")
+	au.free()

@@ -296,6 +296,7 @@ export const AUDIO = {
   musicBpmMax: 190,
   hitLoudPercent: 120, // da questa percentuale in su i colpi suonano al massimo
   voices: 0.8, // volume di partenza delle voci (E13): personaggi e annunciatore
+  tauntVoiceCooldownMs: 1500, // attesa minima tra due voci di provocazione dello stesso giocatore (E13 passo 3)
   musicFadeMs: 1500, // dissolvenza tra la musica della lobby e quella della partita
   duckDb: -8, // di quanto scende la musica su un KO (E13), decibel
   duckMs: 1200, // in quanto tempo risale dopo il KO
