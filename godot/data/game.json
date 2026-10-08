@@ -1121,7 +1121,8 @@
           "activeMs": 400,
           "cooldownMs": 900
         }
-      }
+      },
+      "supremeAttack": null
     },
     "egiainuso": {
       "id": "egiainuso",
@@ -1363,6 +1364,13 @@
             "loop": false,
             "src": "heavy"
           },
+          "dash": {
+            "row": 1,
+            "frames": 6,
+            "fps": 10,
+            "loop": true,
+            "src": "walk"
+          },
           "supreme": {
             "row": 5,
             "frames": 4,
@@ -1406,11 +1414,44 @@
           "activeMs": 100,
           "cooldownMs": 1650
         }
-      }
+      },
+      "supremeAttack": null
     },
     "bonobot": {
       "id": "bonobot",
       "name": "Bonobot",
+      "supreme": {
+        "type": "drop",
+        "name": "Omar",
+        "label": "Omar",
+        "leapMs": 250,
+        "leapDx": 60,
+        "leapDy": 110,
+        "pullMs": 150,
+        "warnMs": 500,
+        "fallMs": 300,
+        "flipMs": 350,
+        "flipDx": 130,
+        "flipArc": 50,
+        "impactMs": 100,
+        "recoverMs": 300,
+        "width": 132,
+        "height": 150,
+        "damage": 28,
+        "baseKnockback": 600,
+        "knockbackGrowth": 11,
+        "angleDeg": 70,
+        "runSpeed": 520,
+        "art": {
+          "dir": "assets/characters/bonobot/omar",
+          "falling": "orsogufo-cade.png",
+          "landed": "orsogufo-a-terra.png",
+          "runner": "gnomo-corre.png",
+          "runnerFrames": 4,
+          "runnerFps": 12,
+          "scale": 0.5
+        }
+      },
       "sprite": {
         "path": "assets/characters/bonobot/bonobot.png",
         "frameWidth": 256,
@@ -1604,6 +1645,13 @@
             "hitFrame": 6,
             "src": "heavy"
           },
+          "dash": {
+            "row": 1,
+            "frames": 10,
+            "fps": 24,
+            "loop": true,
+            "src": "walk"
+          },
           "supreme": {
             "row": 5,
             "frames": 18,
@@ -1702,6 +1750,20 @@
           "activeMs": 400,
           "cooldownMs": 900
         }
+      },
+      "supremeAttack": {
+        "damage": 28,
+        "baseKnockback": 600,
+        "knockbackGrowth": 11,
+        "angleDeg": 70,
+        "startupMs": 900,
+        "activeMs": 100,
+        "cooldownMs": 1300,
+        "range": 132,
+        "height": 150,
+        "boxX": -66,
+        "boxY": -140,
+        "outward": true
       }
     },
     "elvedeo": {
@@ -1881,6 +1943,12 @@
             "frames": 8,
             "src": "heavy"
           },
+          "dash": {
+            "fps": 20,
+            "loop": true,
+            "frames": 10,
+            "src": "walk"
+          },
           "supreme": {
             "fps": 24,
             "loop": false,
@@ -1971,7 +2039,8 @@
           "activeMs": 400,
           "cooldownMs": 900
         }
-      }
+      },
+      "supremeAttack": null
     }
   }
 }

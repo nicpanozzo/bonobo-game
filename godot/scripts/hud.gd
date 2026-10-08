@@ -68,7 +68,7 @@ func on_snapshot(snap: Dictionary) -> void:
 		_last_percent[p.id] = p.percent
 	_supreme_full = false
 	for p in snap.players:
-		if not p.eliminated and float(p.get("supreme", 0)) >= _supreme_max():
+		if not p.get("eliminated", false) and float(p.get("supreme", 0)) >= _supreme_max():
 			_supreme_full = true
 	queue_redraw()
 

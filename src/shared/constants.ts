@@ -32,6 +32,16 @@ export const FIGHTER = {
   dropThroughMs: 200, // per quanto si ignorano le piattaforme dopo aver premuto giù
 };
 
+// Scatto con doppio tocco (#199): numeri provvisori, da rivedere al playtest (#22).
+// Lo scatto va avanti per circa speed * durationMs = 270 pixel, poi tenendo la direzione si corre
+export const DASH = {
+  doubleTapMs: 250, // ms entro cui il secondo tocco della stessa direzione fa scattare
+  tapMaxMs: 120, // il primo tocco dev'essere breve: chi tiene la direzione più a lungo (camminando, i bot) non scatta
+  speed: 900, // pixel/s durante lo scatto (la camminata è FIGHTER.groundSpeed, 380)
+  durationMs: 300, // ms di scatto, anche lasciando il tasto
+  runSpeed: 560, // pixel/s di corsa tenendo la direzione dopo lo scatto
+};
+
 export interface AttackSpec {
   damage: number; // percentuale aggiunta al bersaglio
   baseKnockback: number; // pixel/s anche a 0%
@@ -44,6 +54,7 @@ export interface AttackSpec {
   angleDeg: number; // angolo di lancio sopra l'orizzontale
   boxX?: number; // pixel dal centro del personaggio, in avanti, dove comincia la hitbox (di base: metà larghezza)
   boxY?: number; // pixel dai piedi in su dove sta il bordo alto della hitbox, negativo (di base: -70% dell'altezza)
+  outward?: boolean; // colpo ad area (#102): lancia lontano dal centro di chi colpisce, non dalla parte in cui guarda
 }
 
 // Le speciali (E10) non sono qui: i loro numeri dipendono dal personaggio (specialAttackSpec in characters.ts)
@@ -363,9 +374,9 @@ export const BOT = {
 
 // Livelli di difficoltà dei bot (#20 passo 3): ?bot=facile, ?bot=semplice, ?bot=difficile
 export const BOT_LEVELS = {
-  facile: { reactionMs: 320, heavyEvery: 5, dodges: false, shields: false, grabs: false, specials: false, counters: false }, // reactionMs: ogni quanto rivede le scelte
-  semplice: { reactionMs: 180, heavyEvery: 3, dodges: false, shields: false, grabs: true, specials: true, counters: false }, // heavyEvery: un pesante ogni tanti attacchi
-  difficile: { reactionMs: 90, heavyEvery: 2, dodges: true, shields: true, grabs: true, specials: true, counters: true }, // dodges: schiva i pesanti; shields: si para dagli altri colpi; grabs: afferra chi si para; specials: tira e scatta (E10); counters: un pesante su due lo contrattacca
+  facile: { reactionMs: 320, heavyEvery: 5, dodges: false, shields: false, grabs: false, specials: false, counters: false, supremes: false }, // reactionMs: ogni quanto rivede le scelte
+  semplice: { reactionMs: 180, heavyEvery: 3, dodges: false, shields: false, grabs: true, specials: true, counters: false, supremes: true }, // heavyEvery: un pesante ogni tanti attacchi
+  difficile: { reactionMs: 90, heavyEvery: 2, dodges: true, shields: true, grabs: true, specials: true, counters: true, supremes: true }, // dodges: schiva i pesanti; shields: si para dagli altri colpi; grabs: afferra chi si para; specials: tira e scatta (E10); counters: un pesante su due lo contrattacca; supremes: lancia la suprema (#102) con qualcuno a tiro
 };
 
 // Elementi dinamici delle arene (#14): ascensori e trappole. I loro numeri stanno nei dati dell'arena.

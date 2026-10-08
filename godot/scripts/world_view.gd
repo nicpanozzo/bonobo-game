@@ -38,10 +38,15 @@ var _taunts := {} # id giocatore -> quando ha provocato (ms), per l'animazione t
 var _holding := {} # id di chi tiene qualcuno con la presa (#109), dall'ultimo snapshot
 var _variants := {} # id giocatore -> variante di colore (0 = originale), ricalcolata a ogni frame (E11)
 const VARIANT_HUES := [0.5, 0.25, 0.75, 0.125, 0.625, 0.375, 0.875] # spostamento della tinta per la variante 1, 2, ...
+var _supreme_view: Node2D # liana, orsogufo e gnomo della suprema di Bonobot (#102), disegnati sopra i lottatori
 
 
 func setup(game_data: Dictionary) -> void:
 	game = game_data
+	_supreme_view = preload("res://scripts/supreme_view.gd").new()
+	_supreme_view.game = game
+	_supreme_view.impact.connect(func(strength: float): _shake = maxf(_shake, strength)) # l'orsogufo tocca terra
+	add_child(_supreme_view)
 	reset()
 	if material == null:
 		var palette := ShaderMaterial.new()
@@ -105,6 +110,7 @@ func reset() -> void:
 	_dust = []
 	_trails = {}
 	_flash = 0.0
+	_supreme_view.clear()
 	my_id = ""
 	set_stage(game.defaultStageId)
 
@@ -116,6 +122,7 @@ func set_stage(stage_id: String) -> void:
 # L'arena intera arriva dal server nel benvenuto: così si vedono anche le arene casuali e i percorsi
 func set_stage_spec(spec: Dictionary) -> void:
 	stage = spec
+	_supreme_view.stage = spec
 	_reached = 0
 	queue_redraw()
 
@@ -214,6 +221,18 @@ func on_event(e: Dictionary) -> void:
 					_puff(p.x, p.y - float(game.ledge.hangOffsetY)) # polvere sullo spigolo, da dove parte la rotolata
 		"taunt":
 			_taunts[e.id] = Time.get_ticks_msec()
+		"attack":
+			# Suprema propria (#102): la scena (liana, orsogufo, gnomo) la disegna supreme_view.gd
+			if e.kind == "supreme":
+				var p: Variant = buffer.sample(e.id, Time.get_ticks_msec())
+				if p != null:
+					_supreme_view.start(p, game.characters.get(p.characterId, {}))
+		"dash":
+			# Scatto (#199): uno sbuffo di polvere dove parte e uno un po' indietro
+			_puff(e.x, e.y)
+			var p: Variant = buffer.sample(e.id, Time.get_ticks_msec())
+			if p != null:
+				_puff(float(e.x) - float(p.facing) * 26.0, float(e.y))
 		"jump":
 			if not e.get("air", false):
 				_puff(e.x, e.y)
@@ -297,6 +316,7 @@ func _draw() -> void:
 				_draw_trail(id, p)
 				_draw_fighter(p, now)
 
+	_supreme_view.view_rect = view_rect
 	_draw_items(now)
 	_draw_projectiles()
 	_draw_offscreen_markers()
@@ -572,7 +592,9 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 	var fh: float = game.fighter.height
 	# Chi è appena rientrato lampeggia finché è invulnerabile; chi ha perso la rete no, è solo trasparente (#107)
 	var away: bool = p.get("away", false)
-	if p.respawning or (p.invulnerable and not away and int(now / 100) % 2 == 0):
+	# Chi fa la suprema propria (#102) è invulnerabile ma appeso alla liana: non lampeggia
+	var blink: bool = p.invulnerable and not away and not _supreme_view.holds(p.id, now)
+	if p.respawning or (blink and int(now / 100) % 2 == 0):
 		return
 	var character: Dictionary = game.characters.get(p.characterId, game.characters[game.defaultCharacterId])
 	var charge := float(p.get("charge", 0.0))
@@ -643,8 +665,12 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 	var spec := attack_spec(game, p.characterId, str(p.attack)) if p.attack != null else {}
 	if not spec.is_empty(): # un attacco che questa versione non conosce non ha rettangolo
 		var front: float = spec.get("boxX", fw / 2)
-		var x: float = p.x + front if p.facing == 1 else p.x - front - spec.range
-		var y: float = p.y + spec.get("boxY", -fh * 0.7)
+		var o := Vector2(p.x, p.y)
+		var vine: Variant = _supreme_view.origin(p.id) if p.attack == "supreme" else null
+		if vine != null:
+			o = vine # la suprema di Bonobot colpisce sulla liana (#102), come hitOrigin() in supreme.ts
+		var x: float = o.x + front if p.facing == 1 else o.x - front - spec.range
+		var y: float = o.y + spec.get("boxY", -fh * 0.7)
 		var c := Color("ff9f43") if str(p.attack).begins_with("heavy") else Color.WHITE
 		c.a = 0.85 if p.attackActive else 0.25
 		draw_rect(Rect2(x, y, spec.range, spec.height), c)
@@ -760,6 +786,10 @@ static func sprite_modulate(variant: int, alpha: float) -> Color:
 # I numeri di un attacco per un personaggio, come attackSpecFor() in src/shared/physics/attacks.ts:
 # quelli di ATTACKS con i ritocchi del personaggio (il recupero). {} se l'attacco non esiste
 static func attack_spec(game_data: Dictionary, character_id: String, kind: String) -> Dictionary:
+	if kind == "supreme": # la suprema (#101, #102): quella del personaggio, o quella di base
+		var c: Dictionary = game_data.characters.get(character_id, {})
+		var own: Variant = c.get("supremeAttack")
+		return own if own is Dictionary else game_data.attacks.get("supreme", {})
 	if kind.begins_with("special"): # le speciali (E10) sono del personaggio
 		var c: Dictionary = game_data.characters.get(character_id, game_data.characters.get(game_data.get("defaultCharacterId", ""), {}))
 		return c.get("specialAttacks", {}).get(kind, {})
@@ -855,6 +885,8 @@ static func _animation_for(p: Dictionary, holding := false) -> String:
 		return "shield" # scudo (#109): chi non l'ha disegnato resta fermo, dentro la bolla
 	if not p.onGround:
 		return "jump" if p.vy < 0 else "fall"
+	if p.get("dashing", false):
+		return "dash" # scatto e corsa (#199); senza disegno, la camminata
 	if absf(p.vx) > 20:
 		return "walk"
 	return "idle"

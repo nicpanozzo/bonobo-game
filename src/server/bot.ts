@@ -5,6 +5,7 @@ import { ATTACKS, BOT, BOT_LEVELS, FIGHTER, TICK_RATE } from "../shared/constant
 import type { Match } from "../shared/match";
 import { specialsFor } from "../shared/characters";
 import { emptyInput, ledgesOf, type Fighter } from "../shared/physics";
+import { supremeReach, supremeReady } from "../shared/physics/supreme";
 import type { StageSpec } from "../shared/stages";
 import type { InputState } from "../shared/types";
 import type { RoomHooks } from "./Room";
@@ -68,6 +69,9 @@ export class Bots {
     if (match.isFull) return null;
     const id = `bot-${kind}-${++this.count}`;
     match.addPlayer(id, BOT_NAMES[kind], characterId);
+    // Lo scatto col doppio tocco (#199) i bot non lo usano: i loro tocchi brevi lo farebbero partire per sbaglio
+    const fighter = match.players.find((p) => p.id === id);
+    if (fighter) fighter.dashByTap = false;
     this.bots.set(id, { kind, ticks: 0, attacks: 0, hold: emptyInput(), last: emptyInput(), ledgeTicks: 0, getups: 0, shieldTicks: 0, specialTicks: 0, threats: 0 });
     return id;
   }
@@ -233,6 +237,13 @@ function decideSimple(self: Fighter, players: readonly Fighter[], stage: StageSp
   const spec = ATTACKS.heavy;
   const reach = FIGHTER.width / 2 + spec.range;
   const facingTarget = Math.sign(dx) === self.facing || dx === 0;
+
+  // Barra piena e qualcuno a tiro (#102): suprema, guardando il bersaglio (quella di base colpisce davanti,
+  // quella di Bonobot cade sulla liana, un po' davanti a lui)
+  if (skill.supremes && supremeReady(self) && self.onGround && facingTarget && Math.abs(dx) <= supremeReach(self.characterId) && Math.abs(dy) < FIGHTER.height) {
+    tap("supreme");
+    return input;
+  }
 
   // Il difficile schiva un attacco pesante che sta caricando a portata, allontanandosi; uno su due lo contrattacca (E10)
   const threat = target.attack?.startsWith("heavy") && !target.attackActive && Math.abs(dx) <= reach + FIGHTER.width;

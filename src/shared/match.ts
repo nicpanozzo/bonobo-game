@@ -195,6 +195,7 @@ export class Match {
         shieldHp: Math.round(f.shieldHp),
         stunned: f.stunned,
         grabbedBy: f.grabbedBy,
+        dashing: f.dashing,
         charge: f.charge,
         supreme: Math.floor(f.supreme), // per difetto: 100 solo quando è davvero piena
       });
