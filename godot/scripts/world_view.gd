@@ -36,6 +36,8 @@ var show_hitboxes := false # allenamento (E15): corpo dei lottatori visibile anc
 var _air_jumps := {} # id giocatore -> quando ha fatto il doppio salto (ms), per l'animazione doubleJump (#103)
 var _taunts := {} # id giocatore -> quando ha provocato (ms), per l'animazione taunt (E7)
 var _holding := {} # id di chi tiene qualcuno con la presa (#109), dall'ultimo snapshot
+var _variants := {} # id giocatore -> variante di colore (0 = originale), ricalcolata a ogni frame (E11)
+const VARIANT_HUES := [0.5, 0.25, 0.75, 0.125, 0.625, 0.375, 0.875] # spostamento della tinta per la variante 1, 2, ...
 var _supreme_view: Node2D # liana, orsogufo e gnomo della suprema di Bonobot (#102), disegnati sopra i lottatori
 
 
@@ -46,6 +48,10 @@ func setup(game_data: Dictionary) -> void:
 	_supreme_view.impact.connect(func(strength: float): _shake = maxf(_shake, strength)) # l'orsogufo tocca terra
 	add_child(_supreme_view)
 	reset()
+	if material == null:
+		var palette := ShaderMaterial.new()
+		palette.shader = load("res://shaders/palette.gdshader")
+		material = palette
 	for id in game.characters:
 		var c: Dictionary = game.characters[id]
 		if c.get("sprite") == null:
@@ -188,6 +194,12 @@ func on_event(e: Dictionary) -> void:
 		"grab":
 			# Presa (#109): un lampo bianco dove la mano afferra
 			_sparks.append({"x": e.x, "y": float(e.y) - float(game.fighter.height) * 0.55, "age": 0.0, "size": 24.0, "color": Color.WHITE})
+		"projectileEnd":
+			# Proiettile che sparisce contro qualcosa (E10): una scintilla piccola; il colpo e lo scudo hanno già la loro
+			if e.reason == "wall":
+				_sparks.append({"x": e.x, "y": e.y, "age": 0.0, "size": 14.0, "color": Color(1, 0.9, 0.6)})
+			elif e.reason == "hit":
+				_sparks.append({"x": e.x, "y": e.y, "age": 0.0, "size": 18.0, "color": Color.WHITE}) # anche due proiettili che si annullano
 		"counter":
 			# Contrattacco (E10): lampo azzurro grande dove para, così si capisce perché l'altro vola via
 			_sparks.append({"x": e.x, "y": e.y, "age": 0.0, "size": 46.0, "color": Color(0.55, 0.85, 1)})
@@ -287,6 +299,7 @@ func _draw() -> void:
 	var now := Time.get_ticks_msec()
 	_alive = []
 	_sampled = buffer.sample_all(player_ids, now)
+	_variants = variant_ranks(_sampled.values())
 	for id in player_ids:
 		var p: Variant = _sampled.get(id)
 		if p != null:
@@ -349,17 +362,60 @@ func _draw_beam(b: Dictionary) -> void:
 
 # Oggetti (#17): in mano seguono il lottatore disegnato (che è interpolato), gli altri
 # inseguono la posizione dello snapshot; in volo girano su se stessi
-# Per ora un ovale chiaro della misura del colpo; forma, colore e sprite arrivano col passo 4 di E10
+# Proiettili delle speciali (E10): un ovale della misura del colpo, del colore della speciale, girato
+# nella direzione in cui vola, con una scia che sfuma. Tra uno snapshot e l'altro avanzano da soli
 func _draw_projectiles() -> void:
 	var dt := (Time.get_ticks_msec() - _projectiles_ms) / 1000.0
 	for pr in _projectiles:
 		var spec := attack_spec(game, str(pr.characterId), str(pr.kind))
 		var size := Vector2(float(spec.get("range", 24)), float(spec.get("height", 16)))
-		var c := Vector2(pr.x, pr.y) + Vector2(pr.vx, pr.vy) * minf(dt, 0.1)
-		draw_set_transform(c, 0.0, size / size.y)
-		draw_circle(Vector2.ZERO, size.y / 2, Color(1, 0.95, 0.6))
-		draw_arc(Vector2.ZERO, size.y / 2, 0, TAU, 16, Color(0.55, 0.35, 0.1), 2.0 * size.y / size.x)
-		draw_set_transform(Vector2.ZERO)
+		var vel := Vector2(pr.vx, pr.vy)
+		var c := Vector2(pr.x, pr.y) + vel * minf(dt, 0.1)
+		var color := projectile_color(game, str(pr.characterId), str(pr.kind))
+		var angle := vel.angle() if vel.length() > 1.0 else 0.0
+		for i in [3, 2, 1]: # la scia: copie più piccole e trasparenti dietro
+			var tc := color
+			tc.a = 0.5 - 0.13 * i
+			_draw_oval(c - vel * 0.018 * i, angle, size * (1.0 - 0.15 * i), tc)
+		_draw_oval(c, angle, size, color)
+		_draw_oval(c + Vector2(-2, -2).rotated(angle), angle, size * 0.45, color.lightened(0.6))
+
+
+func _draw_oval(c: Vector2, angle: float, size: Vector2, color: Color) -> void:
+	draw_set_transform(c, angle, Vector2(size.x / size.y, 1.0))
+	draw_circle(Vector2.ZERO, size.y / 2, color)
+	draw_set_transform(Vector2.ZERO)
+
+
+const SLOT_OF_KIND := {"specialNeutral": "neutral", "specialSide": "side", "specialDown": "down"}
+
+
+# Il colore del proiettile: quello della speciale del personaggio, poi quello del personaggio base
+static func projectile_color(game_data: Dictionary, character_id: String, kind: String) -> Color:
+	var slot: String = SLOT_OF_KIND.get(kind, "neutral")
+	for id in [character_id, str(game_data.get("defaultCharacterId", ""))]:
+		var c: Dictionary = game_data.characters.get(id, {})
+		var sp: Dictionary = c.get("specials", {}).get(slot, {})
+		if sp.has("color"):
+			return Color.hex((int(sp.color) << 8) | 0xff)
+	return Color(1, 0.85, 0.3)
+
+
+# Alone della carica (E10): cresce con la carica, da giallo ad arancione
+static func charge_radius(fighter_height: float, charge: float) -> float:
+	return fighter_height * (0.45 + 0.35 * clampf(charge, 0.0, 1.0))
+
+
+func _draw_charge(center: Vector2, charge: float, now: float) -> void:
+	var r := charge_radius(float(game.fighter.height), charge)
+	var col := Color(1, 0.85, 0.3).lerp(Color(1, 0.45, 0.1), charge)
+	var full := charge >= 0.99
+	if full and not Access.calm: # carica piena: l'alone pulsa
+		r += 3.0 * sin(now / 70.0)
+	col.a = 0.12 + 0.18 * charge
+	draw_circle(center, r, col)
+	col.a = 0.4 + 0.5 * charge
+	draw_arc(center, r, 0, TAU, 32, col, 3.0 if full else 2.0)
 
 
 func _draw_items(now: int) -> void:
@@ -535,6 +591,9 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 	if p.respawning or (blink and int(now / 100) % 2 == 0):
 		return
 	var character: Dictionary = game.characters.get(p.characterId, game.characters[game.defaultCharacterId])
+	var charge := float(p.get("charge", 0.0))
+	if charge > 0.0:
+		_draw_charge(Vector2(p.x, p.y - fh / 2), charge, now)
 	var head := fh # altezza della testa sopra i piedi: lo sprite può essere più alto del corpo
 	if _textures.has(character.id):
 		head = maxf(fh, character.sprite.frameHeight * character.sprite.get("scale", 1.0))
@@ -686,8 +745,36 @@ func _draw_sprite(p: Dictionary, character: Dictionary, now: float) -> void:
 	var src := Rect2(frame * fw, row * fh, fw, fh)
 	var scale: float = sheet.get("scale", 1.0) # 0.5 per i disegni fatti a 2x
 	draw_set_transform(Vector2(p.x, p.y), 0, Vector2(p.facing * scale, scale))
-	draw_texture_rect_region(texture, Rect2(-fw / 2, -fh, fw, fh), src, Color(1, 1, 1, away_alpha(p)))
+	draw_texture_rect_region(texture, Rect2(-fw / 2, -fh, fw, fh), src, sprite_modulate(int(_variants.get(p.id, 0)), away_alpha(p)))
 	draw_set_transform(Vector2.ZERO)
+
+
+# Chi ha lo stesso personaggio di un altro giocatore prende una variante di colore: il primo in ordine
+# di colore resta originale, gli altri 1, 2, ... Il colore lo dà il server, così ogni client vede lo stesso.
+# Anche gli eliminati contano: chi resta non cambia colore a metà partita
+static func variant_ranks(players: Array) -> Dictionary:
+	var by_character := {}
+	for p in players:
+		if p == null:
+			continue
+		var id: String = str(p.get("characterId", ""))
+		if not by_character.has(id):
+			by_character[id] = []
+		by_character[id].append(p)
+	var ranks := {}
+	for id in by_character:
+		var same: Array = by_character[id]
+		same.sort_custom(func(a, b): return int(a.color) < int(b.color) or (int(a.color) == int(b.color) and str(a.id) < str(b.id)))
+		for i in same.size():
+			ranks[same[i].id] = i
+	return ranks
+
+
+# Il modulate dello sprite: con una variante il rosso oltre 1 dice allo shader di quanto spostare la tinta
+static func sprite_modulate(variant: int, alpha: float) -> Color:
+	if variant <= 0:
+		return Color(1, 1, 1, alpha)
+	return Color(2.0 + VARIANT_HUES[(variant - 1) % VARIANT_HUES.size()], 1, 1, alpha)
 
 
 # I numeri di un attacco per un personaggio, come attackSpecFor() in src/shared/physics/attacks.ts:

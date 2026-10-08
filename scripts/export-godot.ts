@@ -17,6 +17,8 @@ import { CHALLENGES } from "../src/shared/challenges";
 import { ITEMS } from "../src/shared/items";
 import { DEFAULT_STAGE_ID, STAGES } from "../src/shared/stages";
 import { stageCheckData } from "../src/shared/stageCheck";
+import { characterStats } from "../src/shared/characters";
+import { CHARACTER_STATS } from "../src/shared/constants";
 
 // La versione del gioco ha una fonte sola, package.json (E2, #106)
 const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")) as { version: string };
@@ -65,8 +67,13 @@ for (const [id, spec] of Object.entries(CHARACTERS)) {
   // specialAttacks: le stesse speciali lette come attacchi (specialAttackSpec), per disegnare il colpo in Godot
   const specials = specialsFor(id);
   const specialAttacks = Object.fromEntries(SPECIAL_SLOTS.map((slot) => [SPECIAL_KINDS[slot], specialAttackSpec(specials[slot])]));
+  // stats: tutte e cinque, già dentro i limiti (E11 passo C: le barre della lobby)
+  // portrait: il ritratto della lobby, se c'è public/assets/characters/<id>/portrait.png
+  const portraitPath = `assets/characters/${id}/portrait.png`;
+  const portrait = existsSync(publicDir + portraitPath) ? portraitPath : undefined;
+  if (portrait) spriteFiles.push(portrait);
   // supremeAttack: la suprema propria letta come attacco (#102), null per chi usa quella di base
-  const c = { ...spec, specials, specialAttacks, supremeAttack: supremeAttackSpec(id) };
+  const c = { ...spec, stats: characterStats(id), portrait, specials, specialAttacks, supremeAttack: supremeAttackSpec(id) };
   characters[id] = c;
   // I disegni della suprema propria (#102): si copiano come gli sprite
   const art = spec.supreme?.art;
@@ -147,6 +154,7 @@ const data = {
   defaultStageId: DEFAULT_STAGE_ID,
   stages: STAGES,
   defaultCharacterId: DEFAULT_CHARACTER_ID,
+  characterStats: CHARACTER_STATS, // limiti delle statistiche, per le barre della lobby (E11)
   characters, // CHARACTERS, con i fotogrammi degli sprite in formato cartella
 };
 

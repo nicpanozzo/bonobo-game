@@ -39,6 +39,7 @@ var _announcer := AudioStreamPlayer.new() # la voce dell'annunciatore, sul bus V
 var _phrases := {} # frase -> Array[AudioStream] (game.audioFiles.announcer)
 var _queue: AnnouncerQueue
 var _time_left := -1.0 # tempo rimasto nell'ultimo snapshot, ms (-1 = senza limite)
+var _charges := {} # id -> carica della speciale nell'ultimo snapshot (E10)
 
 const AnnouncerQueue := preload("res://scripts/announcer_queue.gd")
 
@@ -136,6 +137,12 @@ func on_event(e: Dictionary) -> void:
 			_play("grab", {"x": e.x})
 		"counter":
 			_play("counter", {"x": e.x})
+		# Proiettili (E10): il colpo e lo scudo hanno già il loro suono, qui il tiro e lo schiocco contro un muro
+		"projectile":
+			_play("projectile", {"x": e.x, "pitch": randf_range(0.95, 1.05)})
+		"projectileEnd":
+			if e.reason == "wall" or e.reason == "hit":
+				_play("projectilePop", {"x": e.x, "volume": 0.8 if e.reason == "wall" else 0.5})
 		"grabRelease":
 			_play("roll", {"volume": 0.4, "pitch": 1.2})
 		"ko":
@@ -173,6 +180,22 @@ func on_snapshot(data: Dictionary) -> void:
 	if crosses_warning(_time_left, left, warning) and data.get("winnerId") == null:
 		announce("tenSeconds")
 	_time_left = left
+	# La carica (E10) non ha eventi: si sente quando parte e quando è piena
+	for p in data.get("players", []):
+		var now := float(p.get("charge", 0.0))
+		var cue := charge_cue(float(_charges.get(p.id, 0.0)), now)
+		if cue != "":
+			_play(cue, {"x": p.x})
+		_charges[p.id] = now
+
+
+# "charge" quando la carica parte, "chargeFull" quando arriva in cima, "" altrimenti
+static func charge_cue(before: float, now: float) -> String:
+	if before <= 0.0 and now > 0.0:
+		return "charge"
+	if before < 0.99 and now >= 0.99:
+		return "chargeFull"
+	return ""
 
 
 # Il tempo è appena sceso sotto la soglia (e non era già sotto, né la partita è senza tempo o finita)
@@ -437,6 +460,22 @@ func _build_sounds() -> void:
 		s.tone(0, "triangle", 1320, 1250, 0.4, 0.3)
 		s.tone(0, "square", 660, 640, 0.12, 0.12)
 		s.noise(0.06, "lowpass", 4000, 600, 0.12, 0.6))
+	# Tiro (E10): un "piu" corto che scende, con un soffio
+	_sounds.projectile = make.call(0.14, func(s):
+		s.tone(0, "square", 880, 520, 0.1, 0.16)
+		s.noise(0, "bandpass", 3000, 1500, 0.06, 0.25))
+	# Proiettile che sbatte: uno schiocco sordo
+	_sounds.projectilePop = make.call(0.1, func(s):
+		s.noise(0, "lowpass", 3000, 400, 0.07, 0.5)
+		s.tone(0, "sine", 300, 150, 0.06, 0.3))
+	# Carica che sale (E10): due toni che crescono per quasi tutta la carica
+	_sounds.charge = make.call(1.0, func(s):
+		s.tone(0, "sawtooth", 160, 480, 0.95, 0.12)
+		s.tone(0, "sine", 320, 960, 0.95, 0.12))
+	# Carica piena: un "ding" doppio
+	_sounds.chargeFull = make.call(0.3, func(s):
+		s.tone(0, "triangle", 1320, 1320, 0.12, 0.25)
+		s.tone(0.08, "triangle", 1760, 1760, 0.2, 0.25))
 	# Lancio: un "whoop" che sale, come qualcosa che parte in aria
 	_sounds.throw = make.call(0.32, func(s):
 		s.noise(0, "bandpass", 600, 2600, 0.28, 0.55)

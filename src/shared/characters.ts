@@ -1,7 +1,7 @@
 // I personaggi giocabili. Aggiungerne uno = un blocco qui e una cartella in public/assets/characters/<id>/.
 // Cambiano aspetto e statistiche (E11 passo B); le mosse proprie arrivano con le speciali (E10).
 
-import { CHARACTER_STATS, DEFAULT_SPECIALS, RECOVERY, type AttackSpec } from "./constants";
+import { CHARACTER_STATS, CHARGE_EXAMPLE, DEFAULT_SPECIALS, RECOVERY, type AttackSpec } from "./constants";
 import type { SpecialKind } from "./types";
 
 // Gli stati che ogni lottatore con sprite deve avere
@@ -155,8 +155,10 @@ export interface ProjectileSpecial extends SpecialBase, SpecialHit {
   cooldownMs: number; // dall'inizio della mossa a quando si può attaccare di nuovo
   speed: number; // pixel/s in orizzontale
   gravity: number; // pixel/s²: 0 = dritto
+  lift?: number; // pixel/s verso l'alto alla partenza, per i tiri ad arco (con gravity)
   lifeMs: number; // dopo quanto sparisce da solo
   maxAlive: number; // proiettili dello stesso giocatore in volo insieme
+  color?: number; // colore del proiettile in Godot (0xRRGGBB); senza, quello del Tiro
 }
 // Scatto: si corre in avanti colpendo, in aria una volta sola fino all'atterraggio
 export interface DashSpecial extends SpecialBase, SpecialHit {
@@ -243,6 +245,11 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
   default: {
     id: "default",
     name: "Bonobo",
+    // E10: lancia una banana ad arco; scatto e contrattacco sono quelli di base
+    // TODO community: nome e numeri della Banana provvisori
+    specials: {
+      neutral: { type: "projectile", name: "Banana", startupMs: 233, cooldownMs: 600, speed: 560, gravity: 1800, lift: 520, lifeMs: 1400, maxAlive: 1, range: 26, height: 18, damage: 7, baseKnockback: 240, knockbackGrowth: 3.5, angleDeg: 50, color: 0xf2d33a },
+    },
   },
 
   // Creatura blu sulla barchetta col remo, proposta da @MauroGrecchi (#37)
@@ -252,6 +259,13 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     // Con la barchetta addosso è un po' più pesante e lento di Bonobot (E11)
     // TODO community: statistiche provvisorie, da confermare con @MauroGrecchi
     stats: { weight: 1.05, speed: 0.9, airSpeed: 0.95, jump: 0.95 },
+    // E10: uno schizzo d'acqua veloce e corto, una remata in avanti e un colpo di remo da caricare
+    // TODO community: nomi e numeri provvisori, da confermare con @MauroGrecchi (#37)
+    specials: {
+      neutral: { type: "projectile", name: "Schizzo", startupMs: 200, cooldownMs: 500, speed: 900, gravity: 0, lifeMs: 550, maxAlive: 2, range: 20, height: 12, damage: 4, baseKnockback: 180, knockbackGrowth: 3, angleDeg: 25, color: 0x6ec8ff },
+      side: { type: "dash", name: "Remata", startupMs: 120, durationMs: 300, speed: 760, endLagMs: 320, range: 46, height: 50, damage: 10, baseKnockback: 380, knockbackGrowth: 8, angleDeg: 30 },
+      down: { ...CHARGE_EXAMPLE, name: "Colpo di remo" },
+    },
     sprite: {
       path: "assets/characters/egiainuso/egiainuso.png",
       frameWidth: 64,

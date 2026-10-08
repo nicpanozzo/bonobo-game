@@ -134,7 +134,7 @@ export const GRAB = {
 // Mosse speciali di chi non ne ha di sue (E10, #111): i numeri della specifica, da playtest (#22).
 // I personaggi le cambiano in characters.ts (specials); il tasto e il motore arrivano nei passi 2 e 3
 export const DEFAULT_SPECIALS: SpecialSet = {
-  neutral: { type: "projectile", name: "Tiro", startupMs: 216, cooldownMs: 550, speed: 700, gravity: 0, lifeMs: 1200, maxAlive: 1, range: 24, height: 16, damage: 6, baseKnockback: 220, knockbackGrowth: 3.5, angleDeg: 30 },
+  neutral: { type: "projectile", name: "Tiro", startupMs: 216, cooldownMs: 550, speed: 700, gravity: 0, lifeMs: 1200, maxAlive: 1, range: 24, height: 16, damage: 6, baseKnockback: 220, knockbackGrowth: 3.5, angleDeg: 30, color: 0xffd84a },
   side: { type: "dash", name: "Scatto", startupMs: 100, durationMs: 250, speed: 900, endLagMs: 300, range: 40, height: 50, damage: 9, baseKnockback: 360, knockbackGrowth: 8, angleDeg: 35 },
   down: { type: "counter", name: "Contrattacco", startupMs: 50, windowMs: 400, endLagMs: 450, minDamage: 8, multiplier: 1.3, range: 60, height: 60, baseKnockback: 450, knockbackGrowth: 9, angleDeg: 40 },
 };
@@ -355,15 +355,18 @@ export const BOT = {
   shieldHoldMs: 300, // ms: il difficile tiene lo scudo per tanto dopo aver visto partire un attacco vicino (#109)
   shieldMinHp: 15, // punti di scudo: sotto questi il difficile non si para più, così non se lo fa rompere
   grabShieldMs: 300, // ms: semplice e difficile afferrano chi tiene lo scudo da più di tanto (E8)
+  shootFrom: 300, // pixel: più lontano di così il bot tira il proiettile della speciale (E10)
+  dashFrom: 160, // pixel: tra dashFrom e shootFrom scatta verso il bersaglio
+  specialEveryMs: 1200, // ms tra una speciale e l'altra del bot
   sparringEveryMs: 1800, // ms tra un attacco e l'altro dello sparring del tutorial (E15): il tempo di alzare lo scudo
   sparringRange: 140, // pixel: lo sparring attacca solo se sei così vicino
 };
 
 // Livelli di difficoltà dei bot (#20 passo 3): ?bot=facile, ?bot=semplice, ?bot=difficile
 export const BOT_LEVELS = {
-  facile: { reactionMs: 320, heavyEvery: 5, dodges: false, shields: false, grabs: false, supremes: false }, // reactionMs: ogni quanto rivede le scelte
-  semplice: { reactionMs: 180, heavyEvery: 3, dodges: false, shields: false, grabs: true, supremes: true }, // heavyEvery: un pesante ogni tanti attacchi
-  difficile: { reactionMs: 90, heavyEvery: 2, dodges: true, shields: true, grabs: true, supremes: true }, // dodges: schiva i pesanti; shields: si para dagli altri colpi; grabs: afferra chi si para; supremes: lancia la suprema (#102) con qualcuno a tiro
+  facile: { reactionMs: 320, heavyEvery: 5, dodges: false, shields: false, grabs: false, specials: false, counters: false, supremes: false }, // reactionMs: ogni quanto rivede le scelte
+  semplice: { reactionMs: 180, heavyEvery: 3, dodges: false, shields: false, grabs: true, specials: true, counters: false, supremes: true }, // heavyEvery: un pesante ogni tanti attacchi
+  difficile: { reactionMs: 90, heavyEvery: 2, dodges: true, shields: true, grabs: true, specials: true, counters: true, supremes: true }, // dodges: schiva i pesanti; shields: si para dagli altri colpi; grabs: afferra chi si para; specials: tira e scatta (E10); counters: un pesante su due lo contrattacca; supremes: lancia la suprema (#102) con qualcuno a tiro
 };
 
 // Elementi dinamici delle arene (#14): ascensori e trappole. I loro numeri stanno nei dati dell'arena.
