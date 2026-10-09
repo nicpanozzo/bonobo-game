@@ -8,13 +8,27 @@ import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
 
 // Cosa fa il lottatore con i tasti premuti (solo se non è stordito)
 export function applyControls(f: Fighter, dt: number, ctx: PhysicsContext): void {
+  const dir = (f.input.right ? 1 : 0) - (f.input.left ? 1 : 0);
+
   if (f.hitstun) {
     endDash(f);
-    if (!f.onGround) f.vx *= HITSTUN_AIR_DRAG;
+    f.jumpRising = false;
+    if (!f.onGround) {
+      f.vx *= HITSTUN_AIR_DRAG;
+      // Influenza: tenendo una direzione si corregge un po' il volo, così chi sa dove andare sopravvive di più
+      f.vx += dir * FIGHTER.hitstunDriftAccel * dt;
+    }
     return;
   }
 
-  const dir = (f.input.right ? 1 : 0) - (f.input.left ? 1 : 0);
+  // Salto corto: lasciando il tasto mentre si sale si perde parte della spinta
+  if (f.jumpRising) {
+    if (f.vy >= 0) f.jumpRising = false;
+    else if (!f.input.jump && f.shortHop) {
+      f.vy *= FIGHTER.shortHopCut;
+      f.jumpRising = false;
+    }
+  }
 
   // Schivata (#3): mentre dura si scivola alla velocità decisa all'inizio, senza controlli né attacchi
   if (f.dodgeTimer > 0) {
@@ -60,6 +74,7 @@ export function applyControls(f: Fighter, dt: number, ctx: PhysicsContext): void
     f.vx = dir * RECOVERY.drift;
     f.recoveryUsed = true;
     f.helpless = true;
+    f.jumpRising = false; // la spinta ora è del recupero: lasciare il salto non la accorcia
     startAttack(f, "recovery", ctx);
     return;
   }
@@ -67,10 +82,13 @@ export function applyControls(f: Fighter, dt: number, ctx: PhysicsContext): void
   // Salto e doppio salto
   if (pressed(f, "jump") && f.jumpsLeft > 0) {
     consume(f, "jump"); // una pressione = un salto solo
-    ctx.events.push({ type: "jump", id: f.id, x: Math.round(f.x), y: Math.round(f.y), air: !f.onGround });
-    f.vy = -(f.onGround ? FIGHTER.jumpSpeed : FIGHTER.doubleJumpSpeed) * stats.jump;
+    const fromGround = f.onGround || f.coyoteTimer > 0; // appena scesi dal bordo vale ancora da terra
+    ctx.events.push({ type: "jump", id: f.id, x: Math.round(f.x), y: Math.round(f.y), air: !fromGround });
+    f.vy = -(fromGround ? FIGHTER.jumpSpeed : FIGHTER.doubleJumpSpeed) * stats.jump;
     f.jumpsLeft -= 1;
     f.onGround = false;
+    f.coyoteTimer = 0;
+    f.jumpRising = true;
   }
 
   // Giù: attraversa le piattaforme sottili, in aria cade più veloce
@@ -78,6 +96,17 @@ export function applyControls(f: Fighter, dt: number, ctx: PhysicsContext): void
 
   // Provocazione: solo da fermi a terra, la usano voci e animazioni (#16)
   if (pressed(f, "taunt") && f.onGround && !f.attack) ctx.events.push({ type: "taunt", id: f.id });
+}
+
+// Finito il tempo di grazia senza saltare, il salto da terra è perso (resta quello in aria)
+export function tickCoyote(f: Fighter, dtMs: number): void {
+  if (f.coyoteTimer === 0) return;
+  f.coyoteTimer = Math.max(0, f.coyoteTimer - dtMs);
+  if (f.onGround || f.ledgeIndex >= 0) f.coyoteTimer = 0; // a terra o appesi al bordo non serve più
+  else if ((f.coyoteTimer === 0 || f.hitstunTimer > 0) && f.jumpsLeft === FIGHTER.maxJumps) {
+    f.coyoteTimer = 0;
+    f.jumpsLeft = FIGHTER.maxJumps - 1;
+  }
 }
 
 export function applyGravity(f: Fighter, dt: number): void {

@@ -18,7 +18,7 @@ import { carryRider, resolveHazards } from "./elements";
 import { tickBuffer, type Fighter, type PhysicsContext } from "./fighter";
 import { grabbing, inGrab, resolveGrabs, stepGrabs } from "./grab";
 import { holdLedge, tryGrabLedge } from "./ledge";
-import { applyControls, applyGravity } from "./movement";
+import { applyControls, applyGravity, tickCoyote } from "./movement";
 import { holdShield } from "./shield";
 import { stepProjectiles } from "./projectiles";
 import { cancelSpecial, specialing } from "./specials";
@@ -71,6 +71,7 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
   f.dodgeCooldown = Math.max(0, f.dodgeCooldown - dtMs);
   f.hazardTimer = Math.max(0, f.hazardTimer - dtMs);
   f.regrabTimer = Math.max(0, f.regrabTimer - dtMs);
+  tickCoyote(f, dtMs);
   tickSupreme(f, dtMs); // #101: anche il tempo carica la barra
   tickBuffer(f, dtMs);
   f.hitstun = f.hitstunTimer > 0;
@@ -79,12 +80,14 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
 
   // Nella presa (#109) si sta fermi: la posizione di chi è tenuto la decide stepGrabs
   if (inGrab(f)) {
+    f.jumpRising = false;
     f.prevInput = f.input;
     return;
   }
 
   // Appesi al bordo si resta fermi: niente controlli, attacchi né gravità
   if (holdLedge(f, dtMs, ctx)) {
+    f.jumpRising = false; // il salto dal bordo non si accorcia lasciando il tasto
     f.prevInput = f.input;
     return;
   }
@@ -93,6 +96,7 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
   // Suprema propria (#102): appesi alla liana, fermi dove si è
   if (supreming(f, dtMs)) {
     endDash(f); // la suprema ferma lo scatto (#199)
+    f.jumpRising = false;
     f.prevInput = f.input;
     return;
   }
@@ -100,7 +104,10 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
   if (!grabbing(f, dtMs, ctx) && !specialing(f, dtMs, ctx) && !holdShield(f, dtMs, ctx)) {
     applyControls(f, dt, ctx);
     tryStartAttack(f, ctx);
-  } else endDash(f); // scudo, presa o speciale fermano lo scatto (#199)
+  } else {
+    endDash(f); // scudo, presa o speciale fermano lo scatto (#199)
+    f.jumpRising = false; // il salto corto vale solo per la spinta del salto
+  }
   applyGravity(f, dt);
 
   const prevY = f.y;

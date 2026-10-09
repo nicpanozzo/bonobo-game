@@ -72,6 +72,8 @@ export class Bots {
     // Lo scatto col doppio tocco (#199) i bot non lo usano: i loro tocchi brevi lo farebbero partire per sbaglio
     const fighter = match.players.find((p) => p.id === id);
     if (fighter) fighter.dashByTap = false;
+    // Per lo stesso motivo il salto corto: un tick di tasto lo accorcerebbe sempre
+    if (fighter) fighter.shortHop = false;
     this.bots.set(id, { kind, ticks: 0, attacks: 0, hold: emptyInput(), last: emptyInput(), ledgeTicks: 0, getups: 0, shieldTicks: 0, specialTicks: 0, threats: 0 });
     return id;
   }

@@ -54,8 +54,13 @@ export function collideWithStage(f: Fighter, prevY: number, ctx: PhysicsContext,
 
   if (f.onGround && !wasOnGround) ctx.events.push({ type: "land", id: f.id, x: Math.round(f.x), y: Math.round(f.y) });
 
-  // Se si cammina oltre il bordo si resta con il salto in aria
-  if (wasOnGround && !f.onGround && f.jumpsLeft === FIGHTER.maxJumps) f.jumpsLeft = FIGHTER.maxJumps - 1;
+  // Se si cammina oltre il bordo si resta con il salto in aria, ma per FIGHTER.coyoteMs
+  // il salto vale ancora da terra: chi preme un attimo in ritardo non perde il salto
+  if (wasOnGround && !f.onGround && f.jumpsLeft === FIGHTER.maxJumps) {
+    // Scendere apposta da una sottile con giù (dropTimer) non dà il tempo di grazia: si è scelto di cadere
+    if (f.hitstun || f.dropTimer > 0) f.jumpsLeft = FIGHTER.maxJumps - 1;
+    else f.coyoteTimer = FIGHTER.coyoteMs;
+  }
 }
 
 function land(f: Fighter, y: number) {

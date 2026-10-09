@@ -57,6 +57,9 @@ export interface Fighter extends PlayerState {
   dashTapTimer: number; // ms entro cui un secondo tocco nella stessa direzione fa scattare
   dashHoldMs: number; // ms per cui si è tenuto l'ultimo tocco: oltre DASH.tapMaxMs non vale come tocco
   dashByTap: boolean; // il doppio tocco fa scattare (i bot no: i loro tocchi brevi scatterebbero per sbaglio)
+  coyoteTimer: number; // ms in cui, appena scesi dal bordo, il salto vale ancora da terra
+  jumpRising: boolean; // si sta salendo per un salto: lasciando il tasto si accorcia
+  shortHop: boolean; // lasciare presto il salto lo accorcia (i bot no: tengono il tasto un tick solo)
 }
 
 // Quello che serve alla fisica oltre ai lottatori: l'arena e dove scrivere gli eventi
@@ -129,6 +132,9 @@ export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
     dashTapTimer: 0,
     dashHoldMs: 0,
     dashByTap: true,
+    coyoteTimer: 0,
+    jumpRising: false,
+    shortHop: true,
     supreme: 0,
     input: emptyInput(),
     prevInput: emptyInput(),
@@ -182,7 +188,7 @@ export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
 // Riporta un lottatore all'inizio partita, tenendo i tasti che sta premendo
 export function resetForMatch(f: Fighter, index: number, stocks: number, stage: StageSpec): void {
   const fresh = createFighter({ ...f, index, stocks }, stage);
-  Object.assign(f, fresh, { input: f.input, prevInput: f.prevInput, away: f.away, dashByTap: f.dashByTap }); // chi è disconnesso resta tale nella rivincita
+  Object.assign(f, fresh, { input: f.input, prevInput: f.prevInput, away: f.away, dashByTap: f.dashByTap, shortHop: f.shortHop }); // chi è disconnesso resta tale nella rivincita
 }
 
 export const isAlive = (f: Fighter) => !f.eliminated;
