@@ -151,7 +151,8 @@ describe("arene", () => {
           left = f.x > aim + 40;
           up = f.vy > 0 && f.jumpsLeft > 0 && f.y > next.y - 20 && f.x < next.x;
         }
-        f.input = { ...f.input, right, left, jump: up && !f.prevInput.jump };
+        // Il salto si tiene mentre si sale, come una persona: un tocco solo farebbe il salto corto
+        f.input = { ...f.input, right, left, jump: (up && !f.prevInput.jump) || f.jumpRising };
         stepWorld([f], 1000 / TICK_RATE, ctx);
         if (ctx.events.some((e) => e.type === "ko")) falls++;
         ctx.events = [];
