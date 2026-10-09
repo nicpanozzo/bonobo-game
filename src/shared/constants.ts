@@ -30,6 +30,9 @@ export const FIGHTER = {
   maxFallSpeed: 950,
   fastFallSpeed: 1500, // tenendo giù in aria
   dropThroughMs: 200, // per quanto si ignorano le piattaforme dopo aver premuto giù
+  coyoteMs: 80, // ms dopo essere scesi dal bordo camminando in cui il salto vale ancora come salto da terra
+  shortHopCut: 0.45, // lasciando il salto mentre si sale la velocità verso l'alto si moltiplica per questo: salto corto
+  hitstunDriftAccel: 700, // pixel/s²: tenendo una direzione mentre si vola via si corregge un po' la traiettoria
 };
 
 // Scatto con doppio tocco (#199): numeri provvisori, da rivedere al playtest (#22).
