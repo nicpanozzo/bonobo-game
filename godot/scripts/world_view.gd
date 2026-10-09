@@ -39,7 +39,7 @@ var show_hitboxes := false # allenamento (E15): corpo dei lottatori visibile anc
 var _air_jumps := {} # id giocatore -> quando ha fatto il doppio salto (ms), per l'animazione doubleJump (#103)
 var _taunts := {} # id giocatore -> quando ha provocato (ms), per l'animazione taunt (E7)
 var _holding := {} # id di chi tiene qualcuno con la presa (#109), dall'ultimo snapshot
-var _variants := {} # id giocatore -> variante di colore (0 = originale), ricalcolata a ogni frame (E11)
+var _variants := {} # id giocatore -> variante di colore (0 = originale), ricalcolata a ogni snapshot (E11)
 const VARIANT_HUES := [0.5, 0.25, 0.75, 0.125, 0.625, 0.375, 0.875] # spostamento della tinta per la variante 1, 2, ...
 var _supreme_view: Node2D # liana, orsogufo e gnomo della suprema di Bonobot (#102), disegnati sopra i lottatori
 
@@ -180,6 +180,8 @@ func stage_width() -> float:
 func on_snapshot(snap: Dictionary) -> void:
 	buffer.push(snap.t, Time.get_ticks_msec(), snap.players, float(snap.get("stageMs", 0)))
 	player_ids = snap.players.map(func(p): return p.id)
+	# Colore, personaggio e id arrivano solo con lo snapshot: le varianti non cambiano tra un frame e l'altro
+	_variants = variant_ranks(snap.players)
 	_holding = {}
 	for p in snap.players:
 		if p.get("grabbedBy") != null:
@@ -342,7 +344,6 @@ func _draw() -> void:
 	var now := Time.get_ticks_msec()
 	_alive = []
 	_sampled = buffer.sample_all(player_ids, now)
-	_variants = variant_ranks(_sampled.values())
 	for id in player_ids:
 		var p: Variant = _sampled.get(id)
 		if p != null:
