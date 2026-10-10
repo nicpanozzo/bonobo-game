@@ -11,11 +11,15 @@ var _note: Label
 var _dim: Control
 var _in_options := false
 var _options_button: Button
+var _report := {} # dati della partita per il tasto Segnala (#214)
+
+const ISSUES_URL := "https://github.com/nicpanozzo/bonobo-game/issues/new"
 
 
-func setup(s: Settings, room_link: String) -> void:
+func setup(s: Settings, room_link: String, report := {}) -> void:
 	settings = s
 	link = room_link
+	_report = report
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var parts := UI.overlay(380)
 	_dim = parts[0]
@@ -29,6 +33,7 @@ func setup(s: Settings, room_link: String) -> void:
 	box.add_child(UI.button("Copia link della stanza", func():
 		UI.copy(link)
 		_note.text = "Link copiato: incollalo sul Discord"))
+	box.add_child(UI.button("Segnala un problema", _send_report))
 	box.add_child(UI.button("Esci alla lobby", func():
 		queue_free()
 		left.emit()))
@@ -38,6 +43,41 @@ func setup(s: Settings, room_link: String) -> void:
 	var game = JSON.parse_string(FileAccess.get_file_as_string("res://data/game.json"))
 	box.add_child(UI.note(UI.version_text(game if game is Dictionary else {}), 0.5))
 	UI.keep_focus(self, resume_button)
+
+
+# Apre una issue nuova già compilata e copia lo stesso testo, per chi preferisce il Discord
+func _send_report() -> void:
+	var game = JSON.parse_string(FileAccess.get_file_as_string("res://data/game.json"))
+	var body := report_body(_report, UI.version_text(game if game is Dictionary else {}), OS.get_name())
+	UI.copy(body)
+	OS.shell_open(report_url(body))
+	_note.text = "Si apre GitHub con i dati della partita: scrivi cosa è successo. Il testo è anche negli appunti."
+
+
+static func report_url(body: String) -> String:
+	return "%s?title=%s&body=%s" % [ISSUES_URL, "Segnalazione: ".uri_encode(), body.uri_encode()]
+
+
+# Il testo della segnalazione: due domande per chi gioca, poi i dati della partita
+static func report_body(r: Dictionary, version: String, system: String) -> String:
+	var fighters := []
+	for p in r.get("players", []):
+		var who := "%s (%s)" % [p.get("name", "?"), p.get("characterId", "?")]
+		if p.get("id") == r.get("me"):
+			who += ", io"
+		fighters.append(who)
+	var rules: Dictionary = r.get("rules", {})
+	var lines := [
+		"**Cosa è successo:**", "", "", "**Cosa ti aspettavi:**", "", "", "---",
+		"- Versione: %s" % version,
+		"- Sistema: %s" % system,
+		"- Server: %s" % r.get("server", "?"),
+		"- Stanza: %s" % r.get("room", "?"),
+		"- Arena: %s" % r.get("stage", "?"),
+		"- Modalità: %s" % rules.get("mode", "?"),
+		"- Lottatori: %s" % (", ".join(fighters) if not fighters.is_empty() else "nessuno"),
+	]
+	return "\n".join(lines)
 
 
 func resume() -> void:
