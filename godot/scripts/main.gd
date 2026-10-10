@@ -40,6 +40,7 @@ var training: Control # pannello dell'allenamento (E15), solo nelle stanze "trai
 var tutorial: Control # riquadro del tutorial a tappe (E15), solo se si è entrati da "Tutorial"
 var challenge_run: Control # sfida in corso (E15 passo 3), solo se si è entrati da "Sfide"
 var _picked: Dictionary = {} # sfida appena scelta nell'elenco
+var _last_players: Array = [] # giocatori dell'ultimo snapshot, per il tasto Segnala (#214)
 
 
 func _ready() -> void:
@@ -407,6 +408,7 @@ func _on_event(name: String, data: Variant) -> void:
 			camera.zoom = Vector2.ONE
 		"snapshot":
 			_last_snapshot = Time.get_ticks_msec()
+			_last_players = data.get("players", [])
 			for e in data.events:
 				world.on_event(e)
 				audio.on_event(e)
@@ -564,7 +566,7 @@ func _open_pause() -> void:
 	pause_menu = preload("res://scripts/pause_menu.gd").new()
 	pause_menu.theme = UI.theme()
 	ui_layer.add_child(pause_menu)
-	pause_menu.setup(settings, room_link(params.room))
+	pause_menu.setup(settings, room_link(params.room), {"server": params.server, "room": params.room, "stage": world.stage.get("name", ""), "rules": hud.rules, "players": _last_players, "me": world.my_id})
 	pause_menu.left.connect(_leave)
 
 
