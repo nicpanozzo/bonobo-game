@@ -53,4 +53,6 @@ Le issue che le evolutive assorbono: #1 (in E7), #6 (in E13), #21 (in E11), #91 
 
 ## Dopo l'ondata 2
 
-Restano fuori per ora e si riprendono più avanti: stanze aperte e spettatori, predizione dei movimenti, profili e classifica a punti, replay, torneo della serata, gioco da telefono, due giocatori sullo stesso PC, versione inglese e pagina pubblica.
+La predizione dei movimenti è partita prima delle altre, per scelta di Nicola (11 ottobre 2026): [E17](evolutive/E17.md).
+
+Restano fuori per ora e si riprendono più avanti: stanze aperte e spettatori, profili e classifica a punti, replay, torneo della serata, gioco da telefono, due giocatori sullo stesso PC, versione inglese e pagina pubblica.
