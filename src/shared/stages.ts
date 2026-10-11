@@ -17,6 +17,7 @@ export interface ThinPlatform {
   y: number; // superficie (alle estremità, se è ad arco)
   width: number;
   arch?: number; // piattaforma ad arco (#244): pixel di cui sale la superficie al centro, come un ponte
+  y2?: number; // piattaforma inclinata (#246): altezza dell'estremità destra (y è la sinistra), come una scala
 }
 
 // Piattaforma sottile che si muove (ascensore, montacarichi). La posizione dipende solo dal

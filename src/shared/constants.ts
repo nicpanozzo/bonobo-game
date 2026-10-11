@@ -34,6 +34,7 @@ export const FIGHTER = {
   shortHopCut: 0.45, // lasciando il salto mentre si sale la velocità verso l'alto si moltiplica per questo: salto corto
   hitstunDriftAccel: 700, // pixel/s²: tenendo una direzione mentre si vola via si corregge un po' la traiettoria
   archSnapPx: 8, // pixel: camminando su una piattaforma ad arco (#244) si resta attaccati alla curva se il dislivello in un passo è entro questo
+  slopeSnapStepPx: 20, // pixel orizzontali in un passo, scatto compreso: sulle rampe (#246) l'aggancio cresce di pendenza × questo
 };
 
 // Scatto con doppio tocco (#199): numeri provvisori, da rivedere al playtest (#22).

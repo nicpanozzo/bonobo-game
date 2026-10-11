@@ -92,7 +92,10 @@ export function applyControls(f: Fighter, dt: number, ctx: PhysicsContext): void
   }
 
   // Giù: attraversa le piattaforme sottili, in aria cade più veloce
-  if (pressed(f, "down")) f.dropTimer = FIGHTER.dropThroughMs;
+  if (pressed(f, "down")) {
+    f.dropTimer = FIGHTER.dropThroughMs;
+    f.dropFromY = f.y;
+  }
 
   // Provocazione: solo da fermi a terra, la usano voci e animazioni (#16)
   if (pressed(f, "taunt") && f.onGround && !f.attack) ctx.events.push({ type: "taunt", id: f.id });

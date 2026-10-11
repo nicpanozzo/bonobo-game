@@ -23,7 +23,8 @@
     "coyoteMs": 80,
     "shortHopCut": 0.45,
     "hitstunDriftAccel": 700,
-    "archSnapPx": 8
+    "archSnapPx": 8,
+    "slopeSnapStepPx": 20
   },
   "dash": {
     "doubleTapMs": 250,

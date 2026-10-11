@@ -40,7 +40,7 @@ static func state_from(p: Dictionary, timers: Dictionary, input: Dictionary) -> 
 		"x": float(p.x), "y": float(p.y), "vx": float(p.vx), "vy": float(p.vy),
 		"onGround": bool(p.onGround), "facing": int(p.facing),
 		"jumps": int(timers.jumps), "coyote": float(timers.coyote), "rising": bool(timers.rising),
-		"drop": float(timers.drop), "jumpBuffer": float(timers.jumpBuffer),
+		"drop": float(timers.drop), "dropFromY": float(timers.get("dropFromY", p.y)), "jumpBuffer": float(timers.jumpBuffer),
 		"dashing": bool(p.get("dashing", false)), "dash": float(timers.get("dash", 0)),
 		"tapDir": int(timers.get("tapDir", 0)), "tapTimer": float(timers.get("tapTimer", 0)), "tapHold": float(timers.get("tapHold", 0)),
 		"dodge": float(timers.get("dodge", 0)), "dodgeCooldown": float(timers.get("dodgeCooldown", 0)),
@@ -160,6 +160,7 @@ func _apply_controls(s: Dictionary, dt: float) -> void:
 		s.rising = true
 	if _pressed(s, "down"):
 		s.drop = float(fighter.dropThroughMs)
+		s.dropFromY = s.y # rampe e archi più in basso di così ti prendono (#246)
 
 
 # Attacchi leggeri e pesanti (tryStartAttack in attacks.ts). Speciali e suprema non ci sono: con quei tasti
@@ -285,14 +286,29 @@ func _collide(s: Dictionary, prev_y: float) -> void:
 			else:
 				s.x = bx - half if s.x < bx + bw / 2.0 else bx + bw + half
 				s.vx = 0.0
-	if not s.onGround and s.vy >= 0 and s.drop == 0.0:
+	# Da un blocco pieno si sale camminando su una rampa poco più su dei piedi (#246), come collideWithStage
+	if s.onGround and was_on_ground and s.drop == 0.0:
+		for p in platforms:
+			if p.get("y2") == null or not (s.x + half > float(p.x) and s.x - half < float(p.x) + float(p.width)):
+				continue
+			var ry := surface_y(p, s.x)
+			if ry < s.y and s.y - ry <= snap_px(p, fighter):
+				_land(s, ry)
+				break
+	if not s.onGround and s.vy >= 0:
 		for p in platforms:
 			var px := float(p.x)
 			if not (s.x + half > px and s.x - half < px + float(p.width)):
 				continue
 			var py := surface_y(p, s.x)
-			# Sull'arco (#244) chi ci cammina segue la curva, come collideWithStage
-			var follow: bool = float(p.get("arch", 0)) != 0.0 and was_on_ground and absf(s.y - py) <= float(fighter.archSnapPx)
+			if s.drop > 0:
+				# Durante la discesa con giù, solo una rampa o un arco chiaramente più in basso ti prende (#246)
+				if curved(p) and py > float(s.dropFromY) + snap_px(p, fighter) and prev_y <= py and s.y >= py:
+					_land(s, py)
+					break
+				continue
+			# Sull'arco (#244) e sulle rampe (#246) chi ci cammina segue la superficie, come collideWithStage
+			var follow: bool = curved(p) and was_on_ground and absf(s.y - py) <= snap_px(p, fighter)
 			if (prev_y <= py and s.y >= py) or follow:
 				_land(s, py)
 				break
@@ -313,11 +329,26 @@ func _land(s: Dictionary, y: float) -> void:
 	s.helpless = false
 
 
-# Come platformSurfaceY() in physics/stage.ts: superficie di una piattaforma sottile, dritta o ad arco (#244)
+# Come platformSurfaceY() in physics/stage.ts: superficie di una piattaforma sottile, dritta,
+# ad arco (#244) o inclinata da y a sinistra a y2 a destra (#246)
 static func surface_y(p: Dictionary, x: float) -> float:
+	if p.get("y2") != null:
+		var t := clampf((x - float(p.x)) / float(p.width), 0.0, 1.0)
+		return float(p.y) + (float(p.y2) - float(p.y)) * t
 	var arch := float(p.get("arch", 0))
 	if arch == 0.0:
 		return float(p.y)
 	var half := float(p.width) / 2.0
 	var u := clampf((x - (float(p.x) + half)) / half, -1.0, 1.0)
 	return float(p.y) - arch * (1.0 - u * u)
+
+
+# Piattaforme non dritte (ad arco o inclinate): chi ci cammina segue la superficie
+static func curved(p: Dictionary) -> bool:
+	return float(p.get("arch", 0)) != 0.0 or p.get("y2") != null
+
+
+# Come snapPx() in physics/stage.ts: sulle rampe l'aggancio cresce con la pendenza
+static func snap_px(p: Dictionary, f: Dictionary) -> float:
+	var slope := absf(float(p.y2) - float(p.y)) / float(p.width) if p.get("y2") != null else 0.0
+	return float(f.archSnapPx) + slope * float(f.slopeSnapStepPx)

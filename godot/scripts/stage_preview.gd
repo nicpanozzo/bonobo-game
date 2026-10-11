@@ -31,8 +31,8 @@ func _draw() -> void:
 	for s in spec.solids:
 		draw_rect(Rect2(o + Vector2(s.x, s.y) * k, Vector2(s.width, s.height) * k), _c(spec.colors.solid))
 	for p in spec.platforms:
-		if float(p.get("arch", 0)) != 0.0:
-			draw_colored_polygon(WorldView.arch_polygon(p, 2.0 / k, k, o), _c(spec.colors.platform)) # ponte ad arco (#244)
+		if PredictMovement.curved(p):
+			draw_colored_polygon(WorldView.arch_polygon(p, 2.0 / k, k, o), _c(spec.colors.platform)) # ponte ad arco (#244) o scala (#246)
 		else:
 			draw_rect(Rect2(o + Vector2(p.x, p.y) * k, Vector2(p.width * k, 2)), _c(spec.colors.platform))
 	# Ascensori (al primo punto, in giallo) e trappole (in rosso), #14
