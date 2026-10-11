@@ -288,7 +288,7 @@ func on_event(e: Dictionary) -> void:
 				_air_jumps[e.id] = Time.get_ticks_msec()
 		"ko":
 			_shake = game.effects.shakeKo
-			_sparks.append({"x": clampf(e.x, 0, game.world.width), "y": clampf(e.y, 0, game.world.height), "age": 0.0, "size": 90.0, "color": Color(1, 0.4, 0.3)})
+			_sparks.append({"x": clampf(e.x, 0, stage_width()), "y": clampf(e.y, 0, game.world.height), "age": 0.0, "size": 90.0, "color": Color(1, 0.4, 0.3)})
 			# Il raggio prende il colore di chi è uscito, come in Smash
 			var p: Variant = buffer.sample(e.id, Time.get_ticks_msec())
 			var col: Color = Access.color(p.color) if p != null else Color(1, 0.4, 0.3)
@@ -341,6 +341,10 @@ func _draw() -> void:
 	var w: float = game.world.width
 	var h: float = game.world.height
 	draw_rect(Rect2(-400, -400, stage_width() + 800, h + 800), _color(stage.colors.sky))
+	# Nelle arene grandi (#240) la telecamera si allontana fino alle zone di espulsione: il cielo arriva fin lì
+	var bz: Variant = stage.get("blastZone")
+	if bz is Dictionary:
+		draw_rect(Rect2(bz.left - 200, bz.top - 200, bz.right - bz.left + 400, bz.bottom - bz.top + 400), _color(stage.colors.sky))
 	for l in _layers:
 		_draw_layer(l)
 	for s in stage.solids:

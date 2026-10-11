@@ -82,6 +82,14 @@ export interface StageArt {
   dir?: string; // cartella in public/assets/stages/ se diversa dall'id dell'arena (sfondi condivisi)
 }
 
+// Zoom della telecamera per un'arena (#240): un'arena più larga dello schermo si allontana di più
+// per mostrarsi intera quando i lottatori si sparpagliano. Lo zoom più lontano resta comunque quello
+// che riempie le zone di espulsione, se è più vicino di minZoom.
+export interface StageCamera {
+  minZoom?: number; // più piccolo = più lontano (CAMERA.minZoom se manca)
+  maxZoom?: number; // quanto si avvicina quando i lottatori sono vicini (CAMERA.maxZoom se manca)
+}
+
 export interface StageSpec {
   id: string;
   name: string;
@@ -91,8 +99,9 @@ export interface StageSpec {
   spawns: { x: number; y: number }[]; // punti di partenza, uno per giocatore (y = piedi), in coppie simmetriche
   respawn: { x: number; y: number }; // dove si ricompare dopo aver perso una vita
   colors: { sky: number; solid: number; solidEdge: number; platform: number }; // finché non c'è uno sfondo disegnato
+  width?: number; // larghezza del mondo se più larga dello schermo (#240): nelle arene la telecamera inquadra tutti, nella Corsa segue
+  camera?: StageCamera; // zoom della telecamera per quest'arena (#240): senza, valgono CAMERA.minZoom e maxZoom
   // Solo per i percorsi della modalità Corsa (#57)
-  width?: number; // larghezza del mondo se più larga dello schermo: la telecamera segue
   checkpoints?: { x: number; y: number }[]; // dove si ricompare dopo una caduta (y = superficie)
   goal?: Rect; // chi lo tocca vince
   // Elementi dinamici (#14 passo 4)

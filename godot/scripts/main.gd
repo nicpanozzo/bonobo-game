@@ -512,7 +512,9 @@ func _process(_delta: float) -> void:
 		hud.rematch_key = "Tocca lo schermo"
 	if playing:
 		_send_input()
-		if world.stage_width() > game.world.width:
+		# Solo i percorsi della Corsa (con il traguardo) seguono il proprio lottatore; le arene,
+		# anche quelle più larghe dello schermo (#240), inquadrano tutti
+		if world.stage.get("goal") != null:
 			_follow(_delta)
 		else:
 			_frame_fighters(_delta)
@@ -539,24 +541,10 @@ func _follow(delta: float) -> void:
 func _frame_fighters(delta: float) -> void:
 	var cam: Dictionary = game.camera
 	var screen := Vector2(game.world.width, game.world.height)
-	var bz: Dictionary = world.stage.get("blastZone", {"left": 0, "right": screen.x, "top": 0, "bottom": screen.y})
-	var limits := Rect2(bz.left, bz.top, bz.right - bz.left, bz.bottom - bz.top)
-	# Zoom più lontano possibile: quello che riempie le zone di espulsione, o minZoom se è più vicino
-	var far: float = maxf(cam.minZoom, maxf(screen.x / limits.size.x, screen.y / limits.size.y))
-
-	var box := Rect2()
-	var first := true
-	for pos in world.alive_positions():
-		# Il lottatore va dai piedi (pos) alla testa
-		var r := Rect2(pos.x - game.fighter.width / 2.0, pos.y - game.fighter.height, game.fighter.width, game.fighter.height)
-		box = r if first else box.merge(r)
-		first = false
-	var target_zoom := 1.0
-	var center := screen / 2
-	if not first:
-		box = box.grow(cam.margin)
-		target_zoom = clampf(minf(screen.x / box.size.x, screen.y / box.size.y), far, cam.maxZoom)
-		center = box.get_center()
+	var aim := framing(world.stage, cam, game, world.alive_positions())
+	var limits: Rect2 = aim.limits
+	var target_zoom: float = aim.zoom
+	var center: Vector2 = aim.center
 
 	var k := 1.0 - exp(-delta * 1000.0 / float(cam.smoothingMs))
 	var zoom := lerpf(camera.zoom.x, target_zoom, k)
@@ -568,6 +556,34 @@ func _frame_fighters(delta: float) -> void:
 	c.y = clampf(c.y, limits.position.y + size.y / 2, limits.end.y - size.y / 2)
 	camera.zoom = Vector2(zoom, zoom)
 	camera.position = c - size / 2
+
+
+# Dove punta la telecamera di un'arena: zoom e centro per inquadrare i lottatori vivi (posizioni ai piedi),
+# e il rettangolo delle zone di espulsione da cui la vista non esce. L'arena può chiedere il suo
+# zoom (camera.minZoom e maxZoom, #240): le arene più larghe dello schermo si allontanano di più.
+static func framing(stage: Dictionary, cam: Dictionary, game: Dictionary, positions: Array) -> Dictionary:
+	var screen := Vector2(game.world.width, game.world.height)
+	var width := float(stage.get("width", screen.x))
+	var bz: Dictionary = stage.get("blastZone", {"left": 0, "right": width, "top": 0, "bottom": screen.y})
+	var limits := Rect2(bz.left, bz.top, bz.right - bz.left, bz.bottom - bz.top)
+	var own: Dictionary = stage.get("camera") if stage.get("camera") is Dictionary else {}
+	var min_zoom: float = own.get("minZoom", cam.minZoom)
+	var max_zoom: float = own.get("maxZoom", cam.maxZoom)
+	# Zoom più lontano possibile: quello che riempie le zone di espulsione, o minZoom se è più vicino
+	var far: float = maxf(min_zoom, maxf(screen.x / limits.size.x, screen.y / limits.size.y))
+	var box := Rect2()
+	var first := true
+	for pos in positions:
+		# Il lottatore va dai piedi (pos) alla testa
+		var r := Rect2(pos.x - game.fighter.width / 2.0, pos.y - game.fighter.height, game.fighter.width, game.fighter.height)
+		box = r if first else box.merge(r)
+		first = false
+	if first:
+		# Nessuno in campo: l'arena intera, al centro della sua larghezza
+		return {"zoom": clampf(minf(1.0, screen.x / width), far, max_zoom), "center": Vector2(width / 2.0, screen.y / 2.0), "limits": limits}
+	box = box.grow(cam.margin)
+	var zoom := clampf(minf(screen.x / box.size.x, screen.y / box.size.y), far, max_zoom)
+	return {"zoom": zoom, "center": box.get_center(), "limits": limits}
 
 
 func _unhandled_key_input(event: InputEvent) -> void:

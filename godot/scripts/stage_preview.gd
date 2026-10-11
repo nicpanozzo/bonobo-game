@@ -17,13 +17,16 @@ func _draw() -> void:
 		var s := font.get_string_size("?", HORIZONTAL_ALIGNMENT_LEFT, -1, 40)
 		draw_string(font, Vector2((size.x - s.x) / 2, size.y / 2 + 14), "?", HORIZONTAL_ALIGNMENT_LEFT, -1, 40, UI.ACCENT)
 		return
-	# L'arena intera ci sta tutta, centrata nel riquadro
-	var k := minf(size.x / WORLD_WIDTH, size.y / WORLD_HEIGHT)
-	var o := Vector2((size.x - WORLD_WIDTH * k) / 2, (size.y - WORLD_HEIGHT * k) / 2)
+	# L'arena intera ci sta tutta, centrata nel riquadro, anche se è più larga dello schermo (#240)
+	var w := float(spec.get("width", WORLD_WIDTH))
+	var k := minf(size.x / w, size.y / WORLD_HEIGHT)
+	var o := Vector2((size.x - w * k) / 2, (size.y - WORLD_HEIGHT * k) / 2)
 	draw_rect(r, _c(spec.colors.sky))
 	var preview := preview_texture(spec)
 	if preview:
-		draw_texture_rect(preview, Rect2(o, Vector2(WORLD_WIDTH, WORLD_HEIGHT) * k), false)
+		# L'immagine disegnata è 16:9 e riempie il riquadro
+		var ph := minf(size.y, size.x * 9.0 / 16.0)
+		draw_texture_rect(preview, Rect2((size.x - ph * 16.0 / 9.0) / 2, (size.y - ph) / 2, ph * 16.0 / 9.0, ph), false)
 	for s in spec.solids:
 		draw_rect(Rect2(o + Vector2(s.x, s.y) * k, Vector2(s.width, s.height) * k), _c(spec.colors.solid))
 	for p in spec.platforms:

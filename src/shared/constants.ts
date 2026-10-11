@@ -334,6 +334,7 @@ export const CAMERA = {
   minZoom: 0.7, // più piccolo = più lontano; 1 = l'arena intera come prima
   maxZoom: 1.3, // quanto si avvicina quando i lottatori sono vicini
   smoothingMs: 220, // più alto = movimenti più morbidi e più lenti
+  stageMinZoomFloor: 0.45, // lo zoom più lontano che un'arena può chiedere con camera.minZoom (#240): oltre, i lottatori diventano troppo piccoli
 };
 
 // Effetti del client (#15 passi 2 e 3): solo grafica, partono dagli eventi dello snapshot.
