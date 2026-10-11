@@ -24,6 +24,8 @@ var audio: Node2D
 var rumble: Rumble
 var hud: Control
 var touch: TouchControls # levetta e tasti a schermo per il telefono (E18)
+var _rotate_hint: Label # "gira il telefono", sopra tutto, quando si tiene il telefono in verticale (E18)
+var _fullscreen_asked := false
 var lobby: Control
 var title: Control # schermata del titolo (E14)
 var connecting: Control # schermata "Mi collego..." (E14), null quando si è dentro
@@ -87,8 +89,24 @@ func _ready() -> void:
 	layer.add_child(touch)
 	touch.pause_pressed.connect(func(): if not is_instance_valid(pause_menu): _open_pause())
 	touch.free_tap.connect(func(): socket.emit("rematch")) # come R: il server lo accetta solo a partita finita
+	touch.extra_pressed.connect(func(extra: String):
+		if extra == "panel" and is_instance_valid(training):
+			training.toggle())
 	ui_layer.layer = 2 # menu sopra l'HUD
 	add_child(ui_layer)
+	var top := CanvasLayer.new()
+	top.layer = 3
+	add_child(top)
+	_rotate_hint = UI.label("Gira il telefono\nin orizzontale")
+	_rotate_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_rotate_hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_rotate_hint.add_theme_font_size_override("font_size", 110) # in verticale lo schermo da 1280 diventa largo un terzo
+	var dark := StyleBoxFlat.new()
+	dark.bg_color = Color(0.05, 0.05, 0.08, 0.94)
+	_rotate_hint.add_theme_stylebox_override("normal", dark)
+	_rotate_hint.visible = false
+	top.add_child(_rotate_hint)
+	_rotate_hint.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	# Prima volta: nome, comandi e una prova col manichino (E14). Con un link a una stanza si entra e basta
 	if not settings.first_run_done and not (url_params.has("room") and url_params.has("name")):
 		_show_first_run()
@@ -466,7 +484,10 @@ func _process(_delta: float) -> void:
 	if playing and _last_snapshot > 0 and Time.get_ticks_msec() - _last_snapshot > int(game.reconnect.snapshotSilenceMs):
 		_last_snapshot = 0
 		socket.drop()
-	touch.visible = playing and touch.active and not is_instance_valid(pause_menu)
+	var panel_open: bool = is_instance_valid(training) and training.is_open()
+	touch.visible = playing and touch.active and not is_instance_valid(pause_menu) and not panel_open
+	touch.extras = {"panel": "Pannello"} if is_instance_valid(training) else {}
+	_rotate_hint.visible = touch.active and TouchControls.portrait(Vector2(DisplayServer.window_get_size()))
 	if touch.active and playing:
 		hud.rematch_key = "Tocca lo schermo"
 	if playing:
@@ -562,6 +583,9 @@ func _on_joy_changed(device: int, connected: bool) -> void:
 
 # L'HUD mostra il tasto di rivincita del dispositivo usato per ultimo
 func _input(event: InputEvent) -> void:
+	if event is InputEventScreenTouch and event.pressed and not _fullscreen_asked:
+		_fullscreen_asked = true
+		_go_fullscreen()
 	var pad: bool = event is InputEventJoypadButton or (event is InputEventJoypadMotion and absf(event.axis_value) > settings.stick_deadzone)
 	if pad or event is InputEventKey:
 		var kind := Settings.pad_kind(Input.get_joy_name(event.device))
@@ -577,6 +601,22 @@ func _unhandled_input(event: InputEvent) -> void:
 		_open_pause()
 	elif b.button_index == REMATCH_PAD_BUTTON:
 		socket.emit("rematch") # il server lo accetta solo a partita finita
+
+
+# Al primo tocco nel browser (E18): schermo intero e, dove il browser lo permette (Android), bloccato in orizzontale.
+# Il browser lo concede solo subito dopo un gesto della persona, per questo si chiede qui e non all'avvio.
+func _go_fullscreen() -> void:
+	if not OS.has_feature("web"):
+		return
+	JavaScriptBridge.eval("""
+		(function () {
+			var el = document.documentElement;
+			if (!el.requestFullscreen || document.fullscreenElement) return;
+			el.requestFullscreen().then(function () {
+				if (screen.orientation && screen.orientation.lock) return screen.orientation.lock("landscape");
+			}).catch(function () {});
+		})();
+	""", true)
 
 
 # F11: schermo intero e ritorno, sia nell'app sia nel browser

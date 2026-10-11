@@ -9,6 +9,7 @@ extends Control
 
 signal pause_pressed
 signal free_tap # un tocco fuori dai comandi: a partita finita chiede la rivincita (main.gd)
+signal extra_pressed(name: String) # un tasto in più, es. "panel" per il pannello dell'allenamento
 
 # Coordinate nello schermo da 1280x720 del gioco (project.godot), centro e raggio di ogni tasto
 const BUTTONS := {
@@ -21,17 +22,27 @@ const BUTTONS := {
 	"supreme": {"pos": Vector2(1210, 345), "r": 36.0, "label": "Suprema"},
 }
 const PAUSE := {"pos": Vector2(1236, 42), "r": 30.0} # in alto a destra, lontano dal tempo e dalla barra della suprema
+const EXTRA_RECT := Rect2(1110, 92, 152, 46) # sotto la pausa: il primo tasto in più (gli altri scendono)
 const STICK_HOME := Vector2(190, 560) # dove si disegna la levetta a riposo
 const STICK_AREA_X := 560.0 # a sinistra di qui un tocco prende la levetta
 const STICK_RADIUS := 110.0 # spostamento che conta come levetta tutta piegata
 const STICK_DEAD := 0.35 # sotto questa frazione del raggio, in orizzontale, non si va da nessuna parte
 const STICK_VERTICAL := 0.55 # su e giù vogliono una spinta più decisa, per non attaccare in su correndo
 
-var active := false # mostrati e letti: dopo un tocco, finché non si usa tastiera o pad
+var active := false: # mostrati e letti: dopo un tocco, finché non si usa tastiera o pad
+	set(v):
+		if v != active:
+			active = v
+			queue_redraw()
 var _stick_finger := -1
 var _stick_origin := STICK_HOME
 var _stick_vec := Vector2.ZERO # spostamento del pollice dall'origine, al massimo STICK_RADIUS
 var _fingers: Dictionary = {} # dito -> nome del tasto che tiene
+var extras: Dictionary = {}: # tasti in più, nome -> scritta (main.gd li mette e li toglie)
+	set(v):
+		if v != extras:
+			extras = v
+			queue_redraw()
 
 
 func _ready() -> void:
@@ -47,7 +58,8 @@ func _input(event: InputEvent) -> void:
 			active = true
 		elif (event is InputEventKey or event is InputEventJoypadButton) and event.is_pressed():
 			active = false
-		release_all()
+		if _stick_finger >= 0 or not _fingers.is_empty():
+			release_all()
 		return
 	if handle(event):
 		get_viewport().set_input_as_handled()
@@ -95,6 +107,15 @@ func release_all() -> void:
 	queue_redraw()
 
 
+static func extra_rect(i: int) -> Rect2:
+	return Rect2(EXTRA_RECT.position + Vector2(0, i * (EXTRA_RECT.size.y + 10)), EXTRA_RECT.size)
+
+
+# Telefono in verticale: lo schermo da 16:9 diventa una striscia, meglio chiedere di girarlo
+static func portrait(window: Vector2) -> bool:
+	return window.y > window.x
+
+
 # Il tasto sotto un punto, o "" se non ce n'è
 static func button_at(pos: Vector2) -> String:
 	for action in BUTTONS:
@@ -108,6 +129,12 @@ func _press(finger: int, pos: Vector2) -> bool:
 	if pos.distance_to(PAUSE.pos) <= PAUSE.r * 1.3:
 		pause_pressed.emit()
 		return true
+	var i := 0
+	for extra in extras:
+		if extra_rect(i).grow(6).has_point(pos):
+			extra_pressed.emit(extra)
+			return true
+		i += 1
 	var action := button_at(pos)
 	if action != "":
 		_fingers[finger] = action
@@ -167,6 +194,14 @@ func _draw() -> void:
 		var size := 15 if b.r < 45.0 else 17
 		var w := font.get_string_size(b.label, HORIZONTAL_ALIGNMENT_CENTER, -1, size).x
 		draw_string(font, b.pos + Vector2(-w / 2.0, size * 0.35), b.label, HORIZONTAL_ALIGNMENT_CENTER, -1, size, Color(1, 1, 1, 0.85))
+	var i := 0
+	for extra in extras:
+		var r := extra_rect(i)
+		draw_rect(r, Color(1, 1, 1, 0.14))
+		draw_rect(r, Color(1, 1, 1, 0.5), false, 2.0)
+		var w := font.get_string_size(extras[extra], HORIZONTAL_ALIGNMENT_CENTER, -1, 17).x
+		draw_string(font, r.get_center() + Vector2(-w / 2.0, 6), extras[extra], HORIZONTAL_ALIGNMENT_CENTER, -1, 17, Color(1, 1, 1, 0.85))
+		i += 1
 	# Pausa: due sbarrette
 	draw_circle(PAUSE.pos, PAUSE.r, Color(1, 1, 1, 0.14))
 	for dx in [-7.0, 7.0]:
