@@ -322,6 +322,7 @@ export const NET = {
   interpolationDelayMs: 80, // circa due snapshot e mezzo a 30/s
   teleportDistance: 300, // pixel: oltre questo salto (es. respawn) non si interpola
   bufferSize: 30, // snapshot tenuti in memoria (1 secondo)
+  ownExtrapolateMaxMs: 50, // E17: il proprio lottatore segue l'ultimo snapshot, spinto avanti con la sua velocità al massimo di tanto
 };
 
 // Telecamera (#12): nelle arene inquadra tutti i lottatori vivi e zooma quando si allontanano.

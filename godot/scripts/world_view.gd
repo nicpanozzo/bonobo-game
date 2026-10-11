@@ -98,6 +98,7 @@ func reset() -> void:
 	buffer.delay_ms = game.net.interpolationDelayMs
 	buffer.teleport_distance = game.net.teleportDistance
 	buffer.size = int(game.net.bufferSize)
+	buffer.own_extrapolate_ms = float(game.net.get("ownExtrapolateMaxMs", 0.0))
 	player_ids = []
 	positions = {}
 	_anims = {}
@@ -178,6 +179,7 @@ func stage_width() -> float:
 
 
 func on_snapshot(snap: Dictionary) -> void:
+	buffer.own_id = my_id # il proprio lottatore senza ritardo d'interpolazione (E17)
 	buffer.push(snap.t, Time.get_ticks_msec(), snap.players, float(snap.get("stageMs", 0)))
 	player_ids = snap.players.map(func(p): return p.id)
 	# Colore, personaggio e id arrivano solo con lo snapshot: le varianti non cambiano tra un frame e l'altro

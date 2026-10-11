@@ -226,7 +226,8 @@
   "net": {
     "interpolationDelayMs": 80,
     "teleportDistance": 300,
-    "bufferSize": 30
+    "bufferSize": 30,
+    "ownExtrapolateMaxMs": 50
   },
   "reconnect": {
     "retryDelaysMs": [
