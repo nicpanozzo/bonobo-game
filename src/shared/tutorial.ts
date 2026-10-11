@@ -27,7 +27,7 @@ export const LESSONS: Lesson[] = [
   { id: "colpo", title: "Colpisci lo sparring", text: "Avvicinati al compagno di allenamento e colpiscilo.", actions: ["light", "heavy"], event: "hit", who: "attackerId" },
   { id: "schivata", title: "Schivata", text: "Per un attimo nessuno ti può colpire.", actions: ["dodge"], event: "dodge", who: "id" },
   { id: "scudo", title: "Scudo", text: "Tieni lo scudo quando lo sparring attacca: para il colpo.", actions: ["shield"], event: "shield", who: "id" },
-  { id: "recupero", title: "Recupero", text: "In aria, attacco leggero tenendo su: ti riporta verso l'alto.", actions: ["up", "light"], event: "attack", who: "id", match: { kind: "recovery" } },
+  { id: "recupero", title: "Recupero", text: "In aria, attacco pesante tenendo su: ti riporta verso l'alto.", actions: ["up", "heavy"], event: "attack", who: "id", match: { kind: "recovery" } },
   { id: "bordo", title: "Aggrappati al bordo", text: "Cadi oltre il bordo del palco e torna verso lo spigolo: ti ci aggrappi.", actions: ["left", "right"], event: "ledgeGrab", who: "id" },
   { id: "fuori", title: "Buttalo fuori", text: "Più la percentuale è alta più si vola: lancia lo sparring fuori dall'arena.", actions: ["heavy"], event: "ko", who: "byId" },
 ];
