@@ -20,6 +20,10 @@ function checkStage(stage: StageSpec) {
   }
   assert.ok(stage.spawns.length >= MAX_PLAYERS_PER_ROOM, `${stage.id}: una partenza per giocatore`);
   assert.deepEqual(cameraProblems(stage), [], stage.id);
+  // Piattaforme ad arco (#244): una curva dolce, che si cammina senza staccarsi (pendenza ai bordi al massimo 1:2)
+  for (const p of stage.platforms) {
+    if (p.arch !== undefined) assert.ok(p.arch > 0 && p.arch <= p.width / 8, `${stage.id}: arco di ${p.arch} troppo ripido per una piattaforma larga ${p.width}`);
+  }
 
   // Chi parte da ogni punto di partenza resta fermo sul palco
   const ctx: PhysicsContext = { stage, events: [] };

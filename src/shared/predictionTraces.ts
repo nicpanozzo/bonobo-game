@@ -23,6 +23,8 @@ const CASES: { stage: StageSpec; characterId: string; seed: number }[] = [
   { stage: getStage("isole"), characterId: "orsoblu", seed: 19 },
   { stage: getStage("palestra"), characterId: "elvedeo", seed: 48 },
   { stage: generateStage(7), characterId: "default", seed: 34 },
+  // Il palco con un ponte ad arco (#244) al posto delle due piattaforme basse: si cammina sulla curva
+  { stage: { ...getStage("palco"), id: "palco-arco", platforms: [{ x: 340, y: 420, width: 600, arch: 30 }, { x: 540, y: 290, width: 200 }] }, characterId: "bonobot", seed: 150 }, // seme scelto perché cammina a lungo sulla curva
 ];
 
 export interface TraceState {

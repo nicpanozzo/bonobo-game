@@ -33,6 +33,7 @@ export const FIGHTER = {
   coyoteMs: 80, // ms dopo essere scesi dal bordo camminando in cui il salto vale ancora come salto da terra
   shortHopCut: 0.45, // lasciando il salto mentre si sale la velocità verso l'alto si moltiplica per questo: salto corto
   hitstunDriftAccel: 700, // pixel/s²: tenendo una direzione mentre si vola via si corregge un po' la traiettoria
+  archSnapPx: 8, // pixel: camminando su una piattaforma ad arco (#244) si resta attaccati alla curva se il dislivello in un passo è entro questo
 };
 
 // Scatto con doppio tocco (#199): numeri provvisori, da rivedere al playtest (#22).

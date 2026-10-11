@@ -14,8 +14,9 @@ export interface Rect {
 
 export interface ThinPlatform {
   x: number; // bordo sinistro
-  y: number; // superficie
+  y: number; // superficie (alle estremità, se è ad arco)
   width: number;
+  arch?: number; // piattaforma ad arco (#244): pixel di cui sale la superficie al centro, come un ponte
 }
 
 // Piattaforma sottile che si muove (ascensore, montacarichi). La posizione dipende solo dal

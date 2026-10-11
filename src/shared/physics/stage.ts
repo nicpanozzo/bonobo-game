@@ -4,6 +4,17 @@ import { COURSE, FIGHTER, RESPAWN_INVULNERABLE_MS, RESPAWN_MS, SUPREME } from ".
 import { landOnMover } from "./elements";
 import type { Fighter, PhysicsContext } from "./fighter";
 import { resetShield } from "./shield";
+import type { ThinPlatform } from "../stages";
+
+// Superficie di una piattaforma sottile al punto x (#244): dritta, o ad arco come un ponte,
+// alta y alle estremità e arch pixel più su al centro. Il port della predizione (predict/movement.gd)
+// e il disegno (world_view.gd) rifanno lo stesso calcolo.
+export function platformSurfaceY(p: ThinPlatform, x: number): number {
+  if (!p.arch) return p.y;
+  const half = p.width / 2;
+  const u = Math.max(-1, Math.min(1, (x - (p.x + half)) / half));
+  return p.y - p.arch * (1 - u * u);
+}
 
 export function collideWithStage(f: Fighter, prevY: number, ctx: PhysicsContext, dtMs = 0): void {
   const half = FIGHTER.width / 2;
@@ -36,8 +47,12 @@ export function collideWithStage(f: Fighter, prevY: number, ctx: PhysicsContext,
   if (!f.onGround && f.vy >= 0 && f.dropTimer === 0) {
     for (const p of ctx.stage.platforms) {
       const over = f.x + half > p.x && f.x - half < p.x + p.width;
-      if (over && prevY <= p.y && f.y >= p.y) {
-        land(f, p.y);
+      if (!over) continue;
+      const sy = platformSurfaceY(p, f.x);
+      // Sull'arco (#244) chi ci cammina segue la curva, in salita e in discesa
+      const follow = !!p.arch && wasOnGround && Math.abs(f.y - sy) <= FIGHTER.archSnapPx;
+      if ((prevY <= sy && f.y >= sy) || follow) {
+        land(f, sy);
         break;
       }
     }

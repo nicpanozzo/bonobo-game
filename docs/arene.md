@@ -61,6 +61,14 @@ blastZone: { left: -300, right: 2220, top: -420, bottom: 1000 },
 
 I percorsi della Corsa sono larghi anche loro, ma lì la telecamera segue il proprio lottatore: la differenza è il traguardo (`goal`).
 
+### Piattaforme ad arco (`arch`): un ponte curvo
+
+Una piattaforma sottile con `arch` ha la superficie curva, come un ponte: alle estremità è alta `y`, al centro sale di `arch` pixel. Chi ci cammina segue la curva, e anche gli oggetti ci si appoggiano sopra; per il resto è una piattaforma sottile come le altre (si attraversa dal basso, si scende con giù). Alle estremità ha la stessa `y` dei blocchi vicini, così ci si arriva camminando. La curva deve restare dolce: `arch` al massimo un ottavo della larghezza, e `npm test` lo controlla.
+
+```ts
+{ x: 720, y: 520, width: 480, arch: 25 } // il ponte di Prato della Valle (#230), tra due piazze a y 520
+```
+
 ## Gli elementi che esistono
 
 ### Piattaforma mobile (`movers`): ascensore, navetta
