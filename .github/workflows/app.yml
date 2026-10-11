@@ -177,7 +177,7 @@ jobs:
           Il gioco da scaricare. Apri l'app, scrivi il nome, incolla nel campo **Server** il link della serata che gira sul Discord e premi **Gioca**.
 
           - **Windows:** scompatta lo zip e apri `bonobo-game.exe`. Se Windows dice "PC protetto", clicca "Ulteriori informazioni" e poi "Esegui comunque".
-          - **Mac:** scompatta lo zip e apri **Bonobo Game**. La prima volta il Mac la blocca perché non è firmata da Apple: vai in Impostazioni di Sistema → Privacy e sicurezza → "Apri comunque" (sui Mac più vecchi basta tasto destro → Apri). Se dice che è danneggiata, nel Terminale: `xattr -cr ~/Downloads/"Bonobo Game.app"`.
+          - **Mac:** il modo senza blocchi è incollare nel Terminale `curl -fsSL https://nicpanozzo.github.io/bonobo-game/mac.sh | bash`: scarica l'app, la mette in Applicazioni e la apre. Lo zip scaricato dal browser invece il Mac lo blocca ("Apple could not verify..."), perché il gioco non è notarizzato da Apple: in quel caso nel Terminale `xattr -cr "/Applications/Bonobo Game.app"`, oppure provala ad aprire una volta e poi Impostazioni di Sistema → Privacy e sicurezza → "Apri comunque".
           - **Linux:** scompatta lo zip e apri `bonobo-game.x86_64`.
 
           Senza installare niente si gioca anche dal browser: https://nicpanozzo.github.io/bonobo-game/godot/
