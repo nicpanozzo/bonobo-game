@@ -75,6 +75,12 @@ const ACCESS_DEFAULTS := {
 	"colorblind": false, # palette per daltonici
 	"text_size": 0, # indice in Access.TEXT_SCALES
 }
+# Comandi touch (E18): si applicano con TouchControls.configure()
+const TOUCH_DEFAULTS := {
+	"size": 1, # indice in TouchControls.SIZES
+	"opacity": 1, # indice in TouchControls.OPACITIES
+	"left_handed": false, # levetta a destra e tasti a sinistra
+}
 
 var master := 0.8
 var sfx := 0.7
@@ -89,6 +95,7 @@ var profile := {} # name, room, char, stage, rules, server
 var first_run_done := false # primo avvio guidato (E14) già fatto o saltato: Ripristina non lo rimette
 var video := {} # come VIDEO_DEFAULTS
 var access := {} # come ACCESS_DEFAULTS
+var touch := {} # come TOUCH_DEFAULTS
 var medals := {} # sfide (E15): id → {"medal": 1-3, "best": punteggio migliore}, sezione [medals]
 
 var _defaults := {}
@@ -128,6 +135,10 @@ func _init(audio_defaults: Dictionary, path := PATH) -> void:
 		var v: Variant = cfg.get_value("access", k) if cfg.has_section_key("access", k) else null
 		if typeof(v) == typeof(ACCESS_DEFAULTS[k]):
 			access[k] = v
+	for k in TOUCH_DEFAULTS:
+		var v: Variant = cfg.get_value("touch", k) if cfg.has_section_key("touch", k) else null
+		if typeof(v) == typeof(TOUCH_DEFAULTS[k]):
+			touch[k] = v
 	# Un'azione nuova che non era salvata (es. lo scudo) prende i suoi tasti di default anche se
 	# le preferenze vecchie li davano a un'altra: un tasto fa una sola azione
 	for a in ACTIONS:
@@ -157,6 +168,7 @@ func reset(notify := true) -> void:
 	rumble = Rumble.STRONG
 	video = VIDEO_DEFAULTS.duplicate()
 	access = ACCESS_DEFAULTS.duplicate()
+	touch = TOUCH_DEFAULTS.duplicate()
 	reset_bindings(false, false)
 	reset_bindings(true, false)
 	if notify:
@@ -188,6 +200,8 @@ func save() -> void:
 		cfg.set_value("video", k, video[k])
 	for k in access:
 		cfg.set_value("access", k, access[k])
+	for k in touch:
+		cfg.set_value("touch", k, touch[k])
 	cfg.set_value("profile", "last", profile)
 	cfg.set_value("first_run", "done", first_run_done)
 	for id in medals:

@@ -93,3 +93,25 @@ func test_tasto_in_piu_per_il_pannello() -> void:
 func test_telefono_in_verticale() -> void:
 	runner.check(TouchControls.portrait(Vector2(390, 844)), "390x844 è in verticale")
 	runner.check(not TouchControls.portrait(Vector2(844, 390)), "844x390 è in orizzontale")
+
+
+# E18 passo 3
+func test_mancini_e_tasti_grandi() -> void:
+	var t := TouchControls.new()
+	t.configure({"size": 2, "opacity": 1, "left_handed": true})
+	var jump := t.button_pos("jump")
+	runner.check(jump.x < 640.0, "per i mancini il salto è a sinistra: %s" % [jump])
+	runner.check(t.handle(_touch(0, jump)) and t.pressed("jump"), "e si preme lì")
+	runner.check(t.handle(_touch(1, Vector2(1000, 550))), "la levetta è a destra")
+	t.handle(_drag(1, Vector2(900, 550)))
+	runner.check(t.pressed("left"), "e va a sinistra")
+	var normal := TouchControls.new()
+	runner.check(not normal.handle(_touch(0, jump)) or not normal.pressed("jump"), "senza opzioni il salto non è a sinistra")
+	t.free()
+	normal.free()
+
+
+func test_guide_col_touch() -> void:
+	runner.check(TouchControls.hint("jump") == "tasto Salto", TouchControls.hint("jump"))
+	runner.check(TouchControls.hint("up") == "levetta in su", TouchControls.hint("up"))
+	runner.check(TouchControls.hint("taunt") != "", "la provocazione dice che non c'è")

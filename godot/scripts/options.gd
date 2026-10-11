@@ -36,6 +36,7 @@ func setup(s: Settings) -> void:
 	top.add_child(title)
 	_box.add_child(top)
 	var pages := [["audio", "Audio", _audio_page()], ["keys", "Comandi", _keys_page()], ["video", "Video", _video_page()]]
+	pages.append(["touch", "Touch", _touch_page()])
 	pages.append(["access", "Accessibilità", _access_page()])
 	for page in pages:
 		var b := UI.button(page[1], func(): _show_page(page[0]))
@@ -130,6 +131,19 @@ func _video_page() -> VBoxContainer:
 		page.add_child(_choice_row("FPS massimi", Video.FPS_NAMES, settings.video.max_fps, func(i): save.call("max_fps", i)))
 	page.add_child(UI.toggle("Scie e polvere", settings.video.effects, func(on): save.call("effects", on)))
 	page.add_child(UI.toggle("Hitbox dei colpi", settings.video.hitboxes, func(on): save.call("hitboxes", on)))
+	return page
+
+
+# Comandi a schermo per il telefono (E18): valgono dalla prossima volta che compaiono
+func _touch_page() -> VBoxContainer:
+	var page := VBoxContainer.new()
+	var save := func(key: String, value: Variant) -> void:
+		settings.touch[key] = value
+		settings.save()
+	page.add_child(_choice_row("Tasti", TouchControls.SIZE_NAMES, settings.touch.size, func(i): save.call("size", i)))
+	page.add_child(_choice_row("Trasparenza", TouchControls.OPACITY_NAMES, settings.touch.opacity, func(i): save.call("opacity", i)))
+	page.add_child(UI.toggle("Mancino: levetta a destra, tasti a sinistra", settings.touch.left_handed, func(on): save.call("left_handed", on)))
+	page.add_child(UI.note("Levetta e tasti compaiono in partita quando tocchi lo schermo e spariscono se usi tastiera o pad."))
 	return page
 
 
