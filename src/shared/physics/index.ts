@@ -14,7 +14,7 @@
 //   supreme.ts   barra della suprema (#101)
 
 import { resolveHits, tryStartAttack, updateAttack } from "./attacks";
-import { carryRider, resolveHazards } from "./elements";
+import { applyJets, carryRider, resolveHazards } from "./elements";
 import { tickBuffer, type Fighter, type PhysicsContext } from "./fighter";
 import { grabbing, inGrab, resolveGrabs, stepGrabs } from "./grab";
 import { holdLedge, tryGrabLedge } from "./ledge";
@@ -29,7 +29,7 @@ import { supreming, tickSupreme } from "./supreme";
 
 export * from "./fighter";
 export { resolveHits } from "./attacks";
-export { floodPhase, hazardActive, hazardRect, moverPosition, travelDirection, travelPhase, type FloodPhase, type TravelPhase } from "./elements";
+export { floodPhase, hazardActive, hazardRect, jetPhase, moverPosition, travelDirection, travelPhase, type FloodPhase, type JetPhase, type TravelPhase } from "./elements";
 export { ledgesOf } from "./ledge";
 
 // Un passo di simulazione per un lottatore (dtMs = durata del tick)
@@ -134,4 +134,5 @@ export function stepWorld(fighters: Fighter[], dtMs: number, ctx: PhysicsContext
   stepProjectiles(fighters, dtMs, ctx);
   resolveGrabs(fighters, ctx); // dopo i colpi: un colpo nello stesso tick vince sulla presa
   resolveHazards(fighters, ctx);
+  applyJets(fighters, ctx); // getti d'acqua (#253)
 }

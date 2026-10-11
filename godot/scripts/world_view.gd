@@ -714,6 +714,9 @@ func _draw_elements(t: float) -> void:
 		rain = maxf(rain, rain_strength(h, t))
 	if rain > 0.0:
 		_draw_rain(rain, t)
+	var jets: Array = stage.get("jets") if stage.get("jets") is Array else []
+	for j in jets:
+		_draw_jet(j, t)
 
 
 func _draw_hazard(h: Dictionary, on: bool, t: float) -> void:
@@ -826,6 +829,45 @@ static func arch_polygon(p: Dictionary, thick: float, k := 1.0, o := Vector2.ZER
 		bottom.insert(0, o + Vector2(x, y + thick) * k)
 	top.append_array(bottom)
 	return top
+
+
+# Getto d'acqua (#253): bolle durante l'avviso, poi una colonna d'acqua spumosa che sale. Stessa fase di jetPhase()
+func _draw_jet(j: Dictionary, t: float) -> void:
+	var phase := jet_phase(j, t)
+	if phase == "calm":
+		return
+	var x0: float = j.x
+	var w: float = j.width
+	var base: float = j.y
+	if phase == "warn":
+		for i in 6:
+			var bx := x0 + w * (0.15 + 0.7 * fposmod(i * 0.37, 1.0))
+			var rise := fposmod(t / 6.0 + i * 23.0, 40.0)
+			draw_arc(Vector2(bx, base - 4 - rise), 3.0 + (i % 3), 0, TAU, 10, Color(0.85, 0.92, 0.9, 0.8 - rise / 50.0), 1.5)
+		return
+	var h: float = j.height
+	var col := Color(0.55, 0.7, 0.72, 0.55)
+	# Il bordo destro dal basso in alto, poi il sinistro dall'alto in basso: un poligono semplice che ondeggia
+	var pts := PackedVector2Array()
+	for i in 10:
+		var k := i / 9.0
+		pts.append(Vector2(x0 + w * (0.5 + 0.4 * (1.0 - k * 0.6)) + sin(t / 70.0 + k * 9.0) * w * 0.08, base - h * k))
+	for i in range(9, -1, -1):
+		var k := i / 9.0
+		pts.append(Vector2(x0 + w * (0.5 - 0.4 * (1.0 - k * 0.6)) + sin(t / 70.0 + k * 9.0 + 1.3) * w * 0.08, base - h * k))
+	draw_colored_polygon(pts, col)
+	for i in 5: # schizzi in cima
+		var a := t / 120.0 + i * 1.3
+		draw_circle(Vector2(x0 + w / 2 + cos(a) * w * 0.5, base - h + sin(a * 1.7) * 10), 4.0, Color(0.85, 0.93, 0.92, 0.8))
+
+
+# Come jetPhase() in physics/elements.ts: "calm", "warn" (bolle) o "active" (getto)
+static func jet_phase(j: Dictionary, t: float) -> String:
+	var period: float = j.periodMs
+	var left := fposmod(t + float(j.get("offsetMs", 0)), period) - (period - float(j.warnMs) - float(j.activeMs))
+	if left < 0:
+		return "calm"
+	return "warn" if left < float(j.warnMs) else "active"
 
 
 # Il ciclista arrabbiato (#229), disegno provvisorio dentro il rettangolo che fa male: bici scassata,

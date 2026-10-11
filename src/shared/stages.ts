@@ -68,6 +68,7 @@ export interface HazardFlood {
   holdMs: number; // quanto resta alta
   fallMs?: number; // durata della discesa (riseMs se manca)
   offsetMs?: number; // sfasamento del giro
+  lowSafe?: boolean; // l'acqua bassa non fa male (#253): fa male solo mentre sale, resta alta e scende
 }
 
 // Musica della partita su un'arena (E12 passo 4): un preset per il sintetizzatore del client Godot (audio.gd).
@@ -153,6 +154,30 @@ export interface StageCamera {
   maxZoom?: number; // quanto si avvicina quando i lottatori sono vicini (CAMERA.maxZoom se manca)
 }
 
+// Getto d'acqua (#253): una colonna larga width che dalla base (y) sale per height pixel. A ogni giro, dopo
+// la calma, ci sono le bolle (warnMs) e poi il getto (activeMs): chi è nella colonna viene spinto in alto a
+// speed pixel/s, senza danno. Dipende solo dal tempo dell'arena, come le trappole.
+export interface Jet {
+  x: number; // bordo sinistro
+  y: number; // base della colonna
+  width: number;
+  height: number; // quanto sale la colonna d'acqua
+  speed: number; // pixel/s verso l'alto dati a chi ci sta dentro
+  periodMs: number;
+  warnMs: number; // bolle prima del getto
+  activeMs: number; // durata del getto
+  offsetMs?: number;
+}
+
+// Zona dove gli oggetti cadono più spesso (#253): una striscia di superficie con un peso. Senza zone, gli oggetti
+// cadono a caso sui pezzi larghi almeno 80 px; con le zone, si sceglie a caso tra i pezzi (peso 1) e le zone (il loro peso).
+export interface ItemSpot {
+  x: number;
+  y: number; // superficie su cui cade
+  width: number;
+  weight: number;
+}
+
 export interface StageSpec {
   id: string;
   name: string;
@@ -170,6 +195,8 @@ export interface StageSpec {
   // Elementi dinamici (#14 passo 4)
   movers?: MovingPlatform[];
   hazards?: Hazard[];
+  jets?: Jet[]; // getti d'acqua a tempo che spingono in alto (#253)
+  itemSpots?: ItemSpot[]; // zone dove gli oggetti cadono più spesso (#253)
   music?: StageMusic; // musica della partita (E12 passo 4)
   art?: StageArt; // sfondo a strati (E12 passo 3)
 }

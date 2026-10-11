@@ -184,3 +184,11 @@ func test_ciclista_come_il_server() -> void:
 	arc.travel.alternate = false
 	var top := WorldView.hazard_rect(arc, 9000).position
 	runner.check(is_equal_approx(top.x, 100.0) and is_equal_approx(top.y, 400.0), "segue il percorso a più punti: %s" % top)
+
+
+# Getto d'acqua (#253): stesse fasi di jetPhase() in elements.test.ts
+func test_getto_come_il_server() -> void:
+	var jet := {"x": 450, "y": 650, "width": 100, "height": 300, "speed": 1300, "periodMs": 6000, "warnMs": 1000, "activeMs": 1000}
+	runner.check(WorldView.jet_phase(jet, 1000) == "calm", "calma")
+	runner.check(WorldView.jet_phase(jet, 4500) == "warn", "bolle")
+	runner.check(WorldView.jet_phase(jet, 5500) == "active", "getto")

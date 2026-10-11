@@ -3,7 +3,7 @@
 // calcoli in world_view.gd e disegna gli elementi senza riceverne le posizioni.
 
 import { FIGHTER, HAZARD, HITSTOP, HITSTUN_PER_KNOCKBACK } from "../constants";
-import type { Hazard, MovingPlatform } from "../stages";
+import type { Hazard, Jet, MovingPlatform } from "../stages";
 import type { Fighter, PhysicsContext } from "./fighter";
 import { chargeFromHit } from "./supreme";
 
@@ -157,11 +157,14 @@ export function resolveHazards(fighters: Fighter[], ctx: PhysicsContext): void {
   hazards.forEach((h, index) => {
     if (!hazardActive(h, t)) return;
     if (h.travel && travelPhase(h, t).phase !== "cross") return; // fuori scena o durante l'avviso non fa male (#229)
+    if (h.flood?.lowSafe && ["calm", "warn"].includes(floodPhase(h, t).phase)) return; // l'acqua bassa non fa male (#253)
     const r = hazardRect(h, t); // con l'acqua alta la superficie cambia nel tempo (#228), il ciclista viaggia (#229)
     for (const f of fighters) {
       if (!canBeHurt(f)) continue;
       const touching = f.x + half > r.x && f.x - half < r.x + r.width && f.y > r.y && f.y - FIGHTER.height < r.y + r.height;
       if (!touching) continue;
+      // La trappola che viaggia passa sul suo percorso: chi sta più in basso (sotto il ponte) è al riparo (#253)
+      if (h.travel && f.y > r.y + r.height + HAZARD.travelFeetPx) continue;
       f.percent = Math.min(999, f.percent + h.damage);
       chargeFromHit(null, f, h.damage); // #101: la trappola carica solo chi la prende
       const knockback = h.knockback + h.knockbackGrowth * f.percent;
@@ -193,4 +196,34 @@ export function resolveHazards(fighters: Fighter[], ctx: PhysicsContext): void {
       });
     }
   });
+}
+
+// Getto d'acqua (#253): calma, bolle (avviso) o getto, come le altre fasi a tempo. Godot rifà lo stesso calcolo (jet_phase).
+export type JetPhase = "calm" | "warn" | "active";
+
+export function jetPhase(j: Jet, timeMs: number): JetPhase {
+  const t = mod(timeMs + (j.offsetMs ?? 0), j.periodMs) - (j.periodMs - j.warnMs - j.activeMs);
+  if (t < 0) return "calm";
+  return t < j.warnMs ? "warn" : "active";
+}
+
+// Chi sta nella colonna di un getto acceso viene spinto in alto, senza danno; può di nuovo usare il recupero
+export function applyJets(fighters: Fighter[], ctx: PhysicsContext): void {
+  const jets = ctx.stage.jets ?? [];
+  if (jets.length === 0) return;
+  const t = ctx.timeMs ?? 0;
+  const half = FIGHTER.width / 2;
+  for (const j of jets) {
+    if (jetPhase(j, t) !== "active") continue;
+    for (const f of fighters) {
+      if (f.eliminated || f.respawning || f.ledgeIndex >= 0) continue;
+      const inside = f.x + half > j.x && f.x - half < j.x + j.width && f.y > j.y - j.height && f.y - FIGHTER.height < j.y;
+      if (!inside) continue;
+      f.vy = Math.min(f.vy, -j.speed);
+      f.onGround = false;
+      f.riding = -1;
+      f.recoveryUsed = false;
+      f.helpless = false;
+    }
+  }
 }

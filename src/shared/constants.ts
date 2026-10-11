@@ -394,6 +394,7 @@ export const BOT_LEVELS = {
 // Elementi dinamici delle arene (#14): ascensori e trappole. I loro numeri stanno nei dati dell'arena.
 export const HAZARD = {
   cooldownMs: 700, // ms dopo una trappola in cui non se ne prende un'altra (niente colpi a raffica)
+  travelFeetPx: 12, // la trappola che viaggia (#229) colpisce solo chi ha i piedi entro questo sotto il suo percorso: sotto il ponte si è al riparo (#253)
 };
 
 // Classifica delle partite (#18, src/server/leaderboard.ts)

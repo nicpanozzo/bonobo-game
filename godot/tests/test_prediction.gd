@@ -195,3 +195,13 @@ func test_il_fermo_del_colpo_blocca_tutto() -> void:
 	runner.check(s.attackTimer == 60.0 and s.cooldown == 200.0 and s.x == 640.0, "nel fermo non cambia niente: %s" % [s])
 	m.step(s, 1000.0 / 60.0)
 	runner.check(s.hitstop == 0.0 and s.attackTimer > 60.0, "finito il fermo si riparte")
+
+
+# Nella colonna di un getto d'acqua (#253) il port non sa della spinta: si torna allo stato del server
+func test_nel_getto_non_si_predice() -> void:
+	var Predictor := preload("res://scripts/predictor.gd")
+	var stage := {"jets": [{"x": 450, "y": 650, "width": 100, "height": 300}]}
+	var p := {"predict": {}, "x": 500.0, "y": 600.0, "attack": null, "ledge": null, "grabbedBy": null, "charge": 0}
+	runner.check(not Predictor.predictable(p, stage), "dentro la colonna")
+	p.x = 900.0
+	runner.check(Predictor.predictable(p, stage), "lontano dal getto si predice")

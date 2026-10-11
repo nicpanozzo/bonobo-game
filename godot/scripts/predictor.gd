@@ -161,6 +161,10 @@ static func predictable(p: Dictionary, stage: Dictionary) -> bool:
 		return false
 	if p.get("ledge") != null or p.get("grabbedBy") != null:
 		return false
+	# Nella colonna di un getto d'acqua (#253) il port non sa della spinta: si torna allo stato del server
+	for j in stage.get("jets", []) if stage.get("jets") is Array else []:
+		if float(p.x) > float(j.x) - 30 and float(p.x) < float(j.x) + float(j.width) + 30 and float(p.y) > float(j.y) - float(j.height) - 40:
+			return false
 	for flag in ["hitstun", "respawning", "eliminated", "away", "shielding", "stunned", "carrier"]:
 		if p.get(flag, false):
 			return false

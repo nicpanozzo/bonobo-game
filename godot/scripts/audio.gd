@@ -41,6 +41,8 @@ var _duck_db := 0.0 # quanto è abbassata adesso la musica (0 = niente)
 var _duck: Tween
 var stage_hazards: Array = [] # trappole dell'arena della partita: il ciclista (#229) suona da solo, senza eventi
 var _travel := {} # indice della trappola che viaggia -> fase dell'ultimo snapshot
+var stage_jets: Array = [] # getti d'acqua dell'arena (#253): bolle e spruzzo, dal tempo dell'arena
+var _jets := {} # indice del getto -> fase dell'ultimo snapshot
 var _announcer := AudioStreamPlayer.new() # la voce dell'annunciatore, sul bus Voci
 var _phrases := {} # frase -> Array[AudioStream] (game.audioFiles.announcer)
 var _queue: AnnouncerQueue
@@ -211,6 +213,16 @@ func on_snapshot(data: Dictionary) -> void:
 		if cue != "":
 			_play(cue, {"x": WorldView.hazard_rect(h, stage_ms).get_center().x})
 		_travel[i] = phase
+	for i in stage_jets.size():
+		var j: Dictionary = stage_jets[i]
+		var jp: String = WorldView.jet_phase(j, stage_ms)
+		var before := str(_jets.get(i, ""))
+		if before != "" and before != jp:
+			if jp == "warn":
+				_play("bubbles", {"x": float(j.x) + float(j.width) / 2.0})
+			elif jp == "active":
+				_play("splash", {"x": float(j.x) + float(j.width) / 2.0})
+		_jets[i] = jp
 	# La carica (E10) non ha eventi: si sente quando parte e quando è piena
 	for p in data.get("players", []):
 		var now := float(p.get("charge", 0.0))
@@ -670,6 +682,13 @@ func _build_sounds() -> void:
 			s.noise(k * 0.14, "bandpass", 2600, 1400, 0.07, 0.35)
 		s.tone(0.1, "square", 900, 1300, 0.25, 0.06)
 		s.tone(0.6, "square", 1300, 900, 0.25, 0.06))
+	# Getto d'acqua (#253): bolle che salgono, poi lo spruzzo
+	_sounds.bubbles = make.call(0.8, func(s):
+		for k in 6:
+			s.tone(k * 0.12, "sine", 380 + k * 40, 700 + k * 60, 0.06, 0.12))
+	_sounds.splash = make.call(0.9, func(s):
+		s.noise(0, "lowpass", 3000, 600, 0.8, 0.7)
+		s.noise(0, "highpass", 5000, 2500, 0.3, 0.25))
 	# Carica piena: un "ding" doppio
 	_sounds.chargeFull = make.call(0.3, func(s):
 		s.tone(0, "triangle", 1320, 1320, 0.12, 0.25)

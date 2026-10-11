@@ -5,7 +5,7 @@ import { describe, it } from "node:test";
 import { HAZARD, TICK_RATE, WORLD } from "../constants";
 import type { Hazard, MovingPlatform, StageSpec } from "../stages";
 import { getStage } from "../stages";
-import { createFighter, floodPhase, hazardActive, hazardRect, moverPosition, stepWorld, travelDirection, travelPhase, type PhysicsContext } from "./index";
+import { createFighter, floodPhase, hazardActive, hazardRect, jetPhase, moverPosition, stepWorld, travelDirection, travelPhase, type PhysicsContext } from "./index";
 
 const DT = 1000 / TICK_RATE;
 
@@ -225,5 +225,49 @@ describe("trappola che viaggia (#229)", () => {
     run(back.f, back.ctx, Math.round(300 / DT));
     assert.equal(back.f.percent, 10);
     assert.ok(back.f.vx < 0, `al ritorno lanciato verso sinistra (vx = ${back.f.vx})`);
+  });
+});
+
+describe("canale di Padova (#253)", () => {
+  it("con lowSafe l'acqua bassa non fa male, quella che sale sì", () => {
+    const water: Hazard = {
+      kind: "acqua", x: 300, y: 620, width: 400, height: 30, damage: 6, knockback: 550, knockbackGrowth: 3, angleDeg: 85,
+      flood: { highY: 540, periodMs: 10000, warnMs: 1000, riseMs: 1000, holdMs: 2000, fallMs: 1000, lowSafe: true },
+    };
+    const low = setup(stageWith({ hazards: [water] }), { x: 500, y: 650 });
+    run(low.f, low.ctx, Math.round(3000 / DT)); // calma: si sta nell'acqua bassa
+    assert.equal(low.f.percent, 0);
+    const high = setup(stageWith({ hazards: [water] }), { x: 500, y: 650 });
+    high.ctx.timeMs = 6500; // l'acqua sale
+    run(high.f, high.ctx, 3);
+    assert.equal(high.f.percent, 6);
+  });
+
+  it("sotto il percorso del ciclista si è al riparo", () => {
+    const bike: Hazard = {
+      kind: "ciclista", x: 0, y: 0, width: 70, height: 60, damage: 10, knockback: 600, knockbackGrowth: 5, angleDeg: 35,
+      travel: { path: [{ x: 0, y: 520 }, { x: 1000, y: 520 }], periodMs: 10000, warnMs: 1000, crossMs: 2000 },
+    };
+    // Il percorso ha i piedi della bici a 580; chi sta a 650 (70 più giù) ha la testa nel rettangolo ma è sotto il ponte
+    const { ctx, f } = setup(stageWith({ hazards: [bike] }), { x: 500, y: 650 });
+    ctx.timeMs = 8900;
+    run(f, ctx, Math.round(300 / DT));
+    assert.equal(f.percent, 0);
+  });
+
+  it("il getto spinge in alto chi c'è dentro, solo quando è acceso, senza danno", () => {
+    const jet = { x: 450, y: 650, width: 100, height: 300, speed: 1300, periodMs: 6000, warnMs: 1000, activeMs: 1000 };
+    assert.equal(jetPhase(jet, 1000), "calm");
+    assert.equal(jetPhase(jet, 4500), "warn");
+    assert.equal(jetPhase(jet, 5500), "active");
+    const bubbles = setup(stageWith({ jets: [jet] }), { x: 500, y: 650 });
+    bubbles.ctx.timeMs = 4200;
+    run(bubbles.f, bubbles.ctx, 10);
+    assert.ok(bubbles.f.onGround, "con le bolle si resta a terra");
+    const up = setup(stageWith({ jets: [jet] }), { x: 500, y: 650 });
+    up.ctx.timeMs = 5050;
+    run(up.f, up.ctx, 20);
+    assert.ok(up.f.y < 450, `spinto in alto (y = ${up.f.y})`);
+    assert.equal(up.f.percent, 0);
   });
 });
