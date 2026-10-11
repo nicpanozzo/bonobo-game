@@ -12,6 +12,7 @@ import { RECONNECT, RECONNECT_HOLD_MS } from "../src/shared/constants";
 import { COLORS_COLORBLIND, TEAM_COLORS_COLORBLIND } from "../src/shared/constants";
 import { TRAINING } from "../src/shared/constants";
 import { TICK_RATE } from "../src/shared/constants";
+import { predictionTraces } from "../src/shared/predictionTraces";
 import { SUPREME } from "../src/shared/constants";
 import { LESSONS, TUTORIAL_BOT, TUTORIAL_STAGE_ID } from "../src/shared/tutorial";
 import { CHALLENGES } from "../src/shared/challenges";
@@ -140,7 +141,7 @@ const data = {
   protocol: PROTOCOL_VERSION,
   tickRate: TICK_RATE, // tick di fisica al secondo: il client numera gli input con il suo tick (E17)
   world: WORLD,
-  fighter: { width: FIGHTER.width, height: FIGHTER.height },
+  fighter: FIGHTER, // misure e movimento: il port del movimento per la predizione li usa tutti (E17)
   attacks: ATTACKS,
   ledge: { hangOffsetY: LEDGE.hangOffsetY }, // bordo del palco (#110): dove sta la mano di chi è appeso
   shield: { maxHp: SHIELD.maxHp }, // scudo (#109): la bolla è grande in proporzione ai punti rimasti
@@ -175,6 +176,12 @@ const data = {
 const out = new URL("../godot/data/game.json", import.meta.url);
 writeFileSync(out, JSON.stringify(data, null, 2) + "\n");
 console.log(`Scritto ${out.pathname}`);
+
+// Tracce del movimento per il test del port in GDScript (E17 passo 3): nei test, non nel gioco esportato
+const traces = new URL("../godot/tests/data/prediction-traces.json", import.meta.url);
+mkdirSync(dirname(traces.pathname), { recursive: true });
+writeFileSync(traces, JSON.stringify(predictionTraces()) + "\n");
+console.log(`Scritto ${traces.pathname}`);
 
 for (const path of spriteFiles) {
   mkdirSync(dirname(godotData + path), { recursive: true });
