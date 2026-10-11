@@ -204,7 +204,7 @@ static func button(text: String, on_press: Callable, primary := false) -> Button
 
 
 # Scheda grande con un titolo in grassetto e una riga che spiega cosa fa (menu principale, prima pagina della lobby)
-static func choice_card(text: String, detail: String, on_press: Callable) -> Button:
+static func choice_card(text: String, detail: String, on_press: Callable, size := SIZE_BIG) -> Button:
 	var b := Button.new()
 	b.pressed.connect(on_press)
 	set_selected(b, false)
@@ -214,7 +214,7 @@ static func choice_card(text: String, detail: String, on_press: Callable) -> But
 	v.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	v.add_theme_constant_override("separation", 2)
 	b.add_child(v)
-	var t := label(text, SIZE_BIG)
+	var t := label(text, size)
 	t.add_theme_font_override("font", font(WEIGHT_BOLD))
 	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	t.mouse_filter = Control.MOUSE_FILTER_IGNORE

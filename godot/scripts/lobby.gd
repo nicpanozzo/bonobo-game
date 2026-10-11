@@ -12,7 +12,14 @@ signal credits_requested
 signal back_requested # Indietro, Esc o B dal primo passo: torna al titolo (E14)
 
 const MAX_SEED := 999999 # come stageGenerator.ts: "casuale-<seme>" e "corsa-<seme>"
-const MODES := [["ffa", "Tutti contro tutti"], ["teams", "Squadre"], ["flag", "Bandiera (a squadre)"], ["race", "Corsa (platformer)"], ["training", "Allenamento (col manichino)"]]
+# Modalità: id, nome, spiegazione sulla scheda
+const MODES := [
+	["ffa", "Tutti contro tutti", "Vince chi resta con le vite"],
+	["teams", "Squadre", "Rossi contro blu"],
+	["flag", "Bandiera", "Butta fuori il portabandiera"],
+	["race", "Corsa", "Primo al traguardo"],
+	["training", "Allenamento", "Col manichino, senza vite"],
+]
 const TIMES := [[0, "Senza tempo"], [120, "2 minuti"], [180, "3 minuti"], [300, "5 minuti"]]
 # Avversari del server per giocare da soli (#20, src/server/bot.ts)
 # "Nome a caso" per chi usa il pad e non vuole scrivere
@@ -47,11 +54,15 @@ var _room_hint: Label # "Scrivi la stanza...", se si va avanti col campo vuoto
 var _chars := GridContainer.new()
 var _stages := GridContainer.new()
 var _course_note: Label
-var _mode := OptionButton.new()
-var _stocks := OptionButton.new()
-var _time := OptionButton.new()
-var _ff := CheckBox.new()
-var _bot := OptionButton.new()
+var _mode_i := 0 # modalità scelta, indice in MODES
+var _mode_cards := HBoxContainer.new()
+var _stocks := Stepper.new()
+var _time := Stepper.new()
+var _ff := CheckButton.new()
+var _bot := Stepper.new()
+var _stocks_box: Control # titoletto e selettore delle vite, si nascondono insieme
+var _stocks_label: Label
+var _time_box: Control
 var _character := ""
 var _stage := ""
 var _random_stage := ""
@@ -251,41 +262,75 @@ func _match_page(params: Dictionary) -> Control:
 	# Regole e bot: contano solo per chi crea la stanza (anche contro un bot)
 	var rules_box := VBoxContainer.new()
 	rules_box.add_theme_constant_override("separation", UI.GAP_S)
-	rules_box.add_child(UI.heading("Regole"))
-	var rules := HBoxContainer.new()
-	rules.add_theme_constant_override("separation", UI.GAP_M)
+	rules_box.add_child(UI.heading("Modalità"))
 	var saved: Dictionary = params.get("rules", {}) if params.get("rules") is Dictionary else {}
+	_mode_i = maxi(0, MODES.map(func(m): return m[0]).find(saved.get("mode", "ffa")))
+	_mode_cards.add_theme_constant_override("separation", UI.GAP_M)
 	for m in MODES:
-		_mode.add_item(m[1])
-	_mode.select(maxi(0, MODES.map(func(m): return m[0]).find(saved.get("mode", "ffa"))))
+		var id: String = m[0]
+		var b := UI.choice_card(m[1], m[2], func(): _set_mode(id), UI.SIZE_BODY)
+		b.custom_minimum_size = Vector2(0, 66)
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		b.set_meta("id", id)
+		_mode_cards.add_child(b)
+	rules_box.add_child(_mode_cards)
+	var gap := Control.new()
+	gap.custom_minimum_size = Vector2(0, UI.GAP_S)
+	rules_box.add_child(gap)
+	# Vite, tempo e bot con le frecce, uno per riga: col pad su e giù si passa dall'uno all'altro,
+	# sinistra e destra cambiano il valore
+	var rules := VBoxContainer.new()
+	rules.add_theme_constant_override("separation", UI.GAP_S)
 	for n in range(1, 6):
 		_stocks.add_item(str(n))
 	_stocks.select(clampi(int(saved.get("stocks", 3)) - 1, 0, 4))
 	for t in TIMES:
 		_time.add_item(t[1])
 	_time.select(maxi(0, TIMES.map(func(t): return t[0]).find(int(saved.get("timeLimitSec", 0)))))
+	for b in BOTS:
+		_bot.add_item(b[1])
+	_bot.select(maxi(0, BOTS.map(func(x): return x[0]).find(str(params.get("bot", "")))))
+	_stocks_label = UI.heading("Vite")
+	_stocks_box = _labeled(_stocks_label, _stocks)
+	rules.add_child(_stocks_box)
+	_time_box = _labeled(UI.heading("Tempo"), _time)
+	rules.add_child(_time_box)
+	_bot_label = UI.heading("Bot")
+	rules.add_child(_labeled(_bot_label, _bot))
 	_ff.text = "Fuoco amico"
 	_ff.button_pressed = bool(saved.get("friendlyFire", false))
-	for c in [_mode, _stocks, _time, _ff]:
-		rules.add_child(c)
+	_ff.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	_ff.custom_minimum_size = Vector2(374, 0) # l'interruttore finisce dove finiscono le frecce
+	rules.add_child(_ff)
 	rules_box.add_child(rules)
 	_course_note = UI.label("In Corsa si gioca su un percorso lungo, nuovo a ogni stanza: vince chi arriva prima al traguardo.", UI.SIZE_SMALL, Color(UI.TEXT, 0.7))
 	_course_note.autowrap_mode = TextServer.AUTOWRAP_WORD
 	rules_box.add_child(_course_note)
-	_bot_label = UI.heading("Bot")
-	rules_box.add_child(_bot_label)
-	for b in BOTS:
-		_bot.add_item(b[1])
-	_bot.select(maxi(0, BOTS.map(func(x): return x[0]).find(str(params.get("bot", "")))))
-	_bot.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	rules_box.add_child(_bot)
-	_mode.item_selected.connect(func(_i): _sync_rules())
 	_bot.item_selected.connect(func(_i): _sync_rules())
 	for c in [_stocks, _time]:
 		c.item_selected.connect(func(_i): _update_summary())
 	_rules_box = rules_box
 	page.add_child(rules_box)
 	return page
+
+
+func _labeled(label: Label, control: Control) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", UI.GAP_M)
+	label.custom_minimum_size = Vector2(130, 0)
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	row.add_child(label)
+	row.add_child(control)
+	return row
+
+
+func _mode_id() -> String:
+	return MODES[_mode_i][0]
+
+
+func _set_mode(id: String) -> void:
+	_mode_i = maxi(0, MODES.map(func(m): return m[0]).find(id))
+	_sync_rules()
 
 
 func _set_kind(kind: String, focus := true) -> void:
@@ -311,16 +356,18 @@ func _set_advanced(open: bool) -> void:
 # Il fuoco amico ha senso solo a squadre; in Bandiera le vite diventano i punti per vincere;
 # in Corsa le vite non contano e l'arena è un percorso generato; in Allenamento non ci sono né vite né tempo
 func _sync_rules() -> void:
-	var mode: String = MODES[_mode.selected][0]
+	var mode := _mode_id()
+	_select_cards(_mode_cards, mode)
 	_ff.visible = mode == "teams" or mode == "flag"
 	var race := mode == "race"
 	var training := mode == "training"
-	_stocks.visible = not race and not training
-	_time.visible = not training
+	_stocks_box.visible = not race and not training
+	_time_box.visible = not training
+	_stocks_label.text = "PUNTI" if mode == "flag" else "VITE"
 	if training and _bot.selected == 0:
 		_bot.select(1) # in palestra serve qualcuno da colpire: il manichino
 	_course_note.visible = race
-	_bot_label.text = "AVVERSARIO" if _kind == "bot" else "BOT (FACOLTATIVO)"
+	_bot_label.text = "AVVERSARIO" if _kind == "bot" else "BOT (SE VUOI)"
 	for i in 5:
 		var n := i + 1
 		var word := ("punto" if n == 1 else "punti") if mode == "flag" else ("vita" if n == 1 else "vite")
@@ -622,7 +669,7 @@ func _page_box(text: String) -> VBoxContainer:
 
 # I passi di questa partita: l'arena si sceglie solo creando una stanza e mai in Corsa (il percorso è generato)
 func flow() -> Array:
-	if _kind == "join" or MODES[_mode.selected][0] == "race":
+	if _kind == "join" or _mode_id() == "race":
 		return ["match", "fighter"]
 	return ["match", "stage", "fighter"]
 
@@ -743,9 +790,9 @@ func _update_summary() -> void:
 		"bot":
 			parts.append("Contro: " + str(BOTS[_bot.selected][1]) if _bot.selected > 0 else "Contro un bot")
 	if _kind != "join":
-		var mode: String = MODES[_mode.selected][0]
-		var rules := str(MODES[_mode.selected][1])
-		if _stocks.visible:
+		var mode := _mode_id()
+		var rules := str(MODES[_mode_i][1])
+		if _stocks_box.visible:
 			rules += ", " + _stocks.get_item_text(_stocks.selected)
 		parts.append(rules)
 		if mode != "race":
@@ -793,7 +840,7 @@ func _submit() -> void:
 
 
 func _choice(bot: String) -> Dictionary:
-	var mode: String = MODES[_mode.selected][0]
+	var mode := _mode_id()
 	var room := ""
 	match _kind:
 		"create":
