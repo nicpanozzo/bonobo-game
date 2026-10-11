@@ -82,8 +82,9 @@ var _big_stats: VBoxContainer
 var _big_moves: Label
 
 
-# start_join: si arriva da un link con la stanza, quindi si parte da "Entra con un link"
-func setup(game_data: Dictionary, params: Dictionary, link: Callable, start_join := false) -> void:
+# start_kind: da dove si parte nella prima pagina. "join" se si arriva da un link con la stanza,
+# "bot" da "Da solo → Contro un bot" nel titolo, altrimenti "create"
+func setup(game_data: Dictionary, params: Dictionary, link: Callable, start_kind := "create") -> void:
 	game = game_data
 	room_link = link
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -117,7 +118,7 @@ func setup(game_data: Dictionary, params: Dictionary, link: Callable, start_join
 	for p in ["match", "stage", "fighter"]:
 		pages.add_child(_pages[p])
 	root.add_child(_bottom_bar())
-	_set_kind("join" if start_join else "create", false)
+	_set_kind(start_kind if _kind_cards.has(start_kind) else "create", false)
 	_show_page("match")
 
 
@@ -184,23 +185,10 @@ func _match_page(params: Dictionary) -> Control:
 	var cards := HBoxContainer.new()
 	cards.add_theme_constant_override("separation", UI.GAP_L)
 	for k in KINDS:
-		var b := Button.new()
+		var id: String = k[0]
+		var b := UI.choice_card(k[1], k[2], func(): _set_kind(id))
 		b.custom_minimum_size = Vector2(0, 92)
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		var v := VBoxContainer.new()
-		v.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		v.alignment = BoxContainer.ALIGNMENT_CENTER
-		v.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		b.add_child(v)
-		var t := UI.label(k[1], UI.SIZE_BIG)
-		t.add_theme_font_override("font", UI.font(UI.WEIGHT_BOLD))
-		t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		v.add_child(t)
-		var d := UI.note(k[2])
-		d.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		v.add_child(d)
-		var id: String = k[0]
-		b.pressed.connect(func(): _set_kind(id))
 		_kind_cards[id] = b
 		cards.add_child(b)
 	page.add_child(cards)

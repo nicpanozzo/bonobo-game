@@ -1,8 +1,11 @@
 # Schermata del titolo (E14 passo 2): logo, versione, "Premi un tasto", poi il menu principale.
 # La apre main.gd all'avvio; con stanza e nome nell'indirizzo si salta e si entra subito.
+# Il menu ha due strade grandi (#250): "Gioca con gli amici" e "Da solo", che apre il suo sottomenu
+# (Contro un bot, Allenamento, Tutorial, Sfide). Esc o B dal sottomenu tornano al menu.
 extends Control
 
 signal play_requested
+signal bot_requested # Da solo → Contro un bot: la lobby parte da "Contro un bot" (#250)
 signal options_requested
 signal credits_requested
 signal tutorial_requested # tutorial a tappe con lo sparring (E15)
@@ -10,11 +13,14 @@ signal training_requested # palestra col manichino e il pannello dell'allenament
 signal challenges_requested # sfide con medaglie (E15)
 
 const BLINK_S := 0.6 # mezzo giro del lampeggio di "Premi un tasto"
+const CARD_SIZE := Vector2(460, 76) # schede del menu, pixel
 
 var game: Dictionary
 var _press := UI.label("Premi un tasto", UI.SIZE_BIG, UI.TEXT)
-var _menu := VBoxContainer.new()
+var _menu := VBoxContainer.new() # il menu principale
+var _solo := VBoxContainer.new() # il sottomenu "Da solo"
 var _first: Button
+var _solo_first: Button
 var _blink := 0.0
 
 
@@ -44,17 +50,27 @@ func setup(game_data: Dictionary, skip_press := false) -> void:
 	box.add_child(spacer)
 	_press.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(_press)
-	_menu.add_theme_constant_override("separation", UI.GAP_M)
-	_menu.visible = false
-	box.add_child(_menu)
-	_first = _menu_button("Gioca online", func(): play_requested.emit(), true)
-	_menu_button("Tutorial", func(): tutorial_requested.emit())
-	_menu_button("Allenamento", func(): training_requested.emit())
-	_menu_button("Sfide", func(): challenges_requested.emit())
-	_menu_button("Opzioni", func(): options_requested.emit())
-	_menu_button("Crediti", func(): credits_requested.emit())
+	for m in [_menu, _solo]:
+		m.add_theme_constant_override("separation", UI.GAP_M)
+		m.visible = false
+		box.add_child(m)
+	_first = _card(_menu, "Gioca con gli amici", "Crea una stanza o entra con il link del Discord", func(): play_requested.emit(), true)
+	_card(_menu, "Da solo", "Contro un bot, allenamento, tutorial e sfide", _show_solo)
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", UI.GAP_M)
+	row.add_child(_small("Opzioni", func(): options_requested.emit()))
+	row.add_child(_small("Crediti", func(): credits_requested.emit()))
 	if not OS.has_feature("web"): # nel browser si chiude la scheda
-		_menu_button("Esci", func(): get_tree().quit())
+		row.add_child(_small("Esci", func(): get_tree().quit()))
+	_menu.add_child(row)
+	_solo_first = _card(_solo, "Contro un bot", "Una partita veloce contro il computer", func(): bot_requested.emit(), true)
+	_card(_solo, "Allenamento", "Prova le mosse sul manichino, con i numeri dei colpi", func(): training_requested.emit())
+	_card(_solo, "Tutorial", "Impara i comandi un passo alla volta", func(): tutorial_requested.emit())
+	_card(_solo, "Sfide", "Prove a tempo, con le medaglie", func(): challenges_requested.emit())
+	var back := _small("‹ Indietro", _show_main)
+	back.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_solo.add_child(back)
 	var version := UI.note(UI.version_text(game))
 	version.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
 	version.grow_horizontal = Control.GROW_DIRECTION_BEGIN
@@ -65,11 +81,34 @@ func setup(game_data: Dictionary, skip_press := false) -> void:
 		_open_menu()
 
 
-func _menu_button(text: String, on_press: Callable, primary := false) -> Button:
-	var b := UI.button(text, on_press, primary)
-	b.custom_minimum_size = Vector2(280, 0)
-	_menu.add_child(b)
+# Scheda del menu con la sua spiegazione; quella principale è rossa come i pulsanti per giocare
+func _card(menu: Control, text: String, detail: String, on_press: Callable, primary := false) -> Button:
+	var b := UI.choice_card(text, detail, on_press)
+	b.custom_minimum_size = CARD_SIZE
+	if primary:
+		UI.set_primary(b)
+	menu.add_child(b)
 	return b
+
+
+func _small(text: String, on_press: Callable) -> Button:
+	var b := UI.button(text, on_press)
+	b.custom_minimum_size = Vector2(140, 0)
+	return b
+
+
+func _show_solo() -> void:
+	_menu.visible = false
+	_solo.visible = true
+	UI.fade_in(_solo)
+	_solo_first.grab_focus()
+
+
+func _show_main() -> void:
+	_solo.visible = false
+	_menu.visible = true
+	UI.fade_in(_menu)
+	_first.grab_focus()
 
 
 func _process(delta: float) -> void:
@@ -91,9 +130,15 @@ func _gui_input(event: InputEvent) -> void:
 		_open_menu()
 
 
-# Un tasto o un pulsante del pad: compare il menu (il tasto non fa altro)
+# Un tasto o un pulsante del pad: compare il menu (il tasto non fa altro). Esc o B: dal sottomenu al menu
 func _unhandled_input(event: InputEvent) -> void:
-	if not _press.visible or not is_visible_in_tree():
+	if not is_visible_in_tree():
+		return
+	if _solo.visible and event.is_action_pressed("ui_cancel"):
+		get_viewport().set_input_as_handled()
+		_show_main()
+		return
+	if not _press.visible:
 		return
 	var pressed := (event is InputEventKey or event is InputEventJoypadButton) and event.is_pressed()
 	if pressed:
@@ -101,7 +146,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		_open_menu()
 
 
-# Torna il fuoco al menu quando si chiudono opzioni o crediti
+# Torna il fuoco al menu quando si chiudono opzioni, crediti o sfide
 func restore_focus() -> void:
 	if _menu.visible:
 		_first.grab_focus()
+	elif _solo.visible:
+		_solo_first.grab_focus()
