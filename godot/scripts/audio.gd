@@ -4,6 +4,7 @@
 # altrimenti la ricetta sintetizzata qui sotto (synth.gd), che resta sempre il ripiego.
 extends Node2D
 
+const WorldView := preload("res://scripts/world_view.gd")
 const PLAYERS := 12 # suoni che possono sovrapporsi
 const MUSIC_STEPS_PER_FRAME := 4 # la musica si calcola un pezzo per frame, senza bloccare il gioco
 const STEPS := 16 # sedicesimi in una battuta
@@ -38,6 +39,8 @@ var _started := {} # nome -> ms di avvio delle ultime copie (tetto ai suoni ugua
 var _music_volume := 1.0 # volume della musica scelto nelle opzioni, da 0 a 1
 var _duck_db := 0.0 # quanto è abbassata adesso la musica (0 = niente)
 var _duck: Tween
+var stage_hazards: Array = [] # trappole dell'arena della partita: il ciclista (#229) suona da solo, senza eventi
+var _travel := {} # indice della trappola che viaggia -> fase dell'ultimo snapshot
 var _announcer := AudioStreamPlayer.new() # la voce dell'annunciatore, sul bus Voci
 var _phrases := {} # frase -> Array[AudioStream] (game.audioFiles.announcer)
 var _queue: AnnouncerQueue
@@ -197,6 +200,17 @@ func on_snapshot(data: Dictionary) -> void:
 	_time_left = left
 	for p in data.get("players", []):
 		_characters[p.id] = p.get("characterId", "default")
+	# Il ciclista (#229) non ha eventi: campanello quando sta per entrare, sferragliare quando passa
+	var stage_ms := float(data.get("stageMs", 0.0))
+	for i in stage_hazards.size():
+		var h: Dictionary = stage_hazards[i]
+		if not h.get("travel") is Dictionary:
+			continue
+		var phase: String = WorldView.travel_phase(h, stage_ms).phase
+		var cue := travel_cue(str(_travel.get(i, "")), phase)
+		if cue != "":
+			_play(cue, {"x": WorldView.hazard_rect(h, stage_ms).get_center().x})
+		_travel[i] = phase
 	# La carica (E10) non ha eventi: si sente quando parte e quando è piena
 	for p in data.get("players", []):
 		var now := float(p.get("charge", 0.0))
@@ -204,6 +218,17 @@ func on_snapshot(data: Dictionary) -> void:
 		if cue != "":
 			_play(cue, {"x": p.x})
 		_charges[p.id] = now
+
+
+# Il ciclista (#229): "bell" quando comincia l'avviso, "bikeRattle" quando entra, "" altrimenti
+static func travel_cue(before: String, now: String) -> String:
+	if before == "" or before == now:
+		return "" # al primo snapshot non suona niente: la partita è appena partita o ci si è ricollegati
+	if now == "warn":
+		return "bell"
+	if now == "cross":
+		return "bikeRattle"
+	return ""
 
 
 # "charge" quando la carica parte, "chargeFull" quando arriva in cima, "" altrimenti
@@ -634,6 +659,17 @@ func _build_sounds() -> void:
 	_sounds.charge = make.call(1.0, func(s):
 		s.tone(0, "sawtooth", 160, 480, 0.95, 0.12)
 		s.tone(0, "sine", 320, 960, 0.95, 0.12))
+	# Campanello della bici (#229): "drin drin", due colpi metallici acuti
+	_sounds.bell = make.call(0.55, func(s):
+		for k in 2:
+			s.tone(k * 0.22, "triangle", 2350, 2300, 0.2, 0.28)
+			s.tone(k * 0.22, "sine", 3520, 3480, 0.12, 0.12))
+	# La bici scassata che passa: sferragliare di catena e un cigolio
+	_sounds.bikeRattle = make.call(1.2, func(s):
+		for k in 8:
+			s.noise(k * 0.14, "bandpass", 2600, 1400, 0.07, 0.35)
+		s.tone(0.1, "square", 900, 1300, 0.25, 0.06)
+		s.tone(0.6, "square", 1300, 900, 0.25, 0.06))
 	# Carica piena: un "ding" doppio
 	_sounds.chargeFull = make.call(0.3, func(s):
 		s.tone(0, "triangle", 1320, 1320, 0.12, 0.25)

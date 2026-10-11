@@ -60,9 +60,51 @@ export function floodPhase(h: Hazard, timeMs: number): { phase: FloodPhase; k: n
   return { phase: "fall", k: fall > 0 ? Math.min(1, t / fall) : 1 };
 }
 
+// Trappola che viaggia (#229): fase del giro (calma, avviso, passaggio), quanto è avanti (k da 0 a 1)
+// e se questo giro va al contrario. Godot rifà lo stesso calcolo (travel_phase in world_view.gd).
+export type TravelPhase = "calm" | "warn" | "cross";
+
+export function travelPhase(h: Hazard, timeMs: number): { phase: TravelPhase; k: number; reverse: boolean } {
+  const tr = h.travel;
+  if (!tr) return { phase: "calm", k: 0, reverse: false };
+  const tt = timeMs + (tr.offsetMs ?? 0);
+  const reverse = !!tr.alternate && mod(Math.floor(tt / tr.periodMs), 2) === 1;
+  const t = mod(tt, tr.periodMs) - (tr.periodMs - tr.warnMs - tr.crossMs);
+  if (t < 0) return { phase: "calm", k: 0, reverse };
+  if (t < tr.warnMs) return { phase: "warn", k: t / tr.warnMs, reverse };
+  return { phase: "cross", k: Math.min(1, (t - tr.warnMs) / tr.crossMs), reverse };
+}
+
+// Punto del percorso a una frazione k della sua lunghezza
+function pathPoint(path: { x: number; y: number }[], k: number): { x: number; y: number } {
+  const lengths = path.slice(1).map((p, i) => Math.hypot(p.x - path[i].x, p.y - path[i].y));
+  let left = k * lengths.reduce((a, b) => a + b, 0);
+  for (let i = 0; i < lengths.length; i++) {
+    if (left <= lengths[i] || i === lengths.length - 1) {
+      const f = lengths[i] > 0 ? Math.min(1, left / lengths[i]) : 0;
+      return { x: path[i].x + (path[i + 1].x - path[i].x) * f, y: path[i].y + (path[i + 1].y - path[i].y) * f };
+    }
+    left -= lengths[i];
+  }
+  return path[0];
+}
+
+// Da che parte va la trappola che viaggia in questo giro: 1 verso destra, -1 verso sinistra
+export function travelDirection(h: Hazard, timeMs: number): number {
+  const path = h.travel?.path ?? [];
+  const forward = path.length >= 2 && path[path.length - 1].x < path[0].x ? -1 : 1;
+  return travelPhase(h, timeMs).reverse ? -forward : forward;
+}
+
 // Il rettangolo che fa male all'istante timeMs: quello scritto nell'arena, o con l'acqua alta
-// la superficie al livello del momento e il fondo fermo
+// la superficie al livello del momento e il fondo fermo, o lungo il percorso della trappola che viaggia
 export function hazardRect(h: Hazard, timeMs: number): { x: number; y: number; width: number; height: number } {
+  if (h.travel && h.travel.path.length >= 2) {
+    const { phase, k, reverse } = travelPhase(h, timeMs);
+    const along = phase === "cross" ? (reverse ? 1 - k : k) : reverse ? 1 : 0;
+    const p = pathPoint(h.travel.path, along);
+    return { x: p.x, y: p.y, width: h.width, height: h.height };
+  }
   if (!h.flood) return h;
   const { phase, k } = floodPhase(h, timeMs);
   const up = phase === "rise" ? k : phase === "high" ? 1 : phase === "fall" ? 1 - k : 0;
@@ -114,7 +156,8 @@ export function resolveHazards(fighters: Fighter[], ctx: PhysicsContext): void {
   const half = FIGHTER.width / 2;
   hazards.forEach((h, index) => {
     if (!hazardActive(h, t)) return;
-    const r = hazardRect(h, t); // con l'acqua alta la superficie cambia nel tempo (#228)
+    if (h.travel && travelPhase(h, t).phase !== "cross") return; // fuori scena o durante l'avviso non fa male (#229)
+    const r = hazardRect(h, t); // con l'acqua alta la superficie cambia nel tempo (#228), il ciclista viaggia (#229)
     for (const f of fighters) {
       if (!canBeHurt(f)) continue;
       const touching = f.x + half > r.x && f.x - half < r.x + r.width && f.y > r.y && f.y - FIGHTER.height < r.y + r.height;
@@ -123,7 +166,8 @@ export function resolveHazards(fighters: Fighter[], ctx: PhysicsContext): void {
       chargeFromHit(null, f, h.damage); // #101: la trappola carica solo chi la prende
       const knockback = h.knockback + h.knockbackGrowth * f.percent;
       const angle = (h.angleDeg * Math.PI) / 180;
-      const away = f.x < h.x + h.width / 2 ? -1 : 1;
+      // La trappola che viaggia (#229) lancia nella direzione in cui va; le altre lontano dal loro centro
+      const away = h.travel ? travelDirection(h, t) : f.x < r.x + r.width / 2 ? -1 : 1;
       f.vx = away * Math.cos(angle) * knockback;
       f.vy = -Math.sin(angle) * knockback;
       f.onGround = false;

@@ -176,3 +176,12 @@ func test_provocazione_ko_e_vittoria_con_la_voce() -> void:
 	au.on_event({"type": "matchEnd", "winnerId": "p1", "winnerTeam": 0, "durationMs": 1000})
 	runner.check(au.voice_stream("p1") == win, "frase di vittoria")
 	au.free()
+
+
+# Il ciclista (#229) suona dal tempo dell'arena: campanello all'avviso, sferragliare all'ingresso, niente al primo snapshot
+func test_campanello_e_sferragliare_del_ciclista() -> void:
+	runner.check(Audio.travel_cue("calm", "warn") == "bell", "campanello quando comincia l'avviso")
+	runner.check(Audio.travel_cue("warn", "cross") == "bikeRattle", "sferragliare quando entra")
+	runner.check(Audio.travel_cue("cross", "calm") == "", "quando esce non suona niente")
+	runner.check(Audio.travel_cue("warn", "warn") == "", "una volta sola")
+	runner.check(Audio.travel_cue("", "warn") == "", "al primo snapshot niente")

@@ -41,6 +41,19 @@ export interface Hazard extends Rect {
   activeMs?: number; // per quanto resta accesa in ogni ciclo
   offsetMs?: number;
   flood?: HazardFlood; // acqua alta (#228): la superficie sale e scende a ciclo
+  travel?: HazardTravel; // trappola che viaggia (#229): passa lungo un percorso, come il ciclista di Padova
+}
+
+// Trappola che viaggia (#229): a ogni giro, dopo la calma, c'è l'avviso (il campanello) e poi il passaggio
+// lungo path. Fa male solo mentre passa, e lancia nella direzione in cui viaggia. x e y della trappola sono
+// ignorati: la posizione la dà il percorso. Dipende solo dal tempo dell'arena, come le altre trappole.
+export interface HazardTravel {
+  path: { x: number; y: number }[]; // dove passa l'angolo in alto a sinistra del rettangolo, almeno 2 punti
+  periodMs: number; // durata di un giro
+  warnMs: number; // avviso prima che entri
+  crossMs: number; // durata del passaggio da un capo all'altro del percorso
+  alternate?: boolean; // un giro all'andata e il successivo al ritorno
+  offsetMs?: number; // sfasamento del giro
 }
 
 // Acqua alta (#228): la superficie della trappola (y) sale fino a highY e poi torna giù, il fondo

@@ -459,6 +459,7 @@ func _on_event(name: String, data: Variant) -> void:
 				world.set_stage(data.stageId)
 			hud.on_welcome(data, world.stage)
 			audio.set_stage_music(world.stage.get("music")) # la musica dell'arena, se ne ha una (E12)
+			audio.stage_hazards = world.stage.get("hazards", []) if world.stage.get("hazards") is Array else [] # il ciclista (#229)
 			# In una sfida niente pannello: rallentatore e percentuale cambierebbero il risultato
 			_set_training(data.get("rules", {}).get("mode", "") == "training" and params.get("challenge", {}).is_empty())
 			_set_tutorial(params.get("tutorial", false))
