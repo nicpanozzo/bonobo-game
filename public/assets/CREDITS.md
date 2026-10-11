@@ -10,4 +10,5 @@
 | `stages/generica/` (sfondo delle arene casuali, E12) | Claude Code per Nicola, disegnati col codice | fatto da noi | CC0 |
 | `characters/egiainuso/*.png` (il nuovo Egiainuso, #178) | foglio delle pose di @Marcomunista, ritaglio e contorno di Claude per Riccardo (GiovannifRana) con `tools/sprite/egiainuso_dal_foglio.py` | foglio in #178, strumento da chiedere a Marco | da chiedere a Marco |
 | `characters/elvedeo/*.png` | Mauro Grecchi (@MauroGrecchi), ritaglio e pulizia di Claude per Riccardo (GiovannifRana) | foglio in #168, strumento da chiedere a Mauro | da chiedere a Mauro |
+| `characters/_modello/` (modello con hitbox e zone dei colpi per chi disegna, E7 passo 5) | Claude per Riccardo (GiovannifRana), generato con `tools/sprite/modello_sprite.py` | fatto da noi | CC0 |
 | `godot/assets/fonts/Nunito.ttf` (font dei menu e dell'HUD) | The Nunito Project Authors | [google/fonts](https://github.com/google/fonts/tree/main/ofl/nunito) | SIL Open Font License 1.1 (`godot/assets/fonts/OFL.txt`) |
