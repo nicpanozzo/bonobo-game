@@ -6,6 +6,7 @@
 import { characterStats } from "../characters";
 import { FIGHTER, HITSTOP, HITSTUN_PER_KNOCKBACK, ITEM_RULES } from "../constants";
 import { ITEMS } from "../items";
+import type { ItemSpot } from "../stages";
 import { rng } from "../stageGenerator";
 import type { ItemState } from "../types";
 import { bodyBox } from "./attacks";
@@ -137,13 +138,26 @@ function spawn(world: ItemWorld, ctx: PhysicsContext) {
   const surfaces = [...ctx.stage.solids, ...ctx.stage.platforms].filter((s) => s.width >= 80);
   if (surfaces.length === 0) return;
   const kinds = Object.keys(ITEMS).sort();
-  const s = surfaces[Math.floor(world.random() * surfaces.length)];
+  const s = pickSurface(surfaces, ctx.stage.itemSpots ?? [], world.random());
   const kind = kinds[Math.floor(world.random() * kinds.length)];
   const x = Math.round(s.x + 30 + world.random() * (s.width - 60));
   const y = s.y - ITEM_RULES.dropHeight;
   const item: Item = { id: world.nextId++, kind, x, y, vx: 0, vy: 0, heldBy: null, thrown: false, onGround: false, riding: -1, thrownBy: null, lifeMs: ITEM_RULES.lifeMs };
   world.items.push(item);
   ctx.events.push({ type: "itemSpawn", itemId: item.id, kind, x, y });
+}
+
+// Dove cade il prossimo oggetto: un pezzo a caso, o con le zone dell'arena (#253) a caso pesando pezzi (1) e zone (il loro peso).
+// Usa un solo numero casuale come prima, così le arene senza zone restano identiche con lo stesso seme.
+function pickSurface(surfaces: { x: number; y: number; width: number }[], spots: ItemSpot[], r: number) {
+  if (spots.length === 0) return surfaces[Math.floor(r * surfaces.length)];
+  const all = [...surfaces.map((s) => ({ s, w: 1 })), ...spots.map((s) => ({ s, w: s.weight }))];
+  let left = r * all.reduce((sum, c) => sum + c.w, 0);
+  for (const c of all) {
+    if (left < c.w) return c.s;
+    left -= c.w;
+  }
+  return all[all.length - 1].s;
 }
 
 // Un oggetto appoggiato su una piattaforma mobile viaggia con lei (come carryRider in elements.ts)

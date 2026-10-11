@@ -157,6 +157,22 @@ Il tipo `"ciclista"` si disegna come il signore arrabbiato in bici, con la caten
   travel: { path: [{ x: -160, y: 425 }, { x: 2080, y: 425 }], periodMs: 20000, warnMs: 1000, crossMs: 2800, alternate: true } }
 ```
 
+### Canale: acqua bassa innocua, getti e oggetti (`lowSafe`, `jets`, `itemSpots`)
+
+Servono a dare un motivo per scendere in una zona rischiosa, come il canale di Padova (#253).
+
+- **`flood.lowSafe: true`** (nell'acqua alta): l'acqua bassa non fa male, solo quella che sale, resta alta e scende.
+- **Riparo dal ciclista:** la trappola che viaggia colpisce solo chi ha i piedi all'altezza del suo percorso, entro `HAZARD.travelFeetPx`. Chi sta più in basso, per esempio sotto il ponte, è al riparo.
+- **`jets`**, getti d'acqua a tempo: `{ x, y, width, height, speed, periodMs, warnMs, activeMs, offsetMs? }`.
+  - La colonna parte da `y` e sale per `height`.
+  - Dopo la calma ci sono le **bolle** (`warnMs`), poi il **getto** (`activeMs`): chi è nella colonna viene spinto in alto a `speed` pixel/s, senza danno, e può di nuovo usare il recupero.
+- **`itemSpots`**, zone dove gli oggetti cadono più spesso: `{ x, y, width, weight }`. Si sceglie a caso tra i pezzi larghi almeno 80 px (peso 1) e le zone (il loro peso). Senza zone, gli oggetti cadono come prima, con lo stesso seme.
+
+```ts
+jets: [{ x: 930, y: 690, width: 60, height: 300, speed: 1300, periodMs: 9000, warnMs: 1200, activeMs: 1500 }],
+itemSpots: [{ x: 740, y: 690, width: 440, weight: 3 }],
+```
+
 ### Musica (`music`)
 
 Facoltativa: senza, in partita si sente la musica di sempre. È un preset per il sintetizzatore del gioco (`audio.gd`), non un file.

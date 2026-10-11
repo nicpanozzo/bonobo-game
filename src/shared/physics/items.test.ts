@@ -132,3 +132,20 @@ describe("oggetti", () => {
     assert.equal(world.items[0].heldBy, null);
   });
 });
+
+describe("zone degli oggetti (#253)", () => {
+  it("con una zona pesante gli oggetti cadono quasi sempre lì", () => {
+    const spotted = { ...stage, itemSpots: [{ x: 300, y: 560, width: 200, weight: 20 }] };
+    let inSpot = 0;
+    const total = 40;
+    for (let seed = 1; seed <= total; seed++) {
+      const ctx: PhysicsContext = { stage: spotted, events: [] };
+      const world = createItemWorld(seed);
+      run(world, [], ctx, Math.round(ITEM_RULES.firstSpawnMs / DT) + 1);
+      const spawn = ofType(ctx.events, "itemSpawn")[0];
+      assert.ok(spawn, `seme ${seed}: è caduto un oggetto`);
+      if (spawn.x >= 300 && spawn.x <= 500) inSpot++;
+    }
+    assert.ok(inSpot >= total * 0.7, `nella zona ${inSpot} volte su ${total}`);
+  });
+});
