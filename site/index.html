@@ -71,10 +71,18 @@
         <a id="dl-browser" class="btn btn-big" href="godot/">Gioca nel browser</a>
       </div>
       <p class="small muted">Per altri sistemi: <a href="https://github.com/nicpanozzo/bonobo-game/releases/latest/download/bonobo-game-windows.zip">Windows</a> · <a href="https://github.com/nicpanozzo/bonobo-game/releases/latest/download/bonobo-game-mac.zip">Mac</a> · <a href="https://github.com/nicpanozzo/bonobo-game/releases/latest/download/bonobo-game-linux.zip">Linux</a>. Scompatta lo zip e apri il gioco.</p>
+      <div id="mac-install" class="help" hidden>
+        <p><strong>Su Mac, il modo senza blocchi:</strong> apri il Terminale (Cmd+Spazio, scrivi "Terminale"), incolla questa riga e premi Invio. Scarica l'ultima versione, la mette in Applicazioni e la apre.</p>
+        <form class="join" onsubmit="return false">
+          <input id="mac-command" type="text" readonly value="curl -fsSL https://nicpanozzo.github.io/bonobo-game/mac.sh | bash" aria-label="Comando per installare su Mac">
+          <button id="mac-copy" class="btn btn-primary" type="button">Copia</button>
+        </form>
+        <p class="small muted">Scaricata dal browser invece il Mac la blocca ("Apple could not verify..."): Apple vuole 99$ l'anno per toglierlo e il gioco è gratis. Gli aggiornamenti poi arrivano da soli, senza blocchi.</p>
+      </div>
       <details class="help">
         <summary>Windows o il Mac non lo vogliono aprire? Capita solo la prima volta</summary>
         <p><strong>Windows:</strong> se compare "PC protetto", clicca "Ulteriori informazioni" e poi "Esegui comunque". Se chiede il permesso per la rete, clicca "Consenti".</p>
-        <p><strong>Mac:</strong> il gioco non è firmato da Apple, quindi la prima volta il Mac lo blocca. Vai in Impostazioni di Sistema → Privacy e sicurezza e premi "Apri comunque" (sui Mac più vecchi basta tasto destro → Apri). Se dice che è danneggiato, apri il Terminale e scrivi <code>xattr -cr ~/Downloads/"Bonobo Game.app"</code>.</p>
+        <p><strong>Mac:</strong> se dice "Apple could not verify Bonobo Game is free of malware" (o che è danneggiata), è perché il gioco non è notarizzato da Apple. La via più semplice è il comando qui sotto, che la installa senza blocco: <code>curl -fsSL https://nicpanozzo.github.io/bonobo-game/mac.sh | bash</code>. Se l'hai già in Applicazioni basta <code>xattr -cr "/Applications/Bonobo Game.app"</code> nel Terminale. Senza Terminale: prova ad aprirla una volta, poi in Impostazioni di Sistema → Privacy e sicurezza scorri in fondo e premi "Apri comunque" (sui Mac con macOS 14 o più vecchio basta tasto destro → Apri).</p>
         <p><strong>Linux:</strong> se non parte, rendilo eseguibile con <code>chmod +x bonobo-game.x86_64</code>.</p>
       </details>
 

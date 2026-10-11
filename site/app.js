@@ -133,6 +133,7 @@ function setupDownloads() {
     game.textContent = `Scarica per ${known.name === 'Mac Intel' ? 'Mac' : known.name}`;
     server.href = `${DOWNLOAD}/${known.server}`;
     server.textContent = `Scarica il server per ${known.name}`;
+    if (system.startsWith('mac')) showMacInstall();
   } else if (system === 'mobile') {
     // Il gioco da scaricare è per computer: dal telefono si gioca nel browser
     game.href = 'godot/';
@@ -140,6 +141,23 @@ function setupDownloads() {
     document.getElementById('dl-browser').hidden = true;
     document.getElementById('server-note').textContent = 'Il server si scarica da un computer.';
   }
+}
+
+// Su Mac il comando da Terminale evita il blocco di Apple sull'app scaricata dal browser (#219)
+function showMacInstall() {
+  const box = document.getElementById('mac-install');
+  const input = document.getElementById('mac-command');
+  const button = document.getElementById('mac-copy');
+  box.hidden = false;
+  button.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(input.value);
+    } catch {
+      input.select(); // niente appunti: lo selezioniamo, si copia con Cmd+C
+      return;
+    }
+    button.textContent = 'Copiato!';
+  });
 }
 
 async function loadRelease() {
