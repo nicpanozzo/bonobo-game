@@ -37,6 +37,7 @@ var _textures := {} # id personaggio -> Texture2D dello spritesheet (nel formato
 var _state_textures := {} # id personaggio -> { stato: Texture2D }, solo per il formato cartella (E7 passo 2)
 var _anims := {} # id giocatore -> { name, since }: animazione in corso e da quando
 var show_hitboxes := false # allenamento (E15): corpo dei lottatori visibile anche sopra gli sprite
+var attack_boxes := true # rettangolo del colpo in corso (opzioni → Video), main.gd lo legge dalle preferenze
 var _air_jumps := {} # id giocatore -> quando ha fatto il doppio salto (ms), per l'animazione doubleJump (#103)
 var _taunts := {} # id giocatore -> quando ha provocato (ms), per l'animazione taunt (E7)
 var _holding := {} # id di chi tiene qualcuno con la presa (#109), dall'ultimo snapshot
@@ -715,7 +716,8 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 
 	# Colpo in corso: la stessa hitbox di attackBox() in src/shared/physics/attacks.ts,
 	# spostata da boxX/boxY per le varianti direzionali (#2)
-	var spec := attack_spec(game, p.characterId, str(p.attack)) if p.attack != null else {}
+	# Si può nascondere dalle opzioni; in allenamento "Mostra hitbox" lo fa vedere comunque
+	var spec := attack_spec(game, p.characterId, str(p.attack)) if p.attack != null and (attack_boxes or show_hitboxes) else {}
 	if not spec.is_empty(): # un attacco che questa versione non conosce non ha rettangolo
 		var front: float = spec.get("boxX", fw / 2)
 		var o := Vector2(p.x, p.y)

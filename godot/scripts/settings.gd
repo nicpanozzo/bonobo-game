@@ -59,7 +59,7 @@ const DEFAULT_PAD_BINDINGS := {
 	"shield": [AXIS_BASE + JOY_AXIS_TRIGGER_LEFT * 2 + 1, AXIS_BASE + JOY_AXIS_TRIGGER_RIGHT * 2 + 1],
 }
 const MAX_PAD := 4 # pulsanti per azione
-# Video (E14): solo su desktop, nel web decide il browser. Si applicano con Video.apply()
+# Video (E14): finestra, vsync e FPS solo su desktop, nel web decide il browser. Si applicano con Video.apply()
 const VIDEO_DEFAULTS := {
 	"fullscreen": false,
 	"window": 0, # indice in Video.WINDOW_SIZES
@@ -67,6 +67,7 @@ const VIDEO_DEFAULTS := {
 	"max_fps": 0, # indice in Video.FPS_LIMITS (0 = senza limite)
 	"effects": true, # scie e polvere
 	"predict": true, # il proprio lottatore previsto (E17): risponde subito anche con un server lontano
+	"hitboxes": true, # rettangolo del colpo in corso sopra gli sprite
 }
 # Accessibilità (E14): si applicano con Access.apply()
 const ACCESS_DEFAULTS := {

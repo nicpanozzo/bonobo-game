@@ -35,9 +35,7 @@ func setup(s: Settings) -> void:
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	top.add_child(title)
 	_box.add_child(top)
-	var pages := [["audio", "Audio", _audio_page()], ["keys", "Comandi", _keys_page()]]
-	if Video.available():
-		pages.append(["video", "Video", _video_page()])
+	var pages := [["audio", "Audio", _audio_page()], ["keys", "Comandi", _keys_page()], ["video", "Video", _video_page()]]
 	pages.append(["access", "Accessibilità", _access_page()])
 	for page in pages:
 		var b := UI.button(page[1], func(): _show_page(page[0]))
@@ -119,17 +117,19 @@ func _keys_page() -> VBoxContainer:
 	return page
 
 
-# Solo nell'app: nel browser finestra e frequenza le decide la pagina
+# Anche nel browser, ma lì finestra e frequenza le decide la pagina
 func _video_page() -> VBoxContainer:
 	var page := VBoxContainer.new()
 	var save := func(key: String, value: Variant) -> void:
 		settings.video[key] = value
 		settings.save()
-	page.add_child(UI.toggle("Schermo intero (anche con F11)", settings.video.fullscreen, func(on): save.call("fullscreen", on)))
-	page.add_child(_choice_row("Finestra", Video.WINDOW_NAMES, settings.video.window, func(i): save.call("window", i)))
-	page.add_child(UI.toggle("Sincronizza con lo schermo (vsync)", settings.video.vsync, func(on): save.call("vsync", on)))
-	page.add_child(_choice_row("FPS massimi", Video.FPS_NAMES, settings.video.max_fps, func(i): save.call("max_fps", i)))
+	if Video.available():
+		page.add_child(UI.toggle("Schermo intero (anche con F11)", settings.video.fullscreen, func(on): save.call("fullscreen", on)))
+		page.add_child(_choice_row("Finestra", Video.WINDOW_NAMES, settings.video.window, func(i): save.call("window", i)))
+		page.add_child(UI.toggle("Sincronizza con lo schermo (vsync)", settings.video.vsync, func(on): save.call("vsync", on)))
+		page.add_child(_choice_row("FPS massimi", Video.FPS_NAMES, settings.video.max_fps, func(i): save.call("max_fps", i)))
 	page.add_child(UI.toggle("Scie e polvere", settings.video.effects, func(on): save.call("effects", on)))
+	page.add_child(UI.toggle("Hitbox dei colpi", settings.video.hitboxes, func(on): save.call("hitboxes", on)))
 	return page
 
 

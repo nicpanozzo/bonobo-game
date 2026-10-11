@@ -23,10 +23,12 @@ func test_restano_dopo_il_riavvio() -> void:
 	s.video.window = 1
 	s.video.max_fps = 2
 	s.video.effects = false
+	s.video.hitboxes = false
 	s.save()
 	var again := Settings.new(AUDIO, PATH)
 	runner.check(again.video.fullscreen and again.video.window == 1, "finestra: %s" % [again.video])
 	runner.check(again.video.max_fps == 2 and not again.video.effects, "fps ed effetti: %s" % [again.video])
+	runner.check(not again.video.hitboxes, "hitbox dei colpi spente: %s" % [again.video])
 
 
 func test_valori_sbagliati_restano_al_default() -> void:

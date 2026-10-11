@@ -255,6 +255,7 @@ func _apply_volumes() -> void:
 	audio.set_volumes(settings.master, settings.sfx, settings.music, settings.music_on, settings.voices)
 	rumble.level = settings.rumble
 	world.effects = settings.video.effects
+	world.attack_boxes = settings.video.hitboxes
 	_apply_prediction()
 	Video.apply(settings)
 	Access.apply(game, settings.access)
