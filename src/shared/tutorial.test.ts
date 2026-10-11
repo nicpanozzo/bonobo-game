@@ -15,6 +15,9 @@ describe("tutorial", () => {
     assert.equal(lessonDone(lesson("doppio"), { ...jump, air: true }, "me"), true);
     assert.equal(lessonDone(lesson("leggero"), { type: "attack", id: "me", kind: "heavy" }, "me"), false);
     assert.equal(lessonDone(lesson("pesante"), { type: "attack", id: "me", kind: "heavy" }, "me"), true);
+    // Il recupero parte con su + pesante (movement.ts): la tappa deve chiedere quei tasti
+    assert.deepEqual(lesson("recupero").actions, ["up", "heavy"]);
+    assert.equal(lessonDone(lesson("recupero"), { type: "attack", id: "me", kind: "recovery" }, "me"), true);
   });
 
   it("colpire e buttare fuori contano per chi colpisce, non per chi le prende", () => {

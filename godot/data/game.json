@@ -435,10 +435,10 @@
       {
         "id": "recupero",
         "title": "Recupero",
-        "text": "In aria, attacco leggero tenendo su: ti riporta verso l'alto.",
+        "text": "In aria, attacco pesante tenendo su: ti riporta verso l'alto.",
         "actions": [
           "up",
-          "light"
+          "heavy"
         ],
         "event": "attack",
         "who": "id",
