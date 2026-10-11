@@ -45,3 +45,92 @@ func test_il_movimento_rigioca_le_tracce() -> void:
 					runner.check(false, "%s, tick %d, %s: atteso %s, avuto %s" % [t.stage, i, field, tick.state[field], s[field]])
 					return
 			i += 1
+
+
+# E17 passo 4: il predittore rigioca dal server i tick che il server non ha ancora visto
+func _game() -> Dictionary:
+	return JSON.parse_string(FileAccess.get_file_as_string("res://data/game.json"))
+
+
+func _predictor(game: Dictionary) -> Predictor:
+	var pr := Predictor.new()
+	pr.setup(game)
+	pr.set_stage(game.stages.palco)
+	return pr
+
+
+func _server_me(game: Dictionary, seq: int, ticks: int, extra := {}) -> Dictionary:
+	var ground: float = game.stages.palco.solids[0].y
+	var p := {"id": "me", "characterId": "default", "x": 640.0, "y": ground, "vx": 0.0, "vy": 0.0, "facing": 1,
+		"onGround": true, "attack": null, "ledge": null, "grabbedBy": null, "hitstun": false, "respawning": false,
+		"predict": {"seq": seq, "ticks": ticks, "jumps": 2, "coyote": 0, "rising": false, "drop": 0, "jumpBuffer": 0}}
+	p.merge(extra, true)
+	return p
+
+
+func _ms(tick: int) -> float:
+	return tick * 1000.0 / 60.0 + 1.0
+
+
+func test_il_predittore_va_avanti_con_i_tasti_non_ancora_visti() -> void:
+	var game := _game()
+	var pr := _predictor(game)
+	var right := {"left": false, "right": true, "jump": false, "down": false}
+	pr.record_input(right, 100)
+	pr.on_server(_server_me(game, 100, 2), _ms(110))
+	var s: Variant = pr.sample(_ms(110))
+	# Il server ha fatto 2 tick con la destra, qui se ne rigiocano altri 9 (102..110): x cresce di 380/60 a tick
+	var step: float = float(game.fighter.groundSpeed) / 60.0
+	runner.check(s != null and absf(s.x - (640.0 + 8.0 * step)) < step, "atteso circa %s, avuto %s" % [640.0 + 9.0 * step, s])
+	runner.check(s.onGround and s.facing == 1, "a terra e girato a destra")
+
+
+func test_il_salto_si_vede_subito() -> void:
+	var game := _game()
+	var pr := _predictor(game)
+	pr.record_input({"jump": false}, 100)
+	pr.record_input({"jump": true}, 105) # premuto, il server non lo sa ancora
+	pr.on_server(_server_me(game, 100, 4), _ms(106))
+	var s: Variant = pr.sample(_ms(108))
+	runner.check(s != null and not s.onGround and s.vy < 0, "il salto parte prima che il server lo veda: %s" % [s])
+
+
+func test_fuori_dal_movimento_decide_il_server() -> void:
+	var game := _game()
+	var pr := _predictor(game)
+	pr.on_server(_server_me(game, 100, 2, {"attack": "light"}), _ms(104))
+	runner.check(pr.sample(_ms(104)) == null, "attacco in corso: niente predizione")
+	pr.on_server(_server_me(game, 100, 2, {"hitstun": true}), _ms(104))
+	runner.check(pr.sample(_ms(104)) == null, "colpito: niente predizione")
+	var old := _server_me(game, 100, 2)
+	old.erase("predict")
+	pr.on_server(old, _ms(104))
+	runner.check(pr.sample(_ms(104)) == null, "server senza predict: niente predizione")
+	pr.on_server(_server_me(game, 100, 2), _ms(200))
+	runner.check(pr.sample(_ms(200)) == null, "troppo indietro rispetto al server: niente predizione")
+	pr.set_stage(game.stages.fabbrica)
+	pr.on_server(_server_me(game, 100, 2), _ms(104))
+	runner.check(pr.sample(_ms(104)) == null, "arena con ascensori: niente predizione")
+
+
+func test_un_attacco_premuto_ferma_la_predizione() -> void:
+	var game := _game()
+	var pr := _predictor(game)
+	pr.record_input({"light": false}, 100)
+	pr.record_input({"light": true}, 103)
+	pr.on_server(_server_me(game, 100, 2), _ms(104))
+	runner.check(pr.sample(_ms(104)) == null, "il server sta per far partire un attacco che il port non fa")
+
+
+func test_la_correzione_si_spalma() -> void:
+	var game := _game()
+	var pr := _predictor(game)
+	pr.record_input({}, 100)
+	pr.on_server(_server_me(game, 100, 2), _ms(104), Vector2(600, game.stages.palco.solids[0].y))
+	var first: Variant = pr.sample(_ms(104))
+	runner.check(absf(first.x - 600.0) < 1.0, "subito si resta dove si era: %s" % [first.x])
+	var later: Variant = pr.sample(_ms(104) + 500.0)
+	runner.check(absf(later.x - 640.0) < 1.0, "dopo mezzo secondo si è sul previsto: %s" % [later.x])
+	pr.enabled = false
+	pr.on_server(_server_me(game, 100, 2), _ms(104))
+	runner.check(pr.sample(_ms(104)) == null, "opzione spenta: niente predizione")

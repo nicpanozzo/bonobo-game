@@ -242,6 +242,8 @@
     "interpolationDelayMs": 80,
     "teleportDistance": 300,
     "bufferSize": 30,
+    "predictionSmoothMs": 100,
+    "predictionMaxReplayMs": 500,
     "ownExtrapolateMaxMs": 50
   },
   "reconnect": {

@@ -322,6 +322,8 @@ export const NET = {
   interpolationDelayMs: 80, // circa due snapshot e mezzo a 30/s
   teleportDistance: 300, // pixel: oltre questo salto (es. respawn) non si interpola
   bufferSize: 30, // snapshot tenuti in memoria (1 secondo)
+  predictionSmoothMs: 100, // E17: una correzione della predizione si spalma su circa tanto (costante di tempo)
+  predictionMaxReplayMs: 500, // E17: oltre questo ritardo dall'ultimo snapshot non si predice, si mostra il server
   ownExtrapolateMaxMs: 50, // E17: il proprio lottatore segue l'ultimo snapshot, spinto avanti con la sua velocità al massimo di tanto
 };
 

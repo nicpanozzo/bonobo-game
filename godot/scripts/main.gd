@@ -28,6 +28,7 @@ var title: Control # schermata del titolo (E14)
 var connecting: Control # schermata "Mi collego..." (E14), null quando si è dentro
 var playing := false
 var _last_input := {}
+var _training_speed := 1.0 # velocità scelta nel pannello dell'allenamento
 var _retry_at := -1
 var _token := "" # segreto del welcome: solo in memoria, vale per la stanza _token_room (#107)
 var _token_room := ""
@@ -238,10 +239,23 @@ func _flash_status(text: String) -> void:
 			hud.set_status(""))
 
 
+# Predizione (E17): accesa dall'opzione, e solo a velocità normale (l'allenamento rallentato fa meno tick)
+func _apply_prediction() -> void:
+	world.predictor.enabled = bool(settings.video.get("predict", true)) and _training_speed == 1.0
+
+
+func _training_command(data: Dictionary) -> void:
+	if data.has("speed"):
+		_training_speed = float(data.speed)
+		_apply_prediction()
+	socket.emit("training", data)
+
+
 func _apply_volumes() -> void:
 	audio.set_volumes(settings.master, settings.sfx, settings.music, settings.music_on, settings.voices)
 	rumble.level = settings.rumble
 	world.effects = settings.video.effects
+	_apply_prediction()
 	Video.apply(settings)
 	Access.apply(game, settings.access)
 	if hud != null:
@@ -274,6 +288,7 @@ func _set_url(room: String) -> void:
 func _connect() -> void:
 	if _lost_at < 0:
 		_show_connecting("Mi collego...", "Stanza %s su %s" % [params.room, params.server])
+	socket.lag_ms = int(params.get("lag", "0")) # E17: --lag=150 o ?lag=150 per provare la predizione con un server lontano
 	var err := socket.connect_to(params.server)
 	if err != OK:
 		_show_connecting("Non riesco a collegarmi", "%s (%s). Riprovo tra poco." % [params.server, error_string(err)])
@@ -378,6 +393,8 @@ func _on_event(name: String, data: Variant) -> void:
 	match name:
 		"welcome":
 			audio.play_music("match")
+			_training_speed = 1.0
+			_apply_prediction()
 			_token = str(data.get("token", ""))
 			_token_room = str(params.room)
 			# Dopo una caduta: o si torna nello stesso lottatore, o il posto era già scaduto
@@ -583,6 +600,7 @@ func _send_input() -> void:
 		var sent := input.duplicate()
 		sent.seq = local_tick(Time.get_ticks_msec(), float(game.get("tickRate", 60)))
 		socket.emit("input", sent)
+		world.predictor.record_input(input, sent.seq)
 
 
 static func local_tick(now_ms: int, tick_rate: float) -> int:
@@ -626,7 +644,7 @@ func _set_training(on: bool) -> void:
 	training.theme = UI.theme()
 	ui_layer.add_child(training)
 	training.setup(game)
-	training.command.connect(func(data: Dictionary): socket.emit("training", data))
+	training.command.connect(func(data: Dictionary): _training_command(data))
 	training.hitboxes_toggled.connect(func(on_off: bool): world.show_hitboxes = on_off)
 
 

@@ -66,6 +66,7 @@ const VIDEO_DEFAULTS := {
 	"vsync": true,
 	"max_fps": 0, # indice in Video.FPS_LIMITS (0 = senza limite)
 	"effects": true, # scie e polvere
+	"predict": true, # il proprio lottatore previsto (E17): risponde subito anche con un server lontano
 }
 # Accessibilità (E14): si applicano con Access.apply()
 const ACCESS_DEFAULTS := {
