@@ -103,6 +103,13 @@ func _keys_page() -> VBoxContainer:
 		var t := UI.button("Pad" if pad else "Tastiera", func(): _show_tab(pad))
 		_tabs[pad] = t
 		tabs.add_child(t)
+	# Predizione (E17): sulla riga delle schede, così c'è anche nel browser (che non ha la pagina Video)
+	var spacer := Control.new()
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tabs.add_child(spacer)
+	tabs.add_child(UI.toggle("Risposta immediata (predizione)", settings.video.predict, func(on):
+		settings.video.predict = on
+		settings.save()))
 	page.add_child(tabs)
 	_keys.add_theme_constant_override("h_separation", UI.GAP_M)
 	page.add_child(_keys)

@@ -7,6 +7,7 @@ var game: Dictionary # godot/data/game.json
 var stage: Dictionary
 var my_id := ""
 var buffer := SnapshotBuffer.new()
+var predictor := Predictor.new() # il proprio lottatore previsto (E17 passo 4)
 var player_ids: Array = []
 
 var positions := {} # id -> Vector2 dei piedi, come disegnati all'ultimo frame (per la telecamera)
@@ -50,6 +51,7 @@ func setup(game_data: Dictionary) -> void:
 	_supreme_view.game = game
 	_supreme_view.impact.connect(func(strength: float): _shake = maxf(_shake, strength)) # l'orsogufo tocca terra
 	add_child(_supreme_view)
+	predictor.setup(game)
 	reset()
 	if material == null:
 		var palette := ShaderMaterial.new()
@@ -116,6 +118,7 @@ func reset() -> void:
 	_flash = 0.0
 	_supreme_view.clear()
 	my_id = ""
+	predictor.reset()
 	set_stage(game.defaultStageId)
 
 
@@ -126,6 +129,7 @@ func set_stage(stage_id: String) -> void:
 # L'arena intera arriva dal server nel benvenuto: così si vedono anche le arene casuali e i percorsi
 func set_stage_spec(spec: Dictionary) -> void:
 	stage = spec
+	predictor.set_stage(spec)
 	_layers = []
 	_foreground = []
 	var art: Dictionary = spec.get("art", {})
@@ -181,6 +185,9 @@ func stage_width() -> float:
 func on_snapshot(snap: Dictionary) -> void:
 	buffer.own_id = my_id # il proprio lottatore senza ritardo d'interpolazione (E17)
 	buffer.push(snap.t, Time.get_ticks_msec(), snap.players, float(snap.get("stageMs", 0)))
+	for p in snap.players:
+		if p.id == my_id:
+			predictor.on_server(p, Time.get_ticks_msec(), positions.get(my_id, Vector2(NAN, NAN)))
 	player_ids = snap.players.map(func(p): return p.id)
 	# Colore, personaggio e id arrivano solo con lo snapshot: le varianti non cambiano tra un frame e l'altro
 	_variants = variant_ranks(snap.players)
@@ -346,6 +353,9 @@ func _draw() -> void:
 	var now := Time.get_ticks_msec()
 	_alive = []
 	_sampled = buffer.sample_all(player_ids, now)
+	var mine: Variant = predictor.sample(now)
+	if mine != null:
+		_sampled[my_id] = mine
 	for id in player_ids:
 		var p: Variant = _sampled.get(id)
 		if p != null:

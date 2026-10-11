@@ -21,6 +21,9 @@ var _open := false
 var _connecting := false
 var _last_message := 0 # ms dell'ultimo messaggio ricevuto
 var silence_ms := SILENCE_MS # dal pacchetto di apertura: pingInterval + pingTimeout del server (#107)
+var lag_ms := 0 # ritardo finto in andata e in ritorno, per provare la predizione (E17): --lag=150
+var _late_out: Array = [] # [ms in cui mandarlo, testo]
+var _late_in: Array = [] # [ms in cui leggerlo, testo]
 
 
 # base_url: http(s)://host:porta, oppure ws(s)://
@@ -68,6 +71,9 @@ func emit(name: String, data: Variant = null) -> void:
 	if not _joined:
 		return
 	var payload: Array = [name] if data == null else [name, data]
+	if lag_ms > 0:
+		_late_out.append([Time.get_ticks_msec() + lag_ms, "42" + JSON.stringify(payload)])
+		return
 	_ws.send_text("42" + JSON.stringify(payload))
 
 
@@ -82,7 +88,15 @@ func poll() -> void:
 				_last_message = Time.get_ticks_msec()
 			while _ws.get_available_packet_count() > 0:
 				_last_message = Time.get_ticks_msec()
-				_handle(_ws.get_packet().get_string_from_utf8())
+				if lag_ms > 0:
+					_late_in.append([_last_message + lag_ms, _ws.get_packet().get_string_from_utf8()])
+				else:
+					_handle(_ws.get_packet().get_string_from_utf8())
+			var now := Time.get_ticks_msec()
+			while not _late_out.is_empty() and _late_out[0][0] <= now:
+				_ws.send_text(_late_out.pop_front()[1])
+			while not _late_in.is_empty() and _late_in[0][0] <= now:
+				_handle(_late_in.pop_front()[1])
 			# Un tunnel che si spegne può lasciare il WebSocket "aperto" senza che arrivi più niente
 			if Time.get_ticks_msec() - _last_message > silence_ms:
 				_ws.close()
