@@ -77,6 +77,12 @@ describe("parseInput", () => {
     assert.equal(parseInput({ up: true, jump: false })?.jump, false);
     assert.equal(parseInput({ jump: true })?.up, false);
   });
+
+  it("tiene il numero dell'input (E17) solo se è un intero non negativo", () => {
+    assert.equal(parseInput({ seq: 42 })?.seq, 42);
+    for (const seq of [-1, 1.5, "3", NaN, Infinity, 2 ** 60, null]) assert.equal(parseInput({ seq })?.seq, undefined, String(seq));
+    assert.ok(!("seq" in parseInput({})!), "senza seq il campo non c'è");
+  });
 });
 
 describe("sanitizeName", () => {

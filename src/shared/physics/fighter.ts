@@ -60,6 +60,8 @@ export interface Fighter extends PlayerState {
   coyoteTimer: number; // ms in cui, appena scesi dal bordo, il salto vale ancora da terra
   jumpRising: boolean; // si sta salendo per un salto: lasciando il tasto si accorcia
   shortHop: boolean; // lasciare presto il salto lo accorcia (i bot no: tengono il tasto un tick solo)
+  inputSeq: number; // E17: InputState.seq dell'input in uso, -1 se il client non lo manda
+  inputTicks: number; // tick giocati con quell'input
 }
 
 // Quello che serve alla fisica oltre ai lottatori: l'arena e dove scrivere gli eventi
@@ -135,6 +137,8 @@ export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
     coyoteTimer: 0,
     jumpRising: false,
     shortHop: true,
+    inputSeq: -1,
+    inputTicks: 0,
     supreme: 0,
     input: emptyInput(),
     prevInput: emptyInput(),
@@ -188,7 +192,7 @@ export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
 // Riporta un lottatore all'inizio partita, tenendo i tasti che sta premendo
 export function resetForMatch(f: Fighter, index: number, stocks: number, stage: StageSpec): void {
   const fresh = createFighter({ ...f, index, stocks }, stage);
-  Object.assign(f, fresh, { input: f.input, prevInput: f.prevInput, away: f.away, dashByTap: f.dashByTap, shortHop: f.shortHop }); // chi è disconnesso resta tale nella rivincita
+  Object.assign(f, fresh, { input: f.input, prevInput: f.prevInput, away: f.away, dashByTap: f.dashByTap, shortHop: f.shortHop, inputSeq: f.inputSeq, inputTicks: f.inputTicks }); // chi è disconnesso resta tale nella rivincita
 }
 
 export const isAlive = (f: Fighter) => !f.eliminated;

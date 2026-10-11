@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { MAX_PLAYERS_PER_ROOM, RECONNECT_RESUME_INVULNERABLE_MS, RESPAWN_MS, TICK_RATE, TRAINING } from "./constants";
-import type { Fighter } from "./physics";
+import { FIGHTER, MAX_PLAYERS_PER_ROOM, RECONNECT_RESUME_INVULNERABLE_MS, RESPAWN_MS, TICK_RATE, TRAINING } from "./constants";
+import { emptyInput, type Fighter } from "./physics";
 import { Match } from "./match";
 import type { GameEvent } from "./types";
 
@@ -264,3 +264,37 @@ describe("allenamento (#113)", () => {
   });
 });
 
+describe("predizione (E17)", () => {
+  const input = (seq?: number, right = false) => ({ ...emptyInput(), right, ...(seq !== undefined && { seq }) });
+  const me = (m: Match) => m.snapshot([], 0).players.find((p) => p.id === "a")!;
+
+  it("lo snapshot dice quale input si usa e da quanti tick, solo a chi manda seq", () => {
+    const m = new Match();
+    m.addPlayer("a", "A");
+    m.addPlayer("b", "B");
+    assert.equal(me(m).predict, undefined, "un client vecchio non riceve niente in più");
+    m.setInput("a", input(100, true));
+    assert.deepEqual(me(m).predict && { seq: me(m).predict!.seq, ticks: me(m).predict!.ticks }, { seq: 100, ticks: 0 });
+    run(m, 3);
+    assert.equal(me(m).predict?.ticks, 3);
+    m.setInput("a", input(104));
+    run(m, 1);
+    assert.deepEqual([me(m).predict?.seq, me(m).predict?.ticks], [104, 1], "un input nuovo riparte da zero");
+    assert.equal(m.snapshot([], 0).players.find((p) => p.id === "b")!.predict, undefined);
+  });
+
+  it("porta i timer del movimento: salti rimasti, salita e buffer del salto", () => {
+    const m = new Match();
+    m.addPlayer("a", "A");
+    m.setInput("a", input(1));
+    run(m, 30);
+    m.setInput("a", { ...input(31), jump: true });
+    const pressedNow = me(m).predict!;
+    assert.ok(pressedNow.jumpBuffer > 0, "la pressione è nel buffer prima del tick");
+    run(m, 1);
+    const p = me(m).predict!;
+    assert.equal(p.jumps, FIGHTER.maxJumps - 1);
+    assert.equal(p.rising, true);
+    assert.equal(p.jumpBuffer, 0, "il salto è partito e ha consumato la pressione");
+  });
+});

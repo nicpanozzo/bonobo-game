@@ -11,6 +11,7 @@ import { ATTACKS, AUDIO, CAMERA, COLORS, EFFECTS, FIGHTER, INPUT, ITEM_RULES, LE
 import { RECONNECT, RECONNECT_HOLD_MS } from "../src/shared/constants";
 import { COLORS_COLORBLIND, TEAM_COLORS_COLORBLIND } from "../src/shared/constants";
 import { TRAINING } from "../src/shared/constants";
+import { TICK_RATE } from "../src/shared/constants";
 import { SUPREME } from "../src/shared/constants";
 import { LESSONS, TUTORIAL_BOT, TUTORIAL_STAGE_ID } from "../src/shared/tutorial";
 import { CHALLENGES } from "../src/shared/challenges";
@@ -137,6 +138,7 @@ if (spriteErrors.length) {
 const data = {
   version: pkg.version,
   protocol: PROTOCOL_VERSION,
+  tickRate: TICK_RATE, // tick di fisica al secondo: il client numera gli input con il suo tick (E17)
   world: WORLD,
   fighter: { width: FIGHTER.width, height: FIGHTER.height },
   attacks: ATTACKS,

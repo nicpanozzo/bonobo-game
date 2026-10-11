@@ -15,6 +15,7 @@ export interface InputState {
   shield: boolean; // scudo (#109): tenuto a terra para i colpi e si consuma; con una direzione rotola, con su si salta fuori
   special: boolean; // mossa speciale (E10): da fermi, con una direzione o con giù, diversa per ogni personaggio
   supreme: boolean; // suprema (#101): parte solo con la barra piena (PlayerState.supreme)
+  seq?: number; // E17: numero crescente del client (il suo tick), torna in PlayerState.predict. I client vecchi non lo mandano
 }
 
 // Le varianti direzionali (#2): su tenendo su, giù tenendo giù a terra, Air in aria; recovery: K + su in aria (#11)
@@ -71,6 +72,19 @@ export interface PlayerState {
   dashing: boolean; // scatta o corre dopo un doppio tocco (#199)
   charge: number; // carica della speciale in corso (E10), da 0 a 1; 0 se non si carica
   supreme: number; // barra della suprema (#101), da 0 a SUPREME.max: piena, il tasto suprema la lancia
+  predict?: PredictionState; // E17: solo per chi manda InputState.seq
+}
+
+// Quello che serve al client per rigiocare il proprio movimento da questo snapshot (E17):
+// quale input il server sta usando, da quanti tick, e i timer del movimento che non viaggiano altrove
+export interface PredictionState {
+  seq: number; // InputState.seq dell'input in uso
+  ticks: number; // tick di fisica giocati con quell'input
+  jumps: number; // salti rimasti
+  coyote: number; // ms in cui il salto vale ancora da terra
+  rising: boolean; // si sta salendo per un salto: lasciando il tasto si accorcia
+  drop: number; // ms in cui si attraversano le piattaforme sottili
+  jumpBuffer: number; // ms in cui una pressione del salto vale ancora (E6)
 }
 
 // Un proiettile in volo (E10): lo tira una speciale e colpisce come un attacco

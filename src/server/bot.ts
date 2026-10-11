@@ -153,7 +153,7 @@ function decideSimple(self: Fighter, players: readonly Fighter[], stage: StageSp
   const input = emptyInput();
   if (self.eliminated || self.respawning) return input;
   // Un tasto conta come premuto solo se al tick prima era rilasciato
-  const tap = (key: keyof InputState) => {
+  const tap = (key: Exclude<keyof InputState, "seq">) => {
     if (!mem.last[key]) input[key] = true;
   };
 
