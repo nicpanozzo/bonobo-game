@@ -1,4 +1,4 @@
-# Lobby in due parti (lobby.gd, E14 passo 2): Entra in una stanza / Crea stanza
+# Lobby a pagine (lobby.gd, #250): Partita → Arena → Lottatore; Crea, Entra o Contro un bot
 extends RefCounted
 
 var runner
@@ -34,11 +34,68 @@ func test_parte_da_crea_senza_link() -> void:
 
 func test_contro_un_bot() -> void:
 	var lobby := _lobby(false)
-	var c := _last_choice(lobby, lobby._quick_bot)
+	lobby._set_kind("bot")
+	runner.check(lobby._creating, "contro un bot si crea una stanza")
+	var c := _last_choice(lobby, lobby._submit)
 	runner.check(c.bot == Lobby.QUICK_BOT, "bot di riserva: %s" % c.bot)
+	runner.check(c.room != "vecchia" and c.room != lobby._clean_room(lobby._new_room.text), "stanza tutta sua: %s" % c.room)
 	lobby._bot.select(4)
-	c = _last_choice(lobby, lobby._quick_bot)
+	c = _last_choice(lobby, lobby._submit)
 	runner.check(c.bot == "difficile", "il bot scelto nelle regole: %s" % c.bot)
+	lobby._bot.select(0)
+	c = _last_choice(lobby, lobby._submit)
+	runner.check(c.bot == Lobby.QUICK_BOT, "senza bot scelto, quello di riserva: %s" % c.bot)
+	lobby.free()
+
+
+func test_pagine_e_briciole() -> void:
+	var lobby := _lobby(false)
+	runner.check(lobby._page == "match", "si parte dalla Partita")
+	runner.check(lobby.flow() == ["match", "stage", "fighter"], "creando: partita, arena, lottatore")
+	lobby._forward()
+	runner.check(lobby._page == "stage", "Avanti porta all'arena")
+	runner.check(lobby._pages.stage.visible and not lobby._pages.match.visible, "si vede solo l'arena")
+	lobby._forward()
+	runner.check(lobby._page == "fighter" and lobby._next_button.text == "Combatti!", "ultimo passo: %s" % lobby._next_button.text)
+	var got := {}
+	lobby.join_requested.connect(func(c): got.merge(c))
+	lobby._forward()
+	runner.check(got.has("room"), "dall'ultimo passo si entra")
+	lobby._back()
+	runner.check(lobby._page == "stage", "Indietro torna all'arena")
+	var back := [false]
+	lobby.back_requested.connect(func(): back[0] = true)
+	lobby._back()
+	lobby._back()
+	runner.check(back[0], "dal primo passo Indietro torna al titolo")
+	lobby.free()
+
+
+func test_senza_arena_in_corsa_e_entrando() -> void:
+	var lobby := _lobby(false)
+	lobby._mode.select(Lobby.MODES.map(func(m): return m[0]).find("race"))
+	lobby._sync_rules()
+	runner.check(lobby.flow() == ["match", "fighter"], "in Corsa niente arena")
+	lobby._set_kind("join")
+	runner.check(lobby.flow() == ["match", "fighter"], "entrando niente arena")
+	lobby._room.text = ""
+	lobby._forward()
+	runner.check(lobby._page == "match", "senza stanza non si va avanti")
+	lobby._room.text = "amici"
+	lobby._forward()
+	runner.check(lobby._page == "fighter" and lobby._next_button.text == "Entra!", "poi il lottatore: %s" % lobby._next_button.text)
+	lobby.free()
+
+
+func test_scheda_del_lottatore() -> void:
+	var lobby := _lobby(false, {"char": "bonobot"})
+	runner.check(lobby._big_name.text == "Bonobot", "il lottatore scelto in grande: %s" % lobby._big_name.text)
+	runner.check(lobby._big_moves.text.contains("Suprema: Omar"), lobby._big_moves.text)
+	var b: Button = lobby._card(lobby._chars, "orsoblu")
+	b.pressed.emit()
+	runner.check(lobby._big_name.text == "Capt. OrsoBlu" and lobby._character == "orsoblu", "cambia con il riquadro")
+	runner.check(lobby._big_moves.text.begins_with("Speciali: Schizzo"), lobby._big_moves.text)
+	runner.check(lobby._summary.text.ends_with("Capt. OrsoBlu"), "e nel riassunto: %s" % lobby._summary.text)
 	lobby.free()
 
 
