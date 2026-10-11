@@ -8,6 +8,7 @@ extends Node2D
 const DEFAULT_SERVER := "http://localhost:3000" # npm run dev
 const PRODUCTION_SERVER := "https://bonobo-game.onrender.com" # server fisso (render.yaml, #19): lo usa il gioco esportato
 const RECONNECT_MS := 1500 # attesa prima di riprovare a collegarsi
+const WAKE_HINT_MS := 5000 # dopo quanti ms senza risposta si avvisa che il server forse si sta svegliando
 const REMATCH_PAD_BUTTON := JOY_BUTTON_Y # rivincita dal pad: Y è libero finché non arriva la speciale (E10)
 const PAGES_URL := "https://nicpanozzo.github.io/bonobo-game/godot/" # dove sta la versione web (pages.yml)
 
@@ -35,6 +36,7 @@ var _token := "" # segreto del welcome: solo in memoria, vale per la stanza _tok
 var _token_room := ""
 var _lost_at := -1 # ms in cui la connessione è caduta durante la partita, -1 se siamo collegati (#107)
 var _attempt := 0 # tentativi di riconnessione da quando è caduta
+var _join_since := -1 # ms in cui si è cominciato a entrare nella stanza, -1 quando si è dentro o fuori
 var _version_warned := false # banner "versione nuova" già mostrato (E2)
 var _try_hint := "" # prova del primo avvio (E14): si mostra appena si entra nella stanza
 var _last_snapshot := 0 # ms dell'ultimo snapshot: in partita il silenzio dice che la rete è caduta
@@ -224,6 +226,7 @@ func _leave() -> void:
 	playing = false
 	_retry_at = -1
 	_lost_at = -1
+	_join_since = -1
 	_last_snapshot = 0
 	socket.close()
 	world.reset()
@@ -294,7 +297,9 @@ func _set_url(room: String) -> void:
 
 func _connect() -> void:
 	if _lost_at < 0:
-		_show_connecting("Mi collego...", "Stanza %s su %s" % [params.room, params.server])
+		if _join_since < 0:
+			_join_since = Time.get_ticks_msec()
+		_show_joining("Mi collego...", "Stanza %s su %s" % [params.room, params.server])
 	socket.lag_ms = int(params.get("lag", "0")) # E17: --lag=150 o ?lag=150 per provare la predizione con un server lontano
 	var err := socket.connect_to(params.server)
 	if err != OK:
@@ -379,6 +384,16 @@ func _show_connecting(title_text: String, detail := "") -> void:
 	connecting.show_text(title_text, detail)
 
 
+# Mentre si entra: dopo qualche secondo senza risposta si spiega che il server forse dormiva.
+# Quello gratuito (Render) si spegne quando nessuno gioca e ci mette circa un minuto a ripartire.
+func _show_joining(title_text: String, detail: String) -> void:
+	if _join_since >= 0 and Time.get_ticks_msec() - _join_since >= WAKE_HINT_MS:
+		var waited := int((Time.get_ticks_msec() - _join_since) / 1000.0)
+		_show_connecting("Il server si sta svegliando...", "Se nessuno giocava da un po', il server dormiva: può volerci fino a un minuto. Resta qui, entri da solo appena è pronto (%d s). Con Annulla torni alla lobby." % waited)
+	else:
+		_show_connecting(title_text, detail)
+
+
 func _hide_connecting() -> void:
 	if is_instance_valid(connecting):
 		connecting.queue_free()
@@ -392,7 +407,7 @@ func _on_connect_failed() -> void:
 	if _lost_at >= 0:
 		_retry_later() # la rete non è ancora tornata
 		return
-	_show_connecting("Il server non risponde", "Non riesco a raggiungere %s: riprovo. Con Annulla torni alla lobby e puoi cambiare server." % params.server)
+	_show_joining("Il server non risponde", "Non riesco a raggiungere %s: riprovo. Con Annulla torni alla lobby e puoi cambiare server." % params.server)
 	_retry_at = Time.get_ticks_msec() + RECONNECT_MS * 2
 
 
@@ -409,6 +424,7 @@ func _on_event(name: String, data: Variant) -> void:
 				_flash_status("Posto perso, sei rientrato da capo")
 			_lost_at = -1
 			_attempt = 0
+			_join_since = -1
 			_hide_connecting()
 			if _try_hint != "":
 				_flash_status(_try_hint)
@@ -462,6 +478,8 @@ func _process(_delta: float) -> void:
 		_connect()
 	elif _retry_at > 0 and _lost_at >= 0:
 		_show_reconnecting() # il conto alla rovescia del posto tenuto
+	elif _join_since >= 0 and _lost_at < 0 and is_instance_valid(connecting) and Time.get_ticks_msec() - _join_since >= WAKE_HINT_MS:
+		_show_joining("", "") # avviso del server che si sveglia, con i secondi che passano
 	# In partita gli snapshot arrivano 30 volte al secondo: se tacciono la rete è caduta, senza aspettare i ping
 	if playing and _last_snapshot > 0 and Time.get_ticks_msec() - _last_snapshot > int(game.reconnect.snapshotSilenceMs):
 		_last_snapshot = 0
