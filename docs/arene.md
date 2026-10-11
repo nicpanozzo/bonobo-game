@@ -71,7 +71,7 @@ Un rettangolo che, quando è acceso, aggiunge percentuale e lancia via chi lo to
 | Campo | Cosa fa |
 |---|---|
 | `x`, `y`, `width`, `height` | il rettangolo che fa male |
-| `kind` | come si disegna: `"spuntoni"`, `"fuoco"`, altrimenti un rettangolo rosso |
+| `kind` | come si disegna: `"spuntoni"`, `"fuoco"`, `"acqua"` (con la pioggia se c'è `flood`), altrimenti un rettangolo rosso |
 | `damage` | percentuale aggiunta |
 | `knockback`, `knockbackGrowth` | lancio di base (pixel/s) e quanto cresce per ogni punto di percentuale |
 | `angleDeg` | direzione: 90 dritto in alto, meno di 90 in diagonale lontano dal centro della trappola |
@@ -79,6 +79,26 @@ Un rettangolo che, quando è acceso, aggiunge percentuale e lancia via chi lo to
 
 ```ts
 { kind: "fuoco", x: 440, y: 610, width: 400, height: 30, damage: 8, knockback: 600, knockbackGrowth: 4, angleDeg: 80, periodMs: 4000, activeMs: 1500 }
+```
+
+### Acqua alta (`flood` in una trappola): il canale che sale con la pioggia
+
+Una trappola con `flood` ha la superficie che sale e scende a ciclo: il rettangolo scritto nell'arena è l'acqua bassa, `highY` è la superficie con l'acqua alta, il fondo (`y + height`) resta fermo. Chi tocca l'acqua viene colpito come da ogni trappola, quindi conviene un lancio verso l'alto che lo tira fuori (`angleDeg` vicino a 90). Le piattaforme sommerse restano: chi ci sta sopra è in acqua.
+
+Ogni giro, alla fine di `periodMs`: **calma**, poi **avviso** (piove ma l'acqua è ancora bassa), **salita**, **alta**, **discesa**.
+
+| Campo di `flood` | Cosa fa |
+|---|---|
+| `highY` | superficie con l'acqua alta (più in alto di `y`, quindi un numero più piccolo) |
+| `periodMs` | durata di un giro completo |
+| `warnMs` | avviso prima della salita: la pioggia |
+| `riseMs`, `holdMs` | durata della salita e di quanto resta alta |
+| `fallMs` | durata della discesa (uguale a `riseMs` se manca) |
+| `offsetMs` | sfasamento del giro |
+
+```ts
+{ kind: "acqua", x: 440, y: 660, width: 400, height: 30, damage: 6, knockback: 550, knockbackGrowth: 3, angleDeg: 85,
+  flood: { highY: 550, periodMs: 40000, warnMs: 4000, riseMs: 3000, holdMs: 6000, fallMs: 3000 } } // il canale di Padova (#230)
 ```
 
 ### Musica (`music`)

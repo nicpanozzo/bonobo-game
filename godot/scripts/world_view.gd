@@ -547,13 +547,36 @@ func _draw_elements(t: float) -> void:
 		for x in range(0, int(m.width), 20):
 			draw_rect(Rect2(pos.x + x, pos.y + 10, minf(10, m.width - x), 5), Color("f1c40f"))
 	var hazards: Array = stage.get("hazards") if stage.get("hazards") != null else []
+	var rain := 0.0
 	for h in hazards:
 		_draw_hazard(h, hazard_active(h, t), t)
+		rain = maxf(rain, rain_strength(h, t))
+	if rain > 0.0:
+		_draw_rain(rain, t)
 
 
 func _draw_hazard(h: Dictionary, on: bool, t: float) -> void:
-	var r := Rect2(h.x, h.y, h.width, h.height)
+	var r := hazard_rect(h, t)
 	match h.kind:
+		"acqua":
+			# Acqua alta (#228): verde-grigia, non blu saturo (è il colore di P2), con la superficie che ondeggia
+			draw_rect(r, Color(0.29, 0.39, 0.4, 0.82))
+			var wave := PackedVector2Array()
+			var x: float = r.position.x
+			while x <= r.end.x:
+				wave.append(Vector2(x, r.position.y + 2.5 * sin(t / 280.0 + x / 37.0)))
+				x += 16.0
+			wave.append(Vector2(r.end.x, r.position.y + 2.5 * sin(t / 280.0 + r.end.x / 37.0)))
+			draw_polyline(wave, Color("a9c2bf"), 2.0)
+			# Riflessi: due righe chiare che scorrono piano sotto la superficie
+			for i in 2:
+				var ry: float = r.position.y + 12.0 + i * 14.0
+				if ry < r.end.y - 4.0:
+					var off := fposmod(t / 40.0 + i * 90.0, 120.0)
+					var rx: float = r.position.x + off
+					while rx < r.end.x - 30.0:
+						draw_line(Vector2(rx, ry), Vector2(rx + 26.0, ry), Color(0.66, 0.76, 0.75, 0.25), 1.0)
+						rx += 120.0
 		"spuntoni":
 			var n := maxi(1, int(h.width / 15.0))
 			var w: float = h.width / n
@@ -617,6 +640,79 @@ static func hazard_active(h: Dictionary, t: float) -> bool:
 	if period <= 0:
 		return true
 	return fposmod(t + float(h.get("offsetMs", 0)), period) < float(h.get("activeMs", period / 2.0))
+
+
+# Come floodPhase() in physics/elements.ts: fase dell'acqua alta (#228) e quanto è avanti (k da 0 a 1)
+static func flood_phase(h: Dictionary, t: float) -> Dictionary:
+	var f: Dictionary = h.get("flood", {})
+	if f.is_empty():
+		return {"phase": "calm", "k": 0.0}
+	var warn: float = f.warnMs
+	var rise: float = f.riseMs
+	var hold: float = f.holdMs
+	var fall: float = f.get("fallMs", rise)
+	var period: float = f.periodMs
+	var left := fposmod(t + float(f.get("offsetMs", 0)), period) - (period - (warn + rise + hold + fall))
+	if left < 0:
+		return {"phase": "calm", "k": 0.0}
+	if left < warn:
+		return {"phase": "warn", "k": left / warn}
+	left -= warn
+	if left < rise:
+		return {"phase": "rise", "k": left / rise}
+	left -= rise
+	if left < hold:
+		return {"phase": "high", "k": left / hold}
+	left -= hold
+	return {"phase": "fall", "k": minf(1.0, left / fall) if fall > 0 else 1.0}
+
+
+# Come hazardRect() in physics/elements.ts: con l'acqua alta la superficie sale, il fondo resta fermo
+static func hazard_rect(h: Dictionary, t: float) -> Rect2:
+	var y: float = h.y
+	var bottom: float = h.y + h.height
+	if h.has("flood"):
+		var fp := flood_phase(h, t)
+		var k: float = fp.k
+		var up := 0.0
+		match fp.phase:
+			"rise":
+				up = k
+			"high":
+				up = 1.0
+			"fall":
+				up = 1.0 - k
+		y = h.y + (float(h.flood.highY) - h.y) * up
+	return Rect2(h.x, y, h.width, bottom - y)
+
+
+# Quanto piove (0-1) per l'acqua alta: cresce durante l'avviso, piena con l'acqua che sale e alta, cala con la discesa
+static func rain_strength(h: Dictionary, t: float) -> float:
+	if not h.has("flood"):
+		return 0.0
+	var fp := flood_phase(h, t)
+	var k: float = fp.k
+	match fp.phase:
+		"warn":
+			return k
+		"rise", "high":
+			return 1.0
+		"fall":
+			return 1.0 - k
+	return 0.0
+
+
+# Pioggia su tutta l'arena: gocce oblique in posizioni fisse che scorrono col tempo dell'arena
+func _draw_rain(strength: float, t: float) -> void:
+	var w := stage_width() + 800.0
+	var hgt: float = game.world.height + 600.0
+	var drops := int(160.0 * strength)
+	var col := Color(0.78, 0.84, 0.88, 0.3 * strength)
+	for i in drops:
+		var sx := fposmod(float(i) * 0.6180339 * w, w)
+		var sy := fposmod(float(i) * 0.4142136 * hgt + t * 0.9, hgt)
+		var p := Vector2(sx - 400.0, sy - 300.0)
+		draw_line(p, p + Vector2(-5.0, 16.0), col, 1.0)
 
 
 # Corsa: checkpoint (asta grigia, bandierina verde quando la si prende) e arrivo a scacchi

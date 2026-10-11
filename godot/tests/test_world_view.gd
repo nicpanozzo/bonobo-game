@@ -148,3 +148,20 @@ func test_stesso_personaggio_colori_diversi() -> void:
 	runner.check(m.r > 1.5 and m.a == 1.0, "variante: rosso oltre 1 per lo shader")
 	runner.check(WorldView.sprite_modulate(2, 1.0) != m, "varianti diverse, tinte diverse")
 	runner.check(WorldView.sprite_modulate(1 + WorldView.VARIANT_HUES.size(), 1.0) == m, "oltre l'ultima si ricomincia")
+
+
+# Acqua alta (#228): stessi numeri di hazardRect() e floodPhase() in physics/elements.test.ts
+func test_acqua_alta_come_il_server() -> void:
+	var water := {"kind": "acqua", "x": 300, "y": 620, "width": 400, "height": 30,
+		"flood": {"highY": 540, "periodMs": 10000, "warnMs": 1000, "riseMs": 1000, "holdMs": 2000, "fallMs": 1000}}
+	runner.check(WorldView.hazard_rect(water, 0).position.y == 620.0, "bassa all'inizio del giro")
+	runner.check(WorldView.flood_phase(water, 5500).phase == "warn", "pioggia prima della salita")
+	runner.check(WorldView.hazard_rect(water, 5500).position.y == 620.0, "con la pioggia è ancora bassa")
+	runner.check(WorldView.hazard_rect(water, 6500).position.y == 580.0, "a metà della salita")
+	runner.check(WorldView.hazard_rect(water, 7500).position.y == 540.0, "alta")
+	runner.check(WorldView.hazard_rect(water, 9500).position.y == 580.0, "a metà della discesa")
+	runner.check(WorldView.hazard_rect(water, 10000).position.y == 620.0, "il giro ricomincia")
+	runner.check(WorldView.hazard_rect(water, 7500).end.y == 650.0, "il fondo resta fermo")
+	runner.check(WorldView.rain_strength(water, 5500) == 0.5 and WorldView.rain_strength(water, 2000) == 0.0, "pioggia solo dall'avviso in poi")
+	var spikes := {"kind": "spuntoni", "x": 10, "y": 20, "width": 30, "height": 5}
+	runner.check(WorldView.hazard_rect(spikes, 1234) == Rect2(10, 20, 30, 5), "le altre trappole restano ferme")
