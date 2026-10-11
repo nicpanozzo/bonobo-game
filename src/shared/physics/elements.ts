@@ -40,6 +40,36 @@ export function hazardActive(h: Hazard, timeMs: number): boolean {
   return mod(timeMs + (h.offsetMs ?? 0), h.periodMs) < (h.activeMs ?? h.periodMs / 2);
 }
 
+// Acqua alta (#228): in che fase del giro è l'acqua all'istante timeMs, e quanto è avanti in quella
+// fase (k da 0 a 1). Calma all'inizio del giro, poi avviso, salita, alta e discesa fino alla fine.
+// Godot rifà lo stesso calcolo (flood_phase in world_view.gd) per disegnare livello e pioggia.
+export type FloodPhase = "calm" | "warn" | "rise" | "high" | "fall";
+
+export function floodPhase(h: Hazard, timeMs: number): { phase: FloodPhase; k: number } {
+  const f = h.flood;
+  if (!f) return { phase: "calm", k: 0 };
+  const fall = f.fallMs ?? f.riseMs;
+  let t = mod(timeMs + (f.offsetMs ?? 0), f.periodMs) - (f.periodMs - (f.warnMs + f.riseMs + f.holdMs + fall));
+  if (t < 0) return { phase: "calm", k: 0 };
+  if (t < f.warnMs) return { phase: "warn", k: t / f.warnMs };
+  t -= f.warnMs;
+  if (t < f.riseMs) return { phase: "rise", k: t / f.riseMs };
+  t -= f.riseMs;
+  if (t < f.holdMs) return { phase: "high", k: t / f.holdMs };
+  t -= f.holdMs;
+  return { phase: "fall", k: fall > 0 ? Math.min(1, t / fall) : 1 };
+}
+
+// Il rettangolo che fa male all'istante timeMs: quello scritto nell'arena, o con l'acqua alta
+// la superficie al livello del momento e il fondo fermo
+export function hazardRect(h: Hazard, timeMs: number): { x: number; y: number; width: number; height: number } {
+  if (!h.flood) return h;
+  const { phase, k } = floodPhase(h, timeMs);
+  const up = phase === "rise" ? k : phase === "high" ? 1 : phase === "fall" ? 1 - k : 0;
+  const top = h.y + (h.flood.highY - h.y) * up;
+  return { x: h.x, y: top, width: h.width, height: h.y + h.height - top };
+}
+
 // Chi sta su una piattaforma mobile si sposta con lei (prima di muoversi da solo)
 export function carryRider(f: Fighter, dtMs: number, ctx: PhysicsContext): void {
   const m = f.riding >= 0 ? ctx.stage.movers?.[f.riding] : undefined;
@@ -84,9 +114,10 @@ export function resolveHazards(fighters: Fighter[], ctx: PhysicsContext): void {
   const half = FIGHTER.width / 2;
   hazards.forEach((h, index) => {
     if (!hazardActive(h, t)) return;
+    const r = hazardRect(h, t); // con l'acqua alta la superficie cambia nel tempo (#228)
     for (const f of fighters) {
       if (!canBeHurt(f)) continue;
-      const touching = f.x + half > h.x && f.x - half < h.x + h.width && f.y > h.y && f.y - FIGHTER.height < h.y + h.height;
+      const touching = f.x + half > r.x && f.x - half < r.x + r.width && f.y > r.y && f.y - FIGHTER.height < r.y + r.height;
       if (!touching) continue;
       f.percent = Math.min(999, f.percent + h.damage);
       chargeFromHit(null, f, h.damage); // #101: la trappola carica solo chi la prende

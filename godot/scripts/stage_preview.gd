@@ -32,6 +32,13 @@ func _draw() -> void:
 	for m in spec.get("movers", []):
 		draw_rect(Rect2(o + Vector2(m.path[0].x, m.path[0].y) * k, Vector2(m.width * k, 3)), Color("f1c40f"))
 	for h in spec.get("hazards", []):
+		if h.kind == "acqua":
+			# Acqua alta (#228): l'acqua bassa piena, il livello alto come una riga
+			draw_rect(Rect2(o + Vector2(h.x, h.y) * k, Vector2(h.width, h.height) * k), Color("4a6466"))
+			var flood: Dictionary = h.get("flood", {})
+			if flood.has("highY"):
+				draw_line(o + Vector2(h.x, flood.highY) * k, o + Vector2(h.x + h.width, flood.highY) * k, Color("a9c2bf"), 1.0)
+			continue
 		draw_rect(Rect2(o + Vector2(h.x, h.y) * k, Vector2(h.width, h.height) * k), Color(1, 0.25, 0.2))
 
 
