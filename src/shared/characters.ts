@@ -68,7 +68,7 @@ export interface SpriteAnimation {
   hitFrame?: number; // solo negli attacchi, vedi SpriteStateSpec
 }
 
-// Formato a foglio unico: un PNG con una riga per animazione (Egiainuso, Bonobot)
+// Formato a foglio unico: un PNG con una riga per animazione (Capt. OrsoBlu, Bonobot)
 export interface SpriteSheetSpec {
   path: string; // relativo alla radice del sito
   frameWidth: number; // pixel
@@ -258,10 +258,11 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     },
   },
 
-  // Creatura blu sulla barchetta col remo, proposta da @MauroGrecchi (#37)
-  egiainuso: {
-    id: "egiainuso",
-    name: "Egiainuso",
+  // Creatura blu sulla barchetta col remo, proposta da @MauroGrecchi (#37).
+  // Si chiamava Egiainuso: rinominata Capt. OrsoBlu con #178, il nome passa al nuovo personaggio
+  orsoblu: {
+    id: "orsoblu",
+    name: "Capt. OrsoBlu",
     // Con la barchetta addosso è un po' più pesante e lento di Bonobot (E11)
     // TODO community: statistiche provvisorie, da confermare con @MauroGrecchi
     stats: { weight: 1.05, speed: 0.9, airSpeed: 0.95, jump: 0.95 },
@@ -273,7 +274,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       down: { ...CHARGE_EXAMPLE, name: "Colpo di remo" },
     },
     sprite: {
-      path: "assets/characters/egiainuso/egiainuso.png",
+      path: "assets/characters/orsoblu/orsoblu.png",
       frameWidth: 64,
       frameHeight: 96,
       columns: 6,
@@ -358,7 +359,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
   },
 
   // Gatto rasta grassottello col bong, proposto da @MauroGrecchi (#168). Provvisorio: è il suo foglio ritagliato
-  // e ingrandito, un'eccezione alla style guide come Egiainuso (vedi public/assets/characters/elvedeo/README.md).
+  // e ingrandito, un'eccezione alla style guide come Capt. OrsoBlu (vedi public/assets/characters/elvedeo/README.md).
   elvedeo: {
     id: "elvedeo",
     name: "Elvedeo",
@@ -379,6 +380,44 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         heavy: { fps: 24, loop: false, hitFrame: 6 }, // colpo di bong dall'alto
         hit: { fps: 24, loop: false },
         tumble: { fps: 24, loop: true }, // rotola quando vola via
+      },
+    },
+  },
+
+  // Omino col cappellino e lo zaino, dal foglio delle pose di @Marcomunista (#178): ha preso il nome Egiainuso,
+  // che prima era di Capt. OrsoBlu. Una posa per stato (due per la corsa), ritagliate da
+  // tools/sprite/egiainuso_dal_foglio.py; un'eccezione alla style guide come Elvedeo (vedi il suo README).
+  egiainuso: {
+    id: "egiainuso",
+    name: "Egiainuso",
+    // TODO community: statistiche e mosse speciali di base, da decidere con @Marcomunista
+    sprite: {
+      dir: "assets/characters/egiainuso",
+      frameWidth: 318,
+      frameHeight: 238,
+      footY: 194,
+      scale: 0.5, // il foglio è disegnato grande come un disegno a 2x
+      animations: {
+        idle: { fps: 1, loop: true },
+        walk: { fps: 6, loop: true }, // passo e corsa del foglio, alternati
+        jump: { fps: 1, loop: false },
+        fall: { fps: 1, loop: false },
+        light: { fps: 1, loop: false }, // "Side Tilt"
+        heavy: { fps: 1, loop: false }, // "Side Smash"
+        hit: { fps: 1, loop: false }, // nel foglio non c'è: il fermo piegato all'indietro
+        land: { fps: 1, loop: false }, // "Crouch"
+        dash: { fps: 1, loop: false },
+        lightUp: { fps: 1, loop: false },
+        lightDown: { fps: 1, loop: false },
+        lightAir: { fps: 1, loop: false }, // "Neutral Air"
+        heavyUp: { fps: 1, loop: false },
+        heavyDown: { fps: 1, loop: false },
+        heavyAir: { fps: 1, loop: false }, // "Forward Air"
+        recovery: { fps: 1, loop: false }, // "Up Air"
+        shield: { fps: 1, loop: false },
+        grab: { fps: 1, loop: false },
+        throw: { fps: 1, loop: false }, // "Throw (forward)"
+        supreme: { fps: 1, loop: false }, // "Final Smash"
       },
     },
   },

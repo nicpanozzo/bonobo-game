@@ -10,7 +10,7 @@ import type { GameEvent, InputState, MatchRules } from "./types";
 
 const DT = 1000 / TICK_RATE;
 const TICKS = 3600; // un minuto di partita
-const CHARACTERS = ["default", "egiainuso", "bonobot", "default"]; // speciali diverse: proiettili, scatto, carica, contrattacco
+const CHARACTERS = ["default", "orsoblu", "bonobot", "default"]; // speciali diverse: proiettili, scatto, carica, contrattacco
 
 // Generatore con seme, come scripts/bench.ts: le due partite ricevono gli stessi tasti
 function inputs(seed: number) {

@@ -2,11 +2,12 @@
 
 | File | Autore | Fonte | Licenza |
 |---|---|---|---|
-| `characters/egiainuso/egiainuso.png` | Claude Code per Nicola, idea di @MauroGrecchi (#37) | fatto da noi | CC0 |
+| `characters/orsoblu/orsoblu.png` (Capt. OrsoBlu, prima Egiainuso) | Claude Code per Nicola, idea di @MauroGrecchi (#37) | fatto da noi | CC0 |
 | `characters/bonobot/*.png` (sprite e ritratto, dallo scheletro di `rig/`, E7 passo 4) | Claude per Riccardo (GiovannifRana); fermo, schiaffo e martello dalla prova #198 | fatto da noi | CC0 |
 | `characters/bonobot/omar/` (orsogufo e gnomo della suprema, #102) | Claude per Riccardo (GiovannifRana), provvisori disegnati col codice; orsogufo: fan art ispirata a Baldur's Gate 3, nessun file del gioco | fatto da noi | CC0 |
 | `characters/bonobot/rig/` (pezzi dello scheletro nuovo, #195) | Claude per Riccardo (GiovannifRana), provvisori disegnati col codice | fatto da noi | CC0 |
 | `stages/palco/` (sfondo a tre strati e anteprima del Palco, E12) | Claude Code per Nicola, disegnati col codice | fatto da noi | CC0 |
 | `stages/generica/` (sfondo delle arene casuali, E12) | Claude Code per Nicola, disegnati col codice | fatto da noi | CC0 |
+| `characters/egiainuso/*.png` (il nuovo Egiainuso, #178) | foglio delle pose di @Marcomunista, ritaglio e contorno di Claude per Riccardo (GiovannifRana) con `tools/sprite/egiainuso_dal_foglio.py` | foglio in #178, strumento da chiedere a Marco | da chiedere a Marco |
 | `characters/elvedeo/*.png` | Mauro Grecchi (@MauroGrecchi), ritaglio e pulizia di Claude per Riccardo (GiovannifRana) | foglio in #168, strumento da chiedere a Mauro | da chiedere a Mauro |
 | `godot/assets/fonts/Nunito.ttf` (font dei menu e dell'HUD) | The Nunito Project Authors | [google/fonts](https://github.com/google/fonts/tree/main/ofl/nunito) | SIL Open Font License 1.1 (`godot/assets/fonts/OFL.txt`) |

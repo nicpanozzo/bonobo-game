@@ -7,7 +7,8 @@ signal closed
 # TODO community: ruoli e nomi come ognuno preferisce comparire
 const PEOPLE := [
 	["Nicola (@nicpanozzo)", "Idea e organizzazione", "Ha messo in piedi il gioco, la roadmap e il gruppo"],
-	["@MauroGrecchi", "Personaggi", "Egiainuso, la creatura blu sulla barchetta (#37)"],
+	["@MauroGrecchi", "Personaggi", "Capt. OrsoBlu, la creatura blu sulla barchetta (#37)"],
+	["@Marcomunista", "Personaggi", "Egiainuso, l'omino col cappellino e lo zaino (#178)"],
 	["@GiovannifRana", "Playtest e arte", "Segnalazioni su KO e respawn (#8, #9), direzione artistica (#41), Bonobot (#20)"],
 	["Claude Code", "Codice", "Agente che ha scritto parte del codice per gli umani del gruppo"],
 ]
