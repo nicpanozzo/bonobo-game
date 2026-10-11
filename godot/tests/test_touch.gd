@@ -73,3 +73,23 @@ func test_tastiera_o_pad_spengono_il_touch() -> void:
 	t.handle(key)
 	runner.check(not t.active and not t.pressed("heavy"), "un tasto della tastiera spegne i comandi touch")
 	t.free()
+
+
+# E18 passo 2
+func test_tasto_in_piu_per_il_pannello() -> void:
+	var t := TouchControls.new()
+	var got := [""]
+	t.extra_pressed.connect(func(n: String): got[0] = n)
+	t.extras = {"panel": "Pannello"}
+	runner.check(t.handle(_touch(0, TouchControls.extra_rect(0).get_center())), "il tasto in più prende il tocco")
+	runner.check(got[0] == "panel", "e dice quale: %s" % got[0])
+	t.extras = {}
+	got[0] = ""
+	t.handle(_touch(1, TouchControls.extra_rect(0).get_center()))
+	runner.check(got[0] == "", "tolto, non c'è più")
+	t.free()
+
+
+func test_telefono_in_verticale() -> void:
+	runner.check(TouchControls.portrait(Vector2(390, 844)), "390x844 è in verticale")
+	runner.check(not TouchControls.portrait(Vector2(844, 390)), "844x390 è in orizzontale")
