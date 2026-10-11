@@ -125,6 +125,26 @@ Ogni giro, alla fine di `periodMs`: **calma**, poi **avviso** (piove ma l'acqua 
   flood: { highY: 550, periodMs: 40000, warnMs: 4000, riseMs: 3000, holdMs: 6000, fallMs: 3000 } } // il canale di Padova (#230)
 ```
 
+### Trappola che viaggia (`travel` in una trappola): il ciclista arrabbiato
+
+Una trappola con `travel` passa lungo un percorso a ogni giro. Prima c'è la **calma**, poi l'**avviso** (il campanello, e "DRIN DRIN!" sul lato da cui arriva), poi il **passaggio**. Fa male solo mentre passa, e lancia **nella direzione in cui va** (`angleDeg` misurato da quella direzione verso l'alto). `x` e `y` della trappola sono ignorati, perché la posizione la dà il percorso; `width` e `height` sono il rettangolo che fa male.
+
+| Campo di `travel` | Cosa fa |
+|---|---|
+| `path` | punti `{ x, y }` dove passa l'angolo in alto a sinistra del rettangolo, almeno 2. Possono stare fuori dallo schermo, così entra ed esce dalla scena |
+| `periodMs` | durata di un giro |
+| `warnMs` | avviso prima che entri |
+| `crossMs` | durata del passaggio da un capo all'altro |
+| `alternate` | `true`: un giro all'andata e il successivo al ritorno |
+| `offsetMs` | sfasamento del giro, per non farla coincidere con altri elementi |
+
+Il tipo `"ciclista"` si disegna come il signore arrabbiato in bici, con la catena che gira.
+
+```ts
+{ kind: "ciclista", x: 0, y: 0, width: 80, height: 95, damage: 10, knockback: 600, knockbackGrowth: 5, angleDeg: 35,
+  travel: { path: [{ x: -160, y: 425 }, { x: 2080, y: 425 }], periodMs: 20000, warnMs: 1000, crossMs: 2800, alternate: true } }
+```
+
 ### Musica (`music`)
 
 Facoltativa: senza, in partita si sente la musica di sempre. È un preset per il sintetizzatore del gioco (`audio.gd`), non un file.

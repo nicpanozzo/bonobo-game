@@ -565,6 +565,8 @@ func _draw_elements(t: float) -> void:
 func _draw_hazard(h: Dictionary, on: bool, t: float) -> void:
 	var r := hazard_rect(h, t)
 	match h.kind:
+		"ciclista":
+			_draw_cyclist(h, r, t)
 		"acqua":
 			# Acqua alta (#228): verde-grigia, non blu saturo (è il colore di P2), con la superficie che ondeggia
 			draw_rect(r, Color(0.29, 0.39, 0.4, 0.82))
@@ -655,6 +657,77 @@ static func arch_polygon(p: Dictionary, thick: float, k := 1.0, o := Vector2.ZER
 	return top
 
 
+# Il ciclista arrabbiato (#229), disegno provvisorio dentro il rettangolo che fa male: bici scassata,
+# signore pelato e rosso dalla rabbia, maglietta bianca, pettorina catarifrangente (lime spento, non il
+# giallo di P4) e la catena che gira sopra la testa. Durante l'avviso, "DRIN DRIN!" dal lato dove entra.
+func _draw_cyclist(h: Dictionary, r: Rect2, t: float) -> void:
+	var tp := travel_phase(h, t)
+	if tp.phase == "calm":
+		return
+	var dir := travel_direction(h, t)
+	if tp.phase == "warn":
+		_draw_bell_warning(r, dir, t)
+		return
+	var w := r.size.x
+	var hh := r.size.y
+	var fx := func(x: float) -> float: return r.position.x + (x if dir > 0 else w - x) # disegnato verso destra, girato se va a sinistra
+	var bottom := r.end.y
+	var wr := hh * 0.16 # raggio delle ruote
+	var back := Vector2(fx.call(w * 0.2), bottom - wr)
+	var front := Vector2(fx.call(w * 0.82), bottom - wr)
+	var ink := Color("2a2622")
+	for c in [back, front]:
+		draw_arc(c, wr, 0, TAU, 18, ink, 3.0)
+		var a := t / 45.0 * dir
+		draw_line(c + Vector2(cos(a), sin(a)) * wr, c - Vector2(cos(a), sin(a)) * wr, Color("8a8a8a"), 1.5)
+	var seat := Vector2(fx.call(w * 0.38), bottom - hh * 0.45)
+	var bars := Vector2(fx.call(w * 0.74), bottom - hh * 0.52)
+	var pedal := Vector2(fx.call(w * 0.48), bottom - wr)
+	draw_polyline(PackedVector2Array([back, seat, pedal, back]), Color("6b4a3a"), 3.0) # telaio arrugginito
+	draw_polyline(PackedVector2Array([pedal, bars, front]), Color("6b4a3a"), 3.0)
+	# Il signore: busto bianco, pettorina, testa pelata e rossa
+	var hip := seat + Vector2(0, -hh * 0.04)
+	var shoulder := Vector2(fx.call(w * 0.5), bottom - hh * 0.82)
+	draw_line(hip, pedal, Color("3b3b44"), 4.0) # gamba
+	draw_line(hip, shoulder, Color("f2f0ea"), 11.0) # maglietta bianca
+	draw_line(hip.lerp(shoulder, 0.2), hip.lerp(shoulder, 0.85), Color("b9c25a"), 8.0) # pettorina
+	draw_line(hip.lerp(shoulder, 0.5) + Vector2(-4, 0), hip.lerp(shoulder, 0.5) + Vector2(4, 0), Color("c8c8c8"), 2.0) # striscia catarifrangente
+	var head := shoulder + Vector2(fx.call(w * 0.56) - shoulder.x, -hh * 0.1)
+	var rage := 0.5 + 0.5 * sin(t / 90.0)
+	draw_circle(head, hh * 0.1, Color("c0533f").lerp(Color("d8644a"), rage))
+	draw_line(head + Vector2(-hh * 0.05 * dir, -hh * 0.02), head + Vector2(hh * 0.07 * dir, -hh * 0.035), ink, 2.0) # sopracciglio arrabbiato
+	draw_line(shoulder, bars, Color("f2f0ea"), 3.0) # braccio sul manubrio
+	# Braccio alzato con la catena che gira
+	var hand := shoulder + Vector2(-hh * 0.08 * dir, -hh * 0.28)
+	draw_line(shoulder, hand, Color("f2f0ea"), 3.0)
+	var spin := t / 70.0
+	var tip := hand + Vector2(cos(spin), sin(spin) * 0.45) * hh * 0.42
+	var links := PackedVector2Array()
+	for i in 7:
+		var f := float(i) / 6.0
+		links.append(hand.lerp(tip, f) + Vector2(0, sin(f * PI) * 3.0))
+	draw_polyline(links, Color("9aa0a6"), 2.5)
+
+
+func _draw_bell_warning(r: Rect2, dir: int, t: float) -> void:
+	# Il segnale sta sul bordo della vista da cui entrerà, all'altezza del percorso
+	var s := view_rect.size.x / float(game.world.width)
+	var y := clampf(r.get_center().y, view_rect.position.y + 40 * s, view_rect.end.y - 40 * s)
+	var x := view_rect.position.x + 70 * s if dir > 0 else view_rect.end.x - 70 * s
+	if (dir > 0 and r.position.x > view_rect.position.x) or (dir < 0 and r.end.x < view_rect.end.x):
+		x = r.get_center().x # già dentro la vista: il segnale sta sopra al punto di partenza
+	var pulse := 1.0 + 0.12 * sin(t / 60.0)
+	var col := Color("e67e22") # arancio: non è il colore di nessun giocatore
+	draw_circle(Vector2(x, y), 22 * s * pulse, Color(0.1, 0.08, 0.06, 0.75))
+	draw_arc(Vector2(x, y), 22 * s * pulse, 0, TAU, 24, col, 3 * s)
+	var font := ThemeDB.fallback_font
+	var size := int(16 * s)
+	var text := "DRIN DRIN!"
+	var tw := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
+	draw_string(font, Vector2(x - tw / 2, y - 30 * s), text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, col)
+	draw_string(font, Vector2(x - 4 * s, y + 6 * s), "!", HORIZONTAL_ALIGNMENT_LEFT, -1, int(20 * s), col)
+
+
 # Come hazardActive() in physics/elements.ts
 static func hazard_active(h: Dictionary, t: float) -> bool:
 	var period: float = h.get("periodMs", 0)
@@ -690,6 +763,14 @@ static func flood_phase(h: Dictionary, t: float) -> Dictionary:
 
 # Come hazardRect() in physics/elements.ts: con l'acqua alta la superficie sale, il fondo resta fermo
 static func hazard_rect(h: Dictionary, t: float) -> Rect2:
+	var tr: Variant = h.get("travel")
+	if tr is Dictionary and tr.path.size() >= 2:
+		# Trappola che viaggia (#229): lungo il percorso, come hazardRect() in physics/elements.ts
+		var tp := travel_phase(h, t)
+		var k: float = tp.k
+		var along: float = (1.0 - k if tp.reverse else k) if tp.phase == "cross" else (1.0 if tp.reverse else 0.0)
+		var p := path_point(tr.path, along)
+		return Rect2(p.x, p.y, h.width, h.height)
 	var y: float = h.y
 	var bottom: float = h.y + h.height
 	if h.has("flood"):
@@ -721,6 +802,48 @@ static func rain_strength(h: Dictionary, t: float) -> float:
 		"fall":
 			return 1.0 - k
 	return 0.0
+
+
+# Come travelPhase() in physics/elements.ts: calma, avviso o passaggio della trappola che viaggia (#229)
+static func travel_phase(h: Dictionary, t: float) -> Dictionary:
+	var tr: Variant = h.get("travel")
+	if not tr is Dictionary:
+		return {"phase": "calm", "k": 0.0, "reverse": false}
+	var period: float = tr.periodMs
+	var warn: float = tr.warnMs
+	var cross: float = tr.crossMs
+	var tt: float = t + float(tr.get("offsetMs", 0))
+	var reverse: bool = bool(tr.get("alternate", false)) and int(fposmod(floorf(tt / period), 2.0)) == 1
+	var left := fposmod(tt, period) - (period - warn - cross)
+	if left < 0:
+		return {"phase": "calm", "k": 0.0, "reverse": reverse}
+	if left < warn:
+		return {"phase": "warn", "k": left / warn, "reverse": reverse}
+	return {"phase": "cross", "k": minf(1.0, (left - warn) / cross), "reverse": reverse}
+
+
+# Punto del percorso a una frazione k della sua lunghezza (come pathPoint in physics/elements.ts)
+static func path_point(path: Array, k: float) -> Vector2:
+	var lengths: Array[float] = []
+	var total := 0.0
+	for i in range(1, path.size()):
+		var d := Vector2(path[i].x - path[i - 1].x, path[i].y - path[i - 1].y).length()
+		lengths.append(d)
+		total += d
+	var left := k * total
+	for i in lengths.size():
+		if left <= lengths[i] or i == lengths.size() - 1:
+			var f: float = minf(1.0, left / lengths[i]) if lengths[i] > 0 else 0.0
+			return Vector2(path[i].x, path[i].y).lerp(Vector2(path[i + 1].x, path[i + 1].y), f)
+		left -= lengths[i]
+	return Vector2(path[0].x, path[0].y)
+
+
+# Da che parte va in questo giro: 1 verso destra, -1 verso sinistra (come travelDirection)
+static func travel_direction(h: Dictionary, t: float) -> int:
+	var path: Array = h.travel.path
+	var forward := -1 if path[path.size() - 1].x < path[0].x else 1
+	return -forward if travel_phase(h, t).reverse else forward
 
 
 # Pioggia su tutta l'arena: gocce oblique in posizioni fisse che scorrono col tempo dell'arena

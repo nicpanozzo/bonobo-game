@@ -165,3 +165,22 @@ func test_acqua_alta_come_il_server() -> void:
 	runner.check(WorldView.rain_strength(water, 5500) == 0.5 and WorldView.rain_strength(water, 2000) == 0.0, "pioggia solo dall'avviso in poi")
 	var spikes := {"kind": "spuntoni", "x": 10, "y": 20, "width": 30, "height": 5}
 	runner.check(WorldView.hazard_rect(spikes, 1234) == Rect2(10, 20, 30, 5), "le altre trappole restano ferme")
+
+
+# Trappola che viaggia (#229): stessi numeri di travelPhase(), hazardRect() e travelDirection() in elements.test.ts
+func test_ciclista_come_il_server() -> void:
+	var bike := {"kind": "ciclista", "x": 0, "y": 0, "width": 70, "height": 60,
+		"travel": {"path": [{"x": 0, "y": 590}, {"x": 1000, "y": 590}], "periodMs": 10000, "warnMs": 1000, "crossMs": 2000, "alternate": true}}
+	runner.check(WorldView.travel_phase(bike, 6000).phase == "calm", "calma")
+	var warn := WorldView.travel_phase(bike, 7500)
+	runner.check(warn.phase == "warn" and warn.k == 0.5 and not warn.reverse, "campanello")
+	runner.check(WorldView.hazard_rect(bike, 9000).position.x == 500.0, "a metà del passaggio è a metà strada")
+	runner.check(WorldView.travel_direction(bike, 9000) == 1, "all'andata verso destra")
+	runner.check(WorldView.travel_phase(bike, 19000).reverse, "il giro dopo al contrario")
+	runner.check(WorldView.hazard_rect(bike, 18500).position.x == 750.0, "al ritorno da destra a sinistra")
+	runner.check(WorldView.travel_direction(bike, 19000) == -1, "al ritorno verso sinistra")
+	var arc := bike.duplicate(true)
+	arc.travel.path = [{"x": 0, "y": 500}, {"x": 100, "y": 400}, {"x": 200, "y": 500}]
+	arc.travel.alternate = false
+	var top := WorldView.hazard_rect(arc, 9000).position
+	runner.check(is_equal_approx(top.x, 100.0) and is_equal_approx(top.y, 400.0), "segue il percorso a più punti: %s" % top)
