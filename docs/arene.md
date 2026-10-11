@@ -190,6 +190,43 @@ Gli strati sono centrati sul centro dell'arena. Con la telecamera più lontana (
 art: { layers: [{ file: "sfondo-0.png", parallax: 0.15 }, { file: "sfondo-1.png", parallax: 0.45 }, { file: "sfondo-2.png", parallax: 0.75 }], preview: "anteprima.png" } // Il Palco
 ```
 
+### Materiali, ringhiere e decorazioni (`art.skins`, `art.props`)
+
+Facoltativi, solo grafica: senza, blocchi e piattaforme si disegnano a tinta unita con `colors`. I PNG stanno nella cartella dell'arena come gli strati, e `npm run export:godot` si ferma se ne manca uno. Contano nei 4 MB per arena.
+
+| Campo di `art` | Cosa fa |
+|---|---|
+| `skins` | materiali per nome: `{ file, edge?, depth?, rails? }` |
+| `solidSkin`, `platformSkin` | il materiale di base di blocchi e piattaforme sottili |
+| `pieces` | eccezioni per indice: `{ solids: [...], platforms: [...] }`; `null` = tinta unita |
+| `props` | decorazioni ferme: `{ file, x, y, scale?, flip?, front?, opacity? }`, con i piedi (centro del lato basso) in `x, y` |
+
+- **Materiale (`skins`):**
+  - `file` si ripete: nei blocchi in orizzontale e in verticale; nelle piattaforme lungo la superficie, anche ad arco e inclinate, con lo spessore `depth` (12 se manca);
+  - nelle scale, ogni gradino è un blocco del materiale;
+  - `edge` è la striscia del bordo calpestabile, ripetuta sopra: deve restare **chiara** (style guide, sezione 7).
+- **Ringhiere (`rails`):** `{ file, height, offsetY?, front?, opacity? }`, ripetute lungo la superficie della piattaforma.
+  - Quella dietro sta in piedi sul piano.
+  - Quella davanti (`front: true`) si tiene bassa e trasparente (`opacity` circa 0,45) per non coprire chi ci passa.
+- **Decorazioni (`props`):** stanno dietro al palco, così una lastra retta da una statua le sta sopra, oppure davanti ai lottatori con `front: true`. `scale` vale per la singola immagine: per un disegno a 2x si mette 0,5.
+- **Grandezza:** `art.scale` vale per strati e materiali: pixel di mondo per pixel dell'immagine.
+
+```ts
+art: {
+  layers: [/* ... */],
+  skins: {
+    pietra: { file: "pietra.png", edge: "bordo.png" },
+    ponte: { file: "ponte.png", depth: 20, rails: [
+      { file: "balaustra.png", height: 36, offsetY: 2 },
+      { file: "balaustra.png", height: 28, offsetY: 12, front: true, opacity: 0.45 },
+    ] },
+  },
+  solidSkin: "pietra",
+  pieces: { platforms: ["ponte"] },
+  props: [{ file: "statua-ponte.png", x: 690, y: 522, scale: 0.5 }],
+}
+```
+
 ## Come funzionano dentro (per chi aggiunge un elemento)
 
 - Ascensori e trappole dipendono solo dal **tempo dell'arena** (`ctx.timeMs`, che `stepWorld` fa avanzare). Il server lo manda nello snapshot (`stageMs`) e Godot rifà gli stessi calcoli (`mover_position` e `hazard_active` in `world_view.gd`): niente posizioni in rete, e il movimento è fluido perché si interpola il tempo.

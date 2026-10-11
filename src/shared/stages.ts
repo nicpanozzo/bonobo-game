@@ -95,6 +95,54 @@ export interface StageArt {
   preview?: string; // immagine 16:9 dell'arena per la lobby
   scale?: number; // pixel di mondo per pixel dell'immagine (1 se manca)
   dir?: string; // cartella in public/assets/stages/ se diversa dall'id dell'arena (sfondi condivisi)
+  // Materiali e decorazioni del palco (#237): solo grafica, la fisica non li vede
+  skins?: Record<string, StageSkin>; // materiali per nome
+  solidSkin?: string; // materiale di base dei blocchi pieni
+  platformSkin?: string; // materiale di base delle piattaforme sottili
+  pieces?: { solids?: (string | null)[]; platforms?: (string | null)[] }; // eccezioni per indice; null = tinta unita
+  props?: StageProp[]; // decorazioni ferme: statue, archi, lampioni
+}
+
+// Materiale di un pezzo dell'arena (#237): un PNG ripetuto. Nei blocchi si ripete in orizzontale e in verticale,
+// nelle piattaforme lungo la superficie (anche ad arco e inclinate), con lo spessore depth
+export interface StageSkin {
+  file: string;
+  edge?: string; // striscia del bordo calpestabile, ripetuta sopra al pezzo: sempre chiara (style guide, sezione 7)
+  depth?: number; // spessore delle piattaforme sottili, in pixel di mondo (12 se manca)
+  rails?: StageRail[]; // ringhiere che seguono la superficie
+}
+
+// Ringhiera (#237): un PNG ripetuto lungo la superficie di una piattaforma, alto height pixel di mondo
+export interface StageRail {
+  file: string;
+  height: number;
+  offsetY?: number; // pixel più in basso (+) o più in alto (−) rispetto alla superficie
+  front?: boolean; // davanti ai lottatori (altrimenti dietro)
+  opacity?: number; // da 0 a 1 (1 se manca): quella davanti si tiene trasparente per non coprire chi ci passa
+}
+
+// Decorazione ferma (#237): un PNG con i piedi (il centro del lato basso) in x, y
+export interface StageProp {
+  file: string;
+  x: number;
+  y: number;
+  scale?: number; // pixel di mondo per pixel dell'immagine (art.scale se manca)
+  flip?: boolean; // specchiata in orizzontale
+  front?: boolean; // davanti ai lottatori (altrimenti dietro, subito dopo il palco)
+  opacity?: number;
+}
+
+// Tutti i file che lo sfondo e il palco di un'arena nominano (export e test li cercano in public/assets/stages/<dir>/)
+export function stageArtFiles(art: StageArt): string[] {
+  const files = [...art.layers, ...(art.foreground ? [art.foreground] : [])].map((l) => l.file);
+  if (art.preview) files.push(art.preview);
+  for (const skin of Object.values(art.skins ?? {})) {
+    files.push(skin.file);
+    if (skin.edge) files.push(skin.edge);
+    for (const r of skin.rails ?? []) files.push(r.file);
+  }
+  for (const p of art.props ?? []) files.push(p.file);
+  return [...new Set(files)];
 }
 
 // Zoom della telecamera per un'arena (#240): un'arena più larga dello schermo si allontana di più
