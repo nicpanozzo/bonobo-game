@@ -11,6 +11,63 @@ Regole che valgono per tutti i PNG:
 - si disegna a **2x** e nel blocco si scrive `scale: 0.5`;
 - file sotto i 5 MB, e una riga in `public/assets/CREDITS.md` con autore, fonte e licenza.
 
+`npm test` controlla tutte queste regole (`src/shared/assets.test.ts`) e, se qualcosa non va, dice quale file e perché.
+
+## Passo per passo
+
+### 1. Prendi il modello
+
+In [`_modello/`](_modello/) ci sono due PNG da usare come livello di guida, sotto il disegno:
+
+- `modello.png`: un fotogramma con la sagoma della hitbox, i piedi, la direzione e le zone dei colpi leggero e pesante;
+- `colpi.png`: le otto varianti d'attacco, ognuna con la sua zona e i millisecondi in cui è accesa.
+
+Il fotogramma del modello è 400×320 px (200×160 di mondo) e contiene tutte le zone dei colpi. Puoi tenerlo così o sceglierne un altro, purché sia **uguale per tutti gli stati** e con i piedi al centro del bordo basso. Il corpo sta dentro la sagoma grigia; braccia, armi e capelli possono uscire.
+
+### 2. Disegna
+
+**Con Krita** (gratis, per i disegni illustrati):
+
+1. *File → Nuovo*: larghezza = fotogramma × numero di fotogrammi (es. 6 fotogrammi da 400 = 2400), altezza = fotogramma (320). Nella scheda *Contenuto* metti lo sfondo **trasparente** (opacità 0).
+2. *Livello → Importa/Esporta → Importa livello* con `modello.png`, una volta per fotogramma, spostandolo di 400 px ogni volta (o con la griglia: *Impostazioni → Configura Krita → Griglia e guide*, spaziatura = larghezza del fotogramma). Metti il livello del modello al 30-50% di opacità e bloccalo.
+3. Disegna ogni fotogramma nella sua casella, su livelli tuoi sopra il modello.
+
+**Con Aseprite** (per la pixel art e per le animazioni fotogramma per fotogramma):
+
+1. *File → New*: la misura di **un** fotogramma (400×320), *Color Mode: RGBA*, *Background: Transparent*.
+2. Un livello col modello (*File → Open* `modello.png`, copia e incolla), opacità bassa, bloccato.
+3. Un fotogramma della timeline per ogni fotogramma dell'animazione; se vuoi, un *tag* per stato (`idle`, `walk`...).
+
+### 3. Esporta
+
+- **Nascondi il modello** e ogni livello di sfondo: lo sfondo del PNG dev'essere trasparente.
+- **Krita**: *File → Esporta* in PNG, con l'opzione del **canale alfa (trasparenza)** spuntata e senza interlacciamento. Il nome è quello dello stato: `idle.png`, `light.png`...
+- **Aseprite**: *File → Export Sprite Sheet*, *Sheet Type: Horizontal Strip*, *Layers: Visible layers*, nessun bordo né spaziatura, *Output File* `idle.png`. Con i tag, nelle versioni recenti c'è *Split Tags*: un PNG per tag, chiamato come il tag (`{tag}.png`).
+- Se il PNG supera qualche MB, salvalo a 256 colori (Krita: l'opzione *PNG indicizzato, se possibile* nella stessa finestra; Aseprite: *Sprite → Color Mode → Indexed*): i disegni a tinte piatte restano uguali e pesano molto meno.
+- Metti i PNG in `public/assets/characters/<id>/` e aggiungi la riga in `public/assets/CREDITS.md` (basta una per la cartella: `` `characters/<id>/*.png` ``).
+
+### 4. Scrivi il blocco
+
+Il blocco in `src/shared/characters.ts` è descritto qui sotto in [Formato cartella](#formato-cartella-un-png-per-stato-consigliato): `dir`, `frameWidth`, `frameHeight`, `scale: 0.5` e, per ogni stato, `fps`, `loop` e (negli attacchi) `hitFrame`.
+
+### 5. Controlla e prova
+
+```bash
+npm test               # misure, nomi, trasparenza, peso e crediti di ogni file
+npm run export:godot   # copia i PNG in godot/data
+```
+
+I messaggi di `npm test` dicono cosa correggere, per esempio:
+
+```
+assets/characters/mario/walk.png: larga 2000 px, non è un multiplo del fotogramma (frameWidth 400): ...
+assets/characters/mario/idle.png: l'angolo in alto a sinistra (fotogramma 2) non è trasparente, togli il livello di sfondo
+assets/characters/mario/corsa.png: "corsa" non è uno stato; i nomi validi sono in SPRITE_STATES (characters.ts) ...
+characters/mario/idle.png: nessuna riga in public/assets/CREDITS.md (autore, fonte, licenza) ...
+```
+
+Poi provalo in Godot (comandi in [Provare un personaggio](#provare-un-personaggio)). Dal titolo, **Allenamento** ha un pannello con **Mostra hitbox** e il rallentatore: lì vedi se la mano arriva dentro la zona del colpo nell'istante giusto.
+
 ## Formato cartella: un PNG per stato (consigliato)
 
 Nella cartella c'è un PNG per stato, con il nome dello stato: `idle.png`, `walk.png`, `light.png`... In ogni PNG i fotogrammi sono **in fila da sinistra**, su una riga sola. Non serve dire quanti sono: `npm run export:godot` li conta dalla larghezza del PNG, che dev'essere un multiplo della larghezza del fotogramma.
