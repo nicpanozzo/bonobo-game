@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { existsSync, statSync } from "node:fs";
 import { describe, it } from "node:test";
 import { CHARACTERS, characterStats } from "./characters";
-import { AUDIO, MAX_PLAYERS_PER_ROOM, TICK_RATE, WORLD } from "./constants";
+import { AUDIO, CAMERA, MAX_PLAYERS_PER_ROOM, TICK_RATE, WORLD } from "./constants";
 import { createFighter, stepWorld, type PhysicsContext } from "./physics";
 import { hazardActive, moverPosition } from "./physics/elements";
 import { courseSteps, generateCourse } from "./courseGenerator";
@@ -19,6 +19,7 @@ function checkStage(stage: StageSpec) {
     for (const p of stage.platforms) assert.ok(reachable(stage, p), `${stage.id}: piattaforma a ${p.x},${p.y} irraggiungibile`);
   }
   assert.ok(stage.spawns.length >= MAX_PLAYERS_PER_ROOM, `${stage.id}: una partenza per giocatore`);
+  assert.deepEqual(cameraProblems(stage), [], stage.id);
 
   // Chi parte da ogni punto di partenza resta fermo sul palco
   const ctx: PhysicsContext = { stage, events: [] };
@@ -39,9 +40,36 @@ function musicProblems(music: StageMusic): string[] {
   return problems;
 }
 
+// Larghezza e zoom di un'arena (#240): i problemi, uno per riga, o niente
+function cameraProblems(stage: StageSpec): string[] {
+  const problems: string[] = [];
+  if (stage.width !== undefined && stage.width < WORLD.width) problems.push(`width ${stage.width} più stretta dello schermo (${WORLD.width})`);
+  const min = stage.camera?.minZoom ?? CAMERA.minZoom;
+  const max = stage.camera?.maxZoom ?? CAMERA.maxZoom;
+  if (min < CAMERA.stageMinZoomFloor) problems.push(`minZoom ${min} sotto ${CAMERA.stageMinZoomFloor}: lottatori troppo piccoli`);
+  if (!(min <= max)) problems.push(`minZoom ${min} più grande di maxZoom ${max}`);
+  return problems;
+}
+
 describe("arene", () => {
   it("le arene fatte a mano sono valide", () => {
     for (const stage of Object.values(STAGES)) checkStage(stage);
+  });
+
+  it("un'arena più larga dello schermo, con il suo zoom, è valida (#240)", () => {
+    const wide: StageSpec = {
+      ...STAGES.palco,
+      id: "larga",
+      width: 1920,
+      camera: { minZoom: 0.6 },
+      solids: [{ x: 100, y: 560, width: 1720, height: 80 }],
+      platforms: [{ x: 1500, y: 420, width: 200 }],
+      spawns: [0.1, 0.9, 0.3, 0.7, 0.2, 0.8, 0.4, 0.6].map((f) => ({ x: 100 + 1720 * f, y: 560 })),
+      blastZone: { left: -300, right: 2220, top: -420, bottom: 1000 },
+    };
+    checkStage(wide);
+    assert.deepEqual(cameraProblems({ ...wide, camera: { minZoom: 0.2 } }).length, 1, "zoom troppo lontano");
+    assert.deepEqual(cameraProblems({ ...wide, width: 900 }).length, 1, "più stretta dello schermo");
   });
 
   it("la musica delle arene è un preset valido, e almeno due arene ne hanno una (E12)", () => {

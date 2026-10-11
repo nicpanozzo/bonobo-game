@@ -565,7 +565,8 @@
     "margin": 140,
     "minZoom": 0.7,
     "maxZoom": 1.3,
-    "smoothingMs": 220
+    "smoothingMs": 220,
+    "stageMinZoomFloor": 0.45
   },
   "effects": {
     "hitSparkMs": 220,

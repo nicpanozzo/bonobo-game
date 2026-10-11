@@ -45,6 +45,22 @@ fabbrica: {
 }
 ```
 
+### Arene più grandi dello schermo e zoom (`width`, `camera`)
+
+Un'arena può essere più larga dello schermo con `width`, per esempio 1920 per un'arena da 1,5 schermi. Tutti i pezzi devono stare tra 0 e `width`. La telecamera inquadra tutti i lottatori vivi: si avvicina quando sono vicini e si allontana quando si sparpagliano, senza mai mostrare più delle zone di espulsione.
+
+Quanto può allontanarsi lo decide `camera.minZoom`; senza, vale `CAMERA.minZoom` (0,7), che basta per le arene larghe uno schermo. Con `camera.maxZoom` si cambia quanto si avvicina.
+
+Un'arena larga 1920 ha bisogno di circa 0,6 per mostrarsi intera, con i lottatori ai due capi. Sotto `CAMERA.stageMinZoomFloor` (0,45) i lottatori diventano troppo piccoli, e `npm test` lo segnala. Allarga anche le zone di espulsione, così la telecamera ha spazio.
+
+```ts
+width: 1920,
+camera: { minZoom: 0.6 },
+blastZone: { left: -300, right: 2220, top: -420, bottom: 1000 },
+```
+
+I percorsi della Corsa sono larghi anche loro, ma lì la telecamera segue il proprio lottatore: la differenza è il traguardo (`goal`).
+
 ## Gli elementi che esistono
 
 ### Piattaforma mobile (`movers`): ascensore, navetta
