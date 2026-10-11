@@ -69,6 +69,18 @@ Una piattaforma sottile con `arch` ha la superficie curva, come un ponte: alle e
 { x: 720, y: 520, width: 480, arch: 25 } // il ponte di Prato della Valle (#230), tra due piazze a y 520
 ```
 
+### Piattaforme inclinate (`y2`): le scale
+
+Una piattaforma sottile con `y2` è una rampa: va dritta da `y` (estremità sinistra) a `y2` (estremità destra), e si cammina in salita e in discesa senza saltare. Si disegna come una scala di gradini; i piedi stanno sulla rampa, che tocca lo spigolo di ogni gradino.
+
+- La pendenza arriva al massimo a 1:1, come una scala vera; `arch` e `y2` non vanno insieme. `npm test` controlla tutte e due le cose.
+- Da un blocco pieno si sale sulla rampa camminando, se parte poco più su dei piedi. Per passare in cima da una rampa a un blocco pieno, la rampa deve arrivare 2 px sopra il blocco, a 22 px dal suo bordo (mezzo lottatore): altrimenti il blocco ti spinge di lato.
+- Tenendo giù su una piattaforma sottile si scende attraverso. Una rampa o un arco **chiaramente più in basso** ti prende mentre cadi: è così che dal ponte di Padova si scende sulla scala sotto. Con le sole piattaforme dritte non cambia niente.
+
+```ts
+{ x: 742, y: 518, width: 180, y2: 690 } // la scala sinistra di Padova (#230): dalla piazza (520) al fondo del canale (690)
+```
+
 ## Gli elementi che esistono
 
 ### Piattaforma mobile (`movers`): ascensore, navetta

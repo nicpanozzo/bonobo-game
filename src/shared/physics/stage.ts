@@ -6,14 +6,27 @@ import type { Fighter, PhysicsContext } from "./fighter";
 import { resetShield } from "./shield";
 import type { ThinPlatform } from "../stages";
 
-// Superficie di una piattaforma sottile al punto x (#244): dritta, o ad arco come un ponte,
-// alta y alle estremità e arch pixel più su al centro. Il port della predizione (predict/movement.gd)
-// e il disegno (world_view.gd) rifanno lo stesso calcolo.
+// Superficie di una piattaforma sottile al punto x: dritta, ad arco come un ponte (#244), alta y alle
+// estremità e arch pixel più su al centro, o inclinata come una scala (#246), da y a sinistra a y2 a destra.
+// Il port della predizione (predict/movement.gd) e il disegno (world_view.gd) rifanno lo stesso calcolo.
 export function platformSurfaceY(p: ThinPlatform, x: number): number {
+  if (p.y2 !== undefined) {
+    const u = Math.max(0, Math.min(1, (x - p.x) / p.width));
+    return p.y + (p.y2 - p.y) * u;
+  }
   if (!p.arch) return p.y;
   const half = p.width / 2;
   const u = Math.max(-1, Math.min(1, (x - (p.x + half)) / half));
   return p.y - p.arch * (1 - u * u);
+}
+
+// Piattaforme non dritte (ad arco o inclinate): chi ci cammina segue la superficie
+const curved = (p: ThinPlatform) => !!p.arch || p.y2 !== undefined;
+
+// Quanto dislivello in un passo si segue camminando: sulle rampe cresce con la pendenza, così regge anche lo scatto
+function snapPx(p: ThinPlatform): number {
+  const slope = p.y2 !== undefined ? Math.abs(p.y2 - p.y) / p.width : 0;
+  return FIGHTER.archSnapPx + slope * FIGHTER.slopeSnapStepPx;
 }
 
 export function collideWithStage(f: Fighter, prevY: number, ctx: PhysicsContext, dtMs = 0): void {
@@ -43,14 +56,35 @@ export function collideWithStage(f: Fighter, prevY: number, ctx: PhysicsContext,
     }
   }
 
-  // Piattaforme sottili: solo dall'alto, e non se si sta premendo giù
-  if (!f.onGround && f.vy >= 0 && f.dropTimer === 0) {
+  // Da un blocco pieno si sale camminando su una rampa che parte poco più su dei piedi (#246)
+  if (f.onGround && wasOnGround && f.dropTimer === 0) {
+    for (const p of ctx.stage.platforms) {
+      if (p.y2 === undefined || !(f.x + half > p.x && f.x - half < p.x + p.width)) continue;
+      const sy = platformSurfaceY(p, f.x);
+      if (sy < f.y && f.y - sy <= snapPx(p)) {
+        land(f, sy);
+        break;
+      }
+    }
+  }
+
+  // Piattaforme sottili: solo dall'alto, e non subito dopo aver premuto giù. Durante la discesa con giù
+  // una piattaforma ad arco o inclinata più in basso ti prende (#246): così dal ponte si scende sulla scala
+  if (!f.onGround && f.vy >= 0) {
     for (const p of ctx.stage.platforms) {
       const over = f.x + half > p.x && f.x - half < p.x + p.width;
       if (!over) continue;
       const sy = platformSurfaceY(p, f.x);
-      // Sull'arco (#244) chi ci cammina segue la curva, in salita e in discesa
-      const follow = !!p.arch && wasOnGround && Math.abs(f.y - sy) <= FIGHTER.archSnapPx;
+      if (f.dropTimer > 0) {
+        // ...ma solo se è chiaramente più in basso di dove si è premuto giù, non la stessa da cui si scende
+        if (curved(p) && sy > f.dropFromY + snapPx(p) && prevY <= sy && f.y >= sy) {
+          land(f, sy);
+          break;
+        }
+        continue;
+      }
+      // Sull'arco (#244) e sulle rampe (#246) chi ci cammina segue la superficie, in salita e in discesa
+      const follow = curved(p) && wasOnGround && Math.abs(f.y - sy) <= snapPx(p);
       if ((prevY <= sy && f.y >= sy) || follow) {
         land(f, sy);
         break;

@@ -12,6 +12,7 @@ export interface Fighter extends PlayerState {
   buffer: Record<BufferedKey, number>; // ms in cui una pressione vale ancora (E6): si consuma quando l'azione parte
   jumpsLeft: number;
   dropTimer: number; // ms in cui si ignorano le piattaforme sottili
+  dropFromY: number; // piedi quando si è premuto giù: una rampa o un arco più in basso di così ti prende (#246)
   attackTimer: number; // ms dall'inizio dell'attacco in corso
   cooldownTimer: number; // ms prima di poter attaccare ancora
   hitstunTimer: number;
@@ -145,6 +146,7 @@ export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
     buffer: emptyBuffer(),
     jumpsLeft: FIGHTER.maxJumps,
     dropTimer: 0,
+    dropFromY: 0,
     attackTimer: 0,
     cooldownTimer: 0,
     hitstunTimer: 0,

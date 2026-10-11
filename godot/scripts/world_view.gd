@@ -351,7 +351,9 @@ func _draw() -> void:
 		draw_rect(Rect2(s.x, s.y, s.width, s.height), _color(stage.colors.solid))
 		draw_rect(Rect2(s.x, s.y, s.width, 6), _color(stage.colors.solidEdge))
 	for p in stage.platforms:
-		if float(p.get("arch", 0)) != 0.0:
+		if p.get("y2") != null:
+			_draw_stairs(p, _color(stage.colors.platform))
+		elif float(p.get("arch", 0)) != 0.0:
 			draw_colored_polygon(arch_polygon(p, 8.0), _color(stage.colors.platform))
 		else:
 			draw_rect(Rect2(p.x, p.y, p.width, 8), _color(stage.colors.platform))
@@ -641,6 +643,23 @@ static func mover_position(m: Dictionary, t: float) -> Vector2:
 			return a.lerp(Vector2(route[i + 1].x, route[i + 1].y), left / seg_ms)
 		left -= seg_ms
 	return Vector2(route[segments].x, route[segments].y)
+
+
+# Piattaforma inclinata (#246), disegno provvisorio: gradini di pietra lungo la rampa. La fisica vede la rampa;
+# i piedi stanno sulla rampa, che tocca lo spigolo di ogni gradino (al massimo un gradino sopra la pedata).
+func _draw_stairs(p: Dictionary, col: Color) -> void:
+	var w: float = p.width
+	var rise := absf(float(p.y2) - float(p.y))
+	var n := maxi(2, int(rise / 14.0)) # un gradino ogni 14 px di dislivello circa
+	var step := w / n
+	var dark := col.darkened(0.35)
+	for i in n:
+		var x0: float = float(p.x) + step * i
+		var top := maxf(PredictMovement.surface_y(p, x0), PredictMovement.surface_y(p, x0 + step)) # la rampa tocca lo spigolo di ogni gradino
+		var bottom := maxf(float(p.y), float(p.y2)) # i gradini non scendono sotto il fondo della scala
+		draw_rect(Rect2(x0, top, step + 0.5, minf(6.0, bottom - top)), col)
+		if top + 6.0 < bottom:
+			draw_rect(Rect2(x0, top + 6, step + 0.5, minf(rise / n, bottom - top - 6.0)), dark)
 
 
 # Piattaforma ad arco (#244): la striscia spessa thick che segue la curva di PredictMovement.surface_y

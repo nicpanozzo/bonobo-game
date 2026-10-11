@@ -23,6 +23,11 @@ function checkStage(stage: StageSpec) {
   // Piattaforme ad arco (#244): una curva dolce, che si cammina senza staccarsi (pendenza ai bordi al massimo 1:2)
   for (const p of stage.platforms) {
     if (p.arch !== undefined) assert.ok(p.arch > 0 && p.arch <= p.width / 8, `${stage.id}: arco di ${p.arch} troppo ripido per una piattaforma larga ${p.width}`);
+    // Piattaforme inclinate (#246): al massimo ripide come una scala (1:1), e non anche ad arco
+    if (p.y2 !== undefined) {
+      assert.ok(p.arch === undefined, `${stage.id}: una piattaforma è ad arco o inclinata, non tutte e due`);
+      assert.ok(Math.abs(p.y2 - p.y) <= p.width, `${stage.id}: rampa troppo ripida (${p.y} → ${p.y2} su ${p.width})`);
+    }
   }
 
   // Chi parte da ogni punto di partenza resta fermo sul palco
