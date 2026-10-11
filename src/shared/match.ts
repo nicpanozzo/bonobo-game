@@ -364,5 +364,13 @@ function predictionState(f: Fighter): PredictionState {
     rising: f.jumpRising,
     drop: Math.round(f.dropTimer),
     jumpBuffer: Math.round(f.buffer.jump),
+    dash: Math.round(f.dashTimer),
+    tapDir: f.dashTapDir,
+    tapTimer: Math.round(f.dashTapTimer),
+    tapHold: Math.round(f.dashHoldMs),
+    dodge: Math.round(f.dodgeTimer),
+    dodgeCooldown: Math.round(f.dodgeCooldown),
+    airDodge: f.airDodgeUsed,
+    dodgeBuffer: Math.round(f.buffer.dodge),
   };
 }

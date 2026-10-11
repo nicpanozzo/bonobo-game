@@ -85,6 +85,14 @@ export interface PredictionState {
   rising: boolean; // si sta salendo per un salto: lasciando il tasto si accorcia
   drop: number; // ms in cui si attraversano le piattaforme sottili
   jumpBuffer: number; // ms in cui una pressione del salto vale ancora (E6)
+  dash: number; // ms di scatto rimasti (#199)
+  tapDir: number; // direzione dell'ultimo tocco, per il doppio tocco dello scatto
+  tapTimer: number; // ms entro cui un secondo tocco fa scattare
+  tapHold: number; // ms per cui si è tenuto l'ultimo tocco
+  dodge: number; // ms di schivata in corso (#3)
+  dodgeCooldown: number; // ms prima della prossima schivata
+  airDodge: boolean; // la schivata in aria è già stata usata
+  dodgeBuffer: number; // ms in cui una pressione della schivata vale ancora (E6)
 }
 
 // Un proiettile in volo (E10): lo tira una speciale e colpisce come un attacco

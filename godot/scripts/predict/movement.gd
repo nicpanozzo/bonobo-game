@@ -1,23 +1,28 @@
 # Il movimento del proprio lottatore in GDScript, per la predizione (E17 passo 3).
 # È una copia della parte di src/shared/physics che muove un lottatore libero: corsa, aria, salti,
-# salto corto, coyote, gravità, caduta veloce, piattaforme sottili e contatto con l'arena
-# (stepFighter in index.ts, applyControls/applyGravity/tickCoyote in movement.ts, collideWithStage in stage.ts).
+# salto corto, coyote, gravità, caduta veloce, piattaforme sottili, scatto, corsa, schivata e contatto con l'arena
+# (stepFighter in index.ts, applyControls/applyGravity/tickCoyote in movement.ts, stepDash in dash.ts,
+# collideWithStage in stage.ts).
 # La fisica vera resta quella: se cambia, tests/test_prediction.gd rigioca le tracce generate dal
 # TypeScript e diventa rosso finché questo file non fa lo stesso. Fuori da qui (attacchi, colpi, bordo,
-# scudo, presa, speciali, scatto, ascensori) la predizione non prova a indovinare: decide il server.
+# scudo, presa, speciali, ascensori) la predizione non prova a indovinare: decide il server.
 class_name PredictMovement
 extends RefCounted
 
 var fighter: Dictionary # FIGHTER di constants.ts (game.json)
+var dash: Dictionary # DASH
+var dodge: Dictionary # DODGE
 var buffer_ms: float # INPUT.bufferMs: per quanto una pressione del salto vale ancora
 var stats: Dictionary # statistiche del personaggio: speed, airSpeed, jump, gravity
 var solids: Array
 var platforms: Array
 
 
-func _init(fighter_data: Dictionary, input_buffer_ms: float, character_stats: Dictionary, stage_solids: Array, stage_platforms: Array) -> void:
-	fighter = fighter_data
-	buffer_ms = input_buffer_ms
+func _init(game: Dictionary, character_stats: Dictionary, stage_solids: Array, stage_platforms: Array) -> void:
+	fighter = game.fighter
+	dash = game.dash
+	dodge = game.dodge
+	buffer_ms = float(game.input.bufferMs)
 	stats = character_stats
 	solids = stage_solids
 	platforms = stage_platforms
@@ -30,14 +35,20 @@ static func state_from(p: Dictionary, timers: Dictionary, input: Dictionary) -> 
 		"onGround": bool(p.onGround), "facing": int(p.facing),
 		"jumps": int(timers.jumps), "coyote": float(timers.coyote), "rising": bool(timers.rising),
 		"drop": float(timers.drop), "jumpBuffer": float(timers.jumpBuffer),
+		"dashing": bool(p.get("dashing", false)), "dash": float(timers.get("dash", 0)),
+		"tapDir": int(timers.get("tapDir", 0)), "tapTimer": float(timers.get("tapTimer", 0)), "tapHold": float(timers.get("tapHold", 0)),
+		"dodge": float(timers.get("dodge", 0)), "dodgeCooldown": float(timers.get("dodgeCooldown", 0)),
+		"airDodge": bool(timers.get("airDodge", false)), "dodgeBuffer": float(timers.get("dodgeBuffer", 0)),
 		"input": input.duplicate(), "prev": input.duplicate(),
 	}
 
 
-# Un tasto nuovo (Match.setInput): il salto appena premuto finisce nel buffer (E6)
+# Un tasto nuovo (Match.setInput): salto e schivata appena premuti finiscono nel buffer (E6)
 func set_input(s: Dictionary, input: Dictionary) -> void:
 	if input.get("jump", false) and not s.input.get("jump", false):
 		s.jumpBuffer = buffer_ms
+	if input.get("dodge", false) and not s.input.get("dodge", false):
+		s.dodgeBuffer = buffer_ms
 	s.input = input
 
 
@@ -45,8 +56,11 @@ func set_input(s: Dictionary, input: Dictionary) -> void:
 func step(s: Dictionary, dt_ms: float) -> void:
 	var dt := dt_ms / 1000.0
 	s.drop = maxf(0.0, s.drop - dt_ms)
+	s.dodge = maxf(0.0, s.dodge - dt_ms)
+	s.dodgeCooldown = maxf(0.0, s.dodgeCooldown - dt_ms)
 	_tick_coyote(s, dt_ms)
 	s.jumpBuffer = maxf(0.0, s.jumpBuffer - dt_ms)
+	s.dodgeBuffer = maxf(0.0, s.dodgeBuffer - dt_ms)
 	_apply_controls(s, dt)
 	_apply_gravity(s, dt)
 	var prev_y: float = s.y
@@ -79,7 +93,25 @@ func _apply_controls(s: Dictionary, dt: float) -> void:
 		elif not s.input.get("jump", false):
 			s.vy *= float(fighter.shortHopCut)
 			s.rising = false
-	if s.onGround:
+	# Schivata: mentre dura si scivola alla velocità decisa all'inizio, senza controlli
+	if s.dodge > 0:
+		_end_dash(s)
+		return
+	if (_pressed(s, "dodge") or s.dodgeBuffer > 0) and s.dodgeCooldown == 0.0 and (s.onGround or not s.airDodge):
+		s.dodgeBuffer = 0.0
+		s.dodge = float(dodge.durationMs)
+		s.dodgeCooldown = float(dodge.cooldownMs)
+		s.vx = dir * float(dodge.speed)
+		if not s.onGround:
+			s.airDodge = true
+			s.vy = 0.0
+		if dir != 0:
+			s.facing = dir
+		return
+	var dash_speed: Variant = _step_dash(s, dir, dt * 1000.0)
+	if s.onGround and dash_speed != null:
+		s.vx = float(dash_speed)
+	elif s.onGround:
 		s.vx = dir * float(fighter.groundSpeed) * float(stats.speed)
 	elif dir != 0:
 		s.vx += dir * float(fighter.airAccel) * dt
@@ -101,6 +133,44 @@ func _apply_controls(s: Dictionary, dt: float) -> void:
 		s.rising = true
 	if _pressed(s, "down"):
 		s.drop = float(fighter.dropThroughMs)
+
+
+# Scatto e corsa (stepDash in dash.ts): velocità a terra, o null se si cammina come sempre
+func _step_dash(s: Dictionary, dir: int, dt_ms: float) -> Variant:
+	s.tapTimer = maxf(0.0, s.tapTimer - dt_ms)
+	if dir != 0 and dir == s.tapDir:
+		s.tapHold += dt_ms
+		if s.tapHold > float(dash.tapMaxMs):
+			s.tapTimer = 0.0
+	if not s.onGround:
+		_end_dash(s)
+		return null
+	var prev_dir := (1 if s.prev.get("right", false) else 0) - (1 if s.prev.get("left", false) else 0)
+	if dir != 0 and dir != prev_dir:
+		if not s.dashing and s.tapTimer > 0 and s.tapDir == dir:
+			s.dashing = true
+			s.dash = float(dash.durationMs)
+			s.facing = dir
+		s.tapDir = dir
+		s.tapTimer = float(dash.doubleTapMs)
+		s.tapHold = 0.0
+	if not s.dashing:
+		return null
+	if dir == -s.facing:
+		_end_dash(s)
+		return null
+	if s.dash > 0:
+		s.dash = maxf(0.0, s.dash - dt_ms)
+		return s.facing * float(dash.speed) * float(stats.speed)
+	if dir == s.facing:
+		return s.facing * float(dash.runSpeed) * float(stats.speed)
+	_end_dash(s)
+	return null
+
+
+func _end_dash(s: Dictionary) -> void:
+	s.dashing = false
+	s.dash = 0.0
 
 
 func _apply_gravity(s: Dictionary, dt: float) -> void:
@@ -153,3 +223,4 @@ func _land(s: Dictionary, y: float) -> void:
 	s.vy = 0.0
 	s.onGround = true
 	s.jumps = int(fighter.maxJumps)
+	s.airDodge = false

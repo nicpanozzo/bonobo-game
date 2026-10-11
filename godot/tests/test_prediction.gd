@@ -11,12 +11,13 @@ func test_numero_dell_input_e_il_tick_locale() -> void:
 
 
 # E17 passo 3: movement.gd rigioca le tracce della fisica TypeScript (src/shared/predictionTraces.ts)
-const KEYS := {"l": "left", "r": "right", "j": "jump", "d": "down"}
-const FIELDS := ["x", "y", "vx", "vy", "onGround", "facing", "jumps", "coyote", "rising", "drop", "jumpBuffer"]
+const KEYS := {"l": "left", "r": "right", "j": "jump", "d": "down", "x": "dodge"}
+const FIELDS := ["x", "y", "vx", "vy", "onGround", "facing", "jumps", "coyote", "rising", "drop", "jumpBuffer",
+	"dashing", "dash", "tapDir", "tapTimer", "tapHold", "dodge", "dodgeCooldown", "airDodge", "dodgeBuffer"]
 
 
 func _input(keys: String) -> Dictionary:
-	var input := {"left": false, "right": false, "jump": false, "down": false}
+	var input := {"left": false, "right": false, "jump": false, "down": false, "dodge": false}
 	for k in keys:
 		input[KEYS[k]] = true
 	return input
@@ -34,7 +35,7 @@ func test_il_movimento_rigioca_le_tracce() -> void:
 	runner.check(traces.size() >= 4, "servono le tracce: npm run export:godot")
 	var dt := 1000.0 / float(game.tickRate)
 	for t in traces:
-		var m := PredictMovement.new(game.fighter, float(game.input.bufferMs), t.stats, t.solids, t.platforms)
+		var m := PredictMovement.new(game, t.stats, t.solids, t.platforms)
 		var s := PredictMovement.state_from(t.start, t.start, _input(""))
 		var i := 0
 		for tick in t.ticks:
@@ -134,3 +135,28 @@ func test_la_correzione_si_spalma() -> void:
 	pr.enabled = false
 	pr.on_server(_server_me(game, 100, 2), _ms(104))
 	runner.check(pr.sample(_ms(104)) == null, "opzione spenta: niente predizione")
+
+
+# E17 passo 5: smettere di predire non fa saltare indietro il lottatore
+func test_quando_si_smette_di_predire_non_si_salta_indietro() -> void:
+	var game := _game()
+	var pr := _predictor(game)
+	pr.record_input({"right": true}, 100)
+	pr.on_server(_server_me(game, 100, 2), _ms(118))
+	var predicted: Variant = pr.sample(_ms(118))
+	pr.on_server(_server_me(game, 100, 2, {"attack": "light"}), _ms(119))
+	var behind := _server_me(game, 100, 2, {"attack": "light"}) # il server è indietro di un viaggio di rete
+	var first: Variant = pr.sample(_ms(119), behind)
+	runner.check(absf(first.x - predicted.x) < 2.0, "si riparte da dove si era (%s), non dal server (%s)" % [first.x, behind.x])
+	var later: Variant = pr.sample(_ms(119) + 500.0, behind)
+	runner.check(absf(later.x - behind.x) < 1.0, "poi si arriva al server: %s" % [later.x])
+
+
+func test_scatto_e_schivata_si_predicono() -> void:
+	var game := _game()
+	var pr := _predictor(game)
+	pr.record_input({"dodge": true}, 103)
+	pr.on_server(_server_me(game, 100, 2, {"dashing": true}), _ms(104))
+	runner.check(pr.is_active(), "lo scatto non spegne la predizione")
+	pr.on_server(_server_me(game, 100, 2), _ms(104))
+	runner.check(pr.is_active(), "la schivata premuta non spegne la predizione")
