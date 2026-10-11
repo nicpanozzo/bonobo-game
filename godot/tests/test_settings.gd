@@ -164,3 +164,13 @@ func test_salto_nuovo_con_preferenze_vecchie() -> void:
 	runner.check(s.bindings.jump == [KEY_SPACE] and s.bindings.up == [KEY_W, KEY_UP], "Spazio passa al salto: %s %s" % [s.bindings.jump, s.bindings.up])
 	runner.check(s.pad_bindings.jump == [JOY_BUTTON_A], "A passa al salto: %s" % [s.pad_bindings.jump])
 	runner.check(not s.pad_bindings.up.has(JOY_BUTTON_A), "su senza A: %s" % [s.pad_bindings.up])
+
+
+func test_preferenze_del_touch_restano() -> void:
+	var s := _fresh()
+	runner.check(s.touch == Settings.TOUCH_DEFAULTS, "touch di default: %s" % [s.touch])
+	s.touch.size = 2
+	s.touch.left_handed = true
+	s.save()
+	var again := Settings.new(AUDIO, PATH)
+	runner.check(again.touch.size == 2 and again.touch.left_handed, "restano dopo il riavvio: %s" % [again.touch])

@@ -87,6 +87,8 @@ func _ready() -> void:
 	touch = TouchControls.new()
 	touch.visible = false
 	layer.add_child(touch)
+	touch.configure(settings.touch)
+	settings.changed.connect(func(): touch.configure(settings.touch))
 	touch.pause_pressed.connect(func(): if not is_instance_valid(pause_menu): _open_pause())
 	touch.free_tap.connect(func(): socket.emit("rematch")) # come R: il server lo accetta solo a partita finita
 	touch.extra_pressed.connect(func(extra: String):

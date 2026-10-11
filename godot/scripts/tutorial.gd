@@ -14,6 +14,7 @@ var index := 0
 var _done_at := -1 # ms in cui la tappa corrente è stata fatta, -1 se non ancora
 var _pad := false # tasti del pad invece che della tastiera
 var _pad_kind := "xbox"
+var _touch := false # comandi a schermo (E18): si mostrano quelli invece dei tasti
 var _step: Label
 var _title: Label
 var _text: Label
@@ -37,6 +38,7 @@ func setup(s: Settings, game: Dictionary) -> void:
 	_pad = not Input.get_connected_joypads().is_empty()
 	if _pad:
 		_pad_kind = Settings.pad_kind(Input.get_joy_name(Input.get_connected_joypads()[0]))
+	_touch = not _pad and DisplayServer.is_touchscreen_available()
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var panel := PanelContainer.new()
@@ -77,9 +79,14 @@ func _process(_delta: float) -> void:
 
 # L'ultimo dispositivo toccato decide i tasti mostrati
 func _input(event: InputEvent) -> void:
+	if event is InputEventScreenTouch and event.pressed and not _touch:
+		_touch = true
+		_show()
+		return
 	var pad: bool = event is InputEventJoypadButton or (event is InputEventJoypadMotion and absf(event.axis_value) > 0.5)
-	if (pad or event is InputEventKey) and pad != _pad:
+	if (pad or event is InputEventKey) and (pad != _pad or _touch):
 		_pad = pad
+		_touch = false
 		if pad:
 			_pad_kind = Settings.pad_kind(Input.get_joy_name(event.device))
 		_show()
@@ -103,6 +110,9 @@ func _show() -> void:
 func keys_text(actions: Array) -> String:
 	var parts := PackedStringArray()
 	for a in actions:
+		if _touch:
+			parts.append("%s: %s" % [Settings.LABELS.get(a, a), TouchControls.hint(a)])
+			continue
 		var codes: Array = (settings.pad_bindings if _pad else settings.bindings).get(a, []).slice(0, 1)
 		var names: Array = codes.map(func(c): return Settings.pad_label(c, _pad_kind) if _pad else Settings.key_label(c))
 		parts.append("%s: %s" % [Settings.LABELS.get(a, a), names[0] if not names.is_empty() else "nessun tasto"])

@@ -37,3 +37,10 @@ func test_schema_dei_comandi() -> void:
 
 func test_nome_a_caso() -> void:
 	runner.check(FirstRun.random_name().length() > 3, "un nome")
+
+
+func test_schema_dei_comandi_touch() -> void:
+	var s := _fresh()
+	var touch := FirstRun.controls(s, false, "xbox", true)
+	runner.check(touch[FirstRun.SHOWN.find("light")][1] == "tasto Leggero", "col touch: %s" % [touch])
+	runner.check(touch[FirstRun.SHOWN.find("left")][1] == "levetta a sinistra", "la levetta per correre")

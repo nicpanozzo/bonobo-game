@@ -13,6 +13,7 @@ const SHOWN := ["left", "right", "jump", "light", "heavy", "dodge"]
 var settings: Settings
 var _step := 0
 var _pad := false # schema dei comandi del pad invece che della tastiera
+var _touch := false # schema dei comandi a schermo (E18), vince su _pad
 var _box: VBoxContainer
 var _page := VBoxContainer.new()
 var _dots := UI.note("")
@@ -23,6 +24,7 @@ var _next: Button
 func setup(s: Settings) -> void:
 	settings = s
 	_pad = not Input.get_connected_joypads().is_empty()
+	_touch = not _pad and DisplayServer.is_touchscreen_available()
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var bg := ColorRect.new()
 	bg.color = UI.BG
@@ -77,22 +79,29 @@ func _show_step(step: int) -> void:
 			for pad in [false, true]:
 				var b := UI.button("Pad" if pad else "Tastiera", func():
 					_pad = pad
+					_touch = false
 					_show_step(1))
-				UI.set_selected(b, pad == _pad)
+				UI.set_selected(b, pad == _pad and not _touch)
 				tabs.add_child(b)
+			var t := UI.button("Touch", func():
+				_touch = true
+				_show_step(1))
+			UI.set_selected(t, _touch)
+			tabs.add_child(t)
 			_page.add_child(tabs)
 			var grid := GridContainer.new()
 			grid.columns = 2
 			grid.add_theme_constant_override("h_separation", UI.GAP_L * 3)
-			for row in controls(settings, _pad, _pad_kind()):
+			for row in controls(settings, _pad, _pad_kind(), _touch):
 				grid.add_child(UI.label(row[0]))
 				grid.add_child(UI.label(row[1], UI.SIZE_BODY, UI.ACCENT))
 			_page.add_child(grid)
 			_page.add_child(UI.note("Si cambiano quando vuoi da Opzioni → Comandi."))
 			_next.text = "Avanti"
 		2:
-			var hit: String = controls(settings, _pad, _pad_kind())[SHOWN.find("light")][1]
-			var l := UI.label("Prova veloce: entri in una stanza tutta tua con un manichino. Avvicinati e colpiscilo con %s. Per tornare alla lobby premi Esc." % hit)
+			var hit: String = controls(settings, _pad, _pad_kind(), _touch)[SHOWN.find("light")][1]
+			var back := "tocca la pausa in alto a destra" if _touch else "premi Esc"
+			var l := UI.label("Prova veloce: entri in una stanza tutta tua con un manichino. Avvicinati e colpiscilo con %s. Per tornare alla lobby %s." % [hit, back])
 			l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 			_page.add_child(l)
 			_page.add_child(UI.note("Per giocare con gli amici, dalla lobby crei una stanza e mandi il link sul Discord."))
@@ -139,9 +148,12 @@ static func random_name() -> String:
 
 
 # [nome dell'azione, primo o primi due tasti] per lo schema dei comandi, dai tasti salvati (E6)
-static func controls(s: Settings, pad: bool, kind := "xbox") -> Array:
+static func controls(s: Settings, pad: bool, kind := "xbox", touch := false) -> Array:
 	var out := []
 	for a in SHOWN:
+		if touch:
+			out.append([Settings.LABELS[a], TouchControls.hint(a)])
+			continue
 		var codes: Array = (s.pad_bindings if pad else s.bindings)[a].slice(0, 2)
 		var names := codes.map(func(c): return Settings.pad_label(c, kind) if pad else Settings.key_label(c))
 		out.append([Settings.LABELS[a], " o ".join(PackedStringArray(names)) if not names.is_empty() else "nessun tasto"])
