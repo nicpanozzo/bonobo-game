@@ -236,6 +236,10 @@
       "boxY": -130
     }
   },
+  "recovery": {
+    "speed": 1050,
+    "drift": 300
+  },
   "ledge": {
     "hangOffsetY": 56
   },

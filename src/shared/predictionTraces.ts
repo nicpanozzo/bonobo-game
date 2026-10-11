@@ -5,7 +5,8 @@
 // così chi cambia il movimento solo in TypeScript vede rossa prima una CI e poi l'altra.
 //
 // Solo il movimento che il client predice: corsa, aria, salti, salto corto, coyote, gravità, caduta veloce,
-// piattaforme sottili, scatto con il doppio tocco e schivata. Una traccia si ferma prima del primo tick fuori da lì (bordo, KO, ascensori).
+// piattaforme sottili, scatto con il doppio tocco, schivata, attacchi leggeri e pesanti (fermi a terra) e recupero.
+// Una traccia si ferma prima del primo tick fuori da lì (bordo, KO, ascensori).
 
 import { characterStats } from "./characters";
 import { TICK_RATE } from "./constants";
@@ -18,10 +19,10 @@ const DT = 1000 / TICK_RATE;
 const MAX_TICKS = 480;
 // Arena, personaggio (statistiche diverse) e seme dei tasti
 const CASES: { stage: StageSpec; characterId: string; seed: number }[] = [
-  { stage: getStage("palco"), characterId: "default", seed: 11 },
-  { stage: getStage("isole"), characterId: "orsoblu", seed: 17 },
-  { stage: getStage("palestra"), characterId: "elvedeo", seed: 17 },
-  { stage: generateStage(7), characterId: "default", seed: 6 },
+  { stage: getStage("palco"), characterId: "default", seed: 47 },
+  { stage: getStage("isole"), characterId: "orsoblu", seed: 19 },
+  { stage: getStage("palestra"), characterId: "elvedeo", seed: 48 },
+  { stage: generateStage(7), characterId: "default", seed: 34 },
 ];
 
 export interface TraceState {
@@ -45,6 +46,13 @@ export interface TraceState {
   dodgeCooldown: number;
   airDodge: boolean;
   dodgeBuffer: number;
+  attack: string | null;
+  attackTimer: number;
+  cooldown: number;
+  recoveryUsed: boolean;
+  helpless: boolean;
+  lightBuffer: number;
+  heavyBuffer: number;
 }
 
 export interface PredictionTrace {
@@ -54,10 +62,10 @@ export interface PredictionTrace {
   characterId: string;
   stats: { speed: number; airSpeed: number; jump: number; gravity: number };
   start: TraceState;
-  ticks: { input: string; state: TraceState }[]; // input: lettere dei tasti tenuti, l r j d, x per la schivata
+  ticks: { input: string; state: TraceState }[]; // input: lettere dei tasti tenuti, l r j d, x per la schivata, a e h per leggero e pesante, u per su
 }
 
-const KEYS: Record<string, keyof InputState> = { l: "left", r: "right", j: "jump", d: "down", x: "dodge" };
+const KEYS: Record<string, keyof InputState> = { l: "left", r: "right", j: "jump", d: "down", x: "dodge", a: "light", h: "heavy", u: "up" };
 const round = (v: number) => Math.round(v * 1e6) / 1e6;
 
 function stateOf(f: Fighter): TraceState {
@@ -82,11 +90,18 @@ function stateOf(f: Fighter): TraceState {
     dodgeCooldown: round(f.dodgeCooldown),
     airDodge: f.airDodgeUsed,
     dodgeBuffer: round(f.buffer.dodge),
+    attack: f.attack,
+    attackTimer: round(f.attackTimer),
+    cooldown: round(f.cooldownTimer),
+    recoveryUsed: f.recoveryUsed,
+    helpless: f.helpless,
+    lightBuffer: round(f.buffer.light),
+    heavyBuffer: round(f.buffer.heavy),
   };
 }
 
 // Pezzi di tasti tenuti da 1 a 30 tick: direzioni, salti lunghi e corti, giù per cadere più in fretta,
-// schivate; ogni tanto un doppio tocco veloce della stessa direzione, che fa scattare
+// schivate, attacchi (con su o giù per le varianti, su + pesante in aria è il recupero); ogni tanto un doppio tocco veloce della stessa direzione, che fa scattare
 function nextSegments(random: () => number): { keys: string; hold: number }[] {
   const r = random();
   const dir = r < 0.35 ? "l" : r < 0.7 ? "r" : "";
@@ -97,7 +112,10 @@ function nextSegments(random: () => number): { keys: string; hold: number }[] {
   const jump = random() < 0.3 ? "j" : "";
   const down = random() < 0.12 ? "d" : "";
   const dodge = random() < 0.08 ? "x" : "";
-  return [{ keys: dir + jump + down + dodge, hold: 1 + Math.floor(random() * 30) }];
+  const a = random();
+  const attack = a < 0.1 ? "a" : a < 0.18 ? "h" : "";
+  const up = random() < 0.12 ? "u" : "";
+  return [{ keys: dir + jump + down + dodge + attack + up, hold: 1 + Math.floor(random() * 30) }];
 }
 
 const outOfScope = (f: Fighter) => f.respawning || f.eliminated || f.hitstun || f.ledgeIndex >= 0 || f.riding >= 0;

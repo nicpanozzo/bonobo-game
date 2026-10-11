@@ -372,5 +372,12 @@ function predictionState(f: Fighter): PredictionState {
     dodgeCooldown: Math.round(f.dodgeCooldown),
     airDodge: f.airDodgeUsed,
     dodgeBuffer: Math.round(f.buffer.dodge),
+    attackTimer: Math.round(f.attackTimer),
+    cooldown: Math.round(f.cooldownTimer),
+    hitstop: Math.round(f.hitstopTimer),
+    recoveryUsed: f.recoveryUsed,
+    helpless: f.helpless,
+    lightBuffer: Math.round(f.buffer.light),
+    heavyBuffer: Math.round(f.buffer.heavy),
   };
 }

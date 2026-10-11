@@ -11,19 +11,22 @@ func test_numero_dell_input_e_il_tick_locale() -> void:
 
 
 # E17 passo 3: movement.gd rigioca le tracce della fisica TypeScript (src/shared/predictionTraces.ts)
-const KEYS := {"l": "left", "r": "right", "j": "jump", "d": "down", "x": "dodge"}
+const KEYS := {"l": "left", "r": "right", "j": "jump", "d": "down", "x": "dodge", "a": "light", "h": "heavy", "u": "up"}
 const FIELDS := ["x", "y", "vx", "vy", "onGround", "facing", "jumps", "coyote", "rising", "drop", "jumpBuffer",
-	"dashing", "dash", "tapDir", "tapTimer", "tapHold", "dodge", "dodgeCooldown", "airDodge", "dodgeBuffer"]
+	"dashing", "dash", "tapDir", "tapTimer", "tapHold", "dodge", "dodgeCooldown", "airDodge", "dodgeBuffer",
+	"attack", "attackTimer", "cooldown", "recoveryUsed", "helpless", "lightBuffer", "heavyBuffer"]
 
 
 func _input(keys: String) -> Dictionary:
-	var input := {"left": false, "right": false, "jump": false, "down": false, "dodge": false}
+	var input := {"left": false, "right": false, "jump": false, "down": false, "dodge": false, "light": false, "heavy": false, "up": false}
 	for k in keys:
 		input[KEYS[k]] = true
 	return input
 
 
 func _differs(a: Variant, b: Variant) -> bool:
+	if a is String or b is String or a == null or b == null:
+		return str(a if a != null else "") != str(b if b != null else "")
 	if a is bool or b is bool:
 		return bool(a) != bool(b)
 	return absf(float(a) - float(b)) > 0.01
@@ -99,8 +102,8 @@ func test_il_salto_si_vede_subito() -> void:
 func test_fuori_dal_movimento_decide_il_server() -> void:
 	var game := _game()
 	var pr := _predictor(game)
-	pr.on_server(_server_me(game, 100, 2, {"attack": "light"}), _ms(104))
-	runner.check(pr.sample(_ms(104)) == null, "attacco in corso: niente predizione")
+	pr.on_server(_server_me(game, 100, 2, {"attack": "specialSide"}), _ms(104))
+	runner.check(pr.sample(_ms(104)) == null, "speciale in corso: niente predizione")
 	pr.on_server(_server_me(game, 100, 2, {"hitstun": true}), _ms(104))
 	runner.check(pr.sample(_ms(104)) == null, "colpito: niente predizione")
 	var old := _server_me(game, 100, 2)
@@ -114,13 +117,17 @@ func test_fuori_dal_movimento_decide_il_server() -> void:
 	runner.check(pr.sample(_ms(104)) == null, "arena con ascensori: niente predizione")
 
 
-func test_un_attacco_premuto_ferma_la_predizione() -> void:
+func test_una_speciale_premuta_ferma_la_predizione() -> void:
 	var game := _game()
 	var pr := _predictor(game)
-	pr.record_input({"light": false}, 100)
-	pr.record_input({"light": true}, 103)
+	pr.record_input({"special": false}, 100)
+	pr.record_input({"special": true}, 103)
 	pr.on_server(_server_me(game, 100, 2), _ms(104))
-	runner.check(pr.sample(_ms(104)) == null, "il server sta per far partire un attacco che il port non fa")
+	runner.check(pr.sample(_ms(104)) == null, "il server sta per far partire una mossa che il port non fa")
+	pr.record_input({"light": true}, 105)
+	pr.items_present = true
+	pr.on_server(_server_me(game, 105, 1), _ms(106))
+	runner.check(pr.sample(_ms(106)) == null, "con gli oggetti il leggero può raccogliere: decide il server")
 
 
 func test_la_correzione_si_spalma() -> void:
@@ -144,8 +151,8 @@ func test_quando_si_smette_di_predire_non_si_salta_indietro() -> void:
 	pr.record_input({"right": true}, 100)
 	pr.on_server(_server_me(game, 100, 2), _ms(118))
 	var predicted: Variant = pr.sample(_ms(118))
-	pr.on_server(_server_me(game, 100, 2, {"attack": "light"}), _ms(119))
-	var behind := _server_me(game, 100, 2, {"attack": "light"}) # il server è indietro di un viaggio di rete
+	pr.on_server(_server_me(game, 100, 2, {"attack": "grab"}), _ms(119))
+	var behind := _server_me(game, 100, 2, {"attack": "grab"}) # il server è indietro di un viaggio di rete
 	var first: Variant = pr.sample(_ms(119), behind)
 	runner.check(absf(first.x - predicted.x) < 2.0, "si riparte da dove si era (%s), non dal server (%s)" % [first.x, behind.x])
 	var later: Variant = pr.sample(_ms(119) + 500.0, behind)
@@ -160,3 +167,31 @@ func test_scatto_e_schivata_si_predicono() -> void:
 	runner.check(pr.is_active(), "lo scatto non spegne la predizione")
 	pr.on_server(_server_me(game, 100, 2), _ms(104))
 	runner.check(pr.is_active(), "la schivata premuta non spegne la predizione")
+
+
+func test_un_attacco_si_vede_subito_e_a_terra_si_resta_fermi() -> void:
+	var game := _game()
+	var pr := _predictor(game)
+	pr.record_input({"right": true}, 100)
+	pr.record_input({"right": true, "light": true}, 105) # premuto, il server non lo sa ancora
+	pr.on_server(_server_me(game, 100, 2), _ms(106))
+	var s: Variant = pr.sample(_ms(108))
+	runner.check(s != null and s.attack == "light", "il leggero parte prima che il server lo veda: %s" % [s])
+	var x: float = s.x
+	runner.check(absf(pr.sample(_ms(110)).x - x) < 0.01, "durante un attacco da terra si resta fermi")
+	pr.on_server(_server_me(game, 105, 2, {"attack": "light"}), _ms(110))
+	runner.check(pr.is_active(), "un leggero in corso sul server si predice")
+
+
+func test_il_fermo_del_colpo_blocca_tutto() -> void:
+	var game := _game()
+	var m := PredictMovement.new(game, game.characters["default"].stats, game.stages.palco.solids, game.stages.palco.platforms)
+	var p := _server_me(game, 100, 1, {"attack": "light", "vx": 0.0})
+	var s := PredictMovement.state_from(p, {"jumps": 2, "coyote": 0, "rising": false, "drop": 0, "jumpBuffer": 0,
+		"attackTimer": 60, "cooldown": 200, "hitstop": 50}, {})
+	m.set_input(s, {"right": true})
+	for i in 3:
+		m.step(s, 1000.0 / 60.0)
+	runner.check(s.attackTimer == 60.0 and s.cooldown == 200.0 and s.x == 640.0, "nel fermo non cambia niente: %s" % [s])
+	m.step(s, 1000.0 / 60.0)
+	runner.check(s.hitstop == 0.0 and s.attackTimer > 60.0, "finito il fermo si riparte")
