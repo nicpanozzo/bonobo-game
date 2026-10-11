@@ -113,7 +113,7 @@ for (const [id, spec] of Object.entries(CHARACTERS)) {
   }
   // Un PNG nella cartella che il blocco non nomina non si usa: lo si dice, potrebbe essere un nome sbagliato
   for (const file of existsSync(publicDir + sprite.dir) ? readdirSync(publicDir + sprite.dir) : []) {
-    if (extname(file) === ".png" && !Object.hasOwn(sprite.animations, basename(file, ".png"))) {
+    if (extname(file) === ".png" && file !== "portrait.png" && !Object.hasOwn(sprite.animations, basename(file, ".png"))) {
       console.warn(`Attenzione: ${sprite.dir}/${file} non è uno stato di ${id} in characters.ts, non si usa`);
     }
   }

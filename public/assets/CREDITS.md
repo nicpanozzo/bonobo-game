@@ -3,7 +3,7 @@
 | File | Autore | Fonte | Licenza |
 |---|---|---|---|
 | `characters/egiainuso/egiainuso.png` | Claude Code per Nicola, idea di @MauroGrecchi (#37) | fatto da noi | CC0 |
-| `characters/bonobot/bonobot.png` | Claude per Riccardo (GiovannifRana) | fatto da noi | CC0 |
+| `characters/bonobot/*.png` (sprite e ritratto, dallo scheletro di `rig/`, E7 passo 4) | Claude per Riccardo (GiovannifRana); fermo, schiaffo e martello dalla prova #198 | fatto da noi | CC0 |
 | `characters/bonobot/omar/` (orsogufo e gnomo della suprema, #102) | Claude per Riccardo (GiovannifRana), provvisori disegnati col codice; orsogufo: fan art ispirata a Baldur's Gate 3, nessun file del gioco | fatto da noi | CC0 |
 | `characters/bonobot/rig/` (pezzi dello scheletro nuovo, #195) | Claude per Riccardo (GiovannifRana), provvisori disegnati col codice | fatto da noi | CC0 |
 | `stages/palco/` (sfondo a tre strati e anteprima del Palco, E12) | Claude Code per Nicola, disegnati col codice | fatto da noi | CC0 |

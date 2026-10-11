@@ -47,12 +47,13 @@ mario: {
 - `fps`: fotogrammi al secondo. 24 per i movimenti, 12 va bene per le animazioni lente in ciclo.
 - `loop`: `true` ricomincia (fermo, corsa, caduta), `false` si ferma sull'ultimo fotogramma (salto, colpi).
 - `hitFrame` (facoltativo, solo negli attacchi): il fotogramma, contando da 0, in cui la mano o l'arma arriva sul bersaglio. Il gioco lo fa cadere nell'istante in cui la hitbox si accende (`startupMs` di `ATTACKS`) e fa finire l'animazione con `cooldownMs`. Così il colpo è sempre a tempo, anche quando cambiano i numeri o quando una variante (`lightUp`...) usa il disegno di `light`. Senza `hitFrame` l'animazione va a `fps`.
+- `footY` (facoltativo, accanto a `scale`): a quanti pixel dall'alto del fotogramma stanno i piedi. Di base è il bordo basso; serve se qualche stato scende sotto i piedi, come Bonobot appeso al bordo con il corpo sotto lo spigolo.
 - `filter` (facoltativo, accanto a `scale`): `"linear"` (di base) per i disegni illustrati, che il gioco rimpicciolisce con le mipmap senza sfarfallare; `"nearest"` per la pixel art, che resta a quadretti netti.
 - Se un PNG manca, la larghezza o l'altezza non tornano o `hitFrame` è fuori dai fotogrammi, `npm run export:godot` si ferma e dice quale file e perché. Un PNG nella cartella che il blocco non nomina viene segnalato e non si usa.
 
 ## Formato a foglio unico: una riga per animazione
 
-È il formato di Egiainuso e, per ora, di Bonobot: un PNG solo, con una riga per animazione. Nel blocco si scrivono `path`, `columns` (fotogrammi per riga) e, per ogni animazione, `row` e `frames` oltre a `fps` e `loop`. Esempio completo: [bonobot/README.md](bonobot/README.md). Funziona ancora, ma per i personaggi nuovi conviene la cartella: si aggiunge uno stato senza rifare il foglio.
+È il formato di Egiainuso: un PNG solo, con una riga per animazione. Nel blocco si scrivono `path`, `columns` (fotogrammi per riga) e, per ogni animazione, `row` e `frames` oltre a `fps` e `loop`. Esempio completo: [egiainuso/README.md](egiainuso/README.md). Bonobot è nel formato a cartella: [bonobot/README.md](bonobot/README.md). Funziona ancora, ma per i personaggi nuovi conviene la cartella: si aggiunge uno stato senza rifare il foglio.
 
 ## Gli stati
 

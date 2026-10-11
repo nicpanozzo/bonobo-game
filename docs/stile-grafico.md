@@ -42,21 +42,21 @@ Usati poco, come piccoli accenti (una brace, un bottone), vanno bene.
 - La hitbox di gioco è `FIGHTER` in `constants.ts`: **44×88 px di mondo**. Lo sprite è solo grafica: non cambia la hitbox.
 - **Il corpo sta dentro la hitbox;** braccia, colpi, capelli, fumo e oggetti possono uscire.
 - **Piedi sul bordo basso del fotogramma, al centro** (lì il gioco mette `x` e `y` del lottatore). **Guarda a destra:** per l'altra direzione il gioco specchia il fotogramma.
-- **Fotogramma:** tutti della stessa misura, sfondo trasparente. La misura la sceglie chi disegna, abbastanza larga per i colpi: E7 propone 96×112 px di mondo; Bonobot usa **128×120** perché ha le braccia lunghe.
+- **Fotogramma:** tutti della stessa misura, sfondo trasparente. La misura la sceglie chi disegna, abbastanza larga per i colpi: E7 propone 96×112 px di mondo; Bonobot usa **168×184**, perché ha le braccia lunghe e da appeso al bordo il corpo scende sotto i piedi (`footY`).
 - **I colpi arrivano dove colpiscono:** nei fotogrammi in cui la hitbox dell'attacco è accesa (`startupMs` e `activeMs` di `ATTACKS`), la mano o l'arma deve stare dentro la sua area (in arancio nella tavola). Sono le stesse aree che Godot disegna durante il colpo e nel pannello dell'allenamento.
 
 ## 5. Risoluzione: si disegna a 2x
 
-- Si disegna al **doppio** della misura di mondo e nello spritesheet si scrive `scale: 0.5` (`SpriteSheetSpec` in `characters.ts`). Bonobot: fotogrammi da 256×240 px nel PNG, 128×120 nel gioco.
+- Si disegna al **doppio** della misura di mondo e nello spritesheet si scrive `scale: 0.5` (`SpriteSheetSpec` in `characters.ts`). Bonobot: fotogrammi da 336×368 px nel PNG, 168×184 nel gioco.
 - **Perché:** a 1080p con lo zoom massimo (1.3) un lottatore occupa circa 170 px sullo schermo; disegnato a 1x si sgrana.
-- File singoli **sotto i 5 MB**; Bonobot con 11 animazioni pesa circa 1,6 MB.
+- File singoli **sotto i 5 MB**; Bonobot con 13 animazioni pesa circa 0,9 MB, salvato con una palette di 256 colori.
 
 ## 6. Animazione a pezzi (cutout)
 
 ![Pose chiave di Bonobot](stile-grafico/pose.png)
 
 - **Tecnica:** il personaggio è diviso in pezzi (testa, busto, braccio, avambraccio, mano...) appesi a uno scheletro. Si anima ruotando le ossa e si esporta lo spritesheet. Quando arriva il disegno definitivo si sostituiscono le immagini dei pezzi e le animazioni restano.
-- **Strumento: Blender** (gratis). Bonobot è fatto così: un piano per pezzo su un'armatura di 19 ossa, un'azione per animazione, e nel file lo script `esporta_spritesheet.py` che rifà il PNG. Il `.blend` di Bonobot per ora sta sul PC di Riccardo; se metterlo nella repo come sorgente si decide con il gruppo.
+- **Strumento: Blender** (gratis), oppure gli script in `tools/rig`. Lo scheletro è in `rig.json` ([docs/scheletro.md](scheletro.md)) e in Blender si monta con `tools/blender/costruisci_rig.py`. Bonobot oggi è animato in `tools/rig/animazioni_bonobot.py` e disegnato da `tools/rig/rendi_sprite.py`, un PNG per stato.
 - **Movenze naturali, non meccaniche:** anticipo prima dei colpi, inerzia (testa, mani e capelli arrivano un attimo dopo il corpo), piedi e mani che restano piantati a terra mentre il corpo si muove, archi nei movimenti.
 - **Velocità:** 24 fotogrammi al secondo; le animazioni lente in ciclo (fermo, appeso) possono stare a 12.
 - **Colpi a tempo:** negli attacchi si segna `hitFrame`, il fotogramma dell'impatto; il gioco lo fa cadere quando la hitbox si accende.

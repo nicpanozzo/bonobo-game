@@ -75,6 +75,7 @@ export interface SpriteSheetSpec {
   frameHeight: number;
   columns: number; // fotogrammi per riga nel PNG
   scale?: number; // grandezza a schermo rispetto al PNG: 0.5 per i disegni fatti a 2x (manca = 1)
+  footY?: number; // pixel dall'alto del fotogramma dove stanno i piedi (manca = frameHeight, il bordo basso)
   filter?: SpriteFilter;
   // Riga del PNG, numero di fotogrammi e velocità di ogni animazione (fotogrammi/s)
   animations: Record<AnimationName, SpriteAnimation> & Partial<Record<OptionalAnimationName, SpriteAnimation>>;
@@ -98,6 +99,9 @@ export interface SpriteFolderSpec {
   frameWidth: number; // pixel, uguale in tutti i PNG
   frameHeight: number;
   scale?: number; // come in SpriteSheetSpec: 0.5 per i disegni fatti a 2x
+  // Pixel dall'alto del fotogramma dove stanno i piedi (manca = frameHeight, il bordo basso).
+  // Serve se qualche stato scende sotto i piedi, come chi è appeso al bordo con il corpo sotto lo spigolo
+  footY?: number;
   filter?: SpriteFilter;
   animations: Record<AnimationName, SpriteStateSpec> & Partial<Record<OptionalAnimationName, SpriteStateSpec>>;
 }
@@ -327,24 +331,28 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         scale: 0.5,
       },
     },
+    // Rifatto con lo scheletro nuovo (#195) nello stile della guida (E7 passo 4): un PNG per stato, fatti da
+    // tools/rig/animazioni_bonobot.py e tools/rig/rendi_sprite.py (vedi public/assets/characters/bonobot/README.md)
     sprite: {
-      path: "assets/characters/bonobot/bonobot.png",
-      frameWidth: 256,
-      frameHeight: 240,
-      columns: 24,
+      dir: "assets/characters/bonobot",
+      frameWidth: 336,
+      frameHeight: 368,
+      footY: 286, // sotto i piedi restano 82 pixel per il corpo di chi è appeso al bordo
       scale: 0.5,
       animations: {
-        idle: { row: 0, frames: 24, fps: 12, loop: true }, // respiro e peso che si sposta, 2 s
-        walk: { row: 1, frames: 10, fps: 24, loop: true }, // galoppo sulle nocche alla velocità di groundSpeed
-        jump: { row: 2, frames: 7, fps: 24, loop: false },
-        fall: { row: 3, frames: 12, fps: 24, loop: true },
-        light: { row: 4, frames: 7, fps: 24, loop: false, hitFrame: 1 }, // schiaffo di rovescio: colpisce nei fotogrammi 2-4
-        heavy: { row: 5, frames: 18, fps: 24, loop: false, hitFrame: 6 }, // martello a due pugni: colpisce nei fotogrammi 7-10
-        hit: { row: 6, frames: 8, fps: 24, loop: false },
-        doubleJump: { row: 7, frames: 9, fps: 24, loop: false }, // capriola in avanti che si apre verso la caduta
-        tumble: { row: 8, frames: 12, fps: 24, loop: true }, // rotola all'indietro quando vola via dopo un colpo forte
-        ledge: { row: 9, frames: 24, fps: 12, loop: true }, // appeso allo spigolo, piedi contro la parete, dondola piano
-        climb: { row: 10, frames: 10, fps: 24, loop: false }, // si tira su e torna in piedi in LEDGE.climbMs
+        idle: { fps: 12, loop: true }, // respiro, peso che passa da un piede all'altro, battito di ciglia, 2 s
+        walk: { fps: 24, loop: true }, // galoppo sulle nocche: mani e piedi a terra scorrono alla velocità di groundSpeed
+        jump: { fps: 24, loop: false },
+        fall: { fps: 24, loop: true },
+        light: { fps: 24, loop: false, hitFrame: 2 }, // schiaffo di rovescio, con il gomito che si apre a frusta
+        heavy: { fps: 24, loop: false, hitFrame: 8 }, // martello a due pugni: su in punta di piedi, poi giù di peso
+        hit: { fps: 24, loop: false },
+        doubleJump: { fps: 24, loop: false }, // capriola in avanti che si apre verso la caduta
+        tumble: { fps: 24, loop: true }, // rotola all'indietro quando vola via dopo un colpo forte
+        ledge: { fps: 12, loop: true }, // appeso con le due mani, piedi contro la parete, dondola piano
+        climb: { fps: 24, loop: false }, // si tira su e torna in piedi in LEDGE.climbMs
+        land: { fps: 24, loop: false }, // atterra di peso piegando le ginocchia
+        taunt: { fps: 12, loop: false }, // soffia il fumo verso l'avversario e si batte il petto, 2 s
       },
     },
   },
