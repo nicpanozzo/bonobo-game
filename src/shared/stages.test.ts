@@ -8,7 +8,7 @@ import { hazardActive, moverPosition } from "./physics/elements";
 import { courseSteps, generateCourse } from "./courseGenerator";
 import { generateStage, seedFromStageId } from "./stageGenerator";
 import { JUMP_HEIGHT, reachable, SIDE_REACH, stageCheckData } from "./stageCheck";
-import { CHORD_NAME, getStage, STAGE_MUSIC_LEADS, STAGES, stageWidth, type StageMusic, type StageSpec } from "./stages";
+import { CHORD_NAME, getStage, STAGE_MUSIC_LEADS, STAGES, stageArtFiles, stageWidth, type StageMusic, type StageSpec } from "./stages";
 
 function checkStage(stage: StageSpec) {
   for (const p of [...stage.solids, ...stage.platforms]) {
@@ -61,6 +61,19 @@ function cameraProblems(stage: StageSpec): string[] {
 }
 
 describe("arene", () => {
+  it("i materiali e le decorazioni nominano solo cose che esistono (#237)", () => {
+    for (const stage of Object.values(STAGES)) {
+      const art = stage.art;
+      if (!art) continue;
+      const names = Object.keys(art.skins ?? {});
+      const used = [art.solidSkin, art.platformSkin, ...(art.pieces?.solids ?? []), ...(art.pieces?.platforms ?? [])];
+      for (const n of used) if (n) assert.ok(names.includes(n), `${stage.id}: materiale "${n}" non definito in skins`);
+      assert.ok((art.pieces?.solids?.length ?? 0) <= stage.solids.length, `${stage.id}: più eccezioni che blocchi`);
+      assert.ok((art.pieces?.platforms?.length ?? 0) <= stage.platforms.length, `${stage.id}: più eccezioni che piattaforme`);
+      for (const p of art.props ?? []) assert.ok(p.opacity === undefined || (p.opacity >= 0 && p.opacity <= 1), `${stage.id}: opacità di ${p.file}`);
+    }
+  });
+
   it("le arene fatte a mano sono valide", () => {
     for (const stage of Object.values(STAGES)) checkStage(stage);
   });
@@ -97,7 +110,7 @@ describe("arene", () => {
       const layers = [...art.layers, ...(art.foreground ? [art.foreground] : [])];
       for (const l of layers) assert.ok(l.parallax >= 0 && l.parallax <= 1, `${stage.id}: parallasse di ${l.file} tra 0 e 1`);
       let bytes = 0;
-      for (const file of [...layers.map((l) => l.file), ...(art.preview ? [art.preview] : [])]) {
+      for (const file of stageArtFiles(art)) { // con materiali e decorazioni (#237)
         const dir = art.dir ?? stage.id;
         const url = new URL(`../../public/assets/stages/${dir}/${file}`, import.meta.url);
         assert.ok(existsSync(url), `${stage.id}: manca public/assets/stages/${dir}/${file}`);

@@ -33,6 +33,9 @@ var view_rect := Rect2(0, 0, 1280, 720) # la parte di mondo che si vede, decisa 
 var _layers: Array = [] # strati dello sfondo dell'arena (E12), dal più lontano: [texture, parallasse]
 var _foreground: Array = [] # strato davanti ai lottatori, o []
 var _layer_scale := 1.0 # pixel di mondo per pixel delle immagini degli strati
+var _skins := {} # materiali del palco (#237): nome -> {tex, edge, depth, rails}
+var _props_back: Array = [] # decorazioni dietro ai lottatori (#237): [texture, decorazione]
+var _props_front: Array = [] # e davanti
 var _textures := {} # id personaggio -> Texture2D dello spritesheet (nel formato cartella, quella di idle)
 var _state_textures := {} # id personaggio -> { stato: Texture2D }, solo per il formato cartella (E7 passo 2)
 var _anims := {} # id giocatore -> { name, since }: animazione in corso e da quando
@@ -141,9 +144,145 @@ func set_stage_spec(spec: Dictionary) -> void:
 	if art.has("foreground"):
 		_foreground = _stage_layer(art.get("dir", spec.id), art.foreground)
 	_layer_scale = art.get("scale", 1.0)
+	_load_stage_dressing(art.get("dir", spec.id), art)
 	_supreme_view.stage = spec
 	_reached = 0
 	queue_redraw()
+
+
+# Materiali e decorazioni del palco (#237): si caricano una volta, quando si sceglie l'arena
+func _load_stage_dressing(dir: String, art: Dictionary) -> void:
+	_skins = {}
+	_props_back = []
+	_props_front = []
+	var skins: Dictionary = art.get("skins", {}) if art.get("skins") is Dictionary else {}
+	for name in skins:
+		var k: Dictionary = skins[name]
+		var tex := _stage_texture(dir, k.file)
+		if tex == null:
+			continue
+		var rails: Array = []
+		for r in k.get("rails", []):
+			var rt := _stage_texture(dir, r.file)
+			if rt != null:
+				rails.append({"tex": rt, "height": float(r.height), "offsetY": float(r.get("offsetY", 0)), "front": bool(r.get("front", false)), "opacity": float(r.get("opacity", 1.0))})
+		_skins[name] = {"tex": tex, "edge": _stage_texture(dir, k.edge) if k.get("edge") != null else null, "depth": float(k.get("depth", 12)), "rails": rails}
+	for pr in art.get("props", []):
+		var tex := _stage_texture(dir, pr.file)
+		if tex != null:
+			(_props_front if pr.get("front", false) else _props_back).append([tex, pr])
+
+
+static func _stage_texture(dir: String, file: String) -> Texture2D:
+	var path := "res://data/assets/stages/%s/%s" % [dir, file]
+	if not ResourceLoader.exists(path):
+		push_warning("Immagine dell'arena mancante: " + path)
+		return null
+	return _sprite_texture(path, "linear")
+
+
+# Il materiale di un pezzo: l'eccezione in art.pieces (null = tinta unita), o quello di base; {} se non c'è
+func _skin_for(kind: String, i: int) -> Dictionary:
+	var art: Dictionary = stage.get("art", {}) if stage.get("art") is Dictionary else {}
+	var name: Variant = art.get("solidSkin" if kind == "solids" else "platformSkin")
+	var pieces: Variant = art.get("pieces")
+	if pieces is Dictionary and pieces.get(kind) is Array and i < pieces[kind].size():
+		name = pieces[kind][i]
+	if name == null or not _skins.has(name):
+		return {}
+	return _skins[name]
+
+
+# Un PNG ripetuto dentro un rettangolo, a _layer_scale pixel di mondo per pixel; l'ultima fila e colonna si tagliano
+func _draw_tiled(tex: Texture2D, rect: Rect2, mod := Color.WHITE) -> void:
+	var tw := tex.get_width() * _layer_scale
+	var th := tex.get_height() * _layer_scale
+	if tw <= 0 or th <= 0:
+		return
+	var y := rect.position.y
+	while y < rect.end.y - 0.01:
+		var h := minf(th, rect.end.y - y)
+		var x := rect.position.x
+		while x < rect.end.x - 0.01:
+			var w := minf(tw, rect.end.x - x)
+			draw_texture_rect_region(tex, Rect2(x, y, w, h), Rect2(0, 0, w / _layer_scale, h / _layer_scale), mod)
+			x += tw
+		y += th
+
+
+# Un PNG ripetuto lungo la superficie di una piattaforma (dritta, ad arco o inclinata), a colonne strette:
+# ogni colonna sta all'altezza della superficie in quel punto più top, ed è alta height
+func _draw_strip(tex: Texture2D, p: Dictionary, top: float, height: float, mod := Color.WHITE) -> void:
+	var src_w := float(tex.get_width())
+	var cw := 6.0 if PredictMovement.curved(p) else float(p.width)
+	var x: float = p.x
+	var end: float = float(p.x) + float(p.width)
+	while x < end - 0.01:
+		var w := minf(cw, end - x)
+		var y := PredictMovement.surface_y(p, x + w / 2.0) + top
+		# La texture si ripete in orizzontale ogni src_w × _layer_scale pixel di mondo
+		var u := fposmod((x - float(p.x)) / _layer_scale, src_w)
+		var left := w
+		var dx := x
+		while left > 0.01:
+			var piece := minf(left, (src_w - u) * _layer_scale)
+			draw_texture_rect_region(tex, Rect2(dx, y, piece, height), Rect2(u, 0, piece / _layer_scale, tex.get_height()), mod)
+			dx += piece
+			left -= piece
+			u = 0.0
+		x += w
+
+
+func _draw_skinned_solid(s: Dictionary, skin: Dictionary) -> void:
+	_draw_tiled(skin.tex, Rect2(s.x, s.y, s.width, s.height))
+	if skin.edge != null:
+		_draw_tiled(skin.edge, Rect2(s.x, s.y, s.width, minf(skin.edge.get_height() * _layer_scale, s.height)))
+
+
+func _draw_skinned_platform(p: Dictionary, skin: Dictionary) -> void:
+	var edge: Variant = skin.edge
+	if p.get("y2") != null:
+		# Scala (#246): ogni gradino è un blocco del materiale, con il bordo sulla pedata
+		var rise := absf(float(p.y2) - float(p.y))
+		var n := maxi(2, int(rise / 14.0))
+		var step := float(p.width) / n
+		var bottom := maxf(float(p.y), float(p.y2))
+		for i in n:
+			var x0: float = float(p.x) + step * i
+			var top := maxf(PredictMovement.surface_y(p, x0), PredictMovement.surface_y(p, x0 + step))
+			var h := minf(rise / n + 6.0, bottom - top)
+			if h > 0:
+				_draw_tiled(skin.tex, Rect2(x0, top, step + 0.5, h))
+				if edge != null:
+					_draw_tiled(edge, Rect2(x0, top, step + 0.5, minf(edge.get_height() * _layer_scale, h)))
+		return
+	_draw_strip(skin.tex, p, 0.0, skin.depth)
+	if edge != null:
+		_draw_strip(edge, p, 0.0, minf(edge.get_height() * _layer_scale, skin.depth))
+
+
+# Ringhiere (#237) di tutte le piattaforme col materiale che le ha: dietro (front = false) o davanti ai lottatori
+func _draw_rails(front: bool) -> void:
+	for i in stage.platforms.size():
+		var skin := _skin_for("platforms", i)
+		if skin.is_empty():
+			continue
+		for r in skin.rails:
+			if r.front == front:
+				_draw_strip(r.tex, stage.platforms[i], r.offsetY - r.height, r.height, Color(1, 1, 1, r.opacity))
+
+
+# Decorazioni ferme (#237): i piedi (centro del lato basso) in x, y
+func _draw_props(list: Array) -> void:
+	for entry in list:
+		var tex: Texture2D = entry[0]
+		var pr: Dictionary = entry[1]
+		var k: float = float(pr.get("scale", _layer_scale))
+		var size := tex.get_size() * k
+		var rect := Rect2(float(pr.x) - size.x / 2.0, float(pr.y) - size.y, size.x, size.y)
+		if pr.get("flip", false):
+			rect.size.x = -size.x # con la larghezza negativa Godot la specchia restando nello stesso posto
+		draw_texture_rect(tex, rect, false, Color(1, 1, 1, float(pr.get("opacity", 1.0))))
 
 
 # Uno strato dello sfondo (E12): [texture, parallasse], o [] se il file non c'è (si vede il colore del cielo)
@@ -347,16 +486,27 @@ func _draw() -> void:
 		draw_rect(Rect2(bz.left - 200, bz.top - 200, bz.right - bz.left + 400, bz.bottom - bz.top + 400), _color(stage.colors.sky))
 	for l in _layers:
 		_draw_layer(l)
-	for s in stage.solids:
-		draw_rect(Rect2(s.x, s.y, s.width, s.height), _color(stage.colors.solid))
-		draw_rect(Rect2(s.x, s.y, s.width, 6), _color(stage.colors.solidEdge))
-	for p in stage.platforms:
-		if p.get("y2") != null:
+	_draw_props(_props_back) # statue e decorazioni dietro al palco (#237): le lastre che reggono ci stanno sopra
+	for i in stage.solids.size():
+		var s: Dictionary = stage.solids[i]
+		var skin := _skin_for("solids", i)
+		if skin.is_empty():
+			draw_rect(Rect2(s.x, s.y, s.width, s.height), _color(stage.colors.solid))
+			draw_rect(Rect2(s.x, s.y, s.width, 6), _color(stage.colors.solidEdge))
+		else:
+			_draw_skinned_solid(s, skin)
+	for i in stage.platforms.size():
+		var p: Dictionary = stage.platforms[i]
+		var skin := _skin_for("platforms", i)
+		if not skin.is_empty():
+			_draw_skinned_platform(p, skin)
+		elif p.get("y2") != null:
 			_draw_stairs(p, _color(stage.colors.platform))
 		elif float(p.get("arch", 0)) != 0.0:
 			draw_colored_polygon(arch_polygon(p, 8.0), _color(stage.colors.platform))
 		else:
 			draw_rect(Rect2(p.x, p.y, p.width, 8), _color(stage.colors.platform))
+	_draw_rails(false) # ringhiere dietro ai lottatori
 
 	_draw_elements(buffer.sample_stage_ms(Time.get_ticks_msec()))
 	_draw_course()
@@ -380,6 +530,8 @@ func _draw() -> void:
 	_supreme_view.view_rect = view_rect
 	_draw_items(now)
 	_draw_projectiles()
+	_draw_props(_props_front)
+	_draw_rails(true) # ringhiere davanti, di solito trasparenti
 	if not _foreground.is_empty():
 		_draw_layer(_foreground)
 	_draw_offscreen_markers()

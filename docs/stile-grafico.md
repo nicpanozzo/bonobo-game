@@ -72,6 +72,13 @@ Ogni arena ha la sua palette e il suo luogo (#14), con tre regole comuni:
 2. **Bordo calpestabile sempre chiaro**, così si capisce dove si può stare.
 3. **Niente colori dei giocatori saturi vicino al piano di gioco** (vedi la tabella sopra).
 
+I pezzi su cui si cammina possono avere un materiale (`art.skins`, #237): pietra, legno, metallo, ripetuti lungo il pezzo. Valgono le stesse regole:
+- il materiale resta più spento dei lottatori;
+- il bordo calpestabile (`edge`) è sempre la parte più chiara;
+- le decorazioni davanti ai lottatori (ringhiere, statue) sono basse e trasparenti.
+
+Come si scrivono i dati è in [arene.md](arene.md).
+
 ## 8. Prima di mandare un personaggio: checklist
 
 - [ ] Stile: contorno a inchiostro, 2 toni, 2-3 colori propri, nessun colore dei giocatori come colore principale.

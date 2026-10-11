@@ -17,7 +17,7 @@ import { SUPREME } from "../src/shared/constants";
 import { LESSONS, TUTORIAL_BOT, TUTORIAL_STAGE_ID } from "../src/shared/tutorial";
 import { CHALLENGES } from "../src/shared/challenges";
 import { ITEMS } from "../src/shared/items";
-import { DEFAULT_STAGE_ID, STAGES } from "../src/shared/stages";
+import { DEFAULT_STAGE_ID, STAGES, stageArtFiles } from "../src/shared/stages";
 import { stageCheckData } from "../src/shared/stageCheck";
 import { RANDOM_STAGE_ART } from "../src/shared/stageGenerator";
 import { characterStats } from "../src/shared/characters";
@@ -123,8 +123,7 @@ for (const [id, spec] of Object.entries(CHARACTERS)) {
 }
 // Sfondi delle arene (E12 passo 3): ogni file nominato in art deve esserci
 for (const [id, art] of [...Object.entries(STAGES).map(([id, s]) => [id, s.art] as const), ["casuali", RANDOM_STAGE_ART] as const]) {
-  const files = art ? [...art.layers, ...(art.foreground ? [art.foreground] : [])].map((l) => l.file) : [];
-  if (art?.preview) files.push(art.preview);
+  const files = art ? stageArtFiles(art) : []; // strati, anteprima, materiali e decorazioni (#237)
   for (const file of files) {
     const path = `assets/stages/${art!.dir ?? id}/${file}`;
     if (existsSync(publicDir + path)) spriteFiles.push(path);
