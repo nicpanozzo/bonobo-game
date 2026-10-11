@@ -64,7 +64,7 @@ func _next() -> void:
 func _lobby() -> void:
 	var lobby: Control = load("res://scripts/lobby.gd").new()
 	root.add_child(lobby)
-	lobby.setup(_game, {"name": "CI", "room": "ci", "server": "http://localhost:3000"}, func(r): return "http://x/?room=" + r, false)
+	lobby.setup(_game, {"name": "CI", "room": "ci", "server": "http://localhost:3000"}, func(r): return "http://x/?room=" + r)
 
 
 # Quattro lottatori sul palco di base: due con lo stesso personaggio (colori alternativi), un proiettile e una carica

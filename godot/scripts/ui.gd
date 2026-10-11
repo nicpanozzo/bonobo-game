@@ -203,6 +203,36 @@ static func button(text: String, on_press: Callable, primary := false) -> Button
 	return b
 
 
+# Scheda grande con un titolo in grassetto e una riga che spiega cosa fa (menu principale, prima pagina della lobby)
+static func choice_card(text: String, detail: String, on_press: Callable) -> Button:
+	var b := Button.new()
+	b.pressed.connect(on_press)
+	set_selected(b, false)
+	var v := VBoxContainer.new()
+	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	v.alignment = BoxContainer.ALIGNMENT_CENTER
+	v.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	v.add_theme_constant_override("separation", 2)
+	b.add_child(v)
+	var t := label(text, SIZE_BIG)
+	t.add_theme_font_override("font", font(WEIGHT_BOLD))
+	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	v.add_child(t)
+	var d := note(detail)
+	d.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	d.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	v.add_child(d)
+	return b
+
+
+# Rosso come il pulsante principale (UI.button con primary), per una scheda (choice_card) che fa giocare
+static func set_primary(b: Button) -> void:
+	b.add_theme_stylebox_override("normal", _box(PRIMARY, PRIMARY, RADIUS_CARD, 6))
+	b.add_theme_stylebox_override("hover", _box(PRIMARY.lightened(0.15), PRIMARY.lightened(0.15), RADIUS_CARD, 6))
+	b.add_theme_stylebox_override("pressed", _box(PRIMARY.darkened(0.15), ACCENT, RADIUS_CARD, 6))
+
+
 # Pulsante piccolo e basso (i tasti nella tabella delle opzioni)
 static func small_button(text: String, on_press: Callable) -> Button:
 	var b := button(text, on_press)

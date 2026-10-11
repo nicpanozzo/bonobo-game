@@ -130,12 +130,13 @@ func _ready() -> void:
 		_join(params)
 
 
-func _show_lobby() -> void:
+# kind: dove parte la prima pagina della lobby (create, join o bot, #250); con un link si entra in quella stanza
+func _show_lobby(kind := "create") -> void:
 	audio.play_music("lobby")
 	lobby = preload("res://scripts/lobby.gd").new()
 	lobby.theme = UI.theme()
 	ui_layer.add_child(lobby)
-	lobby.setup(game, params, room_link, url_params.has("room"))
+	lobby.setup(game, params, room_link, "join" if url_params.has("room") else kind)
 	UI.fade_in(lobby)
 	lobby.join_requested.connect(_join)
 	lobby.back_requested.connect(func():
@@ -172,6 +173,9 @@ func _show_title(skip_press := false) -> void:
 	title.play_requested.connect(func():
 		title.queue_free()
 		_show_lobby())
+	title.bot_requested.connect(func():
+		title.queue_free()
+		_show_lobby("bot"))
 	title.options_requested.connect(func():
 		var options := preload("res://scripts/options.gd").new()
 		options.theme = UI.theme()

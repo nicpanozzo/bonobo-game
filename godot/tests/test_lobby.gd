@@ -6,13 +6,13 @@ var runner
 const Lobby := preload("res://scripts/lobby.gd")
 
 
-func _lobby(start_join: bool, params := {}) -> Control:
+func _lobby(start_join: bool, params := {}, start_kind := "") -> Control:
 	var game: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/game.json"))
 	var lobby: Control = Lobby.new()
 	runner.root.add_child(lobby)
 	var p := {"name": "Nic", "room": "vecchia", "server": "http://localhost:3000"}
 	p.merge(params, true)
-	lobby.setup(game, p, func(r): return "http://x/?room=" + r, start_join)
+	lobby.setup(game, p, func(r): return "http://x/?room=" + r, start_kind if start_kind != "" else ("join" if start_join else "create"))
 	return lobby
 
 
@@ -129,3 +129,15 @@ func test_barre_delle_statistiche() -> void:
 	var game: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/game.json"))
 	runner.check(Lobby.stats_text(game.characters.orsoblu) == "Velocità 90% · Salto 95% · Peso 105%", Lobby.stats_text(game.characters.orsoblu))
 	runner.check(Lobby.stats_text({}) == "Velocità 100% · Salto 100% · Peso 100%", "senza stats: come Bonobot")
+
+
+func test_parte_da_contro_un_bot() -> void:
+	var lobby := _lobby(false, {}, "bot")
+	runner.check(lobby._kind == "bot", "dal titolo Da solo → Contro un bot")
+	runner.check(lobby._rules_box.visible, "si vedono regole e avversario")
+	runner.check(_bot_id(lobby) == Lobby.QUICK_BOT, "c'è già un avversario: %s" % _bot_id(lobby))
+	lobby.free()
+
+
+func _bot_id(lobby: Control) -> String:
+	return Lobby.BOTS[lobby._bot.selected][0]
