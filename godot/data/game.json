@@ -8,7 +8,21 @@
   },
   "fighter": {
     "width": 44,
-    "height": 88
+    "height": 88,
+    "groundSpeed": 380,
+    "airSpeed": 340,
+    "airAccel": 2400,
+    "airFriction": 1200,
+    "jumpSpeed": 860,
+    "doubleJumpSpeed": 780,
+    "maxJumps": 2,
+    "gravity": 2300,
+    "maxFallSpeed": 950,
+    "fastFallSpeed": 1500,
+    "dropThroughMs": 200,
+    "coyoteMs": 80,
+    "shortHopCut": 0.45,
+    "hitstunDriftAccel": 700
   },
   "attacks": {
     "light": {
