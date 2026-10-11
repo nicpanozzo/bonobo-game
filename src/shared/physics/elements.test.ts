@@ -5,7 +5,7 @@ import { describe, it } from "node:test";
 import { HAZARD, TICK_RATE, WORLD } from "../constants";
 import type { Hazard, MovingPlatform, StageSpec } from "../stages";
 import { getStage } from "../stages";
-import { createFighter, hazardActive, moverPosition, stepWorld, type PhysicsContext } from "./index";
+import { createFighter, floodPhase, hazardActive, hazardRect, moverPosition, stepWorld, type PhysicsContext } from "./index";
 
 const DT = 1000 / TICK_RATE;
 
@@ -121,5 +121,63 @@ describe("trappole", () => {
   it("La Fabbrica ha ascensori e trappole", () => {
     const stage = getStage("fabbrica");
     assert.ok((stage.movers?.length ?? 0) > 0 && (stage.hazards?.length ?? 0) > 0);
+  });
+});
+
+describe("acqua alta (#228)", () => {
+  // Giro di 10 s: calma fino a 5 s, pioggia 1 s, sale in 1 s, alta 2 s, scende in 1 s
+  const water: Hazard = {
+    kind: "acqua", x: 300, y: 620, width: 400, height: 30, damage: 6, knockback: 550, knockbackGrowth: 3, angleDeg: 85,
+    flood: { highY: 540, periodMs: 10000, warnMs: 1000, riseMs: 1000, holdMs: 2000, fallMs: 1000 },
+  };
+  const step: { x: number; y: number; width: number } = { x: 300, y: 580, width: 400 }; // gradino che va sott'acqua
+
+  it("il livello sale, resta alto e torna giù a ogni giro", () => {
+    assert.equal(hazardRect(water, 0).y, 620);
+    assert.deepEqual(floodPhase(water, 5500), { phase: "warn", k: 0.5 });
+    assert.equal(hazardRect(water, 5500).y, 620, "durante la pioggia è ancora bassa");
+    assert.equal(hazardRect(water, 6500).y, 580, "a metà della salita");
+    assert.equal(hazardRect(water, 7500).y, 540);
+    assert.equal(hazardRect(water, 8900).y, 540);
+    assert.equal(hazardRect(water, 9500).y, 580, "a metà della discesa");
+    assert.equal(hazardRect(water, 10000).y, 620, "il giro ricomincia");
+    const r = hazardRect(water, 7500);
+    assert.equal(r.y + r.height, water.y + water.height, "il fondo resta fermo");
+  });
+
+  it("senza flood il rettangolo è quello dell'arena", () => {
+    assert.deepEqual(hazardRect(spikes, 1234), spikes);
+    assert.deepEqual(floodPhase(spikes, 1234), { phase: "calm", k: 0 });
+  });
+
+  it("chi sta sul gradino resta asciutto con l'acqua bassa", () => {
+    const { ctx, f } = setup(stageWith({ platforms: [step], hazards: [water] }), { x: 500, y: 580 });
+    run(f, ctx, Math.round(4000 / DT));
+    assert.equal(f.percent, 0);
+    assert.ok(f.onGround);
+  });
+
+  it("l'acqua alta colpisce chi sta sul gradino e lo lancia in alto", () => {
+    const { ctx, f } = setup(stageWith({ platforms: [step], hazards: [water] }), { x: 500, y: 580 });
+    ctx.timeMs = 7000; // appena salita
+    run(f, ctx, 2);
+    assert.equal(f.percent, 6);
+    assert.equal(ctx.events.filter((e) => e.type === "hazard").length, 1, "evento hazard come le altre trappole");
+    run(f, ctx, 10);
+    assert.ok(f.y < 540, `è stato lanciato fuori dall'acqua (y = ${f.y})`);
+  });
+
+  it("chi cade nel canale prende l'acqua anche quando è bassa", () => {
+    const { ctx, f } = setup(stageWith({ hazards: [water] }), { x: 500, y: 650 });
+    run(f, ctx, 1);
+    assert.equal(f.percent, 6);
+  });
+
+  it("chi sta più in alto dell'acqua alta resta asciutto", () => {
+    const bank = { x: 300, y: 520, width: 400 };
+    const { ctx, f } = setup(stageWith({ platforms: [bank], hazards: [water] }), { x: 500, y: 520 });
+    ctx.timeMs = 7000;
+    run(f, ctx, Math.round(2000 / DT));
+    assert.equal(f.percent, 0);
   });
 });

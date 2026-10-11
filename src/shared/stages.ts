@@ -39,6 +39,20 @@ export interface Hazard extends Rect {
   periodMs?: number; // se c'è, la trappola si accende e si spegne a ciclo
   activeMs?: number; // per quanto resta accesa in ogni ciclo
   offsetMs?: number;
+  flood?: HazardFlood; // acqua alta (#228): la superficie sale e scende a ciclo
+}
+
+// Acqua alta (#228): la superficie della trappola (y) sale fino a highY e poi torna giù, il fondo
+// (y + height) resta fermo. Un giro è calma, avviso (la pioggia), salita, alta, discesa: tutto alla
+// fine di periodMs. Dipende solo dal tempo dell'arena, come ascensori e trappole a ciclo.
+export interface HazardFlood {
+  highY: number; // superficie con l'acqua alta: più in alto di y, quindi un numero più piccolo
+  periodMs: number; // durata di un giro completo
+  warnMs: number; // avviso prima della salita: l'acqua è ancora bassa ma piove
+  riseMs: number; // durata della salita
+  holdMs: number; // quanto resta alta
+  fallMs?: number; // durata della discesa (riseMs se manca)
+  offsetMs?: number; // sfasamento del giro
 }
 
 // Musica della partita su un'arena (E12 passo 4): un preset per il sintetizzatore del client Godot (audio.gd).
