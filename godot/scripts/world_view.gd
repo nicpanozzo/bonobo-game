@@ -186,6 +186,7 @@ func stage_width() -> float:
 func on_snapshot(snap: Dictionary) -> void:
 	buffer.own_id = my_id # il proprio lottatore senza ritardo d'interpolazione (E17)
 	buffer.push(snap.t, Time.get_ticks_msec(), snap.players, float(snap.get("stageMs", 0)))
+	predictor.items_present = not snap.get("items", []).is_empty()
 	for p in snap.players:
 		if p.id == my_id:
 			predictor.on_server(p, Time.get_ticks_msec(), positions.get(my_id, Vector2(NAN, NAN)))

@@ -11,7 +11,7 @@ describe("tracce della predizione (E17)", () => {
     assert.deepEqual(saved, JSON.parse(JSON.stringify(traces)));
   });
 
-  it("coprono quello che il port deve fare: salti doppi, coyote, piattaforme, caduta veloce, scatto, schivata", () => {
+  it("coprono quello che il port deve fare: salti doppi, coyote, piattaforme, caduta veloce, scatto, schivata, attacchi, recupero", () => {
     const ticks = traces.flatMap((t) => t.ticks.map((k) => k.state));
     assert.ok(traces.every((t) => t.ticks.length >= 120), "ogni traccia ha almeno 2 s di gioco");
     assert.ok(ticks.some((s) => s.jumps === 0), "doppio salto");
@@ -21,5 +21,9 @@ describe("tracce della predizione (E17)", () => {
     assert.ok(ticks.some((s) => s.rising) && ticks.some((s) => !s.onGround && !s.rising && s.vy < 0), "salto corto");
     assert.ok(ticks.some((s) => s.dashing && s.dash > 0) && ticks.some((s) => s.dashing && s.dash === 0), "scatto e corsa");
     assert.ok(ticks.some((s) => s.dodge > 0 && s.onGround) && ticks.some((s) => s.dodge > 0 && s.airDodge), "schivata a terra e in aria");
+    assert.ok(ticks.some((s) => s.attack === "light" && s.onGround) && ticks.some((s) => s.attack === "heavyDown"), "attacchi da terra");
+    assert.ok(ticks.some((s) => s.attack?.endsWith("Air")) && ticks.some((s) => s.attack?.endsWith("Up")), "attacchi in aria e in su");
+    assert.ok(ticks.some((s) => s.attack === "recovery") && ticks.some((s) => s.helpless && !s.attack), "recupero");
+    assert.ok(ticks.some((s) => s.lightBuffer > 0 && s.attack) || ticks.some((s) => s.heavyBuffer > 0 && s.attack), "attacco premuto prima della fine del precedente");
   });
 });

@@ -1,4 +1,4 @@
-# Quanto sbaglia la predizione (E17): un giocatore finto scatta, corre avanti e indietro, salta e schiva su un server
+# Quanto sbaglia la predizione (E17): un giocatore finto scatta, corre avanti e indietro, salta, schiva e attacca su un server
 # vero, con un ritardo finto in andata e ritorno; a ogni snapshot si misura di quanto il predittore
 # deve correggersi. Pochi pixel = il proprio lottatore va dove poi lo mette il server.
 # Uso: npm run dev, poi godot --headless --path godot --script res://tools/prediction_check.gd -- --lag=150
@@ -64,8 +64,8 @@ func _process(_d: float) -> bool:
 	var phase := (t / 45) % 4
 	var k := t % 45
 	var held := k < 4 or k >= 8
-	var input := {"left": phase == 2 and held, "right": phase == 0 and held, "jump": t % 70 < 12, "down": false, "up": false, "light": false,
-		"heavy": false, "taunt": false, "dodge": t % 97 < 2, "shield": false, "special": false, "supreme": false}
+	var input := {"left": phase == 2 and held, "right": phase == 0 and held, "jump": t % 70 < 12, "down": false, "up": t % 211 < 30, "light": t % 53 < 2,
+		"heavy": t % 89 < 2, "taunt": false, "dodge": t % 97 < 2, "shield": false, "special": false, "supreme": false}
 	if input != last_input and my_id != "":
 		last_input = input
 		var sent := input.duplicate()

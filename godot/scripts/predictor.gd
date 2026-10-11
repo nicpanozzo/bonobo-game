@@ -2,18 +2,22 @@
 # A ogni snapshot si riparte dallo stato del server (PlayerState con predict) e si rigiocano, con
 # predict/movement.gd, i tick che il server non ha ancora visto con i tasti premuti nel frattempo.
 # La differenza con quello che si vedeva si spalma su smooth_ms, così una correzione non dà scatti.
-# Fuori dal movimento libero (attacco, colpo, bordo, scudo, presa, speciale, rientro, bandiera, ascensori)
-# o con un tasto d'attacco premuto dopo l'ultimo input visto dal server si disegna lo stato del server
+# Fuori da quello che il port sa fare (colpo subito, bordo, scudo, presa, speciale, suprema, rientro, bandiera,
+# ascensori) o con uno di quei tasti premuto dopo l'ultimo input visto dal server si disegna lo stato del server
 # come nel passo 1; anche il passaggio dall'uno all'altro si spalma, così il lottatore non salta indietro.
 class_name Predictor
 extends RefCounted
 
-const ACTION_KEYS := ["light", "heavy", "shield", "special", "supreme"] # mosse che il port non fa
+const ACTION_KEYS := ["shield", "special", "supreme"] # mosse che il port non fa
+const ITEM_KEYS := ["light", "heavy"] # con un oggetto vicino raccolgono o lanciano invece di attaccare (#17)
+# Gli attacchi che il port sa fare (E17 passo 5): leggeri, pesanti e recupero
+const PREDICTED_ATTACKS := ["light", "heavy", "lightUp", "lightDown", "lightAir", "heavyUp", "heavyDown", "heavyAir", "recovery"]
 
 var enabled := true # opzione "Predizione" (video.predict) e velocità normale nell'allenamento
 var smooth_ms := 100.0
 var max_replay_ticks := 30
 var teleport_distance := 300.0
+var items_present := false # oggetti nell'arena: leggero e pesante li lascia decidere al server
 
 var _game: Dictionary
 var _tick_rate := 60.0
@@ -89,7 +93,7 @@ func on_server(p: Dictionary, now_ms: float, shown := Vector2(NAN, NAN)) -> void
 	var key := "%s/%s" % [_stage.get("id", ""), p.characterId]
 	if key != _movement_key:
 		var character: Dictionary = _game.characters.get(p.characterId, _game.characters[_game.defaultCharacterId])
-		_movement = PredictMovement.new(_game, character.stats, _stage.get("solids", []), _stage.get("platforms", []))
+		_movement = PredictMovement.new(_game, character.stats, _stage.get("solids", []), _stage.get("platforms", []), character.get("recovery", {}))
 		_movement_key = key
 	var pr: Dictionary = p.predict
 	# Lo stato del server è quello dopo il tick locale seq + ticks - 1
@@ -121,6 +125,8 @@ func sample(now_ms: float, server: Variant = null) -> Variant:
 		out.vy = _state.vy
 		out.onGround = _state.onGround
 		out.facing = _state.facing
+		out.attack = _state.attack if _state.attack != "" else null
+		out.attackActive = _movement.attack_active(_state)
 	elif server == null:
 		_last_out = Vector2(NAN, NAN)
 		_was_active = false
@@ -151,7 +157,9 @@ func is_active() -> bool:
 static func predictable(p: Dictionary, stage: Dictionary) -> bool:
 	if not (p.get("predict") is Dictionary) or not stage.get("movers", []).is_empty():
 		return false
-	if p.get("attack") != null or p.get("ledge") != null or p.get("grabbedBy") != null:
+	if p.get("attack") != null and not str(p.attack) in PREDICTED_ATTACKS:
+		return false
+	if p.get("ledge") != null or p.get("grabbedBy") != null:
 		return false
 	for flag in ["hitstun", "respawning", "eliminated", "away", "shielding", "stunned", "carrier"]:
 		if p.get(flag, false):
@@ -162,7 +170,7 @@ static func predictable(p: Dictionary, stage: Dictionary) -> bool:
 func _pressed_action_since(seq: int) -> bool:
 	for entry in _inputs:
 		if entry[0] >= seq:
-			for k in ACTION_KEYS:
+			for k in ACTION_KEYS + (ITEM_KEYS if items_present else []):
 				if entry[1].get(k, false):
 					return true
 	return false

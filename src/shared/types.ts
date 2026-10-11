@@ -93,6 +93,13 @@ export interface PredictionState {
   dodgeCooldown: number; // ms prima della prossima schivata
   airDodge: boolean; // la schivata in aria è già stata usata
   dodgeBuffer: number; // ms in cui una pressione della schivata vale ancora (E6)
+  attackTimer: number; // ms dall'inizio dell'attacco in corso (PlayerState.attack)
+  cooldown: number; // ms prima che possa partire un altro attacco
+  hitstop: number; // ms di fermo dopo un colpo andato a segno (#15)
+  recoveryUsed: boolean; // il recupero è già stato usato in questo salto (#11)
+  helpless: boolean; // dopo il recupero niente attacchi fino all'atterraggio
+  lightBuffer: number; // ms in cui una pressione del leggero vale ancora (E6)
+  heavyBuffer: number; // ms in cui una pressione del pesante vale ancora (E6)
 }
 
 // Un proiettile in volo (E10): lo tira una speciale e colpisce come un attacco
