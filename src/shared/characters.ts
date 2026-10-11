@@ -383,6 +383,44 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       },
     },
   },
+
+  // Omino col cappellino e lo zaino, dal foglio delle pose di @Marcomunista (#178): ha preso il nome Egiainuso,
+  // che prima era di Capt. OrsoBlu. Una posa per stato (due per la corsa), ritagliate da
+  // tools/sprite/egiainuso_dal_foglio.py; un'eccezione alla style guide come Elvedeo (vedi il suo README).
+  egiainuso: {
+    id: "egiainuso",
+    name: "Egiainuso",
+    // TODO community: statistiche e mosse speciali di base, da decidere con @Marcomunista
+    sprite: {
+      dir: "assets/characters/egiainuso",
+      frameWidth: 318,
+      frameHeight: 238,
+      footY: 194,
+      scale: 0.5, // il foglio è disegnato grande come un disegno a 2x
+      animations: {
+        idle: { fps: 1, loop: true },
+        walk: { fps: 6, loop: true }, // passo e corsa del foglio, alternati
+        jump: { fps: 1, loop: false },
+        fall: { fps: 1, loop: false },
+        light: { fps: 1, loop: false }, // "Side Tilt"
+        heavy: { fps: 1, loop: false }, // "Side Smash"
+        hit: { fps: 1, loop: false }, // nel foglio non c'è: il fermo piegato all'indietro
+        land: { fps: 1, loop: false }, // "Crouch"
+        dash: { fps: 1, loop: false },
+        lightUp: { fps: 1, loop: false },
+        lightDown: { fps: 1, loop: false },
+        lightAir: { fps: 1, loop: false }, // "Neutral Air"
+        heavyUp: { fps: 1, loop: false },
+        heavyDown: { fps: 1, loop: false },
+        heavyAir: { fps: 1, loop: false }, // "Forward Air"
+        recovery: { fps: 1, loop: false }, // "Up Air"
+        shield: { fps: 1, loop: false },
+        grab: { fps: 1, loop: false },
+        throw: { fps: 1, loop: false }, // "Throw (forward)"
+        supreme: { fps: 1, loop: false }, // "Final Smash"
+      },
+    },
+  },
 };
 
 // Un id sconosciuto (o mancante) diventa il personaggio base

@@ -19,7 +19,7 @@ const MAX_TICKS = 480;
 // Arena, personaggio (statistiche diverse) e seme dei tasti
 const CASES: { stage: StageSpec; characterId: string; seed: number }[] = [
   { stage: getStage("palco"), characterId: "default", seed: 1 },
-  { stage: getStage("isole"), characterId: "egiainuso", seed: 2 },
+  { stage: getStage("isole"), characterId: "orsoblu", seed: 2 },
   { stage: getStage("palestra"), characterId: "elvedeo", seed: 3 },
   { stage: generateStage(7), characterId: "default", seed: 4 },
 ];
