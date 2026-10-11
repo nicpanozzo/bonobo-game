@@ -642,7 +642,8 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 		_draw_charge(Vector2(p.x, p.y - fh / 2), charge, now)
 	var head := fh # altezza della testa sopra i piedi: lo sprite può essere più alto del corpo
 	if _textures.has(character.id):
-		head = maxf(fh, character.sprite.frameHeight * character.sprite.get("scale", 1.0))
+		# footY (E7 passo 4): i piedi possono stare più su del bordo basso, la testa resta sopra di loro
+		head = maxf(fh, float(character.sprite.get("footY", character.sprite.frameHeight)) * character.sprite.get("scale", 1.0))
 		_draw_sprite(p, character, now)
 	else:
 		var color := Access.color(p.color)
@@ -791,7 +792,8 @@ func _draw_sprite(p: Dictionary, character: Dictionary, now: float) -> void:
 	var src := Rect2(frame * fw, row * fh, fw, fh)
 	var scale: float = sheet.get("scale", 1.0) # 0.5 per i disegni fatti a 2x
 	draw_set_transform(Vector2(p.x, p.y), 0, Vector2(p.facing * scale, scale))
-	draw_texture_rect_region(texture, Rect2(-fw / 2, -fh, fw, fh), src, sprite_modulate(int(_variants.get(p.id, 0)), away_alpha(p)))
+	var foot_y: float = sheet.get("footY", fh) # dove stanno i piedi nel fotogramma: sotto c'è chi è appeso al bordo
+	draw_texture_rect_region(texture, Rect2(-fw / 2, -foot_y, fw, fh), src, sprite_modulate(int(_variants.get(p.id, 0)), away_alpha(p)))
 	draw_set_transform(Vector2.ZERO)
 
 

@@ -15,6 +15,7 @@ import {
   resolvedAnimations,
   spriteStatePath,
   type SpriteFolderSpec,
+  type SpriteSheetSpec,
 } from "./characters";
 
 const folder: SpriteFolderSpec = {
@@ -53,8 +54,7 @@ describe("stati degli sprite (E7 passo 2)", () => {
 describe("formato cartella", () => {
   it("si distingue dal foglio unico", () => {
     assert.equal(isSpriteFolder(folder), true);
-    const sheet = CHARACTERS.bonobot.sprite;
-    assert.ok(sheet);
+    const sheet = { path: "assets/characters/prova/prova.png", frameWidth: 64, frameHeight: 96, columns: 6, animations: {} } as unknown as SpriteSheetSpec;
     assert.equal(isSpriteFolder(sheet), false);
   });
 

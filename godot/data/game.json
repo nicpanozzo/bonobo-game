@@ -1493,211 +1493,184 @@
         }
       },
       "sprite": {
-        "path": "assets/characters/bonobot/bonobot.png",
-        "frameWidth": 256,
-        "frameHeight": 240,
-        "columns": 24,
+        "dir": "assets/characters/bonobot",
+        "frameWidth": 336,
+        "frameHeight": 368,
+        "footY": 286,
         "scale": 0.5,
         "animations": {
           "idle": {
-            "row": 0,
-            "frames": 24,
             "fps": 12,
             "loop": true,
+            "frames": 24,
             "src": "idle"
           },
           "walk": {
-            "row": 1,
-            "frames": 10,
             "fps": 24,
             "loop": true,
+            "frames": 8,
             "src": "walk"
           },
           "jump": {
-            "row": 2,
-            "frames": 7,
             "fps": 24,
             "loop": false,
+            "frames": 7,
             "src": "jump"
           },
           "fall": {
-            "row": 3,
-            "frames": 12,
             "fps": 24,
             "loop": true,
+            "frames": 12,
             "src": "fall"
           },
           "light": {
-            "row": 4,
-            "frames": 7,
             "fps": 24,
             "loop": false,
-            "hitFrame": 1,
+            "hitFrame": 2,
+            "frames": 10,
             "src": "light"
           },
           "heavy": {
-            "row": 5,
-            "frames": 18,
             "fps": 24,
             "loop": false,
-            "hitFrame": 6,
+            "hitFrame": 8,
+            "frames": 18,
             "src": "heavy"
           },
           "hit": {
-            "row": 6,
-            "frames": 8,
             "fps": 24,
             "loop": false,
+            "frames": 8,
             "src": "hit"
           },
           "doubleJump": {
-            "row": 7,
-            "frames": 9,
             "fps": 24,
             "loop": false,
+            "frames": 9,
             "src": "doubleJump"
           },
           "tumble": {
-            "row": 8,
-            "frames": 12,
             "fps": 24,
             "loop": true,
+            "frames": 12,
             "src": "tumble"
           },
           "ledge": {
-            "row": 9,
-            "frames": 24,
             "fps": 12,
             "loop": true,
+            "frames": 24,
             "src": "ledge"
           },
           "climb": {
-            "row": 10,
-            "frames": 10,
             "fps": 24,
             "loop": false,
+            "frames": 10,
             "src": "climb"
           },
           "land": {
-            "row": 0,
-            "frames": 24,
-            "fps": 12,
-            "loop": true,
-            "src": "idle"
-          },
-          "lightUp": {
-            "row": 4,
-            "frames": 7,
             "fps": 24,
             "loop": false,
-            "hitFrame": 1,
+            "frames": 6,
+            "src": "land"
+          },
+          "lightUp": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "frames": 10,
             "src": "light"
           },
           "lightDown": {
-            "row": 4,
-            "frames": 7,
             "fps": 24,
             "loop": false,
-            "hitFrame": 1,
+            "hitFrame": 2,
+            "frames": 10,
             "src": "light"
           },
           "lightAir": {
-            "row": 4,
-            "frames": 7,
             "fps": 24,
             "loop": false,
-            "hitFrame": 1,
+            "hitFrame": 2,
+            "frames": 10,
             "src": "light"
           },
           "heavyUp": {
-            "row": 5,
-            "frames": 18,
             "fps": 24,
             "loop": false,
-            "hitFrame": 6,
+            "hitFrame": 8,
+            "frames": 18,
             "src": "heavy"
           },
           "heavyDown": {
-            "row": 5,
-            "frames": 18,
             "fps": 24,
             "loop": false,
-            "hitFrame": 6,
+            "hitFrame": 8,
+            "frames": 18,
             "src": "heavy"
           },
           "heavyAir": {
-            "row": 5,
-            "frames": 18,
             "fps": 24,
             "loop": false,
-            "hitFrame": 6,
+            "hitFrame": 8,
+            "frames": 18,
             "src": "heavy"
           },
           "recovery": {
-            "row": 2,
-            "frames": 7,
             "fps": 24,
             "loop": false,
+            "frames": 7,
             "src": "jump"
           },
           "taunt": {
-            "row": 0,
-            "frames": 24,
             "fps": 12,
-            "loop": true,
-            "src": "idle"
+            "loop": false,
+            "frames": 24,
+            "src": "taunt"
           },
           "shield": {
-            "row": 0,
-            "frames": 24,
             "fps": 12,
             "loop": true,
+            "frames": 24,
             "src": "idle"
           },
           "grab": {
-            "row": 4,
-            "frames": 7,
             "fps": 24,
             "loop": false,
-            "hitFrame": 1,
+            "hitFrame": 2,
+            "frames": 10,
             "src": "light"
           },
           "throw": {
-            "row": 4,
-            "frames": 7,
             "fps": 24,
             "loop": false,
-            "hitFrame": 1,
+            "hitFrame": 2,
+            "frames": 10,
             "src": "light"
           },
           "grabbed": {
-            "row": 6,
-            "frames": 8,
             "fps": 24,
             "loop": false,
+            "frames": 8,
             "src": "hit"
           },
           "special": {
-            "row": 5,
-            "frames": 18,
             "fps": 24,
             "loop": false,
-            "hitFrame": 6,
+            "hitFrame": 8,
+            "frames": 18,
             "src": "heavy"
           },
           "dash": {
-            "row": 1,
-            "frames": 10,
             "fps": 24,
             "loop": true,
+            "frames": 8,
             "src": "walk"
           },
           "supreme": {
-            "row": 5,
-            "frames": 18,
             "fps": 24,
             "loop": false,
-            "hitFrame": 6,
+            "hitFrame": 8,
+            "frames": 18,
             "src": "heavy"
           }
         }
@@ -1709,6 +1682,7 @@
         "weight": 1,
         "gravity": 1
       },
+      "portrait": "assets/characters/bonobot/portrait.png",
       "specials": {
         "neutral": {
           "type": "projectile",
