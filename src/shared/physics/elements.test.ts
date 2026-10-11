@@ -5,7 +5,7 @@ import { describe, it } from "node:test";
 import { HAZARD, TICK_RATE, WORLD } from "../constants";
 import type { Hazard, MovingPlatform, StageSpec } from "../stages";
 import { getStage } from "../stages";
-import { createFighter, floodPhase, hazardActive, hazardRect, moverPosition, stepWorld, type PhysicsContext } from "./index";
+import { createFighter, floodPhase, hazardActive, hazardRect, moverPosition, stepWorld, travelDirection, travelPhase, type PhysicsContext } from "./index";
 
 const DT = 1000 / TICK_RATE;
 
@@ -179,5 +179,51 @@ describe("acqua alta (#228)", () => {
     ctx.timeMs = 7000;
     run(f, ctx, Math.round(2000 / DT));
     assert.equal(f.percent, 0);
+  });
+});
+
+describe("trappola che viaggia (#229)", () => {
+  // Giro di 10 s: calma fino a 7 s, campanello 1 s, passa in 2 s da x 0 a x 1000; un giro sì e uno no al contrario
+  const bike: Hazard = {
+    kind: "ciclista", x: 0, y: 0, width: 70, height: 60, damage: 10, knockback: 600, knockbackGrowth: 5, angleDeg: 35,
+    travel: { path: [{ x: 0, y: 590 }, { x: 1000, y: 590 }], periodMs: 10000, warnMs: 1000, crossMs: 2000, alternate: true },
+  };
+
+  it("calma, campanello, passaggio, e il giro dopo al contrario", () => {
+    assert.equal(travelPhase(bike, 6000).phase, "calm");
+    assert.deepEqual(travelPhase(bike, 7500), { phase: "warn", k: 0.5, reverse: false });
+    assert.equal(travelPhase(bike, 9000).phase, "cross");
+    assert.equal(hazardRect(bike, 9000).x, 500, "a metà del passaggio è a metà strada");
+    assert.equal(travelDirection(bike, 9000), 1);
+    assert.equal(travelPhase(bike, 19000).reverse, true);
+    assert.equal(hazardRect(bike, 19000).x, 500);
+    assert.equal(hazardRect(bike, 18500).x, 750, "al ritorno va da destra a sinistra");
+    assert.equal(travelDirection(bike, 19000), -1);
+  });
+
+  it("segue un percorso con più punti, come il ponte ad arco", () => {
+    const arc: Hazard = { ...bike, travel: { ...bike.travel!, path: [{ x: 0, y: 500 }, { x: 100, y: 400 }, { x: 200, y: 500 }], alternate: false } };
+    const top = hazardRect(arc, 9000); // a metà del percorso: in cima
+    assert.ok(Math.abs(top.x - 100) < 1e-9 && Math.abs(top.y - 400) < 1e-9, `in cima (${top.x}, ${top.y})`);
+  });
+
+  it("chi sta sul percorso viene travolto nella direzione della bici, ma solo mentre passa", () => {
+    const stage = stageWith({ hazards: [bike] });
+    const calm = setup(stage, { x: 500, y: 650 });
+    calm.ctx.timeMs = 7000; // durante il campanello la bici non è ancora entrata
+    run(calm.f, calm.ctx, Math.round(900 / DT));
+    assert.equal(calm.f.percent, 0);
+
+    const { ctx, f } = setup(stage, { x: 500, y: 650 });
+    ctx.timeMs = 8900; // la bici arriva a x 500 a 9 s
+    run(f, ctx, Math.round(300 / DT));
+    assert.equal(f.percent, 10);
+    assert.ok(f.vx > 0, `lanciato verso destra, come va la bici (vx = ${f.vx})`);
+
+    const back = setup(stage, { x: 500, y: 650 });
+    back.ctx.timeMs = 18900; // il giro dopo torna indietro
+    run(back.f, back.ctx, Math.round(300 / DT));
+    assert.equal(back.f.percent, 10);
+    assert.ok(back.f.vx < 0, `al ritorno lanciato verso sinistra (vx = ${back.f.vx})`);
   });
 });

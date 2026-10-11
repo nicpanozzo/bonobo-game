@@ -29,7 +29,7 @@ import { supreming, tickSupreme } from "./supreme";
 
 export * from "./fighter";
 export { resolveHits } from "./attacks";
-export { floodPhase, hazardActive, hazardRect, moverPosition, type FloodPhase } from "./elements";
+export { floodPhase, hazardActive, hazardRect, moverPosition, travelDirection, travelPhase, type FloodPhase, type TravelPhase } from "./elements";
 export { ledgesOf } from "./ledge";
 
 // Un passo di simulazione per un lottatore (dtMs = durata del tick)
