@@ -24,6 +24,18 @@
     "shortHopCut": 0.45,
     "hitstunDriftAccel": 700
   },
+  "dash": {
+    "doubleTapMs": 250,
+    "tapMaxMs": 120,
+    "speed": 900,
+    "durationMs": 300,
+    "runSpeed": 560
+  },
+  "dodge": {
+    "durationMs": 260,
+    "speed": 520,
+    "cooldownMs": 900
+  },
   "attacks": {
     "light": {
       "damage": 5,

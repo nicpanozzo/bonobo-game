@@ -2,13 +2,13 @@
 # A ogni snapshot si riparte dallo stato del server (PlayerState con predict) e si rigiocano, con
 # predict/movement.gd, i tick che il server non ha ancora visto con i tasti premuti nel frattempo.
 # La differenza con quello che si vedeva si spalma su smooth_ms, così una correzione non dà scatti.
-# Fuori dal movimento libero (attacco, colpo, bordo, scudo, presa, speciale, scatto, rientro, bandiera,
-# ascensori) o con un tasto d'attacco premuto dopo l'ultimo input visto dal server, sample() dà null
-# e world_view disegna lo stato del server come nel passo 1.
+# Fuori dal movimento libero (attacco, colpo, bordo, scudo, presa, speciale, rientro, bandiera, ascensori)
+# o con un tasto d'attacco premuto dopo l'ultimo input visto dal server si disegna lo stato del server
+# come nel passo 1; anche il passaggio dall'uno all'altro si spalma, così il lottatore non salta indietro.
 class_name Predictor
 extends RefCounted
 
-const ACTION_KEYS := ["light", "heavy", "dodge", "shield", "special", "supreme"] # mosse che il port non fa
+const ACTION_KEYS := ["light", "heavy", "shield", "special", "supreme"] # mosse che il port non fa
 
 var enabled := true # opzione "Predizione" (video.predict) e velocità normale nell'allenamento
 var smooth_ms := 100.0
@@ -29,6 +29,8 @@ var _tick := 0
 var _error := Vector2.ZERO # quello che si vedeva meno il nuovo stato previsto: torna a zero piano
 var _error_at := 0.0
 var _active := false
+var _last_out := Vector2(NAN, NAN) # dove si è disegnato il lottatore l'ultima volta
+var _was_active := false
 
 
 func setup(game: Dictionary) -> void:
@@ -44,7 +46,9 @@ func reset() -> void:
 	_inputs = []
 	_server = {}
 	_active = false
+	_was_active = false
 	_error = Vector2.ZERO
+	_last_out = Vector2(NAN, NAN)
 
 
 func set_stage(stage: Dictionary) -> void:
@@ -85,7 +89,7 @@ func on_server(p: Dictionary, now_ms: float, shown := Vector2(NAN, NAN)) -> void
 	var key := "%s/%s" % [_stage.get("id", ""), p.characterId]
 	if key != _movement_key:
 		var character: Dictionary = _game.characters.get(p.characterId, _game.characters[_game.defaultCharacterId])
-		_movement = PredictMovement.new(_game.fighter, float(_game.input.bufferMs), character.stats, _stage.get("solids", []), _stage.get("platforms", []))
+		_movement = PredictMovement.new(_game, character.stats, _stage.get("solids", []), _stage.get("platforms", []))
 		_movement_key = key
 	var pr: Dictionary = p.predict
 	# Lo stato del server è quello dopo il tick locale seq + ticks - 1
@@ -103,22 +107,39 @@ func on_server(p: Dictionary, now_ms: float, shown := Vector2(NAN, NAN)) -> void
 	_error_at = now_ms
 
 
-# Lo stato da disegnare ora: lo snapshot del server con posizione e velocità previste, o null
-func sample(now_ms: float) -> Variant:
-	if not _active:
+# Lo stato da disegnare ora. server: quello del passo 1 (l'ultimo snapshot spinto avanti), usato quando
+# non si predice. Passando da uno all'altro la differenza si spalma come una correzione.
+func sample(now_ms: float, server: Variant = null) -> Variant:
+	var out: Variant
+	if _active:
+		_advance(now_ms)
+		var xy := _position(now_ms)
+		out = _server.duplicate()
+		out.x = xy.x
+		out.y = xy.y
+		out.vx = _state.vx
+		out.vy = _state.vy
+		out.onGround = _state.onGround
+		out.facing = _state.facing
+	elif server == null:
+		_last_out = Vector2(NAN, NAN)
+		_was_active = false
 		return null
-	_advance(now_ms)
+	else:
+		out = server.duplicate()
+		if _was_active and not is_nan(_last_out.x):
+			# Si è appena smesso di predire: si parte da dove si era, non da dove dice il server
+			_error = _last_out - Vector2(out.x, out.y)
+			if _error.length() > teleport_distance:
+				_error = Vector2.ZERO
+			_error_at = now_ms
+	_was_active = _active
 	if smooth_ms > 0:
 		_error *= exp(-(now_ms - _error_at) / smooth_ms)
 	_error_at = now_ms
-	var xy := _position(now_ms) + _error
-	var out := _server.duplicate()
-	out.x = xy.x
-	out.y = xy.y
-	out.vx = _state.vx
-	out.vy = _state.vy
-	out.onGround = _state.onGround
-	out.facing = _state.facing
+	out.x += _error.x
+	out.y += _error.y
+	_last_out = Vector2(out.x, out.y)
 	return out
 
 
@@ -132,7 +153,7 @@ static func predictable(p: Dictionary, stage: Dictionary) -> bool:
 		return false
 	if p.get("attack") != null or p.get("ledge") != null or p.get("grabbedBy") != null:
 		return false
-	for flag in ["hitstun", "respawning", "eliminated", "away", "shielding", "stunned", "dashing", "carrier"]:
+	for flag in ["hitstun", "respawning", "eliminated", "away", "shielding", "stunned", "carrier"]:
 		if p.get(flag, false):
 			return false
 	return float(p.get("charge", 0)) == 0.0

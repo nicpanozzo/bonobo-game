@@ -11,7 +11,7 @@ describe("tracce della predizione (E17)", () => {
     assert.deepEqual(saved, JSON.parse(JSON.stringify(traces)));
   });
 
-  it("coprono quello che il port deve fare: salti doppi, coyote, piattaforme attraversate, caduta veloce", () => {
+  it("coprono quello che il port deve fare: salti doppi, coyote, piattaforme, caduta veloce, scatto, schivata", () => {
     const ticks = traces.flatMap((t) => t.ticks.map((k) => k.state));
     assert.ok(traces.every((t) => t.ticks.length >= 120), "ogni traccia ha almeno 2 s di gioco");
     assert.ok(ticks.some((s) => s.jumps === 0), "doppio salto");
@@ -19,5 +19,7 @@ describe("tracce della predizione (E17)", () => {
     assert.ok(ticks.some((s) => s.drop > 0), "giù attraverso le piattaforme");
     assert.ok(ticks.some((s) => s.vy > 1000), "caduta veloce");
     assert.ok(ticks.some((s) => s.rising) && ticks.some((s) => !s.onGround && !s.rising && s.vy < 0), "salto corto");
+    assert.ok(ticks.some((s) => s.dashing && s.dash > 0) && ticks.some((s) => s.dashing && s.dash === 0), "scatto e corsa");
+    assert.ok(ticks.some((s) => s.dodge > 0 && s.onGround) && ticks.some((s) => s.dodge > 0 && s.airDodge), "schivata a terra e in aria");
   });
 });

@@ -354,7 +354,7 @@ func _draw() -> void:
 	var now := Time.get_ticks_msec()
 	_alive = []
 	_sampled = buffer.sample_all(player_ids, now)
-	var mine: Variant = predictor.sample(now)
+	var mine: Variant = predictor.sample(now, _sampled.get(my_id))
 	if mine != null:
 		_sampled[my_id] = mine
 	for id in player_ids:

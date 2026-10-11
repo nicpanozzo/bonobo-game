@@ -5,7 +5,7 @@
 // così chi cambia il movimento solo in TypeScript vede rossa prima una CI e poi l'altra.
 //
 // Solo il movimento che il client predice: corsa, aria, salti, salto corto, coyote, gravità, caduta veloce,
-// piattaforme sottili. Una traccia si ferma prima del primo tick fuori da lì (bordo, KO, ascensori).
+// piattaforme sottili, scatto con il doppio tocco e schivata. Una traccia si ferma prima del primo tick fuori da lì (bordo, KO, ascensori).
 
 import { characterStats } from "./characters";
 import { TICK_RATE } from "./constants";
@@ -18,10 +18,10 @@ const DT = 1000 / TICK_RATE;
 const MAX_TICKS = 480;
 // Arena, personaggio (statistiche diverse) e seme dei tasti
 const CASES: { stage: StageSpec; characterId: string; seed: number }[] = [
-  { stage: getStage("palco"), characterId: "default", seed: 1 },
-  { stage: getStage("isole"), characterId: "orsoblu", seed: 2 },
-  { stage: getStage("palestra"), characterId: "elvedeo", seed: 3 },
-  { stage: generateStage(7), characterId: "default", seed: 4 },
+  { stage: getStage("palco"), characterId: "default", seed: 11 },
+  { stage: getStage("isole"), characterId: "orsoblu", seed: 17 },
+  { stage: getStage("palestra"), characterId: "elvedeo", seed: 17 },
+  { stage: generateStage(7), characterId: "default", seed: 6 },
 ];
 
 export interface TraceState {
@@ -36,6 +36,15 @@ export interface TraceState {
   rising: boolean;
   drop: number;
   jumpBuffer: number;
+  dashing: boolean;
+  dash: number;
+  tapDir: number;
+  tapTimer: number;
+  tapHold: number;
+  dodge: number;
+  dodgeCooldown: number;
+  airDodge: boolean;
+  dodgeBuffer: number;
 }
 
 export interface PredictionTrace {
@@ -45,10 +54,10 @@ export interface PredictionTrace {
   characterId: string;
   stats: { speed: number; airSpeed: number; jump: number; gravity: number };
   start: TraceState;
-  ticks: { input: string; state: TraceState }[]; // input: lettere dei tasti tenuti, l r j d
+  ticks: { input: string; state: TraceState }[]; // input: lettere dei tasti tenuti, l r j d, x per la schivata
 }
 
-const KEYS: Record<string, keyof InputState> = { l: "left", r: "right", j: "jump", d: "down" };
+const KEYS: Record<string, keyof InputState> = { l: "left", r: "right", j: "jump", d: "down", x: "dodge" };
 const round = (v: number) => Math.round(v * 1e6) / 1e6;
 
 function stateOf(f: Fighter): TraceState {
@@ -64,25 +73,39 @@ function stateOf(f: Fighter): TraceState {
     rising: f.jumpRising,
     drop: round(f.dropTimer),
     jumpBuffer: round(f.buffer.jump),
+    dashing: f.dashing,
+    dash: round(f.dashTimer),
+    tapDir: f.dashTapDir,
+    tapTimer: round(f.dashTapTimer),
+    tapHold: round(f.dashHoldMs),
+    dodge: round(f.dodgeTimer),
+    dodgeCooldown: round(f.dodgeCooldown),
+    airDodge: f.airDodgeUsed,
+    dodgeBuffer: round(f.buffer.dodge),
   };
 }
 
-// Un tasto per volta tenuto da 1 a 30 tick: direzioni, salti lunghi e corti, giù per cadere più in fretta
-function nextKeys(random: () => number): { keys: string; hold: number } {
+// Pezzi di tasti tenuti da 1 a 30 tick: direzioni, salti lunghi e corti, giù per cadere più in fretta,
+// schivate; ogni tanto un doppio tocco veloce della stessa direzione, che fa scattare
+function nextSegments(random: () => number): { keys: string; hold: number }[] {
   const r = random();
   const dir = r < 0.35 ? "l" : r < 0.7 ? "r" : "";
+  if (dir && random() < 0.25) {
+    const tap = 2 + Math.floor(random() * 4);
+    return [{ keys: dir, hold: tap }, { keys: "", hold: 2 + Math.floor(random() * 4) }, { keys: dir, hold: 1 + Math.floor(random() * 40) }];
+  }
   const jump = random() < 0.3 ? "j" : "";
   const down = random() < 0.12 ? "d" : "";
-  return { keys: dir + jump + down, hold: 1 + Math.floor(random() * 30) };
+  const dodge = random() < 0.08 ? "x" : "";
+  return [{ keys: dir + jump + down + dodge, hold: 1 + Math.floor(random() * 30) }];
 }
 
-const outOfScope = (f: Fighter) => f.respawning || f.eliminated || f.hitstun || f.ledgeIndex >= 0 || f.riding >= 0 || f.dashing;
+const outOfScope = (f: Fighter) => f.respawning || f.eliminated || f.hitstun || f.ledgeIndex >= 0 || f.riding >= 0;
 
 export function predictionTraces(): PredictionTrace[] {
   return CASES.map(({ stage, characterId, seed }) => {
     const random = rng(seed).next;
     const f = createFighter({ id: "p", name: "P", characterId, color: 0, team: 0, index: 0, stocks: 3 }, stage);
-    f.dashByTap = false; // lo scatto non è ancora nel port (passo 5)
     const ctx = { stage, events: [], timeMs: 0 };
     const stats = characterStats(characterId);
     const trace: PredictionTrace = {
@@ -94,11 +117,11 @@ export function predictionTraces(): PredictionTrace[] {
       start: stateOf(f),
       ticks: [],
     };
-    let keys = "";
-    let hold = 0;
+    const queue: { keys: string; hold: number }[] = [];
     for (let i = 0; i < MAX_TICKS; i++) {
-      if (hold === 0) ({ keys, hold } = nextKeys(random));
-      hold--;
+      if (queue.length === 0) queue.push(...nextSegments(random));
+      const keys = queue[0].keys;
+      if (--queue[0].hold === 0) queue.shift();
       const input = emptyInput();
       for (const k of keys) input[KEYS[k]] = true as never;
       if (JSON.stringify(input) !== JSON.stringify(f.input)) bufferPresses(f, input); // come Match.setInput
