@@ -13,6 +13,7 @@ import { moverPosition } from "./elements";
 import { chargeFromHit } from "./supreme";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
 import { clearStun, hitShield } from "./shield";
+import { platformSurfaceY } from "./stage";
 
 export interface Item extends ItemState {
   onGround: boolean;
@@ -163,7 +164,8 @@ function land(item: Item, prevY: number, half: number, dtMs: number, ctx: Physic
   if (item.vy < 0) return;
   for (const s of [...ctx.stage.solids, ...ctx.stage.platforms]) {
     const over = item.x + half > s.x && item.x - half < s.x + s.width;
-    if (over && prevY <= s.y && item.y >= s.y) return settle(item, s.y);
+    const sy = "height" in s ? s.y : platformSurfaceY(s, item.x); // sulle piattaforme ad arco, la curva (#244)
+    if (over && prevY <= sy && item.y >= sy) return settle(item, sy);
   }
   // Su un ascensore conta anche dov'era la superficie prima del passo (può venire incontro)
   const movers = ctx.stage.movers ?? [];

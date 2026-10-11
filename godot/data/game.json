@@ -22,7 +22,8 @@
     "dropThroughMs": 200,
     "coyoteMs": 80,
     "shortHopCut": 0.45,
-    "hitstunDriftAccel": 700
+    "hitstunDriftAccel": 700,
+    "archSnapPx": 8
   },
   "dash": {
     "doubleTapMs": 250,

@@ -288,8 +288,12 @@ func _collide(s: Dictionary, prev_y: float) -> void:
 	if not s.onGround and s.vy >= 0 and s.drop == 0.0:
 		for p in platforms:
 			var px := float(p.x)
-			var py := float(p.y)
-			if s.x + half > px and s.x - half < px + float(p.width) and prev_y <= py and s.y >= py:
+			if not (s.x + half > px and s.x - half < px + float(p.width)):
+				continue
+			var py := surface_y(p, s.x)
+			# Sull'arco (#244) chi ci cammina segue la curva, come collideWithStage
+			var follow: bool = float(p.get("arch", 0)) != 0.0 and was_on_ground and absf(s.y - py) <= float(fighter.archSnapPx)
+			if (prev_y <= py and s.y >= py) or follow:
 				_land(s, py)
 				break
 	if was_on_ground and not s.onGround and s.jumps == int(fighter.maxJumps):
@@ -307,3 +311,13 @@ func _land(s: Dictionary, y: float) -> void:
 	s.airDodge = false
 	s.recoveryUsed = false
 	s.helpless = false
+
+
+# Come platformSurfaceY() in physics/stage.ts: superficie di una piattaforma sottile, dritta o ad arco (#244)
+static func surface_y(p: Dictionary, x: float) -> float:
+	var arch := float(p.get("arch", 0))
+	if arch == 0.0:
+		return float(p.y)
+	var half := float(p.width) / 2.0
+	var u := clampf((x - (float(p.x) + half)) / half, -1.0, 1.0)
+	return float(p.y) - arch * (1.0 - u * u)

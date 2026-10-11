@@ -351,7 +351,10 @@ func _draw() -> void:
 		draw_rect(Rect2(s.x, s.y, s.width, s.height), _color(stage.colors.solid))
 		draw_rect(Rect2(s.x, s.y, s.width, 6), _color(stage.colors.solidEdge))
 	for p in stage.platforms:
-		draw_rect(Rect2(p.x, p.y, p.width, 8), _color(stage.colors.platform))
+		if float(p.get("arch", 0)) != 0.0:
+			draw_colored_polygon(arch_polygon(p, 8.0), _color(stage.colors.platform))
+		else:
+			draw_rect(Rect2(p.x, p.y, p.width, 8), _color(stage.colors.platform))
 
 	_draw_elements(buffer.sample_stage_ms(Time.get_ticks_msec()))
 	_draw_course()
@@ -636,6 +639,20 @@ static func mover_position(m: Dictionary, t: float) -> Vector2:
 			return a.lerp(Vector2(route[i + 1].x, route[i + 1].y), left / seg_ms)
 		left -= seg_ms
 	return Vector2(route[segments].x, route[segments].y)
+
+
+# Piattaforma ad arco (#244): la striscia spessa thick che segue la curva di PredictMovement.surface_y
+static func arch_polygon(p: Dictionary, thick: float, k := 1.0, o := Vector2.ZERO) -> PackedVector2Array:
+	var top := PackedVector2Array()
+	var bottom := PackedVector2Array()
+	var steps := maxi(2, int(float(p.width) / 16.0))
+	for i in steps + 1:
+		var x: float = float(p.x) + float(p.width) * i / steps
+		var y := PredictMovement.surface_y(p, x)
+		top.append(o + Vector2(x, y) * k)
+		bottom.insert(0, o + Vector2(x, y + thick) * k)
+	top.append_array(bottom)
+	return top
 
 
 # Come hazardActive() in physics/elements.ts

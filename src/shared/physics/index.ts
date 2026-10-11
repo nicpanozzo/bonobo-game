@@ -24,6 +24,7 @@ import { stepProjectiles } from "./projectiles";
 import { cancelSpecial, specialing } from "./specials";
 import { endDash } from "./dash";
 import { collideWithStage, loseStock, outOfBlastZone, respawn } from "./stage";
+export { platformSurfaceY } from "./stage";
 import { supreming, tickSupreme } from "./supreme";
 
 export * from "./fighter";
