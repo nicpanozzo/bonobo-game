@@ -69,3 +69,49 @@ func test_tiene_al_massimo_size_snapshot() -> void:
 	for i in 50:
 		b.push(1000 + i * 33, 1020 + i * 33, _players(i))
 	runner.check(b._frames.size() == b.size, "frame tenuti: %d" % b._frames.size())
+
+
+# E17 passo 1: il proprio lottatore segue l'ultimo snapshot, senza il ritardo d'interpolazione
+func _me(x: float, y := 0.0, on_ground := false) -> Array:
+	return [{"id": "me", "x": x, "y": y, "onGround": on_ground}, {"id": "a", "x": x, "y": y}]
+
+
+func test_il_mio_lottatore_va_avanti() -> void:
+	var b := SnapshotBuffer.new()
+	b.own_id = "me"
+	b.own_extrapolate_ms = 50.0
+	b.push(1000, 1020, _me(0, 0))
+	b.push(1100, 1120, _me(100, -50)) # 1 px/ms in x, -0,5 px/ms in y
+	var s: Dictionary = b.sample_all(["me", "a"], 1140)
+	runner.check(absf(s.me.x - 120.0) < 0.01 and absf(s.me.y + 60.0) < 0.01, "20 ms dopo l'ultimo: 120, -60, avuto %s, %s" % [s.me.x, s.me.y])
+	runner.check(s.a.x < 100.0, "gli altri restano interpolati nel passato: %s" % [s.a.x])
+	var far: Variant = b.sample("me", 5000)
+	runner.check(absf(far.x - 150.0) < 0.01, "non oltre own_extrapolate_ms: %s" % [far.x])
+
+
+func test_il_mio_lottatore_a_terra_non_scende() -> void:
+	var b := SnapshotBuffer.new()
+	b.own_id = "me"
+	b.push(1000, 1020, _me(0, 300, true))
+	b.push(1100, 1120, _me(100, 310, true))
+	var s: Variant = b.sample("me", 1140)
+	runner.check(s.y == 310.0 and s.x > 100.0, "a terra si corre ma non si scende: %s, %s" % [s.x, s.y])
+
+
+func test_il_mio_lottatore_fermo_nel_colpo_non_trema() -> void:
+	var b := SnapshotBuffer.new()
+	b.own_id = "me"
+	var frozen: Array = [{"id": "me", "x": 50.0, "y": 0.0, "vx": 900.0, "vy": -400.0}]
+	b.push(1000, 1020, frozen)
+	b.push(1033, 1053, frozen) # hitstop: vx grande ma la posizione non cambia
+	var s: Variant = b.sample("me", 1080)
+	runner.check(s.x == 50.0 and s.y == 0.0, "senza spostamento tra due snapshot si resta lì: %s, %s" % [s.x, s.y])
+
+
+func test_il_mio_lottatore_dopo_il_rientro_non_scivola() -> void:
+	var b := SnapshotBuffer.new()
+	b.own_id = "me"
+	b.push(1000, 1020, _me(0))
+	b.push(1100, 1120, _me(1000)) # rientro dopo un KO: oltre teleport_distance
+	var s: Variant = b.sample("me", 1140)
+	runner.check(s.x == 1000.0, "un salto lungo non diventa una velocità: %s" % [s.x])

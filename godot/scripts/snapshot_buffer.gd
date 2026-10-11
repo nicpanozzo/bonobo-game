@@ -7,6 +7,8 @@ extends RefCounted
 var delay_ms := 80.0
 var teleport_distance := 300.0
 var size := 30
+var own_id := "" # il proprio lottatore (E17): niente ritardo d'interpolazione, segue l'ultimo snapshot
+var own_extrapolate_ms := 50.0
 
 var _frames: Array = [] # [{ t: ora del server, stage_ms: tempo dell'arena, players: { id: PlayerState } }]
 var _offset := NAN # ora locale - ora del server, stimata
@@ -44,9 +46,40 @@ func sample_all(ids: Array, now: float) -> Dictionary:
 	var a: Dictionary = _frames[i]
 	var b: Dictionary = _frames[i + 1] if i + 1 < _frames.size() and render_time > a.t else {}
 	for id in ids:
-		var p: Variant = _interpolate(id, a, b, render_time)
+		var p: Variant = latest_now(id, now) if id == own_id else _interpolate(id, a, b, render_time)
 		if p != null:
 			out[id] = p
+	return out
+
+
+# L'ultimo stato arrivato di un giocatore, spinto avanti per il tempo passato da allora (al massimo
+# own_extrapolate_ms): il proprio lottatore si vede circa delay_ms prima (E17 passo 1).
+# La velocità è lo spostamento tra gli ultimi due snapshot, non vx/vy: nel fermo di un colpo
+# (hitstop, che non viaggia in rete) la posizione non cambia e il lottatore non trema avanti e indietro.
+# Fermo anche a terra in verticale, e appeso, preso, in rientro o via.
+func latest_now(id: String, now: float) -> Variant:
+	if is_nan(_offset):
+		return null
+	var j := _frames.size() - 1
+	while j >= 0 and not _frames[j].players.has(id):
+		j -= 1
+	if j < 0:
+		return null
+	var p: Dictionary = _frames[j].players[id]
+	if j == 0 or not _frames[j - 1].players.has(id) or p.get("respawning", false) or p.get("eliminated", false) \
+			or p.get("away", false) or p.get("ledge") != null or p.get("grabbedBy") != null:
+		return p
+	var prev: Dictionary = _frames[j - 1].players[id]
+	var dt: float = float(_frames[j].t) - float(_frames[j - 1].t)
+	var dx: float = float(p.x) - float(prev.x)
+	var dy: float = float(p.y) - float(prev.y)
+	if absf(dx) > teleport_distance or absf(dy) > teleport_distance:
+		return p
+	var age := clampf(now - _offset - float(_frames[j].t), 0.0, own_extrapolate_ms)
+	var out: Dictionary = p.duplicate()
+	out.x = float(p.x) + dx / dt * age
+	if not p.get("onGround", false):
+		out.y = float(p.y) + dy / dt * age
 	return out
 
 
