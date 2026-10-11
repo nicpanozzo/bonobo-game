@@ -23,6 +23,7 @@ var camera := Camera2D.new()
 var audio: Node2D
 var rumble: Rumble
 var hud: Control
+var touch: TouchControls # levetta e tasti a schermo per il telefono (E18)
 var lobby: Control
 var title: Control # schermata del titolo (E14)
 var connecting: Control # schermata "Mi collego..." (E14), null quando si è dentro
@@ -81,6 +82,11 @@ func _ready() -> void:
 	hud.set_anchors_preset(Control.PRESET_FULL_RECT)
 	hud.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(hud)
+	touch = TouchControls.new()
+	touch.visible = false
+	layer.add_child(touch)
+	touch.pause_pressed.connect(func(): if not is_instance_valid(pause_menu): _open_pause())
+	touch.free_tap.connect(func(): socket.emit("rematch")) # come R: il server lo accetta solo a partita finita
 	ui_layer.layer = 2 # menu sopra l'HUD
 	add_child(ui_layer)
 	# Prima volta: nome, comandi e una prova col manichino (E14). Con un link a una stanza si entra e basta
@@ -460,6 +466,9 @@ func _process(_delta: float) -> void:
 	if playing and _last_snapshot > 0 and Time.get_ticks_msec() - _last_snapshot > int(game.reconnect.snapshotSilenceMs):
 		_last_snapshot = 0
 		socket.drop()
+	touch.visible = playing and touch.active and not is_instance_valid(pause_menu)
+	if touch.active and playing:
+		hud.rematch_key = "Tocca lo schermo"
 	if playing:
 		_send_input()
 		if world.stage_width() > game.world.width:
@@ -592,8 +601,8 @@ func _send_input() -> void:
 	var input := {}
 	var off := get_viewport().gui_get_focus_owner() != null or is_instance_valid(pause_menu)
 	for action in Settings.ACTIONS:
-		input[action] = not off and settings.is_pressed(action)
-	input.jump = not off and settings.jump_pressed()
+		input[action] = not off and (settings.is_pressed(action) or touch.pressed(action))
+	input.jump = not off and (settings.jump_pressed() or touch.pressed("jump"))
 	# Come il client web: si manda l'input solo quando cambia (== confronta i contenuti)
 	if input != _last_input and socket.is_joined():
 		_last_input = input
