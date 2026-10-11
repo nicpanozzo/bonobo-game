@@ -579,7 +579,14 @@ func _send_input() -> void:
 	# Come il client web: si manda l'input solo quando cambia (== confronta i contenuti)
 	if input != _last_input and socket.is_joined():
 		_last_input = input
-		socket.emit("input", input)
+		# E17: il numero dell'input è il tick locale, così lo snapshot dice da dove rigiocare il proprio movimento
+		var sent := input.duplicate()
+		sent.seq = local_tick(Time.get_ticks_msec(), float(game.get("tickRate", 60)))
+		socket.emit("input", sent)
+
+
+static func local_tick(now_ms: int, tick_rate: float) -> int:
+	return int(floor(now_ms * tick_rate / 1000.0))
 
 
 func _read_params() -> Dictionary:

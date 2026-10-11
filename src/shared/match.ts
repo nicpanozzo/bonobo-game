@@ -11,7 +11,7 @@ import { canHitWithRules, flagWinnerTeam, isTeamMode, lastStanding, leaderOnTime
 import { COURSE_PREFIX, seedFromCourseId } from "./courseGenerator";
 import { seedFromStageId } from "./stageGenerator";
 import { getStage, type StageSpec } from "./stages";
-import type { GameEvent, GameSnapshot, InputState, MatchRules, PlayerState } from "./types";
+import type { GameEvent, GameSnapshot, InputState, MatchRules, PlayerState, PredictionState } from "./types";
 
 export interface MatchOptions {
   stageId?: string;
@@ -112,6 +112,10 @@ export class Match {
     };
     bufferPresses(f, next); // una pressione più corta di un tick non si perde (E6)
     f.input = next;
+    if (input.seq !== undefined) {
+      f.inputSeq = input.seq;
+      f.inputTicks = 0;
+    }
   }
 
   // Caduta di rete (#107): il lottatore resta fermo e intoccabile finché il giocatore rientra o il posto scade.
@@ -156,6 +160,7 @@ export class Match {
     const items = this.items && list.length >= 2 && !this.winnerId ? this.items : null;
     if (items) handleItemInput(items, list, this.ctx);
     stepWorld(list, dtMs, this.ctx);
+    for (const f of list) f.inputTicks++; // E17: il client rigioca da qui il proprio movimento
     if (items) stepItems(items, list, dtMs, this.ctx);
     if (this.rules.mode === "flag" && !this.winnerId) this.scoreFlags();
     if (this.rules.mode === "race" && !this.winnerId) this.updateCheckpoints(list);
@@ -198,6 +203,7 @@ export class Match {
         dashing: f.dashing,
         charge: f.charge,
         supreme: Math.floor(f.supreme), // per difetto: 100 solo quando è davvero piena
+        ...(f.inputSeq >= 0 && { predict: predictionState(f) }),
       });
     }
     const teamScores = this.rules.mode === "flag" ? { ...this.scores } : null;
@@ -346,4 +352,17 @@ function stageFor(rules: MatchRules, stageId: string | undefined): StageSpec {
   if (stage.goal) return stage;
   const seed = (stageId && (seedFromCourseId(stageId) ?? seedFromStageId(stageId))) || 1;
   return getStage(`${COURSE_PREFIX}${seed}`);
+}
+
+// E17: il necessario per rigiocare il movimento sul client. I timer in ms interi, come x e y in pixel interi
+function predictionState(f: Fighter): PredictionState {
+  return {
+    seq: f.inputSeq,
+    ticks: f.inputTicks,
+    jumps: f.jumpsLeft,
+    coyote: Math.round(f.coyoteTimer),
+    rising: f.jumpRising,
+    drop: Math.round(f.dropTimer),
+    jumpBuffer: Math.round(f.buffer.jump),
+  };
 }
