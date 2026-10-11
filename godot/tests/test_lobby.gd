@@ -73,8 +73,7 @@ func test_pagine_e_briciole() -> void:
 
 func test_senza_arena_in_corsa_e_entrando() -> void:
 	var lobby := _lobby(false)
-	lobby._mode.select(Lobby.MODES.map(func(m): return m[0]).find("race"))
-	lobby._sync_rules()
+	lobby._set_mode("race")
 	runner.check(lobby.flow() == ["match", "fighter"], "in Corsa niente arena")
 	lobby._set_kind("join")
 	runner.check(lobby.flow() == ["match", "fighter"], "entrando niente arena")
@@ -141,3 +140,20 @@ func test_parte_da_contro_un_bot() -> void:
 
 func _bot_id(lobby: Control) -> String:
 	return Lobby.BOTS[lobby._bot.selected][0]
+
+
+func test_modalita_e_selettori() -> void:
+	var lobby := _lobby(false)
+	lobby._set_mode("flag")
+	runner.check(lobby._stocks_label.text == "PUNTI" and lobby._ff.visible, "in Bandiera punti e fuoco amico")
+	lobby._set_mode("training")
+	runner.check(not lobby._stocks_box.visible and not lobby._time_box.visible, "in Allenamento niente vite né tempo")
+	runner.check(_bot_id(lobby) == "manichino", "e c'è il manichino")
+	lobby._stocks._step(1)
+	lobby._stocks._step(1)
+	runner.check(lobby._stocks.selected == 4, "le frecce cambiano le vite")
+	lobby._stocks._step(1)
+	runner.check(lobby._stocks.selected == 0, "e dopo l'ultimo si ricomincia")
+	var c := _last_choice(lobby, lobby._submit)
+	runner.check(c.rules.mode == "training" and c.rules.stocks == 1, "le regole scelte: %s" % [c.rules])
+	lobby.free()
