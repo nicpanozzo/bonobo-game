@@ -31,8 +31,20 @@ Un PNG per stato in questa cartella, con i fotogrammi in fila da sinistra. È il
 | `grab` | 15 | 24 | no | si allunga con le due mani (`hitFrame: 2`), poi tiene l'altro stretto al petto (ultimo fotogramma, finché dura la presa) |
 | `throw` | 8 | 24 | no | i quattro lanci: scaglia con le braccia in avanti e in alto (`hitFrame: 0`, si lascia subito) |
 | `grabbed` | 12 | 12 | sì | tenuto da qualcuno: si dimena e scalcia |
+| `lightUp` | 8 | 24 | no | schiaffo verso l'alto, guardando su (`hitFrame: 2`) |
+| `lightDown` | 8 | 24 | no | spazzata bassa col dorso della mano, accucciato con l'altra mano a terra (`hitFrame: 2`) |
+| `lightAir` | 8 | 24 | no | rovescio in aria (`hitFrame: 2`) |
+| `heavyUp` | 19 | 24 | no | si accuccia con le nocche a terra e balza su battendo i pugni sopra la testa (`hitFrame: 7`) |
+| `heavyDown` | 18 | 24 | no | si carica indietro e si butta in avanti basso, le due braccia a terra (`hitFrame: 6`) |
+| `heavyAir` | 17 | 24 | no | martello a due pugni in aria (`hitFrame: 5`) |
+| `recovery` | 6 | 24 | no | il salto di recupero: sale avvitandosi con le braccia in alto (`hitFrame: 0`) |
 
-Gli altri stati (varianti dei colpi, recupero, speciale, suprema) usano per ora il ripiego di `ANIMATION_FALLBACK` in `characters.ts`: arrivano con i passi 4 e 5 di #257.
+Mancano solo `special` e `supreme`, che per ora usano il ripiego di `ANIMATION_FALLBACK` in `characters.ts`: arrivano con il passo 5 di #257.
+
+### Due controlli automatici
+
+- `animazioni_bonobot.py` si ferma se, nel fotogramma `hitFrame` di un attacco, nessuna punta di mano o piede sta dentro la zona del colpo (`ATTACKS` in `constants.ts`, letta da `godot/data/game.json`). Per il recupero vale anche il busto, perché colpisce con tutto il corpo.
+- `rendi_sprite.py` avvisa se un fotogramma tocca il bordo, cioè se il disegno viene tagliato.
 
 ## Come è fatto
 

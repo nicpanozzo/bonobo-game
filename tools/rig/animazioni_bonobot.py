@@ -539,6 +539,147 @@ def grabbed():
     return out
 
 
+# ---------------------------------------------------------------- varianti d'attacco e recupero (#257 passo 4)
+# I tempi sono quelli di ATTACKS (avvio, attivo, fine): hitFrame fa cadere l'impatto all'accendersi della zona.
+# Le zone del colpo (a 2x, rispetto ai piedi, guardando a destra) le controlla controlla_colpi() qui sotto.
+AIR_LEGS = dict(lRu=68, lRl=112, lRf=28, lLu=84, lLl=110, lLf=32)  # le gambe raccolte della caduta
+
+
+def polso(p, S):
+    """Dove sta il polso `S` nella posa piatta p (per finire un'animazione con l'IK sulla posa di partenza)."""
+    corpo, radice = costruisci(p)
+    m = sk.fk(corpo, radice)
+    (x, y), _, _ = m[f"hand_{S}"]
+    return dict(**{f"h{S}x": x, f"h{S}y": y, f"h{S}a": math.degrees(m[f"hand_{S}"][1]), f"h{S}b": -1})
+
+
+REST_HANDS = {**polso({}, "R"), **polso({}, "L")}
+AIR_HANDS = {**polso(FALL_POSE(0), "R"), **polso(FALL_POSE(0), "L")}
+AIR_REST = dict({k: v for k, v in FALL_POSE(0).items() if not k.startswith("a")}, **AIR_HANDS)
+
+
+def light_up():
+    # Schiaffo verso l'alto (avvio 60 ms, colpo fino a 170, fine 320): si abbassa un attimo, poi si stira
+    # guardando su e la mano aperta passa sopra la testa da davanti a dietro
+    keys = [(0, dict(REST_HANDS)),
+            (1, dict(y=8, sp=8, neck=4, head=6, hRx=66, hRy=-74, hRa=60, fR=20, brow=-8, tb=-6, tf=4)),
+            (2, dict(y=-6, sp=-12, neck=-12, head=-26, hRx=26, hRy=-214, hRa=-95, fR=-15, tR=-10,
+                     hLx=-6, hLy=-96, hLa=110, brow=-14, jaw=6, tb=10, tf=-8)),
+            (4, dict(y=-4, sp=-14, head=-28, hRx=-4, hRy=-206, hRa=-125)),
+            (7, dict(y=0, sp=0, neck=0, head=0, brow=0, jaw=0, fR=0, tR=0, tb=0, tf=0, **REST_HANDS))]
+    return [costruisci(p) for p in frames_from(keys, 8, lag={"head": 0.6, "tb": 1, "tf": 1.2})]
+
+
+def light_down():
+    # Spazzata bassa col dorso della mano (avvio 50 ms, fine 300): giù sulle ginocchia, l'altra mano a terra
+    keys = [(0, dict(REST_HANDS)),
+            (1, dict(y=26, hips=16, sp=26, neck=-18, head=-12, hRx=10, hRy=-44, hRa=150, fR=40, hLx=46, hLy=-34, hLa=90, fL=80,
+                     pRx=REST["pRx"] + 14, pLx=REST["pLx"] - 12, brow=-10, tb=-8, tf=6)),
+            (2, dict(x=10, y=34, hips=22, sp=34, neck=-26, head=-18, hRx=108, hRy=-22, hRa=5, fR=-10, tR=-10,
+                     hLx=52, hLy=-34, hLa=90, tb=8, tf=-8)),
+            (4, dict(hRx=112, hRy=-18, hRa=15)),
+            (7, dict(x=0, y=0, hips=0, sp=0, neck=0, head=0, brow=0, fR=0, tR=0, fL=0, pRx=REST["pRx"], pLx=REST["pLx"], tb=0, tf=0, **REST_HANDS))]
+    return [costruisci(p) for p in frames_from(keys, 8, lag={"head": 0.6, "tb": 1, "tf": 1.2})]
+
+
+def light_air():
+    # Rovescio in aria (avvio 50 ms, attivo fino a 210, fine 320): le gambe raccolte, la mano parte da dietro la spalla
+    keys = [(0, dict(AIR_REST)),
+            (1, dict(sp=-4, head=-6, hRx=-14, hRy=-138, hRa=-150, fR=30, brow=-10, tb=-8, tf=6)),
+            (2, dict(sp=10, neck=-6, head=-4, hRx=112, hRy=-104, hRa=-5, fR=-15, tR=-15, hLx=-20, hLy=-92, hLa=150, tb=8, tf=-8)),
+            (5, dict(hRx=116, hRy=-92, hRa=10)),
+            (7, dict(sp=AIR_REST["sp"], neck=AIR_REST["neck"], head=AIR_REST["head"], brow=0, fR=0, tR=0, tb=AIR_REST["tb"], tf=AIR_REST["tf"], **AIR_HANDS))]
+    return [costruisci(dict(p, **AIR_LEGS)) for p in frames_from(keys, 8, lag={"head": 0.6, "tb": 1, "tf": 1.2})]
+
+
+def heavy_up():
+    # Pugni al cielo (avvio 280 ms, colpo fino a 410, fine 800): giù accucciato con le mani a terra, poi un balzo
+    # in su battendo i due pugni sopra la testa; lancia in verticale
+    low = dict(y=34, hips=14, sp=24, neck=-10, head=-4, hRx=50, hRy=-34, hRa=90, fR=80, hLx=38, hLy=-32, hLa=90, fL=80,
+               pRx=REST["pRx"] + 12, pLx=REST["pLx"] - 10, brow=-14, tb=-10, tf=8)
+    keys = [(0, dict(REST_HANDS)), (5, low), (6, dict(low, y=36)),
+            (7, dict(y=-20, hips=-4, sp=-14, neck=-12, head=-26, hRx=18, hRy=-222, hRa=-92, hLx=8, hLy=-218, hLa=-88,
+                     pRx=REST["pRx"], pLx=REST["pLx"], jaw=8, tb=14, tf=-12)),
+            (10, dict(y=-16, hRx=14, hRy=-226, hLx=4, hLy=-222)),
+            (18, dict(y=0, hips=0, sp=0, neck=0, head=0, jaw=0, brow=0, fR=0, fL=0, tb=0, tf=0, **REST_HANDS))]
+    return [costruisci(p) for p in frames_from(keys, 19, lag={"head": 0.8, "tb": 1, "tf": 1.4})]
+
+
+def heavy_down():
+    # Affondo radente (avvio 240 ms, colpo fino a 380, fine 760): si carica indietro con le braccia alzate,
+    # poi si butta in avanti basso spazzando il pavimento con le due braccia lunghe
+    keys = [(0, dict(REST_HANDS)),
+            (4, dict(x=-10, y=20, hips=6, sp=8, neck=4, head=2, hRx=-30, hRy=-150, hRa=-120, fR=60, hLx=-36, hLy=-140, hLa=-120, fL=60,
+                     brow=-14, tb=-12, tf=10)),
+            (6, dict(x=12, y=40, hips=26, sp=44, neck=-40, head=-28, hRx=114, hRy=-22, hRa=0, fR=-10, hLx=98, hLy=-16, hLa=8, fL=-10,
+                     pRx=REST["pRx"] + 34, pRy=REST["pRy"], pLx=REST["pLx"] - 24, jaw=6, tb=12, tf=-10)),
+            (9, dict(hRx=114, hRy=-18, hLx=98, hLy=-14)),
+            (17, dict(x=0, y=0, hips=0, sp=0, neck=0, head=0, jaw=0, brow=0, fR=0, fL=0, pRx=REST["pRx"], pLx=REST["pLx"], tb=0, tf=0, **REST_HANDS))]
+    return [costruisci(p) for p in frames_from(keys, 18, lag={"head": 0.8, "tb": 1, "tf": 1.4})]
+
+
+def heavy_air():
+    # Martello in aria (avvio 200 ms, colpo fino a 340, fine 700): i due pugni sopra la testa, poi giù in avanti
+    keys = [(0, dict(AIR_REST)),
+            (4, dict(sp=-10, neck=6, head=6, hRx=-6, hRy=-232, hRa=-110, fR=70, hLx=-16, hLy=-226, hLa=-110, fL=70, brow=-14, tb=-12, tf=10)),
+            (5, dict(sp=22, neck=-14, head=-12, hRx=122, hRy=-98, hRa=20, hLx=114, hLy=-90, hLa=25, jaw=6, tb=12, tf=-10)),
+            (8, dict(sp=26, hRx=124, hRy=-80, hLx=116, hLy=-74)),
+            (16, dict(sp=AIR_REST["sp"], neck=AIR_REST["neck"], head=AIR_REST["head"], jaw=0, brow=0, fR=0, fL=0, tb=AIR_REST["tb"], tf=AIR_REST["tf"], **AIR_HANDS))]
+    return [costruisci(dict(p, **AIR_LEGS)) for p in frames_from(keys, 17, lag={"head": 0.8, "tb": 1, "tf": 1.4})]
+
+
+def recovery():
+    # Salto di recupero (subito attivo, 250 ms): sale avvitandosi con le braccia in alto e le gambe unite
+    n = 6
+    out = []
+    for f in range(n):
+        u = f / (n - 1)
+        w = TAU * u
+        out.append(costruisci(dict(
+            y=-10, spin=-14 * s(w), sp=-6, neck=-10, head=-18 + 6 * s(w),
+            hRx=30 + 16 * s(w), hRy=-224, hRa=-90, fR=-10, hLx=0 - 16 * s(w), hLy=-218, hLa=-90, fL=-10,
+            lRu=84, lRl=96, lRf=40, lLu=96, lLl=100, lLf=44, jaw=6, tb=-16 + 8 * s(2 * w), tf=12 * s(2 * w + 0.6))))
+    return out
+
+
+# ---------------------------------------------------------------- il colpo arriva dove colpisce
+# stato -> attacco di ATTACKS (le zone e i tempi sono in godot/data/game.json, generato da constants.ts)
+HIT_ZONES = {"light": "light", "heavy": "heavy", "grab": "grab", "lightUp": "lightUp", "lightDown": "lightDown", "lightAir": "lightAir",
+             "heavyUp": "heavyUp", "heavyDown": "heavyDown", "heavyAir": "heavyAir", "recovery": "recovery"}
+TIPS = ["fingers_R", "fingers_L", "thumb_R", "thumb_L", "hand_R", "hand_L", "toes_R", "toes_L", "foot_R", "foot_L"]
+BODY = ["spine_1", "spine_2", "spine_3", "neck"]  # il recupero colpisce con tutto il corpo: valgono anche le ossa del busto
+BODY_HITS = {"recovery"}
+
+
+def controlla_colpi(data):
+    """Nel fotogramma hitFrame la punta di una mano o di un piede sta dentro la zona del colpo: se no si ferma."""
+    gj = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "godot", "data", "game.json")
+    game = json.load(open(gj, encoding="utf-8"))
+    fw, fh = game["fighter"]["width"], game["fighter"]["height"]
+    errori = []
+    for stato, att in HIT_ZONES.items():
+        an = data["animations"].get(stato)
+        if not an or "hitFrame" not in an:
+            continue
+        a = game["attacks"][att]
+        x0 = (a["boxX"] if a.get("boxX") is not None else fw / 2) * 2
+        y0 = (a["boxY"] if a.get("boxY") is not None else -fh * 0.7) * 2
+        x1, y1 = x0 + a["range"] * 2, y0 + a["height"] * 2
+        fr = an["frames"][an["hitFrame"]]
+        m = sk.fk(fr["bones"], tuple(fr["root"]))
+        nomi = TIPS + (BODY if stato in BODY_HITS else [])
+        punte = [sk.punta(m, t) for t in nomi]
+        dentro = [t for t, (x, y) in zip(nomi, punte) if x0 <= x <= x1 and y0 <= y <= y1]
+        if dentro:
+            print(f"  {stato}: colpisce con {dentro[0]} (zona x {x0:.0f}..{x1:.0f}, y {y0:.0f}..{y1:.0f})")
+        else:
+            vicina = min(punte, key=lambda p: max(x0 - p[0], p[0] - x1, 0) + max(y0 - p[1], p[1] - y1, 0))
+            errori.append(f"{stato}: nel fotogramma {an['hitFrame']} nessuna mano o piede nella zona x {x0:.0f}..{x1:.0f}, y {y0:.0f}..{y1:.0f}"
+                          f" (la punta più vicina è a {vicina[0]:.0f}, {vicina[1]:.0f})")
+    if errori:
+        sys.exit("Colpi fuori zona:\n" + "\n".join(errori))
+
+
 # ---------------------------------------------------------------- tutto
 # stato: (fotogrammi, fps, ciclo, fotogramma d'impatto)
 ANIMS = {
@@ -560,6 +701,13 @@ ANIMS = {
     "grab": (grab, FPS, False, 2),
     "throw": (throw, FPS, False, 0),
     "grabbed": (grabbed, 12, True, None),
+    "lightUp": (light_up, FPS, False, 2),
+    "lightDown": (light_down, FPS, False, 2),
+    "lightAir": (light_air, FPS, False, 2),
+    "heavyUp": (heavy_up, FPS, False, 7),
+    "heavyDown": (heavy_down, FPS, False, 6),
+    "heavyAir": (heavy_air, FPS, False, 5),
+    "recovery": (recovery, FPS, False, 0),
 }
 
 
@@ -572,6 +720,7 @@ def main():
         if hit_frame is not None:
             an["hitFrame"] = hit_frame
         data["animations"][name] = an
+    controlla_colpi(data)
     out = os.path.join(RIG, "animazioni.json")
     json.dump(data, open(out, "w"), separators=(",", ":"))
     print("scritto", out, {k: len(v["frames"]) for k, v in data["animations"].items()})

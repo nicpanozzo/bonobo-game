@@ -2258,49 +2258,50 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 2,
-            "frames": 10,
-            "src": "light"
+            "frames": 8,
+            "src": "lightUp"
           },
           "lightDown": {
             "fps": 24,
             "loop": false,
             "hitFrame": 2,
-            "frames": 10,
-            "src": "light"
+            "frames": 8,
+            "src": "lightDown"
           },
           "lightAir": {
             "fps": 24,
             "loop": false,
             "hitFrame": 2,
-            "frames": 10,
-            "src": "light"
+            "frames": 8,
+            "src": "lightAir"
           },
           "heavyUp": {
             "fps": 24,
             "loop": false,
-            "hitFrame": 8,
-            "frames": 18,
-            "src": "heavy"
+            "hitFrame": 7,
+            "frames": 19,
+            "src": "heavyUp"
           },
           "heavyDown": {
             "fps": 24,
             "loop": false,
-            "hitFrame": 8,
+            "hitFrame": 6,
             "frames": 18,
-            "src": "heavy"
+            "src": "heavyDown"
           },
           "heavyAir": {
             "fps": 24,
             "loop": false,
-            "hitFrame": 8,
-            "frames": 18,
-            "src": "heavy"
+            "hitFrame": 5,
+            "frames": 17,
+            "src": "heavyAir"
           },
           "recovery": {
             "fps": 24,
             "loop": false,
-            "frames": 7,
-            "src": "jump"
+            "hitFrame": 0,
+            "frames": 6,
+            "src": "recovery"
           },
           "taunt": {
             "fps": 12,
