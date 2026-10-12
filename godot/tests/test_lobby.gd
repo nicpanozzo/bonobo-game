@@ -157,3 +157,15 @@ func test_modalita_e_selettori() -> void:
 	var c := _last_choice(lobby, lobby._submit)
 	runner.check(c.rules.mode == "training" and c.rules.stocks == 1, "le regole scelte: %s" % [c.rules])
 	lobby.free()
+
+
+# Anteprima che mostra già il palco (#284): la lobby non ci disegna sopra i pezzi; senza il segno sì
+func test_anteprima_che_mostra_gia_il_palco() -> void:
+	var Preview := preload("res://scripts/stage_preview.gd")
+	var game: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/game.json"))
+	runner.check(not Preview.draws_pieces(game.stages.padova), "Padova: l'anteprima basta")
+	runner.check(Preview.draws_pieces(game.stages.palco), "il Palco: i pezzi sopra lo sfondo")
+	runner.check(Preview.draws_pieces({"art": {"previewFull": true}}), "senza immagine si disegnano i pezzi")
+	var p: Control = Preview.new()
+	runner.check(p.clip_contents, "il disegno resta nel riquadro")
+	p.free()
