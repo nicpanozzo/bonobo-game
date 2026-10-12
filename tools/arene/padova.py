@@ -16,7 +16,7 @@ import sys
 from PIL import Image, ImageDraw
 
 sys.path.insert(0, os.path.dirname(__file__))
-from disegno import INK, OUT_SCALE, Scala, Tela, light, mix, rand, shade  # noqa: E402
+from disegno import INK, Tela, light, mix, rand, shade  # noqa: E402
 
 OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(__file__), "..", "..", "public", "assets", "stages", "padova")
 os.makedirs(OUT, exist_ok=True)
@@ -492,288 +492,436 @@ def statue(name, total_h, slab_w, kind):
     save(out, name)
 
 
-def layer(name, draw, W=2440, H=1480):
-    """Uno strato dello sfondo: si disegna in pixel di mondo, il file esce a 2x (art.scale 0.5, #280)."""
-    img = Image.new("RGBA", (W * OUT_SCALE, H * OUT_SCALE), (0, 0, 0, 0))
-    draw(Scala(ImageDraw.Draw(img), OUT_SCALE), W, H)
-    save(img.quantize(colors=256, method=Image.Quantize.FASTOCTREE, dither=Image.Dither.NONE), name)
+# --- lo sfondo (#280 passo 3): tre strati a 2x, disegnati in coordinate di mondo ---
+# Gli strati sono centrati sul centro dell'arena (960, 360) e larghi 2440×1480 di mondo: l'angolo in alto a sinistra
+# è nel mondo a (-260, -380). Più uno strato è lontano, più i colori vanno verso la foschia e l'inchiostro schiarisce.
+LW, LH = 2440, 1480
+L_ORIGIN = (960 - LW / 2, 360 - LH / 2)
+HAZE = (176, 190, 202, 255)  # la foschia del giorno, verso cui sbiadiscono le cose lontane
 
 
-# Gli strati sono centrati sul centro dell'arena (960, 360): il pixel (u, v) è nel mondo a (960 - W/2 + u, 360 - H/2 + v)
-def to_px(wx, wy, W=2440, H=1480):
-    return wx - 960 + W / 2, wy - 360 + H / 2
+def layer(name, draw):
+    """Uno strato dello sfondo: draw(t) disegna sulla tela in pixel di mondo; il file esce a 2x (art.scale 0.5)."""
+    t = Tela(LW, LH, origin=L_ORIGIN, ss=1)
+    draw(t)
+    t.save(OUT, name, colors=256)
 
 
-def outlined(d, pts, fill, ink, width=2):
-    d.polygon(pts, fill=fill)
-    d.line(list(pts) + [pts[0]], fill=ink, width=width, joint="curve")
+def far(col, k):
+    """Un colore velato dalla lontananza: k 0 com'è, 1 tutto foschia."""
+    return mix(col, HAZE, k)
 
 
-def dome(d, cx, base, r, h, fill, shade, ink, ribs=6, lantern=True):
-    """Cupola bizantina del Santo: calotta rialzata con i costoloni, tamburo e lanterna con la statuina in cima."""
-    d.rectangle([cx - r * 0.95, base - r * 0.35, cx + r * 0.95, base], fill=fill, outline=ink, width=2)  # tamburo
-    for i in range(1, 6):  # finestrelle del tamburo
+# --- strato lontano: tetti della città, Santa Giustina e la Basilica del Santo ---
+def dome(t, cx, base, r, h, fill, sh, ink, ribs=6, lantern=True, statue=False):
+    """Cupola: tamburo con le finestrelle, calotta rialzata a costoloni con l'ombra a destra, lanterna."""
+    t.rect(cx - r * 0.95, base - r * 0.35, cx + r * 0.95, base, fill=fill, ink=True, width=1.0, ink_col=ink)
+    t.rect(cx + r * 0.4, base - r * 0.35, cx + r * 0.95, base, fill=sh)
+    for i in range(1, 6):
         wx = cx - r * 0.8 + i * r * 0.27
-        d.rectangle([wx - 2, base - r * 0.28, wx + 2, base - r * 0.08], fill=ink)
+        t.rect(wx - 1.6, base - r * 0.27, wx + 1.6, base - r * 0.09, fill=ink)
     top = base - r * 0.35
-    pts = []
-    for i in range(33):
-        a = math.pi * i / 32
-        pts.append((cx - math.cos(a) * r, top - math.sin(a) * h))
-    d.polygon(pts, fill=fill)
-    d.polygon([p for p in pts if p[0] >= cx] + [(cx, top)], fill=shade)
-    d.line(pts, fill=ink, width=2)
-    for k in range(1, ribs):  # costoloni
+    pts = [(cx - math.cos(math.pi * i / 32) * r, top - math.sin(math.pi * i / 32) * h) for i in range(33)]
+    t.poly(pts, fill=fill)
+    t.poly([p for p in pts if p[0] >= cx + r * 0.15] + [(cx + r * 0.15, top)], fill=sh)
+    for k in range(1, ribs):
         u = -1 + 2 * k / ribs
-        # dal tamburo alla lanterna, curvando come la calotta
-        d.line([(cx + u * r * math.cos(t * math.pi / 2), top - h * math.sin(t * math.pi / 2)) for t in [j / 10 for j in range(11)]], fill=ink, width=1)
+        t.line([(cx + u * r * math.cos(j / 10 * math.pi / 2), top - h * math.sin(j / 10 * math.pi / 2)) for j in range(11)], fill=ink, width=0.7)
+    t.poly(pts, ink=True, width=1.0, ink_col=ink)
     if lantern:
         lt = top - h
-        d.rectangle([cx - r * 0.16, lt - r * 0.32, cx + r * 0.16, lt + 2], fill=fill, outline=ink, width=2)
-        d.pieslice([cx - r * 0.18, lt - r * 0.5, cx + r * 0.18, lt - r * 0.18], 180, 360, fill=fill, outline=ink, width=2)
-        d.line([cx, lt - r * 0.34, cx, lt - r * 0.62], fill=ink, width=2)  # la statuina d'angelo, in sagoma
-        d.ellipse([cx - 3, lt - r * 0.7, cx + 3, lt - r * 0.6], fill=ink)
+        t.rect(cx - r * 0.15, lt - r * 0.3, cx + r * 0.15, lt + 1, fill=fill, ink=True, width=0.9, ink_col=ink)
+        t.pieslice(cx - r * 0.17, lt - r * 0.46, cx + r * 0.17, lt - r * 0.16, 180, 360, fill=fill)
+        t.line([(cx, lt - r * 0.4), (cx, lt - r * 0.62)], fill=ink, width=1.0)
+        if statue:  # la statuina in cima, in sagoma
+            t.circle(cx, lt - r * 0.72, 2.2, fill=ink)
+            t.line([(cx - 3, lt - r * 0.62), (cx + 3, lt - r * 0.62)], fill=ink, width=1.0)
+        else:
+            t.circle(cx, lt - r * 0.66, 1.8, fill=ink)
 
 
-def basilica_santo(d, cx, base, k=1.0):
-    """La Basilica di Sant'Antonio vista da Prato della Valle: facciata a capanna con la loggia e il rosone,
-    otto cupole (la conica al centro), i due campanili a minareto e le torrette. Sagoma azzurrata e lontana."""
-    # di giorno: mattone spento della chiesa, piombo grigio delle cupole, un po' velati dalla lontananza
-    F, S, I = (164, 128, 112, 255), (146, 112, 98, 255), (92, 76, 72, 255)
-    L = (178, 144, 128, 255)
-    # corpo della chiesa, dietro le cupole
-    d.rectangle([cx - 330 * k, base - 150 * k, cx + 330 * k, base], fill=F, outline=I, width=2)
-    for i in range(14):  # archetti pensili e finestre del fianco
-        wx = cx - 300 * k + i * 45 * k
-        d.rectangle([wx, base - 120 * k, wx + 12 * k, base - 70 * k], fill=I)
-        d.pieslice([wx, base - 128 * k, wx + 12 * k, base - 112 * k], 180, 360, fill=I)
-    # campanili a minareto ai lati dell'abside
-    for tx in (cx + 150 * k, cx + 300 * k):
-        d.rectangle([tx - 14 * k, base - 430 * k, tx + 14 * k, base], fill=F, outline=I, width=2)
-        d.rectangle([tx + 2 * k, base - 430 * k, tx + 14 * k, base], fill=S)
-        for j in range(4):  # balconcini a ogni piano
-            yy = base - (160 + j * 70) * k
-            d.rectangle([tx - 19 * k, yy - 5 * k, tx + 19 * k, yy], fill=L, outline=I, width=1)
-            d.rectangle([tx - 4 * k, yy - 40 * k, tx + 4 * k, yy - 14 * k], fill=I)
-        d.rectangle([tx - 10 * k, base - 480 * k, tx + 10 * k, base - 430 * k], fill=F, outline=I, width=2)  # cella campanaria
-        d.polygon([(tx - 11 * k, base - 480 * k), (tx + 11 * k, base - 480 * k), (tx, base - 540 * k)], fill=S, outline=I)  # punta conica
-        d.line([tx, base - 540 * k, tx, base - 556 * k], fill=I, width=2)
-    # le cupole: due sulla navata, la conica al centro, poi quelle del transetto e dell'abside
-    PB, PS, PL = (150, 158, 166, 255), (128, 136, 146, 255), (166, 172, 180, 255)  # piombo delle cupole
-    dome(d, cx - 160 * k, base - 150 * k, 62 * k, 96 * k, PB, PS, I)
-    dome(d, cx - 40 * k, base - 150 * k, 66 * k, 104 * k, PB, PS, I)
-    dome(d, cx + 230 * k, base - 150 * k, 58 * k, 90 * k, PB, PS, I)
-    dome(d, cx + 90 * k, base - 170 * k, 52 * k, 82 * k, PL, PB, I)
-    dome(d, cx + 330 * k, base - 140 * k, 40 * k, 60 * k, PB, PS, I)
-    # il cono: la cupola conica sopra l'altare
-    cone_x, cone_b = cx + 60 * k, base - 210 * k
-    d.rectangle([cone_x - 52 * k, cone_b, cone_x + 52 * k, base - 150 * k], fill=F, outline=I, width=2)
-    outlined(d, [(cone_x - 50 * k, cone_b), (cone_x + 50 * k, cone_b), (cone_x, cone_b - 190 * k)], PB, I)
-    d.polygon([(cone_x, cone_b), (cone_x + 50 * k, cone_b), (cone_x, cone_b - 190 * k)], fill=PS)
+def skyline(t, base, rng):
+    """La città lontana dietro al Prato: tetti a capanna, comignoli, qualche campanile, tutto in foschia."""
+    x = -300
+    while x < 2200:
+        w = rng.randint(50, 120)
+        h = rng.randint(24, 60)
+        col = far(rng.choice([(150, 120, 100, 255), (160, 140, 118, 255), (140, 128, 116, 255)]), 0.62)
+        roof = far((120, 84, 68, 255), 0.6)
+        t.rect(x, base - h, x + w, base, fill=col)
+        t.poly([(x - 3, base - h), (x + w * 0.5, base - h - rng.randint(8, 16)), (x + w + 3, base - h)], fill=roof)
+        for wx in range(int(x + 8), int(x + w - 8), 14):
+            t.rect(wx, base - h + 8, wx + 4, base - h + 15, fill=far((70, 66, 64, 255), 0.6))
+        if rng.random() < 0.15:  # un campanile
+            tx = x + w * 0.5
+            th = rng.randint(110, 160)
+            t.rect(tx - 7, base - th, tx + 7, base - h, fill=col)
+            t.rect(tx - 5, base - th + 6, tx + 5, base - th + 20, fill=far((70, 66, 64, 255), 0.55))
+            t.poly([(tx - 8, base - th), (tx + 8, base - th), (tx, base - th - 26)], fill=roof)
+        x += w + rng.randint(-6, 6)
+
+
+def santa_giustina(t, cx, base):
+    """Santa Giustina: la grande facciata di mattoni rimasta grezza, con i buchi delle impalcature, le otto cupole
+    basse con le statuine sulle lanterne e il campanile. Più lontana del Santo: più velata."""
+    F, S, I = far((160, 120, 100, 255), 0.45), far((136, 102, 86, 255), 0.45), far((80, 66, 62, 255), 0.45)
+    P = far((178, 170, 156, 255), 0.45)  # piombo delle cupole
+    PS = shade(P, 0.86)
+    # le cupole dietro la facciata
+    for dx, r in ((-60, 34), (40, 42), (130, 52), (225, 40), (300, 30)):
+        dome(t, cx + dx, base - 150, r, r * 1.15, P, PS, I, ribs=4, statue=True)
+    t.rect(cx - 100, base - 150, cx + 330, base, fill=F, ink=True, width=1.0, ink_col=I)  # il corpo della chiesa
+    t.rect(cx + 200, base - 150, cx + 330, base, fill=S)
+    # la facciata grezza, più alta, con i gradini davanti
+    fx0, fx1, ftop = cx - 200, cx - 20, base - 230
+    t.rect(fx0, ftop, fx1, base, fill=F, ink=True, width=1.1, ink_col=I)
+    t.rect(fx0 + 120, ftop, fx1, base, fill=S)
+    rng = rand(31)
+    for row in range(10):  # buche pontaie in file
+        for k in range(8):
+            t.rect(fx0 + 10 + k * 21 + (row % 2) * 6, ftop + 12 + row * 21, fx0 + 13 + k * 21 + (row % 2) * 6, ftop + 15 + row * 21, fill=I)
+    for i, px in enumerate((fx0 + 30, fx0 + 80, fx0 + 130)):  # tre portali
+        t.rect(px, base - (60 if i == 1 else 46), px + 20, base, fill=I)
+    t.rect(fx0 - 12, base - 8, fx1 + 12, base, fill=far((190, 182, 168, 255), 0.45), ink=True, width=0.9, ink_col=I)
+    # il campanile con la cella e la punta a cono
+    tx = cx + 360
+    t.rect(tx - 14, base - 300, tx + 14, base, fill=F, ink=True, width=1.0, ink_col=I)
+    t.rect(tx + 3, base - 300, tx + 14, base, fill=S)
+    for j in range(3):
+        t.rect(tx - 5, base - 290 + j * 20, tx + 5, base - 278 + j * 20, fill=I)
+    t.poly([(tx - 16, base - 300), (tx + 16, base - 300), (tx, base - 350)], fill=S, ink=True, width=1.0, ink_col=I)
+
+
+def basilica_santo(t, cx, base):
+    """La Basilica di Sant'Antonio vista da Prato della Valle: la facciata a capanna con la loggia, il rosone e i
+    tre portali, le cupole di piombo a costoloni, il cono sopra l'altare, i due campanili a minareto con i
+    balconcini e le torrette ai lati della facciata. Mattone spento e piombo grigio, velati dalla lontananza."""
+    F, S, I = far((168, 126, 108, 255), 0.3), far((144, 106, 92, 255), 0.3), far((88, 70, 66, 255), 0.3)
+    L = far((186, 150, 132, 255), 0.3)
+    PB, PS, PL = far((150, 158, 168, 255), 0.25), far((124, 132, 144, 255), 0.25), far((170, 176, 184, 255), 0.25)
+    # i campanili a minareto dietro, ai lati dell'abside
+    for tx in (cx + 150, cx + 300):
+        t.rect(tx - 14, base - 430, tx + 14, base, fill=F, ink=True, width=1.0, ink_col=I)
+        t.rect(tx + 3, base - 430, tx + 14, base, fill=S)
+        for j in range(4):
+            yy = base - (160 + j * 70)
+            t.rect(tx - 19, yy - 5, tx + 19, yy, fill=L, ink=True, width=0.9, ink_col=I)
+            t.rect(tx - 4, yy - 40, tx + 4, yy - 14, fill=I)
+            t.pieslice(tx - 4, yy - 44, tx + 4, yy - 36, 180, 360, fill=I)
+        t.rect(tx - 11, base - 480, tx + 11, base - 430, fill=F, ink=True, width=1.0, ink_col=I)
+        t.rect(tx - 6, base - 470, tx + 6, base - 440, fill=I)
+        t.poly([(tx - 12, base - 480), (tx + 12, base - 480), (tx, base - 545)], fill=S, ink=True, width=1.0, ink_col=I)
+        t.line([(tx, base - 545), (tx, base - 562)], fill=I, width=1.2)
+        t.circle(tx, base - 563, 2.4, fill=I)
+    # corpo della chiesa con gli archetti e le finestre del fianco
+    t.rect(cx - 330, base - 150, cx + 330, base, fill=F, ink=True, width=1.1, ink_col=I)
+    t.rect(cx + 120, base - 150, cx + 330, base, fill=S)
+    for i in range(14):
+        wx = cx - 300 + i * 45
+        t.rect(wx, base - 120, wx + 12, base - 70, fill=I)
+        t.pieslice(wx, base - 128, wx + 12, base - 112, 180, 360, fill=I)
+        for k in range(4):
+            t.arc(wx - 8 + k * 6, base - 146, wx - 2 + k * 6, base - 140, 0, 180, fill=I, width=0.6)
+    # le cupole: due sulla navata, quelle del transetto e dell'abside
+    dome(t, cx - 160, base - 150, 62, 96, PB, PS, I, ribs=8)
+    dome(t, cx - 40, base - 150, 66, 104, PB, PS, I, ribs=8)
+    dome(t, cx + 230, base - 150, 58, 90, PB, PS, I, ribs=8)
+    dome(t, cx + 90, base - 170, 52, 82, PL, PB, I, ribs=6)
+    dome(t, cx + 330, base - 140, 40, 60, PB, PS, I, ribs=6)
+    # il cono sopra l'altare, a spicchi
+    ccx, cb = cx + 60, base - 210
+    t.rect(ccx - 52, cb, ccx + 52, base - 150, fill=F, ink=True, width=1.0, ink_col=I)
+    t.rect(ccx + 20, cb, ccx + 52, base - 150, fill=S)
+    t.poly([(ccx - 50, cb), (ccx + 50, cb), (ccx, cb - 190)], fill=PB)
+    t.poly([(ccx + 4, cb), (ccx + 50, cb), (ccx, cb - 190)], fill=PS)
     for i in range(1, 5):
-        d.line([cone_x - 50 * k + i * 20 * k, cone_b, cone_x, cone_b - 190 * k], fill=I, width=1)
-    d.ellipse([cone_x - 6 * k, cone_b - 206 * k, cone_x + 6 * k, cone_b - 190 * k], fill=F, outline=I, width=2)
+        t.line([(ccx - 50 + i * 20, cb), (ccx, cb - 190)], fill=I, width=0.8)
+    t.poly([(ccx - 50, cb), (ccx + 50, cb), (ccx, cb - 190)], ink=True, width=1.1, ink_col=I)
+    t.circle(ccx, cb - 196, 6, fill=F, ink=True, width=0.9, ink_col=I)
     # facciata a capanna, davanti a tutto
-    fx0, fx1, ftop = cx - 330 * k, cx - 150 * k, base - 290 * k
-    outlined(d, [(fx0, base), (fx0, ftop + 60 * k), ((fx0 + fx1) / 2, ftop), (fx1, ftop + 60 * k), (fx1, base)], L, I)
-    d.polygon([((fx0 + fx1) / 2, ftop), (fx1, ftop + 60 * k), (fx1, base), ((fx0 + fx1) / 2, base)], fill=F)
-    for i in range(4):  # la loggia a quattro archi
-        ax = fx0 + 18 * k + i * 38 * k
-        d.rectangle([ax, base - 200 * k, ax + 26 * k, base - 160 * k], fill=I)
-        d.polygon([(ax, base - 200 * k), (ax + 13 * k, base - 216 * k), (ax + 26 * k, base - 200 * k)], fill=I)
-    rx, ry = (fx0 + fx1) / 2, base - 240 * k  # rosone
-    d.ellipse([rx - 18 * k, ry - 18 * k, rx + 18 * k, ry + 18 * k], fill=S, outline=I, width=2)
-    for a in range(8):
-        aa = a * math.pi / 4
-        d.line([rx, ry, rx + math.cos(aa) * 16 * k, ry + math.sin(aa) * 16 * k], fill=I, width=1)
-    for i in range(3):  # portali
-        px = fx0 + 30 * k + i * 50 * k
-        d.rectangle([px, base - 70 * k, px + 22 * k, base], fill=I)
-        d.pieslice([px, base - 82 * k, px + 22 * k, base - 58 * k], 180, 360, fill=I)
-    for tx in (fx0 + 6 * k, fx1 - 6 * k):  # torrette con la guglia ai lati della facciata
-        d.rectangle([tx - 7 * k, ftop + 40 * k, tx + 7 * k, base], fill=L, outline=I, width=1)
-        d.polygon([(tx - 8 * k, ftop + 40 * k), (tx + 8 * k, ftop + 40 * k), (tx, ftop + 2 * k)], fill=F, outline=I)
+    fx0, fx1, ftop = cx - 330, cx - 150, base - 290
+    fac = [(fx0, base), (fx0, ftop + 60), ((fx0 + fx1) / 2, ftop), (fx1, ftop + 60), (fx1, base)]
+    t.poly(fac, fill=L)
+    t.poly([((fx0 + fx1) / 2, ftop), (fx1, ftop + 60), (fx1, base), ((fx0 + fx1) / 2 + 30, base)], fill=F)
+    t.poly(fac, ink=True, width=1.2, ink_col=I)
+    for i in range(4):  # la loggia a quattro archi, con le colonnine
+        ax = fx0 + 18 + i * 38
+        t.rect(ax, base - 200, ax + 26, base - 160, fill=I)
+        t.poly([(ax, base - 200), (ax + 13, base - 216), (ax + 26, base - 200)], fill=I)
+        t.rect(ax - 4, base - 202, ax - 1, base - 160, fill=L)
+    t.rect(fx0 + 8, base - 160, fx1 - 8, base - 154, fill=L, ink=True, width=0.8, ink_col=I)
+    rx, ry = (fx0 + fx1) / 2, base - 240  # rosone
+    t.circle(rx, ry, 19, fill=S, ink=True, width=1.1, ink_col=I)
+    t.circle(rx, ry, 6, fill=I)
+    for a in range(12):
+        aa = a * math.pi / 6
+        t.line([(rx + math.cos(aa) * 6, ry + math.sin(aa) * 6), (rx + math.cos(aa) * 17, ry + math.sin(aa) * 17)], fill=I, width=0.8)
+    for i in range(3):  # portali con la lunetta
+        px = fx0 + 30 + i * 50
+        tall = 82 if i == 1 else 70
+        t.rect(px, base - tall + 12, px + 22, base, fill=I)
+        t.pieslice(px, base - tall, px + 22, base - tall + 24, 180, 360, fill=I)
+        t.arc(px - 3, base - tall - 3, px + 25, base - tall + 27, 180, 360, fill=L, width=1.4)
+    for tx in (fx0 + 6, fx1 - 6):  # torrette con la guglia
+        t.rect(tx - 7, ftop + 40, tx + 7, base, fill=L, ink=True, width=0.9, ink_col=I)
+        t.poly([(tx - 8, ftop + 40), (tx + 8, ftop + 40), (tx, ftop + 2)], fill=F, ink=True, width=0.9, ink_col=I)
 
 
-def santa_giustina(d, cx, base):
-    """Santa Giustina, più lontana: facciata grezza, le otto cupole basse con le statuine e il campanile."""
-    F, S, I = (170, 150, 140, 255), (154, 136, 128, 255), (110, 98, 94, 255)  # più lontana: più chiara e velata
-    d.rectangle([cx - 230, base - 110, cx + 230, base], fill=F, outline=I, width=2)
-    for i, (dx, r) in enumerate([(-170, 34), (-90, 44), (0, 56), (95, 44), (175, 34)]):
-        dome(d, cx + dx, base - 110, r, r * 1.2, F, S, I, ribs=4)
-    d.rectangle([cx + 250, base - 300, cx + 280, base], fill=F, outline=I, width=2)
-    d.rectangle([cx + 254, base - 280, cx + 276, base - 250], fill=I)
-    d.polygon([(cx + 247, base - 300), (cx + 283, base - 300), (cx + 265, base - 345)], fill=S, outline=I)
-
-
-def cloud(d, x, y, w, col, shade):
-    for i in range(5):
-        cx = x + i * w / 5
-        r = w * (0.16 + 0.08 * math.sin(i * 1.7 + x))
-        d.ellipse([cx - r, y - r * 0.7, cx + r, y + r * 0.5], fill=col)
-    d.ellipse([x - w * 0.05, y - w * 0.02, x + w * 0.85, y + w * 0.1], fill=shade)  # pancia in ombra
-
-
-def sky(d, W, H):
+def sky(t):
     # Il cielo lo disegna il gioco (cielo vivo, #267): qui solo le sagome lontane, su fondo trasparente
-    base = to_px(0, 470)[1]
-    santa_giustina(d, to_px(300, 0)[0], base + 10)
-    basilica_santo(d, to_px(1500, 0)[0], base, 0.95)
+    base = 470
+    skyline(t, base + 6, rand(5))
+    santa_giustina(t, 300, base + 10)
+    basilica_santo(t, 1500, base)
 
 
-def palazzo_row(d, x0, x1, base, rng, tones):
-    """Una fila di palazzi del centro: portici al piano terra, finestre gotiche, balconcini, tetti e camini a imbuto."""
-    x = x0
-    while x < x1:
-        bw = rng.randint(130, 230)
-        floors = rng.randint(3, 4)
-        fh = rng.randint(40, 48)
-        top = base - 60 - floors * fh
-        col = rng.choice(tones)
-        shade = tuple(max(0, c - 14) for c in col[:3]) + (255,)
-        ink = (40, 38, 36, 255)
-        d.rectangle([x, top, x + bw, base], fill=col, outline=ink, width=2)
-        d.rectangle([x + bw * 0.72, top, x + bw, base], fill=shade)
-        # portico
-        d.rectangle([x, base - 60, x + bw, base], fill=shade)
-        for ax in range(x + 6, x + bw - 26, 32):
-            d.rectangle([ax, base - 44, ax + 24, base], fill=(44, 42, 40, 255))
-            d.pieslice([ax, base - 56, ax + 24, base - 32], 180, 360, fill=(44, 42, 40, 255))
-            d.line([ax - 4, base - 60, ax - 4, base], fill=ink, width=2)
-        # piani con le finestre: gotiche al piano nobile, rettangolari sopra
-        for f in range(floors):
-            fy = base - 60 - (f + 1) * fh
-            for wx in range(x + 14, x + bw - 18, 30):
-                if f == 0:
-                    d.rectangle([wx, fy + 10, wx + 14, fy + fh - 4], fill=(52, 50, 48, 255))
-                    d.polygon([(wx, fy + 10), (wx + 7, fy + 2), (wx + 14, fy + 10)], fill=(52, 50, 48, 255))
-                    d.rectangle([wx - 3, fy + fh - 6, wx + 17, fy + fh - 2], fill=(150, 144, 132, 255))  # balconcino
-                else:
-                    d.rectangle([wx + 2, fy + 10, wx + 12, fy + fh - 8], fill=(56, 54, 50, 255))
-                    d.rectangle([wx - 1, fy + 8, wx + 15, fy + 10], fill=(140, 134, 122, 255))
-            d.line([x, fy, x + bw, fy], fill=shade, width=2)  # marcapiano
-        # tetto di coppi e cornice, camini veneziani a imbuto
-        d.rectangle([x - 6, top - 10, x + bw + 6, top], fill=(98, 72, 60, 255), outline=ink, width=2)
-        for cxm in (x + bw * 0.25, x + bw * 0.7):
-            if rng.random() < 0.8:
-                d.rectangle([cxm - 4, top - 34, cxm + 4, top - 10], fill=(110, 84, 70, 255), outline=ink, width=1)
-                d.polygon([(cxm - 11, top - 46), (cxm + 11, top - 46), (cxm + 5, top - 32), (cxm - 5, top - 32)], fill=(110, 84, 70, 255), outline=ink)
-        x += bw
+# --- strato dei portici: palazzi del Prato, Loggia Amulea, mercato ---
+FACADES = [(178, 146, 104, 255), (182, 136, 118, 255), (192, 178, 150, 255), (164, 112, 90, 255), (150, 146, 126, 255), (170, 128, 98, 255)]
+SHUTTERS = [(88, 104, 84, 255), (110, 84, 64, 255), (96, 100, 96, 255)]
 
 
-def loggia_amulea(d, lx, base):
-    """La Loggia Amulea: mattone rosso spento, archi gotici a due ordini, pilastri bianchi e la merlatura chiara."""
-    ink = (44, 34, 32, 255)
-    brick, brick_s, white = (118, 80, 68, 255), (100, 68, 58, 255), (176, 168, 154, 255)
+def portico_house(t, x, w, base, rng):
+    """Un palazzo sopra i portici: archi con le colonne, piani con le finestre e le persiane, qualche balconcino
+    in ferro, marcapiani, cornicione con le mensole, tetto di coppi, camini a imbuto e qualche antenna."""
+    floors = rng.randint(3, 4)
+    fh = rng.randint(40, 46)
+    top = base - 62 - floors * fh
+    col = far(rng.choice(FACADES), 0.26)  # più velati del palazzo al centro, che è il soggetto
+    sh = shade(col, 0.86)
+    ink = (52, 46, 44, 255)
+    stone = far((196, 188, 172, 255), 0.18)
+    t.rect(x, top, x + w, base, fill=col)
+    # portico: colonne, archi bui, la lanterna, qualche tenda
+    t.rect(x, base - 62, x + w, base, fill=sh)
+    n = max(2, int(w / 34))
+    aw = w / n
+    for k in range(n):
+        ax = x + k * aw
+        t.rect(ax + 4, base - 44, ax + aw - 4, base, fill=(46, 42, 40, 255))
+        t.pieslice(ax + 4, base - 58, ax + aw - 4, base - 30, 180, 360, fill=(46, 42, 40, 255))
+        t.rect(ax - 2, base - 50, ax + 4, base, fill=stone)  # colonna
+        t.rect(ax - 4, base - 52, ax + 6, base - 48, fill=stone)  # capitello
+        if rng.random() < 0.25:  # tenda a strisce sopra l'arco
+            tc = far(rng.choice([(150, 120, 92, 255), (120, 124, 112, 255), (160, 150, 130, 255)]), 0.15)
+            t.poly([(ax + 4, base - 50), (ax + aw - 4, base - 50), (ax + aw, base - 40), (ax, base - 40)], fill=tc)
+            for s_ in range(1, 4):
+                sx = ax + 4 + s_ * (aw - 8) / 4
+                t.line([(sx, base - 50), (sx + (s_ - 2) * 1.5, base - 40)], fill=shade(tc, 0.8), width=1.4)
+        elif rng.random() < 0.3:
+            t.line([(ax + aw / 2, base - 44), (ax + aw / 2, base - 38)], fill=ink, width=0.6)
+            t.rect(ax + aw / 2 - 2.5, base - 38, ax + aw / 2 + 2.5, base - 32, fill=(160, 146, 108, 255))
+    t.line([(x, base - 62), (x + w, base - 62)], fill=ink, width=1.0)
+    # i piani
+    win = rng.choice(SHUTTERS)
+    for f in range(floors):
+        fy = base - 62 - (f + 1) * fh
+        cols = max(2, int((w - 20) / 30))
+        step = (w - 20) / cols
+        for c in range(cols):
+            wx = x + 10 + c * step + step / 2 - 6
+            if f == 0 and rng.random() < 0.5:  # piano nobile: finestra ad arco con il balconcino in ferro
+                t.rect(wx, fy + 10, wx + 12, fy + fh - 6, fill=(54, 54, 56, 255))
+                t.pieslice(wx, fy + 4, wx + 12, fy + 16, 180, 360, fill=(54, 54, 56, 255))
+                t.rect(wx - 3, fy + fh - 6, wx + 15, fy + fh - 4, fill=stone)
+                for b in range(4):
+                    t.line([(wx - 2 + b * 5.3, fy + fh - 14), (wx - 2 + b * 5.3, fy + fh - 6)], fill=ink, width=0.6)
+                t.line([(wx - 3, fy + fh - 14), (wx + 15, fy + fh - 14)], fill=ink, width=0.8)
+            else:
+                t.rect(wx, fy + 10, wx + 12, fy + fh - 8, fill=(56, 56, 58, 255))
+                if rng.random() < 0.7:  # persiane aperte, a volte una chiusa
+                    if rng.random() < 0.2:
+                        t.rect(wx, fy + 10, wx + 12, fy + fh - 8, fill=far(win, 0.15))
+                    else:
+                        t.rect(wx - 5, fy + 10, wx, fy + fh - 8, fill=far(win, 0.15))
+                        t.rect(wx + 12, fy + 10, wx + 17, fy + fh - 8, fill=far(shade(win, 0.85), 0.15))
+                t.rect(wx - 2, fy + 8, wx + 14, fy + 10, fill=stone)
+                t.rect(wx - 2, fy + fh - 8, wx + 14, fy + fh - 6, fill=stone)
+        t.line([(x, fy), (x + w, fy)], fill=sh, width=1.4)  # marcapiano
+    # l'ombra a destra e il contorno
+    t.rect(x + w - 6, top, x + w, base - 62, fill=sh)
+    t.rect(x, top, x + w, base, ink=True, width=1.0, ink_col=ink)
+    # cornicione con le mensole e il tetto di coppi
+    t.rect(x - 5, top - 8, x + w + 5, top, fill=stone, ink=True, width=0.9, ink_col=ink)
+    for mx in range(int(x), int(x + w), 9):
+        t.rect(mx, top, mx + 3, top + 3, fill=shade(stone, 0.85))
+    roof = far((122, 84, 68, 255), 0.18)
+    t.poly([(x - 6, top - 8), (x + w + 6, top - 8), (x + w - 10, top - 22), (x + 10, top - 22)], fill=roof, ink=True, width=0.9, ink_col=ink)
+    for k in range(int(w / 6)):
+        t.arc(x + 4 + k * 6, top - 20, x + 10 + k * 6, top - 12, 180, 360, fill=shade(roof, 0.82), width=0.7)
+    for cxm in (x + w * 0.22, x + w * 0.72):
+        if rng.random() < 0.8:
+            t.rect(cxm - 4, top - 44, cxm + 4, top - 20, fill=far((134, 98, 80, 255), 0.18), ink=True, width=0.8, ink_col=ink)
+            t.poly([(cxm - 11, top - 56), (cxm + 11, top - 56), (cxm + 5, top - 42), (cxm - 5, top - 42)], fill=far((134, 98, 80, 255), 0.18), ink=True, width=0.8, ink_col=ink)
+    if rng.random() < 0.4:  # un'antenna
+        ax = x + w * rng.uniform(0.3, 0.6)
+        t.line([(ax, top - 22), (ax, top - 60)], fill=ink, width=0.8)
+        for k in range(3):
+            t.line([(ax - 8 + k * 2, top - 54 + k * 6), (ax + 8 - k * 2, top - 54 + k * 6)], fill=ink, width=0.7)
+
+
+def loggia_amulea(t, lx, base):
+    """La Loggia Amulea: mattone rosso spento, due ordini di archi gotici con le colonnine bianche,
+    la balaustra del primo piano e la merlatura a coda di rondine."""
+    ink = (52, 38, 34, 255)
+    brick, brick_s, white = far((128, 82, 68, 255), 0.15), far((108, 68, 58, 255), 0.15), far((196, 188, 172, 255), 0.15)
     top = base - 270
-    d.rectangle([lx, top, lx + 340, base], fill=brick, outline=ink, width=2)
-    d.rectangle([lx + 240, top, lx + 340, base], fill=brick_s)
-    for row, (y0, y1) in enumerate([(top + 34, top + 128), (base - 112, base)]):
+    t.rect(lx, top, lx + 340, base, fill=brick)
+    t.rect(lx + 250, top, lx + 340, base, fill=brick_s)
+    for row in range(int(270 / 6)):  # corsi di mattoni appena accennati
+        t.line([(lx, top + row * 6), (lx + 340, top + row * 6)], fill=shade(brick, 0.93), width=0.5)
+    for (y0, y1) in ((top + 34, top + 128), (base - 112, base)):
         for i in range(7):
             ax = lx + 12 + i * 46
-            d.rectangle([ax - 6, y0 - 6, ax - 2, y1], fill=white)  # pilastrini bianchi a strisce
-            d.rectangle([ax, y0 + 22, ax + 34, y1], fill=(66, 44, 40, 255))
-            d.polygon([(ax, y0 + 22), (ax + 17, y0), (ax + 34, y0 + 22)], fill=(66, 44, 40, 255))
-            d.arc([ax - 3, y0 - 3, ax + 37, y0 + 40], 200, 340, fill=white, width=3)
-    d.rectangle([lx, top + 128, lx + 340, top + 140], fill=white)  # balaustra del primo piano
+            t.rect(ax - 6, y0 - 6, ax - 1, y1, fill=white)  # pilastrini a strisce bianche e rosse
+            for k in range(int((y1 - y0) / 12)):
+                t.rect(ax - 6, y0 + k * 12, ax - 1, y0 + k * 12 + 5, fill=brick_s)
+            t.rect(ax, y0 + 22, ax + 34, y1, fill=(62, 42, 38, 255))
+            t.poly([(ax, y0 + 22), (ax + 17, y0), (ax + 34, y0 + 22)], fill=(62, 42, 38, 255))
+            t.arc(ax - 3, y0 - 3, ax + 37, y0 + 42, 200, 340, fill=white, width=2.0)
+            t.rect(ax + 15.5, y0 + 18, ax + 18.5, y1, fill=white)  # colonnina in mezzo
+        t.rect(lx + 2, y1 - 2, lx + 338, y1, fill=brick_s)
+    t.rect(lx, top + 128, lx + 340, top + 140, fill=white)  # balaustra del primo piano
     for i in range(34):
-        d.rectangle([lx + 4 + i * 10, top + 129, lx + 7 + i * 10, top + 139], fill=brick_s)
-    d.rectangle([lx - 6, top - 16, lx + 346, top], fill=white, outline=ink, width=2)  # merlatura bianca
-    for i in range(22):
-        d.rectangle([lx - 4 + i * 16, top - 30, lx + 6 + i * 16, top - 16], fill=white, outline=ink, width=1)
+        t.rect(lx + 4 + i * 10, top + 130, lx + 7 + i * 10, top + 138, fill=brick_s)
+    t.rect(lx - 6, top - 14, lx + 346, top, fill=white, ink=True, width=1.0, ink_col=ink)
+    for i in range(22):  # merli a coda di rondine
+        mx = lx - 4 + i * 16
+        t.poly([(mx, top - 14), (mx, top - 30), (mx + 4, top - 26), (mx + 8, top - 30), (mx + 8, top - 14)], fill=white, ink=True, width=0.8, ink_col=ink)
+    t.rect(lx, top, lx + 340, base, ink=True, width=1.2, ink_col=ink)
 
 
-def buildings(d, W, H):
-    base = int(to_px(0, 540)[1])
-    rng = random.Random(3)
-    tones = [(118, 104, 84, 255), (124, 98, 78, 255), (110, 104, 92, 255), (128, 112, 86, 255), (104, 92, 82, 255)]
-    palazzo_row(d, -40, W + 40, base, rng, tones)
-    loggia_amulea(d, int(to_px(520, 0)[0]), base)
-    # bancarelle del mercato davanti ai portici, a destra
-    mx0 = int(to_px(1420, 0)[0])
-    for i, mx in enumerate(range(mx0, mx0 + 520, 74)):
-        col = (172, 170, 162, 255) if i % 2 == 0 else (150, 152, 146, 255)
-        d.polygon([(mx, base - 40), (mx + 34, base - 64), (mx + 68, base - 40)], fill=col, outline=(60, 58, 54, 255))
-        d.rectangle([mx + 4, base - 40, mx + 64, base - 8], fill=(80, 76, 70, 255))
-        for b in range(4):  # merce sui banchi
-            d.ellipse([mx + 8 + b * 14, base - 22, mx + 18 + b * 14, base - 12], fill=rng.choice([(140, 110, 80, 255), (120, 124, 100, 255), (150, 130, 96, 255)]))
-    # tavolini del bar con lo spritz arancione, sotto la loggia
-    for tx in range(int(to_px(560, 0)[0]), int(to_px(820, 0)[0]), 46):
-        d.ellipse([tx - 12, base - 26, tx + 12, base - 20], fill=(160, 154, 140, 255))
-        d.line([tx, base - 20, tx, base - 4], fill=(60, 58, 54, 255), width=2)
-        d.rectangle([tx - 4, base - 34, tx - 1, base - 26], fill=(196, 120, 64, 255))  # lo spritz
-        d.rectangle([tx + 3, base - 33, tx + 6, base - 26], fill=(196, 120, 64, 255))
+def market(t, x0, base, rng):
+    """Il mercato davanti ai portici: banchi con le tende a strisce spente e le cassette."""
+    for i, mx in enumerate(range(int(x0), int(x0) + 520, 74)):
+        tc = far(rng.choice([(176, 170, 158, 255), (150, 156, 148, 255), (166, 148, 130, 255)]), 0.12)
+        t.poly([(mx - 2, base - 40), (mx + 34, base - 66), (mx + 70, base - 40)], fill=tc, ink=True, width=0.9, ink_col=(60, 56, 52, 255))
+        for k in range(1, 4):
+            t.line([(mx + 34, base - 66), (mx - 2 + k * 18, base - 40)], fill=shade(tc, 0.82), width=1.2)
+        t.rect(mx + 4, base - 40, mx + 64, base - 10, fill=(84, 78, 70, 255))
+        t.rect(mx + 2, base - 24, mx + 66, base - 20, fill=(120, 100, 80, 255))
+        for b in range(4):  # cassette di verdura
+            bx = mx + 6 + b * 15
+            t.rect(bx, base - 32, bx + 13, base - 24, fill=(132, 108, 80, 255))
+            for f in range(3):
+                t.circle(bx + 2.5 + f * 4, base - 33, 2.4, fill=far(rng.choice([(150, 120, 80, 255), (120, 130, 96, 255), (164, 104, 80, 255), (176, 156, 96, 255)]), 0.15))
 
 
-def plane_tree(d, x, base, r, rng):
-    trunk = (72, 64, 54, 255)
-    d.polygon([(x - 7, base), (x + 7, base), (x + 4, base - r * 1.3), (x - 4, base - r * 1.3)], fill=trunk)
-    for i in range(7):
-        a = i / 6 * math.pi
-        cx, cy = x + math.cos(a) * r * 0.6, base - r * 1.5 - math.sin(a) * r * 0.5
-        rr = r * rng.uniform(0.45, 0.65)
-        d.ellipse([cx - rr, cy - rr, cx + rr, cy + rr], fill=(50, 66, 50, 255))
-    for i in range(4):  # chioma in luce
-        cx, cy = x - r * 0.3 + i * r * 0.15, base - r * 1.85 + i * 4
-        d.ellipse([cx - r * 0.3, cy - r * 0.25, cx + r * 0.3, cy + r * 0.25], fill=(60, 78, 58, 255))
+def buildings(t):
+    base = 540
+    rng = rand(3)
+    x = -300
+    while x < 2200:
+        w = rng.randint(130, 220)
+        portico_house(t, x, w, base, rng)
+        x += w
+    loggia_amulea(t, 520, base)
+    market(t, 1420, base, rng)
 
 
-def lamp(d, x, base, h):
-    ink = (40, 40, 40, 255)
-    d.rectangle([x - 2, base - h, x + 2, base], fill=(54, 54, 56, 255))
-    d.rectangle([x - 6, base - 8, x + 6, base], fill=(54, 54, 56, 255))
-    d.polygon([(x - 9, base - h), (x + 9, base - h), (x + 6, base - h - 18), (x - 6, base - h - 18)], fill=(150, 140, 110, 255), outline=ink)
-    d.polygon([(x - 10, base - h - 18), (x + 10, base - h - 18), (x, base - h - 28)], fill=(54, 54, 56, 255))
+# --- strato del prato: platani, lampioni, panchine, la seconda fila di statue, la riva lontana ---
+def plane_tree(t, x, base, r, rng):
+    """Un platano: tronco chiaro a chiazze (la corteccia che si stacca), rami e chioma a ciuffi in due toni
+    con il contorno a inchiostro attorno alla sagoma."""
+    ink = (36, 44, 36, 255)
+    bark, bark_s = (150, 146, 124, 255), (112, 110, 94, 255)
+    th = r * 1.3
+    trunk = [(x - 7, base), (x + 7, base), (x + 4, base - th), (x - 4, base - th)]
+    t.poly(trunk, fill=bark)
+    t.poly([(x + 1, base), (x + 7, base), (x + 4, base - th), (x + 1, base - th)], fill=bark_s)
+    for k in range(6):  # chiazze della corteccia
+        py = base - rng.uniform(4, th - 6)
+        px = x + rng.uniform(-4, 3)
+        t.ellipse(px - 2.5, py - 3.5, px + 2.5, py + 3.5, fill=rng.choice([(176, 172, 146, 255), (96, 100, 84, 255)]))
+    t.poly(trunk, ink=True, width=1.0, ink_col=ink)
+    for side in (-1, 1):  # rami
+        t.line([(x, base - th * 0.8), (x + side * r * 0.5, base - th - r * 0.4)], fill=bark_s, width=3)
+    blobs = []
+    for i in range(9):
+        a = i / 8 * math.pi
+        cx, cy = x + math.cos(a) * r * 0.7, base - th - r * 0.45 - math.sin(a) * r * 0.55
+        blobs.append((cx, cy, r * rng.uniform(0.38, 0.55)))
+    blobs.append((x, base - th - r * 0.5, r * 0.6))
+    for cx, cy, rr in blobs:  # prima il contorno, un po' più grande
+        t.circle(cx, cy, rr + 1.6, fill=ink)
+    for cx, cy, rr in blobs:
+        t.circle(cx, cy, rr, fill=(52, 70, 50, 255))
+    for cx, cy, rr in blobs:  # la luce in alto a sinistra di ogni ciuffo
+        t.circle(cx - rr * 0.22, cy - rr * 0.25, rr * 0.62, fill=(66, 86, 60, 255))
 
 
-def small_statue(d, x, base, rng):
-    m, sh, ink = (150, 146, 136, 255), (128, 124, 116, 255), (70, 68, 64, 255)
-    d.rectangle([x - 11, base - 36, x + 11, base], fill=m, outline=ink, width=1)
-    d.rectangle([x - 14, base - 40, x + 14, base - 36], fill=m, outline=ink, width=1)
+def lamp(t, x, base, h):
+    """Il lampione del Prato: palo di ghisa con lo zoccolo e la lanterna a quattro vetri col cappello."""
+    ink = (36, 36, 38, 255)
+    iron = (58, 58, 60, 255)
+    t.rect(x - 6, base - 10, x + 6, base, fill=iron, ink=True, width=0.8, ink_col=ink)
+    t.poly([(x - 2.4, base - 10), (x + 2.4, base - 10), (x + 1.6, base - h), (x - 1.6, base - h)], fill=iron)
+    for k in range(3):
+        t.rect(x - 3.4, base - 24 - k * 26, x + 3.4, base - 21 - k * 26, fill=iron)
+    t.poly([(x - 8, base - h), (x + 8, base - h), (x + 10, base - h - 18), (x - 10, base - h - 18)], fill=(176, 166, 128, 255), ink=True, width=0.9, ink_col=ink)
+    t.line([(x, base - h), (x, base - h - 18)], fill=ink, width=0.7)
+    t.poly([(x - 12, base - h - 18), (x + 12, base - h - 18), (x, base - h - 30)], fill=iron, ink=True, width=0.8, ink_col=ink)
+    t.circle(x, base - h - 31, 2, fill=iron)
+
+
+def small_statue(t, x, base, rng):
+    """Una statua della seconda fila, più lontana: piedistallo con la cornice e una figura in posa."""
+    m, sh, ink = (164, 160, 148, 255), (138, 134, 124, 255), (76, 74, 70, 255)
+    t.rect(x - 11, base - 34, x + 11, base, fill=m, ink=True, width=0.8, ink_col=ink)
+    t.rect(x + 3, base - 34, x + 11, base, fill=sh)
+    t.rect(x - 14, base - 40, x + 14, base - 34, fill=m, ink=True, width=0.8, ink_col=ink)
+    t.rect(x - 14, base - 4, x + 14, base, fill=m, ink=True, width=0.8, ink_col=ink)
     pose = rng.random()
-    d.polygon([(x - 7, base - 40), (x + 7, base - 40), (x + 5, base - 84), (x - 5, base - 84)], fill=m, outline=ink)
-    d.polygon([(x + 1, base - 40), (x + 7, base - 40), (x + 5, base - 84), (x + 1, base - 84)], fill=sh)
-    d.ellipse([x - 5, base - 96, x + 5, base - 84], fill=m, outline=ink)
-    if pose < 0.5:
-        d.line([x - 5, base - 80, x - 13, base - 96], fill=m, width=3)  # braccio alzato
-    else:
-        d.line([x + 5, base - 80, x + 12, base - 62], fill=m, width=3)
+    body = [(x - 8, base - 40), (x + 8, base - 40), (x + 5, base - 72), (x + 6, base - 82), (x - 6, base - 82), (x - 5, base - 72)]
+    t.poly(body, fill=m)
+    t.poly([(x + 1, base - 40), (x + 8, base - 40), (x + 5, base - 72), (x + 6, base - 82), (x + 1, base - 82)], fill=sh)
+    t.poly(body, ink=True, width=0.8, ink_col=ink)
+    t.circle(x, base - 88, 5.5, fill=m, ink=True, width=0.8, ink_col=ink)
+    if pose < 0.35:  # braccio alzato
+        t.line([(x - 5, base - 78), (x - 13, base - 96)], fill=ink, width=3.4)
+        t.line([(x - 5, base - 78), (x - 13, base - 96)], fill=m, width=2.0)
+    elif pose < 0.7:  # mano sul fianco e libro
+        t.line([(x + 5, base - 78), (x + 11, base - 64)], fill=ink, width=3.4)
+        t.line([(x + 5, base - 78), (x + 11, base - 64)], fill=m, width=2.0)
+        t.rect(x - 11, base - 72, x - 4, base - 64, fill=sh, ink=True, width=0.7, ink_col=ink)
+    else:  # mantello che scende di lato
+        t.poly([(x - 6, base - 80), (x - 13, base - 46), (x - 7, base - 42)], fill=sh, ink=True, width=0.7, ink_col=ink)
 
 
-def lawn(d, W, H):
-    base = int(to_px(0, 560)[1])
-    rng = random.Random(11)
-    d.rectangle([0, base - 50, W, base + 70], fill=(56, 70, 52, 255))  # il prato dell'Isola Memmia, spento
+def lawn(t):
+    base = 560
+    rng = rand(11)
+    t.rect(-300, base - 50, 2200, base + 70, fill=(58, 72, 54, 255))  # il prato dell'Isola Memmia, spento
     # oltre il prato: la riva lontana del canale esterno e la sua acqua (#264), non il vuoto
-    d.rectangle([0, base + 70, W, base + 150], fill=(118, 112, 100, 255))
-    for bx in range(0, W, 60):
-        d.line([bx, base + 70, bx, base + 150], fill=(98, 93, 84, 255), width=2)
-    d.line([0, base + 110, W, base + 110], fill=(98, 93, 84, 255), width=2)
-    d.rectangle([0, base + 70, W, base + 76], fill=(170, 164, 150, 255))
-    d.rectangle([0, base + 150, W, H], fill=(70, 98, 104, 255))
-    for wy in range(base + 170, H, 40):  # riflessi
-        for wx in range((wy * 7) % 90, W, 180):
-            d.line([wx, wy, wx + 50, wy], fill=(96, 126, 130, 255), width=2)
-    for x in range(0, W, 7):  # erba a ciuffi sul bordo
-        d.line([x, base - 50, x + 2, base - 56 - (x * 7 % 5)], fill=(64, 80, 58, 255), width=1)
-    for i, tx in enumerate(range(30, W, 230)):  # platani
-        plane_tree(d, tx + rng.randint(-50, 50), base - 50, rng.randint(46, 70), rng)
-    # vialetto, panchine e lampioni
-    d.rectangle([0, base - 50, W, base - 44], fill=(120, 114, 102, 255))
-    for bx in range(160, W, 380):
-        d.rectangle([bx, base - 62, bx + 40, base - 56], fill=(92, 72, 56, 255))
-        d.rectangle([bx + 2, base - 56, bx + 6, base - 50], fill=(54, 54, 56, 255))
-        d.rectangle([bx + 34, base - 56, bx + 38, base - 50], fill=(54, 54, 56, 255))
-    for lx in range(90, W, 300):
-        lamp(d, lx, base - 50, 92)
-    # la canaletta lontana con la seconda fila di statue sui piedistalli e la balaustra
-    d.rectangle([0, base - 40, W, base - 30], fill=(140, 136, 126, 255))
-    for sx in range(60, W, 120):
-        small_statue(d, sx, base - 36, rng)
+    t.rect(-300, base + 70, 2200, base + 150, fill=(120, 114, 102, 255))
+    for bx in range(-300, 2200, 60):
+        t.line([(bx, base + 70), (bx, base + 150)], fill=(100, 95, 86, 255), width=1.6)
+    t.line([(-300, base + 110), (2200, base + 110)], fill=(100, 95, 86, 255), width=1.6)
+    t.rect(-300, base + 70, 2200, base + 76, fill=(172, 166, 152, 255))
+    t.rect(-300, base + 150, 2200, 1110, fill=(70, 98, 104, 255))
+    for wy in range(base + 170, 1110, 40):  # riflessi
+        for wx in range(-300 + (wy * 7) % 90, 2200, 180):
+            t.line([(wx, wy), (wx + 50, wy)], fill=(96, 126, 130, 255), width=1.6)
+    # la canaletta lontana con la balaustra e la seconda fila di statue
+    t.rect(-300, base - 40, 2200, base - 30, fill=(146, 142, 132, 255))
+    for sx in range(-240, 2200, 120):
+        small_statue(t, sx, base - 36, rng)
+    # platani, poi il vialetto, le panchine e i lampioni davanti
+    for tx in range(-230, 2200, 230):
+        plane_tree(t, tx + rng.randint(-50, 50), base - 50, rng.randint(48, 70), rng)
+    for x in range(-300, 2200, 6):  # erba a ciuffi sul bordo
+        t.line([(x, base - 50), (x + 2, base - 56 - (x * 7 % 5))], fill=(70, 86, 62, 255), width=0.8)
+    t.rect(-300, base - 50, 2200, base - 44, fill=(124, 118, 106, 255))
+    for bx in range(-140, 2200, 380):
+        t.rect(bx, base - 63, bx + 42, base - 58, fill=(104, 80, 60, 255), ink=True, width=0.6, ink_col=(50, 44, 40, 255))
+        t.rect(bx, base - 70, bx + 42, base - 66, fill=(104, 80, 60, 255), ink=True, width=0.6, ink_col=(50, 44, 40, 255))
+        for lx in (bx + 3, bx + 37):
+            t.rect(lx, base - 58, lx + 3, base - 50, fill=(54, 54, 56, 255))
+    for lx in range(-170, 2200, 300):  # gli stessi x di daycycle.lamps (x - 260)
+        lamp(t, lx, base - 50, 92)
     # dettaglio nascosto: un papiro di laurea appeso a un lampione
-    px = 90 + 300 * 3
-    d.rectangle([px + 3, base - 120, px + 9, base - 104], fill=(212, 204, 180, 255), outline=(60, 56, 50, 255))
-    d.line([px + 2, base - 112, px + 10, base - 112], fill=(150, 40, 40, 255), width=2)
+    px = -170 + 300 * 4
+    t.rect(px + 3, base - 122, px + 10, base - 104, fill=(214, 206, 182, 255), ink=True, width=0.6, ink_col=(60, 56, 50, 255))
+    t.line([(px + 2, base - 113), (px + 11, base - 113)], fill=(150, 60, 56, 255), width=1.4)
 
 
 def palazzo(name):
