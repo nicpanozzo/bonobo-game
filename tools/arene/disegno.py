@@ -67,8 +67,9 @@ class Scala:
 
 
 class Tela:
-    def __init__(self, w, h, bg=(0, 0, 0, 0), wrap=False, wrap_y=False, scale=OUT_SCALE, ss=SUPER):
+    def __init__(self, w, h, bg=(0, 0, 0, 0), wrap=False, wrap_y=False, scale=OUT_SCALE, ss=SUPER, origin=(0, 0)):
         self.w, self.h = w, h
+        self.ox, self.oy = origin  # il punto del mondo che sta nell'angolo in alto a sinistra della tela
         self.k = scale * ss
         self.ss = ss
         self.wrap, self.wrap_y = wrap, wrap_y
@@ -82,11 +83,11 @@ class Tela:
         return [(ox, oy) for ox in xs for oy in ys]
 
     def _pts(self, pts, ox, oy):
-        return [((x + ox) * self.k, (y + oy) * self.k) for x, y in pts]
+        return [((x + ox - self.ox) * self.k, (y + oy - self.oy) * self.k) for x, y in pts]
 
     def _box(self, box, ox, oy):
         x0, y0, x1, y1 = box
-        return [(x0 + ox) * self.k, (y0 + oy) * self.k, (x1 + ox) * self.k, (y1 + oy) * self.k]
+        return [(x0 + ox - self.ox) * self.k, (y0 + oy - self.oy) * self.k, (x1 + ox - self.ox) * self.k, (y1 + oy - self.oy) * self.k]
 
     def _w(self, width):
         return max(1, int(round(width * self.k)))
