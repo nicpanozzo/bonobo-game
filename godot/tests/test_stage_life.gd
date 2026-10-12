@@ -78,3 +78,67 @@ func test_acqua_intorno_e_splash() -> void:
 	var life := StageLife.new()
 	life.setup({"art": {"life": {"outerWater": {"y": 800, "highY": 760, "flood": 0}}}}, 1920, 720)
 	runner.check(life.outer_water_level(0.0) == 800.0 and life.outer_water_level(1.0) == 760.0, "sale con l'acqua alta")
+
+
+# Traffico (#278): stessi veicoli per lo stesso tempo, tutti tra i due margini, nei due versi
+func test_traffico_sempre_uguale_e_in_strada() -> void:
+	var tr := {"y": 488, "parallax": 0.5, "everyMs": 2600, "kinds": ["auto", "vespa", "furgone", "bici", "bus"]}
+	var a := StageLife.traffic_at(tr, 61500.0, 1920.0)
+	runner.check(a.size() > 2, "in strada ci sono più veicoli: %d" % a.size())
+	runner.check(str(a) == str(StageLife.traffic_at(tr, 61500.0, 1920.0)), "stesso tempo, stessi veicoli")
+	var dirs := {}
+	for v in a:
+		var length: float = StageLife.TRAFFIC[v.kind].length
+		runner.check(v.x >= -StageLife.TRAFFIC_MARGIN - length - 1.0 and v.x <= 1920.0 + StageLife.TRAFFIC_MARGIN + 1.0, "%s dentro la strada: %s" % [v.kind, v.x])
+		dirs[v.dir] = true
+	var later := StageLife.traffic_at(tr, 61600.0, 1920.0)
+	var moved := false
+	for v in later:
+		for w in a:
+			if v.n == w.n:
+				moved = moved or (v.x - w.x) * v.dir > 0.0
+	runner.check(moved, "i veicoli vanno nel loro verso")
+	var many := 0
+	for k in 40:
+		many += StageLife.traffic_at(tr, k * 2600.0 + 1300.0, 1920.0).size()
+	runner.check(many > 40, "passa sempre qualcuno")
+	runner.check(StageLife.traffic_slot(7, tr.kinds).dir == StageLife.traffic_slot(7, tr.kinds).dir, "il giro decide tipo e verso")
+
+
+# Passanti (#278): tanti tipi, chi corre va più veloce
+func test_passanti_di_tanti_tipi() -> void:
+	var kinds := {}
+	for i in 14:
+		kinds[StageLife.walker_kind(i)] = true
+	runner.check(kinds.size() >= 6, "almeno sei tipi in 14 passanti: %s" % [kinds.keys()])
+	runner.check(StageLife.walker_kind(3) == StageLife.walker_kind(3), "sempre lo stesso tipo")
+
+
+# Il bar (#278): ogni tanto si brinda, e intanto si beve a sorsi; il cameriere resta tra i tavolini
+func test_bar_dello_spritz() -> void:
+	var toasts := 0
+	var sips := 0
+	for k in 220:
+		var t := k * 100.0
+		if StageLife.bar_toast(0, t):
+			toasts += 1
+		var up := StageLife.bar_sip(1, 0, t)
+		runner.check(up >= 0.0 and up <= 1.0, "il bicchiere tra il tavolo e la bocca")
+		if up > 0.5 and not StageLife.bar_toast(1, t):
+			sips += 1
+	runner.check(toasts > 0 and toasts < 60, "un brindisi ogni tanto: %d decimi su 220" % toasts)
+	runner.check(sips > 0, "si beve anche senza brindare")
+	runner.check(StageLife.bar_sip(2, 1, 0.0) == 1.0 or not StageLife.bar_toast(2, 0.0), "nel brindisi il bicchiere è alzato")
+	for k in 50:
+		var x := StageLife.waiter_x(k * 700.0, 100.0, 300.0)
+		runner.check(x >= 100.0 and x <= 300.0, "il cameriere tra i tavolini: %s" % x)
+
+
+# Aereo e uccelli vicini (#278)
+func test_aereo_e_rondini() -> void:
+	var p := StageLife.plane_at(75000, 20000)
+	runner.check(p.on and p.dir == 1 and is_equal_approx(p.k, 0.5), "a metà del primo passaggio")
+	runner.check(not StageLife.plane_at(75000, 50000).on, "poi il cielo è libero")
+	runner.check(StageLife.plane_at(75000, 80000).dir == -1, "il giro dopo nell'altro verso")
+	var f := StageLife.flyer_at(2, 12345, 2700, 90)
+	runner.check(f.x >= 0 and f.x < 2700 and f.y > 0 and f.y < 320, "la rondine resta in cielo: %s" % f)

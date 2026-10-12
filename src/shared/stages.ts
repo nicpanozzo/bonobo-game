@@ -111,11 +111,19 @@ export interface StageArt {
 // Sfondo vivo (#260): elementi animati che non toccano il gioco. Le coordinate sono quelle del mondo come se
 // l'elemento stesse su uno strato con quella parallasse (come gli strati di art.layers); si disegna tra gli strati
 // giusti. Tutto si ricalcola nel client da stageMs e dalle posizioni dei lottatori: niente in rete.
+export type TrafficKind = "auto" | "vespa" | "furgone" | "bici" | "bus";
+
 export interface StageLife {
   birds?: { y: number; parallax: number; everyMs: number }; // stormi che attraversano il cielo all'altezza y
   pigeons?: { x: number; y: number }[]; // piccioni posati (sulle statue): scappano se un lottatore arriva vicino
   walkers?: { y: number; parallax: number; count: number; umbrellas?: boolean }; // passanti sulla linea y; ombrelli con la pioggia
   vehicles?: { y: number; parallax: number; everyMs: number; kind: "tram" | "bus" }; // un veicolo che passa ogni tanto
+  // Traffico (#278): ogni everyMs parte un veicolo di uno dei tipi, nei due versi su due corsie, ognuno alla sua velocità
+  traffic?: { y: number; parallax: number; everyMs: number; kinds: TrafficKind[] };
+  flyers?: { y: number; parallax: number; count: number }; // uccelli vicini da y in giù: rondini di giorno, pipistrelli di notte
+  planes?: { y: number; everyMs: number }; // un aereo lontanissimo ogni tanto, con la scia di giorno e le luci di notte
+  // Tavolini di un bar (#278): da x verso destra ogni spacing pixel, gente seduta che beve e brinda, il cameriere, le lucine la sera
+  bar?: { x: number; y: number; parallax: number; tables: number; spacing: number };
   // Giorno e notte: un giro in cycleMs dall'inizio della partita; startAt da 0 a 1 (0 mezzogiorno, 0,25 tramonto,
   // 0,5 mezzanotte, 0,75 alba). Di notte le stelle; i lampioni si accendono al tramonto e si spengono all'alba
   // Acqua intorno all'arena (#264): da y in giù, davanti a chi cade (splash). Con flood (indice di una trappola con
@@ -493,8 +501,13 @@ export const STAGES: Record<string, StageSpec> = {
         birds: { y: 40, parallax: 0.2, everyMs: 14000 },
         // Sulle punte delle lastre delle statue e sul cornicione del palazzo
         pigeons: [{ x: 485, y: 330 }, { x: 1435, y: 330 }, { x: 235, y: 380 }, { x: 1685, y: 380 }, { x: 790, y: 100 }, { x: 1130, y: 100 }],
-        walkers: { y: 510, parallax: 0.75, count: 9, umbrellas: true },
-        vehicles: { y: 540, parallax: 0.45, everyMs: 23000, kind: "tram" },
+        walkers: { y: 510, parallax: 0.75, count: 14, umbrellas: true },
+        // Il tram e il traffico passano sulla strada davanti ai portici (#278): più giù le piazze li coprirebbero
+        vehicles: { y: 488, parallax: 0.5, everyMs: 23000, kind: "tram" },
+        traffic: { y: 488, parallax: 0.5, everyMs: 2600, kinds: ["auto", "auto", "auto", "vespa", "vespa", "furgone", "bici", "bus"] },
+        flyers: { y: 90, parallax: 0.6, count: 7 }, // rondini sul Prato, di notte i pipistrelli
+        planes: { y: -60, everyMs: 75000 },
+        bar: { x: 120, y: 504, parallax: 0.8, tables: 3, spacing: 72 }, // il chiosco dello spritz sul prato
         daycycle: {
           cycleMs: 240000, // un giorno intero in 4 minuti: alba, giorno, tramonto e notte
           startAt: 0.8, // si parte poco dopo l'alba

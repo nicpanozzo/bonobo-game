@@ -273,12 +273,16 @@ Facoltativo, solo grafica: elementi animati che fanno sembrare il posto abitato.
 |---|---|
 | `birds: { y, parallax, everyMs }` | uno stormo a V attraversa il cielo all'altezza `y`, ogni `everyMs`, un giro da sinistra e uno da destra |
 | `pigeons: [{ x, y }]` | piccioni posati (sulle statue, sui cornicioni): scappano quando un lottatore arriva vicino o passa il ciclista, e tornano dopo 7 s |
-| `walkers: { y, parallax, count, umbrellas? }` | `count` passanti sulla linea `y`; con `umbrellas` aprono l'ombrello quando piove (acqua alta) |
+| `walkers: { y, parallax, count, umbrellas? }` | `count` passanti sulla linea `y`, di tanti tipi (#278): chi passeggia, chi porta il cane, chi corre, il passeggino, l'anziano col bastone, lo studente con la corona d'alloro, chi torna dal mercato. Con `umbrellas` quando piove (acqua alta) quasi tutti aprono l'ombrello, gli altri si coprono col giornale |
 | `vehicles: { y, parallax, everyMs, kind }` | un tram o un bus (`kind`) che passa in 12 s, ogni `everyMs` (più di 12000) |
+| `traffic: { y, parallax, everyMs, kinds }` | il traffico (#278): ogni `everyMs` (almeno 1000) parte un veicolo di uno dei `kinds` (`auto`, `vespa`, `furgone`, `bici`, `bus`; un tipo ripetuto passa più spesso), nei due versi su due corsie, ognuno alla sua velocità, su una strada con il marciapiede. Di sera fari e luci di dietro. Mettilo dove si vede: più giù il palco lo copre |
+| `flyers: { y, parallax, count }` | `count` uccelli vicini da `y` in giù (#278): rondini che sfrecciano di giorno, pipistrelli di notte (servono `daycycle`) |
+| `planes: { y, everyMs }` | un aereo lontanissimo che attraversa il cielo in 40 s ogni `everyMs` (più di 40000): la scia di giorno, le luci che lampeggiano di notte |
+| `bar: { x, y, parallax, tables, spacing }` | i tavolini di un bar (#278), da `x` verso destra ogni `spacing`: due persone per tavolino che bevono lo spritz e ogni tanto brindano, gli ombrelloni, il cameriere col vassoio e di sera le lucine |
 | `outerWater: { y, highY?, flood? }` | acqua intorno all'arena, da `y` in giù, disegnata davanti a chi cade, con lo splash. Con `flood` (indice di una trappola con l'acqua alta) sale fino a `highY` insieme a lei. Le rive possono scendere fino all'acqua: l'arena non sembra sospesa nel vuoto |
 | `daycycle: { cycleMs, startAt?, lamps? }` | giorno e notte: un giro intero in `cycleMs` dall'inizio della partita, partendo da `startAt` (0 mezzogiorno, 0,25 tramonto, 0,5 mezzanotte, 0,75 alba). Di notte si vedono le stelle; i lampioni `{ x, y, parallax }` si accendono al tramonto e si spengono all'alba, le finestre `windows: [{ x, y, width, height }]` si accendono una alla volta. Con `sky: true` il cielo è vivo (#267): gradiente con i colori del momento (alba rosa, giorno azzurro, tramonto arancio e viola, notte blu), sole e luna che tramontano dietro gli strati, stelle e nuvole che scorrono; lo strato più lontano allora va disegnato con il cielo trasparente, solo le sagome. La luce del momento moltiplica strati, decorazioni, acqua e sfondo vivo, il palco solo un po' |
 
-Colori spenti, lontani da quelli dei giocatori (style guide, sezione 7).
+Colori spenti, lontani da quelli dei giocatori (style guide, sezione 7). Quello che sta fuori dall'inquadratura non si disegna, ma ogni elemento costa qualche centinaio di µs per frame: dopo averne aggiunti, controlla con `npm run bench:godot`.
 
 ## Come funzionano dentro (per chi aggiunge un elemento)
 
