@@ -400,9 +400,10 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
   elvedeo: {
     id: "elvedeo",
     name: "Elvedeo",
-    // Con la pancia è più pesante e un po' lento, salta meno (E11)
+    // Con la pancia è più pesante e un po' lento, salta meno (E11). Peso da 1,15 a 1,05 (#276): con 1,15 vinceva
+    // il 67-73% contro il bot in npm run balance, sopra la soglia del 60%
     // TODO community: statistiche provvisorie, da confermare con @MauroGrecchi
-    stats: { weight: 1.15, speed: 0.85, airSpeed: 0.95, jump: 0.9 },
+    stats: { weight: 1.05, speed: 0.85, airSpeed: 0.95, jump: 0.9 },
     // Speciali proprie (#262), dal foglio di Mauro: la nuvola verde soffiata lontano, la rotolata, il colpo di bong caricato
     // TODO community: nomi e numeri provvisori, da confermare con @MauroGrecchi
     specials: {
