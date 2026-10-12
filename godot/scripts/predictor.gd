@@ -155,8 +155,16 @@ func is_active() -> bool:
 
 # Dove il port sa fare quello che fa il server
 static func predictable(p: Dictionary, stage: Dictionary) -> bool:
-	if not (p.get("predict") is Dictionary) or not stage.get("movers", []).is_empty():
+	if not (p.get("predict") is Dictionary):
 		return false
+	# Le piattaforme mobili il port non le conosce: si torna allo stato del server solo vicino al loro percorso (#264)
+	for m in stage.get("movers", []) if stage.get("movers") is Array else []:
+		var box := Rect2(m.path[0].x, m.path[0].y, 0, 0)
+		for pt in m.path:
+			box = box.expand(Vector2(pt.x, pt.y))
+		box = Rect2(box.position.x - 60, box.position.y - 200, box.size.x + float(m.width) + 120, box.size.y + 260)
+		if box.has_point(Vector2(float(p.x), float(p.y))):
+			return false
 	if p.get("attack") != null and not str(p.attack) in PREDICTED_ATTACKS:
 		return false
 	if p.get("ledge") != null or p.get("grabbedBy") != null:

@@ -152,6 +152,20 @@ func set_stage_spec(spec: Dictionary) -> void:
 	queue_redraw()
 
 
+# Quanto è salita l'acqua alta che l'acqua intorno all'arena segue (0 bassa, 1 alta), #264
+func _flood_up(t: float) -> float:
+	var art: Dictionary = stage.get("art", {}) if stage.get("art") is Dictionary else {}
+	var w: Variant = art.get("life", {}).get("outerWater") if art.get("life") is Dictionary else null
+	var hazards: Array = stage.get("hazards", []) if stage.get("hazards") is Array else []
+	if not w is Dictionary or w.get("flood") == null or int(w.flood) >= hazards.size():
+		return 0.0
+	var h: Dictionary = hazards[int(w.flood)]
+	var r := hazard_rect(h, t)
+	var low: float = h.y
+	var high: float = h.get("flood", {}).get("highY", low)
+	return clampf((low - r.position.y) / (low - high), 0.0, 1.0) if high != low else 0.0
+
+
 # Quanto piove adesso (0-1), per gli ombrelli dello sfondo vivo (#260)
 func _rain_now(t: float) -> float:
 	var rain := 0.0
@@ -565,6 +579,8 @@ func _draw() -> void:
 	_supreme_view.view_rect = view_rect
 	_draw_items(now)
 	_draw_projectiles()
+	if not _life.is_empty():
+		_life.draw_outer_water(self, t_stage, now, _flood_up(t_stage), view_rect, positions) # davanti a chi cade (#264)
 	_draw_props(_props_front)
 	_draw_rails(true) # ringhiere davanti, di solito trasparenti
 	if not _foreground.is_empty():
@@ -738,6 +754,9 @@ func _draw_elements(t: float) -> void:
 	var movers: Array = stage.get("movers") if stage.get("movers") != null else []
 	for m in movers:
 		var pos := mover_position(m, t)
+		if m.get("kind", "") == "barca":
+			_draw_boat(pos, float(m.width), t)
+			continue
 		draw_rect(Rect2(pos.x, pos.y, m.width, 10), _color(stage.colors.platform))
 		# Strisce gialle e nere sotto: si capisce che si muove
 		for x in range(0, int(m.width), 20):
@@ -903,6 +922,19 @@ static func jet_phase(j: Dictionary, t: float) -> String:
 	if left < 0:
 		return "calm"
 	return "warn" if left < float(j.warnMs) else "active"
+
+
+# La barca del canale (#264): ponte di legno dove si sta in piedi (y), scafo scuro sotto, prua e poppa rialzate
+func _draw_boat(pos: Vector2, w: float, t: float) -> void:
+	var ink := Color("1e1a17")
+	var bob := sin(t / 500.0) * 1.5 # dondola appena: la superficie vera resta pos.y
+	var hull := PackedVector2Array([Vector2(pos.x - 18, pos.y - 8 + bob), Vector2(pos.x + w + 18, pos.y - 8 + bob), Vector2(pos.x + w - 10, pos.y + 26 + bob), Vector2(pos.x + 10, pos.y + 26 + bob)])
+	draw_colored_polygon(hull, Color("4a3a2e"))
+	draw_polyline(PackedVector2Array([hull[0], hull[1], hull[2], hull[3], hull[0]]), ink, 2.0)
+	draw_rect(Rect2(pos.x - 14, pos.y - 2 + bob, w + 28, 6), Color("8a6a4c")) # il bordo di legno chiaro
+	draw_rect(Rect2(pos.x, pos.y + bob, w, 4), _color(stage.colors.solidEdge)) # dove si sta in piedi: chiaro
+	draw_line(Vector2(pos.x + w * 0.7, pos.y + bob), Vector2(pos.x + w * 0.7, pos.y - 46 + bob), ink, 2.0) # asta della bandierina
+	draw_colored_polygon(PackedVector2Array([Vector2(pos.x + w * 0.7, pos.y - 46 + bob), Vector2(pos.x + w * 0.7 + 22, pos.y - 40 + bob), Vector2(pos.x + w * 0.7, pos.y - 34 + bob)]), Color("b8a88a"))
 
 
 # Il ciclista arrabbiato (#229), disegno provvisorio dentro il rettangolo che fa male: bici scassata,

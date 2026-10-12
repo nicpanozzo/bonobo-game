@@ -100,6 +100,8 @@ Una piattaforma sottile che passa per una lista di punti. Chi ci sta sopra viene
 { width: 140, path: [{ x: 570, y: 540 }, { x: 570, y: 260 }], periodMs: 7000, pauseMs: 1200 } // ascensore
 ```
 
+Una piattaforma mobile con `kind: "barca"` si disegna come una barca (#264): la superficie su cui si sta è sempre la `y` del percorso. Con le piattaforme mobili il predittore del proprio lottatore si spegne solo vicino al loro percorso.
+
 ### Trappola (`hazards`): spuntoni, fuoco, laser
 
 Un rettangolo che, quando è acceso, aggiunge percentuale e lancia via chi lo tocca (come un colpo). Il KO va a chi ti ci ha spinto. Dopo una trappola si è al sicuro per `HAZARD.cooldownMs` (in `constants.ts`).
@@ -253,6 +255,7 @@ Facoltativo, solo grafica: elementi animati che fanno sembrare il posto abitato.
 | `pigeons: [{ x, y }]` | piccioni posati (sulle statue, sui cornicioni): scappano quando un lottatore arriva vicino o passa il ciclista, e tornano dopo 7 s |
 | `walkers: { y, parallax, count, umbrellas? }` | `count` passanti sulla linea `y`; con `umbrellas` aprono l'ombrello quando piove (acqua alta) |
 | `vehicles: { y, parallax, everyMs, kind }` | un tram o un bus (`kind`) che passa in 12 s, ogni `everyMs` (più di 12000) |
+| `outerWater: { y, highY?, flood? }` | acqua intorno all'arena, da `y` in giù, disegnata davanti a chi cade, con lo splash. Con `flood` (indice di una trappola con l'acqua alta) sale fino a `highY` insieme a lei. Le rive possono scendere fino all'acqua: l'arena non sembra sospesa nel vuoto |
 | `daycycle: { cycleMs, startAt?, lamps? }` | giorno e notte: un giro intero in `cycleMs` dall'inizio della partita, partendo da `startAt` (0 mezzogiorno, 0,25 tramonto, 0,5 mezzanotte, 0,75 alba). Di notte si vedono le stelle; i lampioni `{ x, y, parallax }` si accendono al tramonto e si spengono all'alba, le finestre `windows: [{ x, y, width, height }]` si accendono una alla volta. Il velo della notte copre lo sfondo e le decorazioni, non il palco |
 
 Colori spenti, lontani da quelli dei giocatori (style guide, sezione 7).

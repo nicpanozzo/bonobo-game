@@ -205,3 +205,14 @@ func test_nel_getto_non_si_predice() -> void:
 	runner.check(not Predictor.predictable(p, stage), "dentro la colonna")
 	p.x = 900.0
 	runner.check(Predictor.predictable(p, stage), "lontano dal getto si predice")
+
+
+# Con le piattaforme mobili si torna allo stato del server solo vicino al loro percorso (#264)
+func test_piattaforme_mobili_solo_vicino() -> void:
+	var Predictor := preload("res://scripts/predictor.gd")
+	var stage := {"movers": [{"width": 160, "path": [{"x": -560, "y": 780}, {"x": -150, "y": 780}]}]}
+	var p := {"predict": {}, "x": 900.0, "y": 520.0, "attack": null, "ledge": null, "grabbedBy": null, "charge": 0}
+	runner.check(Predictor.predictable(p, stage), "lontano dalla barca si predice")
+	p.x = -100.0
+	p.y = 760.0
+	runner.check(not Predictor.predictable(p, stage), "vicino alla barca no")

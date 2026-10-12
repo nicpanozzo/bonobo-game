@@ -206,20 +206,40 @@ static func darkness(phase: float) -> float:
 static func sky_tint(phase: float) -> Color:
 	var dark := darkness(phase)
 	var warm := clampf(1.0 - absf(dark - 0.35) / 0.35, 0.0, 1.0) # il caldo sta a metà strada tra giorno e notte
-	var night := Color(0.06, 0.07, 0.2, 0.55 * dark)
+	var night := Color(0.04, 0.06, 0.18, 0.7 * dark)
 	var sunset := Color(0.98, 0.5, 0.25, 0.2)
 	return night.lerp(sunset, warm * (1.0 - dark * 0.6)) if warm > 0.0 else night
 
 
-# Le stelle si disegnano subito dopo il cielo, prima del palazzo e delle statue
+# Dove sta il sole (o la luna) nel cielo: un arco da sinistra a destra. phase 0 = mezzogiorno, in cima
+# Il sole va dall'alba (0,75) al tramonto (0,25), la luna dal tramonto all'alba: k 0 sorge a sinistra, 0,5 in cima, 1 tramonta
+static func sky_body(phase: float, width_: float) -> Vector2:
+	var k := fposmod(phase + 0.25, 0.5) / 0.5
+	# Il cielo segue quasi la telecamera: l'arco sta dentro lo schermo, in alto a mezzogiorno e basso ai lati
+	return Vector2(width_ / 2.0 - 760.0 + 1520.0 * k, 70.0 + 300.0 * pow(absf(k - 0.5) * 2.0, 2.0))
+
+
+# Sole, luna e stelle si disegnano subito dopo il cielo, prima del palazzo e delle statue
 func draw_stars(ci: CanvasItem, t: float, view: Rect2) -> void:
 	if not life.get("daycycle") is Dictionary:
 		return
-	var dark := darkness(day_phase(t))
+	var phase := day_phase(t)
+	var dark := darkness(phase)
+	var off := offset(0.08, view.get_center())
+	var day := phase < 0.25 or phase >= 0.75 # il sole è su da 0,75 (alba) a 0,25 (tramonto)
+	var body := sky_body(phase, width) + off
+	if day:
+		var warm := clampf(dark / 0.5, 0.0, 1.0) # basso sull'orizzonte diventa arancio
+		var col := Color(1.0, 0.95, 0.75).lerp(Color(1.0, 0.6, 0.3), warm)
+		for j in 3:
+			ci.draw_circle(body, 60.0 - j * 14.0, Color(col.r, col.g, col.b, 0.12 + j * 0.06))
+		ci.draw_circle(body, 28.0, col)
+	else:
+		ci.draw_circle(body, 22.0, Color(0.94, 0.94, 0.88))
+		ci.draw_circle(body + Vector2(9, -5), 19.0, Color(0.78, 0.8, 0.82, 0.55)) # le macchie della luna
 	if dark <= 0.5:
 		return
 	var a := (dark - 0.5) * 2.0
-	var off := offset(0.08, view.get_center())
 	for i in 70:
 		var sx := fposmod(i * 0.6180339 * 3000.0, width + 1200.0) - 600.0
 		var sy := -420.0 + fposmod(i * 0.4142136 * 1000.0, 520.0)
@@ -252,3 +272,55 @@ func draw_daycycle(ci: CanvasItem, t: float, view: Rect2) -> void:
 		var lit := clampf((dark - 0.25 - 0.06 * (i % 5)) / 0.15, 0.0, 1.0)
 		if lit > 0.0:
 			ci.draw_rect(Rect2(w.x, w.y, w.width, w.height), Color(1.0, 0.78, 0.42, 0.75 * lit))
+
+
+# --- acqua intorno all'arena (#264): davanti a chi cade, con lo splash quando qualcuno ci finisce dentro ---
+var _last_y := {} # id del lottatore -> y del frame prima
+var _splashes: Array = [] # [x, y, ms dell'orologio del client]
+const SPLASH_MS := 700.0
+
+
+func outer_water_level(up: float) -> float:
+	var w: Dictionary = life.get("outerWater", {})
+	return lerpf(float(w.y), float(w.get("highY", w.y)), up)
+
+
+func draw_outer_water(ci: CanvasItem, t: float, now: float, up: float, view: Rect2, fighters: Dictionary) -> void:
+	if not life.get("outerWater") is Dictionary:
+		return
+	var level := outer_water_level(up)
+	for id in fighters:
+		var y: float = fighters[id].y
+		if _last_y.has(id) and _last_y[id] < level and y >= level:
+			_splashes.append([fighters[id].x, level, now])
+		_last_y[id] = y
+	var left := view.position.x - 40.0
+	var right := view.end.x + 40.0
+	var bottom := maxf(view.end.y, level) + 40.0
+	var night := darkness(day_phase(t)) if life.get("daycycle") is Dictionary else 0.0
+	ci.draw_rect(Rect2(left, level, right - left, bottom - level), Color(0.27, 0.38, 0.4, 0.88).lerp(Color(0.08, 0.12, 0.2, 0.92), night * 0.8))
+	var wave := PackedVector2Array()
+	var x := left
+	while x <= right:
+		wave.append(Vector2(x, level + 3.0 * sin(t / 300.0 + x / 41.0)))
+		x += 18.0
+	ci.draw_polyline(wave, Color("a9c2bf"), 2.5)
+	for i in 4: # riflessi che scorrono
+		var ry := level + 18.0 + i * 22.0
+		var rx := left + fposmod(t / 30.0 + i * 140.0, 260.0)
+		while rx < right:
+			ci.draw_line(Vector2(rx, ry), Vector2(rx + 40.0, ry), Color(0.66, 0.76, 0.75, 0.25), 1.5)
+			rx += 260.0
+	var keep: Array = []
+	for sp in _splashes:
+		var k: float = (now - sp[2]) / SPLASH_MS
+		if k >= 1.0:
+			continue
+		keep.append(sp)
+		for j in 7: # gocce che saltano in alto e ricadono
+			var ang := PI + PI * (j + 0.5) / 7.0
+			var dist := 60.0 * k
+			var p := Vector2(sp[0] + cos(ang) * dist, sp[1] + sin(ang) * dist * 1.4 + 90.0 * k * k)
+			ci.draw_circle(p, 4.0 * (1.0 - k) + 1.0, Color(0.85, 0.93, 0.92, 1.0 - k))
+		ci.draw_arc(Vector2(sp[0], sp[1]), 20.0 + 50.0 * k, PI, TAU, 16, Color(0.85, 0.93, 0.92, 0.8 * (1.0 - k)), 3.0)
+	_splashes = keep

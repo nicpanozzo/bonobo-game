@@ -39,3 +39,18 @@ func test_giorno_e_notte() -> void:
 	var empty := StageLife.new()
 	empty.setup({}, 1280, 720)
 	runner.check(empty.is_empty() and empty.day_phase(99999) == 0.0, "senza life l'arena resta com'è")
+
+
+func test_sole_e_luna_attraversano_il_cielo() -> void:
+	var rise := StageLife.sky_body(0.76, 1920)
+	var noon := StageLife.sky_body(0.0, 1920)
+	var set_ := StageLife.sky_body(0.24, 1920)
+	runner.check(rise.x < noon.x and noon.x < set_.x, "il sole va da sinistra a destra")
+	runner.check(noon.y < rise.y and noon.y < set_.y, "a mezzogiorno è in alto")
+	runner.check(is_equal_approx(StageLife.sky_body(0.5, 1920).x, noon.x), "a mezzanotte la luna è in cima")
+
+
+func test_acqua_intorno_e_splash() -> void:
+	var life := StageLife.new()
+	life.setup({"art": {"life": {"outerWater": {"y": 800, "highY": 760, "flood": 0}}}}, 1920, 720)
+	runner.check(life.outer_water_level(0.0) == 800.0 and life.outer_water_level(1.0) == 760.0, "sale con l'acqua alta")
