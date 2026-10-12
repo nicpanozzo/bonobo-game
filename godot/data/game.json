@@ -1426,6 +1426,7 @@
         "lead": "triangle"
       },
       "art": {
+        "scale": 0.5,
         "layers": [
           {
             "file": "sfondo-0.png",

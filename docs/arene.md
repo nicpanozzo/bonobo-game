@@ -248,6 +248,10 @@ Facoltativi, solo grafica: senza, blocchi e piattaforme si disegnano a tinta uni
   - Quella davanti (`front: true`) si tiene bassa e trasparente (`opacity` circa 0,45) per non coprire chi ci passa.
 - **Decorazioni (`props`):** stanno dietro al palco, così una lastra retta da una statua le sta sopra, oppure davanti ai lottatori con `front: true`. `scale` vale per la singola immagine: per un disegno a 2x si mette 0,5.
 - **Grandezza:** `art.scale` vale per strati e materiali: pixel di mondo per pixel dell'immagine.
+- **Disegnare col codice (#280):** `tools/arene/disegno.py` ha la tela di Padova. Si disegna in pixel di mondo, il file esce a 2x (`art.scale: 0.5`) ed è disegnato a 4x e poi ridotto, per avere i bordi lisci.
+  - Ci sono l'inchiostro, le ombre a 2 toni, i blocchi di pietra e le velature.
+  - Con `wrap` la tela fa una piastrella che si ripete senza giunte.
+  - `tools/arene/padova.py` è l'esempio da copiare per una nuova arena.
 
 ```ts
 art: {

@@ -15,10 +15,12 @@ import sys
 
 from PIL import Image, ImageDraw
 
+sys.path.insert(0, os.path.dirname(__file__))
+from disegno import INK, OUT_SCALE, Scala, Tela, light, mix, rand, shade  # noqa: E402
+
 OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(__file__), "..", "..", "public", "assets", "stages", "padova")
 os.makedirs(OUT, exist_ok=True)
 
-INK = (30, 26, 23, 255)
 MARBLE = (214, 208, 194, 255)  # statue e ringhiere: marmo, un po' spento
 MARBLE_SHADE = (172, 164, 148, 255)
 STONE = (111, 106, 96, 255)  # lastricato delle piazze
@@ -38,111 +40,220 @@ def save(img, name):
     print("scritto", name, img.size)
 
 
+# --- il palco (#280 passo 1): tutto a 2x con disegno.Tela, in pixel di mondo ---
+TRACHITE = (122, 116, 104, 255)  # i blocchi delle rive: trachite euganea, grigia e calda
+MALTA = (78, 73, 66, 255)  # i giunti
+MUSCHIO = (92, 104, 76, 255)  # verde spento, lontano dal verde dei giocatori
+
+
 def paving():
-    """Lastricato delle piazze: lastre a file sfalsate, due toni e giunti scuri."""
-    w, h = 96, 96
-    img = Image.new("RGBA", (w, h), STONE)
-    d = ImageDraw.Draw(img)
-    rng = random.Random(7)
-    row_h = 24
-    for r in range(h // row_h):
-        y = r * row_h
+    """Il lastricato (materiale di riserva delle piazze): lastre di trachite a file sfalsate."""
+    t = Tela(96, 96, bg=STONE, wrap=True, wrap_y=True)
+    rng = rand(7)
+    for r in range(4):
+        y = r * 24
         off = 0 if r % 2 == 0 else 24
-        for x in range(-48 + off, w, 48):
-            tone = STONE_LIGHT if rng.random() < 0.35 else STONE
-            d.rectangle([x + 1, y + 1, x + 46, y + row_h - 2], fill=tone)
-            d.rectangle([x + 1, y + row_h - 6, x + 46, y + row_h - 2], fill=STONE_SHADE)  # ombra piatta in basso
-        d.line([0, y, w, y], fill=STONE_SHADE, width=1)
-        for x in range(-48 + off, w, 48):
-            d.line([x, y, x, y + row_h], fill=STONE_SHADE, width=1)
-    save(img, "pietra.png")
+        for x in range(off - 48, 96, 48):
+            tone = mix(STONE, STONE_LIGHT, rng.random() * 0.8)
+            t.block(x, y, x + 48, y + 24, tone, side=2, bottom=4, width=1.0, chip=("br", 4) if rng.random() < 0.3 else None)
+    t.save(OUT, "pietra.png")
 
 
 def quay_wall():
-    """Il muro della riva sul canale (#264): grandi blocchi di pietra d'Istria sfalsati, umidi verso il basso."""
-    w, h = 120, 60
-    img = Image.new("RGBA", (w, h), (126, 120, 108, 255))
-    d = ImageDraw.Draw(img)
-    rng = random.Random(9)
-    for r in range(2):
-        y = r * 30
-        off = 0 if r % 2 == 0 else 30
-        for x in range(-60 + off, w, 60):
-            tone = rng.choice([(132, 126, 114, 255), (122, 116, 104, 255), (138, 131, 118, 255)])
-            d.rectangle([x + 1, y + 1, x + 58, y + 28], fill=tone)
-            d.rectangle([x + 1, y + 22, x + 58, y + 28], fill=(108, 102, 92, 255))  # ombra piatta del blocco
-            d.line([x, y, x, y + 30], fill=(90, 85, 76, 255), width=2)
-        d.line([0, y, w, y], fill=(90, 85, 76, 255), width=2)
-    save(img, "riva.png")
+    """Il muro della riva (#264): grandi blocchi di trachite sfalsati, con muschio sui giunti, colature d'acqua,
+    qualche crepa e spigolo sbreccato. Piastrella 240×120 di mondo che si ripete nei due versi."""
+    W, H, ROW = 240, 120, 40
+    t = Tela(W, H, bg=MALTA, wrap=True, wrap_y=True)
+    rng = rand(9)
+    for r in range(H // ROW):
+        y0 = r * ROW
+        x = rng.randint(0, 60)
+        widths = []
+        while sum(widths) < W - 70:
+            widths.append(rng.choice([60, 70, 80, 90, 100]))
+        widths.append(W - sum(widths))
+        for bw in widths:
+            tone = mix(TRACHITE, light(TRACHITE, 1.1), rng.random()) if rng.random() < 0.5 else mix(TRACHITE, shade(TRACHITE, 0.92), rng.random())
+            x0, x1, y1 = x + 1, x + bw - 1, y0 + ROW - 1
+            chip = (rng.choice(["tl", "tr", "bl", "br"]), rng.uniform(4, 8)) if rng.random() < 0.35 else None
+            t.block(x0, y0 + 1, x1, y1, tone, side=3, bottom=6, width=1.2, chip=chip, ink_col=(54, 50, 46, 255))  # inchiostro più morbido: il muro sta sotto il piano di gioco
+            # segni dello scalpello: due tratti in ombra
+            for _ in range(rng.randint(0, 2)):
+                sx, sy = rng.uniform(x0 + 8, x1 - 20), rng.uniform(y0 + 8, y1 - 12)
+                t.line([(sx, sy), (sx + rng.uniform(8, 16), sy + rng.uniform(-1, 1))], fill=shade(tone, 0.88), width=1.2)
+            if rng.random() < 0.2:
+                t.crack(rng.uniform(x0 + 10, x1 - 10), y0 + 2, ROW - 8, rng, col=(64, 60, 54, 255))
+            # colature scure che scendono dal giunto di sopra
+            if rng.random() < 0.45:
+                cx = rng.uniform(x0 + 6, x1 - 10)
+                long = rng.uniform(16, 32)
+                t.glaze([(cx, y0 + 1), (cx + 7, y0 + 1), (cx + 6, y0 + long * 0.7), (cx + 4, y0 + long), (cx + 2, y0 + long * 0.8)], (60, 62, 56, 60))
+            # muschio sul bordo di sopra, a ciuffi
+            if rng.random() < 0.3:
+                mx = rng.uniform(x0 + 4, x1 - 24)
+                for k in range(rng.randint(3, 5)):
+                    rr = rng.uniform(2.2, 3.6)
+                    t.circle(mx + k * 4.5, y0 + 1.5, rr, fill=MUSCHIO if k % 2 else shade(MUSCHIO, 0.85))
+            x += bw
+    t.save(OUT, "riva.png")
 
 
-def edge(name, w, h, top=EDGE):
-    img = Image.new("RGBA", (w, h), top)
-    d = ImageDraw.Draw(img)
-    d.line([0, h - 1, w, h - 1], fill=INK, width=1)
-    d.line([0, 0, w, 0], fill=(250, 247, 238, 255), width=1)
-    save(img, name)
+def coping(name, w=96, h=10):
+    """La copertina chiara sopra le rive: il piano su cui si cammina (il più chiaro), lo spigolo e la faccia
+    in ombra, i giunti tra una lastra e l'altra. Bordo calpestabile sempre chiaro (stile, sezione 7)."""
+    t = Tela(w, h, wrap=True)
+    t.rect(0, 0, w, h * 0.55, fill=EDGE)
+    t.rect(0, 0, w, 0.8, fill=(248, 245, 236, 255))
+    t.rect(0, h * 0.55, w, h, fill=(196, 189, 174, 255))
+    t.rect(0, h * 0.85, w, h, fill=(170, 163, 149, 255))
+    t.line([(0, h * 0.55), (w, h * 0.55)], fill=(150, 144, 132, 255), width=0.8)
+    for x in (0, w / 2):
+        t.line([(x, 0.6), (x, h)], fill=INK, width=1.0)
+    t.line([(0, h - 0.6), (w, h - 0.6)], fill=INK, width=1.2)
+    t.save(OUT, name)
 
 
 def deck():
-    """Il ponte, visto di lato: fascia di pietra con la cornice in alto e l'ombra sotto."""
-    w, h = 64, 20
-    img = Image.new("RGBA", (w, h), DECK)
-    d = ImageDraw.Draw(img)
-    d.rectangle([0, 0, w, 3], fill=EDGE)
-    d.rectangle([0, 12, w, h], fill=DECK_SHADE)
-    for x in range(0, w, 32):
-        d.line([x, 4, x, h], fill=DECK_SHADE, width=1)
-    d.line([0, h - 1, w, h - 1], fill=INK, width=1)
-    save(img, "ponte.png")
+    """Il fianco del ponte: piano chiaro, cornice modanata con i dentelli, fascia di conci e l'ombra sotto."""
+    W, H = 96, 20
+    t = Tela(W, H, bg=DECK, wrap=True)
+    t.rect(0, 0, W, 4, fill=EDGE)
+    t.rect(0, 0, W, 0.8, fill=(248, 245, 236, 255))
+    t.rect(0, 4, W, 7, fill=(210, 204, 190, 255))  # toro della cornice
+    t.rect(0, 6, W, 7, fill=DECK_SHADE)
+    for x in range(0, W, 8):  # dentelli
+        t.rect(x + 1, 7, x + 5, 10, fill=(200, 194, 180, 255))
+        t.rect(x + 4, 7, x + 5, 10, fill=DECK_SHADE)
+    t.rect(0, 10, W, H, fill=DECK)
+    t.rect(0, 16, W, H, fill=DECK_SHADE)
+    for x in (0, 32, 64):
+        t.line([(x, 10), (x, H)], fill=(120, 114, 102, 255), width=1.0)
+    for y in (4, 7, 10):
+        t.line([(0, y), (W, y)], fill=INK, width=0.9)
+    t.line([(0, H - 0.6), (W, H - 0.6)], fill=INK, width=1.2)
+    t.save(OUT, "ponte.png")
 
 
 def stairs():
-    w, h = 32, 32
-    img = Image.new("RGBA", (w, h), STAIR)
-    d = ImageDraw.Draw(img)
-    d.rectangle([0, 18, w, h], fill=STAIR_SHADE)
-    d.line([16, 0, 16, h], fill=STAIR_SHADE, width=1)
-    save(img, "scala.png")
-    edge("scala-bordo.png", 32, 5, TREAD)
+    """I gradini di pietra: ogni gradino prende l'angolo in alto a sinistra della piastrella (una quindicina di
+    pixel), con l'ombra sotto il naso della pedata e il fianco a inchiostro. Lo usa anche il fondo del canale."""
+    t = Tela(32, 32, bg=STAIR, wrap=True, wrap_y=True)
+    t.rect(0, 0, 32, 4, fill=STAIR_SHADE)  # ombra sotto il naso del gradino di sopra
+    t.rect(0, 20, 32, 32, fill=STAIR_SHADE)
+    t.line([(0, 20), (32, 20)], fill=(84, 80, 72, 255), width=0.8)
+    t.line([(0.5, 0), (0.5, 32)], fill=INK, width=1.0)
+    t.line([(16, 20), (16, 32)], fill=(84, 80, 72, 255), width=0.8)
+    t.save(OUT, "scala.png")
+    t = Tela(32, 5, wrap=True)  # la pedata: chiara, con il naso arrotondato
+    t.rect(0, 0, 32, 3, fill=TREAD)
+    t.rect(0, 0, 32, 0.7, fill=(236, 230, 218, 255))
+    t.rect(0, 3, 32, 5, fill=(182, 175, 162, 255))
+    t.line([(0, 4.4), (32, 4.4)], fill=INK, width=1.1)
+    t.save(OUT, "scala-bordo.png")
 
 
 def balustrade():
-    """Ringhiera di Prato della Valle: corrimano, zoccolo, pilastrini e anelli traforati di marmo."""
-    w, h = 48, 36
-    img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-    d = ImageDraw.Draw(img)
-    # corrimano e zoccolo
-    d.rectangle([0, 0, w, 5], fill=MARBLE, outline=None)
-    d.rectangle([0, 4, w, 6], fill=MARBLE_SHADE)
-    d.rectangle([0, h - 6, w, h - 1], fill=MARBLE)
-    d.rectangle([0, h - 3, w, h - 1], fill=MARBLE_SHADE)
-    d.line([0, 0, w, 0], fill=INK)
-    d.line([0, 6, w, 6], fill=INK)
-    d.line([0, h - 6, w, h - 6], fill=INK)
-    d.line([0, h - 1, w, h - 1], fill=INK)
-    # pilastrino (metà a ogni bordo, così ripetendo si unisce)
-    for x0, x1 in ((0, 3), (w - 4, w - 1)):
-        d.rectangle([x0, 6, x1, h - 6], fill=MARBLE)
-    d.line([3, 6, 3, h - 6], fill=INK)
-    d.line([w - 4, 6, w - 4, h - 6], fill=INK)
-    # anello traforato con il nodo sopra e sotto
-    cx, cy, r = w / 2, h / 2, 9
-    d.ellipse([cx - r, cy - r, cx + r, cy + r], outline=INK, width=4)
-    d.ellipse([cx - r + 1, cy - r + 1, cx + r - 1, cy + r - 1], outline=MARBLE, width=2)
-    d.rectangle([cx - 2, 6, cx + 2, cy - r + 1], fill=MARBLE, outline=INK)
-    d.rectangle([cx - 2, cy + r - 1, cx + 2, h - 6], fill=MARBLE, outline=INK)
-    save(img, "balaustra.png")
+    """La ringhiera traforata dei ponti del Prato: corrimano modanato, zoccolo, pilastrini e l'anello di marmo
+    con i nodi sopra e sotto. Si ripete ogni 48 pixel di mondo; il pilastrino è a metà su ogni bordo."""
+    W, H = 48, 36
+    t = Tela(W, H, wrap=True)
+    # corrimano: piano chiaro, toro e l'ombra sotto
+    t.rect(0, 0, W, 6, fill=MARBLE)
+    t.rect(0, 0, W, 1.2, fill=(236, 232, 222, 255))
+    t.rect(0, 4.2, W, 6, fill=MARBLE_SHADE)
+    t.line([(0, 0.5), (W, 0.5)], fill=INK, width=1.1)
+    t.line([(0, 6), (W, 6)], fill=INK, width=1.1)
+    # zoccolo
+    t.rect(0, H - 6, W, H, fill=MARBLE)
+    t.rect(0, H - 2.5, W, H, fill=MARBLE_SHADE)
+    t.line([(0, H - 6), (W, H - 6)], fill=INK, width=1.1)
+    t.line([(0, H - 0.6), (W, H - 0.6)], fill=INK, width=1.1)
+    # pilastrino a cavallo del bordo, col capitello
+    t.rect(-3, 6, 3, H - 6, fill=MARBLE, ink=True, width=1.0)
+    t.rect(0.8, 6, 3, H - 6, fill=MARBLE_SHADE)
+    t.rect(-4, 6, 4, 9, fill=MARBLE, ink=True, width=0.9)
+    # l'anello: pieno, l'ombra in basso a destra, poi il buco trasparente
+    cx, cy, r, th = W / 2, H / 2, 9.5, 3.4
+    t.circle(cx, cy, r, fill=MARBLE)
+    t.chord(cx - r, cy - r, cx + r, cy + r, -30, 120, fill=MARBLE_SHADE)
+    t.circle(cx, cy, r, ink=True, width=1.1)
+    t.circle(cx, cy, r - th, fill=(0, 0, 0, 0))
+    t.circle(cx, cy, r - th, ink=True, width=1.0)
+    # nodi tra anello, corrimano e zoccolo
+    for y0, y1 in ((6, cy - r + 0.5), (cy + r - 0.5, H - 6)):
+        t.rect(cx - 2, y0, cx + 2, y1, fill=MARBLE, ink=True, width=0.9)
+        t.rect(cx + 0.6, y0 + 0.6, cx + 1.6, y1 - 0.6, fill=MARBLE_SHADE)
+        t.ellipse(cx - 3, (y0 + y1) / 2 - 1.5, cx + 3, (y0 + y1) / 2 + 1.5, fill=MARBLE, ink=True, width=0.8)
+    t.save(OUT, "balaustra.png")
 
 
 def slab():
-    w, h = 64, 12
-    img = Image.new("RGBA", (w, h), MARBLE)
-    d = ImageDraw.Draw(img)
-    d.rectangle([0, 0, w, 3], fill=EDGE)
-    d.rectangle([0, 8, w, h], fill=MARBLE_SHADE)
-    d.line([0, h - 1, w, h - 1], fill=INK)
-    save(img, "lastra.png")
+    """La lastra retta dalle statue: piano chiaro, listello modanato, fascia di marmo e l'ombra sotto."""
+    W, H = 64, 12
+    t = Tela(W, H, bg=MARBLE, wrap=True)
+    t.rect(0, 0, W, 3, fill=EDGE)
+    t.rect(0, 0, W, 0.7, fill=(248, 245, 236, 255))
+    t.rect(0, 3, W, 5, fill=(226, 220, 206, 255))
+    t.line([(0, 3), (W, 3)], fill=INK, width=0.9)
+    t.line([(0, 5), (W, 5)], fill=(150, 142, 128, 255), width=0.8)
+    t.rect(0, 8.5, W, H, fill=MARBLE_SHADE)
+    t.line([(0, H - 0.6), (W, H - 0.6)], fill=INK, width=1.2)
+    t.save(OUT, "lastra.png")
+
+
+def arch():
+    """Il fianco del ponte sotto il piano (x 720-1200, y 492-692): conci a raggiera attorno all'arco con la chiave
+    più grande, la pietra a corsi tra il piano curvo e i conci, le spalle ai lati. Dentro l'arco non c'è il vuoto:
+    l'intradosso in ombra e, in fondo, il muro opposto del canale."""
+    x0, x1, y_top, y_bot = 720, 1200, 492, 692
+    W, H = x1 - x0, y_bot - y_top
+    t = Tela(W, H)
+
+    def deck_y(x):
+        u = max(-1, min(1, (x - 960) / 240))
+        return 520 - 25 * (1 - u * u) - y_top
+
+    cx, cy, rx, ry = 960 - x0, 692 - y_top, 205, 148  # apertura dell'arco
+    band = 20  # spessore dei conci
+    # muratura tra il piano e l'arco: corsi di pietra orizzontali, il lato destro in ombra
+    top_pts = [(x, deck_y(x + x0)) for x in range(0, W + 1, 8)]
+    t.poly(top_pts + [(W, H), (0, H)], fill=DECK)
+    t.poly([(x, y) for x, y in top_pts if x >= W / 2] + [(W, H), (W / 2, H)], fill=mix(DECK, DECK_SHADE, 0.55))
+    rng = rand(13)
+    for row in range(1, 12):
+        y = 8 + row * 16
+        t.line([(0, y), (W, y)], fill=(140, 133, 120, 255), width=0.9)
+        off = 0 if row % 2 else 22
+        for x in range(off, W, 44):
+            t.line([(x, y - 16), (x, y)], fill=(140, 133, 120, 255), width=0.9)
+    # dentro l'arco: il muro di fronte, scuro, a grandi blocchi, ritagliato nell'apertura
+    inner = [(cx - rx * math.cos(math.pi * i / 48), cy - ry * math.sin(math.pi * i / 48)) for i in range(49)]
+    far = Tela(W, H, bg=(52, 55, 54, 255))
+    for row in range(10):
+        y = cy - ry + 4 + row * 15
+        for x in range(int(cx - rx) - (row % 2) * 20, int(cx + rx), 40):
+            far.rect(x + 1, y + 1, x + 39, y + 14, fill=(60, 63, 61, 255) if (x // 40 + row) % 3 else (56, 59, 57, 255))
+    t.paste_inside(far, inner)
+    vault = [(cx - (rx - 2) * math.cos(math.pi * i / 48), cy - (ry - 2) * math.sin(math.pi * i / 48)) for i in range(49)]
+    vault_in = [(cx - (rx - 26) * math.cos(math.pi * i / 48), cy - (ry - 18) * math.sin(math.pi * i / 48)) for i in range(48, -1, -1)]
+    t.poly(vault + vault_in, fill=(92, 90, 84, 255))  # l'intradosso, visto di sotto
+    for i in range(1, 16):
+        a = math.pi * i / 16
+        t.line([(cx - (rx - 2) * math.cos(a), cy - (ry - 2) * math.sin(a)), (cx - (rx - 26) * math.cos(a), cy - (ry - 18) * math.sin(a))], fill=(70, 68, 64, 255), width=0.9)
+    # conci: a raggiera, alternati chiaro e in ombra, la chiave in cima più alta
+    n = 17
+    for i in range(n):
+        a0, a1 = math.pi * i / n, math.pi * (i + 1) / n
+        key = i == n // 2
+        out = band + (8 if key else 0)
+        pts = [(cx - rx * math.cos(a0), cy - ry * math.sin(a0)), (cx - (rx + out) * math.cos(a0), cy - (ry + out) * math.sin(a0)),
+               (cx - (rx + out) * math.cos(a1), cy - (ry + out) * math.sin(a1)), (cx - rx * math.cos(a1), cy - ry * math.sin(a1))]
+        right = (a0 + a1) / 2 > math.pi / 2
+        t.poly(pts, fill=mix(MARBLE, MARBLE_SHADE, 0.7 if right else 0.15), ink=True, width=1.2)
+    # le spalle: il fianco del ponte finisce con uno spigolo netto contro la riva
+    for x in (0.8, W - 0.8):
+        t.line([(x, deck_y(x + x0) + 1), (x, H)], fill=INK, width=1.6)
+    t.save(OUT, "arco-ponte.png")
 
 
 def statue(name, total_h, slab_w, kind):
@@ -349,46 +460,11 @@ def statue(name, total_h, slab_w, kind):
     save(out, name)
 
 
-def arch():
-    """Il fianco del ponte sotto il piano: pietra tra il piano curvo e l'arco, con le spalle ai lati. 1x."""
-    x0, x1, y_top, y_bot = 720, 1200, 492, 692
-    W, H = x1 - x0, y_bot - y_top
-    img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    d = ImageDraw.Draw(img)
-
-    def deck_y(x):
-        u = max(-1, min(1, (x - 960) / 240))
-        return 520 - 25 * (1 - u * u)
-
-    cx, cy, rx, ry = 960, 692, 205, 148  # apertura dell'arco
-    for x in range(W):
-        wx = x0 + x
-        top = deck_y(wx) - y_top
-        dx = (wx - cx) / rx
-        open_top = cy - ry * math.sqrt(max(0, 1 - dx * dx)) - y_top if abs(dx) < 1 else H
-        if open_top > top:
-            col = DECK if (x // 20 + int(top) // 18) % 2 == 0 else DECK_SHADE
-            d.line([x, top, x, open_top], fill=DECK_SHADE if wx > 960 else DECK)
-    # conci dell'arco e contorno
-    pts = []
-    for i in range(41):
-        a = math.pi * i / 40
-        pts.append((cx - rx * math.cos(a) - x0, cy - ry * math.sin(a) - y_top))
-    d.line(pts, fill=INK, width=3)
-    for i in range(1, 12):
-        a = math.pi * i / 12
-        p0 = (cx - rx * math.cos(a) - x0, cy - ry * math.sin(a) - y_top)
-        p1 = (cx - (rx + 16) * math.cos(a) - x0, cy - (ry + 16) * math.sin(a) - y_top)
-        d.line([p0, p1], fill=INK, width=2)
-    for x in (0, W - 1):
-        d.line([x, 0, x, H], fill=INK, width=3)
-    save(img, "arco-ponte.png")
-
-
 def layer(name, draw, W=2440, H=1480):
-    img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    draw(ImageDraw.Draw(img), W, H)
-    save(img, name)
+    """Uno strato dello sfondo: si disegna in pixel di mondo, il file esce a 2x (art.scale 0.5, #280)."""
+    img = Image.new("RGBA", (W * OUT_SCALE, H * OUT_SCALE), (0, 0, 0, 0))
+    draw(Scala(ImageDraw.Draw(img), OUT_SCALE), W, H)
+    save(img.quantize(colors=256, method=Image.Quantize.FASTOCTREE, dither=Image.Dither.NONE), name)
 
 
 # Gli strati sono centrati sul centro dell'arena (960, 360): il pixel (u, v) è nel mondo a (960 - W/2 + u, 360 - H/2 + v)
@@ -743,39 +819,47 @@ def palazzo(name):
 
 
 def balcony_rail():
-    """Balaustrata dei balconi del palazzo: colonnine a vaso tra corrimano e zoccolo di pietra."""
-    w, h = 24, 30
-    img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-    d = ImageDraw.Draw(img)
-    stone, shade = (196, 190, 176, 255), (160, 152, 138, 255)
-    d.rectangle([0, 0, w, 4], fill=stone)
-    d.rectangle([0, h - 5, w, h - 1], fill=stone)
-    d.line([0, 0, w, 0], fill=INK)
-    d.line([0, 4, w, 4], fill=INK)
-    d.line([0, h - 5, w, h - 5], fill=INK)
-    d.line([0, h - 1, w, h - 1], fill=INK)
-    for cx in (6, 18):  # colonnine a vaso
-        d.ellipse([cx - 4, 9, cx + 4, 21], fill=stone, outline=INK)
-        d.rectangle([cx - 2, 5, cx + 2, 9], fill=stone, outline=INK)
-        d.rectangle([cx - 2, 21, cx + 2, h - 5], fill=stone, outline=INK)
-        d.rectangle([cx + 1, 10, cx + 3, 20], fill=shade)
-    save(img, "balaustra-balcone.png")
+    """La balaustrata dei balconi del palazzo: colonnine a vaso tra corrimano e zoccolo di pietra."""
+    W, H = 24, 30
+    stone, sh = (200, 194, 180, 255), (164, 156, 142, 255)
+    t = Tela(W, H, wrap=True)
+    t.rect(0, 0, W, 4.5, fill=stone)
+    t.rect(0, 3.2, W, 4.5, fill=sh)
+    t.rect(0, H - 5, W, H, fill=stone)
+    t.rect(0, H - 2, W, H, fill=sh)
+    for y in (0.5, 4.5, H - 5, H - 0.6):
+        t.line([(0, y), (W, y)], fill=INK, width=1.0)
+    for cx in (6, 18):  # colonnina a vaso: collo, pancia, piede
+        prof = [(0, 1.6), (0.12, 1.6), (0.22, 2.4), (0.45, 4.2), (0.62, 4.0), (0.78, 2.2), (0.9, 2.6), (1.0, 2.6)]
+        y0, y1 = 4.5, H - 5
+        left = [(cx - w, y0 + (y1 - y0) * k) for k, w in prof]
+        right = [(cx + w, y0 + (y1 - y0) * k) for k, w in prof][::-1]
+        t.poly(left + right, fill=stone)
+        t.poly([(cx + w * 0.2, y0 + (y1 - y0) * k) for k, w in prof] + right, fill=sh)
+        t.poly(left + right, ink=True, width=0.9)
+    t.save(OUT, "balaustra-balcone.png")
 
 
 def balcony_floor():
-    w, h = 48, 14
-    img = Image.new("RGBA", (w, h), (196, 190, 176, 255))
-    d = ImageDraw.Draw(img)
-    d.rectangle([0, 0, w, 3], fill=EDGE)
-    d.rectangle([0, 9, w, h], fill=(160, 152, 138, 255))
-    d.line([0, h - 1, w, h - 1], fill=INK)
-    save(img, "balcone.png")
+    """Il piano dei balconi: bordo chiaro, cornice con i dentelli come il cornicione del palazzo, ombra sotto."""
+    W, H = 48, 14
+    stone, sh = (200, 194, 180, 255), (164, 156, 142, 255)
+    t = Tela(W, H, bg=stone, wrap=True)
+    t.rect(0, 0, W, 3, fill=EDGE)
+    t.rect(0, 0, W, 0.7, fill=(248, 245, 236, 255))
+    t.line([(0, 3), (W, 3)], fill=INK, width=0.9)
+    t.rect(0, 6, W, 7, fill=sh)
+    for x in range(0, W, 8):
+        t.rect(x + 1.5, 7, x + 5.5, 10.5, fill=stone, ink=True, width=0.7)
+    t.rect(0, 10.5, W, H, fill=sh)
+    t.line([(0, H - 0.6), (W, H - 0.6)], fill=INK, width=1.2)
+    t.save(OUT, "balcone.png")
 
 
 if __name__ == "__main__":
     paving()
     quay_wall()
-    edge("bordo.png", 96, 8)
+    coping("bordo.png")
     deck()
     stairs()
     balustrade()

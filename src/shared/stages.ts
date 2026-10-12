@@ -446,8 +446,9 @@ export const STAGES: Record<string, StageSpec> = {
     colors: { sky: 0x7aa0c4, solid: 0x6f6a60, solidEdge: 0xe8e2d2, platform: 0xd9d4c7 },
     // Rilassata, da pomeriggio in piazza. TODO community: un pezzo del canale da rifare per Padova?
     music: { bpm: 116, chords: ["F", "Am", "Bb", "C"], lead: "triangle" },
-    // Segnaposto disegnati col codice da tools/arene/padova.py: si sostituiscono con i disegni veri, stessi nomi
+    // Disegnati col codice da tools/arene/padova.py (#280), a 2x: chi disegna in Krita può sostituirli, stessi nomi e misure
     art: {
+      scale: 0.5, // strati, materiali e decorazioni senza scala propria sono a 2x (stile grafico, sezione 5)
       layers: [
         { file: "sfondo-0.png", parallax: 0.15 }, // cielo e Santa Giustina
         { file: "sfondo-1.png", parallax: 0.45 }, // portici, Loggia Amulea, mercato
