@@ -377,6 +377,16 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     // Con la pancia è più pesante e un po' lento, salta meno (E11)
     // TODO community: statistiche provvisorie, da confermare con @MauroGrecchi
     stats: { weight: 1.15, speed: 0.85, airSpeed: 0.95, jump: 0.9 },
+    // Speciali proprie (#262), dal foglio di Mauro: la nuvola verde soffiata lontano, la rotolata, il colpo di bong caricato
+    // TODO community: nomi e numeri provvisori, da confermare con @MauroGrecchi
+    specials: {
+      // lenta e larga: copre una zona più che colpire lontano
+      neutral: { type: "projectile", name: "Nuvola verde", startupMs: 300, cooldownMs: 700, speed: 260, gravity: 0, lifeMs: 1100, maxAlive: 1, range: 44, height: 40, damage: 6, baseKnockback: 150, knockbackGrowth: 3, angleDeg: 30, color: 0x8fbf6a },
+      // più lenta e lunga dello scatto di base, e più bassa: rotola sulla pancia
+      side: { type: "dash", name: "Rotolata di pancia", startupMs: 120, durationMs: 360, speed: 700, endLagMs: 380, range: 46, height: 40, damage: 9, baseKnockback: 380, knockbackGrowth: 8, angleDeg: 30 },
+      // la carica di esempio, più pesante: parte più tardi e chiude più lenta
+      down: { type: "charge", name: "Bongata", minMs: 250, maxMs: 1300, maxMultiplier: 1.8, activeMs: 120, endLagMs: 420, range: 56, height: 54, damage: 12, baseKnockback: 420, knockbackGrowth: 10.5, angleDeg: 45 },
+    },
     sprite: {
       dir: "assets/characters/elvedeo",
       frameWidth: 360,

@@ -2237,6 +2237,54 @@
         "weight": 1.15,
         "gravity": 1
       },
+      "specials": {
+        "neutral": {
+          "type": "projectile",
+          "name": "Nuvola verde",
+          "startupMs": 300,
+          "cooldownMs": 700,
+          "speed": 260,
+          "gravity": 0,
+          "lifeMs": 1100,
+          "maxAlive": 1,
+          "range": 44,
+          "height": 40,
+          "damage": 6,
+          "baseKnockback": 150,
+          "knockbackGrowth": 3,
+          "angleDeg": 30,
+          "color": 9420650
+        },
+        "side": {
+          "type": "dash",
+          "name": "Rotolata di pancia",
+          "startupMs": 120,
+          "durationMs": 360,
+          "speed": 700,
+          "endLagMs": 380,
+          "range": 46,
+          "height": 40,
+          "damage": 9,
+          "baseKnockback": 380,
+          "knockbackGrowth": 8,
+          "angleDeg": 30
+        },
+        "down": {
+          "type": "charge",
+          "name": "Bongata",
+          "minMs": 250,
+          "maxMs": 1300,
+          "maxMultiplier": 1.8,
+          "activeMs": 120,
+          "endLagMs": 420,
+          "range": 56,
+          "height": 54,
+          "damage": 12,
+          "baseKnockback": 420,
+          "knockbackGrowth": 10.5,
+          "angleDeg": 45
+        }
+      },
       "sprite": {
         "dir": "assets/characters/elvedeo",
         "frameWidth": 360,
@@ -2419,86 +2467,39 @@
           }
         }
       },
-      "specials": {
-        "neutral": {
-          "type": "projectile",
-          "name": "Tiro",
-          "startupMs": 216,
-          "cooldownMs": 550,
-          "speed": 700,
-          "gravity": 0,
-          "lifeMs": 1200,
-          "maxAlive": 1,
-          "range": 24,
-          "height": 16,
-          "damage": 6,
-          "baseKnockback": 220,
-          "knockbackGrowth": 3.5,
-          "angleDeg": 30,
-          "color": 16767050
-        },
-        "side": {
-          "type": "dash",
-          "name": "Scatto",
-          "startupMs": 100,
-          "durationMs": 250,
-          "speed": 900,
-          "endLagMs": 300,
-          "range": 40,
-          "height": 50,
-          "damage": 9,
-          "baseKnockback": 360,
-          "knockbackGrowth": 8,
-          "angleDeg": 35
-        },
-        "down": {
-          "type": "counter",
-          "name": "Contrattacco",
-          "startupMs": 50,
-          "windowMs": 400,
-          "endLagMs": 450,
-          "minDamage": 8,
-          "multiplier": 1.3,
-          "range": 60,
-          "height": 60,
-          "baseKnockback": 450,
-          "knockbackGrowth": 9,
-          "angleDeg": 40
-        }
-      },
       "specialAttacks": {
         "specialNeutral": {
-          "baseKnockback": 220,
-          "knockbackGrowth": 3.5,
+          "baseKnockback": 150,
+          "knockbackGrowth": 3,
           "angleDeg": 30,
-          "range": 24,
-          "height": 16,
+          "range": 44,
+          "height": 40,
           "damage": 6,
-          "startupMs": 216,
+          "startupMs": 300,
           "activeMs": 0,
-          "cooldownMs": 550
+          "cooldownMs": 700
         },
         "specialSide": {
-          "baseKnockback": 360,
+          "baseKnockback": 380,
           "knockbackGrowth": 8,
-          "angleDeg": 35,
-          "range": 40,
-          "height": 50,
+          "angleDeg": 30,
+          "range": 46,
+          "height": 40,
           "damage": 9,
-          "startupMs": 100,
-          "activeMs": 250,
-          "cooldownMs": 650
+          "startupMs": 120,
+          "activeMs": 360,
+          "cooldownMs": 860
         },
         "specialDown": {
-          "baseKnockback": 450,
-          "knockbackGrowth": 9,
-          "angleDeg": 40,
-          "range": 60,
-          "height": 60,
-          "damage": 8,
-          "startupMs": 50,
-          "activeMs": 400,
-          "cooldownMs": 900
+          "baseKnockback": 420,
+          "knockbackGrowth": 10.5,
+          "angleDeg": 45,
+          "range": 56,
+          "height": 54,
+          "damage": 12,
+          "startupMs": 250,
+          "activeMs": 120,
+          "cooldownMs": 1840
         }
       },
       "supremeAttack": null
