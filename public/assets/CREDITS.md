@@ -10,6 +10,7 @@
 | `stages/generica/` (sfondo delle arene casuali, E12) | Claude Code per Nicola, disegnati col codice | fatto da noi | CC0 |
 | `stages/padova/` (Padova, Prato della Valle, #230: sfondo a tre strati, materiali, ringhiera, statue, arco del ponte, anteprima) | idea di Riccardo (GiovannifRana); segnaposto disegnati col codice da Claude Code con `tools/arene/padova.py`, ispirati a Prato della Valle (le foto restano fuori dalla repo) | fatto da noi | CC0 |
 | `stages/padova/ciclista.png` (Cancaro Man, il ciclista arrabbiato di Padova, #270) | idea e disegno di riferimento di Riccardo (GiovannifRana); fotogrammi disegnati col codice da Claude Code con `tools/arene/ciclista.py` | fatto da noi | CC0 |
+| `stages/padova/barca.png` (la barca del canale con il barcaiolo, #273) | idea di Riccardo (GiovannifRana); fotogrammi disegnati col codice da Claude Code con `tools/arene/barca.py` | fatto da noi | CC0 |
 | `characters/egiainuso/*.png` (il nuovo Egiainuso, #178) | foglio delle pose di @Marcomunista, ritaglio e contorno di Claude per Riccardo (GiovannifRana) con `tools/sprite/egiainuso_dal_foglio.py` | foglio in #178, strumento da chiedere a Marco | da chiedere a Marco |
 | `characters/elvedeo/*.png` | Mauro Grecchi (@MauroGrecchi), ritaglio e pulizia di Claude per Riccardo (GiovannifRana) | foglio in #168, strumento da chiedere a Mauro | da chiedere a Mauro |
 | `characters/_modello/` (modello con hitbox e zone dei colpi per chi disegna, E7 passo 5) | Claude per Riccardo (GiovannifRana), generato con `tools/sprite/modello_sprite.py` | fatto da noi | CC0 |

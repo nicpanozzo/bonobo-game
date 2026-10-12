@@ -1508,6 +1508,26 @@
             }
           }
         ],
+        "moverSprites": [
+          {
+            "mover": 0,
+            "file": "barca.png",
+            "frames": 6,
+            "fps": 6,
+            "scale": 0.5,
+            "footX": 300,
+            "footY": 184
+          },
+          {
+            "mover": 1,
+            "file": "barca.png",
+            "frames": 6,
+            "fps": 6,
+            "scale": 0.5,
+            "footX": 300,
+            "footY": 184
+          }
+        ],
         "props": [
           {
             "file": "palazzo.png",

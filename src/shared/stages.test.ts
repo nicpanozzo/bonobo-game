@@ -76,6 +76,10 @@ describe("arene", () => {
         assert.ok(Number.isInteger(h.hazard) && h.hazard >= 0 && h.hazard < (stage.hazards?.length ?? 0), `${stage.id}: ${h.file} per una trappola che non c'è`);
         assert.ok(Number.isInteger(h.frames) && h.frames >= 1 && h.fps > 0, `${stage.id}: fotogrammi e fps di ${h.file}`);
       }
+      for (const m of art.moverSprites ?? []) {
+        assert.ok(Number.isInteger(m.mover) && m.mover >= 0 && m.mover < (stage.movers?.length ?? 0), `${stage.id}: ${m.file} per una piattaforma mobile che non c'è`);
+        assert.ok(Number.isInteger(m.frames) && m.frames >= 1 && m.fps > 0, `${stage.id}: fotogrammi e fps di ${m.file}`);
+      }
       // Sfondo vivo (#260): parallassi tra 0 e 1, tempi positivi
       const life = art.life;
       for (const e of [life?.birds, life?.walkers, life?.vehicles, ...(life?.daycycle?.lamps ?? [])]) {
