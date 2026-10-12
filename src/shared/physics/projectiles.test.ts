@@ -11,18 +11,18 @@ import { createFighter, emptyInput, stepWorld, type Fighter, type PhysicsContext
 
 const DT = 1000 / TICK_RATE;
 const stage = getStage(undefined); // il palco di base: un blocco da x 240 a 1040, in alto a y 560
-// Bonobot ha le speciali di base: il Tiro dritto (Bonobo tira la Banana ad arco)
-const shot = specialsFor("bonobot").neutral;
-const counter = specialsFor("bonobot").down;
+// Egiainuso ha le speciali di base: il Tiro dritto (Bonobo tira la Banana ad arco, Bonobot l'Anello di fumo)
+const shot = specialsFor("egiainuso").neutral;
+const counter = specialsFor("egiainuso").down;
 if (shot.type !== "projectile" || counter.type !== "counter") throw new Error("il personaggio base deve avere tiro e contrattacco");
 // Un personaggio solo per i test, con la carica di esempio sotto giù
 CHARACTERS["prova-carica"] = { id: "prova-carica", name: "Prova carica", specials: { down: CHARGE_EXAMPLE } };
 
 // a guarda a destra, b gli sta davanti girato verso di lui, a gap pixel
-function setup(gap: number, characterId = "bonobot") {
+function setup(gap: number, characterId = "egiainuso") {
   const ctx: PhysicsContext = { stage, events: [] };
   const fighters = [0, 1].map((i) =>
-    createFighter({ id: `p${i}`, name: `P${i}`, characterId: i === 0 ? characterId : "bonobot", color: 0, team: 0, index: i, stocks: 3 }, stage),
+    createFighter({ id: `p${i}`, name: `P${i}`, characterId: i === 0 ? characterId : "egiainuso", color: 0, team: 0, index: i, stocks: 3 }, stage),
   );
   const [a, b] = fighters;
   a.x = 400;
