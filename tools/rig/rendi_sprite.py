@@ -80,6 +80,9 @@ def rendi(cartella_rig, file_anim, uscita, solo=None):
         striscia = Image.new("RGBA", (misura[0] * len(fotogrammi), misura[1]), (0, 0, 0, 0))
         for i, fr in enumerate(fotogrammi):
             img = pit.disegna(fr["bones"], fr["root"], misura, piedi, t=i / an["fps"])
+            bb = img.getchannel("A").point(lambda a: 255 if a > 24 else 0).getbbox()
+            if bb and (bb[0] == 0 or bb[1] == 0 or bb[2] == misura[0] or bb[3] == misura[1]):
+                print(f"  ATTENZIONE: {nome}, fotogramma {i}: il disegno tocca il bordo, cioè viene tagliato (allarga il fotogramma o accorcia la posa)")
             striscia.alpha_composite(img, (i * misura[0], 0))
         salva(striscia, os.path.join(uscita, f"{nome}.png"))
         print(f"{nome}: {len(fotogrammi)} fotogrammi")

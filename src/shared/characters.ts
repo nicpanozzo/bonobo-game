@@ -371,6 +371,14 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         grab: { fps: 24, loop: false, hitFrame: 2 }, // si allunga con le due mani, poi tiene l'altro stretto al petto
         throw: { fps: 24, loop: false, hitFrame: 0 }, // scaglia con le braccia in avanti e in alto (si lascia subito)
         grabbed: { fps: 12, loop: true }, // tenuto: si dimena e scalcia
+        // #257 passo 4: in ogni hitFrame la mano sta nella zona del colpo (lo controlla tools/rig/animazioni_bonobot.py)
+        lightUp: { fps: 24, loop: false, hitFrame: 2 }, // schiaffo verso l'alto, guardando su
+        lightDown: { fps: 24, loop: false, hitFrame: 2 }, // spazzata bassa col dorso della mano, accucciato
+        lightAir: { fps: 24, loop: false, hitFrame: 2 }, // rovescio in aria
+        heavyUp: { fps: 24, loop: false, hitFrame: 7 }, // si accuccia e balza su battendo i pugni sopra la testa
+        heavyDown: { fps: 24, loop: false, hitFrame: 6 }, // affondo radente con le due braccia a terra
+        heavyAir: { fps: 24, loop: false, hitFrame: 5 }, // martello a due pugni in aria
+        recovery: { fps: 24, loop: false, hitFrame: 0 }, // sale avvitandosi con le braccia in alto
       },
     },
   },
