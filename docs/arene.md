@@ -218,7 +218,8 @@ Facoltativo: senza, l'arena si disegna con i colori di `colors`. I PNG vanno in 
 | `layers` | gli strati dietro al palco, dal più lontano: `{ file, parallax }` |
 | `parallax` | da 0 (fermo con la telecamera, lontanissimo) a 1 (si muove con il palco) |
 | `foreground` | facoltativo, uno strato davanti ai lottatori: quasi tutto trasparente |
-| `preview` | immagine 16:9 dell'arena per la lobby |
+| `preview` | immagine 16:9 dell'arena per la lobby; la lobby ci disegna sopra i pezzi del palco |
+| `previewFull` | `true` se l'anteprima mostra già il palco (per esempio fotografata dal gioco): la lobby non ci disegna sopra i pezzi (#284) |
 | `scale` | pixel di mondo per pixel dell'immagine (1 se manca) |
 | `dir` | cartella in `public/assets/stages/` se diversa dall'id dell'arena: le arene casuali usano tutte `generica` |
 

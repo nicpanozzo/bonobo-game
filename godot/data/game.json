@@ -1442,6 +1442,7 @@
           }
         ],
         "preview": "anteprima.png",
+        "previewFull": true,
         "skins": {
           "pietra": {
             "file": "pietra.png",

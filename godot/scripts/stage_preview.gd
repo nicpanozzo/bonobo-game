@@ -10,6 +10,10 @@ const WorldView := preload("res://scripts/world_view.gd")
 static var _previews := {} # percorso -> Texture2D, le anteprime già caricate (E12)
 
 
+func _init() -> void:
+	clip_contents = true # le arene più grandi dello schermo (#240) non escono dal riquadro (#284)
+
+
 func _draw() -> void:
 	var r := Rect2(Vector2.ZERO, size)
 	if spec.is_empty():
@@ -28,6 +32,8 @@ func _draw() -> void:
 		# L'immagine disegnata è 16:9 e riempie il riquadro
 		var ph := minf(size.y, size.x * 9.0 / 16.0)
 		draw_texture_rect(preview, Rect2((size.x - ph * 16.0 / 9.0) / 2, (size.y - ph) / 2, ph * 16.0 / 9.0, ph), false)
+		if not draws_pieces(spec):
+			return # l'immagine mostra già il palco (#284): i pezzi in tinta unita la coprirebbero
 	for s in spec.solids:
 		draw_rect(Rect2(o + Vector2(s.x, s.y) * k, Vector2(s.width, s.height) * k), _c(spec.colors.solid))
 	for p in spec.platforms:
@@ -54,6 +60,12 @@ func _draw() -> void:
 				draw_line(o + Vector2(h.x, flood.highY) * k, o + Vector2(h.x + h.width, flood.highY) * k, Color("a9c2bf"), 1.0)
 			continue
 		draw_rect(Rect2(o + Vector2(h.x, h.y) * k, Vector2(h.width, h.height) * k), Color(1, 0.25, 0.2))
+
+
+# Sopra l'anteprima si disegnano i pezzi del palco, tranne quando l'immagine li mostra già (art.previewFull, #284)
+static func draws_pieces(stage: Dictionary) -> bool:
+	var art: Dictionary = stage.get("art", {}) if stage.get("art") is Dictionary else {}
+	return not (art.get("preview", "") != "" and art.get("previewFull", false))
 
 
 # L'immagine dell'arena disegnata (StageSpec.art.preview), o null

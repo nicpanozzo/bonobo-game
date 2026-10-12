@@ -95,6 +95,7 @@ export interface StageArt {
   layers: StageLayer[]; // dal più lontano al più vicino, tutti dietro al palco; centrati sul centro dell'arena
   foreground?: StageLayer; // davanti ai lottatori: leggero e quasi tutto trasparente, per non coprire il gioco
   preview?: string; // immagine 16:9 dell'arena per la lobby
+  previewFull?: boolean; // l'anteprima mostra già il palco (#284): la lobby non ci disegna sopra i pezzi
   scale?: number; // pixel di mondo per pixel dell'immagine (1 se manca)
   dir?: string; // cartella in public/assets/stages/ se diversa dall'id dell'arena (sfondi condivisi)
   // Materiali e decorazioni del palco (#237): solo grafica, la fisica non li vede
@@ -455,6 +456,7 @@ export const STAGES: Record<string, StageSpec> = {
         { file: "sfondo-2.png", parallax: 0.75 }, // il prato dell'Isola Memmia, alberi e la seconda fila di statue
       ],
       preview: "anteprima.png",
+      previewFull: true, // fotografata dal gioco, con il palco e lo sfondo
       skins: {
         pietra: { file: "pietra.png", edge: "bordo.png" },
         riva: { file: "riva.png", edge: "bordo.png" }, // il muro della riva, a grandi blocchi
