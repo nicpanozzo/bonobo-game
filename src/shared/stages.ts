@@ -347,6 +347,9 @@ export const STAGES: Record<string, StageSpec> = {
       { x: 1310, y: 330, width: 140 },
       { x: 220, y: 380, width: 180 }, // ...e sulle piazze
       { x: 1520, y: 380, width: 180 },
+      // I balconi del palazzo signorile dietro il ponte (idea di Riccardo): la casa è sfondo, i balconi si calpestano
+      { x: 800, y: 300, width: 320 }, // il balcone largo del piano nobile, sopra il ponte
+      { x: 900, y: 180, width: 120 }, // il balconcino dell'ultimo piano: la cima dell'arena
     ],
     hazards: [
       // Il canale: l'acqua bassa non fa male; con la pioggia sale, copre le scale e fa male finché non riscende
@@ -369,10 +372,11 @@ export const STAGES: Record<string, StageSpec> = {
       { x: 1310, y: 330, width: 140, weight: 2 },
       { x: 220, y: 380, width: 180, weight: 2 },
       { x: 1520, y: 380, width: 180, weight: 2 },
+      { x: 800, y: 300, width: 320, weight: 3 }, // il balcone del palazzo
     ],
     blastZone: { left: -300, right: 2220, top: -420, bottom: 1000 },
     spawns: [300, 450, 200, 600, 380, 520, 250, 660].flatMap((x) => [{ x, y: 520 }, { x: 1920 - x, y: 520 }]).slice(0, 8),
-    respawn: { x: 960, y: 160 },
+    respawn: { x: 960, y: 100 },
     colors: { sky: 0x2b3446, solid: 0x6f6a60, solidEdge: 0xe8e2d2, platform: 0xd9d4c7 },
     // Rilassata, da pomeriggio in piazza. TODO community: un pezzo del canale da rifare per Padova?
     music: { bpm: 116, chords: ["F", "Am", "Bb", "C"], lead: "triangle" },
@@ -397,11 +401,16 @@ export const STAGES: Record<string, StageSpec> = {
         },
         scala: { file: "scala.png", edge: "scala-bordo.png" },
         lastra: { file: "lastra.png", depth: 12 },
+        balcone: { file: "balcone.png", depth: 14, rails: [{ file: "balaustra-balcone.png", height: 30, offsetY: 2 }] },
       },
       solidSkin: "pietra",
       platformSkin: "lastra",
-      pieces: { solids: ["pietra", "pietra", "fondo"], platforms: ["ponte", "scala", "scala"] },
+      pieces: {
+        solids: ["pietra", "pietra", "fondo"],
+        platforms: ["ponte", "scala", "scala", "lastra", "lastra", "lastra", "lastra", "lastra", "lastra", "balcone", "balcone"],
+      },
       props: [
+        { file: "palazzo.png", x: 960, y: 480, scale: 0.5 }, // il palazzo signorile: la facciata, dietro a tutto il palco
         { file: "arco-ponte.png", x: 960, y: 692 },
         // Le statue che reggono le lastre: il giovane con l'alloro, il filosofo con la barba, la dama col velo
         { file: "statua-ponte.png", x: 690, y: 522, scale: 0.5 },
