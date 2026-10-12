@@ -124,6 +124,7 @@ export interface StageLife {
     startAt?: number;
     lamps?: { x: number; y: number; parallax: number }[];
     windows?: { x: number; y: number; width: number; height: number }[]; // finestre che si accendono di notte, una alla volta
+    sky?: boolean; // cielo vivo (#267): gradiente, sole, luna, stelle e nuvole calcolati, dietro a uno strato del cielo trasparente
   };
 }
 
@@ -461,8 +462,9 @@ export const STAGES: Record<string, StageSpec> = {
         walkers: { y: 510, parallax: 0.75, count: 9, umbrellas: true },
         vehicles: { y: 540, parallax: 0.45, everyMs: 23000, kind: "tram" },
         daycycle: {
-          cycleMs: 240000, // un giorno intero in 4 minuti: si parte nel pomeriggio, a metà partita è sera
-          startAt: 0.1,
+          cycleMs: 240000, // un giorno intero in 4 minuti: alba, giorno, tramonto e notte
+          startAt: 0.8, // si parte poco dopo l'alba
+          sky: true, // il cielo vivo dietro alle sagome di Santa Giustina e del Santo (#267)
           lamps: [90, 390, 690, 990, 1290, 1590, 1890, 2190].map((x) => ({ x: x - 260, y: 409, parallax: 0.75 })), // i lampioni del prato
           // Le finestre del palazzo che si accendono la sera: la trifora, le bifore, l'ultimo piano, il mezzanino
           windows: [

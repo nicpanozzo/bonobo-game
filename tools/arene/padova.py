@@ -507,16 +507,7 @@ def cloud(d, x, y, w, col, shade):
 
 
 def sky(d, W, H):
-    # cielo di giorno, a fasce piatte: azzurro spento in alto, più chiaro e caldo verso l'orizzonte (la notte la fa il velo)
-    bands = [(122, 160, 196), (136, 172, 204), (152, 184, 210), (168, 194, 214), (184, 202, 214), (198, 206, 210)]
-    d.rectangle([0, 0, W, H], fill=bands[0] + (255,))
-    for i, c in enumerate(bands):
-        y = to_px(0, -300 + i * 140)[1]
-        d.rectangle([0, y, W, H], fill=c + (255,))
-    rng = random.Random(5)
-    for _ in range(9):  # nuvole bianche con la pancia in ombra
-        x, y = rng.uniform(0, W), to_px(0, rng.uniform(-260, 120))[1]
-        cloud(d, x, y, rng.uniform(160, 320), (236, 238, 240, 255), (206, 212, 220, 255))
+    # Il cielo lo disegna il gioco (cielo vivo, #267): qui solo le sagome lontane, su fondo trasparente
     base = to_px(0, 470)[1]
     santa_giustina(d, to_px(300, 0)[0], base + 10)
     basilica_santo(d, to_px(1500, 0)[0], base, 0.95)
