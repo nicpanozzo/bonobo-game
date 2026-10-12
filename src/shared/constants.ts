@@ -421,6 +421,14 @@ export const ITEM_RULES = {
   holdOffsetY: 52, // pixel sopra i piedi
 };
 
+// Potenziamenti degli oggetti da consumare (#231): il fiore rende intoccabili ma "rilassati"
+export const POWERUP = {
+  flowerMs: 8000, // ms di effetto dalla raccolta
+  damageMult: 1.3, // danno dei colpi dati mentre si è potenziati
+  speedMult: 0.75, // frazione della velocità orizzontale, a terra e in aria (il salto resta uguale)
+  endingMs: 1500, // ms finali in cui l'alone lampeggia nel client, per avvisare che sta finendo
+};
+
 // Limiti della rete (#105): il server non si fida di quello che riceve
 export const NET_LIMITS = {
   maxMessageBytes: 16_384, // byte massimi di un messaggio Socket.IO (il predefinito è 1 MB)

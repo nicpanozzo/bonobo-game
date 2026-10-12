@@ -203,6 +203,8 @@ export class Match {
         dashing: f.dashing,
         charge: f.charge,
         supreme: Math.floor(f.supreme), // per difetto: 100 solo quando è davvero piena
+        powerup: f.powerup,
+        powerupMs: Math.ceil(f.powerupMs),
         ...(f.inputSeq >= 0 && { predict: predictionState(f) }),
       });
     }

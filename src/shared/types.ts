@@ -72,6 +72,8 @@ export interface PlayerState {
   dashing: boolean; // scatta o corre dopo un doppio tocco (#199)
   charge: number; // carica della speciale in corso (E10), da 0 a 1; 0 se non si carica
   supreme: number; // barra della suprema (#101), da 0 a SUPREME.max: piena, il tasto suprema la lancia
+  powerup: string | null; // potenziamento in corso da un oggetto consumato (#231), null se nessuno
+  powerupMs: number; // ms che restano del potenziamento, 0 se nessuno
   predict?: PredictionState; // E17: solo per chi manda InputState.seq
 }
 
@@ -162,6 +164,8 @@ export type GameEvent =
   | { type: "itemSpawn"; itemId: number; kind: string; x: number; y: number } // un oggetto comincia a cadere (#17)
   | { type: "itemPick"; itemId: number; id: string } // id lo raccoglie
   | { type: "itemThrow"; itemId: number; id: string; x: number; y: number }
+  | { type: "powerUp"; itemId: number; id: string; kind: string; x: number; y: number } // id consuma l'oggetto e si potenzia (#231)
+  | { type: "powerEnd"; id: string; kind: string } // il potenziamento di id finisce
   | { type: "ledgeGrab"; id: string; x: number; y: number; invulnerable: boolean } // si aggrappa al bordo (#110)
   | { type: "ledgeGetup"; id: string; option: "climb" | "attack" | "jump" | "roll" | "drop" } // come lascia il bordo (#110)
   | { type: "shield"; id: string; attackerId: string; damage: number; shieldHp: number; x: number; y: number } // colpo parato (#109)

@@ -141,6 +141,8 @@ export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
     inputSeq: -1,
     inputTicks: 0,
     supreme: 0,
+    powerup: null,
+    powerupMs: 0,
     input: emptyInput(),
     prevInput: emptyInput(),
     buffer: emptyBuffer(),

@@ -444,6 +444,10 @@ func on_event(e: Dictionary) -> void:
 				_sparks.append({"x": e.x, "y": e.y, "age": 0.0, "size": 14.0, "color": Color(1, 0.9, 0.6)})
 			elif e.reason == "hit":
 				_sparks.append({"x": e.x, "y": e.y, "age": 0.0, "size": 18.0, "color": Color.WHITE}) # anche due proiettili che si annullano
+		"powerUp":
+			# Il fiore (#231): uno sbuffo verde dove lo si prende, più grande di una scintilla
+			_sparks.append({"x": e.x, "y": float(e.y) - float(game.fighter.height) * 0.5, "age": 0.0, "size": 50.0, "color": FLOWER_GREEN.lightened(0.3)})
+			_puff(e.x, e.y)
 		"counter":
 			# Contrattacco (E10): lampo azzurro grande dove para, così si capisce perché l'altro vola via
 			_sparks.append({"x": e.x, "y": e.y, "age": 0.0, "size": 46.0, "color": Color(0.55, 0.85, 1)})
@@ -746,9 +750,92 @@ func _draw_item(kind: String, base: Vector2, spin: float) -> void:
 		draw_arc(Vector2(0, -h * 0.9), h * 1.25, PI * 0.2, PI * 0.8, 12, _color(spec.color), h * 0.55)
 		draw_circle(Vector2(-w * 0.42, -h * 0.25), 2.5, Color("5a3a1a"))
 		draw_circle(Vector2(w * 0.42, -h * 0.25), 2.5, Color("5a3a1a"))
+	elif kind == "fiore":
+		# Un alone che respira, così a terra si nota anche da lontano
+		var glow := 0.5 + 0.5 * sin(Time.get_ticks_msec() / 260.0)
+		draw_circle(Vector2(0, -h * 0.05), h * (0.8 + 0.12 * glow), Color(FLOWER_GREEN.lightened(0.4), 0.25 + 0.15 * glow))
+		draw_leaf(self, Vector2(0, h / 2), h * 1.3, FLOWER_GREEN.lightened(0.1))
 	else:
 		draw_rect(Rect2(-w / 2, -h / 2, w, h), _color(spec.color))
 	draw_set_transform(Vector2.ZERO)
+
+
+# Il fiore (#231): verde salvia scuro, non quello acceso del giocatore 3
+const FLOWER_GREEN := Color("5f9e4a")
+
+
+# La foglia del fiore: sette foglioline dentellate a ventaglio sul gambo, dal punto stem verso l'alto.
+# Statica perché la usa anche l'HUD per il segno nella scheda
+static func draw_leaf(canvas: CanvasItem, stem: Vector2, size: float, col: Color) -> void:
+	var dark := col.darkened(0.35)
+	canvas.draw_line(stem, stem + Vector2(0, -size * 0.32), dark, maxf(1.5, size * 0.07))
+	var hub := stem + Vector2(0, -size * 0.3)
+	for leaflet in leaf_leaflets(size):
+		var pts: PackedVector2Array = leaflet
+		var moved := PackedVector2Array()
+		for q in pts:
+			moved.append(hub + q)
+		canvas.draw_colored_polygon(moved, col)
+		canvas.draw_polyline(moved, dark, maxf(1.0, size * 0.03), true)
+		canvas.draw_line(hub, hub + pts[pts.size() / 2], dark, maxf(1.0, size * 0.025))
+
+
+# Le foglioline in coordinate rispetto al centro: lunghe al centro, corte ai lati, con i dentini sui bordi
+static func leaf_leaflets(size: float) -> Array:
+	var out: Array = []
+	var angles := [-80.0, -52.0, -26.0, 0.0, 26.0, 52.0, 80.0]
+	var lengths := [0.34, 0.55, 0.68, 0.72, 0.68, 0.55, 0.34]
+	for i in angles.size():
+		var a := deg_to_rad(angles[i])
+		var dir := Vector2(sin(a), -cos(a))
+		var side := Vector2(-dir.y, dir.x)
+		var length: float = lengths[i] * size
+		var half := length * 0.14
+		var pts := PackedVector2Array([Vector2.ZERO])
+		# Un bordo dalla base alla punta, poi l'altro a ritroso: a zig-zag per i dentini
+		for k in range(1, 6):
+			var t := k / 6.0
+			var wide := half * sin(t * PI) * (1.25 if k % 2 == 0 else 1.0)
+			pts.append(dir * length * t + side * wide)
+		pts.append(dir * length)
+		for k in range(5, 0, -1):
+			var t := k / 6.0
+			var wide := half * sin(t * PI) * (1.25 if k % 2 == 0 else 1.0)
+			pts.append(dir * length * t - side * wide)
+		out.append(pts)
+	return out
+
+
+# Potenziati dal fiore (#231): quanto si vede l'alone. Pieno e lento che respira; negli ultimi secondi
+# lampeggia per avvisare che sta finendo
+static func aura_alpha(ms_left: float, now_ms: float, ending_ms: float) -> float:
+	if ms_left <= 0.0:
+		return 0.0
+	if ms_left < ending_ms and int(now_ms / 120.0) % 2 == 0:
+		return 0.15
+	return 0.45 + 0.12 * sin(now_ms / 420.0)
+
+
+# Alone verde dietro al lottatore potenziato
+func _draw_power_aura(p: Dictionary, now: float, height: float) -> void:
+	var a := aura_alpha(float(p.get("powerupMs", 0)), now, float(game.get("powerup", {}).get("endingMs", 1500)))
+	var center := Vector2(p.x, p.y - height * 0.55)
+	var glow := FLOWER_GREEN.lightened(0.35)
+	for k in 3:
+		draw_circle(center, height * (0.5 + 0.12 * k), Color(glow, a * (0.7 - 0.2 * k)))
+	draw_arc(center, height * 0.76, 0, TAU, 40, Color(glow.lightened(0.3), a * 1.4), 3.0)
+
+
+# Il fumo: sbuffi grigio-verdi che salgono lenti dalla testa e si allargano, sempre gli stessi per lo stesso istante
+func _draw_power_smoke(p: Dictionary, now: float, height: float) -> void:
+	if Access.calm:
+		return
+	var offset := float(hash(p.id) % 1000) / 1000.0
+	for k in 5:
+		var life := fmod(now / 1800.0 + k / 5.0 + offset, 1.0)
+		var drift := sin(now / 700.0 + k * 1.7 + offset * TAU) * 10.0 * life
+		var pos := Vector2(p.x + p.facing * 14.0 + drift, p.y - height * 0.85 - life * 80.0)
+		draw_circle(pos, 5.0 + life * 13.0, Color(0.86, 0.9, 0.84, 0.55 * (1.0 - life)))
 
 
 # Chi vola veloce (lanciato lontano) lascia dietro di sé delle sagome che sbiadiscono
@@ -1279,17 +1366,22 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 	# Chi è appena rientrato lampeggia finché è invulnerabile; chi ha perso la rete no, è solo trasparente (#107)
 	var away: bool = p.get("away", false)
 	# Chi fa la suprema propria (#102) è invulnerabile ma appeso alla liana: non lampeggia
-	var blink: bool = p.invulnerable and not away and not _supreme_view.holds(p.id, now)
+	# Col fiore (#231) si è intoccabili per 8 s: invece di lampeggiare si ha l'alone verde
+	var powered: bool = p.get("powerup") != null and not away
+	var blink: bool = p.invulnerable and not away and not powered and not _supreme_view.holds(p.id, now)
 	if p.respawning or (blink and int(now / 100) % 2 == 0):
 		return
 	var character: Dictionary = game.characters.get(p.characterId, game.characters[game.defaultCharacterId])
-	var charge := float(p.get("charge", 0.0))
-	if charge > 0.0:
-		_draw_charge(Vector2(p.x, p.y - fh / 2), charge, now)
 	var head := fh # altezza della testa sopra i piedi: lo sprite può essere più alto del corpo
 	if _textures.has(character.id):
 		# footY (E7 passo 4): i piedi possono stare più su del bordo basso, la testa resta sopra di loro
 		head = maxf(fh, float(character.sprite.get("footY", character.sprite.frameHeight)) * character.sprite.get("scale", 1.0))
+	if powered:
+		_draw_power_aura(p, now, fh)
+	var charge := float(p.get("charge", 0.0))
+	if charge > 0.0:
+		_draw_charge(Vector2(p.x, p.y - fh / 2), charge, now)
+	if _textures.has(character.id):
 		_draw_sprite(p, character, now)
 	else:
 		var color := Access.color(p.color)
@@ -1303,6 +1395,8 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 		# Occhio dalla parte in cui si guarda
 		draw_circle(Vector2(p.x + p.facing * fw * 0.22, p.y - fh * 0.78), 5.0, Color.WHITE)
 		draw_circle(Vector2(p.x + p.facing * fw * 0.27, p.y - fh * 0.78), 2.5, Color.BLACK)
+	if powered:
+		_draw_power_smoke(p, now, fh)
 
 	# Appeso al bordo (#110): il braccio arriva fino allo spigolo, sopra la testa.
 	# Chi ha l'animazione ledge nello spritesheet (#171) ha già la mano disegnata sullo spigolo.

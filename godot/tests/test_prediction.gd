@@ -216,3 +216,12 @@ func test_piattaforme_mobili_solo_vicino() -> void:
 	p.x = -100.0
 	p.y = 760.0
 	runner.check(not Predictor.predictable(p, stage), "vicino alla barca no")
+
+
+# Col fiore (#231) si va più piano e il port non lo sa: si torna allo stato del server finché dura
+func test_col_fiore_non_si_predice() -> void:
+	var Predictor := preload("res://scripts/predictor.gd")
+	var p := {"predict": {}, "x": 500.0, "y": 600.0, "attack": null, "ledge": null, "grabbedBy": null, "charge": 0, "powerup": null}
+	runner.check(Predictor.predictable(p, {}), "senza fiore si predice")
+	p.powerup = "fiore"
+	runner.check(not Predictor.predictable(p, {}), "col fiore no")

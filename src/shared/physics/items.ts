@@ -62,13 +62,35 @@ export function handleItemInput(world: ItemWorld, fighters: Fighter[], ctx: Phys
     const near = world.items.find(
       (i) => !i.heldBy && !i.thrown && Math.abs(i.x - f.x) < ITEM_RULES.pickRange && i.y > f.y - FIGHTER.height && i.y < f.y + 12,
     );
-    if (near) {
+    if (near && ITEMS[near.kind].consume) {
+      powerUp(world, near, f, ctx);
+      consumeAttackKeys(f);
+    } else if (near) {
       near.heldBy = f.id;
       near.onGround = false;
       ctx.events.push({ type: "itemPick", itemId: near.id, id: f.id });
       consumeAttackKeys(f);
     }
   }
+}
+
+// Un oggetto da consumare (#231): sparisce subito e dà il potenziamento; un altro fiore ricarica il tempo
+function powerUp(world: ItemWorld, item: Item, f: Fighter, ctx: PhysicsContext) {
+  const use = ITEMS[item.kind].consume!;
+  world.items = world.items.filter((i) => i !== item);
+  f.powerup = use.powerup;
+  f.powerupMs = use.ms;
+  f.invulnerable = true;
+  ctx.events.push({ type: "powerUp", itemId: item.id, id: f.id, kind: use.powerup, x: Math.round(f.x), y: Math.round(f.y) });
+}
+
+// Il tempo del potenziamento scorre come gli altri timer del lottatore (fermo nell'hitstop)
+export function tickPowerup(f: Fighter, dtMs: number, ctx: PhysicsContext): void {
+  if (!f.powerup) return;
+  f.powerupMs = Math.max(0, f.powerupMs - dtMs);
+  if (f.powerupMs > 0) return;
+  ctx.events.push({ type: "powerEnd", id: f.id, kind: f.powerup });
+  f.powerup = null;
 }
 
 // Avanti con un arco, tenendo su verso l'alto, tenendo giù lo si posa e basta
@@ -137,14 +159,25 @@ export function stepItems(world: ItemWorld, fighters: Fighter[], dtMs: number, c
 function spawn(world: ItemWorld, ctx: PhysicsContext) {
   const surfaces = [...ctx.stage.solids, ...ctx.stage.platforms].filter((s) => s.width >= 80);
   if (surfaces.length === 0) return;
-  const kinds = Object.keys(ITEMS).sort();
   const s = pickSurface(surfaces, ctx.stage.itemSpots ?? [], world.random());
-  const kind = kinds[Math.floor(world.random() * kinds.length)];
+  const kind = pickKind(world.random());
   const x = Math.round(s.x + 30 + world.random() * (s.width - 60));
   const y = s.y - ITEM_RULES.dropHeight;
   const item: Item = { id: world.nextId++, kind, x, y, vx: 0, vy: 0, heldBy: null, thrown: false, onGround: false, riding: -1, thrownBy: null, lifeMs: ITEM_RULES.lifeMs };
   world.items.push(item);
   ctx.events.push({ type: "itemSpawn", itemId: item.id, kind, x, y });
+}
+
+// Quale oggetto cade: a caso pesando ITEMS[k].weight (#231), con un solo numero casuale
+export function pickKind(r: number): string {
+  const kinds = Object.keys(ITEMS).sort();
+  const weight = (k: string) => ITEMS[k].weight ?? 1;
+  let left = r * kinds.reduce((sum, k) => sum + weight(k), 0);
+  for (const k of kinds) {
+    if (left < weight(k)) return k;
+    left -= weight(k);
+  }
+  return kinds[kinds.length - 1];
 }
 
 // Dove cade il prossimo oggetto: un pezzo a caso, o con le zone dell'arena (#253) a caso pesando pezzi (1) e zone (il loro peso).
