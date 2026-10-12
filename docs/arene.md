@@ -154,6 +154,24 @@ Una trappola con `travel` passa lungo un percorso a ogni giro. Prima c'è la **c
 
 Il tipo `"ciclista"` si disegna come il signore arrabbiato in bici, con la catena che gira.
 
+#### Un'animazione disegnata per una trappola (`art.hazardSprites`)
+
+Al posto del disegno fatto col codice, una trappola può avere un'animazione: un foglio di fotogrammi uno accanto all'altro, **rivolti a destra** (il gioco li specchia quando la trappola va a sinistra), nella cartella dell'arena. Solo grafica: la fisica usa sempre il rettangolo della trappola.
+
+| Campo | Cosa fa |
+|---|---|
+| `hazard` | indice della trappola in `hazards` |
+| `file`, `frames`, `fps` | il foglio, quanti fotogrammi e quanti al secondo (sul tempo dell'arena) |
+| `scale` | pixel di mondo per pixel dell'immagine (1 se manca) |
+| `footX`, `footY` | il punto del fotogramma (in pixel) che va sul centro del lato basso del rettangolo |
+| `shout` | facoltativo, `{ text, x, y }`: un fumetto a punte che esce da quel punto del fotogramma (la bocca) mentre la trappola passa |
+
+```ts
+hazardSprites: [{ hazard: 1, file: "ciclista.png", frames: 8, fps: 16, scale: 0.58, footX: 150, footY: 312, shout: { text: "CANCAROOOO!", x: 200, y: 110 } }]
+```
+
+Cancaro Man di Padova lo disegna `tools/arene/ciclista.py`: un disegno vero lo sostituisce tenendo le stesse misure (8 fotogrammi da 300×320).
+
 ```ts
 { kind: "ciclista", x: 0, y: 0, width: 80, height: 95, damage: 10, knockback: 600, knockbackGrowth: 5, angleDeg: 35,
   travel: { path: [{ x: -160, y: 425 }, { x: 2080, y: 425 }], periodMs: 20000, warnMs: 1000, crossMs: 2800, alternate: true } }

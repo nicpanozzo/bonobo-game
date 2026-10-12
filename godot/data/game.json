@@ -1492,6 +1492,22 @@
             "balcone"
           ]
         },
+        "hazardSprites": [
+          {
+            "hazard": 1,
+            "file": "ciclista.png",
+            "frames": 8,
+            "fps": 16,
+            "scale": 0.58,
+            "footX": 150,
+            "footY": 312,
+            "shout": {
+              "text": "CANCAROOOO!",
+              "x": 200,
+              "y": 110
+            }
+          }
+        ],
         "props": [
           {
             "file": "palazzo.png",

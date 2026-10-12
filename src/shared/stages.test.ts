@@ -71,6 +71,11 @@ describe("arene", () => {
       assert.ok((art.pieces?.solids?.length ?? 0) <= stage.solids.length, `${stage.id}: più eccezioni che blocchi`);
       assert.ok((art.pieces?.platforms?.length ?? 0) <= stage.platforms.length, `${stage.id}: più eccezioni che piattaforme`);
       for (const p of art.props ?? []) assert.ok(p.opacity === undefined || (p.opacity >= 0 && p.opacity <= 1), `${stage.id}: opacità di ${p.file}`);
+      // Animazioni delle trappole (#270): una trappola che esiste, fotogrammi e velocità sensati
+      for (const h of art.hazardSprites ?? []) {
+        assert.ok(Number.isInteger(h.hazard) && h.hazard >= 0 && h.hazard < (stage.hazards?.length ?? 0), `${stage.id}: ${h.file} per una trappola che non c'è`);
+        assert.ok(Number.isInteger(h.frames) && h.frames >= 1 && h.fps > 0, `${stage.id}: fotogrammi e fps di ${h.file}`);
+      }
       // Sfondo vivo (#260): parallassi tra 0 e 1, tempi positivi
       const life = art.life;
       for (const e of [life?.birds, life?.walkers, life?.vehicles, ...(life?.daycycle?.lamps ?? [])]) {
