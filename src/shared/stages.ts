@@ -29,6 +29,7 @@ export interface MovingPlatform {
   loop?: boolean; // true: dall'ultimo punto torna dritto al primo; altrimenti fa avanti e indietro
   pauseMs?: number; // sosta a ogni punto, come un ascensore al piano
   offsetMs?: number; // sfasamento, per far partire due piattaforme in momenti diversi
+  kind?: string; // solo per il disegno: "barca" (#264); altrimenti la piattaforma con le strisce gialle e nere
 }
 
 // Trappola: un rettangolo che, quando è acceso, toglie percentuale e lancia via chi lo tocca
@@ -115,6 +116,9 @@ export interface StageLife {
   vehicles?: { y: number; parallax: number; everyMs: number; kind: "tram" | "bus" }; // un veicolo che passa ogni tanto
   // Giorno e notte: un giro in cycleMs dall'inizio della partita; startAt da 0 a 1 (0 mezzogiorno, 0,25 tramonto,
   // 0,5 mezzanotte, 0,75 alba). Di notte le stelle; i lampioni si accendono al tramonto e si spengono all'alba
+  // Acqua intorno all'arena (#264): da y in giù, davanti a chi cade (splash). Con flood (indice di una trappola con
+  // l'acqua alta) sale fino a highY insieme a lei
+  outerWater?: { y: number; highY?: number; flood?: number };
   daycycle?: {
     cycleMs: number;
     startAt?: number;
@@ -351,9 +355,10 @@ export const STAGES: Record<string, StageSpec> = {
     width: 1920,
     camera: { minZoom: 0.6 },
     solids: [
-      { x: 100, y: 520, width: 620, height: 200 }, // piazza sinistra
-      { x: 1200, y: 520, width: 620, height: 200 }, // piazza destra
-      { x: 720, y: 690, width: 480, height: 30 }, // fondo del canale
+      // Le piazze sono rive di pietra che scendono fino al canale esterno (#264): l'arena non è sospesa nel vuoto
+      { x: 100, y: 520, width: 620, height: 480 }, // piazza sinistra
+      { x: 1200, y: 520, width: 620, height: 480 }, // piazza destra
+      { x: 720, y: 690, width: 480, height: 310 }, // fondo del canale
     ],
     platforms: [
       // Il ponte va per primo: camminando dalla piazza si resta sul ponte, tenendo giù si scende sulla scala (#246)
@@ -380,6 +385,12 @@ export const STAGES: Record<string, StageSpec> = {
         travel: { path: [{ x: -160, y: 425 }, { x: 680, y: 425 }, { x: 920, y: 400 }, { x: 1160, y: 425 }, { x: 2080, y: 425 }],
           periodMs: 20000, warnMs: 1000, crossMs: 2800, alternate: true, offsetMs: 7000 } },
     ],
+    // Le barche del canale esterno (#264): arrivano quando l'acqua è bassa e si fermano accanto alle rive, così chi
+    // è caduto ci può atterrare e risalire con il doppio salto; quando piove aspettano fuori scena
+    movers: [
+      { kind: "barca", width: 160, path: [{ x: -560, y: 780 }, { x: -150, y: 780 }], periodMs: 40000, pauseMs: 14000, offsetMs: 16000 },
+      { kind: "barca", width: 160, path: [{ x: 2380, y: 780 }, { x: 1910, y: 780 }], periodMs: 40000, pauseMs: 14000, offsetMs: 16000 },
+    ],
     // Il getto della fontana in fondo al canale (#253): una scorciatoia verso le lastre alte
     jets: [{ x: 930, y: 690, width: 60, height: 300, speed: 1300, periodMs: 9000, warnMs: 1200, activeMs: 1500, offsetMs: 3000 }],
     // Gli oggetti cadono spesso nel canale e sulle lastre delle statue: rischio e premio, e un motivo per salire
@@ -396,7 +407,7 @@ export const STAGES: Record<string, StageSpec> = {
     blastZone: { left: -300, right: 2220, top: -420, bottom: 1000 },
     spawns: [300, 450, 200, 600, 380, 520, 250, 660].flatMap((x) => [{ x, y: 520 }, { x: 1920 - x, y: 520 }]).slice(0, 8),
     respawn: { x: 960, y: 100 },
-    colors: { sky: 0x2b3446, solid: 0x6f6a60, solidEdge: 0xe8e2d2, platform: 0xd9d4c7 },
+    colors: { sky: 0x7aa0c4, solid: 0x6f6a60, solidEdge: 0xe8e2d2, platform: 0xd9d4c7 },
     // Rilassata, da pomeriggio in piazza. TODO community: un pezzo del canale da rifare per Padova?
     music: { bpm: 116, chords: ["F", "Am", "Bb", "C"], lead: "triangle" },
     // Segnaposto disegnati col codice da tools/arene/padova.py: si sostituiscono con i disegni veri, stessi nomi
@@ -409,6 +420,7 @@ export const STAGES: Record<string, StageSpec> = {
       preview: "anteprima.png",
       skins: {
         pietra: { file: "pietra.png", edge: "bordo.png" },
+        riva: { file: "riva.png", edge: "bordo.png" }, // il muro della riva, a grandi blocchi
         fondo: { file: "scala.png" },
         ponte: {
           file: "ponte.png",
@@ -425,7 +437,7 @@ export const STAGES: Record<string, StageSpec> = {
       solidSkin: "pietra",
       platformSkin: "lastra",
       pieces: {
-        solids: ["pietra", "pietra", "fondo"],
+        solids: ["riva", "riva", "fondo"],
         platforms: ["ponte", "scala", "scala", "lastra", "lastra", "lastra", "lastra", "lastra", "lastra", "balcone", "balcone"],
       },
       props: [
@@ -442,6 +454,7 @@ export const STAGES: Record<string, StageSpec> = {
       // Sfondo vivo (#260): stormi, piccioni sulle teste delle statue, passanti sul vialetto del prato con l'ombrello
       // quando piove, il tram davanti ai portici e il giorno che passa: tramonto, notte con le stelle e i lampioni, alba
       life: {
+        outerWater: { y: 800, highY: 760, flood: 0 }, // il canale esterno, che sale con la pioggia come quello interno
         birds: { y: 40, parallax: 0.2, everyMs: 14000 },
         // Sulle punte delle lastre delle statue e sul cornicione del palazzo
         pigeons: [{ x: 485, y: 330 }, { x: 1435, y: 330 }, { x: 235, y: 380 }, { x: 1685, y: 380 }, { x: 790, y: 100 }, { x: 1130, y: 100 }],

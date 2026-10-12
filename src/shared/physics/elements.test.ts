@@ -271,3 +271,28 @@ describe("canale di Padova (#253)", () => {
     assert.equal(up.f.percent, 0);
   });
 });
+
+describe("Padova, canale esterno (#264)", () => {
+  it("la barca accanto alla riva sinistra raccoglie chi cade quando l'acqua è bassa, e da lì si risale", () => {
+    const stage = getStage("padova");
+    const { ctx, f } = setup(stage, { x: -70, y: 700 });
+    ctx.timeMs = 6000; // l'acqua è bassa e la barca è ferma accanto alla riva
+    f.onGround = false;
+    run(f, ctx, 30);
+    assert.equal(f.riding, 0, "è sulla barca");
+    assert.equal(f.y, 780);
+    assert.equal(hazardRect(stage.hazards![0], 6000).y, 660, "intanto l'acqua alta è giù");
+    // Dalla barca alla piazza ci sono 260 px: meno del doppio salto
+    assert.ok(780 - 520 < 293, "la riva si raggiunge con il doppio salto");
+  });
+
+  it("quando l'acqua sale le barche sono fuori scena", () => {
+    const stage = getStage("padova");
+    for (const t of [30000, 34000]) {
+      for (const m of stage.movers!) {
+        const x = moverPosition(m, t).x;
+        assert.ok(x < stage.blastZone.left || x > stage.blastZone.right, `a ${t} ms la barca è fuori (x = ${x})`);
+      }
+    }
+  });
+});

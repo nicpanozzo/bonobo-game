@@ -58,6 +58,24 @@ def paving():
     save(img, "pietra.png")
 
 
+def quay_wall():
+    """Il muro della riva sul canale (#264): grandi blocchi di pietra d'Istria sfalsati, umidi verso il basso."""
+    w, h = 120, 60
+    img = Image.new("RGBA", (w, h), (126, 120, 108, 255))
+    d = ImageDraw.Draw(img)
+    rng = random.Random(9)
+    for r in range(2):
+        y = r * 30
+        off = 0 if r % 2 == 0 else 30
+        for x in range(-60 + off, w, 60):
+            tone = rng.choice([(132, 126, 114, 255), (122, 116, 104, 255), (138, 131, 118, 255)])
+            d.rectangle([x + 1, y + 1, x + 58, y + 28], fill=tone)
+            d.rectangle([x + 1, y + 22, x + 58, y + 28], fill=(108, 102, 92, 255))  # ombra piatta del blocco
+            d.line([x, y, x, y + 30], fill=(90, 85, 76, 255), width=2)
+        d.line([0, y, w, y], fill=(90, 85, 76, 255), width=2)
+    save(img, "riva.png")
+
+
 def edge(name, w, h, top=EDGE):
     img = Image.new("RGBA", (w, h), top)
     d = ImageDraw.Draw(img)
@@ -412,8 +430,9 @@ def dome(d, cx, base, r, h, fill, shade, ink, ribs=6, lantern=True):
 def basilica_santo(d, cx, base, k=1.0):
     """La Basilica di Sant'Antonio vista da Prato della Valle: facciata a capanna con la loggia e il rosone,
     otto cupole (la conica al centro), i due campanili a minareto e le torrette. Sagoma azzurrata e lontana."""
-    F, S, I = (88, 98, 122, 255), (74, 82, 104, 255), (52, 58, 78, 255)
-    L = (104, 114, 138, 255)
+    # di giorno: mattone spento della chiesa, piombo grigio delle cupole, un po' velati dalla lontananza
+    F, S, I = (164, 128, 112, 255), (146, 112, 98, 255), (92, 76, 72, 255)
+    L = (178, 144, 128, 255)
     # corpo della chiesa, dietro le cupole
     d.rectangle([cx - 330 * k, base - 150 * k, cx + 330 * k, base], fill=F, outline=I, width=2)
     for i in range(14):  # archetti pensili e finestre del fianco
@@ -432,16 +451,17 @@ def basilica_santo(d, cx, base, k=1.0):
         d.polygon([(tx - 11 * k, base - 480 * k), (tx + 11 * k, base - 480 * k), (tx, base - 540 * k)], fill=S, outline=I)  # punta conica
         d.line([tx, base - 540 * k, tx, base - 556 * k], fill=I, width=2)
     # le cupole: due sulla navata, la conica al centro, poi quelle del transetto e dell'abside
-    dome(d, cx - 160 * k, base - 150 * k, 62 * k, 96 * k, F, S, I)
-    dome(d, cx - 40 * k, base - 150 * k, 66 * k, 104 * k, F, S, I)
-    dome(d, cx + 230 * k, base - 150 * k, 58 * k, 90 * k, F, S, I)
-    dome(d, cx + 90 * k, base - 170 * k, 52 * k, 82 * k, L, F, I)
-    dome(d, cx + 330 * k, base - 140 * k, 40 * k, 60 * k, F, S, I)
+    PB, PS, PL = (150, 158, 166, 255), (128, 136, 146, 255), (166, 172, 180, 255)  # piombo delle cupole
+    dome(d, cx - 160 * k, base - 150 * k, 62 * k, 96 * k, PB, PS, I)
+    dome(d, cx - 40 * k, base - 150 * k, 66 * k, 104 * k, PB, PS, I)
+    dome(d, cx + 230 * k, base - 150 * k, 58 * k, 90 * k, PB, PS, I)
+    dome(d, cx + 90 * k, base - 170 * k, 52 * k, 82 * k, PL, PB, I)
+    dome(d, cx + 330 * k, base - 140 * k, 40 * k, 60 * k, PB, PS, I)
     # il cono: la cupola conica sopra l'altare
     cone_x, cone_b = cx + 60 * k, base - 210 * k
     d.rectangle([cone_x - 52 * k, cone_b, cone_x + 52 * k, base - 150 * k], fill=F, outline=I, width=2)
-    outlined(d, [(cone_x - 50 * k, cone_b), (cone_x + 50 * k, cone_b), (cone_x, cone_b - 190 * k)], F, I)
-    d.polygon([(cone_x, cone_b), (cone_x + 50 * k, cone_b), (cone_x, cone_b - 190 * k)], fill=S)
+    outlined(d, [(cone_x - 50 * k, cone_b), (cone_x + 50 * k, cone_b), (cone_x, cone_b - 190 * k)], PB, I)
+    d.polygon([(cone_x, cone_b), (cone_x + 50 * k, cone_b), (cone_x, cone_b - 190 * k)], fill=PS)
     for i in range(1, 5):
         d.line([cone_x - 50 * k + i * 20 * k, cone_b, cone_x, cone_b - 190 * k], fill=I, width=1)
     d.ellipse([cone_x - 6 * k, cone_b - 206 * k, cone_x + 6 * k, cone_b - 190 * k], fill=F, outline=I, width=2)
@@ -469,7 +489,7 @@ def basilica_santo(d, cx, base, k=1.0):
 
 def santa_giustina(d, cx, base):
     """Santa Giustina, più lontana: facciata grezza, le otto cupole basse con le statuine e il campanile."""
-    F, S, I = (80, 88, 110, 255), (68, 76, 96, 255), (54, 60, 80, 255)
+    F, S, I = (170, 150, 140, 255), (154, 136, 128, 255), (110, 98, 94, 255)  # più lontana: più chiara e velata
     d.rectangle([cx - 230, base - 110, cx + 230, base], fill=F, outline=I, width=2)
     for i, (dx, r) in enumerate([(-170, 34), (-90, 44), (0, 56), (95, 44), (175, 34)]):
         dome(d, cx + dx, base - 110, r, r * 1.2, F, S, I, ribs=4)
@@ -487,14 +507,16 @@ def cloud(d, x, y, w, col, shade):
 
 
 def sky(d, W, H):
-    bands = [(38, 46, 64), (43, 52, 70), (49, 58, 77), (56, 64, 83), (64, 70, 88), (73, 76, 92)]
-    for i, c in enumerate(bands):  # cielo a fasce, più chiaro verso l'orizzonte
+    # cielo di giorno, a fasce piatte: azzurro spento in alto, più chiaro e caldo verso l'orizzonte (la notte la fa il velo)
+    bands = [(122, 160, 196), (136, 172, 204), (152, 184, 210), (168, 194, 214), (184, 202, 214), (198, 206, 210)]
+    d.rectangle([0, 0, W, H], fill=bands[0] + (255,))
+    for i, c in enumerate(bands):
         y = to_px(0, -300 + i * 140)[1]
         d.rectangle([0, y, W, H], fill=c + (255,))
     rng = random.Random(5)
-    for _ in range(9):  # nuvole piatte
+    for _ in range(9):  # nuvole bianche con la pancia in ombra
         x, y = rng.uniform(0, W), to_px(0, rng.uniform(-260, 120))[1]
-        cloud(d, x, y, rng.uniform(160, 320), (70, 78, 98, 255), (62, 70, 90, 255))
+        cloud(d, x, y, rng.uniform(160, 320), (236, 238, 240, 255), (206, 212, 220, 255))
     base = to_px(0, 470)[1]
     santa_giustina(d, to_px(300, 0)[0], base + 10)
     basilica_santo(d, to_px(1500, 0)[0], base, 0.95)
@@ -623,7 +645,16 @@ def lawn(d, W, H):
     base = int(to_px(0, 560)[1])
     rng = random.Random(11)
     d.rectangle([0, base - 50, W, base + 70], fill=(56, 70, 52, 255))  # il prato dell'Isola Memmia, spento
-    d.rectangle([0, base + 70, W, H], fill=(34, 40, 52, 255))  # sotto il palco: il buio, non il prato
+    # oltre il prato: la riva lontana del canale esterno e la sua acqua (#264), non il vuoto
+    d.rectangle([0, base + 70, W, base + 150], fill=(118, 112, 100, 255))
+    for bx in range(0, W, 60):
+        d.line([bx, base + 70, bx, base + 150], fill=(98, 93, 84, 255), width=2)
+    d.line([0, base + 110, W, base + 110], fill=(98, 93, 84, 255), width=2)
+    d.rectangle([0, base + 70, W, base + 76], fill=(170, 164, 150, 255))
+    d.rectangle([0, base + 150, W, H], fill=(70, 98, 104, 255))
+    for wy in range(base + 170, H, 40):  # riflessi
+        for wx in range((wy * 7) % 90, W, 180):
+            d.line([wx, wy, wx + 50, wy], fill=(96, 126, 130, 255), width=2)
     for x in range(0, W, 7):  # erba a ciuffi sul bordo
         d.line([x, base - 50, x + 2, base - 56 - (x * 7 % 5)], fill=(64, 80, 58, 255), width=1)
     for i, tx in enumerate(range(30, W, 230)):  # platani
@@ -752,6 +783,7 @@ def balcony_floor():
 
 if __name__ == "__main__":
     paving()
+    quay_wall()
     edge("bordo.png", 96, 8)
     deck()
     stairs()

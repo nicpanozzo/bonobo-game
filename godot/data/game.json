@@ -1108,19 +1108,19 @@
           "x": 100,
           "y": 520,
           "width": 620,
-          "height": 200
+          "height": 480
         },
         {
           "x": 1200,
           "y": 520,
           "width": 620,
-          "height": 200
+          "height": 480
         },
         {
           "x": 720,
           "y": 690,
           "width": 480,
-          "height": 30
+          "height": 310
         }
       ],
       "platforms": [
@@ -1245,6 +1245,42 @@
           }
         }
       ],
+      "movers": [
+        {
+          "kind": "barca",
+          "width": 160,
+          "path": [
+            {
+              "x": -560,
+              "y": 780
+            },
+            {
+              "x": -150,
+              "y": 780
+            }
+          ],
+          "periodMs": 40000,
+          "pauseMs": 14000,
+          "offsetMs": 16000
+        },
+        {
+          "kind": "barca",
+          "width": 160,
+          "path": [
+            {
+              "x": 2380,
+              "y": 780
+            },
+            {
+              "x": 1910,
+              "y": 780
+            }
+          ],
+          "periodMs": 40000,
+          "pauseMs": 14000,
+          "offsetMs": 16000
+        }
+      ],
       "jets": [
         {
           "x": 930,
@@ -1353,7 +1389,7 @@
         "y": 100
       },
       "colors": {
-        "sky": 2831430,
+        "sky": 8036548,
         "solid": 7301728,
         "solidEdge": 15262418,
         "platform": 14275783
@@ -1387,6 +1423,10 @@
         "skins": {
           "pietra": {
             "file": "pietra.png",
+            "edge": "bordo.png"
+          },
+          "riva": {
+            "file": "riva.png",
             "edge": "bordo.png"
           },
           "fondo": {
@@ -1434,8 +1474,8 @@
         "platformSkin": "lastra",
         "pieces": {
           "solids": [
-            "pietra",
-            "pietra",
+            "riva",
+            "riva",
             "fondo"
           ],
           "platforms": [
@@ -1505,6 +1545,11 @@
           }
         ],
         "life": {
+          "outerWater": {
+            "y": 800,
+            "highY": 760,
+            "flood": 0
+          },
           "birds": {
             "y": 40,
             "parallax": 0.2,
