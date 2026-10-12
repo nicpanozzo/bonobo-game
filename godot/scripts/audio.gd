@@ -179,6 +179,11 @@ func on_event(e: Dictionary) -> void:
 			_play("point", {"volume": 0.4, "pitch": 1.6})
 		"itemThrow":
 			_play("light", {"volume": 0.7, "x": e.x, "pitch": 0.8})
+		# Il fiore (#231): un respiro lungo che entra, e uno che esce quando finisce
+		"powerUp":
+			_play("inhale", {"x": e.x})
+		"powerEnd":
+			_play("exhale", {"volume": 0.6})
 		"matchStart":
 			_play("start")
 			_queue.clear()
@@ -689,6 +694,14 @@ func _build_sounds() -> void:
 	_sounds.splash = make.call(0.9, func(s):
 		s.noise(0, "lowpass", 3000, 600, 0.8, 0.7)
 		s.noise(0, "highpass", 5000, 2500, 0.3, 0.25))
+	# Il fiore (#231): un respiro che entra lento e sale, poi uno che esce e scende, con un accordo morbido sotto
+	_sounds.inhale = make.call(1.3, func(s):
+		s.noise(0, "bandpass", 500, 1800, 1.1, 0.45)
+		s.tone(0.2, "sine", 220, 330, 1.0, 0.1)
+		s.tone(0.35, "sine", 277, 415, 0.9, 0.08))
+	_sounds.exhale = make.call(1.4, func(s):
+		s.noise(0, "bandpass", 1600, 350, 1.3, 0.4)
+		s.tone(0, "sine", 330, 196, 1.1, 0.08))
 	# Carica piena: un "ding" doppio
 	_sounds.chargeFull = make.call(0.3, func(s):
 		s.tone(0, "triangle", 1320, 1320, 0.12, 0.25)

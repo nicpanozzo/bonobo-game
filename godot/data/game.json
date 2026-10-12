@@ -604,7 +604,22 @@
       "knockback": 300,
       "width": 24,
       "height": 16,
-      "color": 15844367
+      "color": 15844367,
+      "weight": 3
+    },
+    "fiore": {
+      "id": "fiore",
+      "name": "Fiore",
+      "damage": 0,
+      "knockback": 0,
+      "width": 26,
+      "height": 26,
+      "color": 5025616,
+      "weight": 1,
+      "consume": {
+        "powerup": "fiore",
+        "ms": 8000
+      }
     }
   },
   "itemRules": {
@@ -622,6 +637,12 @@
     "angleDeg": 38,
     "holdOffsetX": 22,
     "holdOffsetY": 52
+  },
+  "powerup": {
+    "flowerMs": 8000,
+    "damageMult": 1.3,
+    "speedMult": 0.75,
+    "endingMs": 1500
   },
   "colors": [
     15158332,

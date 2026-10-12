@@ -216,3 +216,16 @@ func test_verso_della_barca() -> void:
 	runner.check(WorldView.mover_facing(boat, 35000, 1920) == -1, "se ne va verso sinistra")
 	var right := {"width": 160, "path": [{"x": 2380, "y": 780}, {"x": 1910, "y": 780}], "periodMs": 40000, "pauseMs": 14000}
 	runner.check(WorldView.mover_facing(right, 20000, 1920) == -1, "quella di destra, ferma, guarda a sinistra")
+
+
+# Il fiore (#231): la foglia ha sette foglioline chiuse, l'alone respira e lampeggia solo alla fine
+func test_foglia_e_alone_del_fiore() -> void:
+	var leaflets: Array = WorldView.leaf_leaflets(30.0)
+	runner.check(leaflets.size() == 7, "sette foglioline: %d" % leaflets.size())
+	var middle: PackedVector2Array = leaflets[3]
+	runner.check(middle[middle.size() / 2].y < -20.0, "quella centrale punta in alto: %s" % middle[middle.size() / 2])
+	runner.check(Geometry2D.triangulate_polygon(middle).size() > 0, "si può riempire")
+	runner.check(WorldView.aura_alpha(0.0, 1000.0, 1500.0) == 0.0, "finito, niente alone")
+	var full := [0.0, 50.0, 120.0, 240.0].map(func(now: float) -> float: return WorldView.aura_alpha(6000.0, now, 1500.0))
+	runner.check(full.all(func(a: float) -> bool: return a > 0.25), "a metà effetto sempre visibile: %s" % [full])
+	runner.check(WorldView.aura_alpha(1000.0, 0.0, 1500.0) < 0.2 and WorldView.aura_alpha(1000.0, 130.0, 1500.0) > 0.25, "alla fine lampeggia")

@@ -144,6 +144,8 @@ export function loseStock(f: Fighter, ctx: PhysicsContext): void {
   f.hitstun = false;
   f.lastHitById = null;
   if (!SUPREME.keepOnKo) f.supreme = 0; // #101
+  f.powerup = null; // il fiore finisce con la vita (#231)
+  f.powerupMs = 0;
   if (f.stocks <= 0) {
     f.eliminated = true;
     return;

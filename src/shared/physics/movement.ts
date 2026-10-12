@@ -1,7 +1,7 @@
 // Corsa, controllo in aria, salti, caduta veloce e gravità.
 
 import { characterStats } from "../characters";
-import { DODGE, FIGHTER, FLAG, HITSTUN_AIR_DRAG, RECOVERY } from "../constants";
+import { DODGE, FIGHTER, FLAG, HITSTUN_AIR_DRAG, POWERUP, RECOVERY } from "../constants";
 import { startAttack } from "./attacks";
 import { endDash, stepDash } from "./dash";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
@@ -51,7 +51,7 @@ export function applyControls(f: Fighter, dt: number, ctx: PhysicsContext): void
     return;
   }
   const stats = characterStats(f.characterId);
-  const speed = f.carrier ? FLAG.carrierSpeed : 1; // la bandiera pesa
+  const speed = (f.carrier ? FLAG.carrierSpeed : 1) * (f.powerup ? POWERUP.speedMult : 1); // la bandiera pesa, il fiore rilassa (#231)
   // Durante un attacco da terra si resta fermi, in aria si mantiene lo slancio
   const dashSpeed = stepDash(f, dir, dt * 1000, ctx); // scatto e corsa (#199)
   if (f.onGround && dashSpeed !== null) {

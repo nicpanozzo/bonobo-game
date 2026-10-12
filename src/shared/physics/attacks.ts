@@ -1,7 +1,7 @@
 // Attacchi: inizio, finestra attiva, hitbox e cosa succede a chi viene colpito.
 
 import { characterStats, getCharacter, SPECIAL_KINDS, specialAttackSpec, specialsFor, supremeAttackSpec, type SpecialSlot } from "../characters";
-import { ATTACKS, FIGHTER, HITSTOP, HITSTUN_PER_KNOCKBACK, type AttackSpec } from "../constants";
+import { ATTACKS, FIGHTER, HITSTOP, HITSTUN_PER_KNOCKBACK, POWERUP, type AttackSpec } from "../constants";
 import type { AttackKind, SpecialKind } from "../types";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
 import { clearStun, hitShield } from "./shield";
@@ -148,7 +148,9 @@ export function resolveHits(fighters: Fighter[], ctx: PhysicsContext): void {
 // Il colpo vero: percentuale e volo nella direzione in cui guarda chi colpisce. Lo usano anche i lanci della presa
 // damage cambia il danno della mossa (la risposta del contrattacco dipende dal colpo parato)
 export function launch(target: Fighter, attacker: Fighter, kind: AttackKind, x: number, y: number, ctx: PhysicsContext, damage?: number): void {
-  const spec = damage === undefined ? attackSpecFor(attacker, kind) : { ...attackSpecFor(attacker, kind), damage };
+  const base = damage === undefined ? attackSpecFor(attacker, kind) : { ...attackSpecFor(attacker, kind), damage };
+  // Potenziati dal fiore (#231) i colpi fanno più danno; il volo cresce già con la percentuale
+  const spec = attacker.powerup ? { ...base, damage: Math.round(base.damage * POWERUP.damageMult * 10) / 10 } : base;
   // Stile Smash/Brawlhalla: il danno non toglie vita, fa volare più lontano
   target.percent = Math.min(999, target.percent + spec.damage);
   chargeFromHit(attacker, target, spec.damage); // #101

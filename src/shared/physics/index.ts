@@ -17,6 +17,7 @@ import { resolveHits, tryStartAttack, updateAttack } from "./attacks";
 import { applyJets, carryRider, resolveHazards } from "./elements";
 import { tickBuffer, type Fighter, type PhysicsContext } from "./fighter";
 import { grabbing, inGrab, resolveGrabs, stepGrabs } from "./grab";
+import { tickPowerup } from "./items";
 import { holdLedge, tryGrabLedge } from "./ledge";
 import { applyControls, applyGravity, tickCoyote } from "./movement";
 import { holdShield } from "./shield";
@@ -76,7 +77,8 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
   tickSupreme(f, dtMs); // #101: anche il tempo carica la barra
   tickBuffer(f, dtMs);
   f.hitstun = f.hitstunTimer > 0;
-  f.invulnerable = f.invulnerableTimer > 0;
+  tickPowerup(f, dtMs, ctx); // #231
+  f.invulnerable = f.invulnerableTimer > 0 || f.powerupMs > 0;
   if (f.hitstun) f.ledgeGrabs = 0; // un colpo ridà le prese del bordo (#110)
 
   // Nella presa (#109) si sta fermi: la posizione di chi è tenuto la decide stepGrabs

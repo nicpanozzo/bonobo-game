@@ -2,12 +2,13 @@
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { FIGHTER, ITEM_RULES, TICK_RATE } from "../constants";
+import { FIGHTER, ITEM_RULES, POWERUP, TICK_RATE } from "../constants";
 import { ITEMS } from "../items";
 import { getStage } from "../stages";
 import type { GameEvent, InputState } from "../types";
 import { createFighter, emptyInput, stepWorld, type Fighter, type PhysicsContext } from "./index";
-import { createItemWorld, handleItemInput, stepItems, type Item, type ItemWorld } from "./items";
+import { canBeHit, launch } from "./attacks";
+import { createItemWorld, handleItemInput, pickKind, stepItems, type Item, type ItemWorld } from "./items";
 
 const DT = 1000 / TICK_RATE;
 const stage = getStage(undefined);
@@ -147,5 +148,88 @@ describe("zone degli oggetti (#253)", () => {
       if (spawn.x >= 300 && spawn.x <= 500) inSpot++;
     }
     assert.ok(inSpot >= total * 0.7, `nella zona ${inSpot} volte su ${total}`);
+  });
+});
+
+describe("il fiore, oggetto da consumare (#231)", () => {
+  const fiore = (x: number, y: number): Item => ({ ...banana(x, y), kind: "fiore" });
+
+  it("compare una volta su quattro rispetto alla banana", () => {
+    const kinds = Array.from({ length: 400 }, (_, i) => pickKind(i / 400));
+    assert.equal(kinds.filter((k) => k === "fiore").length, 100);
+    assert.equal(kinds.filter((k) => k === "banana").length, 300);
+  });
+
+  it("raccolto sparisce e potenzia subito, senza attaccare", () => {
+    const { ctx, fighters, world } = setup();
+    const [a] = fighters;
+    world.items.push(fiore(a.x + 10, a.y));
+    press(a, { light: true });
+    run(world, fighters, ctx, 1);
+    assert.equal(world.items.length, 0);
+    assert.equal(a.powerup, "fiore");
+    assert.ok(a.powerupMs > POWERUP.flowerMs - 2 * DT);
+    assert.equal(a.invulnerable, true);
+    assert.equal(canBeHit(a), false, "intoccabile");
+    assert.equal(ofType(ctx.events, "powerUp").length, 1);
+    assert.equal(ofType(ctx.events, "itemPick").length, 0);
+    assert.equal(ofType(ctx.events, "attack").length, 0);
+  });
+
+  it("i colpi fanno ×1,3 di danno", () => {
+    const { ctx, fighters } = setup();
+    const [a, b] = fighters;
+    launch(b, a, "light", 0, 0, ctx);
+    const normal = b.percent;
+    b.percent = 0;
+    a.powerup = "fiore";
+    a.powerupMs = POWERUP.flowerMs;
+    launch(b, a, "light", 0, 0, ctx);
+    assert.equal(b.percent, Math.round(normal * POWERUP.damageMult * 10) / 10);
+  });
+
+  it("ci si muove a ×0,75, il salto resta uguale", () => {
+    const speeds = [false, true].map((powered) => {
+      const { ctx, fighters, world } = setup();
+      const [a] = fighters;
+      if (powered) {
+        a.powerup = "fiore";
+        a.powerupMs = POWERUP.flowerMs;
+      }
+      press(a, { right: true });
+      run(world, fighters, ctx, 3);
+      const vx = a.vx;
+      press(a, { jump: true });
+      run(world, fighters, ctx, 1);
+      return { vx, vy: a.vy };
+    });
+    assert.ok(speeds[0].vx > 0 && speeds[0].vy < 0, "si cammina e si salta");
+    assert.ok(Math.abs(speeds[1].vx - speeds[0].vx * POWERUP.speedMult) < 1e-6);
+    assert.equal(speeds[1].vy, speeds[0].vy);
+  });
+
+  it("finisce dopo il tempo, con l'evento, e si torna colpibili", () => {
+    const { ctx, fighters, world } = setup();
+    const [a] = fighters;
+    world.items.push(fiore(a.x, a.y));
+    press(a, { light: true });
+    run(world, fighters, ctx, 1);
+    press(a, {});
+    run(world, fighters, ctx, Math.ceil(POWERUP.flowerMs / DT) + 1);
+    assert.equal(a.powerup, null);
+    assert.equal(a.powerupMs, 0);
+    assert.equal(a.invulnerable, false);
+    assert.equal(ofType(ctx.events, "powerEnd").length, 1);
+  });
+
+  it("uscire dall'arena toglie la vita e il fiore", () => {
+    const { ctx, fighters, world } = setup();
+    const [a] = fighters;
+    a.powerup = "fiore";
+    a.powerupMs = POWERUP.flowerMs;
+    a.y = stage.blastZone.bottom + 50;
+    run(world, fighters, ctx, 1);
+    assert.equal(ofType(ctx.events, "ko").length, 1);
+    assert.equal(a.powerup, null);
   });
 });
