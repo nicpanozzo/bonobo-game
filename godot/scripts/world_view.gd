@@ -36,6 +36,7 @@ var _layer_scale := 1.0 # pixel di mondo per pixel delle immagini degli strati
 var _skins := {} # materiali del palco (#237): nome -> {tex, edge, depth, rails}
 var _props_back: Array = [] # decorazioni dietro ai lottatori (#237): [texture, decorazione]
 var _props_front: Array = [] # e davanti
+var _life: RefCounted = preload("res://scripts/stage_life.gd").new() # sfondo vivo (#260)
 var _textures := {} # id personaggio -> Texture2D dello spritesheet (nel formato cartella, quella di idle)
 var _state_textures := {} # id personaggio -> { stato: Texture2D }, solo per il formato cartella (E7 passo 2)
 var _anims := {} # id giocatore -> { name, since }: animazione in corso e da quando
@@ -145,9 +146,27 @@ func set_stage_spec(spec: Dictionary) -> void:
 		_foreground = _stage_layer(art.get("dir", spec.id), art.foreground)
 	_layer_scale = art.get("scale", 1.0)
 	_load_stage_dressing(art.get("dir", spec.id), art)
+	_life.setup(spec, stage_width(), game.world.height)
 	_supreme_view.stage = spec
 	_reached = 0
 	queue_redraw()
+
+
+# Quanto piove adesso (0-1), per gli ombrelli dello sfondo vivo (#260)
+func _rain_now(t: float) -> float:
+	var rain := 0.0
+	for h in stage.get("hazards", []) if stage.get("hazards") is Array else []:
+		rain = maxf(rain, rain_strength(h, t))
+	return rain
+
+
+# Dove passa adesso una trappola che viaggia: i piccioni scappano anche dal ciclista (#260)
+func _threats(t: float) -> Array:
+	var out := []
+	for h in stage.get("hazards", []) if stage.get("hazards") is Array else []:
+		if h.get("travel") is Dictionary and travel_phase(h, t).phase == "cross":
+			out.append(hazard_rect(h, t))
+	return out
 
 
 # Materiali e decorazioni del palco (#237): si caricano una volta, quando si sceglie l'arena
@@ -345,6 +364,7 @@ func on_event(e: Dictionary) -> void:
 	match e.type:
 		"matchStart":
 			_reached = 0
+			_life.match_start = NAN # il giorno riparte da dove dice l'arena (#260)
 		"checkpoint":
 			if e.id == my_id:
 				_reached = int(e.index)
@@ -484,9 +504,22 @@ func _draw() -> void:
 	var bz: Variant = stage.get("blastZone")
 	if bz is Dictionary:
 		draw_rect(Rect2(bz.left - 200, bz.top - 200, bz.right - bz.left + 400, bz.bottom - bz.top + 400), _color(stage.colors.sky))
+	var t_stage := buffer.sample_stage_ms(Time.get_ticks_msec())
+	var view_center := view_rect.get_center()
+	var rain := _rain_now(t_stage)
+	# Sfondo vivo (#260): ogni elemento si disegna dopo gli strati più lontani di lui
+	var far := -1.0
 	for l in _layers:
+		if not _life.is_empty():
+			_life.draw_band(self, far, l[1], t_stage, view_center, rain)
 		_draw_layer(l)
+		far = l[1]
+	if not _life.is_empty():
+		_life.draw_band(self, far, 1.01, t_stage, view_center, rain)
+		_life.draw_stars(self, t_stage, view_rect)
 	_draw_props(_props_back) # statue e decorazioni dietro al palco (#237): le lastre che reggono ci stanno sopra
+	if not _life.is_empty():
+		_life.draw_daycycle(self, t_stage, view_rect) # giorno e notte su sfondo, statue e palazzo, non sul palco
 	for i in stage.solids.size():
 		var s: Dictionary = stage.solids[i]
 		var skin := _skin_for("solids", i)
@@ -507,6 +540,8 @@ func _draw() -> void:
 		else:
 			draw_rect(Rect2(p.x, p.y, p.width, 8), _color(stage.colors.platform))
 	_draw_rails(false) # ringhiere dietro ai lottatori
+	if not _life.is_empty():
+		_life.draw_pigeons(self, t_stage, Time.get_ticks_msec(), positions.values(), _threats(t_stage))
 
 	_draw_elements(buffer.sample_stage_ms(Time.get_ticks_msec()))
 	_draw_course()

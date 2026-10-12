@@ -71,6 +71,16 @@ describe("arene", () => {
       assert.ok((art.pieces?.solids?.length ?? 0) <= stage.solids.length, `${stage.id}: più eccezioni che blocchi`);
       assert.ok((art.pieces?.platforms?.length ?? 0) <= stage.platforms.length, `${stage.id}: più eccezioni che piattaforme`);
       for (const p of art.props ?? []) assert.ok(p.opacity === undefined || (p.opacity >= 0 && p.opacity <= 1), `${stage.id}: opacità di ${p.file}`);
+      // Sfondo vivo (#260): parallassi tra 0 e 1, tempi positivi
+      const life = art.life;
+      for (const e of [life?.birds, life?.walkers, life?.vehicles, ...(life?.daycycle?.lamps ?? [])]) {
+        if (e) assert.ok(e.parallax >= 0 && e.parallax <= 1, `${stage.id}: parallasse dello sfondo vivo tra 0 e 1`);
+      }
+      for (const ms of [life?.birds?.everyMs, life?.vehicles?.everyMs, life?.daycycle?.cycleMs]) {
+        if (life?.daycycle?.startAt !== undefined) assert.ok(life.daycycle.startAt >= 0 && life.daycycle.startAt < 1, `${stage.id}: startAt tra 0 e 1`);
+        if (ms !== undefined) assert.ok(ms > 0, `${stage.id}: tempi dello sfondo vivo positivi`);
+      }
+      if (life?.vehicles) assert.ok(life.vehicles.everyMs > 12000, `${stage.id}: il veicolo impiega 12 s a passare, everyMs deve essere di più`);
     }
   });
 
