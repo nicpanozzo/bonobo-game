@@ -1456,7 +1456,8 @@ static func _animation_for(p: Dictionary, holding := false) -> String:
 	if p.attack != null and str(p.attack).begins_with("throw"):
 		return "throw" # i quattro lanci; senza disegno, la posa della presa
 	if p.attack != null and str(p.attack).begins_with("special"):
-		return "special" # le speciali (E10); senza disegno, la posa del pesante
+		# le speciali (E10): specialNeutral, specialSide o specialDown (#257); senza disegno "special", poi il pesante
+		return str(p.attack)
 	if p.attack != null:
 		# Lo stato del colpo preciso (lightUp, heavyAir, recovery...): chi non l'ha disegnato mostra il ripiego.
 		# L'attacco dal bordo (#110) non ha uno stato suo: usa il colpo leggero

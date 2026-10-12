@@ -2051,6 +2051,27 @@
             "fps": 8,
             "loop": false,
             "src": "heavy"
+          },
+          "specialNeutral": {
+            "row": 5,
+            "frames": 4,
+            "fps": 8,
+            "loop": false,
+            "src": "heavy"
+          },
+          "specialSide": {
+            "row": 5,
+            "frames": 4,
+            "fps": 8,
+            "loop": false,
+            "src": "heavy"
+          },
+          "specialDown": {
+            "row": 5,
+            "frames": 4,
+            "fps": 8,
+            "loop": false,
+            "src": "heavy"
           }
         }
       },
@@ -2351,9 +2372,30 @@
           "supreme": {
             "fps": 24,
             "loop": false,
-            "hitFrame": 8,
+            "hitFrame": 24,
+            "frames": 30,
+            "src": "supreme"
+          },
+          "specialNeutral": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 5,
+            "frames": 15,
+            "src": "specialNeutral"
+          },
+          "specialSide": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 3,
             "frames": 18,
-            "src": "heavy"
+            "src": "specialSide"
+          },
+          "specialDown": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 1,
+            "frames": 17,
+            "src": "specialDown"
           }
         }
       },
@@ -2652,6 +2694,27 @@
             "hitFrame": 6,
             "frames": 8,
             "src": "heavy"
+          },
+          "specialNeutral": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 6,
+            "frames": 8,
+            "src": "heavy"
+          },
+          "specialSide": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 6,
+            "frames": 8,
+            "src": "heavy"
+          },
+          "specialDown": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 6,
+            "frames": 8,
+            "src": "heavy"
           }
         }
       },
@@ -2863,6 +2926,24 @@
             "loop": false,
             "frames": 1,
             "src": "supreme"
+          },
+          "specialNeutral": {
+            "fps": 1,
+            "loop": false,
+            "frames": 1,
+            "src": "heavy"
+          },
+          "specialSide": {
+            "fps": 1,
+            "loop": false,
+            "frames": 1,
+            "src": "heavy"
+          },
+          "specialDown": {
+            "fps": 1,
+            "loop": false,
+            "frames": 1,
+            "src": "heavy"
           }
         }
       },

@@ -143,7 +143,10 @@ Facoltativi (`OPTIONAL_ANIMATION_NAMES`). Chi non li ha usa quello della colonna
 | `grab` | parte la presa, e poi si tiene l'altro (#109) | `light` |
 | `throw` | uno dei quattro lanci dalla presa | `grab` |
 | `grabbed` | tenuto da qualcuno con la presa | `hit` |
-| `special` | posto per le mosse speciali (E10): il gioco non lo usa ancora | `heavy` |
+| `special` | le mosse speciali (E10), se non c'è lo stato della singola speciale | `heavy` |
+| `specialNeutral`, `specialSide`, `specialDown` | la speciale da fermi, con una direzione, con giù (#257) | `special` |
+| `dash` | scatto e corsa dopo il doppio tocco (#199) | `walk` |
+| `supreme` | la suprema (#101): per chi ha la sua, tutta la scena da quando parte all'impatto e oltre | `special` |
 
 Il ripiego si decide una volta sola: `npm run export:godot` scrive in `godot/data/game.json` la tabella completa, con tutti gli stati. Le animazioni di passaggio (`doubleJump`, `tumble`, `land`, `taunt`) si vedono solo se sono disegnate: col ripiego interromperebbero la corsa o il salto.
 
