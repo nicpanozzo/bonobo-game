@@ -37,6 +37,7 @@ var _skins := {} # materiali del palco (#237): nome -> {tex, edge, depth, rails}
 var _props_back: Array = [] # decorazioni dietro ai lottatori (#237): [texture, decorazione]
 var _props_front: Array = [] # e davanti
 var _hazard_sprites := {} # indice della trappola -> {tex, frames, fps, scale, footX, footY}: animazioni disegnate (#270)
+var _mover_sprites := {} # indice della piattaforma mobile -> come sopra (#273)
 var _life: RefCounted = preload("res://scripts/stage_life.gd").new() # sfondo vivo (#260)
 var _ambient := Color.WHITE # luce del momento del giorno (#267): moltiplica strati e decorazioni, un po' il palco
 var _textures := {} # id personaggio -> Texture2D dello spritesheet (nel formato cartella, quella di idle)
@@ -213,6 +214,12 @@ func _load_stage_dressing(dir: String, art: Dictionary) -> void:
 			_hazard_sprites[int(hs.hazard)] = {"tex": tex, "frames": int(hs.frames), "fps": float(hs.fps), "scale": float(hs.get("scale", 1.0)),
 				"footX": float(hs.get("footX", tex.get_width() / float(hs.frames) / 2.0)), "footY": float(hs.get("footY", tex.get_height())),
 				"shout": hs.get("shout") if hs.get("shout") is Dictionary else {}}
+	_mover_sprites = {}
+	for ms in art.get("moverSprites", []):
+		var tex := _stage_texture(dir, ms.file)
+		if tex != null:
+			_mover_sprites[int(ms.mover)] = {"tex": tex, "frames": int(ms.frames), "fps": float(ms.fps), "scale": float(ms.get("scale", 1.0)),
+				"footX": float(ms.get("footX", tex.get_width() / float(ms.frames) / 2.0)), "footY": float(ms.get("footY", tex.get_height()))}
 
 
 static func _stage_texture(dir: String, file: String) -> Texture2D:
@@ -770,8 +777,12 @@ func _draw_trail(id: String, p: Dictionary) -> void:
 # Ascensori e trappole (#14), dove sono all'istante t dell'arena: stessi calcoli di physics/elements.ts
 func _draw_elements(t: float) -> void:
 	var movers: Array = stage.get("movers") if stage.get("movers") != null else []
-	for m in movers:
+	for mi in movers.size():
+		var m: Dictionary = movers[mi]
 		var pos := mover_position(m, t)
+		if _mover_sprites.has(mi):
+			_draw_mover_sprite(_mover_sprites[mi], m, pos, t)
+			continue
 		if m.get("kind", "") == "barca":
 			_draw_boat(pos, float(m.width), t)
 			continue
@@ -954,6 +965,28 @@ func _draw_boat(pos: Vector2, w: float, t: float) -> void:
 	draw_rect(Rect2(pos.x, pos.y + bob, w, 4), _color(stage.colors.solidEdge)) # dove si sta in piedi: chiaro
 	draw_line(Vector2(pos.x + w * 0.7, pos.y + bob), Vector2(pos.x + w * 0.7, pos.y - 46 + bob), ink, 2.0) # asta della bandierina
 	draw_colored_polygon(PackedVector2Array([Vector2(pos.x + w * 0.7, pos.y - 46 + bob), Vector2(pos.x + w * 0.7 + 22, pos.y - 40 + bob), Vector2(pos.x + w * 0.7, pos.y - 34 + bob)]), Color("b8a88a"))
+
+
+# Una piattaforma mobile disegnata (#273): il piede sul centro della superficie, girata nel verso in cui va;
+# da ferma guarda verso il centro dell'arena. Dondola appena, ma la superficie vera resta quella della fisica
+func _draw_mover_sprite(spr: Dictionary, m: Dictionary, pos: Vector2, t: float) -> void:
+	var tex: Texture2D = spr.tex
+	var fw := tex.get_width() / float(spr.frames)
+	var w: float = m.width
+	var dir := mover_facing(m, t, stage_width())
+	var bob := sin(t / 500.0) * 1.2 if m.get("kind", "") == "barca" else 0.0
+	var surface := Rect2(pos.x, pos.y - 1.0 + bob, w, 1.0)
+	var frame := hazard_frame(t, spr.fps, spr.frames)
+	draw_texture_rect_region(tex, hazard_sprite_rect(spr, fw, tex.get_height(), surface, dir), Rect2(frame * fw, 0, fw, tex.get_height()), _stage_light())
+
+
+# Il verso di una piattaforma mobile: quello in cui va, o da ferma verso il centro dell'arena
+static func mover_facing(m: Dictionary, t: float, arena_width: float) -> int:
+	var dx := mover_position(m, t + 50.0).x - mover_position(m, t).x
+	if absf(dx) > 0.01:
+		return 1 if dx > 0 else -1
+	var x := mover_position(m, t).x + float(m.width) / 2.0
+	return 1 if x < arena_width / 2.0 else -1
 
 
 # Il fotogramma dell'animazione di una trappola al tempo t dell'arena (#270)

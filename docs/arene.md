@@ -172,6 +172,8 @@ hazardSprites: [{ hazard: 1, file: "ciclista.png", frames: 8, fps: 16, scale: 0.
 
 Cancaro Man di Padova lo disegna `tools/arene/ciclista.py`: un disegno vero lo sostituisce tenendo le stesse misure (8 fotogrammi da 300×320).
 
+Le piattaforme mobili hanno lo stesso meccanismo con `art.moverSprites` (#273): `{ mover, file, frames, fps, scale, footX, footY }`, dove `mover` è l'indice in `movers` e `footX`, `footY` va sul centro della superficie. L'animazione si gira nel verso in cui va la piattaforma, e da ferma verso il centro dell'arena. Le barche di Padova le disegna `tools/arene/barca.py` (6 fotogrammi da 580×260, con il barcaiolo che voga).
+
 ```ts
 { kind: "ciclista", x: 0, y: 0, width: 80, height: 95, damage: 10, knockback: 600, knockbackGrowth: 5, angleDeg: 35,
   travel: { path: [{ x: -160, y: 425 }, { x: 2080, y: 425 }], periodMs: 20000, warnMs: 1000, crossMs: 2800, alternate: true } }

@@ -206,3 +206,13 @@ func test_animazione_della_trappola() -> void:
 	runner.check(right.position.x == 140.0 - 75.0 and right.position.y == 520.0 - 156.0 and right.size.x == 150.0, "verso destra: il piede sul centro in basso: %s" % right)
 	var left := WorldView.hazard_sprite_rect(spr, 300, 320, r, -1)
 	runner.check(left.size.x == -150.0 and left.position.x == 140.0 - 75.0, "verso sinistra: specchiata sul posto: %s" % left)
+
+
+# La barca disegnata (#273): guarda dove va, e da ferma verso il centro dell'arena
+func test_verso_della_barca() -> void:
+	var boat := {"width": 160, "path": [{"x": -560, "y": 780}, {"x": -150, "y": 780}], "periodMs": 40000, "pauseMs": 14000}
+	runner.check(WorldView.mover_facing(boat, 15000, 1920) == 1, "arriva verso destra")
+	runner.check(WorldView.mover_facing(boat, 20000, 1920) == 1, "ferma accanto alla riva sinistra: guarda il centro")
+	runner.check(WorldView.mover_facing(boat, 35000, 1920) == -1, "se ne va verso sinistra")
+	var right := {"width": 160, "path": [{"x": 2380, "y": 780}, {"x": 1910, "y": 780}], "periodMs": 40000, "pauseMs": 14000}
+	runner.check(WorldView.mover_facing(right, 20000, 1920) == -1, "quella di destra, ferma, guarda a sinistra")
