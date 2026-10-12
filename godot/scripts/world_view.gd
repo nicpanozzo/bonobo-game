@@ -37,6 +37,7 @@ var _skins := {} # materiali del palco (#237): nome -> {tex, edge, depth, rails}
 var _props_back: Array = [] # decorazioni dietro ai lottatori (#237): [texture, decorazione]
 var _props_front: Array = [] # e davanti
 var _life: RefCounted = preload("res://scripts/stage_life.gd").new() # sfondo vivo (#260)
+var _ambient := Color.WHITE # luce del momento del giorno (#267): moltiplica strati e decorazioni, un po' il palco
 var _textures := {} # id personaggio -> Texture2D dello spritesheet (nel formato cartella, quella di idle)
 var _state_textures := {} # id personaggio -> { stato: Texture2D }, solo per il formato cartella (E7 passo 2)
 var _anims := {} # id giocatore -> { name, since }: animazione in corso e da quando
@@ -226,8 +227,14 @@ func _skin_for(kind: String, i: int) -> Dictionary:
 	return _skins[name]
 
 
+# Il palco prende solo un po' della luce del momento (#267): di notte resta ben leggibile
+func _stage_light() -> Color:
+	return Color.WHITE.lerp(_ambient, 0.4)
+
+
 # Un PNG ripetuto dentro un rettangolo, a _layer_scale pixel di mondo per pixel; l'ultima fila e colonna si tagliano
 func _draw_tiled(tex: Texture2D, rect: Rect2, mod := Color.WHITE) -> void:
+	mod *= _stage_light()
 	var tw := tex.get_width() * _layer_scale
 	var th := tex.get_height() * _layer_scale
 	if tw <= 0 or th <= 0:
@@ -246,6 +253,7 @@ func _draw_tiled(tex: Texture2D, rect: Rect2, mod := Color.WHITE) -> void:
 # Un PNG ripetuto lungo la superficie di una piattaforma (dritta, ad arco o inclinata), a colonne strette:
 # ogni colonna sta all'altezza della superficie in quel punto più top, ed è alta height
 func _draw_strip(tex: Texture2D, p: Dictionary, top: float, height: float, mod := Color.WHITE) -> void:
+	mod *= _stage_light()
 	var src_w := float(tex.get_width())
 	var cw := 6.0 if PredictMovement.curved(p) else float(p.width)
 	var x: float = p.x
@@ -315,7 +323,7 @@ func _draw_props(list: Array) -> void:
 		var rect := Rect2(float(pr.x) - size.x / 2.0, float(pr.y) - size.y, size.x, size.y)
 		if pr.get("flip", false):
 			rect.size.x = -size.x # con la larghezza negativa Godot la specchia restando nello stesso posto
-		draw_texture_rect(tex, rect, false, Color(1, 1, 1, float(pr.get("opacity", 1.0))))
+		draw_texture_rect(tex, rect, false, Color(_ambient.r, _ambient.g, _ambient.b, float(pr.get("opacity", 1.0))))
 
 
 # Uno strato dello sfondo (E12): [texture, parallasse], o [] se il file non c'è (si vede il colore del cielo)
@@ -330,7 +338,7 @@ static func _stage_layer(dir: String, layer: Dictionary) -> Array:
 func _draw_layer(layer: Array) -> void:
 	var tex: Texture2D = layer[0]
 	var center := Vector2(stage_width() / 2.0, game.world.height / 2.0)
-	draw_texture_rect(tex, layer_rect(tex.get_size() * _layer_scale, layer[1], center, view_rect.get_center()), false)
+	draw_texture_rect(tex, layer_rect(tex.get_size() * _layer_scale, layer[1], center, view_rect.get_center()), false, _ambient)
 
 
 # Dove sta uno strato: centrato sull'arena, poi trascinato verso il centro della vista tanto più quanto è lontano.
@@ -521,19 +529,21 @@ func _draw() -> void:
 	var t_stage := buffer.sample_stage_ms(Time.get_ticks_msec())
 	var view_center := view_rect.get_center()
 	var rain := _rain_now(t_stage)
+	_ambient = _life.ambient(t_stage) # la luce del momento del giorno (#267), bianca senza ciclo
+	if not _life.is_empty():
+		_life.draw_sky(self, t_stage, view_rect) # cielo vivo, sole, luna, stelle e nuvole, dietro agli strati
 	# Sfondo vivo (#260): ogni elemento si disegna dopo gli strati più lontani di lui
 	var far := -1.0
 	for l in _layers:
 		if not _life.is_empty():
-			_life.draw_band(self, far, l[1], t_stage, view_center, rain)
+			_life.draw_band(self, far, l[1], t_stage, view_center, rain, _ambient)
 		_draw_layer(l)
 		far = l[1]
 	if not _life.is_empty():
-		_life.draw_band(self, far, 1.01, t_stage, view_center, rain)
-		_life.draw_stars(self, t_stage, view_rect)
+		_life.draw_band(self, far, 1.01, t_stage, view_center, rain, _ambient)
 	_draw_props(_props_back) # statue e decorazioni dietro al palco (#237): le lastre che reggono ci stanno sopra
 	if not _life.is_empty():
-		_life.draw_daycycle(self, t_stage, view_rect) # giorno e notte su sfondo, statue e palazzo, non sul palco
+		_life.draw_daycycle(self, t_stage, view_rect) # di notte lampioni e finestre accese
 	for i in stage.solids.size():
 		var s: Dictionary = stage.solids[i]
 		var skin := _skin_for("solids", i)

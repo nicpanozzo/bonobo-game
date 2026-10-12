@@ -1595,7 +1595,8 @@
           },
           "daycycle": {
             "cycleMs": 240000,
-            "startAt": 0.1,
+            "startAt": 0.8,
+            "sky": true,
             "lamps": [
               {
                 "x": -170,
