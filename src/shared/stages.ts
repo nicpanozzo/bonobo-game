@@ -102,6 +102,25 @@ export interface StageArt {
   platformSkin?: string; // materiale di base delle piattaforme sottili
   pieces?: { solids?: (string | null)[]; platforms?: (string | null)[] }; // eccezioni per indice; null = tinta unita
   props?: StageProp[]; // decorazioni ferme: statue, archi, lampioni
+  life?: StageLife; // sfondo vivo (#260): solo grafica, calcolata nel client dal tempo dell'arena
+}
+
+// Sfondo vivo (#260): elementi animati che non toccano il gioco. Le coordinate sono quelle del mondo come se
+// l'elemento stesse su uno strato con quella parallasse (come gli strati di art.layers); si disegna tra gli strati
+// giusti. Tutto si ricalcola nel client da stageMs e dalle posizioni dei lottatori: niente in rete.
+export interface StageLife {
+  birds?: { y: number; parallax: number; everyMs: number }; // stormi che attraversano il cielo all'altezza y
+  pigeons?: { x: number; y: number }[]; // piccioni posati (sulle statue): scappano se un lottatore arriva vicino
+  walkers?: { y: number; parallax: number; count: number; umbrellas?: boolean }; // passanti sulla linea y; ombrelli con la pioggia
+  vehicles?: { y: number; parallax: number; everyMs: number; kind: "tram" | "bus" }; // un veicolo che passa ogni tanto
+  // Giorno e notte: un giro in cycleMs dall'inizio della partita; startAt da 0 a 1 (0 mezzogiorno, 0,25 tramonto,
+  // 0,5 mezzanotte, 0,75 alba). Di notte le stelle; i lampioni si accendono al tramonto e si spengono all'alba
+  daycycle?: {
+    cycleMs: number;
+    startAt?: number;
+    lamps?: { x: number; y: number; parallax: number }[];
+    windows?: { x: number; y: number; width: number; height: number }[]; // finestre che si accendono di notte, una alla volta
+  };
 }
 
 // Materiale di un pezzo dell'arena (#237): un PNG ripetuto. Nei blocchi si ripete in orizzontale e in verticale,
@@ -420,6 +439,31 @@ export const STAGES: Record<string, StageSpec> = {
         { file: "statua-piazza.png", x: 310, y: 522, scale: 0.5 },
         { file: "statua-piazza.png", x: 1610, y: 522, scale: 0.5, flip: true },
       ],
+      // Sfondo vivo (#260): stormi, piccioni sulle teste delle statue, passanti sul vialetto del prato con l'ombrello
+      // quando piove, il tram davanti ai portici e il giorno che passa: tramonto, notte con le stelle e i lampioni, alba
+      life: {
+        birds: { y: 40, parallax: 0.2, everyMs: 14000 },
+        // Sulle punte delle lastre delle statue e sul cornicione del palazzo
+        pigeons: [{ x: 485, y: 330 }, { x: 1435, y: 330 }, { x: 235, y: 380 }, { x: 1685, y: 380 }, { x: 790, y: 100 }, { x: 1130, y: 100 }],
+        walkers: { y: 510, parallax: 0.75, count: 9, umbrellas: true },
+        vehicles: { y: 540, parallax: 0.45, everyMs: 23000, kind: "tram" },
+        daycycle: {
+          cycleMs: 240000, // un giorno intero in 4 minuti: si parte nel pomeriggio, a metà partita è sera
+          startAt: 0.1,
+          lamps: [90, 390, 690, 990, 1290, 1590, 1890, 2190].map((x) => ({ x: x - 260, y: 409, parallax: 0.75 })), // i lampioni del prato
+          // Le finestre del palazzo che si accendono la sera: la trifora, le bifore, l'ultimo piano, il mezzanino
+          windows: [
+            { x: 909, y: 220, width: 102, height: 72 },
+            { x: 803, y: 230, width: 54, height: 62 },
+            { x: 1063, y: 230, width: 54, height: 62 },
+            { x: 790, y: 130, width: 16, height: 38 },
+            { x: 990, y: 130, width: 16, height: 38 },
+            { x: 1120, y: 130, width: 16, height: 38 },
+            { x: 852, y: 342, width: 24, height: 20 },
+            { x: 1044, y: 342, width: 24, height: 20 },
+          ],
+        },
+      },
     },
   },
 };

@@ -243,6 +243,20 @@ art: {
 }
 ```
 
+### Sfondo vivo (`art.life`)
+
+Facoltativo, solo grafica: elementi animati che fanno sembrare il posto abitato. Il client Godot li calcola dal tempo dell'arena e dalle posizioni dei lottatori (`godot/scripts/stage_life.gd`): non passa niente in rete. Ogni elemento ha una `parallax`, come gli strati, e si disegna dietro agli strati più vicini di lui: il tram passa dietro gli alberi del prato, i passanti camminano sul vialetto.
+
+| Campo di `life` | Cosa fa |
+|---|---|
+| `birds: { y, parallax, everyMs }` | uno stormo a V attraversa il cielo all'altezza `y`, ogni `everyMs`, un giro da sinistra e uno da destra |
+| `pigeons: [{ x, y }]` | piccioni posati (sulle statue, sui cornicioni): scappano quando un lottatore arriva vicino o passa il ciclista, e tornano dopo 7 s |
+| `walkers: { y, parallax, count, umbrellas? }` | `count` passanti sulla linea `y`; con `umbrellas` aprono l'ombrello quando piove (acqua alta) |
+| `vehicles: { y, parallax, everyMs, kind }` | un tram o un bus (`kind`) che passa in 12 s, ogni `everyMs` (più di 12000) |
+| `daycycle: { cycleMs, startAt?, lamps? }` | giorno e notte: un giro intero in `cycleMs` dall'inizio della partita, partendo da `startAt` (0 mezzogiorno, 0,25 tramonto, 0,5 mezzanotte, 0,75 alba). Di notte si vedono le stelle; i lampioni `{ x, y, parallax }` si accendono al tramonto e si spengono all'alba, le finestre `windows: [{ x, y, width, height }]` si accendono una alla volta. Il velo della notte copre lo sfondo e le decorazioni, non il palco |
+
+Colori spenti, lontani da quelli dei giocatori (style guide, sezione 7).
+
 ## Come funzionano dentro (per chi aggiunge un elemento)
 
 - Ascensori e trappole dipendono solo dal **tempo dell'arena** (`ctx.timeMs`, che `stepWorld` fa avanzare). Il server lo manda nello snapshot (`stageMs`) e Godot rifà gli stessi calcoli (`mover_position` e `hazard_active` in `world_view.gd`): niente posizioni in rete, e il movimento è fluido perché si interpola il tempo.
