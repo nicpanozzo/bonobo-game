@@ -34,7 +34,7 @@ func test_stato_preciso_dei_colpi() -> void:
 	runner.check(WorldView._animation_for(_player({"grabbedBy": "b"})) == "grabbed", "tenuto con la presa")
 	runner.check(WorldView._animation_for(_player({}), true) == "grab", "chi tiene")
 	runner.check(WorldView._animation_for(_player({"attack": "throwBack"})) == "throw", "lancio")
-	runner.check(WorldView._animation_for(_player({"attack": "specialSide"})) == "special", "speciale")
+	runner.check(WorldView._animation_for(_player({"attack": "specialSide"})) == "specialSide", "speciale: lo stato della singola speciale (#257), che ripiega su special")
 
 
 func test_disegno_proprio_o_ripiego() -> void:

@@ -642,6 +642,97 @@ def recovery():
     return out
 
 
+# ---------------------------------------------------------------- speciali e suprema (#257 passo 5)
+def special_neutral():
+    # Anello di fumo (avvio 260 ms, fine 620): prende la canna, tira indietro la testa, poi soffia in avanti
+    mouth = dict(hRx=72, hRy=-152, hRa=-30, fR=-20, tR=30)
+    keys = [(0, dict(REST_HANDS)),
+            (3, dict(sp=-8, neck=-4, head=-14, brow=-10, **mouth)),
+            (4, dict(sp=-10, neck=-6, head=-20, brow=-12, lid=10, hRx=86, hRy=-142, hRa=10, fR=-10, tR=20, tb=-6, tf=4)),
+            (5, dict(sp=8, neck=6, head=6, jaw=12, lid=12, brow=-16, hRx=94, hRy=-124, hRa=24, tb=8, tf=-8)),
+            (8, dict(sp=6, neck=4, head=4, jaw=10)),
+            (11, dict(sp=0, neck=0, head=-4, jaw=0, lid=0, brow=-6, tb=0, tf=0, **mouth)),
+            (14, dict(sp=0, neck=0, head=0, jaw=0, lid=0, brow=0, fR=0, tR=0, **REST_HANDS))]
+    return [costruisci(p) for p in frames_from(keys, 15, lag={"head": 0.6, "tb": 1, "tf": 1.2})]
+
+
+def special_side():
+    # Carica sulle nocche (avvio 140 ms, carica 320, fine 360): testa bassa come un toro, due giri di galoppo
+    # più veloce dello scatto, poi frena con le mani avanti
+    wind = [(0, dict(REST_HANDS)),
+            (2, dict(y=18, hips=20, sp=30, neck=-6, head=12, brow=-16, hRx=50, hRy=-40, hRa=90, fR=80, hLx=36, hLy=-38, hLa=90, fL=80,
+                     pRx=REST["pRx"] - 6, pLx=REST["pLx"] - 14, tb=-10, tf=8))]
+    run = gallop(n=6, speed=820 * 2, duty=0.22, hips=36, sp=38, neck=-20, head=-4, bob=4, lift_leg=26, lift_arm=30, reach=26)
+    brake = [(0, dict(x=-6, y=12, hips=10, sp=16, neck=-12, head=-10, brow=-10, hRx=96, hRy=-40, hRa=60, fR=40, hLx=82, hLy=-38, hLa=60, fL=40,
+                      pRx=REST["pRx"] + 18, pLx=REST["pLx"] - 6, tb=12, tf=-10)),
+             (2, dict(x=0, y=0, hips=0, sp=0, neck=0, head=0, brow=0, fR=0, fL=0, pRx=REST["pRx"], pLx=REST["pLx"], tb=0, tf=0, **REST_HANDS))]
+    return ([costruisci(p) for p in frames_from(wind, 3)] + run + run
+            + [costruisci(p) for p in frames_from(brake, 3, lag={"head": 0.6, "tb": 1, "tf": 1.2})])
+
+
+def special_down():
+    # Battuta del petto (finestra da 60 a 440 ms, fine a 920): petto in fuori, si batte il petto a pugni
+    # alterni finché la finestra è aperta, poi allarga le braccia come a dire "vieni" e torna al fermo
+    out_, in_R, in_L = (40, -104), (16, -112), (10, -116)
+    keys = [(0, dict(sp=-8, neck=-4, head=-10, brow=-14, jaw=8, hRx=out_[0], hRy=out_[1], hRa=150, hRb=-1, fR=60,
+                     hLx=out_[0] - 6, hLy=out_[1] - 6, hLa=160, hLb=-1, fL=60, tb=-6, tf=4))]
+    for f in range(1, 9):  # quattro colpi per mano, alterni
+        r_in = f % 2 == 1
+        keys.append((f, dict(sp=-10 + (2 if r_in else 0), head=-12, jaw=10,
+                             hRx=(in_R if r_in else out_)[0], hRy=(in_R if r_in else out_)[1],
+                             hLx=(out_[0] - 6 if r_in else in_L[0]), hLy=(out_[1] - 6 if r_in else in_L[1]),
+                             tb=4 * (1 if r_in else -1), tf=-3 * (1 if r_in else -1))))
+    keys += [(11, dict(sp=-6, neck=-6, head=-14, jaw=6, brow=-16, hRx=96, hRy=-150, hRa=-40, fR=-20, hLx=-40, hLy=-150, hLa=-140, fL=-20, tb=0, tf=0)),
+             (16, dict(sp=0, neck=0, head=0, jaw=0, brow=0, fR=0, fL=0, **REST_HANDS))]
+    return [costruisci(p) for p in frames_from(keys, 17, lag={"head": 0.6})]
+
+
+def _girato(p):
+    """Gli angoli nel mondo di braccia e gambe ruotati con la capriola (spin), così girano insieme al corpo."""
+    q = dict(p)
+    for k in ("aRu", "aRl", "aRh", "aLu", "aLl", "aLh", "lRu", "lRl", "lRf", "lLu", "lLl", "lLf"):
+        if k in q:
+            q[k] = q[k] + q.get("spin", 0)
+    return q
+
+
+# Omar (#102): i tempi sono quelli della suprema (characters.ts): hitFrame 24 cade all'impatto (salto + tirata
+# + attesa = 1170 ms), quindi ogni fotogramma prima vale 1170/24 = 49 ms: salto 0-6, appeso e tira 7-10,
+# capriola all'indietro 11-19 (finisce a 975 ms), accucciato a guardare 20-23, impatto 24, poi si rialza.
+SUPREME_HIT = 24
+VINE = (0, -167)  # dove la mano prende la liana, rispetto ai piedi: 0,95 della hitbox sopra (supreme_view.gd), a 2x
+
+
+def supreme():
+    vx, vy = VINE
+    hang = dict(hRx=vx + 2, hRy=vy + 8, hRa=-92, hRb=-1, fR=80, tR=40, hLx=vx - 2, hLy=vy + 28, hLa=-88, hLb=-1, fL=80,
+                pRx=REST["pRx"] + 6, pRy=REST["pRy"] - 4, pRa=REST["pRa"] - 30, pLx=REST["pLx"] - 4, pLy=REST["pLy"], pLa=REST["pLa"] - 30)
+    leap = [(0, dict(REST_HANDS)),
+            (1, dict(y=24, hips=14, sp=14, neck=-8, head=-10, brow=-14, hRx=-24, hRy=-70, hRa=120, hLx=-34, hLy=-66, hLa=120,
+                     pRx=REST["pRx"] + 10, pLx=REST["pLx"] - 10, tb=-12, tf=10)),
+            (3, dict(y=-6, hips=-6, sp=-8, neck=-14, head=-26, hRx=40, hRy=-196, hRa=-80, fR=-20, hLx=-30, hLy=-80, hLa=120,
+                     pRx=REST["pRx"], pRy=REST["pRy"] - 10, pLx=REST["pLx"] - 6, pLy=REST["pLy"] - 4, tb=14, tf=-10)),
+            (6, dict(y=0, hips=0, sp=-4, neck=-12, head=-24, hRx=vx + 6, hRy=vy - 4, hRa=-90, fR=-20, hLx=vx - 6, hLy=vy + 30, hLa=-90, fL=-10)),
+            (7, dict(sp=-2, neck=-10, head=-20, jaw=4, **hang)),
+            (9, dict(sp=6, neck=-6, head=-14, jaw=10, brow=-18, hRy=vy + 24, hLy=vy + 44, pRy=REST["pRy"] - 18, pLy=REST["pLy"] - 14, tb=-10, tf=8)),
+            (10, dict(sp=0, neck=-8, head=-18, jaw=4, hRy=vy + 10, hLy=vy + 30, pRy=REST["pRy"] - 6, pLy=REST["pLy"] - 2, tb=6, tf=-4))]
+    out = [costruisci(p) for p in frames_from(leap, 11, lag={"head": 0.6, "tb": 1, "tf": 1.2})]
+    # la capriola all'indietro: raccolto come nel doppio salto, ma girando al contrario
+    tuck = dict(sp=28, neck=10, head=10, aRu=40, aRl=-60, aRh=-40, aLu=25, aLl=-70, aLh=-50,
+                lRu=-20, lRl=95, lRf=10, lLu=-5, lLl=100, lLf=15, tb=20, tf=-10, lid=20)
+    for f in range(9):
+        u = f / 8
+        out.append(costruisci(_girato(dict(tuck, spin=-360 * smooth(u), y=-30 * math.sin(math.pi * u)))))
+    land_ = dict(y=22, hips=8, sp=22, neck=-14, head=-16, brow=-10, hRx=60, hRy=-40, hRa=90, fR=60, hLx=44, hLy=-38, hLa=90, fL=60,
+                 pRx=REST["pRx"] + 14, pLx=REST["pLx"] - 12, tb=-8, tf=6)
+    after = [(0, land_), (3, dict(land_, y=18, head=-22, brow=-14)),
+             (4, dict(y=24, hips=6, sp=10, neck=-2, head=6, lid=24, brow=-18, jaw=-2, hRx=58, hRy=-140, hRa=-80, fR=85, hLx=68, hLy=-126, hLa=-70, fL=85, tb=10, tf=-8)),
+             (6, dict(y=20, head=2, lid=14)),
+             (9, dict(y=0, hips=0, sp=0, neck=0, head=0, lid=0, brow=0, jaw=0, fR=0, fL=0, pRx=REST["pRx"], pLx=REST["pLx"], tb=0, tf=0, **REST_HANDS))]
+    out += [costruisci(p) for p in frames_from(after, 10, lag={"head": 0.6, "tb": 1, "tf": 1.2})]
+    return out
+
+
 # ---------------------------------------------------------------- il colpo arriva dove colpisce
 # stato -> attacco di ATTACKS (le zone e i tempi sono in godot/data/game.json, generato da constants.ts)
 HIT_ZONES = {"light": "light", "heavy": "heavy", "grab": "grab", "lightUp": "lightUp", "lightDown": "lightDown", "lightAir": "lightAir",
@@ -708,6 +799,10 @@ ANIMS = {
     "heavyDown": (heavy_down, FPS, False, 6),
     "heavyAir": (heavy_air, FPS, False, 5),
     "recovery": (recovery, FPS, False, 0),
+    "specialNeutral": (special_neutral, FPS, False, 5),
+    "specialSide": (special_side, FPS, False, 3),
+    "specialDown": (special_down, FPS, False, 1),
+    "supreme": (supreme, FPS, False, SUPREME_HIT),
 }
 
 

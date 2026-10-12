@@ -38,8 +38,14 @@ Un PNG per stato in questa cartella, con i fotogrammi in fila da sinistra. È il
 | `heavyDown` | 18 | 24 | no | si carica indietro e si butta in avanti basso, le due braccia a terra (`hitFrame: 6`) |
 | `heavyAir` | 17 | 24 | no | martello a due pugni in aria (`hitFrame: 5`) |
 | `recovery` | 6 | 24 | no | il salto di recupero: sale avvitandosi con le braccia in alto (`hitFrame: 0`) |
+| `specialNeutral` | 15 | 24 | no | Anello di fumo: prende la canna, tira indietro la testa e soffia (`hitFrame: 5`, quando parte l'anello) |
+| `specialSide` | 18 | 24 | no | Carica sulle nocche: testa bassa come un toro, due giri di galoppo veloce, poi frena (`hitFrame: 3`) |
+| `specialDown` | 17 | 24 | no | Battuta del petto: pugni alterni sul petto finché la finestra è aperta, poi allarga le braccia (`hitFrame: 1`) |
+| `supreme` | 30 | 24 | no | Omar: salto alla liana, appeso a tirarla, capriola all'indietro, accucciato a ripararsi all'impatto (`hitFrame: 24`), si rialza |
 
-Mancano solo `special` e `supreme`, che per ora usano il ripiego di `ANIMATION_FALLBACK` in `characters.ts`: arrivano con il passo 5 di #257.
+**Bonobot ha disegnati tutti gli stati che il gioco mostra** (#257). Solo `special` non c'è: le tre speciali hanno ognuna il suo stato, quindi non serve.
+
+La suprema dura come la sua scena in `characters.ts` (`supreme`): `hitFrame` cade all'impatto (`leapMs + pullMs + warnMs`) e i fotogrammi prima si dividono quel tempo in parti uguali. In `animazioni_bonobot.py`, `supreme()` dice quali fotogrammi vanno a salto, tirata e capriola: se cambiano i tempi della suprema, si spostano lì.
 
 ### Due controlli automatici
 

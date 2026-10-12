@@ -30,6 +30,9 @@ export const OPTIONAL_ANIMATION_NAMES = [
   "special",
   "dash", // scatto e corsa dopo il doppio tocco (#199)
   "supreme", // suprema (#101)
+  "specialNeutral", // le tre speciali, una per tasto (#257): senza disegno, la posa di "special"
+  "specialSide",
+  "specialDown",
 ] as const;
 export type OptionalAnimationName = (typeof OPTIONAL_ANIMATION_NAMES)[number];
 export type SpriteState = AnimationName | OptionalAnimationName;
@@ -58,6 +61,9 @@ export const ANIMATION_FALLBACK: Record<OptionalAnimationName, SpriteState> = {
   special: "heavy",
   dash: "walk", // senza disegno, la camminata (per Bonobot: il galoppo sulle nocche)
   supreme: "special", // senza disegno, la posa della speciale (e poi del pesante)
+  specialNeutral: "special",
+  specialSide: "special",
+  specialDown: "special",
 };
 
 export interface SpriteAnimation {
@@ -379,6 +385,12 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         heavyDown: { fps: 24, loop: false, hitFrame: 6 }, // affondo radente con le due braccia a terra
         heavyAir: { fps: 24, loop: false, hitFrame: 5 }, // martello a due pugni in aria
         recovery: { fps: 24, loop: false, hitFrame: 0 }, // sale avvitandosi con le braccia in alto
+        // #257 passo 5: le tre speciali e la suprema. hitFrame cade alla fine dell'avvio della speciale
+        specialNeutral: { fps: 24, loop: false, hitFrame: 5 }, // Anello di fumo: prende la canna, tira indietro la testa e soffia
+        specialSide: { fps: 24, loop: false, hitFrame: 3 }, // Carica sulle nocche: testa bassa, due giri di galoppo, frena
+        specialDown: { fps: 24, loop: false, hitFrame: 1 }, // Battuta del petto: pugni alterni sul petto, poi braccia aperte
+        // Omar: salto alla liana, appeso a tirarla, capriola all'indietro, accucciato all'impatto (hitFrame), si rialza
+        supreme: { fps: 24, loop: false, hitFrame: 24 },
       },
     },
   },
