@@ -78,11 +78,15 @@ export interface StageMusic {
   bpm: number; // battiti al minuto, tra AUDIO.musicBpmMin e AUDIO.musicBpmMax
   chords: string[]; // un accordo per battuta, per nome: "C", "F#", "Bb", con "m" se minore ("Am", "C#m")
   lead: StageMusicLead; // timbro della melodia
+  // Melodia scritta (#286): una nota per ottavo, 8 per accordo, separate da spazi. "A4", "Bb5", "F#4" (ottave 2-6);
+  // "-" tiene la nota di prima, "." è una pausa. Con la melodia gli accordi diventano un tappeto morbido
+  melody?: string;
 }
 
 export type StageMusicLead = "square" | "triangle" | "sawtooth" | "sine";
 export const STAGE_MUSIC_LEADS: StageMusicLead[] = ["square", "triangle", "sawtooth", "sine"];
 export const CHORD_NAME = /^[A-G][#b]?m?$/;
+export const MELODY_TOKEN = /^([A-G][#b]?[2-6]|-|\.)$/; // una nota con l'ottava, "-" tiene, "." pausa
 
 // Uno strato disegnato di un'arena (E12 passo 3): un PNG in public/assets/stages/<id>/
 export interface StageLayer {
