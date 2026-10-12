@@ -275,34 +275,51 @@ def statue(name, total_h, slab_w, kind):
             d.polygon(shade_pts, fill=MARBLE_SHADE)
         d.line(pts + [pts[0]], fill=INK, width=lw, joint="curve")
 
-    # --- piedistallo tondo: zoccolo, fusto con la targa e la ghirlanda, cornice ---
+    # --- piedistallo: zoccolo a due gradini, toro, dado con la targa e il festone, cornice che sporge ---
     ped_h = min(48, total_h * 0.33) * S
     ped_w = 36 * S
     base = H - 1
-    def band(y0, y1, half):
+    MID = mix(MARBLE, MARBLE_SHADE, 0.5)
+
+    def band(y0, y1, half, round_=False):
+        if round_:  # toro: una fascia tonda, chiara in alto e in ombra sotto
+            d.rounded_rectangle([cx - half, y0, cx + half, y1], radius=(y1 - y0) / 2, fill=MARBLE)
+            d.rectangle([cx - half + (y1 - y0) / 2, (y0 + y1) / 2, cx + half - (y1 - y0) / 2, y1 - lw / 2], fill=MID)
+            d.rounded_rectangle([cx - half, y0, cx + half, y1], radius=(y1 - y0) / 2, outline=INK, width=lw)
+            return
         d.rectangle([cx - half, y0, cx + half, y1], fill=MARBLE)
         d.rectangle([cx + half * 0.35, y0, cx + half, y1], fill=MARBLE_SHADE)
         d.rectangle([cx - half, y0, cx + half, y1], outline=INK, width=lw)
-    band(base - 7 * S, base, ped_w / 2 + 6 * S)
-    band(base - 10 * S, base - 7 * S, ped_w / 2 + 3 * S)
-    band(base - ped_h + 9 * S, base - 10 * S, ped_w / 2)
-    band(base - ped_h + 5 * S, base - ped_h + 9 * S, ped_w / 2 + 3 * S)
-    band(base - ped_h, base - ped_h + 5 * S, ped_w / 2 + 7 * S)
+    band(base - 5 * S, base, ped_w / 2 + 8 * S)  # gradino basso
+    band(base - 9 * S, base - 5 * S, ped_w / 2 + 5 * S)  # gradino alto
+    band(base - 13 * S, base - 9 * S, ped_w / 2 + 3 * S, round_=True)  # toro
+    band(base - ped_h + 10 * S, base - 13 * S, ped_w / 2)  # dado
+    d.rectangle([cx - ped_w / 2, base - ped_h + 10 * S, cx + ped_w / 2, base - ped_h + 12 * S], fill=MARBLE_SHADE)  # ombra sotto la cornice
+    band(base - ped_h + 6 * S, base - ped_h + 10 * S, ped_w / 2 + 3 * S, round_=True)  # listello
+    band(base - ped_h, base - ped_h + 6 * S, ped_w / 2 + 7 * S)  # cornice
     # targa con l'iscrizione (tratti illeggibili: il nome si sceglie con il gruppo)
-    ty0, ty1 = base - ped_h + 14 * S, base - ped_h + 26 * S
-    d.rectangle([cx - 12 * S, ty0, cx + 12 * S, ty1], fill=(200, 194, 180, 255), outline=INK, width=lw)
+    ty0, ty1 = base - ped_h + 17 * S, base - ped_h + 28 * S
+    d.rectangle([cx - 11 * S, ty0, cx + 11 * S, ty1], fill=(204, 198, 184, 255), outline=INK, width=lw)
+    d.rectangle([cx - 11 * S + lw, ty1 - 2 * S, cx + 11 * S - lw, ty1 - lw], fill=MID)
     for row in range(2):
-        y = ty0 + (4 + row * 5) * S
-        x = cx - 9 * S
+        y = ty0 + (3.5 + row * 4.5) * S
+        x = cx - 8 * S
         rng = random.Random(len(name) * 7 + row)
-        while x < cx + 8 * S:
+        while x < cx + 7 * S:
             seg = rng.randint(2, 4) * S
-            d.line([x, y, min(x + seg, cx + 9 * S), y], fill=INK, width=S)
+            d.line([x, y, min(x + seg, cx + 8 * S), y], fill=INK, width=S)
             x += seg + 2 * S
-    # ghirlanda sotto la cornice
-    gy = base - ped_h + 9 * S
-    d.arc([cx - ped_w / 2 + 2 * S, gy - 4 * S, cx - 2 * S, gy + 8 * S], 10, 170, fill=INK, width=lw)
-    d.arc([cx + 2 * S, gy - 4 * S, cx + ped_w / 2 - 2 * S, gy + 8 * S], 10, 170, fill=INK, width=lw)
+    # festone di foglie appeso agli angoli del dado, con i nastri
+    fy = base - ped_h + 13 * S
+    for side in (-1, 1):
+        x0, x1 = (cx - ped_w / 2 + 2 * S, cx) if side < 0 else (cx, cx + ped_w / 2 - 2 * S)
+        for k in range(7):
+            u = k / 6
+            lx = x0 + (x1 - x0) * u
+            ly = fy + math.sin(u * math.pi) * 4 * S
+            d.ellipse([lx - 2.2 * S, ly - 1.4 * S, lx + 2.2 * S, ly + 1.4 * S], fill=MARBLE if k % 2 else MID, outline=INK, width=max(1, S // 2))
+    for x in (cx - ped_w / 2 + 2 * S, cx, cx + ped_w / 2 - 2 * S):
+        d.line([x, fy - S, x - S, fy + 4 * S], fill=INK, width=max(1, S // 2))  # nastro
 
     # --- la figura: dalla cornice alle mani ---
     feet = base - ped_h
@@ -336,6 +353,13 @@ def statue(name, total_h, slab_w, kind):
         t0 = 0.2 + i * 0.25
         a = (toga[0][0] + (toga[2][0] - toga[0][0]) * t0, toga[0][1] + (toga[2][1] - toga[0][1]) * t0)
         d.line([a, (a[0] - 3 * S, a[1] + 10 * S)], fill=INK, width=S)
+    # pieghe della veste in ombra piatta: strisce tra una piega e l'altra, sul lato in luce
+    for i in range(0, 5, 2):
+        fx0, fx1 = -0.75 + i * 0.3, -0.75 + i * 0.3 + 0.13
+        ys2 = [waist_y + S * 10 + (feet - waist_y - S * 12) * k / 8 for k in range(9)]
+        left_edge = [(cx + fx0 * half_width(y) + math.sin(k * 0.7 + i) * S * 0.7, y) for k, y in enumerate(ys2)]
+        right_edge = [(cx + fx1 * half_width(y) + math.sin(k * 0.7 + i) * S * 0.7, y) for k, y in enumerate(ys2)]
+        d.polygon(left_edge + right_edge[::-1], fill=mix(MARBLE, MARBLE_SHADE, 0.55))
     # pieghe della veste: linee che scendono ondeggiando fino all'orlo
     rng = random.Random(len(name))
     for i in range(6):
@@ -376,7 +400,15 @@ def statue(name, total_h, slab_w, kind):
             fx = hand[0] - 4.5 * S + f * 3 * S
             d.line([fx, 0, fx, 4 * S], fill=INK, width=max(1, S // 2))
     # manica che ricade dal braccio alzato
-    d.polygon([(cx - sh_w * 0.9, sh_y - S), (cx - sh_w * 1.65, sh_y + 16 * S), (cx - sh_w * 1.0, sh_y + 20 * S)], fill=(222, 216, 203, 255), outline=INK)
+    sh_l = (cx - sh_w * 0.92, sh_y + 3 * S)
+    hand_l = (cx - hand_dx, 6 * S)
+    elbow_l = ((sh_l[0] + hand_l[0]) / 2 - 7 * S, (sh_l[1] + hand_l[1]) * 0.55)
+    mid = (sh_l[0] + (elbow_l[0] - sh_l[0]) * 0.55, sh_l[1] + (elbow_l[1] - sh_l[1]) * 0.55)
+    sleeve = [(sh_l[0] + 3 * S, sh_l[1] - 3 * S), mid, (mid[0] + 1 * S, mid[1] + 9 * S), (sh_l[0] - 1 * S, sh_l[1] + 14 * S), (sh_l[0] + 4 * S, sh_l[1] + 10 * S)]
+    d.polygon(sleeve, fill=(222, 216, 203, 255))
+    d.polygon([sleeve[2], sleeve[3], sleeve[4]], fill=mix(MARBLE, MARBLE_SHADE, 0.5))
+    d.line(sleeve + [sleeve[0]], fill=INK, width=lw, joint="curve")
+    d.line([((sleeve[0][0] + mid[0]) / 2, (sleeve[0][1] + mid[1]) / 2), (sh_l[0] + S, sh_l[1] + 9 * S)], fill=INK, width=S)
 
     # --- collo, capelli dietro, testa e volto ---
     neck_w = head_r * 0.5
@@ -745,77 +777,169 @@ def lawn(d, W, H):
 
 
 def palazzo(name):
-    """Il palazzo signorile al centro, dietro il ponte: facciata di intonaco caldo, portico, piano nobile con la
-    trifora gotica e il balcone largo, ultimo piano con il balconcino. I balconi veri sono piattaforme (y 300 e 180):
-    qui c'è solo la facciata, con le mensole sotto i balconi. Disegnato a 2x: x da 740 a 1180, y da 40 a 480."""
-    k = 2
-    x0, y0, x1, y1 = 740, 40, 1180, 480
-    W, H = (x1 - x0) * k, (y1 - y0) * k
-    img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    d = ImageDraw.Draw(img)
-    P = lambda x, y: ((x - x0) * k, (y - y0) * k)
-    plaster, plaster_s = (150, 118, 92, 255), (130, 100, 78, 255)
-    stone, stone_s = (196, 190, 176, 255), (168, 160, 146, 255)
-    dark = (54, 46, 42, 255)
-    ink = (34, 28, 26, 255)
-    lw = 2 * k
-    # corpo e ombra a destra
-    d.rectangle([*P(760, 110), *P(1160, 480)], fill=plaster)
-    d.rectangle([*P(1060, 110), *P(1160, 480)], fill=plaster_s)
-    # bugnato del portico e archi
-    d.rectangle([*P(760, 380), *P(1160, 480)], fill=stone)
+    """Il palazzo signorile al centro, dietro il ponte (#280 passo 2), x 740-1180, y 40-480, a 2x.
+
+    Portico a bugnato con i conci sugli archi, mezzanino con le inferriate, piano nobile con la trifora gotica e
+    le bifore (le luci di notte stanno su queste finestre: art.life.daycycle.windows), ultimo piano con le persiane,
+    cornicione con le mensole, tetto di coppi e camini a imbuto. L'intonaco caldo ha qualche scrostatura che mostra
+    i mattoni. I balconi veri sono piattaforme (y 300 e 180): qui ci sono solo le mensole sotto."""
+    t = Tela(440, 440, origin=(740, 40))
+    rng = rand(21)
+    plaster, plaster_s = (156, 122, 94, 255), (132, 102, 78, 255)
+    stone, stone_s = (188, 182, 168, 255), (156, 148, 135, 255)  # un po' più spenta dei balconi, che si calpestano
+    dark, glass = (46, 40, 38, 255), (58, 62, 66, 255)
+    shutter, shutter_s = (88, 104, 84, 255), (70, 84, 68, 255)
+    brick = (132, 84, 66, 255)
+
+    # --- corpo: intonaco, le ombre portate le mettono cornici e balconi ---
+    t.rect(760, 110, 1160, 480, fill=plaster)
+    # scrostature: l'intonaco caduto mostra i mattoni, col bordo chiaro dell'intonaco rotto
+    for (px, py, pw, ph) in ((1022, 138, 32, 24), (869, 246, 26, 40), (1012, 338, 24, 26)):
+        pts = [(px + pw * u, py + ph * v) for u, v in ((0.1, 0), (0.6, 0.05), (1, 0.3), (0.9, 0.8), (0.5, 1), (0, 0.7))]
+        t.poly(pts, fill=brick)
+        for k in range(1, 5):
+            yy = py + k * ph / 5
+            t.line([(px + 2, yy), (px + pw - 2, yy)], fill=shade(brick, 0.75), width=0.6)
+        t.poly(pts, ink=True, width=0.8, ink_col=light(plaster, 1.12))
+    # lesene d'angolo a conci alternati (cantonali)
+    for x0 in (760, 1144):
+        for k in range(12):
+            y0 = 120 + k * 22
+            w = 16 if k % 2 == 0 else 12
+            xx = x0 if x0 == 760 else x0 + 16 - w
+            t.block(xx, y0, xx + w, y0 + 22, stone, sh=stone_s, bottom=3, width=0.9)
+
+    # --- portico a bugnato (y 380-480) ---
+    t.rect(760, 380, 1160, 480, fill=stone)
     for row in range(5):
         y = 380 + row * 20
-        d.line([*P(760, y), *P(1160, y)], fill=stone_s, width=k)
-    for i in range(5):
+        off = 0 if row % 2 == 0 else 20
+        for x in range(760 - off, 1160, 40):
+            x0, x1 = max(760, x), min(1160, x + 40)
+            if x1 - x0 > 2:
+                t.block(x0 + 0.5, y + 0.5, x1 - 0.5, y + 19.5, mix(stone, stone_s, rng.random() * 0.3), sh=stone_s, bottom=3, side=2, width=0.8)
+    for i in range(5):  # archi con i conci a raggiera e la chiave
         ax = 778 + i * 78
-        d.rectangle([*P(ax, 410), *P(ax + 52, 480)], fill=dark)
-        d.pieslice([*P(ax, 384), *P(ax + 52, 436)], 180, 360, fill=dark)
-        d.arc([*P(ax - 4, 380), *P(ax + 56, 440)], 180, 360, fill=ink, width=lw)
-    # mezzanino con le finestrelle quadrate
+        cxa, r = ax + 26, 26
+        t.rect(ax, 410, ax + 52, 480, fill=dark)
+        t.pieslice(ax, 384, ax + 52, 436, 180, 360, fill=dark)
+        t.rect(ax + 4, 446, ax + 48, 480, fill=(54, 48, 44, 255))  # il fondo del portico, appena più chiaro in basso
+        for k in range(9):
+            a0, a1 = math.pi * k / 9, math.pi * (k + 1) / 9
+            out = 10 if k == 4 else 7
+            pts = [(cxa - r * math.cos(a0), 410 - r * math.sin(a0)), (cxa - (r + out) * math.cos(a0), 410 - (r + out) * math.sin(a0)),
+                   (cxa - (r + out) * math.cos(a1), 410 - (r + out) * math.sin(a1)), (cxa - r * math.cos(a1), 410 - r * math.sin(a1))]
+            t.poly(pts, fill=stone if k < 5 else stone_s, ink=True, width=0.8)
+        t.line([(ax, 410), (ax, 480)], fill=INK, width=1.2)
+        t.line([(ax + 52, 410), (ax + 52, 480)], fill=INK, width=1.2)
+        if i == 2:  # la lanterna appesa nell'arco centrale
+            t.line([(cxa, 386), (cxa, 400)], fill=INK, width=0.8)
+            t.poly([(cxa - 4, 400), (cxa + 4, 400), (cxa + 3, 410), (cxa - 3, 410)], fill=(150, 136, 100, 255), ink=True, width=0.7)
+
+    # --- mezzanino con le inferriate (y 330-370) e il marcapiano ---
     for i in range(6):
         wx = 786 + i * 64
-        d.rectangle([*P(wx, 340), *P(wx + 28, 364)], fill=dark, outline=ink, width=k)
-    d.rectangle([*P(756, 370), *P(1164, 380)], fill=stone, outline=ink, width=k)  # marcapiano
-    # mensole sotto il balcone del piano nobile (la piattaforma è a y 300, da x 800 a 1120)
-    for i in range(7):
-        mx = 812 + i * 48
-        d.polygon([P(mx, 300), P(mx + 16, 300), P(mx + 12, 322), P(mx + 4, 322)], fill=stone, outline=ink)
-    # piano nobile: trifora gotica al centro, bifore ai lati, con le cornici di pietra
+        t.rect(wx - 3, 337, wx + 31, 367, fill=stone, ink=True, width=0.9)
+        t.rect(wx, 340, wx + 28, 364, fill=glass)
+        for b in range(1, 4):
+            t.line([(wx + b * 7, 340), (wx + b * 7, 364)], fill=(30, 28, 26, 255), width=0.9)
+        t.line([(wx, 352), (wx + 28, 352)], fill=(30, 28, 26, 255), width=0.9)
+    t.rect(756, 370, 1164, 380, fill=stone)
+    t.rect(756, 376, 1164, 380, fill=stone_s)
+    t.rect(756, 370, 1164, 380, ink=True, width=1.0)
+
+    # --- piano nobile (y 204-330): ombra del balcone, mensole, trifora e bifore ---
+    t.rect(800, 314, 1120, 322, fill=plaster_s)  # l'ombra sotto il piano del balcone (la piattaforma finisce a 314)
+    for i in range(9):
+        mx = 806 + i * 38
+        t.poly([(mx, 314), (mx + 14, 314), (mx + 14, 318), (mx + 10, 330), (mx + 4, 330), (mx, 318)], fill=stone, ink=True, width=0.9)
+        t.poly([(mx + 9, 316), (mx + 14, 316), (mx + 10, 330), (mx + 8, 328)], fill=stone_s)
+
     def gothic(wx, wy, ww, wh, lights):
-        d.rectangle([*P(wx - 6, wy - 10), *P(wx + ww + 6, wy + wh)], fill=stone, outline=ink, width=k)
+        # cornice di pietra con il cappello a punta, luci a sesto acuto con le colonnine, quadrilobo in cima
+        frame = [(wx - 7, wy + wh), (wx - 7, wy + 6), (wx + ww / 2, wy - 16), (wx + ww + 7, wy + 6), (wx + ww + 7, wy + wh)]
+        t.poly(frame, fill=stone, ink=True, width=1.1)
+        t.poly([(wx + ww / 2, wy - 16), (wx + ww + 7, wy + 6), (wx + ww + 7, wy + wh), (wx + ww, wy + wh)], fill=stone_s)
         lw_ = ww / lights
         for j in range(lights):
             lx = wx + j * lw_
-            d.rectangle([*P(lx + 3, wy + 16), *P(lx + lw_ - 3, wy + wh - 4)], fill=dark)
-            d.polygon([P(lx + 3, wy + 16), P(lx + lw_ / 2, wy), P(lx + lw_ - 3, wy + 16)], fill=dark)
-        d.ellipse([*P(wx + ww / 2 - 8, wy - 6), *P(wx + ww / 2 + 8, wy + 10)], fill=stone_s, outline=ink, width=k)  # quadrilobo
+            pts = [(lx + 3, wy + wh - 3), (lx + 3, wy + 18), (lx + lw_ / 2, wy + 4), (lx + lw_ - 3, wy + 18), (lx + lw_ - 3, wy + wh - 3)]
+            t.poly(pts, fill=glass, ink=True, width=0.9)
+            t.poly([(lx + lw_ * 0.55, wy + 14), (lx + lw_ - 4, wy + 22), (lx + lw_ - 4, wy + 30), (lx + lw_ * 0.55, wy + 24)], fill=(76, 82, 86, 255))  # riflesso
+            if j:
+                t.rect(lx - 1.6, wy + 16, lx + 1.6, wy + wh - 3, fill=stone, ink=True, width=0.7)  # colonnina
+        qx, qy = wx + ww / 2, wy - 4
+        for a in range(4):
+            aa = a * math.pi / 2
+            t.circle(qx + math.cos(aa) * 3.2, qy + math.sin(aa) * 3.2, 3.4, fill=stone_s, ink=True, width=0.7)
+        t.circle(qx, qy, 2.4, fill=stone_s)
+        t.rect(wx - 9, wy + wh - 2, wx + ww + 9, wy + wh + 3, fill=stone, ink=True, width=0.9)  # davanzale
     gothic(905, 212, 110, 84, 3)
     gothic(800, 222, 60, 74, 2)
     gothic(1060, 222, 60, 74, 2)
-    d.rectangle([*P(756, 196), *P(1164, 204)], fill=stone, outline=ink, width=k)
-    # mensole del balconcino in alto (piattaforma a y 180, da x 900 a 1020)
-    for i in range(4):
-        mx = 908 + i * 30
-        d.polygon([P(mx, 180), P(mx + 12, 180), P(mx + 9, 196), P(mx + 3, 196)], fill=stone, outline=ink)
-    # ultimo piano: finestre rettangolari con le persiane verdi spente
+    t.rect(756, 196, 1164, 204, fill=stone)
+    t.rect(756, 201, 1164, 204, fill=stone_s)
+    t.rect(756, 196, 1164, 204, ink=True, width=1.0)
+
+    # --- ultimo piano (y 112-196): mensole del balconcino, finestre con le persiane aperte e i vasi ---
+    t.rect(900, 194, 1020, 200, fill=plaster_s)
+    for i in range(5):
+        mx = 904 + i * 26
+        t.poly([(mx, 194), (mx + 10, 194), (mx + 7, 206), (mx + 3, 206)], fill=stone, ink=True, width=0.8)
     for wx in (790, 850, 940, 990, 1070, 1120):
-        d.rectangle([*P(wx - 8, 128), *P(wx - 2, 170)], fill=(84, 98, 80, 255))
-        d.rectangle([*P(wx + 16, 128), *P(wx + 22, 170)], fill=(84, 98, 80, 255))
-        d.rectangle([*P(wx - 2, 128), *P(wx + 16, 170)], fill=dark, outline=ink, width=k)
-    # cornicione, tetto di coppi, altana di legno e camini a imbuto
-    d.rectangle([*P(750, 100), *P(1170, 112)], fill=stone, outline=ink, width=lw)
-    for i in range(26):
-        d.rectangle([*P(756 + i * 16, 112), *P(762 + i * 16, 118)], fill=stone_s)  # dentelli
-    d.polygon([P(752, 100), P(1168, 100), P(1130, 66), P(790, 66)], fill=(110, 76, 62, 255), outline=ink)
-    for i in range(20):
-        d.line([*P(796 + i * 18, 70), *P(770 + i * 20, 100)], fill=(94, 64, 52, 255), width=k)
+        t.rect(wx - 4, 124, wx + 20, 128, fill=stone, ink=True, width=0.8)  # cappello
+        t.rect(wx - 2, 128, wx + 18, 172, fill=stone, ink=True, width=0.8)
+        t.rect(wx, 130, wx + 16, 170, fill=glass)
+        t.line([(wx + 8, 130), (wx + 8, 170)], fill=stone_s, width=0.8)
+        t.line([(wx, 146), (wx + 16, 146)], fill=stone_s, width=0.8)
+        for sx in (wx - 10, wx + 18):  # persiane a stecche
+            t.rect(sx, 128, sx + 8, 172, fill=shutter, ink=True, width=0.8)
+            t.rect(sx + 5.5, 128, sx + 8, 172, fill=shutter_s)
+            for k in range(1, 11):
+                t.line([(sx + 1, 128 + k * 4), (sx + 7, 128 + k * 4)], fill=shutter_s, width=0.6)
+        t.rect(wx - 4, 172, wx + 20, 175, fill=stone, ink=True, width=0.8)  # davanzale
+        if wx in (850, 1070):  # vasi di fiori sul davanzale, colori spenti
+            for k in range(3):
+                fx = wx + 1 + k * 6
+                t.rect(fx, 166, fx + 5, 172, fill=(140, 92, 72, 255), ink=True, width=0.5)
+                t.circle(fx + 2.5, 164, 3, fill=(204, 168, 176, 255) if k % 2 else (226, 220, 206, 255))
+
+    # --- cornicione con le mensole e i dentelli, ombra sotto ---
+    t.rect(760, 112, 1160, 118, fill=plaster_s)
+    t.rect(750, 98, 1170, 112, fill=stone)
+    t.rect(750, 108, 1170, 112, fill=stone_s)
+    t.rect(750, 98, 1170, 112, ink=True, width=1.2)
+    for i in range(27):
+        mx = 754 + i * 15.5
+        t.poly([(mx, 112), (mx + 6, 112), (mx + 6, 115), (mx + 3, 118), (mx, 118)], fill=stone, ink=True, width=0.6)
+
+    # --- tetto di coppi a file, colmo e camini a imbuto ---
+    roof = [(752, 98), (1168, 98), (1130, 64), (790, 64)]
+    t.poly(roof, fill=(116, 78, 62, 255))
+    t.poly([(1060, 64), (1130, 64), (1168, 98), (1100, 98)], fill=(102, 68, 54, 255))  # la falda in ombra a destra
+    for row in range(5):
+        y = 70 + row * 6.5
+        x0 = 790 - (y - 64) * 38 / 34
+        x1 = 1130 + (y - 64) * 38 / 34
+        x = x0 + (row % 2) * 4
+        while x < x1 - 4:
+            t.arc(x, y - 3, x + 8, y + 5, 180, 360, fill=(92, 60, 48, 255), width=0.9)
+            x += 8
+    t.poly(roof, ink=True, width=1.2)
+    t.line([(790, 64), (1130, 64)], fill=INK, width=1.6)
     for cxm in (812, 1110):
-        d.rectangle([*P(cxm - 6, 40), *P(cxm + 6, 70)], fill=(126, 92, 76, 255), outline=ink, width=k)
-        d.polygon([P(cxm - 16, 40), P(cxm + 16, 40), P(cxm + 8, 54), P(cxm - 8, 54)], fill=(126, 92, 76, 255), outline=ink)
+        t.rect(cxm - 6, 40, cxm + 6, 68, fill=(132, 96, 78, 255), ink=True, width=1.0)
+        t.rect(cxm + 2, 40, cxm + 6, 68, fill=(112, 80, 66, 255))
+        t.poly([(cxm - 16, 38), (cxm + 16, 38), (cxm + 8, 52), (cxm - 8, 52)], fill=(132, 96, 78, 255), ink=True, width=1.0)
+        t.rect(cxm - 18, 34, cxm + 18, 38, fill=(150, 112, 92, 255), ink=True, width=0.9)
+
+    # --- pluviale di rame, verde spento, con le fascette ---
+    t.rect(1150, 112, 1155, 480, fill=(98, 116, 102, 255), ink=True, width=0.8)
+    for y in range(140, 480, 60):
+        t.rect(1148, y, 1157, y + 3, fill=(70, 80, 72, 255))
     # contorno del palazzo
-    d.rectangle([*P(760, 110), *P(1160, 480)], outline=ink, width=lw)
-    save(img, name)
+    t.rect(760, 110, 1160, 480, ink=True, width=1.4)
+    t.save(OUT, name)
 
 
 def balcony_rail():
