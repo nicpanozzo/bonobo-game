@@ -194,3 +194,15 @@ func test_getto_come_il_server() -> void:
 	runner.check(WorldView.jet_phase(jet, 1000) == "calm", "calma")
 	runner.check(WorldView.jet_phase(jet, 4500) == "warn", "bolle")
 	runner.check(WorldView.jet_phase(jet, 5500) == "active", "getto")
+
+
+# Animazione di una trappola (#270): fotogramma dal tempo dell'arena, piede sul fondo del rettangolo, specchiata a sinistra
+func test_animazione_della_trappola() -> void:
+	runner.check(WorldView.hazard_frame(0, 16, 8) == 0 and WorldView.hazard_frame(130, 16, 8) == 2, "16 fps: 130 ms = fotogramma 2")
+	runner.check(WorldView.hazard_frame(1000, 16, 8) == 0, "in ciclo: dopo 16 fotogrammi si ricomincia")
+	var spr := {"scale": 0.5, "footX": 150.0, "footY": 312.0}
+	var r := Rect2(100, 425, 80, 95)
+	var right := WorldView.hazard_sprite_rect(spr, 300, 320, r, 1)
+	runner.check(right.position.x == 140.0 - 75.0 and right.position.y == 520.0 - 156.0 and right.size.x == 150.0, "verso destra: il piede sul centro in basso: %s" % right)
+	var left := WorldView.hazard_sprite_rect(spr, 300, 320, r, -1)
+	runner.check(left.size.x == -150.0 and left.position.x == 140.0 - 75.0, "verso sinistra: specchiata sul posto: %s" % left)

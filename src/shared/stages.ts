@@ -103,6 +103,7 @@ export interface StageArt {
   platformSkin?: string; // materiale di base delle piattaforme sottili
   pieces?: { solids?: (string | null)[]; platforms?: (string | null)[] }; // eccezioni per indice; null = tinta unita
   props?: StageProp[]; // decorazioni ferme: statue, archi, lampioni
+  hazardSprites?: HazardSprite[]; // animazioni disegnate delle trappole (#270), al posto del disegno fatto col codice
   life?: StageLife; // sfondo vivo (#260): solo grafica, calcolata nel client dal tempo dell'arena
 }
 
@@ -157,6 +158,20 @@ export interface StageProp {
   opacity?: number;
 }
 
+// Animazione di una trappola (#270): un foglio di fotogrammi uno accanto all'altro, rivolti a destra (il gioco li
+// specchia quando la trappola va a sinistra). Il punto footX, footY dell'immagine (in pixel del fotogramma) va sul
+// centro del lato basso del rettangolo che fa male. Solo grafica: la fisica usa sempre il rettangolo.
+export interface HazardSprite {
+  hazard: number; // indice della trappola in hazards
+  file: string;
+  frames: number;
+  fps: number; // fotogrammi al secondo, sul tempo dell'arena
+  scale?: number; // pixel di mondo per pixel dell'immagine (1 se manca)
+  footX?: number; // pixel dal bordo sinistro del fotogramma (metà fotogramma se manca)
+  footY?: number; // pixel dal bordo alto (il fondo del fotogramma se manca)
+  shout?: { text: string; x: number; y: number }; // un fumetto che esce da qui (pixel del fotogramma) mentre passa
+}
+
 // Tutti i file che lo sfondo e il palco di un'arena nominano (export e test li cercano in public/assets/stages/<dir>/)
 export function stageArtFiles(art: StageArt): string[] {
   const files = [...art.layers, ...(art.foreground ? [art.foreground] : [])].map((l) => l.file);
@@ -167,6 +182,7 @@ export function stageArtFiles(art: StageArt): string[] {
     for (const r of skin.rails ?? []) files.push(r.file);
   }
   for (const p of art.props ?? []) files.push(p.file);
+  for (const h of art.hazardSprites ?? []) files.push(h.file);
   return [...new Set(files)];
 }
 
@@ -441,6 +457,11 @@ export const STAGES: Record<string, StageSpec> = {
         solids: ["riva", "riva", "fondo"],
         platforms: ["ponte", "scala", "scala", "lastra", "lastra", "lastra", "lastra", "lastra", "lastra", "balcone", "balcone"],
       },
+      // Cancaro Man (#270, dal disegno di Riccardo): la pedalata in 8 fotogrammi da tools/arene/ciclista.py
+      // TODO community: la voce del "CANCAROOOO!" da registrare; intanto c'è il fumetto
+      hazardSprites: [
+        { hazard: 1, file: "ciclista.png", frames: 8, fps: 16, scale: 0.58, footX: 150, footY: 312, shout: { text: "CANCAROOOO!", x: 200, y: 110 } },
+      ],
       props: [
         { file: "palazzo.png", x: 960, y: 480, scale: 0.5 }, // il palazzo signorile: la facciata, dietro a tutto il palco
         { file: "arco-ponte.png", x: 960, y: 692 },

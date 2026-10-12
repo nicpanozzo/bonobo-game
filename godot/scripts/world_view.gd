@@ -36,6 +36,7 @@ var _layer_scale := 1.0 # pixel di mondo per pixel delle immagini degli strati
 var _skins := {} # materiali del palco (#237): nome -> {tex, edge, depth, rails}
 var _props_back: Array = [] # decorazioni dietro ai lottatori (#237): [texture, decorazione]
 var _props_front: Array = [] # e davanti
+var _hazard_sprites := {} # indice della trappola -> {tex, frames, fps, scale, footX, footY}: animazioni disegnate (#270)
 var _life: RefCounted = preload("res://scripts/stage_life.gd").new() # sfondo vivo (#260)
 var _ambient := Color.WHITE # luce del momento del giorno (#267): moltiplica strati e decorazioni, un po' il palco
 var _textures := {} # id personaggio -> Texture2D dello spritesheet (nel formato cartella, quella di idle)
@@ -205,6 +206,13 @@ func _load_stage_dressing(dir: String, art: Dictionary) -> void:
 		var tex := _stage_texture(dir, pr.file)
 		if tex != null:
 			(_props_front if pr.get("front", false) else _props_back).append([tex, pr])
+	_hazard_sprites = {}
+	for hs in art.get("hazardSprites", []):
+		var tex := _stage_texture(dir, hs.file)
+		if tex != null:
+			_hazard_sprites[int(hs.hazard)] = {"tex": tex, "frames": int(hs.frames), "fps": float(hs.fps), "scale": float(hs.get("scale", 1.0)),
+				"footX": float(hs.get("footX", tex.get_width() / float(hs.frames) / 2.0)), "footY": float(hs.get("footY", tex.get_height())),
+				"shout": hs.get("shout") if hs.get("shout") is Dictionary else {}}
 
 
 static func _stage_texture(dir: String, file: String) -> Texture2D:
@@ -773,8 +781,9 @@ func _draw_elements(t: float) -> void:
 			draw_rect(Rect2(pos.x + x, pos.y + 10, minf(10, m.width - x), 5), Color("f1c40f"))
 	var hazards: Array = stage.get("hazards") if stage.get("hazards") != null else []
 	var rain := 0.0
-	for h in hazards:
-		_draw_hazard(h, hazard_active(h, t), t)
+	for i in hazards.size():
+		var h: Dictionary = hazards[i]
+		_draw_hazard(h, hazard_active(h, t), t, i)
 		rain = maxf(rain, rain_strength(h, t))
 	if rain > 0.0:
 		_draw_rain(rain, t)
@@ -783,11 +792,11 @@ func _draw_elements(t: float) -> void:
 		_draw_jet(j, t)
 
 
-func _draw_hazard(h: Dictionary, on: bool, t: float) -> void:
+func _draw_hazard(h: Dictionary, on: bool, t: float, index := -1) -> void:
 	var r := hazard_rect(h, t)
 	match h.kind:
 		"ciclista":
-			_draw_cyclist(h, r, t)
+			_draw_cyclist(h, r, t, index)
 		"acqua":
 			# Acqua alta (#228): verde-grigia, non blu saturo (è il colore di P2), con la superficie che ondeggia
 			draw_rect(r, Color(0.29, 0.39, 0.4, 0.82))
@@ -947,16 +956,76 @@ func _draw_boat(pos: Vector2, w: float, t: float) -> void:
 	draw_colored_polygon(PackedVector2Array([Vector2(pos.x + w * 0.7, pos.y - 46 + bob), Vector2(pos.x + w * 0.7 + 22, pos.y - 40 + bob), Vector2(pos.x + w * 0.7, pos.y - 34 + bob)]), Color("b8a88a"))
 
 
+# Il fotogramma dell'animazione di una trappola al tempo t dell'arena (#270)
+static func hazard_frame(t: float, fps: float, frames: int) -> int:
+	return posmod(int(floorf(t / 1000.0 * fps)), frames)
+
+
+# Dove si disegna un fotogramma: il piede (footX, footY) sul centro del lato basso del rettangolo che fa male.
+# Andando a sinistra si specchia sul posto: la larghezza negativa gira l'immagine (canvas_item_add_texture_rect)
+static func hazard_sprite_rect(spr: Dictionary, fw: float, fh: float, r: Rect2, dir: int) -> Rect2:
+	var k: float = spr.scale
+	var foot_x: float = spr.footX
+	var left := r.get_center().x - (foot_x if dir > 0 else fw - foot_x) * k
+	var top: float = r.end.y - float(spr.footY) * k
+	return Rect2(left, top, fw * k, fh * k) if dir > 0 else Rect2(left, top, -fw * k, fh * k)
+
+
+# Il fumetto di una trappola che urla, come il "CANCAROOOO!" di Cancaro Man (#270): una nuvola a punte che compare
+# con un colpo e trema, con la punta verso la bocca.
+# TODO community: quando qualcuno registra la voce, il fumetto resta e si sente anche il grido
+func _draw_shout(text: String, mouth: Vector2, dir: int, k: float, t: float) -> void:
+	var font := UI.font(UI.WEIGHT_BOLD)
+	var size := 26
+	var tw := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
+	var pop := minf(1.0, k / 0.06) # all'ingresso il fumetto si gonfia in un attimo
+	var shake := Vector2(sin(t / 23.0), cos(t / 31.0)) * 1.5
+	var c := mouth + Vector2(dir * 55.0, -66.0) + shake # sopra e davanti alla bocca
+	var rx := (tw / 2.0 + 22.0) * pop
+	var ry := 30.0 * pop
+	if rx < 2.0:
+		return
+	var pts := PackedVector2Array()
+	var spikes := 18
+	for i in spikes * 2:
+		var a := TAU * i / (spikes * 2)
+		var out := 1.0 if i % 2 == 0 else 0.8
+		pts.append(c + Vector2(cos(a) * rx * out, sin(a) * ry * out))
+	# la punta che scende verso la bocca
+	draw_colored_polygon(PackedVector2Array([c + Vector2(-dir * rx * 0.25, ry * 0.5), mouth, c + Vector2(-dir * rx * 0.02, ry * 0.7)]), Color.WHITE)
+	draw_polyline(PackedVector2Array([c + Vector2(-dir * rx * 0.25, ry * 0.6), mouth, c + Vector2(-dir * rx * 0.02, ry * 0.75)]), Color("1e1a17"), 3.0)
+	draw_colored_polygon(pts, Color.WHITE)
+	var outline := pts.duplicate()
+	outline.append(pts[0])
+	draw_polyline(outline, Color("1e1a17"), 3.0)
+	if pop >= 1.0:
+		draw_string_outline(font, c + Vector2(-tw / 2.0, size * 0.36), text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, 5, Color("1e1a17"))
+		draw_string(font, c + Vector2(-tw / 2.0, size * 0.36), text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, Color("e04a2a"))
+
+
 # Il ciclista arrabbiato (#229), disegno provvisorio dentro il rettangolo che fa male: bici scassata,
 # signore pelato e rosso dalla rabbia, maglietta bianca, pettorina catarifrangente (lime spento, non il
 # giallo di P4) e la catena che gira sopra la testa. Durante l'avviso, "DRIN DRIN!" dal lato dove entra.
-func _draw_cyclist(h: Dictionary, r: Rect2, t: float) -> void:
+func _draw_cyclist(h: Dictionary, r: Rect2, t: float, index := -1) -> void:
 	var tp := travel_phase(h, t)
 	if tp.phase == "calm":
 		return
 	var dir := travel_direction(h, t)
 	if tp.phase == "warn":
 		_draw_bell_warning(r, dir, t)
+		return
+	if _hazard_sprites.has(index):
+		# Cancaro Man (#270): l'animazione disegnata, poi il fumetto che urla
+		var spr: Dictionary = _hazard_sprites[index]
+		var tex: Texture2D = spr.tex
+		var fw := tex.get_width() / float(spr.frames)
+		var frame := hazard_frame(t, spr.fps, spr.frames)
+		draw_texture_rect_region(tex, hazard_sprite_rect(spr, fw, tex.get_height(), r, dir), Rect2(frame * fw, 0, fw, tex.get_height()), _stage_light())
+		var shout: Dictionary = spr.shout
+		if not shout.is_empty():
+			var k: float = spr.scale
+			var mouth := Vector2(r.get_center().x + dir * (float(shout.x) - float(spr.footX)) * k, r.end.y - (float(spr.footY) - float(shout.y)) * k)
+			_draw_shout(str(shout.text), mouth, dir, tp.k, t)
 		return
 	var w := r.size.x
 	var hh := r.size.y
