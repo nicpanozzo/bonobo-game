@@ -365,6 +365,12 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         climb: { fps: 24, loop: false }, // si tira su e torna in piedi in LEDGE.climbMs
         land: { fps: 24, loop: false }, // atterra di peso piegando le ginocchia
         taunt: { fps: 12, loop: false }, // soffia il fumo verso l'avversario e si batte il petto, 2 s
+        // #257 passo 3
+        dash: { fps: 24, loop: true }, // galoppo più disteso e veloce, alla velocità di DASH.runSpeed
+        shield: { fps: 12, loop: true }, // in guardia dentro la bolla, i pugni davanti alla faccia
+        grab: { fps: 24, loop: false, hitFrame: 2 }, // si allunga con le due mani, poi tiene l'altro stretto al petto
+        throw: { fps: 24, loop: false, hitFrame: 0 }, // scaglia con le braccia in avanti e in alto (si lascia subito)
+        grabbed: { fps: 12, loop: true }, // tenuto: si dimena e scalcia
       },
     },
   },

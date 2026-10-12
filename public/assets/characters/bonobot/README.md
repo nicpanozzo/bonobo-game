@@ -26,8 +26,13 @@ Un PNG per stato in questa cartella, con i fotogrammi in fila da sinistra. È il
 | `climb` | 10 | 24 | no | si tira su e torna in piedi in `LEDGE.climbMs`; l'ultimo fotogramma è la posa del fermo |
 | `land` | 6 | 24 | no | atterra di peso piegando le ginocchia |
 | `taunt` | 24 | 12 | no | si toglie la canna, soffia il fumo verso l'avversario e si batte il petto |
+| `dash` | 6 | 24 | sì | scatto e corsa: lo stesso galoppo della camminata, più disteso, alla velocità di `DASH.runSpeed` |
+| `shield` | 12 | 12 | sì | in guardia dentro la bolla, i pugni davanti alla faccia, respira piano |
+| `grab` | 15 | 24 | no | si allunga con le due mani (`hitFrame: 2`), poi tiene l'altro stretto al petto (ultimo fotogramma, finché dura la presa) |
+| `throw` | 8 | 24 | no | i quattro lanci: scaglia con le braccia in avanti e in alto (`hitFrame: 0`, si lascia subito) |
+| `grabbed` | 12 | 12 | sì | tenuto da qualcuno: si dimena e scalcia |
 
-Gli altri stati (varianti dei colpi, scudo, scatto, suprema...) usano il ripiego di `ANIMATION_FALLBACK` in `characters.ts`.
+Gli altri stati (varianti dei colpi, recupero, speciale, suprema) usano per ora il ripiego di `ANIMATION_FALLBACK` in `characters.ts`: arrivano con i passi 4 e 5 di #257.
 
 ## Come è fatto
 

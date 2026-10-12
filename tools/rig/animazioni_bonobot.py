@@ -237,10 +237,15 @@ def heavy():
 def walk():
     # Mani e piedi si appoggiano davvero: a terra scorrono indietro alla velocità della camminata
     # (FIGHTER.groundSpeed), in aria tornano avanti ad arco. Busto piegato in avanti, testa su.
-    n = 8  # 1/3 di secondo a 24 fps
+    # 8 fotogrammi = 1/3 di secondo a 24 fps; duty: quanto del giro un appoggio sta a terra, corto perché
+    # le gambe sono corte e la corsa veloce
+    return gallop(n=8, speed=GROUND_SPEED, duty=0.28)
+
+
+def gallop(n, speed, duty, hips=26, sp=26, neck=-30, head=-24, bob=6, lift_leg=24, lift_arm=30, reach=18):
+    """Il galoppo sulle nocche, alla velocità `speed` (pixel a 2x al secondo): lo usano camminata e scatto."""
     L = n / FPS
-    duty = 0.28  # quanto del giro un appoggio sta a terra: corto, perché le gambe sono corte e la corsa veloce
-    stride = duty * L * GROUND_SPEED
+    stride = duty * L * speed
     phase = {"R_leg": 0.00, "L_leg": 0.10, "R_arm": 0.50, "L_arm": 0.60}
 
     def path(t, ph, center, lift):
@@ -255,16 +260,16 @@ def walk():
     for i in range(n):
         t = i / FPS
         w = TAU * t / L
-        pose = dict(hips=26 + 3 * s(w), sp=26 + 4 * s(w + 0.6), neck=-30, head=-24 + 3 * s(w + 1.6), y=16 - 6 * abs(s(w + 0.3)))
+        pose = dict(hips=hips + 3 * s(w), sp=sp + 4 * s(w + 0.6), neck=neck, head=head + 3 * s(w + 1.6), y=10 + bob - bob * abs(s(w + 0.3)))
         corpo, radice = costruisci(pose)
         m = sk.fk(corpo, radice)
         for S in ("R", "L"):
             hx = m[f"thigh_{S}"][0][0]
-            x, y = path(t, phase[f"{S}_leg"], hx + 4, 24)
+            x, y = path(t, phase[f"{S}_leg"], hx + 4, lift_leg)
             pose[f"p{S}x"], pose[f"p{S}y"], pose[f"p{S}b"] = x, y - 12, 1
             pose[f"p{S}a"] = REST[f"p{S}a"] - (30 if y < -2 else 0)
             sx = m[f"upper_arm_{S}"][0][0]
-            x, y = path(t, phase[f"{S}_arm"], sx + 18, 30)
+            x, y = path(t, phase[f"{S}_arm"], sx + reach, lift_arm)
             pose[f"h{S}x"], pose[f"h{S}y"], pose[f"h{S}b"] = x, y - 34, -1
             pose[f"h{S}a"] = 90  # mano dritta, sulle nocche
             pose[f"f{S}"] = 80
@@ -465,6 +470,75 @@ def taunt():
     return out
 
 
+# ---------------------------------------------------------------- scatto, scudo, presa (#257 passo 3)
+def dash():
+    # Scatto e corsa dopo il doppio tocco (DASH.runSpeed, 560 px/s): lo stesso galoppo della camminata, più
+    # disteso in avanti, con il giro più corto e le mani che vanno più lontano
+    return gallop(n=6, speed=560 * 2, duty=0.24, hips=30, sp=31, neck=-34, head=-28, bob=3, lift_leg=30, lift_arm=34, reach=24)
+
+
+def shield():
+    # Dentro la bolla: accucciato in guardia, i pugni chiusi davanti alla faccia, il mento giù; respira piano (1 s, 12 fps)
+    n = 12
+    out = []
+    for f in range(n):
+        w = TAU * f / n
+        out.append(costruisci(dict(
+            y=14 + 1.5 * s(w), hips=8, sp=16 + 1.5 * s(w + 0.5), neck=-4, head=10 + 1.5 * s(w + 1.0),
+            hRx=64, hRy=-146 + 1.5 * s(w + 0.3), hRa=-80, hRb=-1, fR=85, tR=40,
+            hLx=74, hLy=-134 + 1.5 * s(w + 0.6), hLa=-70, hLb=-1, fL=85,
+            pRx=REST["pRx"] + 12, pLx=REST["pLx"] - 10, brow=-10, lid=10, jaw=-2,
+            tb=4 * s(w), tf=-3 * s(w + 0.5), joint=-6)))
+    return out
+
+
+GRAB_REACH = dict(x=10, hips=10, sp=14, neck=-10, head=-8, brow=-12,
+                  hRx=112, hRy=-100, hRa=0, hRb=-1, fR=-10, tR=-20,
+                  hLx=104, hLy=-90, hLa=10, hLb=-1, fL=-10,
+                  pRx=REST["pRx"] + 16, pLx=REST["pLx"] - 6, tb=-10, tf=8)
+# Chi tiene (#109): l'altro sta a GRAB.holdDistance (56 px = 112 a 2x), le mani gli stringono il petto
+GRAB_HOLD = dict(x=4, hips=6, sp=8, neck=-6, head=-6, brow=-14, jaw=4,
+                 hRx=84, hRy=-118, hRa=40, hRb=-1, fR=70, tR=40,
+                 hLx=78, hLy=-104, hLa=50, hLb=-1, fL=70,
+                 pRx=REST["pRx"] + 10, pLx=REST["pLx"] - 8, tb=0, tf=0)
+
+
+def grab():
+    # Presa (ATTACKS.grab: avvio 100 ms, attiva 33, attesa 633): si allunga con le due mani, le chiude e tira
+    # a sé; l'ultimo fotogramma è la posa di chi tiene, che resta finché dura la presa
+    keys = [(0, dict()), (2, GRAB_REACH), (4, dict(GRAB_REACH, fR=60, fL=60, tR=30)), (9, GRAB_HOLD), (14, GRAB_HOLD)]
+    return [costruisci(p) for p in frames_from(keys, 15, lag={"head": 0.6, "tb": 1, "tf": 1.2})]
+
+
+def throw():
+    # I quattro lanci (ATTACKS.throw*: si lascia subito, 300 ms in tutto): dalla presa le braccia si aprono in
+    # avanti e in alto come per scagliare, il busto segue, poi torna al fermo
+    fling = dict(x=14, y=-6, hips=12, sp=20, neck=-14, head=-12, brow=-14, jaw=8,
+                 hRx=96, hRy=-176, hRa=-40, hRb=-1, fR=-20, tR=-20,
+                 hLx=88, hLy=-166, hLa=-30, hLb=-1, fL=-20,
+                 pRx=REST["pRx"] + 20, pLx=REST["pLx"] - 12, pLa=REST["pLa"] - 20, tb=-16, tf=12)
+    keys = [(0, fling), (2, dict(fling, x=16, sp=24, hRx=104, hRy=-150, hLx=96, hLy=-142)),
+            (7, dict(x=0, y=0, hips=0, sp=0, neck=0, head=0, brow=0, jaw=0, hRx=40, hRy=-58, hRa=80, hLx=26, hLy=-58, hLa=80,
+                     fR=0, tR=0, fL=0, pRx=REST["pRx"], pLx=REST["pLx"], pLa=REST["pLa"], tb=0, tf=0))]
+    return [costruisci(p) for p in frames_from(keys, 8, lag={"head": 0.6, "tb": 1, "tf": 1.2}, curve=ease_out)]
+
+
+def grabbed():
+    # Tenuto da qualcuno (#109): spinto indietro, si dimena con le braccia e scalcia per liberarsi (1 s, 12 fps)
+    n = 12
+    out = []
+    for f in range(n):
+        w = TAU * f / n
+        out.append(costruisci(dict(
+            x=-4, y=-4 + 2 * s(2 * w), hips=-8, sp=-16 + 4 * s(w), neck=-8, head=-14 + 10 * s(2 * w), brow=-8, lid=18, jaw=6 + 4 * s(2 * w),
+            hRx=58 + 14 * s(w), hRy=-172 + 16 * s(w + 0.8), hRa=-60, hRb=-1, fR=20 + 20 * s(2 * w),
+            hLx=20 - 14 * s(w), hLy=-178 - 14 * s(w + 0.8), hLa=-90, hLb=-1, fL=20 - 20 * s(2 * w),
+            pRx=REST["pRx"] + 14 * s(w), pRy=REST["pRy"] - 10 - 8 * max(0.0, s(w)), pRa=REST["pRa"] - 20 * max(0.0, s(w)),
+            pLx=REST["pLx"] - 14 * s(w), pLy=REST["pLy"] - 10 - 8 * max(0.0, -s(w)), pLa=REST["pLa"] - 20 * max(0.0, -s(w)),
+            joint=-10, tb=14 * s(2 * w), tf=-10 * s(2 * w + 0.6))))
+    return out
+
+
 # ---------------------------------------------------------------- tutto
 # stato: (fotogrammi, fps, ciclo, fotogramma d'impatto)
 ANIMS = {
@@ -481,6 +555,11 @@ ANIMS = {
     "climb": (climb, FPS, False, None),
     "land": (land, FPS, False, None),
     "taunt": (taunt, 12, False, None),
+    "dash": (dash, FPS, True, None),
+    "shield": (shield, 12, True, None),
+    "grab": (grab, FPS, False, 2),
+    "throw": (throw, FPS, False, 0),
+    "grabbed": (grabbed, 12, True, None),
 }
 
 
