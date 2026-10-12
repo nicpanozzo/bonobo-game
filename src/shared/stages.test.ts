@@ -82,14 +82,19 @@ describe("arene", () => {
       }
       // Sfondo vivo (#260): parallassi tra 0 e 1, tempi positivi
       const life = art.life;
-      for (const e of [life?.birds, life?.walkers, life?.vehicles, ...(life?.daycycle?.lamps ?? [])]) {
+      for (const e of [life?.birds, life?.walkers, life?.vehicles, life?.traffic, life?.flyers, life?.bar, ...(life?.daycycle?.lamps ?? [])]) {
         if (e) assert.ok(e.parallax >= 0 && e.parallax <= 1, `${stage.id}: parallasse dello sfondo vivo tra 0 e 1`);
       }
-      for (const ms of [life?.birds?.everyMs, life?.vehicles?.everyMs, life?.daycycle?.cycleMs]) {
+      for (const ms of [life?.birds?.everyMs, life?.vehicles?.everyMs, life?.traffic?.everyMs, life?.planes?.everyMs, life?.daycycle?.cycleMs]) {
         if (life?.daycycle?.startAt !== undefined) assert.ok(life.daycycle.startAt >= 0 && life.daycycle.startAt < 1, `${stage.id}: startAt tra 0 e 1`);
         if (ms !== undefined) assert.ok(ms > 0, `${stage.id}: tempi dello sfondo vivo positivi`);
       }
       if (life?.vehicles) assert.ok(life.vehicles.everyMs > 12000, `${stage.id}: il veicolo impiega 12 s a passare, everyMs deve essere di più`);
+      // #278: il traffico ha almeno un tipo e non si accalca; il bar ha almeno un tavolino
+      if (life?.traffic) assert.ok(life.traffic.kinds.length > 0 && life.traffic.everyMs >= 1000, `${stage.id}: tipi del traffico e un veicolo al massimo al secondo`);
+      if (life?.planes) assert.ok(life.planes.everyMs > 40000, `${stage.id}: l'aereo impiega 40 s a passare, everyMs deve essere di più`);
+      if (life?.flyers) assert.ok(Number.isInteger(life.flyers.count) && life.flyers.count > 0, `${stage.id}: quanti uccelli vicini`);
+      if (life?.bar) assert.ok(Number.isInteger(life.bar.tables) && life.bar.tables > 0 && life.bar.spacing > 0, `${stage.id}: tavolini del bar`);
     }
   });
 

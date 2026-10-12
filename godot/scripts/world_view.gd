@@ -550,6 +550,7 @@ func _draw() -> void:
 	var rain := _rain_now(t_stage)
 	_ambient = _life.ambient(t_stage) # la luce del momento del giorno (#267), bianca senza ciclo
 	if not _life.is_empty():
+		_life.view = view_rect # lo sfondo vivo non disegna quello che sta fuori dall'inquadratura (#278)
 		_life.draw_sky(self, t_stage, view_rect) # cielo vivo, sole, luna, stelle e nuvole, dietro agli strati
 	# Sfondo vivo (#260): ogni elemento si disegna dopo gli strati più lontani di lui
 	var far := -1.0

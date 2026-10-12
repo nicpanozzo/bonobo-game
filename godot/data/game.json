@@ -1641,14 +1641,45 @@
           "walkers": {
             "y": 510,
             "parallax": 0.75,
-            "count": 9,
+            "count": 14,
             "umbrellas": true
           },
           "vehicles": {
-            "y": 540,
-            "parallax": 0.45,
+            "y": 488,
+            "parallax": 0.5,
             "everyMs": 23000,
             "kind": "tram"
+          },
+          "traffic": {
+            "y": 488,
+            "parallax": 0.5,
+            "everyMs": 2600,
+            "kinds": [
+              "auto",
+              "auto",
+              "auto",
+              "vespa",
+              "vespa",
+              "furgone",
+              "bici",
+              "bus"
+            ]
+          },
+          "flyers": {
+            "y": 90,
+            "parallax": 0.6,
+            "count": 7
+          },
+          "planes": {
+            "y": -60,
+            "everyMs": 75000
+          },
+          "bar": {
+            "x": 120,
+            "y": 504,
+            "parallax": 0.8,
+            "tables": 3,
+            "spacing": 72
           },
           "daycycle": {
             "cycleMs": 240000,
