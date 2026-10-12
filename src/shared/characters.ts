@@ -333,6 +333,16 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         scale: 0.5,
       },
     },
+    // Speciali proprie (#257 passo 2), idea di Riccardo: soffia il fumo della canna, galoppa sulle nocche, si batte il petto
+    // TODO community: nomi e numeri provvisori, da rivedere al playtest (#22)
+    specials: {
+      // un anello lento e corto, uno alla volta: tiene a distanza più che fare danno
+      neutral: { type: "projectile", name: "Anello di fumo", startupMs: 260, cooldownMs: 620, speed: 380, gravity: 0, lifeMs: 900, maxAlive: 1, range: 30, height: 30, damage: 5, baseKnockback: 160, knockbackGrowth: 3, angleDeg: 20, color: 0xd9d3c7 },
+      // parte più tardi dello scatto di base (140 ms invece di 100) ma colpisce più forte
+      side: { type: "dash", name: "Carica sulle nocche", startupMs: 140, durationMs: 320, speed: 820, endLagMs: 360, range: 48, height: 46, damage: 11, baseKnockback: 400, knockbackGrowth: 8.5, angleDeg: 35 },
+      // il contrattacco di base, un po' più lento a chiudersi e più forte nella risposta
+      down: { type: "counter", name: "Battuta del petto", startupMs: 60, windowMs: 380, endLagMs: 480, minDamage: 9, multiplier: 1.35, range: 64, height: 64, baseKnockback: 470, knockbackGrowth: 9, angleDeg: 40 },
+    },
     // Rifatto con lo scheletro nuovo (#195) nello stile della guida (E7 passo 4): un PNG per stato, fatti da
     // tools/rig/animazioni_bonobot.py e tools/rig/rendi_sprite.py (vedi public/assets/characters/bonobot/README.md)
     sprite: {

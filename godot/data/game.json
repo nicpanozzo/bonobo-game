@@ -1939,6 +1939,53 @@
           "scale": 0.5
         }
       },
+      "specials": {
+        "neutral": {
+          "type": "projectile",
+          "name": "Anello di fumo",
+          "startupMs": 260,
+          "cooldownMs": 620,
+          "speed": 380,
+          "gravity": 0,
+          "lifeMs": 900,
+          "maxAlive": 1,
+          "range": 30,
+          "height": 30,
+          "damage": 5,
+          "baseKnockback": 160,
+          "knockbackGrowth": 3,
+          "angleDeg": 20,
+          "color": 14275527
+        },
+        "side": {
+          "type": "dash",
+          "name": "Carica sulle nocche",
+          "startupMs": 140,
+          "durationMs": 320,
+          "speed": 820,
+          "endLagMs": 360,
+          "range": 48,
+          "height": 46,
+          "damage": 11,
+          "baseKnockback": 400,
+          "knockbackGrowth": 8.5,
+          "angleDeg": 35
+        },
+        "down": {
+          "type": "counter",
+          "name": "Battuta del petto",
+          "startupMs": 60,
+          "windowMs": 380,
+          "endLagMs": 480,
+          "minDamage": 9,
+          "multiplier": 1.35,
+          "range": 64,
+          "height": 64,
+          "baseKnockback": 470,
+          "knockbackGrowth": 9,
+          "angleDeg": 40
+        }
+      },
       "sprite": {
         "dir": "assets/characters/bonobot",
         "frameWidth": 336,
@@ -2130,86 +2177,39 @@
         "gravity": 1
       },
       "portrait": "assets/characters/bonobot/portrait.png",
-      "specials": {
-        "neutral": {
-          "type": "projectile",
-          "name": "Tiro",
-          "startupMs": 216,
-          "cooldownMs": 550,
-          "speed": 700,
-          "gravity": 0,
-          "lifeMs": 1200,
-          "maxAlive": 1,
-          "range": 24,
-          "height": 16,
-          "damage": 6,
-          "baseKnockback": 220,
-          "knockbackGrowth": 3.5,
-          "angleDeg": 30,
-          "color": 16767050
-        },
-        "side": {
-          "type": "dash",
-          "name": "Scatto",
-          "startupMs": 100,
-          "durationMs": 250,
-          "speed": 900,
-          "endLagMs": 300,
-          "range": 40,
-          "height": 50,
-          "damage": 9,
-          "baseKnockback": 360,
-          "knockbackGrowth": 8,
-          "angleDeg": 35
-        },
-        "down": {
-          "type": "counter",
-          "name": "Contrattacco",
-          "startupMs": 50,
-          "windowMs": 400,
-          "endLagMs": 450,
-          "minDamage": 8,
-          "multiplier": 1.3,
-          "range": 60,
-          "height": 60,
-          "baseKnockback": 450,
-          "knockbackGrowth": 9,
-          "angleDeg": 40
-        }
-      },
       "specialAttacks": {
         "specialNeutral": {
-          "baseKnockback": 220,
-          "knockbackGrowth": 3.5,
-          "angleDeg": 30,
-          "range": 24,
-          "height": 16,
-          "damage": 6,
-          "startupMs": 216,
+          "baseKnockback": 160,
+          "knockbackGrowth": 3,
+          "angleDeg": 20,
+          "range": 30,
+          "height": 30,
+          "damage": 5,
+          "startupMs": 260,
           "activeMs": 0,
-          "cooldownMs": 550
+          "cooldownMs": 620
         },
         "specialSide": {
-          "baseKnockback": 360,
-          "knockbackGrowth": 8,
+          "baseKnockback": 400,
+          "knockbackGrowth": 8.5,
           "angleDeg": 35,
-          "range": 40,
-          "height": 50,
-          "damage": 9,
-          "startupMs": 100,
-          "activeMs": 250,
-          "cooldownMs": 650
+          "range": 48,
+          "height": 46,
+          "damage": 11,
+          "startupMs": 140,
+          "activeMs": 320,
+          "cooldownMs": 820
         },
         "specialDown": {
-          "baseKnockback": 450,
+          "baseKnockback": 470,
           "knockbackGrowth": 9,
           "angleDeg": 40,
-          "range": 60,
-          "height": 60,
-          "damage": 8,
-          "startupMs": 50,
-          "activeMs": 400,
-          "cooldownMs": 900
+          "range": 64,
+          "height": 64,
+          "damage": 9,
+          "startupMs": 60,
+          "activeMs": 380,
+          "cooldownMs": 920
         }
       },
       "supremeAttack": {
