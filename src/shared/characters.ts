@@ -298,25 +298,26 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     name: "Bonobot",
     // Suprema "Omar" (#102): Bonobot salta ad afferrare la liana, la tira e fa una capriola indietro;
     // l'orsogufo Omar cade sulla liana, schiaccia chi sta lì, fa puff e diventa uno gnomo che scappa.
-    // Numeri provvisori dall'issue e da Riccardo (danno 25-30%, area 132 px, dura poco), da rivedere al playtest (#22)
+    // Numeri provvisori dall'issue e da Riccardo (area 132 px), da rivedere al playtest (#22).
+    // Dopo il playtest di Riccardo (#257): tempi 1,3 volte più lunghi (circa 1,7 s in tutto) e danno da 28 a 35
     supreme: {
       type: "drop",
       name: "Omar",
       label: "Omar",
-      leapMs: 250,
+      leapMs: 325,
       leapDx: 60,
       leapDy: 110,
-      pullMs: 150,
-      warnMs: 500,
-      fallMs: 300,
-      flipMs: 350,
+      pullMs: 195,
+      warnMs: 650,
+      fallMs: 390,
+      flipMs: 455,
       flipDx: 130,
       flipArc: 50,
       impactMs: 100,
-      recoverMs: 300,
+      recoverMs: 390,
       width: 132,
       height: 150,
-      damage: 28,
+      damage: 35,
       baseKnockback: 600,
       knockbackGrowth: 11,
       angleDeg: 70,
