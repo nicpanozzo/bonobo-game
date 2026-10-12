@@ -124,8 +124,10 @@ func test_numeri_delle_speciali_dal_personaggio() -> void:
 
 func test_colore_dei_proiettili_e_alone_della_carica() -> void:
 	var game: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/game.json"))
-	var tiro := WorldView.projectile_color(game, "bonobot", "specialNeutral")
+	var tiro := WorldView.projectile_color(game, "egiainuso", "specialNeutral")
 	runner.check(tiro.is_equal_approx(Color.hex(0xffd84aff)), "il Tiro è giallo: %s" % tiro)
+	var fumo := WorldView.projectile_color(game, "bonobot", "specialNeutral")
+	runner.check(fumo.is_equal_approx(Color.hex(0xd9d3c7ff)), "l'Anello di fumo di Bonobot è grigio: %s" % fumo)
 	runner.check(WorldView.projectile_color(game, "sconosciuto", "specialNeutral").is_equal_approx(WorldView.projectile_color(game, "default", "specialNeutral")), "personaggio sconosciuto: quello di Bonobo")
 	var schizzo := WorldView.projectile_color(game, "orsoblu", "specialNeutral")
 	runner.check(schizzo.is_equal_approx(Color.hex(0x6ec8ffff)), "lo Schizzo di Capt. OrsoBlu è azzurro: %s" % schizzo)
