@@ -9,10 +9,12 @@ const DEFAULT_RESPAWN_Y = 160;
 
 // Stesso conto di reachable in src/shared/stageCheck.ts
 export function reachable(stage, p, check) {
+  // Una scala (#246) si prende dal punto più basso, e ci si arriva anche camminando da una superficie alla stessa altezza
+  const py = Math.max(p.y, p.y2 ?? p.y);
   return [...stage.solids, ...stage.platforms].some((s) => {
-    if (s.y <= p.y) return false;
+    if (s.y < py || (s.y === py && p.y2 === undefined)) return false;
     const gap = Math.max(0, s.x - (p.x + p.width), p.x - (s.x + s.width));
-    const rise = s.y - p.y;
+    const rise = s.y - py;
     return (gap <= check.sideReach && rise <= check.jumpHeight) || (gap === 0 && rise <= check.doubleJumpHeight * 0.9);
   });
 }
@@ -81,12 +83,15 @@ export function toStageSpec(model) {
     id: model.id,
     name: model.name,
     solids: model.solids.map(({ x, y, width, height }) => ({ x, y, width, height })),
-    platforms: model.platforms.map(({ x, width, y }) => ({ x, width, y })),
-    blastZone: { left: -250, right: WORLD.width + 250, top: -350, bottom: WORLD.height + 200 },
+    // Ponti ad arco (#244) e scale (#246) restano tali anche se l'editor li disegna dritti
+    platforms: model.platforms.map(({ x, width, y, arch, y2 }) => ({ x, width, y, ...(arch !== undefined && { arch }), ...(y2 !== undefined && { y2 }) })),
+    blastZone: { left: -250, right: (model.width ?? WORLD.width) + 250, top: -350, bottom: WORLD.height + 200 },
     spawns: generateSpawns(model),
     respawn: model.respawn ?? { x: WORLD.width / 2, y: DEFAULT_RESPAWN_Y },
     colors: model.colors,
   };
+  if (model.width) spec.width = model.width; // arene più larghe dello schermo (#240)
+  if (model.camera) spec.camera = model.camera;
   if (model.movers?.length) spec.movers = model.movers;
   if (model.hazards?.length) spec.hazards = model.hazards;
   return spec;
@@ -114,10 +119,14 @@ export function toStagesTs(spec) {
     `    solids: ${list(spec.solids)},`,
     `    platforms: ${list(spec.platforms)},`,
   ];
+  if (spec.width) lines.push(`    width: ${spec.width},`); // arene più larghe dello schermo (#240)
+  if (spec.camera) lines.push(`    camera: ${literal(spec.camera)},`);
   if (spec.movers) lines.push(`    movers: ${list(spec.movers)},`);
   if (spec.hazards) lines.push(`    hazards: ${list(spec.hazards)},`);
   lines.push(
-    `    blastZone: { left: -250, right: WORLD.width + 250, top: -350, bottom: WORLD.height + 200 },`,
+    spec.width
+      ? `    blastZone: ${literal(spec.blastZone)},`
+      : `    blastZone: { left: -250, right: WORLD.width + 250, top: -350, bottom: WORLD.height + 200 },`,
     `    spawns: ${list(spec.spawns)},`,
     `    respawn: { x: ${respawnX}, y: ${spec.respawn.y} },`,
     `    colors: ${literal(spec.colors)},`,

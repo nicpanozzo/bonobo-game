@@ -13,10 +13,12 @@ export const SIDE_REACH = STAGE_CHECK.sideReach;
 // o da una superficie proprio sotto con il doppio salto
 // heightScale: per i personaggi con salto o gravità diversi (E11) l'altezza è jump² / gravity volte quella di base
 export function reachable(stage: { solids: Rect[]; platforms: ThinPlatform[] }, p: ThinPlatform, heightScale = 1): boolean {
+  // Una scala (#246) si prende dal punto più basso, e ci si arriva anche camminando da una superficie alla stessa altezza
+  const py = Math.max(p.y, p.y2 ?? p.y);
   return [...stage.solids, ...stage.platforms].some((s) => {
-    if (s.y <= p.y) return false;
+    if (s.y < py || (s.y === py && p.y2 === undefined)) return false;
     const gap = Math.max(0, s.x - (p.x + p.width), p.x - (s.x + s.width));
-    const rise = s.y - p.y;
+    const rise = s.y - py;
     return (gap <= SIDE_REACH && rise <= JUMP_HEIGHT * heightScale) || (gap === 0 && rise <= DOUBLE_JUMP_HEIGHT * heightScale * 0.9);
   });
 }

@@ -322,6 +322,106 @@ export const STAGES: Record<string, StageSpec> = {
     respawn: { x: WORLD.width / 2, y: 160 },
     colors: { sky: 0x2a2433, solid: 0x6b4f3a, solidEdge: 0xd9a066, platform: 0xb8a58c },
   },
+
+  // Padova, Prato della Valle (#230, idea di Riccardo): piazza, ponte ad arco e piazza sopra il canale, con le statue
+  // del Prato che reggono le lastre. Il canale sale con la pioggia, il getto della fontana spinge in alto, e un signore
+  // arrabbiato in bici attraversa tutto gridando. Larga 1,5 schermi: la telecamera si allontana fino a 0,6.
+  padova: {
+    id: "padova",
+    name: "Padova",
+    width: 1920,
+    camera: { minZoom: 0.6 },
+    solids: [
+      { x: 100, y: 520, width: 620, height: 200 }, // piazza sinistra
+      { x: 1200, y: 520, width: 620, height: 200 }, // piazza destra
+      { x: 720, y: 690, width: 480, height: 30 }, // fondo del canale
+    ],
+    platforms: [
+      // Il ponte va per primo: camminando dalla piazza si resta sul ponte, tenendo giù si scende sulla scala (#246)
+      { x: 720, y: 520, width: 480, arch: 25 },
+      { x: 742, y: 518, width: 180, y2: 690 }, // scala sinistra, giù fino al fondo del canale
+      { x: 998, y: 690, width: 180, y2: 518 }, // scala destra
+      { x: 600, y: 410, width: 180 }, // lastre rette dalle statue, larghe per starci in due: ai capi del ponte...
+      { x: 1140, y: 410, width: 180 },
+      { x: 470, y: 330, width: 140 }, // ...più in alto...
+      { x: 1310, y: 330, width: 140 },
+      { x: 220, y: 380, width: 180 }, // ...e sulle piazze
+      { x: 1520, y: 380, width: 180 },
+      // I balconi del palazzo signorile dietro il ponte (idea di Riccardo): la casa è sfondo, i balconi si calpestano
+      { x: 800, y: 300, width: 320 }, // il balcone largo del piano nobile, sopra il ponte
+      { x: 900, y: 180, width: 120 }, // il balconcino dell'ultimo piano: la cima dell'arena
+    ],
+    hazards: [
+      // Il canale: l'acqua bassa non fa male; con la pioggia sale, copre le scale e fa male finché non riscende
+      { kind: "acqua", x: 720, y: 660, width: 480, height: 30, damage: 6, knockback: 550, knockbackGrowth: 3, angleDeg: 85,
+        flood: { highY: 550, periodMs: 40000, warnMs: 4000, riseMs: 3000, holdMs: 6000, fallMs: 3000, lowSafe: true } },
+      // Il ciclista arrabbiato (#229): entra da fuori, passa sulle piazze e sul ponte, ed esce. Sotto il ponte si è al riparo
+      // TODO community: il grido "CANCAROOOO!" da registrare (chi lo fa?)
+      { kind: "ciclista", x: 0, y: 0, width: 80, height: 95, damage: 10, knockback: 600, knockbackGrowth: 5, angleDeg: 35,
+        travel: { path: [{ x: -160, y: 425 }, { x: 680, y: 425 }, { x: 920, y: 400 }, { x: 1160, y: 425 }, { x: 2080, y: 425 }],
+          periodMs: 20000, warnMs: 1000, crossMs: 2800, alternate: true, offsetMs: 7000 } },
+    ],
+    // Il getto della fontana in fondo al canale (#253): una scorciatoia verso le lastre alte
+    jets: [{ x: 930, y: 690, width: 60, height: 300, speed: 1300, periodMs: 9000, warnMs: 1200, activeMs: 1500, offsetMs: 3000 }],
+    // Gli oggetti cadono spesso nel canale e sulle lastre delle statue: rischio e premio, e un motivo per salire
+    itemSpots: [
+      { x: 740, y: 690, width: 440, weight: 3 },
+      { x: 600, y: 410, width: 180, weight: 2 },
+      { x: 1140, y: 410, width: 180, weight: 2 },
+      { x: 470, y: 330, width: 140, weight: 2 },
+      { x: 1310, y: 330, width: 140, weight: 2 },
+      { x: 220, y: 380, width: 180, weight: 2 },
+      { x: 1520, y: 380, width: 180, weight: 2 },
+      { x: 800, y: 300, width: 320, weight: 3 }, // il balcone del palazzo
+    ],
+    blastZone: { left: -300, right: 2220, top: -420, bottom: 1000 },
+    spawns: [300, 450, 200, 600, 380, 520, 250, 660].flatMap((x) => [{ x, y: 520 }, { x: 1920 - x, y: 520 }]).slice(0, 8),
+    respawn: { x: 960, y: 100 },
+    colors: { sky: 0x2b3446, solid: 0x6f6a60, solidEdge: 0xe8e2d2, platform: 0xd9d4c7 },
+    // Rilassata, da pomeriggio in piazza. TODO community: un pezzo del canale da rifare per Padova?
+    music: { bpm: 116, chords: ["F", "Am", "Bb", "C"], lead: "triangle" },
+    // Segnaposto disegnati col codice da tools/arene/padova.py: si sostituiscono con i disegni veri, stessi nomi
+    art: {
+      layers: [
+        { file: "sfondo-0.png", parallax: 0.15 }, // cielo e Santa Giustina
+        { file: "sfondo-1.png", parallax: 0.45 }, // portici, Loggia Amulea, mercato
+        { file: "sfondo-2.png", parallax: 0.75 }, // il prato dell'Isola Memmia, alberi e la seconda fila di statue
+      ],
+      preview: "anteprima.png",
+      skins: {
+        pietra: { file: "pietra.png", edge: "bordo.png" },
+        fondo: { file: "scala.png" },
+        ponte: {
+          file: "ponte.png",
+          depth: 20,
+          rails: [
+            { file: "balaustra.png", height: 36, offsetY: 2 }, // la ringhiera traforata del Prato, dietro
+            { file: "balaustra.png", height: 28, offsetY: 12, front: true, opacity: 0.45 }, // e quella davanti, trasparente
+          ],
+        },
+        scala: { file: "scala.png", edge: "scala-bordo.png" },
+        lastra: { file: "lastra.png", depth: 12 },
+        balcone: { file: "balcone.png", depth: 14, rails: [{ file: "balaustra-balcone.png", height: 30, offsetY: 2 }] },
+      },
+      solidSkin: "pietra",
+      platformSkin: "lastra",
+      pieces: {
+        solids: ["pietra", "pietra", "fondo"],
+        platforms: ["ponte", "scala", "scala", "lastra", "lastra", "lastra", "lastra", "lastra", "lastra", "balcone", "balcone"],
+      },
+      props: [
+        { file: "palazzo.png", x: 960, y: 480, scale: 0.5 }, // il palazzo signorile: la facciata, dietro a tutto il palco
+        { file: "arco-ponte.png", x: 960, y: 692 },
+        // Le statue che reggono le lastre: il giovane con l'alloro, il filosofo con la barba, la dama col velo
+        { file: "statua-ponte.png", x: 690, y: 522, scale: 0.5 },
+        { file: "statua-ponte.png", x: 1230, y: 522, scale: 0.5, flip: true },
+        { file: "statua-alta.png", x: 540, y: 522, scale: 0.5 },
+        { file: "statua-alta.png", x: 1380, y: 522, scale: 0.5, flip: true },
+        { file: "statua-piazza.png", x: 310, y: 522, scale: 0.5 },
+        { file: "statua-piazza.png", x: 1610, y: 522, scale: 0.5, flip: true },
+      ],
+    },
+  },
 };
 
 // Le arene generate si ricreano dal seme; si tengono le ultime per non rigenerarle a ogni chiamata

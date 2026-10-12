@@ -1095,6 +1095,416 @@
         "solidEdge": 14262374,
         "platform": 12101004
       }
+    },
+    "padova": {
+      "id": "padova",
+      "name": "Padova",
+      "width": 1920,
+      "camera": {
+        "minZoom": 0.6
+      },
+      "solids": [
+        {
+          "x": 100,
+          "y": 520,
+          "width": 620,
+          "height": 200
+        },
+        {
+          "x": 1200,
+          "y": 520,
+          "width": 620,
+          "height": 200
+        },
+        {
+          "x": 720,
+          "y": 690,
+          "width": 480,
+          "height": 30
+        }
+      ],
+      "platforms": [
+        {
+          "x": 720,
+          "y": 520,
+          "width": 480,
+          "arch": 25
+        },
+        {
+          "x": 742,
+          "y": 518,
+          "width": 180,
+          "y2": 690
+        },
+        {
+          "x": 998,
+          "y": 690,
+          "width": 180,
+          "y2": 518
+        },
+        {
+          "x": 600,
+          "y": 410,
+          "width": 180
+        },
+        {
+          "x": 1140,
+          "y": 410,
+          "width": 180
+        },
+        {
+          "x": 470,
+          "y": 330,
+          "width": 140
+        },
+        {
+          "x": 1310,
+          "y": 330,
+          "width": 140
+        },
+        {
+          "x": 220,
+          "y": 380,
+          "width": 180
+        },
+        {
+          "x": 1520,
+          "y": 380,
+          "width": 180
+        },
+        {
+          "x": 800,
+          "y": 300,
+          "width": 320
+        },
+        {
+          "x": 900,
+          "y": 180,
+          "width": 120
+        }
+      ],
+      "hazards": [
+        {
+          "kind": "acqua",
+          "x": 720,
+          "y": 660,
+          "width": 480,
+          "height": 30,
+          "damage": 6,
+          "knockback": 550,
+          "knockbackGrowth": 3,
+          "angleDeg": 85,
+          "flood": {
+            "highY": 550,
+            "periodMs": 40000,
+            "warnMs": 4000,
+            "riseMs": 3000,
+            "holdMs": 6000,
+            "fallMs": 3000,
+            "lowSafe": true
+          }
+        },
+        {
+          "kind": "ciclista",
+          "x": 0,
+          "y": 0,
+          "width": 80,
+          "height": 95,
+          "damage": 10,
+          "knockback": 600,
+          "knockbackGrowth": 5,
+          "angleDeg": 35,
+          "travel": {
+            "path": [
+              {
+                "x": -160,
+                "y": 425
+              },
+              {
+                "x": 680,
+                "y": 425
+              },
+              {
+                "x": 920,
+                "y": 400
+              },
+              {
+                "x": 1160,
+                "y": 425
+              },
+              {
+                "x": 2080,
+                "y": 425
+              }
+            ],
+            "periodMs": 20000,
+            "warnMs": 1000,
+            "crossMs": 2800,
+            "alternate": true,
+            "offsetMs": 7000
+          }
+        }
+      ],
+      "jets": [
+        {
+          "x": 930,
+          "y": 690,
+          "width": 60,
+          "height": 300,
+          "speed": 1300,
+          "periodMs": 9000,
+          "warnMs": 1200,
+          "activeMs": 1500,
+          "offsetMs": 3000
+        }
+      ],
+      "itemSpots": [
+        {
+          "x": 740,
+          "y": 690,
+          "width": 440,
+          "weight": 3
+        },
+        {
+          "x": 600,
+          "y": 410,
+          "width": 180,
+          "weight": 2
+        },
+        {
+          "x": 1140,
+          "y": 410,
+          "width": 180,
+          "weight": 2
+        },
+        {
+          "x": 470,
+          "y": 330,
+          "width": 140,
+          "weight": 2
+        },
+        {
+          "x": 1310,
+          "y": 330,
+          "width": 140,
+          "weight": 2
+        },
+        {
+          "x": 220,
+          "y": 380,
+          "width": 180,
+          "weight": 2
+        },
+        {
+          "x": 1520,
+          "y": 380,
+          "width": 180,
+          "weight": 2
+        },
+        {
+          "x": 800,
+          "y": 300,
+          "width": 320,
+          "weight": 3
+        }
+      ],
+      "blastZone": {
+        "left": -300,
+        "right": 2220,
+        "top": -420,
+        "bottom": 1000
+      },
+      "spawns": [
+        {
+          "x": 300,
+          "y": 520
+        },
+        {
+          "x": 1620,
+          "y": 520
+        },
+        {
+          "x": 450,
+          "y": 520
+        },
+        {
+          "x": 1470,
+          "y": 520
+        },
+        {
+          "x": 200,
+          "y": 520
+        },
+        {
+          "x": 1720,
+          "y": 520
+        },
+        {
+          "x": 600,
+          "y": 520
+        },
+        {
+          "x": 1320,
+          "y": 520
+        }
+      ],
+      "respawn": {
+        "x": 960,
+        "y": 100
+      },
+      "colors": {
+        "sky": 2831430,
+        "solid": 7301728,
+        "solidEdge": 15262418,
+        "platform": 14275783
+      },
+      "music": {
+        "bpm": 116,
+        "chords": [
+          "F",
+          "Am",
+          "Bb",
+          "C"
+        ],
+        "lead": "triangle"
+      },
+      "art": {
+        "layers": [
+          {
+            "file": "sfondo-0.png",
+            "parallax": 0.15
+          },
+          {
+            "file": "sfondo-1.png",
+            "parallax": 0.45
+          },
+          {
+            "file": "sfondo-2.png",
+            "parallax": 0.75
+          }
+        ],
+        "preview": "anteprima.png",
+        "skins": {
+          "pietra": {
+            "file": "pietra.png",
+            "edge": "bordo.png"
+          },
+          "fondo": {
+            "file": "scala.png"
+          },
+          "ponte": {
+            "file": "ponte.png",
+            "depth": 20,
+            "rails": [
+              {
+                "file": "balaustra.png",
+                "height": 36,
+                "offsetY": 2
+              },
+              {
+                "file": "balaustra.png",
+                "height": 28,
+                "offsetY": 12,
+                "front": true,
+                "opacity": 0.45
+              }
+            ]
+          },
+          "scala": {
+            "file": "scala.png",
+            "edge": "scala-bordo.png"
+          },
+          "lastra": {
+            "file": "lastra.png",
+            "depth": 12
+          },
+          "balcone": {
+            "file": "balcone.png",
+            "depth": 14,
+            "rails": [
+              {
+                "file": "balaustra-balcone.png",
+                "height": 30,
+                "offsetY": 2
+              }
+            ]
+          }
+        },
+        "solidSkin": "pietra",
+        "platformSkin": "lastra",
+        "pieces": {
+          "solids": [
+            "pietra",
+            "pietra",
+            "fondo"
+          ],
+          "platforms": [
+            "ponte",
+            "scala",
+            "scala",
+            "lastra",
+            "lastra",
+            "lastra",
+            "lastra",
+            "lastra",
+            "lastra",
+            "balcone",
+            "balcone"
+          ]
+        },
+        "props": [
+          {
+            "file": "palazzo.png",
+            "x": 960,
+            "y": 480,
+            "scale": 0.5
+          },
+          {
+            "file": "arco-ponte.png",
+            "x": 960,
+            "y": 692
+          },
+          {
+            "file": "statua-ponte.png",
+            "x": 690,
+            "y": 522,
+            "scale": 0.5
+          },
+          {
+            "file": "statua-ponte.png",
+            "x": 1230,
+            "y": 522,
+            "scale": 0.5,
+            "flip": true
+          },
+          {
+            "file": "statua-alta.png",
+            "x": 540,
+            "y": 522,
+            "scale": 0.5
+          },
+          {
+            "file": "statua-alta.png",
+            "x": 1380,
+            "y": 522,
+            "scale": 0.5,
+            "flip": true
+          },
+          {
+            "file": "statua-piazza.png",
+            "x": 310,
+            "y": 522,
+            "scale": 0.5
+          },
+          {
+            "file": "statua-piazza.png",
+            "x": 1610,
+            "y": 522,
+            "scale": 0.5,
+            "flip": true
+          }
+        ]
+      }
     }
   },
   "defaultCharacterId": "default",
