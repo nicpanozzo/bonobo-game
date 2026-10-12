@@ -2310,28 +2310,28 @@
           "shield": {
             "fps": 12,
             "loop": true,
-            "frames": 24,
-            "src": "idle"
+            "frames": 12,
+            "src": "shield"
           },
           "grab": {
             "fps": 24,
             "loop": false,
             "hitFrame": 2,
-            "frames": 10,
-            "src": "light"
+            "frames": 15,
+            "src": "grab"
           },
           "throw": {
             "fps": 24,
             "loop": false,
-            "hitFrame": 2,
-            "frames": 10,
-            "src": "light"
+            "hitFrame": 0,
+            "frames": 8,
+            "src": "throw"
           },
           "grabbed": {
-            "fps": 24,
-            "loop": false,
-            "frames": 8,
-            "src": "hit"
+            "fps": 12,
+            "loop": true,
+            "frames": 12,
+            "src": "grabbed"
           },
           "special": {
             "fps": 24,
@@ -2343,8 +2343,8 @@
           "dash": {
             "fps": 24,
             "loop": true,
-            "frames": 8,
-            "src": "walk"
+            "frames": 6,
+            "src": "dash"
           },
           "supreme": {
             "fps": 24,
