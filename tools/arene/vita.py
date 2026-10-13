@@ -499,6 +499,218 @@ def bar_sheets():
     sheet(frames, OUT, "cameriere.png")
 
 
+# --- traffico (#288 passo 3c): macchine, furgone, Vespa, bici, autobus e il tram, dipinti di fianco verso destra ---
+GLASS, GLASS_L = (70, 82, 96), (150, 170, 184)
+
+
+def wheel(q, x, y, r):
+    """La ruota: gomma scura, il cerchione chiaro con i bulloni, l'ombra nel passaruota."""
+    _part(q, q.ellipse(q.mask(), x - r, y - r, x + r, y + r), (34, 34, 38), ink=0.4)
+    _part(q, q.ellipse(q.mask(), x - r * 0.55, y - r * 0.55, x + r * 0.55, y + r * 0.55), (168, 170, 172), ink=0.3)
+    for k in range(4):
+        a = k * math.pi / 2 + 0.4
+        q.fill(q.ellipse(q.mask(), x + math.cos(a) * r * 0.28 - 0.4, y + math.sin(a) * r * 0.28 - 0.4, x + math.cos(a) * r * 0.28 + 0.4, y + math.sin(a) * r * 0.28 + 0.4), (90, 90, 94))
+
+
+def car(L, H, col, profile, roof=None, rack=False, seed=0):
+    """Una macchina di fianco: profilo di Bézier dal paraurti dietro al muso (profile: "500" tonda, "berlina",
+    "squadrata", "familiare"), i vetri con il riflesso, le portiere, le maniglie, i fari, le ruote."""
+    W = L + 8
+    q = Quadro(W, H + 6)
+    x0, x1, base = 4, 4 + L, H + 4
+    wy = base - H * 0.18  # centro ruote
+    r = H * 0.2
+    belt = base - H * 0.52  # linea di cintura sotto i vetri
+    top = base - H
+    if profile == "500":
+        body = bezier((x0, base - H * 0.25), (x0 - 1, top + H * 0.1), (x0 + L * 0.35, top - 1), (x0 + L * 0.62, top + H * 0.06), 16) + \
+            bezier((x0 + L * 0.62, top + H * 0.06), (x0 + L * 0.8, belt - 2), (x1 + 1, belt), (x1, base - H * 0.25), 12)
+        win = [(x0 + L * 0.12, belt), (x0 + L * 0.2, top + H * 0.14), (x0 + L * 0.55, top + H * 0.12), (x0 + L * 0.66, belt)]
+    elif profile == "squadrata":
+        body = [(x0, base - H * 0.25), (x0, top + H * 0.08), (x0 + L * 0.06, top), (x0 + L * 0.66, top), (x0 + L * 0.76, belt - 1), (x1 - 1, belt + 1), (x1, base - H * 0.25)]
+        win = [(x0 + L * 0.06, belt), (x0 + L * 0.08, top + H * 0.1), (x0 + L * 0.62, top + H * 0.1), (x0 + L * 0.71, belt)]
+    elif profile == "familiare":
+        body = [(x0, base - H * 0.28), (x0 + 1, top + H * 0.06), (x0 + L * 0.06, top), (x0 + L * 0.62, top), (x0 + L * 0.74, belt - 1)] + bezier((x0 + L * 0.74, belt - 1), (x0 + L * 0.85, belt), (x1, belt + 1), (x1, base - H * 0.28), 6)
+        win = [(x0 + L * 0.05, belt), (x0 + L * 0.07, top + H * 0.1), (x0 + L * 0.6, top + H * 0.1), (x0 + L * 0.69, belt)]
+    else:  # berlina
+        body = bezier((x0, base - H * 0.3), (x0, belt - 2), (x0 + L * 0.1, belt - 3), (x0 + L * 0.2, belt - 3), 6) + \
+            bezier((x0 + L * 0.2, belt - 3), (x0 + L * 0.28, top), (x0 + L * 0.55, top - 1), (x0 + L * 0.68, belt - 3), 12) + \
+            bezier((x0 + L * 0.68, belt - 3), (x0 + L * 0.85, belt - 2), (x1, belt), (x1, base - H * 0.3), 6)
+        win = [(x0 + L * 0.22, belt - 1), (x0 + L * 0.3, top + H * 0.12), (x0 + L * 0.53, top + H * 0.11), (x0 + L * 0.64, belt - 1)]
+    body = body + [(x1, base - H * 0.15), (x0, base - H * 0.15)]
+    m = q.smooth(q.poly(q.mask(), body), 0.5)
+    q.fill(m, col)
+    q.fill(q.inner_shadow(m, 0, -H * 0.25, H * 0.12), tuple(int(c * 0.72) for c in col), 0.9)  # la fiancata in ombra sotto
+    q.fill(q.rim(m, -1, -1.5, 0.8), tuple(min(255, int(c * 1.25)) for c in col), 0.7)
+    # i vetri: scuri con il riflesso in diagonale, divisi dal montante
+    wm = q.smooth(q.poly(q.mask(), win), 0.3)
+    q.fill(wm, GLASS)
+    q.fill(q.intersect(q.poly(q.mask(), [(win[0][0] + 4, belt), (win[1][0] + 8, top), (win[1][0] + 13, top), (win[0][0] + 9, belt)]), wm), GLASS_L, 0.6)
+    mid = (win[0][0] + win[3][0]) / 2
+    q.line([(mid, belt), (mid + 1, top + H * 0.1)], 1.0, col)
+    q.outline(wm, 0.4, INK)
+    # portiere, maniglie, paraurti, fari
+    q.line([(mid, belt), (mid - 1, base - H * 0.2)], 0.35, tuple(int(c * 0.55) for c in col), 0.9)
+    q.line([(mid + L * 0.08, belt + 2), (mid + L * 0.12, belt + 2)], 0.5, (60, 60, 64))
+    q.line([(mid - L * 0.12, belt + 2), (mid - L * 0.08, belt + 2)], 0.5, (60, 60, 64))
+    _part(q, [(x0 - 1, base - H * 0.3), (x0 + 3, base - H * 0.3), (x0 + 3, base - H * 0.16), (x0 - 1, base - H * 0.16)], (130, 130, 132), ink=0.3)
+    _part(q, [(x1 - 3, base - H * 0.3), (x1 + 1, base - H * 0.3), (x1 + 1, base - H * 0.16), (x1 - 3, base - H * 0.16)], (130, 130, 132), ink=0.3)
+    q.fill(q.ellipse(q.mask(), x1 - 3.5, belt + 1, x1 - 0.5, belt + 3.5), (236, 226, 190))
+    q.fill(q.ellipse(q.mask(), x0 + 0.5, belt + 1.5, x0 + 2.5, belt + 3.5), (176, 70, 60))
+    q.outline(m, 0.6, INK)
+    if rack:  # il portapacchi sul tetto
+        q.line([(x0 + L * 0.15, top - 1.5), (x0 + L * 0.6, top - 1.5)], 0.7, (60, 60, 62))
+    for wx in (x0 + L * 0.2, x1 - L * 0.2):  # passaruota scuro, poi la ruota
+        q.fill(q.ellipse(q.mask(), wx - r * 1.25, wy - r * 1.25, wx + r * 1.25, wy + r * 1.25), (30, 30, 34), 0.8)
+        wheel(q, wx, wy, r)
+    return q.result()
+
+
+def rider_on(q, x, seat_y, outfit, pedal=None, helmet=None):
+    """Chi guida la Vespa o pedala: busto un po' in avanti, braccia al manubrio, gamba che spinge il pedale."""
+    jacket, pants, shoes, skin, hair = outfit
+    sh = (x + 3, seat_y - 12)
+    hip = (x, seat_y)
+    _part(q, [hip, sh, (sh[0] + 3, sh[1] + 1), (hip[0] + 4, hip[1])], jacket)
+    if pedal is not None:
+        for side in (-1, 1):
+            a = pedal + (0 if side > 0 else math.pi)
+            foot = (x + 6 + math.cos(a) * 3.5, seat_y + 11 + math.sin(a) * 3.5)
+            knee = (x + 5 + (foot[0] - x) * 0.4, seat_y + 2 - 2 * side)
+            _part(q, [hip, knee, foot], pants if side > 0 else tuple(int(c * 0.8) for c in pants), width=2.4)
+    else:
+        _part(q, [hip, (x + 7, seat_y + 1), (x + 8, seat_y + 9)], pants, width=2.6)
+    head = (sh[0] + 1.5, sh[1] - 4.5)
+    _part(q, q.ellipse(q.mask(), head[0] - 3, head[1] - 3.4, head[0] + 3, head[1] + 3.2), skin)
+    if helmet:
+        _part(q, [(head[0] - 3.4, head[1] + 0.5), (head[0] - 3, head[1] - 3), (head[0], head[1] - 4.2), (head[0] + 3, head[1] - 3), (head[0] + 3.4, head[1] - 0.5)], helmet)
+    else:
+        _part(q, [(head[0] - 3.2, head[1] + 1), (head[0] - 3, head[1] - 2.6), (head[0], head[1] - 3.8), (head[0] + 2.6, head[1] - 2.8), (head[0], head[1] - 2)], hair, ink=0.4)
+    _part(q, [sh, (sh[0] + 6, sh[1] + 5), (sh[0] + 11, sh[1] + 4)], jacket, width=2.2)
+
+
+def vespa_frames():
+    out = []
+    for i in range(2):
+        q = Quadro(40, 42, origin=(0, -8))  # spazio sopra per la testa
+        base = 32
+        col = (150, 168, 160)  # verde acqua spento, la Vespa classica
+        wheel(q, 9, base - 3.5, 3.5)
+        wheel(q, 31, base - 3.5, 3.5)
+        _part(q, bezier((4, base - 6), (5, base - 15), (14, base - 14), (18, base - 12), 8) + [(26, base - 6)], col)  # la pancia
+        _part(q, [(28, base - 4), (31, base - 20), (34, base - 20), (32, base - 4)], col)  # lo scudo
+        _part(q, [(26, base - 8), (33, base - 8), (33, base - 5), (26, base - 5)], (60, 62, 66), ink=0.3)  # pedana
+        q.line([(32, base - 20), (29, base - 24), (34, base - 24)], 0.8, (60, 60, 64))
+        q.fill(q.ellipse(q.mask(), 32.5, base - 23, 35, base - 20.5), (236, 226, 190))
+        _part(q, [(7, base - 15), (18, base - 15), (17, base - 13), (8, base - 13)], (60, 46, 40), ink=0.3)  # sella
+        rider_on(q, 12, base - 15 + (0.4 if i else 0), ((120, 96, 76), (60, 62, 70), (40, 34, 30), SKINS[1], HAIRS[0]), helmet=(200, 196, 186))
+        out.append(q.result())
+    return out
+
+
+def bike_frames(n=4):
+    out = []
+    for i in range(n):
+        q = Quadro(40, 48, origin=(0, -8))
+        base = 38
+        for wx in (9, 31):
+            _part(q, q.ellipse(q.mask(), wx - 6.5, base - 13, wx + 6.5, base), (40, 40, 42), ink=0.3)
+            q.fill(q.ellipse(q.mask(), wx - 5.5, base - 12, wx + 5.5, base - 1), (0, 0, 0, 0))
+            q.img.paste((0, 0, 0, 0), None, q.ellipse(q.mask(), wx - 5.4, base - 11.9, wx + 5.4, base - 1.1))
+            for k in range(6):
+                a = k * math.pi / 3 + i * 0.4
+                q.line([(wx, base - 6.5), (wx + math.cos(a) * 5.4, base - 6.5 + math.sin(a) * 5.4)], 0.2, (120, 120, 124), 0.8)
+        frame = (106, 120, 108)
+        q.line([(9, base - 6.5), (19, base - 7), (16, base - 19), (9, base - 6.5)], 1.1, frame)
+        q.line([(19, base - 7), (28, base - 19), (16, base - 19)], 1.1, frame)
+        q.line([(28, base - 19), (31, base - 6.5)], 1.1, frame)
+        q.line([(27, base - 22), (29, base - 21), (31, base - 22)], 0.8, (50, 50, 52))
+        _part(q, [(13, base - 21.5), (19, base - 21.5), (18, base - 19.5), (14, base - 19.5)], (50, 40, 36), ink=0.3)
+        rider_on(q, 15, base - 21, ((84, 104, 120), (70, 70, 76), (50, 42, 36), SKINS[2], HAIRS[4]), pedal=i / n * math.tau)
+        out.append(q.result())
+    return out
+
+
+def bus():
+    """L'autobus di città: lungo, con i finestrini, le porte a soffietto, il tetto chiaro e la fascia colorata."""
+    L, H = 170, 44
+    q = Quadro(L + 6, H + 6)
+    x0, x1, base = 3, 3 + L, H + 4
+    col, band = (196, 190, 172), (150, 120, 84)
+    m = q.smooth(q.poly(q.mask(), [(x0, base - 6), (x0, base - H + 4), (x0 + 3, base - H), (x1 - 6, base - H), (x1, base - H + 6), (x1, base - 6)]), 0.6)
+    q.fill(m, col)
+    q.fill(q.intersect(q.poly(q.mask(), [(x0, base - 16), (x1, base - 16), (x1, base - 10), (x0, base - 10)]), m), band)
+    q.fill(q.inner_shadow(m, 0, -10, 4), (120, 116, 104), 0.8)
+    for k in range(7):
+        wx = x0 + 6 + k * 22
+        wm = q.smooth(q.poly(q.mask(), [(wx, base - 36), (wx + 18, base - 36), (wx + 18, base - 22), (wx, base - 22)]), 0.4)
+        q.fill(wm, GLASS)
+        q.fill(q.intersect(q.poly(q.mask(), [(wx + 3, base - 22), (wx + 9, base - 36), (wx + 12, base - 36), (wx + 6, base - 22)]), wm), GLASS_L, 0.5)
+        if k % 2:
+            q.fill(q.ellipse(q.mask(), wx + 7, base - 31, wx + 12, base - 25), (100, 84, 74), 0.8)  # un passeggero
+    for dx in (x0 + 50, x1 - 30):  # porte
+        _part(q, [(dx, base - 38), (dx + 12, base - 38), (dx + 12, base - 7), (dx, base - 7)], GLASS, ink=0.4)
+        q.line([(dx + 6, base - 38), (dx + 6, base - 7)], 0.4, (40, 40, 44))
+    q.fill(q.poly(q.mask(), [(x1 - 4, base - 38), (x1, base - 34), (x1, base - 20), (x1 - 4, base - 20)]), GLASS)
+    q.fill(q.ellipse(q.mask(), x1 - 3, base - 13, x1, base - 10), (236, 226, 190))
+    q.outline(m, 0.7, INK)
+    for wx in (x0 + 28, x1 - 34):
+        wheel(q, wx, base - 5, 6)
+    return q.result()
+
+
+def tram():
+    """Il tram di Padova: tre casse articolate bianche con la fascia spenta, i finestrini lunghi, le porte, il
+    pantografo sul tetto e i soffietti tra le casse. Ruote gommate nascoste dalle carenature."""
+    L, H = 300, 52
+    q = Quadro(L + 8, H + 22)
+    x0, base = 4, H + 20
+    col, band = (216, 214, 206), (138, 112, 100)
+    segs = [(x0, x0 + 96), (x0 + 102, x0 + 198), (x0 + 204, x0 + 300)]
+    for k, (a, b) in enumerate(segs):
+        nose = 10 if k == 2 else 0
+        tail = 10 if k == 0 else 0
+        pts = [(a + tail, base - H), (b - nose, base - H)] + (bezier((b - nose, base - H), (b, base - H + 4), (b + 1, base - 14), (b, base - 4), 8) if nose else [(b, base - H), (b, base - 4)]) + [(a, base - 4)] + (list(reversed(bezier((a + tail, base - H), (a, base - H + 4), (a - 1, base - 14), (a, base - 4), 8))) if tail else [(a, base - H)])
+        m = q.smooth(q.poly(q.mask(), pts), 0.6)
+        q.fill(m, col)
+        q.fill(q.intersect(q.poly(q.mask(), [(a, base - 16), (b, base - 16), (b, base - 11), (a, base - 11)]), m), band)
+        q.fill(q.inner_shadow(m, 0, -9, 4), (150, 150, 146), 0.7)
+        wm = q.smooth(q.poly(q.mask(), [(a + 8, base - 42), (b - 8 - nose, base - 42), (b - 8 - nose, base - 22), (a + 8, base - 22)]), 0.5)
+        q.fill(wm, GLASS)
+        for j in range(int((b - a - 16) / 18)):
+            gx = a + 10 + j * 18
+            q.fill(q.intersect(q.poly(q.mask(), [(gx, base - 22), (gx + 6, base - 42), (gx + 9, base - 42), (gx + 3, base - 22)]), wm), GLASS_L, 0.45)
+            q.line([(gx + 16, base - 42), (gx + 16, base - 22)], 0.6, col)
+        q.outline(wm, 0.4, INK)
+        dx = (a + b) / 2 - 6
+        _part(q, [(dx, base - 44), (dx + 12, base - 44), (dx + 12, base - 6), (dx, base - 6)], GLASS, ink=0.4)
+        q.line([(dx + 6, base - 44), (dx + 6, base - 6)], 0.4, (40, 40, 44))
+        _part(q, [(a + 4, base - 6), (b - 4, base - 6), (b - 6, base), (a + 6, base)], (70, 70, 74), ink=0.4)  # carenatura
+        q.outline(m, 0.7, INK)
+    for a in (x0 + 96, x0 + 198):  # i soffietti
+        _part(q, [(a, base - H + 6), (a + 6, base - H + 6), (a + 6, base - 6), (a, base - 6)], (90, 90, 94), ink=0.3)
+        for j in range(5):
+            q.line([(a + 1 + j * 1.1, base - H + 7), (a + 1 + j * 1.1, base - 7)], 0.2, (60, 60, 64), 0.8)
+    pc = x0 + 150  # pantografo sul tetto della cassa centrale
+    q.line([(pc - 12, base - H), (pc, base - H - 14), (pc + 12, base - H)], 0.8, (60, 60, 62))
+    q.line([(pc - 10, base - H - 14), (pc + 10, base - H - 14)], 1.0, (60, 60, 62))
+    q.fill(q.ellipse(q.mask(), x0 + 297, base - 15, x0 + 300, base - 11), (236, 226, 190))
+    return q.result()
+
+
+def traffic_sheets():
+    cars = [car(64, 26, c, p, rack=r) for c, p, r in (
+        ((206, 196, 168), "500", False), ((150, 154, 156), "squadrata", False), ((112, 124, 140), "berlina", False),
+        ((130, 140, 116), "familiare", True), ((160, 120, 108), "berlina", False), ((96, 98, 104), "squadrata", True))]
+    sheet(cars, OUT, "auto.png")
+    vans = [car(82, 36, c, "squadrata", rack=r) for c, r in (((196, 192, 182), False), ((150, 160, 170), True))]
+    sheet(vans, OUT, "furgone.png")
+    sheet(vespa_frames(), OUT, "vespa.png")
+    sheet(bike_frames(), OUT, "bici.png")
+    sheet([bus()], OUT, "bus.png")
+    sheet([tram()], OUT, "tram.png")
+
+
 if __name__ == "__main__":
     sheet([cloud(s) for s in range(1, 9)], OUT, "nuvole.png")
     sheet(gull_frames(), OUT, "gabbiano.png")
@@ -508,3 +720,4 @@ if __name__ == "__main__":
     walkers_sheet()
     umbrellas_sheet()
     bar_sheets()
+    traffic_sheets()

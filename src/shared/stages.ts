@@ -502,6 +502,13 @@ export const STAGES: Record<string, StageSpec> = {
           "bar-tavolo": { file: "bar-tavolo.png", frames: 1 },
           "bar-seduti": { file: "bar-seduti.png", frames: 4, rows: 3 }, // sul tavolo, a metà, alla bocca, brindisi
           cameriere: { file: "cameriere.png", frames: 8 },
+          // Il traffico e il tram (#288 passo 3c): le macchine sono una per fotogramma, gli altri si animano
+          auto: { file: "auto.png", frames: 6 },
+          furgone: { file: "furgone.png", frames: 2 },
+          vespa: { file: "vespa.png", frames: 2 },
+          bici: { file: "bici.png", frames: 4 },
+          bus: { file: "bus.png", frames: 1 },
+          tram: { file: "tram.png", frames: 1 },
         },
         birds: { y: 40, parallax: 0.2, everyMs: 14000 },
         // Sulle punte delle lastre delle statue e sul cornicione del palazzo

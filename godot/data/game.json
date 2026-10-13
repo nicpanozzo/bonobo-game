@@ -1529,6 +1529,30 @@
             "cameriere": {
               "file": "cameriere.png",
               "frames": 8
+            },
+            "auto": {
+              "file": "auto.png",
+              "frames": 6
+            },
+            "furgone": {
+              "file": "furgone.png",
+              "frames": 2
+            },
+            "vespa": {
+              "file": "vespa.png",
+              "frames": 2
+            },
+            "bici": {
+              "file": "bici.png",
+              "frames": 4
+            },
+            "bus": {
+              "file": "bus.png",
+              "frames": 1
+            },
+            "tram": {
+              "file": "tram.png",
+              "frames": 1
             }
           },
           "birds": {
