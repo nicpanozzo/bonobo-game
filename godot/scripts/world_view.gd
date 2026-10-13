@@ -23,6 +23,7 @@ var effects := true # scie e polvere (opzioni → Video), main.gd lo legge dalle
 var _beams: Array = [] # [{ x, y, age, color }] raggi dei KO, dal punto di uscita verso il centro
 var _shards: Array = [] # [{ x, y, vx, vy, age, color }] schegge di uno scudo rotto (#109)
 var _shield_hits := {} # id giocatore -> ms da quando lo scudo ha parato un colpo
+var _reactions := {} # id giocatore -> reazione procedurale all'ultimo colpo preso (#305)
 var _items: Array = [] # oggetti dell'ultimo snapshot (#17)
 var _projectiles: Array = [] # proiettili delle speciali dell'ultimo snapshot (E10)
 var _projectiles_ms := 0 # quando è arrivato: tra uno snapshot e l'altro volano con la loro velocità
@@ -52,6 +53,7 @@ var _air_jumps := {} # id giocatore -> quando ha fatto il doppio salto (ms), per
 var _taunts := {} # id giocatore -> quando ha provocato (ms), per l'animazione taunt (E7)
 var _holding := {} # id di chi tiene qualcuno con la presa (#109), dall'ultimo snapshot
 var _variants := {} # id giocatore -> variante di colore (0 = originale), ricalcolata a ogni snapshot (E11)
+const HitReaction := preload("res://scripts/hit_reaction.gd") # il corpo si piega dove è colpito (#305)
 const SunLight := preload("res://scripts/sun_light.gd") # luce e ombre del sole e della luna (#288)
 const VARIANT_HUES := [0.5, 0.25, 0.75, 0.125, 0.625, 0.375, 0.875] # spostamento della tinta per la variante 1, 2, ...
 var _supreme_view: Node2D # liana, orsogufo e gnomo della suprema di Bonobot (#102), disegnati sopra i lottatori
@@ -122,6 +124,7 @@ func reset() -> void:
 	_beams = []
 	_shards = []
 	_shield_hits = {}
+	_reactions = {}
 	_items = []
 	_projectiles = []
 	_item_pos = {}
@@ -446,6 +449,7 @@ func on_event(e: Dictionary) -> void:
 				_shake = maxf(_shake, minf(fx.shakeMax, (kb - fx.shakeFromKnockback) * fx.shakePerKnockback))
 			if kb >= fx.flashKnockback:
 				_flash = fx.flashMs
+			_react(e)
 		"hazard":
 			# Trappola (#14): scintilla arancione e scossa come un colpo forte
 			_sparks.append({"x": e.x, "y": e.y, "age": 0.0, "size": 30.0, "color": Color(1, 0.55, 0.15)})
@@ -527,6 +531,29 @@ func on_event(e: Dictionary) -> void:
 
 
 # Sbuffi di polvere ai piedi, a destra e a sinistra
+# Reazione al colpo (#305): altezza del punto d'impatto sul corpo, direzione da chi colpisce, forza dal knockback.
+# Le posizioni sono quelle disegnate all'ultimo frame, così la reazione segue quello che si vede
+func _react(e: Dictionary) -> void:
+	if not positions.has(e.targetId):
+		return
+	var target: Vector2 = positions[e.targetId]
+	var from: Vector2 = positions.get(e.attackerId, Vector2(e.x, e.y)) if e.attackerId != e.targetId else Vector2(e.x, e.y)
+	var dir := 1 if target.x >= from.x else -1
+	var height := (target.y - float(e.y)) / float(game.fighter.height)
+	_reactions[e.targetId] = HitReaction.start(game.effects, height, dir, float(e.get("knockback", 0)), Time.get_ticks_msec())
+
+
+# La deformazione di chi sta reagendo a un colpo, con il perno sui piedi; identità quando è finita
+func _reaction_transform(p: Dictionary, now: float) -> Transform2D:
+	if not _reactions.has(p.id):
+		return Transform2D.IDENTITY
+	var s := HitReaction.sample(_reactions[p.id], game.effects, now)
+	if s.angle == 0.0 and s.squash == 0.0 and s.offset == 0.0:
+		_reactions.erase(p.id)
+		return Transform2D.IDENTITY
+	return HitReaction.transform(Vector2(p.x, p.y), s)
+
+
 func _puff(x: float, y: float) -> void:
 	if not effects:
 		return
@@ -1547,9 +1574,11 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 	var charge := float(p.get("charge", 0.0))
 	if charge > 0.0:
 		_draw_charge(Vector2(p.x, p.y - fh / 2), charge, now)
+	var react := _reaction_transform(p, now)
 	if _textures.has(character.id):
-		_draw_sprite(p, character, now)
+		_draw_sprite(p, character, now, react)
 	else:
+		draw_set_transform_matrix(react)
 		var color := Access.color(p.color)
 		if p.hitstun or p.get("stunned", false) or p.get("grabbedBy") != null:
 			color = color.lightened(0.5)
@@ -1561,6 +1590,7 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 		# Occhio dalla parte in cui si guarda
 		draw_circle(Vector2(p.x + p.facing * fw * 0.22, p.y - fh * 0.78), 5.0, Color.WHITE)
 		draw_circle(Vector2(p.x + p.facing * fw * 0.27, p.y - fh * 0.78), 2.5, Color.BLACK)
+		draw_set_transform(Vector2.ZERO)
 	if powered:
 		_draw_power_smoke(p, now, fh)
 
@@ -1645,7 +1675,7 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 
 # Un fotogramma dello spritesheet, con i piedi dello sprite su quelli del giocatore
 # e girato dalla parte in cui guarda (come FighterViews in src/client/render/fighters.ts)
-func _draw_sprite(p: Dictionary, character: Dictionary, now: float) -> void:
+func _draw_sprite(p: Dictionary, character: Dictionary, now: float, react := Transform2D.IDENTITY) -> void:
 	var sheet: Dictionary = character.sprite
 	var anims: Dictionary = sheet.animations # tutti gli stati, già risolti con il ripiego (export:godot)
 	var name := _animation_for(p, _holding.has(p.id))
@@ -1698,7 +1728,7 @@ func _draw_sprite(p: Dictionary, character: Dictionary, now: float) -> void:
 		texture = _state_textures[character.id][a.src]
 	var src := Rect2(frame * fw, row * fh, fw, fh)
 	var scale: float = sheet.get("scale", 1.0) # 0.5 per i disegni fatti a 2x
-	draw_set_transform(Vector2(p.x, p.y), 0, Vector2(p.facing * scale, scale))
+	draw_set_transform_matrix(react * Transform2D(0.0, Vector2(p.facing * scale, scale), 0.0, Vector2(p.x, p.y)))
 	var foot_y: float = sheet.get("footY", fh) # dove stanno i piedi nel fotogramma: sotto c'è chi è appeso al bordo
 	draw_texture_rect_region(texture, Rect2(-fw / 2, -foot_y, fw, fh), src, sprite_modulate(int(_variants.get(p.id, 0)), away_alpha(p)))
 	draw_set_transform(Vector2.ZERO)
