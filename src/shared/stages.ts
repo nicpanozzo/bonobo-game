@@ -132,7 +132,7 @@ export interface StageLife {
   outerWater?: { y: number; highY?: number; flood?: number };
   // Fogli di fotogrammi dipinti (#288) per lo sfondo vivo, per nome: nuvole, gabbiano, rondine, pipistrello, piccione.
   // Fotogrammi in fila da sinistra, a 2x (scale 0.5 se manca). Senza, si disegnano le forme semplici di prima
-  sheets?: Record<string, { file: string; frames: number; scale?: number }>;
+  sheets?: Record<string, { file: string; frames: number; rows?: number; scale?: number }>;
   // Pioggia solo grafica (#288): ogni periodMs piove per rainMs, senza trappole. I passanti aprono l'ombrello
   rain?: { periodMs: number; rainMs: number; offsetMs?: number };
   daycycle?: {
@@ -497,6 +497,11 @@ export const STAGES: Record<string, StageSpec> = {
           rondine: { file: "rondine.png", frames: 4 },
           pipistrello: { file: "pipistrello.png", frames: 4 },
           piccione: { file: "piccione.png", frames: 6 },
+          passanti: { file: "passanti.png", frames: 8, rows: 9 }, // signore, signora, cane, corsa, passeggino, bastone, laurea, borsa, giornale
+          ombrelli: { file: "ombrelli.png", frames: 4 },
+          "bar-tavolo": { file: "bar-tavolo.png", frames: 1 },
+          "bar-seduti": { file: "bar-seduti.png", frames: 4, rows: 3 }, // sul tavolo, a metà, alla bocca, brindisi
+          cameriere: { file: "cameriere.png", frames: 8 },
         },
         birds: { y: 40, parallax: 0.2, everyMs: 14000 },
         // Sulle punte delle lastre delle statue e sul cornicione del palazzo
