@@ -1128,41 +1128,11 @@
         {
           "x": 100,
           "y": 520,
-          "width": 620,
-          "height": 480
-        },
-        {
-          "x": 1200,
-          "y": 520,
-          "width": 620,
-          "height": 480
-        },
-        {
-          "x": 720,
-          "y": 690,
-          "width": 480,
-          "height": 310
+          "width": 1720,
+          "height": 70
         }
       ],
       "platforms": [
-        {
-          "x": 720,
-          "y": 520,
-          "width": 480,
-          "arch": 25
-        },
-        {
-          "x": 742,
-          "y": 518,
-          "width": 180,
-          "y2": 690
-        },
-        {
-          "x": 998,
-          "y": 690,
-          "width": 180,
-          "y2": 518
-        },
         {
           "x": 600,
           "y": 410,
@@ -1206,33 +1176,13 @@
       ],
       "hazards": [
         {
-          "kind": "acqua",
-          "x": 720,
-          "y": 660,
-          "width": 480,
-          "height": 30,
-          "damage": 6,
-          "knockback": 550,
-          "knockbackGrowth": 3,
-          "angleDeg": 85,
-          "flood": {
-            "highY": 550,
-            "periodMs": 40000,
-            "warnMs": 4000,
-            "riseMs": 3000,
-            "holdMs": 6000,
-            "fallMs": 3000,
-            "lowSafe": true
-          }
-        },
-        {
           "kind": "ciclista",
           "x": 0,
           "y": 0,
           "width": 80,
           "height": 95,
-          "damage": 10,
-          "knockback": 600,
+          "damage": 13,
+          "knockback": 620,
           "knockbackGrowth": 5,
           "angleDeg": 35,
           "travel": {
@@ -1242,84 +1192,37 @@
                 "y": 425
               },
               {
-                "x": 680,
-                "y": 425
-              },
-              {
-                "x": 920,
-                "y": 400
-              },
-              {
-                "x": 1160,
-                "y": 425
-              },
-              {
                 "x": 2080,
                 "y": 425
               }
             ],
             "periodMs": 20000,
-            "warnMs": 1000,
-            "crossMs": 2800,
+            "warnMs": 1200,
+            "crossMs": 4200,
             "alternate": true,
             "offsetMs": 7000
           }
         }
       ],
-      "movers": [
-        {
-          "kind": "barca",
-          "width": 160,
-          "path": [
-            {
-              "x": -560,
-              "y": 780
-            },
-            {
-              "x": -150,
-              "y": 780
-            }
-          ],
-          "periodMs": 40000,
-          "pauseMs": 14000,
-          "offsetMs": 16000
-        },
-        {
-          "kind": "barca",
-          "width": 160,
-          "path": [
-            {
-              "x": 2380,
-              "y": 780
-            },
-            {
-              "x": 1910,
-              "y": 780
-            }
-          ],
-          "periodMs": 40000,
-          "pauseMs": 14000,
-          "offsetMs": 16000
-        }
-      ],
       "jets": [
         {
-          "x": 930,
-          "y": 690,
-          "width": 60,
-          "height": 300,
-          "speed": 1300,
-          "periodMs": 9000,
+          "x": 915,
+          "y": 520,
+          "width": 90,
+          "height": 320,
+          "speed": 1350,
+          "periodMs": 7000,
           "warnMs": 1200,
-          "activeMs": 1500,
-          "offsetMs": 3000
+          "activeMs": 1600,
+          "offsetMs": 3000,
+          "idle": 70
         }
       ],
       "itemSpots": [
         {
-          "x": 740,
-          "y": 690,
-          "width": 440,
+          "x": 840,
+          "y": 520,
+          "width": 240,
           "weight": 3
         },
         {
@@ -1452,31 +1355,6 @@
             "file": "riva.png",
             "edge": "bordo.png"
           },
-          "fondo": {
-            "file": "scala.png"
-          },
-          "ponte": {
-            "file": "ponte.png",
-            "depth": 20,
-            "rails": [
-              {
-                "file": "balaustra.png",
-                "height": 36,
-                "offsetY": 2
-              },
-              {
-                "file": "balaustra.png",
-                "height": 28,
-                "offsetY": 12,
-                "front": true,
-                "opacity": 0.45
-              }
-            ]
-          },
-          "scala": {
-            "file": "scala.png",
-            "edge": "scala-bordo.png"
-          },
           "lastra": {
             "file": "lastra.png",
             "depth": 12
@@ -1497,14 +1375,9 @@
         "platformSkin": "lastra",
         "pieces": {
           "solids": [
-            "riva",
-            "riva",
-            "fondo"
+            "riva"
           ],
           "platforms": [
-            "ponte",
-            "scala",
-            "scala",
             "lastra",
             "lastra",
             "lastra",
@@ -1517,7 +1390,7 @@
         },
         "hazardSprites": [
           {
-            "hazard": 1,
+            "hazard": 0,
             "file": "ciclista.png",
             "frames": 8,
             "fps": 16,
@@ -1531,26 +1404,6 @@
             }
           }
         ],
-        "moverSprites": [
-          {
-            "mover": 0,
-            "file": "barca.png",
-            "frames": 6,
-            "fps": 6,
-            "scale": 0.5,
-            "footX": 300,
-            "footY": 184
-          },
-          {
-            "mover": 1,
-            "file": "barca.png",
-            "frames": 6,
-            "fps": 6,
-            "scale": 0.5,
-            "footX": 300,
-            "footY": 184
-          }
-        ],
         "props": [
           {
             "file": "palazzo.png",
@@ -1559,9 +1412,34 @@
             "scale": 0.5
           },
           {
-            "file": "arco-ponte.png",
+            "file": "platano.png",
+            "x": 410,
+            "y": 522,
+            "scale": 0.5
+          },
+          {
+            "file": "platano.png",
+            "x": 1510,
+            "y": 522,
+            "scale": 0.5,
+            "flip": true
+          },
+          {
+            "file": "fondamenta.png",
             "x": 960,
-            "y": 692
+            "y": 760
+          },
+          {
+            "file": "fontana.png",
+            "x": 960,
+            "y": 524
+          },
+          {
+            "file": "fontana-davanti.png",
+            "x": 960,
+            "y": 530,
+            "front": true,
+            "opacity": 0.7
           },
           {
             "file": "statua-ponte.png",
@@ -1604,10 +1482,10 @@
           }
         ],
         "life": {
-          "outerWater": {
-            "y": 800,
-            "highY": 760,
-            "flood": 0
+          "rain": {
+            "periodMs": 40000,
+            "rainMs": 12000,
+            "offsetMs": 26000
           },
           "birds": {
             "y": 40,

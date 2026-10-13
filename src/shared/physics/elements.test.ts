@@ -272,27 +272,28 @@ describe("canale di Padova (#253)", () => {
   });
 });
 
-describe("Padova, canale esterno (#264)", () => {
-  it("la barca accanto alla riva sinistra raccoglie chi cade quando l'acqua è bassa, e da lì si risale", () => {
+describe("Padova, isola sospesa con la fontana (#288)", () => {
+  it("lo zampillo della fontana lancia in alto chi sta sulla vasca, verso lastre e balcone", () => {
     const stage = getStage("padova");
-    const { ctx, f } = setup(stage, { x: -70, y: 700 });
-    ctx.timeMs = 6000; // l'acqua è bassa e la barca è ferma accanto alla riva
-    f.onGround = false;
-    run(f, ctx, 30);
-    assert.equal(f.riding, 0, "è sulla barca");
-    assert.equal(f.y, 780);
-    assert.equal(hazardRect(stage.hazards![0], 6000).y, 660, "intanto l'acqua alta è giù");
-    // Dalla barca alla piazza ci sono 260 px: meno del doppio salto
-    assert.ok(780 - 520 < 293, "la riva si raggiunge con il doppio salto");
+    const jet = stage.jets![0];
+    assert.equal(jetPhase(jet, 1000), "calm");
+    assert.equal(jetPhase(jet, 3000), "active");
+    const { ctx, f } = setup(stage, { x: 960, y: 520 });
+    ctx.timeMs = 3000;
+    run(f, ctx, 20);
+    assert.ok(f.y < 400, `lanciato in alto (y = ${f.y})`);
   });
 
-  it("quando l'acqua sale le barche sono fuori scena", () => {
+  it("la piazza è una sola, sospesa: niente canale, barche o acqua", () => {
     const stage = getStage("padova");
-    for (const t of [30000, 34000]) {
-      for (const m of stage.movers!) {
-        const x = moverPosition(m, t).x;
-        assert.ok(x < stage.blastZone.left || x > stage.blastZone.right, `a ${t} ms la barca è fuori (x = ${x})`);
-      }
-    }
+    assert.equal(stage.solids.length, 1);
+    assert.ok(!(stage.movers ?? []).length && !(stage.hazards ?? []).some((h) => h.kind === "acqua"));
+    assert.ok(stage.solids[0].y + stage.solids[0].height < stage.blastZone.bottom, "sotto la piazza si cade");
+  });
+
+  it("Cancaro Man attraversa tutta la piazza", () => {
+    const stage = getStage("padova");
+    const bike = stage.hazards!.find((h) => h.kind === "ciclista")!;
+    assert.ok(bike.damage > 10 && bike.travel!.crossMs > 2800, "più lento e più cattivo di prima");
   });
 });

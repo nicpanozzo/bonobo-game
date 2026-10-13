@@ -130,6 +130,8 @@ export interface StageLife {
   // Acqua intorno all'arena (#264): da y in giù, davanti a chi cade (splash). Con flood (indice di una trappola con
   // l'acqua alta) sale fino a highY insieme a lei
   outerWater?: { y: number; highY?: number; flood?: number };
+  // Pioggia solo grafica (#288): ogni periodMs piove per rainMs, senza trappole. I passanti aprono l'ombrello
+  rain?: { periodMs: number; rainMs: number; offsetMs?: number };
   daycycle?: {
     cycleMs: number;
     startAt?: number;
@@ -227,6 +229,7 @@ export interface Jet {
   warnMs: number; // bolle prima del getto
   activeMs: number; // durata del getto
   offsetMs?: number;
+  idle?: number; // solo grafica (#288): pixel dello zampillo a riposo, come una fontana che non si spegne mai
 }
 
 // Zona dove gli oggetti cadono più spesso (#253): una striscia di superficie con un peso. Senza zone, gli oggetti
@@ -383,56 +386,40 @@ export const STAGES: Record<string, StageSpec> = {
     colors: { sky: 0x2a2433, solid: 0x6b4f3a, solidEdge: 0xd9a066, platform: 0xb8a58c },
   },
 
-  // Padova, Prato della Valle (#230, idea di Riccardo): piazza, ponte ad arco e piazza sopra il canale, con le statue
-  // del Prato che reggono le lastre. Il canale sale con la pioggia, il getto della fontana spinge in alto, e un signore
-  // arrabbiato in bici attraversa tutto gridando. Larga 1,5 schermi: la telecamera si allontana fino a 0,6.
+  // Padova, Prato della Valle (#230, idea di Riccardo): un'isola sospesa sopra il Prato (#288), una piazza continua
+  // con al centro la fontana dell'Isola Memmia, il cui zampillo ogni tanto lancia in alto chi ci sta sopra. Le statue
+  // del Prato reggono le lastre, il palazzo ha i balconi calpestabili, e un signore arrabbiato in bici attraversa
+  // tutto gridando. Larga 1,5 schermi: la telecamera si allontana fino a 0,6.
   padova: {
     id: "padova",
     name: "Padova",
     width: 1920,
     camera: { minZoom: 0.6 },
     solids: [
-      // Le piazze sono rive di pietra che scendono fino al canale esterno (#264): l'arena non è sospesa nel vuoto
-      { x: 100, y: 520, width: 620, height: 480 }, // piazza sinistra
-      { x: 1200, y: 520, width: 620, height: 480 }, // piazza destra
-      { x: 720, y: 690, width: 480, height: 310 }, // fondo del canale
+      { x: 100, y: 520, width: 1720, height: 70 }, // la piazza: sotto pendono le fondamenta disegnate, poi il vuoto
     ],
     platforms: [
-      // Il ponte va per primo: camminando dalla piazza si resta sul ponte, tenendo giù si scende sulla scala (#246)
-      { x: 720, y: 520, width: 480, arch: 25 },
-      { x: 742, y: 518, width: 180, y2: 690 }, // scala sinistra, giù fino al fondo del canale
-      { x: 998, y: 690, width: 180, y2: 518 }, // scala destra
-      { x: 600, y: 410, width: 180 }, // lastre rette dalle statue, larghe per starci in due: ai capi del ponte...
+      { x: 600, y: 410, width: 180 }, // lastre rette dalle statue, larghe per starci in due: ai lati della fontana...
       { x: 1140, y: 410, width: 180 },
       { x: 470, y: 330, width: 140 }, // ...più in alto...
       { x: 1310, y: 330, width: 140 },
-      { x: 220, y: 380, width: 180 }, // ...e sulle piazze
+      { x: 220, y: 380, width: 180 }, // ...e verso i bordi
       { x: 1520, y: 380, width: 180 },
-      // I balconi del palazzo signorile dietro il ponte (idea di Riccardo): la casa è sfondo, i balconi si calpestano
-      { x: 800, y: 300, width: 320 }, // il balcone largo del piano nobile, sopra il ponte
+      // I balconi del palazzo signorile dietro la fontana (idea di Riccardo): la casa è sfondo, i balconi si calpestano
+      { x: 800, y: 300, width: 320 }, // il balcone largo del piano nobile
       { x: 900, y: 180, width: 120 }, // il balconcino dell'ultimo piano: la cima dell'arena
     ],
     hazards: [
-      // Il canale: l'acqua bassa non fa male; con la pioggia sale, copre le scale e fa male finché non riscende
-      { kind: "acqua", x: 720, y: 660, width: 480, height: 30, damage: 6, knockback: 550, knockbackGrowth: 3, angleDeg: 85,
-        flood: { highY: 550, periodMs: 40000, warnMs: 4000, riseMs: 3000, holdMs: 6000, fallMs: 3000, lowSafe: true } },
-      // Il ciclista arrabbiato (#229): entra da fuori, passa sulle piazze e sul ponte, ed esce. Sotto il ponte si è al riparo
+      // Il ciclista arrabbiato (#229): entra da fuori, attraversa la piazza ed esce. Più lento e più cattivo dal #288
       // TODO community: il grido "CANCAROOOO!" da registrare (chi lo fa?)
-      { kind: "ciclista", x: 0, y: 0, width: 80, height: 95, damage: 10, knockback: 600, knockbackGrowth: 5, angleDeg: 35,
-        travel: { path: [{ x: -160, y: 425 }, { x: 680, y: 425 }, { x: 920, y: 400 }, { x: 1160, y: 425 }, { x: 2080, y: 425 }],
-          periodMs: 20000, warnMs: 1000, crossMs: 2800, alternate: true, offsetMs: 7000 } },
+      { kind: "ciclista", x: 0, y: 0, width: 80, height: 95, damage: 13, knockback: 620, knockbackGrowth: 5, angleDeg: 35,
+        travel: { path: [{ x: -160, y: 425 }, { x: 2080, y: 425 }], periodMs: 20000, warnMs: 1200, crossMs: 4200, alternate: true, offsetMs: 7000 } },
     ],
-    // Le barche del canale esterno (#264): arrivano quando l'acqua è bassa e si fermano accanto alle rive, così chi
-    // è caduto ci può atterrare e risalire con il doppio salto; quando piove aspettano fuori scena
-    movers: [
-      { kind: "barca", width: 160, path: [{ x: -560, y: 780 }, { x: -150, y: 780 }], periodMs: 40000, pauseMs: 14000, offsetMs: 16000 },
-      { kind: "barca", width: 160, path: [{ x: 2380, y: 780 }, { x: 1910, y: 780 }], periodMs: 40000, pauseMs: 14000, offsetMs: 16000 },
-    ],
-    // Il getto della fontana in fondo al canale (#253): una scorciatoia verso le lastre alte
-    jets: [{ x: 930, y: 690, width: 60, height: 300, speed: 1300, periodMs: 9000, warnMs: 1200, activeMs: 1500, offsetMs: 3000 }],
-    // Gli oggetti cadono spesso nel canale e sulle lastre delle statue: rischio e premio, e un motivo per salire
+    // Lo zampillo della fontana (#288): ogni 7 s gorgoglia e poi lancia in alto chi sta sulla vasca, verso lastre e balcone
+    jets: [{ x: 915, y: 520, width: 90, height: 320, speed: 1350, periodMs: 7000, warnMs: 1200, activeMs: 1600, offsetMs: 3000, idle: 70 }],
+    // Gli oggetti cadono spesso sulla fontana e sulle lastre delle statue: rischio e premio, e un motivo per salire
     itemSpots: [
-      { x: 740, y: 690, width: 440, weight: 3 },
+      { x: 840, y: 520, width: 240, weight: 3 },
       { x: 600, y: 410, width: 180, weight: 2 },
       { x: 1140, y: 410, width: 180, weight: 2 },
       { x: 470, y: 330, width: 140, weight: 2 },
@@ -459,36 +446,29 @@ export const STAGES: Record<string, StageSpec> = {
       previewFull: true, // fotografata dal gioco, con il palco e lo sfondo
       skins: {
         pietra: { file: "pietra.png", edge: "bordo.png" },
-        riva: { file: "riva.png", edge: "bordo.png" }, // il muro della riva, a grandi blocchi
-        fondo: { file: "scala.png" },
-        ponte: {
-          file: "ponte.png",
-          depth: 20,
-          rails: [
-            { file: "balaustra.png", height: 36, offsetY: 2 }, // la ringhiera traforata del Prato, dietro
-            { file: "balaustra.png", height: 28, offsetY: 12, front: true, opacity: 0.45 }, // e quella davanti, trasparente
-          ],
-        },
-        scala: { file: "scala.png", edge: "scala-bordo.png" },
+        riva: { file: "riva.png", edge: "bordo.png" }, // il fianco della piazza, a grandi blocchi
         lastra: { file: "lastra.png", depth: 12 },
         balcone: { file: "balcone.png", depth: 14, rails: [{ file: "balaustra-balcone.png", height: 30, offsetY: 2 }] },
       },
       solidSkin: "pietra",
       platformSkin: "lastra",
       pieces: {
-        solids: ["riva", "riva", "fondo"],
-        platforms: ["ponte", "scala", "scala", "lastra", "lastra", "lastra", "lastra", "lastra", "lastra", "balcone", "balcone"],
+        solids: ["riva"],
+        platforms: ["lastra", "lastra", "lastra", "lastra", "lastra", "lastra", "balcone", "balcone"],
       },
       // Cancaro Man (#270, dal disegno di Riccardo): la pedalata in 8 fotogrammi da tools/arene/ciclista.py
       // TODO community: la voce del "CANCAROOOO!" da registrare; intanto c'è il fumetto
       hazardSprites: [
-        { hazard: 1, file: "ciclista.png", frames: 8, fps: 16, scale: 0.58, footX: 150, footY: 312, shout: { text: "CANCAROOOO!", x: 200, y: 110 } },
+        { hazard: 0, file: "ciclista.png", frames: 8, fps: 16, scale: 0.58, footX: 150, footY: 312, shout: { text: "CANCAROOOO!", x: 200, y: 110 } },
       ],
-      // Le barche con il barcaiolo che voga (#273), da tools/arene/barca.py
-      moverSprites: [0, 1].map((mover) => ({ mover, file: "barca.png", frames: 6, fps: 6, scale: 0.5, footX: 300, footY: 184 })),
       props: [
         { file: "palazzo.png", x: 960, y: 480, scale: 0.5 }, // il palazzo signorile: la facciata, dietro a tutto il palco
-        { file: "arco-ponte.png", x: 960, y: 692 },
+        // Due platani sulla piazza (#288), dietro alle statue: la chioma sta sopra le teste e lascia vedere il palco
+        { file: "platano.png", x: 410, y: 522, scale: 0.5 },
+        { file: "platano.png", x: 1510, y: 522, scale: 0.5, flip: true },
+        { file: "fondamenta.png", x: 960, y: 760 }, // sotto la piazza: le fondamenta di mattoni e pietra, con l'edera
+        { file: "fontana.png", x: 960, y: 524 }, // la fontana dell'Isola Memmia: la vasca, i paracarri e la ringhiera
+        { file: "fontana-davanti.png", x: 960, y: 530, front: true, opacity: 0.7 }, // il bordo della vasca davanti ai piedi
         // Le statue che reggono le lastre: il giovane con l'alloro, il filosofo con la barba, la dama col velo
         { file: "statua-ponte.png", x: 690, y: 522, scale: 0.5 },
         { file: "statua-ponte.png", x: 1230, y: 522, scale: 0.5, flip: true },
@@ -500,7 +480,7 @@ export const STAGES: Record<string, StageSpec> = {
       // Sfondo vivo (#260): stormi, piccioni sulle teste delle statue, passanti sul vialetto del prato con l'ombrello
       // quando piove, il tram davanti ai portici e il giorno che passa: tramonto, notte con le stelle e i lampioni, alba
       life: {
-        outerWater: { y: 800, highY: 760, flood: 0 }, // il canale esterno, che sale con la pioggia come quello interno
+        rain: { periodMs: 40000, rainMs: 12000, offsetMs: 26000 }, // ogni tanto piove: i passanti aprono l'ombrello
         birds: { y: 40, parallax: 0.2, everyMs: 14000 },
         // Sulle punte delle lastre delle statue e sul cornicione del palazzo
         pigeons: [{ x: 485, y: 330 }, { x: 1435, y: 330 }, { x: 235, y: 380 }, { x: 1685, y: 380 }, { x: 790, y: 100 }, { x: 1130, y: 100 }],

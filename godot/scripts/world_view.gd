@@ -174,7 +174,20 @@ func _rain_now(t: float) -> float:
 	var rain := 0.0
 	for h in stage.get("hazards", []) if stage.get("hazards") is Array else []:
 		rain = maxf(rain, rain_strength(h, t))
+	var art: Dictionary = stage.get("art", {}) if stage.get("art") is Dictionary else {}
+	var life: Dictionary = art.get("life", {}) if art.get("life") is Dictionary else {}
+	if life.get("rain") is Dictionary:
+		rain = maxf(rain, life_rain(life.rain, t))
 	return rain
+
+
+# Pioggia solo grafica (#288): 2 s per arrivare e 2 per smettere, dentro i rainMs di ogni giro
+static func life_rain(r: Dictionary, t: float) -> float:
+	var k := fposmod(t + float(r.get("offsetMs", 0)), float(r.periodMs))
+	var dur: float = r.rainMs
+	if k >= dur:
+		return 0.0
+	return clampf(minf(k, dur - k) / 2000.0, 0.0, 1.0)
 
 
 # Dove passa adesso una trappola che viaggia: i piccioni scappano anche dal ciclista (#260)
@@ -879,11 +892,10 @@ func _draw_elements(t: float) -> void:
 		for x in range(0, int(m.width), 20):
 			draw_rect(Rect2(pos.x + x, pos.y + 10, minf(10, m.width - x), 5), Color("f1c40f"))
 	var hazards: Array = stage.get("hazards") if stage.get("hazards") != null else []
-	var rain := 0.0
 	for i in hazards.size():
 		var h: Dictionary = hazards[i]
 		_draw_hazard(h, hazard_active(h, t), t, i)
-		rain = maxf(rain, rain_strength(h, t))
+	var rain := _rain_now(t) # dall'acqua alta o dalla pioggia dello sfondo vivo (#288)
 	if rain > 0.0:
 		_draw_rain(rain, t)
 	var jets: Array = stage.get("jets") if stage.get("jets") is Array else []
@@ -1003,10 +1015,12 @@ static func arch_polygon(p: Dictionary, thick: float, k := 1.0, o := Vector2.ZER
 	return top
 
 
-# Getto d'acqua (#253): bolle durante l'avviso, poi una colonna d'acqua spumosa che sale. Stessa fase di jetPhase()
+# Getto d'acqua (#253): bolle durante l'avviso, poi una colonna d'acqua spumosa che sale. Stessa fase di jetPhase().
+# Con idle (#288) è una fontana: a riposo lo zampillo resta basso, con l'avviso cresce, poi sale tutto
 func _draw_jet(j: Dictionary, t: float) -> void:
 	var phase := jet_phase(j, t)
-	if phase == "calm":
+	var idle := float(j.get("idle", 0))
+	if phase == "calm" and idle <= 0.0:
 		return
 	var x0: float = j.x
 	var w: float = j.width
@@ -1016,8 +1030,16 @@ func _draw_jet(j: Dictionary, t: float) -> void:
 			var bx := x0 + w * (0.15 + 0.7 * fposmod(i * 0.37, 1.0))
 			var rise := fposmod(t / 6.0 + i * 23.0, 40.0)
 			draw_arc(Vector2(bx, base - 4 - rise), 3.0 + (i % 3), 0, TAU, 10, Color(0.85, 0.92, 0.9, 0.8 - rise / 50.0), 1.5)
-		return
+		if idle <= 0.0:
+			return
 	var h: float = j.height
+	if phase == "calm":
+		h = idle
+	elif phase == "warn":
+		h = idle * (1.3 + 0.25 * sin(t / 60.0)) # gorgoglia e cresce: sta per partire
+	if idle > 0.0:
+		_draw_fountain_plume(x0 + w / 2.0, base, w, h, t, phase == "active")
+		return
 	var col := Color(0.55, 0.7, 0.72, 0.55)
 	# Il bordo destro dal basso in alto, poi il sinistro dall'alto in basso: un poligono semplice che ondeggia
 	var pts := PackedVector2Array()
@@ -1031,6 +1053,40 @@ func _draw_jet(j: Dictionary, t: float) -> void:
 	for i in 5: # schizzi in cima
 		var a := t / 120.0 + i * 1.3
 		draw_circle(Vector2(x0 + w / 2 + cos(a) * w * 0.5, base - h + sin(a * 1.7) * 10), 4.0, Color(0.85, 0.93, 0.92, 0.8))
+
+
+# Lo zampillo di una fontana (#288): una colonna bianca che si assottiglia, il pennacchio che si apre in cima
+# e ricade a ventaglio in gocce, e la schiuma dove l'acqua torna nella vasca. Acceso è alto e pieno
+func _draw_fountain_plume(cx: float, base: float, w: float, h: float, t: float, strong: bool) -> void:
+	var foam := Color(0.93, 0.97, 0.96, 0.85)
+	var body := Color(0.78, 0.9, 0.9, 0.7)
+	var half := w * (0.28 if strong else 0.16)
+	# la colonna: due bordi che ondeggiano, stretti in cima
+	var pts := PackedVector2Array()
+	for i in 12:
+		var k := i / 11.0
+		pts.append(Vector2(cx + half * (1.0 - k * 0.7) + sin(t / 55.0 + k * 8.0) * 2.5, base - h * k))
+	for i in range(11, -1, -1):
+		var k := i / 11.0
+		pts.append(Vector2(cx - half * (1.0 - k * 0.7) + sin(t / 55.0 + k * 8.0 + 1.7) * 2.5, base - h * k))
+	draw_colored_polygon(pts, body)
+	draw_line(Vector2(cx - half * 0.3, base), Vector2(cx - half * 0.1, base - h), foam, 2.0) # il filo di luce
+	# il pennacchio: ricade a ventaglio, ogni goccia lungo la sua parabola
+	var drops := 26 if strong else 14
+	for i in drops:
+		var side := -1.0 if i % 2 == 0 else 1.0
+		var k := fposmod(t / (520.0 if strong else 420.0) + i * 0.137, 1.0) # vita della goccia, da 0 a 1
+		var spread := (0.35 + 0.65 * fposmod(i * 0.61, 1.0)) * (w * (1.1 if strong else 0.8))
+		var px := cx + side * spread * k
+		var py := base - h + h * 0.95 * k * k - 18.0 * k * (1.0 - k) * 4.0 * (0.4 if strong else 0.25)
+		draw_circle(Vector2(px, py), (3.2 if strong else 2.4) * (1.0 - 0.4 * k), Color(foam.r, foam.g, foam.b, 0.9 - 0.5 * k))
+	# la cima spumosa e la schiuma alla base
+	for i in 4:
+		var a := t / 140.0 + i * 1.6
+		draw_circle(Vector2(cx + cos(a) * half * 0.9, base - h + sin(a * 1.3) * 5.0), 5.0 if strong else 3.5, foam)
+	for i in 7:
+		var a := t / 200.0 + i * 0.9
+		draw_circle(Vector2(cx + (i - 3) * w * 0.22 + sin(a) * 3.0, base - 4.0 + cos(a * 1.4) * 1.5), 4.5 if strong else 3.0, Color(0.95, 0.98, 0.97, 0.7))
 
 
 # Come jetPhase() in physics/elements.ts: "calm", "warn" (bolle) o "active" (getto)
