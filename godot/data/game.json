@@ -1507,6 +1507,28 @@
             "piccione": {
               "file": "piccione.png",
               "frames": 6
+            },
+            "passanti": {
+              "file": "passanti.png",
+              "frames": 8,
+              "rows": 9
+            },
+            "ombrelli": {
+              "file": "ombrelli.png",
+              "frames": 4
+            },
+            "bar-tavolo": {
+              "file": "bar-tavolo.png",
+              "frames": 1
+            },
+            "bar-seduti": {
+              "file": "bar-seduti.png",
+              "frames": 4,
+              "rows": 3
+            },
+            "cameriere": {
+              "file": "cameriere.png",
+              "frames": 8
             }
           },
           "birds": {

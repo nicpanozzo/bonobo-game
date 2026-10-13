@@ -36,12 +36,13 @@ func setup(spec: Dictionary, stage_width: float, world_height: float) -> void:
 		if ResourceLoader.exists(path):
 			var tex: Texture2D = load(path)
 			var frames := maxi(1, int(sh.frames))
-			_sheets[name] = {"tex": tex, "frames": frames, "fw": tex.get_width() / frames, "fh": tex.get_height(), "scale": float(sh.get("scale", 0.5))}
+			var rows := maxi(1, int(sh.get("rows", 1)))
+			_sheets[name] = {"tex": tex, "frames": frames, "fw": tex.get_width() / frames, "fh": tex.get_height() / rows, "scale": float(sh.get("scale", 0.5))}
 
 
 # Un fotogramma di un foglio dipinto, centrato in pos (o con i piedi in pos se feet), grande k volte la sua misura
 # di mondo, specchiato se flip. Restituisce false se il foglio non c'è (allora si disegna la forma semplice)
-func draw_frame(ci: CanvasItem, name: String, frame: int, pos: Vector2, k: float, flip := false, mod := Color.WHITE, feet := false) -> bool:
+func draw_frame(ci: CanvasItem, name: String, frame: int, pos: Vector2, k: float, flip := false, mod := Color.WHITE, feet := false, row := 0) -> bool:
 	var sh: Variant = _sheets.get(name)
 	if sh == null:
 		return false
@@ -51,7 +52,7 @@ func draw_frame(ci: CanvasItem, name: String, frame: int, pos: Vector2, k: float
 	var dest := Rect2(pos.x - size.x / 2.0, pos.y - (size.y if feet else size.y / 2.0), size.x, size.y)
 	if flip:
 		dest.size.x = -size.x
-	ci.draw_texture_rect_region(sh.tex, dest, Rect2(fw * posmod(frame, int(sh.frames)), 0, fw, fh), mod)
+	ci.draw_texture_rect_region(sh.tex, dest, Rect2(fw * posmod(frame, int(sh.frames)), fh * row, fw, fh), mod)
 	return true
 
 
@@ -200,6 +201,9 @@ func _draw_walkers(ci: CanvasItem, w: Dictionary, t: float, off: Vector2, rain: 
 			continue
 		var dir := 1.0 if i % 2 == 0 else -1.0
 		var running := kind == "corsa"
+		if has_sheet("passanti"):
+			_draw_walker_sprite(ci, i, kind, off + Vector2(x, base), t, dir, running, wet, amb)
+			continue
 		var cadence := 180.0 / (2.2 if running else float(WALKER_PACE.get(kind, 1.0)))
 		var step := sin(t / cadence * (1.0 + 0.1 * (i % 3)) + i)
 		var p := off + Vector2(x, base)
@@ -533,6 +537,9 @@ func _draw_bar(ci: CanvasItem, b: Dictionary, t: float, off: Vector2, amb: Color
 	var canopy := Color("d2c8b0") * amb
 	var stripe := Color("a89a80") * amb
 	var tops: Array = []
+	if has_sheet("bar-tavolo"):
+		_draw_bar_sprites(ci, b, t, base, n, sp, amb)
+		n = 0 # i tavolini dipinti al posto di quelli fatti di forme
 	for i in n:
 		var c := base + Vector2(i * sp, 0)
 		# l'ombrellone: palo e tela a spicchi
@@ -568,6 +575,12 @@ func _draw_bar(ci: CanvasItem, b: Dictionary, t: float, off: Vector2, amb: Color
 		ci.draw_rect(Rect2(c + Vector2(-6, -26), Vector2(3, 6)), SPRITZ * amb) # il terzo spritz, ancora pieno
 		if bar_toast(i, t) and fposmod(t + i * 3700.0, TOAST_EVERY_MS) < 300.0:
 			ci.draw_circle(c + Vector2(0, -36), 5.0, Color(1, 0.95, 0.8, 0.8)) # cin cin
+	if has_sheet("cameriere"):
+		var wx2 := waiter_x(t, base.x - 20.0, base.x + (int(b.tables) - 1) * sp + 20.0)
+		var wdir2 := 1.0 if fposmod(t / 16000.0, 1.0) < 0.5 else -1.0
+		draw_frame(ci, "cameriere", int(t / 120.0), Vector2(wx2, base.y + 4), 0.95, wdir2 < 0.0, Color(amb.r, amb.g, amb.b, 1.0), true)
+		_draw_bar_lights(ci, b, t, base, sp, dark)
+		return
 	# il cameriere col vassoio alto
 	var wx := waiter_x(t, base.x - 20.0, base.x + (n - 1) * sp + 20.0)
 	var wdir := 1.0 if fposmod(t / 16000.0, 1.0) < 0.5 else -1.0
@@ -596,6 +609,57 @@ func _draw_bar(ci: CanvasItem, b: Dictionary, t: float, off: Vector2, amb: Color
 				var tw := 0.75 + 0.25 * sin(t / 300.0 + j * 1.9 + k)
 				ci.draw_circle(q, 4.0, Color(1.0, 0.82, 0.5, 0.25 * a * tw))
 				ci.draw_circle(q, 1.6, Color(1.0, 0.9, 0.65, a * tw))
+
+
+# Il bar dipinto (#288): l'ombrellone con il tavolino e le sedie, le due persone sedute (una specchiata) che bevono
+# e brindano, con la posa dal sorso, e il cameriere che cammina col vassoio
+func _draw_bar_sprites(ci: CanvasItem, b: Dictionary, t: float, base: Vector2, n: int, sp: float, amb: Color) -> void:
+	var mod := Color(amb.r, amb.g, amb.b, 1.0)
+	for i in n:
+		var c := base + Vector2(i * sp, 0)
+		if not _seen(c.x - 40.0, 80.0):
+			continue
+		for seat in 2:
+			var pose := 3 if bar_toast(i, t) else (0 if bar_sip(i, seat, t) < 0.3 else (1 if bar_sip(i, seat, t) < 0.75 else 2))
+			var side := -1.0 if seat == 0 else 1.0
+			draw_frame(ci, "bar-seduti", pose, c + Vector2(side * 11.0, 1.0), 0.95, seat == 1, mod, true, (i * 2 + seat) % 3)
+		draw_frame(ci, "bar-tavolo", 0, c + Vector2(0, 1.0), 0.95, false, mod, true)
+
+
+# Le lucine tra gli ombrelloni dipinti, di sera (#288)
+func _draw_bar_lights(ci: CanvasItem, b: Dictionary, t: float, base: Vector2, sp: float, dark: float) -> void:
+	if dark <= 0.25:
+		return
+	var a := clampf((dark - 0.25) / 0.25, 0.0, 1.0)
+	for k in range(int(b.tables) - 1):
+		var p0 := base + Vector2(k * sp + 31.0, -47.0)
+		var p1 := base + Vector2((k + 1) * sp - 31.0, -47.0)
+		for j in 6:
+			var u := (j + 0.5) / 6.0
+			var q := p0.lerp(p1, u) + Vector2(0, sin(u * PI) * 6.0)
+			var tw := 0.75 + 0.25 * sin(t / 300.0 + j * 1.9 + k)
+			ci.draw_circle(q, 3.5, Color(1.0, 0.82, 0.5, 0.25 * a * tw))
+			ci.draw_circle(q, 1.4, Color(1.0, 0.9, 0.65, a * tw))
+
+
+# I passanti dipinti (#288): la riga del foglio per tipo, la camminata a 8 fotogrammi, l'ombrello sopra la testa
+# quando piove, e chi non ce l'ha si copre col giornale
+const WALKER_ROWS := {"signore": 0, "signora": 1, "cane": 2, "corsa": 3, "passeggino": 4, "bastone": 5, "laurea": 6, "borsa": 7, "giornale": 8}
+
+
+func _draw_walker_sprite(ci: CanvasItem, i: int, kind: String, p: Vector2, t: float, dir: float, running: bool, wet: bool, amb: Color) -> void:
+	var name := kind
+	if kind == "solo":
+		name = "signore" if i % 2 == 0 else "signora"
+	var umbrella := wet and i % 4 != 3 and not running
+	if wet and not umbrella and not running:
+		name = "giornale"
+	var period := 75.0 if running else 125.0 * float(WALKER_PACE.get(kind, 1.0)) ** -0.5
+	var frame := int(t / period + i * 3)
+	var mod := Color(amb.r, amb.g, amb.b, 1.0)
+	draw_frame(ci, "passanti", frame, p + Vector2(0, 2), 0.95, dir < 0.0, mod, true, int(WALKER_ROWS.get(name, 0)))
+	if umbrella:
+		draw_frame(ci, "ombrelli", i, p + Vector2(dir * -3.0, -18.0), 0.95, dir < 0.0, mod, true)
 
 
 # --- piccioni: posati finché nessuno arriva vicino; scappano verso l'alto e tornano dopo un po' ---
