@@ -12,7 +12,7 @@ export const WORLD = {
 // Palco, piattaforme, zone di espulsione e punti di partenza stanno in stages.ts, uno per arena.
 
 export const TICK_RATE = 60; // aggiornamenti della fisica al secondo (server)
-export const SEND_RATE = 30; // stati inviati ai client al secondo
+export const SEND_RATE = 60; // stati inviati ai client al secondo: uno per tick, il movimento degli altri arriva prima e più fluido
 export const MAX_CATCHUP_TICKS = 5; // passi recuperabili in una volta se il server resta indietro
 export const MAX_PLAYERS_PER_ROOM = 8; // 4 contro 4 a squadre (#55)
 
@@ -321,7 +321,7 @@ export const AUDIO = {
 // Rete lato client: si disegna il passato di qualche ms e si interpola tra due snapshot,
 // così il movimento resta fluido anche se i pacchetti arrivano a scatti
 export const NET = {
-  interpolationDelayMs: 80, // circa due snapshot e mezzo a 30/s
+  interpolationDelayMs: 50, // tre snapshot a 60/s: margine per un pacchetto in ritardo, 30 ms meno di prima
   teleportDistance: 300, // pixel: oltre questo salto (es. respawn) non si interpola
   bufferSize: 30, // snapshot tenuti in memoria (1 secondo)
   predictionSmoothMs: 100, // E17: una correzione della predizione si spalma su circa tanto (costante di tempo)

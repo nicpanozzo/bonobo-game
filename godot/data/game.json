@@ -257,7 +257,7 @@
     "sideReach": 250
   },
   "net": {
-    "interpolationDelayMs": 80,
+    "interpolationDelayMs": 50,
     "teleportDistance": 300,
     "bufferSize": 30,
     "predictionSmoothMs": 100,
