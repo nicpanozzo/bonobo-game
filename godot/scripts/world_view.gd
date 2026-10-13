@@ -1151,6 +1151,11 @@ func _draw_jet(j: Dictionary, t: float) -> void:
 # Lo zampillo di una fontana (#288): una colonna bianca che si assottiglia, il pennacchio che si apre in cima
 # e ricade a ventaglio in gocce, e la schiuma dove l'acqua torna nella vasca. Acceso è alto e pieno
 func _draw_fountain_plume(cx: float, base: float, w: float, h: float, t: float, strong: bool) -> void:
+	# l'acqua dipinta (#288): il getto alto quando è acceso, lo zampillo (anche gonfio, con l'avviso) a riposo
+	if strong and _life.draw_frame(self, "getto", int(t / 90.0), Vector2(cx, base + 3.0), h / 318.0, false, Color.WHITE, true):
+		return
+	if not strong and _life.draw_frame(self, "zampillo", int(t / 90.0), Vector2(cx, base + 3.0), h / 66.0, false, Color.WHITE, true):
+		return
 	var foam := Color(0.93, 0.97, 0.96, 0.85)
 	var body := Color(0.78, 0.9, 0.9, 0.7)
 	var half := w * (0.28 if strong else 0.16)

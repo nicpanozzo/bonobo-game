@@ -1101,13 +1101,26 @@ def fountain_back():
     t.ellipse(cx - rx - 8, rim_y - ry - 5, cx + rx + 8, rim_y + ry + 5, fill=(214, 208, 194, 255), ink=True, width=1.1)
     t.chord(cx - rx - 8, rim_y - ry - 5, cx + rx + 8, rim_y + ry + 5, 180, 360, fill=(188, 180, 166, 255))
     t.ellipse(cx - rx - 8, rim_y - ry - 5, cx + rx + 8, rim_y + ry + 5, ink=True, width=1.1)
-    # l'acqua: verde acqua spento, l'ombra del bordo lontano, i riflessi chiari che il sole fa a strisce
-    t.ellipse(cx - rx, rim_y - ry, cx + rx, rim_y + ry, fill=WATER, ink=True, width=1.0)
-    t.chord(cx - rx, rim_y - ry, cx + rx, rim_y + ry, 190, 350, fill=WATER_S)
-    for k, (dx, dy, w) in enumerate(((-90, 4, 38), (-30, 8, 54), (40, 2, 30), (95, 7, 26), (-120, 9, 18))):
-        t.line([(cx + dx, rim_y + dy), (cx + dx + w, rim_y + dy)], fill=WATER_L, width=1.4 if k % 2 else 1.0)
-    for r_ in (24, 40, 58):  # cerchi che si allargano dove cade l'acqua
-        t.ellipse(cx - r_, rim_y + 2 - r_ * 0.1, cx + r_, rim_y + 2 + r_ * 0.1, ink=True, width=0.7, ink_col=(176, 204, 202, 255))
+    # l'acqua dipinta (#288): verde acqua spento, più scura sotto il bordo lontano, i riflessi del cielo spezzati
+    # dalle increspature, gli anelli d'onda interrotti attorno allo zampillo e la schiuma
+    from pittura import Quadro, wobble
+    q = Quadro(360, 70, origin=(780, 454))
+    wm = q.ellipse(q.mask(), cx - rx, rim_y - ry, cx + rx, rim_y + ry)
+    q.fill(wm, WATER)
+    q.fill(q.inner_shadow(wm, 0, 7, 3.5), WATER_S, 0.9)
+    rng = rand(61)
+    for k in range(16):  # riflessi a pennellate orizzontali, interrotte
+        y = rim_y - ry * 0.4 + rng.uniform(0, ry * 1.2)
+        x0 = cx + rng.uniform(-rx * 0.85, rx * 0.6)
+        ln = rng.uniform(10, 40)
+        pts = wobble([(x0 + ln * j / 6, y + math.sin(j) * 0.6) for j in range(7)], 0.5, k, closed=False)
+        q.fill(q.intersect(q.soften(q.stroke(q.mask(), pts, rng.uniform(0.8, 1.8)), 0.4), wm), WATER_L, rng.uniform(0.35, 0.8))
+    for r_ in (22, 38, 56, 78):  # anelli d'onda: archi spezzati, non cerchi
+        for j in range(6):
+            a0 = j / 6 * math.tau + r_ * 0.1
+            arc = [(cx + r_ * math.cos(a0 + i * 0.12), rim_y + 2 + r_ * 0.11 * math.sin(a0 + i * 0.12)) for i in range(5)]
+            q.fill(q.intersect(q.soften(q.stroke(q.mask(), arc, 0.7), 0.3), wm), (184, 212, 210), 0.5 - r_ / 200)
+    t.img.alpha_composite(q.img)
     # il bocchettone al centro, di bronzo scuro
     t.rect(cx - 6, rim_y - 6, cx + 6, rim_y + 2, fill=(96, 92, 80, 255), ink=True, width=0.9)
     t.ellipse(cx - 8, rim_y - 9, cx + 8, rim_y - 4, fill=(120, 116, 100, 255), ink=True, width=0.8)

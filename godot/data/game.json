@@ -1553,6 +1553,14 @@
             "tram": {
               "file": "tram.png",
               "frames": 1
+            },
+            "zampillo": {
+              "file": "zampillo.png",
+              "frames": 6
+            },
+            "getto": {
+              "file": "getto.png",
+              "frames": 4
             }
           },
           "birds": {

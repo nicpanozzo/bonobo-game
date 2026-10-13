@@ -711,6 +711,84 @@ def traffic_sheets():
     sheet([tram()], OUT, "tram.png")
 
 
+# --- l'acqua della fontana (#288 passo 3d): lo zampillo a riposo e il getto alto, dipinti e semitrasparenti ---
+FOAM = (244, 250, 250)
+AQUA = (196, 226, 228)
+
+
+def _water_column(q, cx, base, h, w, phase, seed):
+    """Una colonna d'acqua: filetti che ondeggiano, si gonfiano e si spezzano, il cuore più chiaro, la corona
+    che si apre in cima e ricade in filetti e gocce dentro una nebbiolina, e la schiuma irregolare dove l'acqua
+    torna nella vasca."""
+    rng = random.Random(seed)
+    col = q.mask()
+    for k in range(12):
+        u = (k / 11 - 0.5)
+        width = w * rng.uniform(0.05, 0.12)
+        for j in range(16):  # ogni filetto è fatto di tratti con lo spessore che cambia: l'acqua non è un tubo
+            v0, v1 = j / 16, (j + 1) / 16
+            if rng.random() < 0.08:
+                continue  # un filetto che si spezza
+            wob = math.sin(v0 * 11 + phase * math.tau + k * 1.3)
+            p0 = (cx + w * (0.5 - 0.25 * v0) * u + wob * 1.4, base - h * v0)
+            p1 = (cx + w * (0.5 - 0.25 * v1) * u + math.sin(v1 * 11 + phase * math.tau + k * 1.3) * 1.4, base - h * v1)
+            q.stroke(col, [p0, p1], width * (0.7 + 0.6 * abs(math.sin(v0 * 7 + k + phase * 5))))
+    q.fill(q.soften(col, 0.5), AQUA, 0.6)
+    core = q.mask()
+    for j in range(10):
+        v0, v1 = j / 10, (j + 1) / 10
+        q.stroke(core, [(cx - w * 0.04 + math.sin(v0 * 9 + phase * 6) * 0.8, base - h * v0), (cx - w * 0.04 + math.sin(v1 * 9 + phase * 6) * 0.8, base - h * v1)], w * (0.08 + 0.05 * math.sin(v0 * 13 + phase * 7)))
+    q.fill(q.soften(core, 0.8), FOAM, 0.9)
+    # la nebbiolina attorno alla colonna e alla corona
+    mist = q.mask()
+    q.ellipse(mist, cx - w * 0.9, base - h - 14, cx + w * 0.9, base - h + 22)
+    q.poly(mist, [(cx - w * 0.6, base), (cx + w * 0.6, base), (cx + w * 0.3, base - h), (cx - w * 0.3, base - h)])
+    q.fill(q.soften(mist, 6), (255, 255, 255), 0.22)
+    # la corona: si apre a ombrello e ricade, filetti che si assottigliano
+    for k in range(14):
+        side = -1 if k % 2 else 1
+        reach = w * rng.uniform(0.5, 1.0)
+        fall = h * rng.uniform(0.1, 0.32)
+        top = (cx + side * 1.5, base - h)
+        pts = bezier(top, (cx + side * reach * 0.4, base - h - 7), (cx + side * reach * 0.9, base - h - 3), (cx + side * reach, base - h + fall), 12)
+        upto = int(len(pts) * (0.5 + 0.5 * ((phase + k * 0.13) % 1.0)))
+        m = q.mask()
+        for j in range(upto - 1):
+            q.stroke(m, [pts[j], pts[j + 1]], 2.2 * (1 - j / len(pts)) + 0.5)
+        q.fill(q.soften(m, 0.35), FOAM, 0.85)
+    for k in range(int(18 + w * 0.25)):  # gocce che cadono, un po' allungate
+        side = rng.choice((-1, 1))
+        u = (phase * 1.7 + k * 0.137) % 1.0
+        x = cx + side * w * rng.uniform(0.3, 0.95) * (0.4 + u * 0.6)
+        y = base - h + h * 0.9 * u * u
+        r = rng.uniform(0.6, 1.4) * (1 - 0.4 * u)
+        q.fill(q.soften(q.ellipse(q.mask(), x - r, y - r * 1.6, x + r, y + r * 1.2), 0.3), FOAM, 0.9 - 0.4 * u)
+    # la schiuma alla base: tante bolle unite e lisciate in una macchia irregolare
+    foam = q.mask()
+    for k in range(18):
+        fx = cx + rng.uniform(-w * 0.75, w * 0.75) + math.sin(phase * math.tau + k) * 1.2
+        r = rng.uniform(1.5, 4.0)
+        q.ellipse(foam, fx - r * 1.4, base - r * 1.6, fx + r * 1.4, base + 0.8)
+    foam = q.smooth(foam, 0.7)
+    q.fill(foam, FOAM, 0.85)
+    q.fill(q.inner_shadow(foam, 0, -1.5, 0.8), AQUA, 0.6)
+
+
+def fountain_water_sheets():
+    idle = []
+    for i in range(6):
+        q = Quadro(110, 96)
+        _water_column(q, 55, 92, 66, 42, i / 6, 3)
+        idle.append(q.result())
+    sheet(idle, OUT, "zampillo.png")
+    jet = []
+    for i in range(4):
+        q = Quadro(150, 350)
+        _water_column(q, 75, 344, 318, 70, i / 4, 7)
+        jet.append(q.result())
+    sheet(jet, OUT, "getto.png")
+
+
 if __name__ == "__main__":
     sheet([cloud(s) for s in range(1, 9)], OUT, "nuvole.png")
     sheet(gull_frames(), OUT, "gabbiano.png")
@@ -721,3 +799,4 @@ if __name__ == "__main__":
     umbrellas_sheet()
     bar_sheets()
     traffic_sheets()
+    fountain_water_sheets()

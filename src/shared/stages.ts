@@ -509,6 +509,9 @@ export const STAGES: Record<string, StageSpec> = {
           bici: { file: "bici.png", frames: 4 },
           bus: { file: "bus.png", frames: 1 },
           tram: { file: "tram.png", frames: 1 },
+          // L'acqua della fontana (#288 passo 3d): lo zampillo a riposo e il getto acceso
+          zampillo: { file: "zampillo.png", frames: 6 },
+          getto: { file: "getto.png", frames: 4 },
         },
         birds: { y: 40, parallax: 0.2, everyMs: 14000 },
         // Sulle punte delle lastre delle statue e sul cornicione del palazzo
