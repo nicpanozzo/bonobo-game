@@ -367,6 +367,7 @@ def statue(name, total_h, slab_w, kind):
 # Gli strati sono centrati sul centro dell'arena (960, 360) e larghi 2440×1480 di mondo: l'angolo in alto a sinistra
 # è nel mondo a (-260, -380). Più uno strato è lontano, più i colori vanno verso la foschia e l'inchiostro schiarisce.
 LW, LH = 2440, 1480
+LIFT = (8, 24, 30)  # quanto sale ogni strato (#300): sfondo-0, 1, 2 (vedi layer)
 L_ORIGIN = (960 - LW / 2, 360 - LH / 2)
 HAZE = (176, 190, 202, 255)  # la foschia del giorno, verso cui sbiadiscono le cose lontane
 
@@ -389,11 +390,14 @@ def lit_rect(lt, x0, y0, x1, y1):
     lit_window(lt, [(x0, y0), (x1, y0), (x1, y1), (x0, y1)])
 
 
-def layer(name, draw, lights=None):
+def layer(name, draw, lights=None, lift=0):
     """Uno strato dello sfondo: draw(t) disegna sulla tela in pixel di mondo; il file esce a 2x (art.scale 0.5).
-    Con lights, anche l'immagine delle luci della notte (#288): solo i vetri accesi, nello stesso posto."""
-    t = Tela(LW, LH, origin=L_ORIGIN, ss=1)
-    t.lights = Tela(LW, LH, origin=L_ORIGIN, ss=1) if lights else None
+    Con lights, anche l'immagine delle luci della notte (#288): solo i vetri accesi, nello stesso posto.
+    lift (#300): di quanti pixel di mondo sale tutto lo strato. Più è lontano, più la sua terra sta in alto, dietro
+    il piano dell'isola: così la prospettiva torna. Le y di stages.ts (passanti, traffico, lampioni) salgono uguali."""
+    origin = (L_ORIGIN[0], L_ORIGIN[1] + lift)
+    t = Tela(LW, LH, origin=origin, ss=1)
+    t.lights = Tela(LW, LH, origin=origin, ss=1) if lights else None
     draw(t)
     t.save(OUT, name, colors=256)
     if lights:
@@ -1182,15 +1186,71 @@ def lawn(t):
     t.line([(px + 2, base - 113), (px + 11, base - 113)], fill=(150, 60, 56, 255), width=1.4)
 
 
+def piano(name):
+    """Il piano dell'isola visto un po' dall'alto (#300): il lastricato di trachite che dal bordo calpestabile
+    (y 520, il più chiaro, lo disegna bordo.png) si allontana fino al ciglio di dietro (y 496). I giunti delle lastre
+    scappano verso il centro e le file si stringono andando indietro: così si capisce che l'isola ha una profondità
+    e che lo sfondo sta dietro. Sotto statue, platani e palazzo un'ombra morbida di contatto li appoggia a terra.
+    Prop in x 960, y 524, dietro alle statue e davanti al palazzo."""
+    x0, x1, y0, y1 = 80, 1840, 488, 524
+    t = Tela(x1 - x0, y1 - y0, origin=(x0, y0))
+    back, front, vx = 496, 520, 960
+    narrow = 0.034  # quanto si stringe il ciglio di dietro rispetto al bordo davanti
+
+    def at(xf, y):  # dove sta, alla quota y, il punto che sul bordo davanti è a xf
+        return vx + (xf - vx) * (1 - narrow * (front - y) / (front - back))
+
+    rng = rand(300)
+    rows = [496, 499.5, 504, 509.5, 516, 521]  # le file si allargano venendo avanti
+    base = mix(EDGE, STONE_LIGHT, 0.42)
+    far_col = mix(EDGE, STONE, 0.62)
+    for r, (ya, yb) in enumerate(zip(rows, rows[1:])):
+        k = r / (len(rows) - 2)  # 0 il ciglio di dietro, 1 davanti
+        row_col = mix(far_col, base, k)
+        step = 44
+        off = (r % 2) * step / 2 - step
+        xf = 100 + off
+        while xf < 1820:
+            a, b = max(100, xf), min(1820, xf + step)
+            if b - a > 1:
+                col = mix(row_col, shade(row_col, 0.9), rng.random() * 0.6)
+                t.poly([(at(a, ya), ya), (at(b, ya), ya), (at(b, yb), yb), (at(a, yb), yb)], fill=col)
+                if rng.random() < 0.25:  # qualche lastra consumata, più chiara al centro
+                    cx = (at(a, ya) + at(b, yb)) / 2
+                    t.glaze([(cx - 8, (ya + yb) / 2), (cx, ya + 0.6), (cx + 9, (ya + yb) / 2), (cx, yb - 0.4)], (255, 250, 236, 40))
+            xf += step
+        # i giunti: la riga della fila e i tagli tra le lastre, verso il punto di fuga
+        joint = mix(STONE_SHADE, row_col, 0.35)
+        t.line([(at(100, ya), ya), (at(1820, ya), ya)], fill=joint, width=0.5 + 0.35 * k)
+        xf = 100 + off
+        while xf < 1820:
+            if xf > 100:
+                t.line([(at(xf, ya), ya), (at(xf, yb), yb)], fill=joint, width=0.45 + 0.3 * k)
+            xf += step
+    # il ciglio di dietro: lo spigolo della pietra e un filo d'ombra, poi c'è lo sfondo
+    t.line([(at(100, back), back), (at(1820, back), back)], fill=shade(far_col, 0.7), width=1.0)
+    # ombre di contatto: le basi delle statue, i platani e il palazzo poggiano sul lastricato
+    for cx, w in ((310, 36), (540, 40), (690, 36), (1230, 36), (1380, 40), (1610, 36), (410, 22), (1510, 22)):
+        for i, (ww, a) in enumerate(((w * 1.4, 14), (w * 1.1, 20), (w * 0.8, 26))):
+            t.glaze([(cx + math.cos(u) * ww, 515 + math.sin(u) * (3 + i)) for u in [j * math.tau / 24 for j in range(24)]], (40, 36, 32, a))
+    for i, (h, a) in enumerate(((7, 30), (4, 40), (2, 50))):  # il palazzo sta sul ciglio di dietro
+        t.glaze([(at(756, back), back), (at(1164, back), back), (at(1170, back + h), back + h), (at(750, back + h), back + h)], (40, 36, 32, a))
+    t.save(OUT, name)
+
+
+GROUND = 522  # il pavimento dell'isola, dove poggiano palazzo, statue e platani
+
+
 def palazzo(name):
     """Il palazzo signorile al centro, dietro il ponte (#280 passo 2), x 740-1180, y 40-480, a 2x.
 
     Portico a bugnato con i conci sugli archi, mezzanino con le inferriate, piano nobile con la trifora gotica e
     le bifore (le luci di notte stanno su queste finestre: art.life.daycycle.windows), ultimo piano con le persiane,
     cornicione con le mensole, tetto di coppi e camini a imbuto. L'intonaco caldo ha qualche scrostatura che mostra
-    i mattoni. I balconi veri sono piattaforme (y 300 e 180): qui ci sono solo le mensole sotto."""
-    t = Tela(440, 440, origin=(740, 40))
-    lt = Tela(440, 440, origin=(740, 40))  # le luci della notte (#288): solo i vetri accesi, nello stesso posto
+    i mattoni. I balconi veri sono piattaforme (y 300 e 180): qui ci sono solo le mensole sotto.
+    Il portico arriva fino al pavimento dell'isola, a y 522 (#300): prima finiva a 480 e il palazzo sembrava sollevato."""
+    t = Tela(440, 482, origin=(740, 40))
+    lt = Tela(440, 482, origin=(740, 40))  # le luci della notte (#288): solo i vetri accesi, nello stesso posto
     rng = rand(21)
     plaster, plaster_s = (156, 122, 94, 255), (132, 102, 78, 255)
     stone, stone_s = (188, 182, 168, 255), (156, 148, 135, 255)  # un po' più spenta dei balconi, che si calpestano
@@ -1199,7 +1259,7 @@ def palazzo(name):
     brick = (132, 84, 66, 255)
 
     # --- corpo: intonaco, le ombre portate le mettono cornici e balconi ---
-    t.rect(760, 110, 1160, 480, fill=plaster)
+    t.rect(760, 110, 1160, GROUND, fill=plaster)
     # scrostature: l'intonaco caduto mostra i mattoni, col bordo chiaro dell'intonaco rotto
     for (px, py, pw, ph) in ((1022, 138, 32, 24), (869, 246, 26, 40), (1012, 338, 24, 26)):
         pts = [(px + pw * u, py + ph * v) for u, v in ((0.1, 0), (0.6, 0.05), (1, 0.3), (0.9, 0.8), (0.5, 1), (0, 0.7))]
@@ -1216,9 +1276,9 @@ def palazzo(name):
             xx = x0 if x0 == 760 else x0 + 16 - w
             t.block(xx, y0, xx + w, y0 + 22, stone, sh=stone_s, bottom=3, width=0.9)
 
-    # --- portico a bugnato (y 380-480) ---
-    t.rect(760, 380, 1160, 480, fill=stone)
-    for row in range(5):
+    # --- portico a bugnato (y 380-522), sullo zoccolo ---
+    t.rect(760, 380, 1160, GROUND, fill=stone)
+    for row in range(7):
         y = 380 + row * 20
         off = 0 if row % 2 == 0 else 20
         for x in range(760 - off, 1160, 40):
@@ -1228,17 +1288,17 @@ def palazzo(name):
     for i in range(5):  # archi con i conci a raggiera e la chiave
         ax = 778 + i * 78
         cxa, r = ax + 26, 26
-        t.rect(ax, 410, ax + 52, 480, fill=dark)
+        t.rect(ax, 410, ax + 52, GROUND, fill=dark)
         t.pieslice(ax, 384, ax + 52, 436, 180, 360, fill=dark)
-        t.rect(ax + 4, 446, ax + 48, 480, fill=(54, 48, 44, 255))  # il fondo del portico, appena più chiaro in basso
+        t.rect(ax + 4, 470, ax + 48, GROUND, fill=(54, 48, 44, 255))  # il fondo del portico, appena più chiaro in basso
         for k in range(9):
             a0, a1 = math.pi * k / 9, math.pi * (k + 1) / 9
             out = 10 if k == 4 else 7
             pts = [(cxa - r * math.cos(a0), 410 - r * math.sin(a0)), (cxa - (r + out) * math.cos(a0), 410 - (r + out) * math.sin(a0)),
                    (cxa - (r + out) * math.cos(a1), 410 - (r + out) * math.sin(a1)), (cxa - r * math.cos(a1), 410 - r * math.sin(a1))]
             t.poly(pts, fill=stone if k < 5 else stone_s, ink=True, width=0.8)
-        t.line([(ax, 410), (ax, 480)], fill=INK, width=1.2)
-        t.line([(ax + 52, 410), (ax + 52, 480)], fill=INK, width=1.2)
+        t.line([(ax, 410), (ax, GROUND)], fill=INK, width=1.2)
+        t.line([(ax + 52, 410), (ax + 52, GROUND)], fill=INK, width=1.2)
         if i == 2:  # la lanterna appesa nell'arco centrale
             t.line([(cxa, 386), (cxa, 400)], fill=INK, width=0.8)
             t.poly([(cxa - 4, 400), (cxa + 4, 400), (cxa + 3, 410), (cxa - 3, 410)], fill=(150, 136, 100, 255), ink=True, width=0.7)
@@ -1352,11 +1412,12 @@ def palazzo(name):
         t.rect(cxm - 18, 34, cxm + 18, 38, fill=(150, 112, 92, 255), ink=True, width=0.9)
 
     # --- pluviale di rame, verde spento, con le fascette ---
-    t.rect(1150, 112, 1155, 480, fill=(98, 116, 102, 255), ink=True, width=0.8)
-    for y in range(140, 480, 60):
+    t.rect(1150, 112, 1155, GROUND, fill=(98, 116, 102, 255), ink=True, width=0.8)
+    for y in range(140, GROUND, 60):
         t.rect(1148, y, 1157, y + 3, fill=(70, 80, 72, 255))
     # contorno del palazzo
-    t.rect(760, 110, 1160, 480, ink=True, width=1.4)
+    t.rect(756, GROUND - 8, 1164, GROUND, fill=stone_s, ink=True, width=1.0)  # lo zoccolo
+    t.rect(760, 110, 1160, GROUND, ink=True, width=1.4)
     t.save(OUT, name)
     lt.save(OUT, name.replace(".png", "-luci.png"))
 
@@ -1637,6 +1698,7 @@ if __name__ == "__main__":
     plane_tree_prop("platano.png")
     balcony_rail()
     balcony_floor()
-    layer("sfondo-0.png", sky, "sfondo-0-luci.png")
-    layer("sfondo-1.png", buildings, "sfondo-1-luci.png")
-    layer("sfondo-2.png", lawn, "sfondo-2-luci.png")
+    piano("piano.png")
+    layer("sfondo-0.png", sky, "sfondo-0-luci.png", lift=LIFT[0])
+    layer("sfondo-1.png", buildings, "sfondo-1-luci.png", lift=LIFT[1])
+    layer("sfondo-2.png", lawn, "sfondo-2-luci.png", lift=LIFT[2])
