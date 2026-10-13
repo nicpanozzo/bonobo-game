@@ -41,8 +41,17 @@ static func shadow(feet: Vector2, width: float, l: Dictionary, above := 0.0) -> 
 	var half := width * 0.5 * (1.0 - clampf(above / 400.0, 0.0, 0.5)) + length * 0.5 * absf(float(l.side))
 	var cx := feet.x + dir * length * 0.5 * absf(float(l.side))
 	var ry := 6.5
-	var pts := PackedVector2Array()
+	# Il cerchio unitario allargato e spostato dal motore: in GDScript punto per punto costava molto con tante ombre
+	var pts := Transform2D(0.0, Vector2(half, ry), 0.0, Vector2(cx, feet.y + 2.0)) * _unit
+	return [pts, alpha]
+
+
+static var _unit := _unit_circle() # i 20 punti dell'ombra sul cerchio di raggio 1
+
+
+static func _unit_circle() -> PackedVector2Array:
+	var out := PackedVector2Array()
 	for i in 20:
 		var a := TAU * i / 20.0
-		pts.append(Vector2(cx + cos(a) * half, feet.y + 2.0 + sin(a) * ry))
-	return [pts, alpha]
+		out.append(Vector2(cos(a), sin(a)))
+	return out

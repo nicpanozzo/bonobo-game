@@ -34,6 +34,7 @@ var _layers: Array = [] # strati dello sfondo dell'arena (E12), dal più lontano
 var _foreground: Array = [] # strato davanti ai lottatori, o []
 var _layer_scale := 1.0 # pixel di mondo per pixel delle immagini degli strati
 var _skins := {} # materiali del palco (#237): nome -> {tex, edge, depth, rails}
+var _fan := PackedInt32Array() # indici dei triangoli a ventaglio delle ombre, per _draw_convex
 var _props_back: Array = [] # decorazioni dietro ai lottatori (#237): [texture, decorazione]
 var _props_front: Array = [] # e davanti
 var _hazard_sprites := {} # indice della trappola -> {tex, frames, fps, scale, footX, footY}: animazioni disegnate (#270)
@@ -222,7 +223,8 @@ func _load_stage_dressing(dir: String, art: Dictionary) -> void:
 	for pr in art.get("props", []):
 		var tex := _stage_texture(dir, pr.file)
 		if tex != null:
-			(_props_front if pr.get("front", false) else _props_back).append([tex, pr])
+			# Il palco non si sposta: la superficie sotto la decorazione (per la sua ombra) si cerca una volta sola
+			(_props_front if pr.get("front", false) else _props_back).append([tex, pr, _surface_below(float(pr.x), float(pr.y) - 6.0)])
 	_hazard_sprites = {}
 	for hs in art.get("hazardSprites", []):
 		var tex := _stage_texture(dir, hs.file)
@@ -1063,7 +1065,7 @@ func _draw_sun_light(t: float) -> void:
 	for entry in _props_back:
 		var pr: Dictionary = entry[1]
 		var tex: Texture2D = entry[0]
-		var ground := _surface_below(float(pr.x), float(pr.y) - 6.0)
+		var ground: float = entry[2]
 		if absf(ground - float(pr.y)) > 8.0:
 			continue # non poggia sul palco (il palazzo, le fondamenta)
 		var w := tex.get_width() * float(pr.get("scale", _layer_scale)) * 0.55
@@ -1082,16 +1084,25 @@ func _draw_shadow(s: Array) -> void:
 	if float(s[1]) <= 0.0:
 		return
 	var pts: PackedVector2Array = s[0]
-	draw_colored_polygon(pts, Color(0.05, 0.05, 0.1, float(s[1]) * 0.6))
+	_draw_convex(pts, Color(0.05, 0.05, 0.1, float(s[1]) * 0.6))
 	# il nucleo più scuro, vicino a chi la fa: un'ombra morbida ai bordi
 	var c := Vector2.ZERO
 	for q in pts:
 		c += q
 	c /= pts.size()
-	var core := PackedVector2Array()
-	for q in pts:
-		core.append(c + (q - c) * 0.6)
-	draw_colored_polygon(core, Color(0.05, 0.05, 0.1, float(s[1]) * 0.5))
+	# q -> c + (q - c) * 0.6, fatto dal motore su tutto il poligono invece che punto per punto in GDScript
+	var core := Transform2D(0.0, Vector2(0.6, 0.6), 0.0, c * 0.4) * pts
+	_draw_convex(core, Color(0.05, 0.05, 0.1, float(s[1]) * 0.5))
+
+
+# Un poligono convesso a ventaglio dal primo punto, senza la triangolazione generica di draw_colored_polygon:
+# con tante ombre per frame (Padova, #288) era la parte più cara
+func _draw_convex(pts: PackedVector2Array, color: Color) -> void:
+	if _fan.size() != (pts.size() - 2) * 3:
+		_fan = PackedInt32Array()
+		for i in range(1, pts.size() - 1):
+			_fan.append_array([0, i, i + 1])
+	RenderingServer.canvas_item_add_triangle_array(get_canvas_item(), _fan, pts, PackedColorArray([color]))
 
 
 # La superficie più vicina sotto un punto: blocchi pieni e piattaforme (anche ad arco), INF se sotto c'è il vuoto
