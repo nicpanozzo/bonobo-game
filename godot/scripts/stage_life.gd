@@ -153,6 +153,10 @@ func _draw_vehicle(ci: CanvasItem, v: Dictionary, t: float, off: Vector2, amb :=
 	var base := float(v.y)
 	if not _seen(off.x + x, length):
 		return
+	var vs: Variant = _sheets.get(str(v.kind))
+	if vs != null:
+		draw_frame(ci, str(v.kind), 0, off + Vector2(x + length / 2.0, base + 3.0), (length + 8.0) / (float(vs.fw) * float(vs.scale)), dir < 0, Color(amb.r, amb.g, amb.b, 1.0), true)
+		return # il tram dipinto (#288)
 	var body := (Color("7a6a5c") if v.kind == "tram" else Color("6c7064")) * amb
 	var h := 52.0
 	var o := off + Vector2(x, base - h - 10)
@@ -344,6 +348,14 @@ func _draw_car(ci: CanvasItem, v: Dictionary, t: float, o: Vector2, amb: Color, 
 	var kind: String = v.kind
 	var length: float = TRAFFIC[kind].length
 	var dir: int = v.dir
+	var sh: Variant = _sheets.get(kind)
+	if sh != null:
+		# il veicolo dipinto (#288): largo quanto il suo posto in strada, girato nel verso in cui va
+		var k := (length + 8.0) / (float(sh.fw) * float(sh.scale))
+		var frame := int(v.color) if kind in ["auto", "furgone"] else int(t / 110.0) # le macchine sono modelli diversi, gli altri pedalano
+		draw_frame(ci, kind, frame, o + Vector2(length / 2.0, 3.0), k, dir < 0, Color(amb.r, amb.g, amb.b, 1.0), true)
+		_car_lights(ci, kind, o, length, dir, dark)
+		return
 	var body: Color = CAR_COLORS[int(v.color)] * amb
 	var glass := Color("3c4048") * amb
 	var front := o.x + length if dir > 0 else o.x
@@ -393,7 +405,13 @@ func _draw_car(ci: CanvasItem, v: Dictionary, t: float, o: Vector2, amb: Color, 
 			ci.draw_line(seat, pedal + crank, Color("3a3836") * amb, 2.5)
 			ci.draw_line(seat, pedal - crank, Color("3a3836") * amb, 2.5)
 			_rider(ci, seat, dir, CLOTHES[int(v.n) % CLOTHES.size()] * amb, HAIR[int(v.n) % HAIR.size()] * amb, false)
-	# di sera fari e luci di dietro, che non si moltiplicano per la luce ambiente
+	_car_lights(ci, kind, o, length, dir, dark)
+
+
+# Di sera fari e luci di dietro, che non si moltiplicano per la luce ambiente
+func _car_lights(ci: CanvasItem, kind: String, o: Vector2, length: float, dir: int, dark: float) -> void:
+	var front := o.x + length if dir > 0 else o.x
+	var rear := o.x if dir > 0 else o.x + length
 	if dark > 0.3 and kind != "bici":
 		var a := clampf((dark - 0.3) / 0.3, 0.0, 1.0)
 		var lamp := Vector2(front, o.y - (30.0 if kind == "bus" else 14.0))
