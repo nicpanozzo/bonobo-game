@@ -38,6 +38,8 @@ var _props_back: Array = [] # decorazioni dietro ai lottatori (#237): [texture, 
 var _props_front: Array = [] # e davanti
 var _hazard_sprites := {} # indice della trappola -> {tex, frames, fps, scale, footX, footY}: animazioni disegnate (#270)
 var _mover_sprites := {} # indice della piattaforma mobile -> come sopra (#273)
+var _light_layers := {} # parallasse -> Texture2D con i vetri accesi di quello strato (#288)
+var _light_props: Array = [] # [texture, decorazione] con i vetri accesi, sopra le decorazioni (#288)
 var _life: RefCounted = preload("res://scripts/stage_life.gd").new() # sfondo vivo (#260)
 var _ambient := Color.WHITE # luce del momento del giorno (#267): moltiplica strati e decorazioni, un po' il palco
 var _textures := {} # id personaggio -> Texture2D dello spritesheet (nel formato cartella, quella di idle)
@@ -49,6 +51,7 @@ var _air_jumps := {} # id giocatore -> quando ha fatto il doppio salto (ms), per
 var _taunts := {} # id giocatore -> quando ha provocato (ms), per l'animazione taunt (E7)
 var _holding := {} # id di chi tiene qualcuno con la presa (#109), dall'ultimo snapshot
 var _variants := {} # id giocatore -> variante di colore (0 = originale), ricalcolata a ogni snapshot (E11)
+const SunLight := preload("res://scripts/sun_light.gd") # luce e ombre del sole e della luna (#288)
 const VARIANT_HUES := [0.5, 0.25, 0.75, 0.125, 0.625, 0.375, 0.875] # spostamento della tinta per la variante 1, 2, ...
 var _supreme_view: Node2D # liana, orsogufo e gnomo della suprema di Bonobot (#102), disegnati sopra i lottatori
 
@@ -233,6 +236,19 @@ func _load_stage_dressing(dir: String, art: Dictionary) -> void:
 		if tex != null:
 			_mover_sprites[int(ms.mover)] = {"tex": tex, "frames": int(ms.frames), "fps": float(ms.fps), "scale": float(ms.get("scale", 1.0)),
 				"footX": float(ms.get("footX", tex.get_width() / float(ms.frames) / 2.0)), "footY": float(ms.get("footY", tex.get_height()))}
+	# Luci della notte precise (#288): strati e decorazioni con solo i vetri accesi
+	_light_layers = {}
+	_light_props = []
+	var life: Dictionary = art.get("life", {}) if art.get("life") is Dictionary else {}
+	var day: Dictionary = life.get("daycycle", {}) if life.get("daycycle") is Dictionary else {}
+	for ll in day.get("lightLayers", []):
+		var tex := _stage_texture(dir, ll.file)
+		if tex != null:
+			_light_layers[snappedf(float(ll.parallax), 0.001)] = tex
+	for lp in day.get("lightProps", []):
+		var tex := _stage_texture(dir, lp.file)
+		if tex != null:
+			_light_props.append([tex, lp])
 
 
 static func _stage_texture(dir: String, file: String) -> Texture2D:
@@ -363,10 +379,10 @@ static func _stage_layer(dir: String, layer: Dictionary) -> Array:
 	return [_sprite_texture(path, "linear"), clampf(layer.parallax, 0.0, 1.0)]
 
 
-func _draw_layer(layer: Array) -> void:
+func _draw_layer(layer: Array, mod := Color(-1, 0, 0)) -> void:
 	var tex: Texture2D = layer[0]
 	var center := Vector2(stage_width() / 2.0, game.world.height / 2.0)
-	draw_texture_rect(tex, layer_rect(tex.get_size() * _layer_scale, layer[1], center, view_rect.get_center()), false, _ambient)
+	draw_texture_rect(tex, layer_rect(tex.get_size() * _layer_scale, layer[1], center, view_rect.get_center()), false, _ambient if mod.r < 0.0 else mod)
 
 
 # Dove sta uno strato: centrato sull'arena, poi trascinato verso il centro della vista tanto più quanto è lontano.
@@ -567,14 +583,26 @@ func _draw() -> void:
 		_life.draw_sky(self, t_stage, view_rect) # cielo vivo, sole, luna, stelle e nuvole, dietro agli strati
 	# Sfondo vivo (#260): ogni elemento si disegna dopo gli strati più lontani di lui
 	var far := -1.0
+	var night: float = _life.night_lights(t_stage) if not _life.is_empty() else 0.0
 	for l in _layers:
 		if not _life.is_empty():
 			_life.draw_band(self, far, l[1], t_stage, view_center, rain, _ambient)
 		_draw_layer(l)
+		var lights: Variant = _light_layers.get(snappedf(float(l[1]), 0.001))
+		if lights != null and night > 0.0:
+			_draw_layer([lights, l[1]], Color(1, 1, 1, night)) # i vetri accesi, senza la luce ambiente
+		if night > 0.0:
+			_life.draw_lamps(self, t_stage, view_rect, float(l[1]))
 		far = l[1]
 	if not _life.is_empty():
 		_life.draw_band(self, far, 1.01, t_stage, view_center, rain, _ambient)
 	_draw_props(_props_back) # statue e decorazioni dietro al palco (#237): le lastre che reggono ci stanno sopra
+	if night > 0.0:
+		for entry in _light_props: # i vetri accesi delle decorazioni (#288)
+			var tex: Texture2D = entry[0]
+			var pr: Dictionary = entry[1]
+			var size := tex.get_size() * float(pr.get("scale", _layer_scale))
+			draw_texture_rect(tex, Rect2(float(pr.x) - size.x / 2.0, float(pr.y) - size.y, size.x, size.y), false, Color(1, 1, 1, night))
 	if not _life.is_empty():
 		_life.draw_daycycle(self, t_stage, view_rect) # di notte lampioni e finestre accese
 	for i in stage.solids.size():
@@ -609,6 +637,7 @@ func _draw() -> void:
 	var mine: Variant = predictor.sample(now, _sampled.get(my_id))
 	if mine != null:
 		_sampled[my_id] = mine
+	_draw_sun_light(t_stage) # ombre a terra e luce dal lato del sole o della luna (#288), sotto i lottatori
 	for id in player_ids:
 		var p: Variant = _sampled.get(id)
 		if p != null:
@@ -1013,6 +1042,70 @@ static func arch_polygon(p: Dictionary, thick: float, k := 1.0, o := Vector2.ZER
 		bottom.insert(0, o + Vector2(x, y + thick) * k)
 	top.append_array(bottom)
 	return top
+
+
+# Luce del sole e della luna (#288), solo nelle arene col giorno che passa: una luce calda (o fredda di notte)
+# che arriva dal lato dell'astro e sfuma dall'altra parte, poi le ombre a terra delle decorazioni (statue, alberi,
+# fontana) e dei lottatori, allungate dalla parte opposta all'astro. I lottatori restano dei loro colori
+func _draw_sun_light(t: float) -> void:
+	if _life.is_empty() or not _life.life.get("daycycle") is Dictionary:
+		return
+	var l := SunLight.light(_life.day_phase(t))
+	var r := view_rect
+	var side: float = l.side
+	if absf(side) > 0.05 and not Access.calm:
+		var tint: Color = l.tint
+		var lit := Color(tint.r, tint.g, tint.b, 0.07 * absf(side) + 0.03 * (1.0 - float(l.elev)))
+		var dark := Color(0.08, 0.1, 0.2, 0.06 + 0.08 * (1.0 - float(l.elev)))
+		var from := lit if side < 0.0 else dark
+		var to := dark if side < 0.0 else lit
+		draw_polygon(PackedVector2Array([r.position, Vector2(r.end.x, r.position.y), r.end, Vector2(r.position.x, r.end.y)]), PackedColorArray([from, to, to, from]))
+	for entry in _props_back:
+		var pr: Dictionary = entry[1]
+		var tex: Texture2D = entry[0]
+		var ground := _surface_below(float(pr.x), float(pr.y) - 6.0)
+		if absf(ground - float(pr.y)) > 8.0:
+			continue # non poggia sul palco (il palazzo, le fondamenta)
+		var w := tex.get_width() * float(pr.get("scale", _layer_scale)) * 0.55
+		_draw_shadow(SunLight.shadow(Vector2(pr.x, ground), w, l))
+	for id in player_ids:
+		var p: Variant = _sampled.get(id)
+		if p == null or p.eliminated or p.respawning:
+			continue
+		var ground := _surface_below(float(p.x), float(p.y) - 2.0)
+		if ground == INF:
+			continue
+		_draw_shadow(SunLight.shadow(Vector2(p.x, ground), float(game.fighter.width), l, ground - float(p.y)))
+
+
+func _draw_shadow(s: Array) -> void:
+	if float(s[1]) <= 0.0:
+		return
+	var pts: PackedVector2Array = s[0]
+	draw_colored_polygon(pts, Color(0.05, 0.05, 0.1, float(s[1]) * 0.6))
+	# il nucleo più scuro, vicino a chi la fa: un'ombra morbida ai bordi
+	var c := Vector2.ZERO
+	for q in pts:
+		c += q
+	c /= pts.size()
+	var core := PackedVector2Array()
+	for q in pts:
+		core.append(c + (q - c) * 0.6)
+	draw_colored_polygon(core, Color(0.05, 0.05, 0.1, float(s[1]) * 0.5))
+
+
+# La superficie più vicina sotto un punto: blocchi pieni e piattaforme (anche ad arco), INF se sotto c'è il vuoto
+func _surface_below(x: float, y: float) -> float:
+	var best := INF
+	for s in stage.solids:
+		if x >= float(s.x) and x <= float(s.x) + float(s.width) and float(s.y) >= y:
+			best = minf(best, float(s.y))
+	for p in stage.platforms:
+		if x >= float(p.x) and x <= float(p.x) + float(p.width):
+			var sy := PredictMovement.surface_y(p, x)
+			if sy >= y:
+				best = minf(best, sy)
+	return best
 
 
 # Getto d'acqua (#253): bolle durante l'avviso, poi una colonna d'acqua spumosa che sale. Stessa fase di jetPhase().

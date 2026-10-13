@@ -1607,54 +1607,26 @@
                 "parallax": 0.75
               }
             ],
-            "windows": [
+            "lightLayers": [
               {
-                "x": 909,
-                "y": 220,
-                "width": 102,
-                "height": 72
+                "file": "sfondo-0-luci.png",
+                "parallax": 0.15
               },
               {
-                "x": 803,
-                "y": 230,
-                "width": 54,
-                "height": 62
+                "file": "sfondo-1-luci.png",
+                "parallax": 0.45
               },
               {
-                "x": 1063,
-                "y": 230,
-                "width": 54,
-                "height": 62
-              },
+                "file": "sfondo-2-luci.png",
+                "parallax": 0.75
+              }
+            ],
+            "lightProps": [
               {
-                "x": 790,
-                "y": 130,
-                "width": 16,
-                "height": 38
-              },
-              {
-                "x": 990,
-                "y": 130,
-                "width": 16,
-                "height": 38
-              },
-              {
-                "x": 1120,
-                "y": 130,
-                "width": 16,
-                "height": 38
-              },
-              {
-                "x": 852,
-                "y": 342,
-                "width": 24,
-                "height": 20
-              },
-              {
-                "x": 1044,
-                "y": 342,
-                "width": 24,
-                "height": 20
+                "file": "palazzo-luci.png",
+                "x": 960,
+                "y": 480,
+                "scale": 0.5
               }
             ]
           }

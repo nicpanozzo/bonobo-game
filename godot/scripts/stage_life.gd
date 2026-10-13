@@ -741,6 +741,37 @@ static func _draw_cloud(ci: CanvasItem, pos: Vector2, w: float, lit: Color, shad
 		ci.draw_circle(Vector2(px, pos.y - r * 0.45 - w * 0.02), r, lit)
 
 
+# I lampioni accesi (#288) di uno strato, subito dopo di lui: l'alone attorno alla lanterna, il cono di luce che
+# scende e la pozza chiara a terra (ground pixel sotto la lanterna). Così stanno dietro alle statue del palco
+func draw_lamps(ci: CanvasItem, t: float, view: Rect2, parallax: float, ground := 101.0) -> void:
+	var d: Variant = life.get("daycycle")
+	if not d is Dictionary:
+		return
+	var on := night_lights(t)
+	if on <= 0.0:
+		return
+	for l in d.get("lamps", []):
+		if absf(float(l.parallax) - parallax) > 0.001:
+			continue
+		var p := Vector2(l.x, l.y) + offset(float(l.parallax), view.get_center())
+		var warm := Color(1.0, 0.84, 0.55)
+		ci.draw_colored_polygon(PackedVector2Array([p + Vector2(-7, 8), p + Vector2(7, 8), p + Vector2(34, ground), p + Vector2(-34, ground)]), Color(warm, 0.12 * on))
+		var pool := PackedVector2Array()
+		for i in 16:
+			var a := TAU * i / 16.0
+			pool.append(p + Vector2(cos(a) * 40.0, ground + sin(a) * 5.0))
+		ci.draw_colored_polygon(pool, Color(warm, 0.22 * on))
+		for j in 3:
+			ci.draw_circle(p, 5.0 + j * 7.0, Color(warm, (0.32 - j * 0.09) * on))
+
+
+# Quanto sono accese le luci della notte (#288): da 0 di giorno a 1 di sera, con la stessa soglia dei lampioni
+func night_lights(t: float) -> float:
+	if not life.get("daycycle") is Dictionary:
+		return 0.0
+	return clampf((darkness(day_phase(t)) - 0.2) / 0.3, 0.0, 1.0)
+
+
 # Di notte lampioni e finestre accese (dopo le decorazioni, che intanto la luce ambiente ha scurito)
 func draw_daycycle(ci: CanvasItem, t: float, view: Rect2) -> void:
 	var d: Variant = life.get("daycycle")
@@ -750,11 +781,6 @@ func draw_daycycle(ci: CanvasItem, t: float, view: Rect2) -> void:
 	var on := clampf((dark - 0.2) / 0.3, 0.0, 1.0) # i lampioni si accendono al tramonto e si spengono all'alba
 	if on <= 0.0:
 		return
-	var view_center := view.get_center()
-	for l in d.get("lamps", []):
-		var p := Vector2(l.x, l.y) + offset(float(l.parallax), view_center)
-		for j in 3:
-			ci.draw_circle(p, 6.0 + j * 9.0, Color(1.0, 0.82, 0.5, (0.5 - j * 0.15) * on))
 	var windows: Array = d.get("windows", [])
 	for i in windows.size():
 		# le finestre si accendono una alla volta, non tutte insieme
