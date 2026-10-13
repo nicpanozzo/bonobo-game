@@ -6,6 +6,7 @@
 extends Node2D
 
 const DEFAULT_SERVER := "http://localhost:3000" # npm run dev
+const HOST_LINK_TOAST_S := 10.0 # quanto resta l'avviso "link copiato" a chi ospita, secondi
 const PRODUCTION_SERVER := "https://bonobo-game.onrender.com" # server fisso (render.yaml, #19): lo usa il gioco esportato
 const RECONNECT_MS := 1500 # attesa prima di riprovare a collegarsi
 const WAKE_HINT_MS := 5000 # dopo quanti ms senza risposta si avvisa che il server forse si sta svegliando
@@ -254,6 +255,10 @@ func _join(choice: Dictionary) -> void:
 		lobby.queue_free()
 	playing = true
 	_connect()
+	if _local_host(): # chi ospita (#308): il link è già negli appunti, ma va detto
+		var lan_only := not HostServer.instance(get_tree()).info.has("server")
+		UI.toast(ui_layer, "Link copiato: vale solo per chi è sul tuo Wi-Fi (il tunnel non è partito)" if lan_only \
+				else "Link della serata copiato: incollalo sul Discord (anche da Esc → Copia link)", UI.WARN if lan_only else UI.OK, HOST_LINK_TOAST_S)
 
 
 # Esce dalla stanza e torna alla lobby (dal menu di pausa o dalla fine della partita).
