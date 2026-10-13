@@ -126,6 +126,7 @@ export interface ItemState {
   vy: number;
   heldBy: string | null; // chi lo tiene in mano
   thrown: boolean; // lanciato: colpisce chi tocca
+  load?: number; // il bong in carica (#302), da 0 a 1; assente se non lo si carica
 }
 
 // Regole della partita, scelte da chi crea la stanza (#17). Default in src/shared/rules.ts
@@ -166,6 +167,8 @@ export type GameEvent =
   | { type: "itemThrow"; itemId: number; id: string; x: number; y: number }
   | { type: "powerUp"; itemId: number; id: string; kind: string; x: number; y: number } // id consuma l'oggetto e si potenzia (#231)
   | { type: "powerEnd"; id: string; kind: string } // il potenziamento di id finisce
+  // Il bong (#302): load = comincia a caricarlo, smoke = soffia la nuvola (centro x,y, verso dir, danno), stun = troppo fatto, crolla
+  | { type: "bong"; phase: "load" | "smoke" | "stun"; id: string; x: number; y: number; dir?: 1 | -1; damage?: number }
   | { type: "ledgeGrab"; id: string; x: number; y: number; invulnerable: boolean } // si aggrappa al bordo (#110)
   | { type: "ledgeGetup"; id: string; option: "climb" | "attack" | "jump" | "roll" | "drop" } // come lascia il bordo (#110)
   | { type: "shield"; id: string; attackerId: string; damage: number; shieldHp: number; x: number; y: number } // colpo parato (#109)

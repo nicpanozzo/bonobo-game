@@ -2,13 +2,13 @@
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { FIGHTER, ITEM_RULES, POWERUP, TICK_RATE } from "../constants";
+import { BONG, FIGHTER, ITEM_RULES, POWERUP, TICK_RATE } from "../constants";
 import { ITEMS } from "../items";
 import { getStage } from "../stages";
 import type { GameEvent, InputState } from "../types";
 import { createFighter, emptyInput, stepWorld, type Fighter, type PhysicsContext } from "./index";
 import { canBeHit, launch } from "./attacks";
-import { createItemWorld, handleItemInput, pickKind, stepItems, type Item, type ItemWorld } from "./items";
+import { createItemWorld, handleItemInput, itemStates, pickKind, stepItems, type Item, type ItemWorld } from "./items";
 
 const DT = 1000 / TICK_RATE;
 const stage = getStage(undefined);
@@ -154,10 +154,11 @@ describe("zone degli oggetti (#253)", () => {
 describe("il fiore, oggetto da consumare (#231)", () => {
   const fiore = (x: number, y: number): Item => ({ ...banana(x, y), kind: "fiore" });
 
-  it("compare una volta su quattro rispetto alla banana", () => {
-    const kinds = Array.from({ length: 400 }, (_, i) => pickKind(i / 400));
+  it("compare una volta ogni tre banane (e due bong, #302)", () => {
+    const kinds = Array.from({ length: 600 }, (_, i) => pickKind(i / 600));
     assert.equal(kinds.filter((k) => k === "fiore").length, 100);
     assert.equal(kinds.filter((k) => k === "banana").length, 300);
+    assert.equal(kinds.filter((k) => k === "bong").length, 200);
   });
 
   it("raccolto sparisce e potenzia subito, senza attaccare", () => {
@@ -231,5 +232,147 @@ describe("il fiore, oggetto da consumare (#231)", () => {
     run(world, fighters, ctx, 1);
     assert.equal(ofType(ctx.events, "ko").length, 1);
     assert.equal(a.powerup, null);
+  });
+});
+
+describe("il bong, in tre fasi (#302)", () => {
+  const bong = (x: number, y: number): Item => ({ ...banana(x, y), kind: "bong", loadMs: -1 });
+  const loadTicks = Math.ceil(BONG.loadMs / DT) + 1;
+
+  // a raccoglie il bong con J e lo carica tenendo J per ticks tick
+  function pickAndLoad(ticks: number) {
+    const s = setup();
+    const [a, b] = s.fighters;
+    a.x = 500;
+    a.facing = 1;
+    b.x = 900;
+    s.world.items.push(bong(a.x + 10, a.y));
+    press(a, { light: true });
+    run(s.world, s.fighters, s.ctx, 1);
+    press(a, {});
+    run(s.world, s.fighters, s.ctx, 1);
+    press(a, { light: true });
+    run(s.world, s.fighters, s.ctx, ticks);
+    return s;
+  }
+
+  it("raccolto si tiene in mano; tenendo J si carica senza attaccare", () => {
+    const { ctx, world, fighters } = pickAndLoad(10);
+    assert.equal(world.items[0].heldBy, fighters[0].id);
+    assert.ok(world.items[0].loadMs! > 0);
+    assert.ok(itemStates(world)[0].load! > 0 && itemStates(world)[0].load! < 1, "la carica va nello snapshot");
+    assert.equal(ofType(ctx.events, "bong").filter((e) => e.phase === "load").length, 1);
+    assert.equal(ofType(ctx.events, "attack").length, 0);
+    assert.equal(ofType(ctx.events, "itemThrow").length, 0);
+  });
+
+  it("lasciando J prima della carica piena la carica si perde", () => {
+    const { ctx, world, fighters } = pickAndLoad(10);
+    press(fighters[0], {});
+    run(world, fighters, ctx, 1);
+    assert.equal(world.items[0].loadMs, -1);
+    assert.equal(fighters[0].powerup, null);
+  });
+
+  it("carico, lasciando J si è fatti: il bong sparisce, si è più leggeri ma colpibili", () => {
+    const { ctx, world, fighters } = pickAndLoad(loadTicks);
+    const [a] = fighters;
+    press(a, {});
+    run(world, fighters, ctx, 1);
+    assert.equal(world.items.length, 0);
+    assert.equal(a.powerup, "bong");
+    assert.equal(a.invulnerable, false);
+    assert.equal(canBeHit(a), true);
+    const powerUp = ofType(ctx.events, "powerUp");
+    assert.equal(powerUp.length, 1);
+    assert.equal(powerUp[0].kind, "bong");
+    // Più leggeri: la stessa caduta accelera meno
+    const vy = (high: boolean) => {
+      const s = setup();
+      const [f] = s.fighters;
+      if (high) {
+        f.powerup = "bong";
+        f.powerupMs = BONG.highMs;
+      }
+      f.y -= 300;
+      f.onGround = false;
+      f.vy = 0;
+      run(s.world, s.fighters, s.ctx, 3);
+      return f.vy;
+    };
+    assert.ok(Math.abs(vy(true) - vy(false) * BONG.gravityMult) < 1);
+  });
+
+  it("J soffia la nuvola: colpisce chi è vicino, più forte se si aspetta", () => {
+    const damage = (waitMs: number) => {
+      const { ctx, world, fighters } = pickAndLoad(loadTicks);
+      const [a, b] = fighters;
+      press(a, {});
+      run(world, fighters, ctx, 1);
+      run(world, fighters, ctx, Math.round(waitMs / DT));
+      b.x = a.x + 60;
+      b.y = a.y;
+      b.vx = b.vy = 0;
+      press(a, { light: true });
+      run(world, fighters, ctx, 1);
+      assert.equal(a.powerup, null);
+      assert.equal(ofType(ctx.events, "bong").filter((e) => e.phase === "smoke").length, 1);
+      assert.equal(ofType(ctx.events, "attack").length, 0, "la nuvola non fa partire un attacco");
+      const hits = ofType(ctx.events, "hit");
+      assert.equal(hits.length, 1);
+      assert.equal(hits[0].itemKind, "bong");
+      assert.ok(b.vx > 0, "vola via");
+      return b.percent;
+    };
+    const soon = damage(0);
+    const late = damage(BONG.highMs - 500);
+    assert.ok(soon >= BONG.minDamage && soon < BONG.minDamage + 2);
+    assert.ok(late > soon + 10 && late <= BONG.maxDamage);
+  });
+
+  it("lontano dalla nuvola non si prende niente", () => {
+    const { ctx, world, fighters } = pickAndLoad(loadTicks);
+    const [a, b] = fighters;
+    press(a, {});
+    run(world, fighters, ctx, 1);
+    b.x = a.x + BONG.cloudOffsetX + BONG.cloudRadius + 60;
+    press(a, { light: true });
+    run(world, fighters, ctx, 1);
+    assert.equal(b.percent, 0);
+  });
+
+  it("se non si soffia in tempo si crolla tramortiti", () => {
+    const { ctx, world, fighters } = pickAndLoad(loadTicks);
+    const [a] = fighters;
+    press(a, {});
+    run(world, fighters, ctx, Math.ceil(BONG.highMs / DT) + 2);
+    assert.equal(a.powerup, null);
+    assert.equal(a.stunned, true);
+    assert.equal(ofType(ctx.events, "bong").filter((e) => e.phase === "stun").length, 1);
+    run(world, fighters, ctx, Math.ceil(BONG.stunMs / DT) + 1);
+    assert.equal(a.stunned, false);
+  });
+
+  it("colpiti mentre lo si carica, cade di mano e la carica si perde", () => {
+    const { ctx, world, fighters } = pickAndLoad(10);
+    const [a, b] = fighters;
+    launch(a, b, "heavy", 0, 0, ctx);
+    run(world, fighters, ctx, 1);
+    assert.equal(world.items[0].heldBy, null);
+    assert.equal(world.items[0].loadMs, -1);
+  });
+
+  it("con K si lancia come gli altri oggetti", () => {
+    const s = setup();
+    const [a] = s.fighters;
+    s.world.items.push(bong(a.x + 10, a.y));
+    press(a, { heavy: true });
+    run(s.world, s.fighters, s.ctx, 1);
+    press(a, {});
+    run(s.world, s.fighters, s.ctx, 1);
+    press(a, { heavy: true });
+    run(s.world, s.fighters, s.ctx, 1);
+    assert.equal(ofType(s.ctx.events, "itemThrow").length, 1);
+    assert.equal(s.world.items[0].thrown, true);
   });
 });

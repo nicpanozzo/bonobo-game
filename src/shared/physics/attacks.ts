@@ -150,7 +150,7 @@ export function resolveHits(fighters: Fighter[], ctx: PhysicsContext): void {
 export function launch(target: Fighter, attacker: Fighter, kind: AttackKind, x: number, y: number, ctx: PhysicsContext, damage?: number): void {
   const base = damage === undefined ? attackSpecFor(attacker, kind) : { ...attackSpecFor(attacker, kind), damage };
   // Potenziati dal fiore (#231) i colpi fanno più danno; il volo cresce già con la percentuale
-  const spec = attacker.powerup ? { ...base, damage: Math.round(base.damage * POWERUP.damageMult * 10) / 10 } : base;
+  const spec = attacker.powerup === "fiore" ? { ...base, damage: Math.round(base.damage * POWERUP.damageMult * 10) / 10 } : base;
   // Stile Smash/Brawlhalla: il danno non toglie vita, fa volare più lontano
   target.percent = Math.min(999, target.percent + spec.damage);
   chargeFromHit(attacker, target, spec.damage); // #101
