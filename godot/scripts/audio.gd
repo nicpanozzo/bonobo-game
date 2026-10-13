@@ -184,6 +184,15 @@ func on_event(e: Dictionary) -> void:
 			_play("inhale", {"x": e.x})
 		"powerEnd":
 			_play("exhale", {"volume": 0.6})
+		# Il bong (#302): gorgoglio quando si carica, colpo di tosse con la nuvola, giramento di testa nel crollo
+		"bong":
+			match str(e.phase):
+				"load":
+					_play("bubbles", {"x": e.x})
+				"smoke":
+					_play("cough", {"x": e.x})
+				"stun":
+					_play("dizzy", {"x": e.x})
 		"matchStart":
 			_play("start")
 			_queue.clear()
@@ -702,6 +711,15 @@ func _build_sounds() -> void:
 	_sounds.exhale = make.call(1.4, func(s):
 		s.noise(0, "bandpass", 1600, 350, 1.3, 0.4)
 		s.tone(0, "sine", 330, 196, 1.1, 0.08))
+	# Il bong (#302): la nuvola esce con un soffio forte e due colpi di tosse
+	_sounds.cough = make.call(0.9, func(s):
+		s.noise(0, "bandpass", 900, 400, 0.35, 0.7)
+		s.noise(0.38, "bandpass", 1300, 500, 0.14, 0.55)
+		s.noise(0.6, "bandpass", 1200, 450, 0.16, 0.5))
+	# Troppo fatto: note che scendono e ondeggiano
+	_sounds.dizzy = make.call(1.2, func(s):
+		for k in 5:
+			s.tone(k * 0.2, "sine", 660 - k * 70, 600 - k * 80, 0.22, 0.14))
 	# Carica piena: un "ding" doppio
 	_sounds.chargeFull = make.call(0.3, func(s):
 		s.tone(0, "triangle", 1320, 1320, 0.12, 0.25)

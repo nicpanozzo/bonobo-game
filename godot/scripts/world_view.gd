@@ -19,6 +19,8 @@ var _shake := 0.0
 var _flash := 0.0 # ms di lampo bianco rimasti
 var _dust: Array = [] # [{ x, y, dx, age }] sbuffi di polvere
 var _trails := {} # id -> Array[Vector2] delle ultime posizioni, per la scia di chi vola
+var _clouds: Array = [] # [{ x, y, dir, age, damage }] nuvole soffiate col bong (#302)
+var _high_overlay: ColorRect # lo schermo distorto di chi è fatto col bong (#302)
 var effects := true # scie e polvere (opzioni → Video), main.gd lo legge dalle preferenze
 var _beams: Array = [] # [{ x, y, age, color }] raggi dei KO, dal punto di uscita verso il centro
 var _shards: Array = [] # [{ x, y, vx, vy, age, color }] schegge di uno scudo rotto (#109)
@@ -65,6 +67,13 @@ func setup(game_data: Dictionary) -> void:
 	_supreme_view.game = game
 	_supreme_view.impact.connect(func(strength: float): _shake = maxf(_shake, strength)) # l'orsogufo tocca terra
 	add_child(_supreme_view)
+	_high_overlay = ColorRect.new()
+	var fatto := ShaderMaterial.new()
+	fatto.shader = load("res://shaders/fatto.gdshader")
+	_high_overlay.material = fatto
+	_high_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_high_overlay.visible = false
+	add_child(_high_overlay)
 	predictor.setup(game)
 	reset()
 	if material == null:
@@ -121,6 +130,7 @@ func reset() -> void:
 	_air_jumps = {}
 	_taunts = {}
 	_sparks = []
+	_clouds = []
 	_beams = []
 	_shards = []
 	_shield_hits = {}
@@ -480,9 +490,18 @@ func on_event(e: Dictionary) -> void:
 			elif e.reason == "hit":
 				_sparks.append({"x": e.x, "y": e.y, "age": 0.0, "size": 18.0, "color": Color.WHITE}) # anche due proiettili che si annullano
 		"powerUp":
-			# Il fiore (#231): uno sbuffo verde dove lo si prende, più grande di una scintilla
-			_sparks.append({"x": e.x, "y": float(e.y) - float(game.fighter.height) * 0.5, "age": 0.0, "size": 50.0, "color": FLOWER_GREEN.lightened(0.3)})
+			# Il fiore (#231): uno sbuffo verde dove lo si prende, più grande di una scintilla. Il bong (#302): una boccata grigia
+			var col: Color = SMOKE_GREY if e.kind == "bong" else FLOWER_GREEN.lightened(0.3)
+			_sparks.append({"x": e.x, "y": float(e.y) - float(game.fighter.height) * 0.5, "age": 0.0, "size": 50.0, "color": col})
 			_puff(e.x, e.y)
+		"bong":
+			if e.phase == "smoke":
+				# La nuvola (#302): si allarga davanti a chi soffia e trema un po' lo schermo
+				_clouds.append({"x": float(e.x), "y": float(e.y), "dir": float(e.get("dir", 1)), "age": 0.0, "damage": float(e.get("damage", 12))})
+				_shake = maxf(_shake, 6.0)
+			elif e.phase == "stun":
+				# Troppo fatto: stelline gialle sopra la testa, come uno stordito
+				_sparks.append({"x": e.x, "y": float(e.y) - float(game.fighter.height) * 1.1, "age": 0.0, "size": 30.0, "color": Color(1, 0.9, 0.4)})
 		"counter":
 			# Contrattacco (E10): lampo azzurro grande dove para, così si capisce perché l'altro vola via
 			_sparks.append({"x": e.x, "y": e.y, "age": 0.0, "size": 46.0, "color": Color(0.55, 0.85, 1)})
@@ -580,6 +599,10 @@ func _process(delta: float) -> void:
 		s.y += s.vy * delta
 		s.vy += 900.0 * delta # le schegge ricadono
 	_shards = _shards.filter(func(s): return s.age < fx.shardMs)
+	for c in _clouds:
+		c.age += delta * 1000.0
+	_clouds = _clouds.filter(func(c): return c.age < CLOUD_MS)
+	_update_high_overlay()
 	for id in _shield_hits.keys():
 		_shield_hits[id] += delta * 1000.0
 		if _shield_hits[id] >= fx.shieldFlashMs:
@@ -699,6 +722,9 @@ func _draw() -> void:
 		c.a = 1.0 - k
 		draw_arc(Vector2(s.x, s.y), s.size * (0.4 + k), 0, TAU, 20, c, 4.0)
 
+	for c in _clouds:
+		_draw_cloud(c)
+
 	for b in _beams:
 		_draw_beam(b)
 
@@ -804,7 +830,7 @@ func _draw_items(now: int) -> void:
 		_item_pos[it.id] = pos
 		seen[it.id] = true
 		var spin := now / 1000.0 * 14.0 if it.thrown else 0.0
-		_draw_item(it.kind, pos, spin)
+		_draw_item(it.kind, pos, spin, float(it.get("load", -1.0)))
 	for id in _item_pos.keys():
 		if not seen.has(id):
 			_item_pos.erase(id)
@@ -812,7 +838,7 @@ func _draw_items(now: int) -> void:
 
 # La banana è una mezzaluna gialla con le punte scure; gli altri oggetti, finché non hanno
 # un disegno, sono un rettangolo del loro colore
-func _draw_item(kind: String, base: Vector2, spin: float) -> void:
+func _draw_item(kind: String, base: Vector2, spin: float, load: float = -1.0) -> void:
 	var spec: Dictionary = game.items.get(kind, {"width": 24, "height": 16, "color": 0xffffff})
 	var w: float = spec.width
 	var h: float = spec.height
@@ -827,9 +853,81 @@ func _draw_item(kind: String, base: Vector2, spin: float) -> void:
 		var glow := 0.5 + 0.5 * sin(Time.get_ticks_msec() / 260.0)
 		draw_circle(Vector2(0, -h * 0.05), h * (0.8 + 0.12 * glow), Color(FLOWER_GREEN.lightened(0.4), 0.25 + 0.15 * glow))
 		draw_leaf(self, Vector2(0, h / 2), h * 1.3, FLOWER_GREEN.lightened(0.1))
+	elif kind == "bong":
+		_draw_bong(spec, h, load)
 	else:
 		draw_rect(Rect2(-w / 2, -h / 2, w, h), _color(spec.color))
 	draw_set_transform(Vector2.ZERO)
+
+
+# Il bong (#302): tubo di vetro con l'acqua, il fornelletto di lato e il boccaglio in alto.
+# In carica l'acqua gorgoglia e sopra c'è la barra
+func _draw_bong(spec: Dictionary, h: float, load: float) -> void:
+	var w: float = spec.width
+	var glass := Color(0.75, 0.95, 0.9, 0.55)
+	var rim := Color(0.85, 1, 0.95, 0.9)
+	var base := Rect2(-w / 2, h * 0.12, w, h * 0.38)
+	draw_rect(base, glass)
+	var water := Color(0.35, 0.75, 0.6, 0.85)
+	draw_rect(Rect2(base.position.x + 2, base.position.y + base.size.y * 0.35, base.size.x - 4, base.size.y * 0.6), water)
+	draw_rect(Rect2(-w * 0.22, -h / 2, w * 0.44, h * 0.64), glass)
+	draw_rect(Rect2(-w / 2, -h / 2, w, h), rim, false, 1.5)
+	draw_line(Vector2(-w * 0.22, -h / 2), Vector2(w * 0.22, -h / 2), rim, 3.0)
+	# Il fornelletto, inclinato verso l'esterno
+	draw_line(Vector2(w * 0.4, h * 0.3), Vector2(w * 0.85, h * 0.02), rim, 3.0)
+	draw_circle(Vector2(w * 0.88, 0), 4.0, Color("6b4a2a"))
+	if load >= 0.0:
+		var now := Time.get_ticks_msec() / 1000.0
+		for k in 4:
+			var life := fmod(now * (2.0 + load * 3.0) + k / 4.0, 1.0)
+			draw_circle(Vector2(sin(k * 2.3) * w * 0.25, base.end.y - 4 - life * base.size.y * 0.6), 2.0 + 1.5 * life, Color(1, 1, 1, 0.8 * (1.0 - life)))
+		# La barra: verde mentre si carica, gialla e pulsante quando è pronta da lasciare
+		var bar := Rect2(-w, -h / 2 - 16, w * 2, 6)
+		draw_rect(bar, Color(0, 0, 0, 0.6))
+		var full := load >= 1.0
+		var col := Color(1, 0.85, 0.3) if full else FLOWER_GREEN.lightened(0.3)
+		if full and int(now * 8.0) % 2 == 0:
+			col = col.lightened(0.4)
+		draw_rect(Rect2(bar.position, Vector2(bar.size.x * clampf(load, 0.0, 1.0), bar.size.y)), col)
+
+
+# La nuvola soffiata (#302): sbuffi che si allargano davanti, grigio-verdi, più grandi se fa più danno
+func _draw_cloud(c: Dictionary) -> void:
+	var k: float = c.age / CLOUD_MS
+	var radius := float(game.get("bong", {}).get("cloudRadius", 95)) * (0.55 + 0.6 * sqrt(k)) * (0.85 + float(c.damage) / 80.0)
+	for i in 7:
+		var a := float(i) / 7.0 * TAU + float(c.x) * 0.01
+		var off := Vector2(cos(a), sin(a)) * radius * 0.45 + Vector2(c.dir * radius * 0.25 * k, -20.0 * k)
+		draw_circle(Vector2(c.x, c.y) + off, radius * (0.42 + 0.1 * sin(i * 1.9)), Color(SMOKE_GREY, 0.5 * (1.0 - k)))
+	draw_circle(Vector2(c.x, c.y), radius * 0.5, Color(SMOKE_GREY.lightened(0.2), 0.55 * (1.0 - k)))
+
+
+# Quanto è fatto il proprio lottatore (#302): da 0,25 appena fumato a 1 prima di crollare; 0 se non lo è
+static func high_level(p: Variant, high_ms: float) -> float:
+	if not (p is Dictionary) or p.get("powerup") != "bong":
+		return 0.0
+	return 0.25 + 0.75 * clampf(1.0 - float(p.get("powerupMs", 0)) / high_ms, 0.0, 1.0)
+
+
+# Lo schermo distorto copre la parte di mondo che si vede; con "meno scossa e lampi" è più leggero
+func _update_high_overlay() -> void:
+	if _high_overlay == null:
+		return
+	var level := high_level(_sampled.get(my_id), float(game.get("bong", {}).get("highMs", 7000)))
+	if Access.calm:
+		level *= 0.35
+	_high_overlay.visible = level > 0.0
+	if level <= 0.0:
+		return
+	_high_overlay.position = view_rect.position - position
+	_high_overlay.size = view_rect.size
+	var mat: ShaderMaterial = _high_overlay.material
+	mat.set_shader_parameter("level", level)
+	mat.set_shader_parameter("t", Time.get_ticks_msec() / 1000.0)
+
+
+const CLOUD_MS := 700.0 # ms di vita della nuvola nel client
+const SMOKE_GREY := Color(0.82, 0.86, 0.8)
 
 
 # Il fiore (#231): verde salvia scuro, non quello acceso del giocatore 3
@@ -1560,7 +1658,8 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 	var away: bool = p.get("away", false)
 	# Chi fa la suprema propria (#102) è invulnerabile ma appeso alla liana: non lampeggia
 	# Col fiore (#231) si è intoccabili per 8 s: invece di lampeggiare si ha l'alone verde
-	var powered: bool = p.get("powerup") != null and not away
+	var powered: bool = p.get("powerup") == "fiore" and not away
+	var high: bool = p.get("powerup") == "bong" and not away # col bong (#302) si fuma ma si resta colpibili
 	var blink: bool = p.invulnerable and not away and not powered and not _supreme_view.holds(p.id, now)
 	if p.respawning or (blink and int(now / 100) % 2 == 0):
 		return
@@ -1591,7 +1690,7 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 		draw_circle(Vector2(p.x + p.facing * fw * 0.22, p.y - fh * 0.78), 5.0, Color.WHITE)
 		draw_circle(Vector2(p.x + p.facing * fw * 0.27, p.y - fh * 0.78), 2.5, Color.BLACK)
 		draw_set_transform(Vector2.ZERO)
-	if powered:
+	if powered or high:
 		_draw_power_smoke(p, now, fh)
 
 	# Appeso al bordo (#110): il braccio arriva fino allo spigolo, sopra la testa.

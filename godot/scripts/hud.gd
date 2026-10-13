@@ -173,7 +173,7 @@ func _draw_cards(w: float, h: float, flag: bool) -> void:
 		if not p.eliminated:
 			_draw_supreme(Rect2(x + 20, h - 23, card_w - 40, 5), float(p.get("supreme", 0)))
 		if p.get("powerup") != null and not p.eliminated:
-			_draw_powerup(Rect2(x + 6, h - 86, card_w - 12, 74), float(p.get("powerupMs", 0)))
+			_draw_powerup(Rect2(x + 6, h - 86, card_w - 12, 74), float(p.get("powerupMs", 0)), str(p.powerup))
 		if _stage.get("goal") != null:
 			# Corsa: quanta strada si è fatta
 			draw_string(_font, Vector2(x + card_w - 62, h - 30), "%d%%" % _progress(p.x), HORIZONTAL_ALIGNMENT_LEFT, -1, 16, UI.ACCENT)
@@ -205,7 +205,16 @@ func _draw_supreme(r: Rect2, value: float) -> void:
 
 # Potenziati dal fiore (#231): la foglia sopra la scheda e, sul suo bordo alto,
 # una barra verde che si accorcia col tempo che resta
-func _draw_powerup(card: Rect2, ms_left: float) -> void:
+# Col bong (#302) la barra invece si riempie, dal giallo al rosso: piena si crolla
+func _draw_powerup(card: Rect2, ms_left: float, kind: String = "fiore") -> void:
+	if kind == "bong":
+		var high := 1.0 - clampf(ms_left / float(game.get("bong", {}).get("highMs", 7000)), 0.0, 1.0)
+		var col := Color(1, 0.85, 0.3).lerp(Color(1, 0.25, 0.2), high)
+		if high > 0.8 and Time.get_ticks_msec() / 120 % 2 == 0:
+			col = col.lightened(0.5)
+		draw_rect(Rect2(card.position, Vector2(card.size.x * high, 4)), col)
+		WorldView.draw_leaf(self, card.position + Vector2(20, 4), 30.0, WorldView.SMOKE_GREY)
+		return
 	var total := float(game.get("powerup", {}).get("flowerMs", 8000))
 	var t := clampf(ms_left / total, 0.0, 1.0)
 	draw_rect(Rect2(card.position, Vector2(card.size.x * t, 3)), WorldView.FLOWER_GREEN.lightened(0.25))

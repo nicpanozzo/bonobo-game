@@ -229,3 +229,13 @@ func test_foglia_e_alone_del_fiore() -> void:
 	var full := [0.0, 50.0, 120.0, 240.0].map(func(now: float) -> float: return WorldView.aura_alpha(6000.0, now, 1500.0))
 	runner.check(full.all(func(a: float) -> bool: return a > 0.25), "a metà effetto sempre visibile: %s" % [full])
 	runner.check(WorldView.aura_alpha(1000.0, 0.0, 1500.0) < 0.2 and WorldView.aura_alpha(1000.0, 130.0, 1500.0) > 0.25, "alla fine lampeggia")
+
+
+# Il bong (#302): lo schermo si distorce solo per chi è fatto, e sempre di più col tempo
+func test_quanto_si_e_fatti_col_bong() -> void:
+	runner.check(WorldView.high_level(null, 7000.0) == 0.0, "senza lottatore niente")
+	runner.check(WorldView.high_level({"powerup": null, "powerupMs": 0}, 7000.0) == 0.0, "senza potenziamento niente")
+	runner.check(WorldView.high_level({"powerup": "fiore", "powerupMs": 5000}, 7000.0) == 0.0, "il fiore non distorce")
+	var soon := WorldView.high_level({"powerup": "bong", "powerupMs": 7000}, 7000.0)
+	var late := WorldView.high_level({"powerup": "bong", "powerupMs": 500}, 7000.0)
+	runner.check(soon > 0.0 and soon < late and late <= 1.0, "cresce col tempo: %s → %s" % [soon, late])
