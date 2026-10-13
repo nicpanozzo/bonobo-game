@@ -1487,6 +1487,28 @@
             "rainMs": 12000,
             "offsetMs": 26000
           },
+          "sheets": {
+            "nuvole": {
+              "file": "nuvole.png",
+              "frames": 8
+            },
+            "gabbiano": {
+              "file": "gabbiano.png",
+              "frames": 8
+            },
+            "rondine": {
+              "file": "rondine.png",
+              "frames": 4
+            },
+            "pipistrello": {
+              "file": "pipistrello.png",
+              "frames": 4
+            },
+            "piccione": {
+              "file": "piccione.png",
+              "frames": 6
+            }
+          },
           "birds": {
             "y": 40,
             "parallax": 0.2,

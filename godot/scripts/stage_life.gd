@@ -13,6 +13,7 @@ var width := 1280.0 # larghezza dell'arena
 var center := Vector2(640, 360) # centro dell'arena, dove sono centrati gli strati
 var match_start := NAN # stageMs di inizio della partita, per il tramonto
 var view := Rect2() # la parte di mondo inquadrata in questo frame (world_view.gd): quello che sta fuori non si disegna
+var _sheets := {} # nome -> {tex, frames, fw, fh, scale}: i fogli dipinti dello sfondo vivo (#288)
 var _pigeons: Array = [] # per ogni piccione: {x, y, away (ms dell'orologio del client in cui è scappato, -1 se posato)}
 
 
@@ -25,6 +26,37 @@ func setup(spec: Dictionary, stage_width: float, world_height: float) -> void:
 	_pigeons = []
 	for p in life.get("pigeons", []):
 		_pigeons.append({"x": float(p.x), "y": float(p.y), "away": -1.0})
+	# Fogli di fotogrammi dipinti (#288): nuvole e uccelli al posto delle forme semplici
+	_sheets = {}
+	var dir: String = str(art.get("dir", spec.get("id", "")))
+	var sheets: Dictionary = life.get("sheets", {}) if life.get("sheets") is Dictionary else {}
+	for name: String in sheets:
+		var sh: Dictionary = sheets[name]
+		var path := "res://data/assets/stages/%s/%s" % [dir, sh.file]
+		if ResourceLoader.exists(path):
+			var tex: Texture2D = load(path)
+			var frames := maxi(1, int(sh.frames))
+			_sheets[name] = {"tex": tex, "frames": frames, "fw": tex.get_width() / frames, "fh": tex.get_height(), "scale": float(sh.get("scale", 0.5))}
+
+
+# Un fotogramma di un foglio dipinto, centrato in pos (o con i piedi in pos se feet), grande k volte la sua misura
+# di mondo, specchiato se flip. Restituisce false se il foglio non c'è (allora si disegna la forma semplice)
+func draw_frame(ci: CanvasItem, name: String, frame: int, pos: Vector2, k: float, flip := false, mod := Color.WHITE, feet := false) -> bool:
+	var sh: Variant = _sheets.get(name)
+	if sh == null:
+		return false
+	var fw: float = sh.fw
+	var fh: float = sh.fh
+	var size := Vector2(fw, fh) * float(sh.scale) * k
+	var dest := Rect2(pos.x - size.x / 2.0, pos.y - (size.y if feet else size.y / 2.0), size.x, size.y)
+	if flip:
+		dest.size.x = -size.x
+	ci.draw_texture_rect_region(sh.tex, dest, Rect2(fw * posmod(frame, int(sh.frames)), 0, fw, fh), mod)
+	return true
+
+
+func has_sheet(name: String) -> bool:
+	return _sheets.has(name)
 
 
 func is_empty() -> bool:
@@ -100,6 +132,8 @@ func _draw_birds(ci: CanvasItem, b: Dictionary, t: float, off: Vector2, amb: Col
 			var y := float(b.y) + j * 70.0 + row * 12.0 * side * size + sin(t / 400.0 + i + j) * 4.0
 			var flap := sin(t / 90.0 + i * 1.3 + j) * 5.0 * size
 			var p := Vector2(x, y) + off * (1.0 - 0.3 * j)
+			if draw_frame(ci, "gabbiano", int(t / 75.0 + i * 1.7 + j * 3.0), p, 0.36 * size, int(f.dir) < 0, Color(amb.r, amb.g, amb.b, 1.0 - 0.2 * j)):
+				continue
 			var col := Color(0.18, 0.2, 0.26, 0.85 - 0.2 * j) * Color(amb.r, amb.g, amb.b, 1.0)
 			ci.draw_polyline(PackedVector2Array([p + Vector2(-8, -flap) * size, p, p + Vector2(8, -flap) * size]), col, 2.0 * size + 0.5)
 
@@ -404,7 +438,9 @@ func _draw_flyers(ci: CanvasItem, f: Dictionary, t: float, off: Vector2, amb: Co
 		if p.distance_to(before) > 100.0 or not _seen(p.x - 20.0, 40.0):
 			continue # ha appena fatto il giro dell'arena, o è fuori dall'inquadratura
 		var dir := signf(p.x - before.x)
-		if swallows > 0.0:
+		if swallows > 0.0 and draw_frame(ci, "rondine", int(t / 45.0 + i), p, 0.45, dir < 0, Color(amb.r, amb.g, amb.b, swallows)):
+			pass
+		elif swallows > 0.0:
 			# rondine: ali a falce indietro e la coda a forbice
 			var col := Color(0.16, 0.17, 0.22, swallows) * Color(amb.r, amb.g, amb.b, 1.0)
 			var beat := sin(t / 55.0 + i) * 4.0
@@ -414,9 +450,11 @@ func _draw_flyers(ci: CanvasItem, f: Dictionary, t: float, off: Vector2, amb: Co
 		if bats > 0.0 and i % 2 == 0:
 			# pipistrello: ali a festone che battono veloci, solo metà degli uccelli
 			# più in basso delle rondini, davanti alle finestre accese e all'orizzonte più chiaro
+			var q := p + Vector2(0, 160.0 + sin(t / 140.0 + i) * 8.0)
+			if draw_frame(ci, "pipistrello", int(t / 40.0 + i), q, 0.6, dir < 0, Color(1, 1, 1, bats)):
+				continue
 			var col := Color(0.03, 0.03, 0.05, 0.95 * bats)
 			var beat := sin(t / 35.0 + i) * 7.0
-			var q := p + Vector2(0, 160.0 + sin(t / 140.0 + i) * 8.0)
 			for side in [-1.0, 1.0]:
 				ci.draw_colored_polygon(PackedVector2Array([q, q + Vector2(side * 8, -5 - beat), q + Vector2(side * 16, -3 - beat), q + Vector2(side * 12, 3), q + Vector2(side * 5, 1)]), col)
 			ci.draw_circle(q, 3.0, col)
@@ -593,7 +631,9 @@ func draw_pigeons(ci: CanvasItem, t: float, now: float, fighters: Array, threats
 				flying = true
 			else:
 				continue # lontano, fuori scena
-		_draw_pigeon(ci, pos, t + p.x, flying)
+		var frame := 2 + int((t + p.x) / 60.0) % 4 if flying else int(fposmod((t + p.x * 13.0) / 900.0, 4.0) >= 3.0)
+		if not draw_frame(ci, "piccione", frame, pos + Vector2(0, 2), 0.7, int(p.x) % 2 == 1, Color.WHITE, true):
+			_draw_pigeon(ci, pos, t + p.x, flying)
 
 
 static func _draw_pigeon(ci: CanvasItem, pos: Vector2, t: float, flying: bool) -> void:
@@ -727,7 +767,13 @@ func draw_sky(ci: CanvasItem, t: float, view: Rect2) -> void:
 	for i in 12:
 		var c := cloud_at(i, t, span)
 		var o := offset(float(c.parallax), vc)
-		_draw_cloud(ci, Vector2(float(c.x) - 800.0, float(c.y)) + o, float(c.size), lit, shade, i)
+		var cp := Vector2(float(c.x) - 800.0, float(c.y)) + o
+		var sh: Variant = _sheets.get("nuvole")
+		if sh != null:
+			# la nuvola dipinta, larga come quella di prima e colorata dalla luce del momento (#288)
+			draw_frame(ci, "nuvole", i, cp + Vector2(0, -float(c.size) * 0.12), float(c.size) * 1.35 / (float(sh.fw) * float(sh.scale)), i % 3 == 1, lit.lerp(Color.WHITE, 0.25))
+		else:
+			_draw_cloud(ci, cp, float(c.size), lit, shade, i)
 
 
 static func _draw_cloud(ci: CanvasItem, pos: Vector2, w: float, lit: Color, shade: Color, seed: int) -> void:
