@@ -13,7 +13,7 @@ import os
 import random
 import sys
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFilter
 
 sys.path.insert(0, os.path.dirname(__file__))
 from disegno import INK, Tela, light, mix, rand, shade  # noqa: E402
@@ -487,79 +487,432 @@ def santa_giustina(t, cx, base):
     t.poly([(tx - 16, base - 300), (tx + 16, base - 300), (tx, base - 350)], fill=S, ink=True, width=1.0, ink_col=I)
 
 
+class _Santo:
+    """I colori della Basilica del Santo (#296), già velati dalla lontananza: cotto rosso-ocra, piombo grigio-azzurro,
+    pietra bianca di logge e balconi, i cappucci rossi delle torrette e l'oro dell'angelo."""
+
+    def __init__(self, k):
+        self.brick = far((180, 106, 80, 255), k)
+        self.brick_sh = far((142, 80, 66, 255), k)
+        self.lead = far((150, 160, 174, 255), k)
+        self.lead_sh = far((108, 118, 136, 255), k)
+        self.lead_hi = far((196, 204, 212, 255), k)
+        self.stone = far((230, 222, 204, 255), k)
+        self.red = far((176, 80, 58, 255), k)
+        self.gold = far((232, 188, 84, 255), k)
+        self.dark = far((62, 44, 46, 255), k)
+        self.ink = far((78, 56, 54, 255), k)
+
+
+def _rect(q, m, x0, y0, x1, y1):
+    q.poly(m, [(x0, y0), (x1, y0), (x1, y1), (x0, y1)])
+    return m
+
+
+def _arch(q, m, x0, x1, ys, yb, pointed=False):
+    """Un'apertura ad arco nella maschera m: l'arco parte a ys, il fondo è a yb. Tonda o a sesto acuto."""
+    from pittura import bezier
+    r = (x1 - x0) / 2
+    mx = (x0 + x1) / 2
+    if pointed:
+        top = bezier((x0, ys), (x0, ys - r * 0.9), (mx - r * 0.25, ys - r * 1.45), (mx, ys - r * 1.65), 10)
+        top += [(2 * mx - x, y) for x, y in reversed(top)]
+    else:
+        top = [(mx - math.cos(math.pi * i / 16) * r, ys - math.sin(math.pi * i / 16) * r) for i in range(17)]
+    q.poly(m, [(x0, yb), *top, (x1, yb)])
+    return m
+
+
+def _paint(q, m, col, ink, shadow=8.0, grain=0.22, seed=0, rim=True, ow=0.8):
+    """Una massa dipinta: colore, grana a pennello, ombra morbida dalla parte opposta alla luce (che viene da
+    sinistra in alto, come nel resto dello sfondo), luce sul bordo e contorno a inchiostro."""
+    q.fill(m, col)
+    if grain:
+        q.fill(q.grain(m, grain, seed, 1.3), shade(col, 0.76))
+    if shadow:
+        q.fill(q.inner_shadow(m, -shadow, 0, shadow * 0.55), shade(col, 0.74), 0.92)
+    if rim:
+        q.fill(q.rim(m, -1.6, -1.6, 1.2), light(col, 1.16), 0.75)
+    if ow:
+        q.outline(m, ow, ink)
+
+
+def _courses(q, m, y0, y1, step, col, opacity):
+    """I corsi dei mattoni: righe orizzontali sottili dentro la sagoma, appena accennate."""
+    lines = q.mask()
+    d = ImageDraw.Draw(lines)
+    y = y0
+    while y > y1:
+        d.line([q._p(q.ox, y), q._p(q.ox + q.w, y)], fill=255, width=max(1, int(q.k * 0.3)))
+        y -= step
+    q.fill(q.intersect(lines.filter(ImageFilter.GaussianBlur(0.6)), m), col, opacity)
+
+
+def _cross(q, x, y, size, col):
+    """La croce in cima a una lanterna o a una guglia, con la palla sotto."""
+    m = q.mask()
+    q.ellipse(m, x - size * 0.32, y - size * 0.32, x + size * 0.32, y + size * 0.32)
+    q.stroke(m, [(x, y), (x, y - size * 1.5)], size * 0.16)
+    q.stroke(m, [(x - size * 0.42, y - size * 1.08), (x + size * 0.42, y - size * 1.08)], size * 0.16)
+    q.fill(m, col)
+
+
+def _angel(q, x, y, C):
+    """L'angelo dorato sulla punta del cono: ali aperte, tunica, il braccio alzato. Piccolo, si legge dalla sagoma."""
+    from pittura import bezier
+    m = q.mask()
+    q.poly(m, [(x - 2.2, y), (x + 2.2, y), (x + 1.4, y - 9), (x - 1.4, y - 9)])  # tunica
+    q.ellipse(m, x - 1.6, y - 12.4, x + 1.6, y - 9.2)  # testa
+    for s in (-1, 1):  # ali
+        q.poly(m, [(x, y - 8), *bezier((x + s * 1, y - 9), (x + s * 5, y - 15), (x + s * 8, y - 12), (x + s * 7, y - 6), 8), (x + s * 1.5, y - 5)])
+    q.stroke(m, [(x + 1, y - 8), (x + 3.5, y - 15)], 0.9)  # il braccio alzato
+    q.fill(m, C.gold)
+    q.fill(q.inner_shadow(m, -1.2, 0, 0.8), shade(C.gold, 0.72), 0.9)
+    q.outline(m, 0.45, C.ink)
+
+
+def _dome(q, cx, top, r, h, C, seed, statue=False):
+    """Cupola del Santo: tamburo di mattone con le arcatelle e la cornice bianca, calotta di piombo un po' a ogiva
+    con le costolature delle lastre, lanterna bianca con il cappuccio e la croce (o la statuina)."""
+    from pittura import bezier
+    dh, dr = r * 0.4, r * 0.96
+    drum = _rect(q, q.mask(), cx - dr, top - dh, cx + dr, top + 2)
+    _paint(q, drum, C.brick, C.ink, shadow=dr * 0.55, seed=seed)
+    holes = q.mask()
+    for i in range(7):  # le arcatelle girano sul cilindro: strette verso i lati
+        th = -1.2 + 2.4 * i / 6
+        x = cx + math.sin(th) * dr * 0.9
+        w = math.cos(th) * dr * 0.085
+        _arch(q, holes, x - w, x + w, top - dh * 0.66, top - dh * 0.2)
+    q.fill(q.soften(holes, 0.3), C.dark, 0.8)
+    trim = _rect(q, q.mask(), cx - dr - 2.5, top - dh - 3, cx + dr + 2.5, top - dh + 1.5)
+    _rect(q, trim, cx - dr - 1, top - dh * 0.14, cx + dr + 1, top - dh * 0.02)
+    _paint(q, trim, C.stone, C.ink, shadow=dr * 0.5, grain=0, rim=False, ow=0.5)
+    # la calotta
+    y0 = top - dh - 2
+    left = bezier((cx - r, y0), (cx - r * 1.03, y0 - h * 0.6), (cx - r * 0.44, y0 - h * 0.95), (cx, y0 - h), 24)
+    shell = q.mask()
+    q.poly(shell, left + [(2 * cx - x, y) for x, y in reversed(left)])
+    q.fill(shell, C.lead)
+    q.fill(q.inner_shadow(shell, -r * 0.85, -h * 0.05, r * 0.45), C.lead_sh, 0.9)
+    glow = q.ellipse(q.mask(), cx - r * 0.72, y0 - h * 0.86, cx - r * 0.06, y0 - h * 0.16)
+    q.fill(q.intersect(q.soften(glow, r * 0.2), shell), C.lead_hi, 0.75)
+    q.fill(q.grain(shell, 0.12, seed + 1, 1.0), C.lead_sh)
+    seams, shine = q.mask(), q.mask()
+    for k in range(-6, 7):  # le costolature: i meridiani della calotta, fitti verso i lati
+        s = math.sin(k / 7 * math.pi / 2)
+        pts = [(cx + (cx - x) * s, y) for x, y in left]
+        q.stroke(seams, pts, 0.55)
+        q.stroke(shine, [(x - 0.9, y) for x, y in pts], 0.5)
+    q.fill(q.intersect(q.soften(shine, 0.3), shell), C.lead_hi, 0.45)
+    q.fill(q.intersect(q.soften(seams, 0.25), shell), C.lead_sh, 0.9)
+    q.outline(shell, 0.75, C.ink)
+    # la lanterna
+    lb = y0 - h + r * 0.05
+    lw, lh = r * 0.13, r * 0.3
+    lan = _rect(q, q.mask(), cx - lw, lb - lh, cx + lw, lb)
+    _paint(q, lan, C.stone, C.ink, shadow=lw * 0.8, grain=0, rim=False, ow=0.5)
+    slits = q.mask()
+    for u in (-0.5, 0.0, 0.5):
+        _arch(q, slits, cx + u * lw * 1.4 - lw * 0.18, cx + u * lw * 1.4 + lw * 0.18, lb - lh * 0.7, lb - lh * 0.2)
+    q.fill(slits, C.dark, 0.85)
+    cap = q.mask()
+    capl = bezier((cx - lw * 1.15, lb - lh), (cx - lw * 1.2, lb - lh - lw * 1.2), (cx - lw * 0.3, lb - lh - lw * 1.6), (cx, lb - lh - lw * 2.2), 10)
+    q.poly(cap, capl + [(2 * cx - x, y) for x, y in reversed(capl)])
+    _paint(q, cap, C.lead, C.ink, shadow=lw * 0.9, grain=0, ow=0.5)
+    tip = lb - lh - lw * 2.2
+    if statue:
+        _angel(q, cx, tip + 0.5, C)
+    else:
+        _cross(q, cx, tip - 0.5, max(3.0, r * 0.11), C.ink)
+
+
+def _turret(q, x, yb, h, half, C, seed):
+    """Una torretta tonda con il cappuccio a cono rosso: ce ne sono tante attorno alle cupole e sulla facciata."""
+    from pittura import bezier
+    body = _rect(q, q.mask(), x - half, yb - h, x + half, yb)
+    _paint(q, body, C.brick, C.ink, shadow=half * 0.75, seed=seed, ow=0.6)
+    holes = q.mask()
+    _arch(q, holes, x - half * 0.32, x + half * 0.32, yb - h * 0.72, yb - h * 0.42)
+    q.fill(holes, C.dark, 0.85)
+    ring = _rect(q, q.mask(), x - half - 1.2, yb - h - 1.6, x + half + 1.2, yb - h + 1.2)
+    _paint(q, ring, C.stone, C.ink, shadow=half * 0.6, grain=0, rim=False, ow=0.45)
+    capl = bezier((x - half * 1.15, yb - h - 1.6), (x - half * 0.9, yb - h - half * 1.4), (x - half * 0.3, yb - h - half * 2.6), (x, yb - h - half * 3.1), 10)
+    cap = q.mask()
+    q.poly(cap, capl + [(2 * x - px, py) for px, py in reversed(capl)])
+    _paint(q, cap, C.red, C.ink, shadow=half * 0.7, seed=seed + 2, ow=0.55)
+    _cross(q, x, yb - h - half * 3.1, max(2.2, half * 0.42), C.ink)
+
+
+def _campanile(q, tx, base, C, seed):
+    """Un campanile a minareto: fusto ottagonale di mattone che si stringe a ogni giro, due logge di pietra bianca
+    con il balconcino, la cella con le bifore, il tamburino e la guglia con la croce."""
+    from pittura import bezier
+
+    def shaft(y0, y1, half):
+        m = _rect(q, q.mask(), tx - half, y1, tx + half, y0)
+        _paint(q, m, C.brick, C.ink, shadow=half * 0.75, seed=seed + int(y0), ow=0.7)
+        _courses(q, m, y0, y1, 3.2, C.brick_sh, 0.35)
+        edges = q.mask()
+        for s in (-0.42, 0.42):  # gli spigoli dell'ottagono
+            q.stroke(edges, [(tx + s * half * 2, y0), (tx + s * half * 2, y1)], 0.55)
+        q.fill(q.intersect(edges, m), C.brick_sh, 0.75)
+        return m
+
+    def loggia(y0, y1, half):
+        """Il giro di loggette: balaustra sotto, archetti con le colonnine bianche, cornice sopra."""
+        m = _rect(q, q.mask(), tx - half, y1, tx + half, y0)
+        _paint(q, m, C.stone, C.ink, shadow=half * 0.7, grain=0.1, seed=seed, ow=0.6)
+        holes = q.mask()
+        for i in range(5):
+            th = -1.15 + 2.3 * i / 4
+            x = tx + math.sin(th) * half * 0.86
+            w = math.cos(th) * half * 0.17
+            _arch(q, holes, x - w, x + w, y1 + (y0 - y1) * 0.36, y0 - (y0 - y1) * 0.2)
+        q.fill(q.soften(holes, 0.3), C.dark, 0.9)
+        rail = _rect(q, q.mask(), tx - half - 3.5, y0 - 5, tx + half + 3.5, y0 + 1)
+        _rect(q, rail, tx - half - 2.5, y1 - 2.5, tx + half + 2.5, y1 + 1.5)
+        _paint(q, rail, C.stone, C.ink, shadow=half * 0.6, grain=0, rim=False, ow=0.55)
+        posts = q.mask()
+        for i in range(9):  # i balaustrini del balconcino
+            x = tx + math.sin(-1.2 + 2.4 * i / 8) * (half + 3)
+            _rect(q, posts, x - 0.35, y0 - 4.2, x + 0.35, y0 - 1.2)
+        q.fill(posts, C.dark, 0.5)
+
+    shaft(base, base - 236, 15)
+    loggia(base - 236, base - 262, 15)
+    shaft(base - 262, base - 352, 13)
+    loggia(base - 352, base - 376, 13)
+    cell = shaft(base - 376, base - 436, 11.5)
+    holes = q.mask()  # la cella delle campane: una bifora per faccia
+    for u in (-0.9, 0.0, 0.9):
+        w = 3.6 * (1 - abs(u) * 0.55)
+        x = tx + u * 11.5 * 0.72
+        _arch(q, holes, x - w, x + w, base - 424, base - 386)
+    q.fill(q.intersect(holes, cell), C.dark, 0.9)
+    q.line([(tx, base - 425), (tx, base - 386)], 0.6, C.stone, 0.8)
+    rail = _rect(q, q.mask(), tx - 15, base - 442, tx + 15, base - 436)
+    _paint(q, rail, C.stone, C.ink, shadow=8, grain=0, rim=False, ow=0.55)
+    drum = _rect(q, q.mask(), tx - 9, base - 456, tx + 9, base - 442)
+    _paint(q, drum, C.stone, C.ink, shadow=6, grain=0, rim=False, ow=0.5)
+    slits = q.mask()
+    for u in (-0.55, 0, 0.55):
+        _arch(q, slits, tx + u * 9 - 1.3, tx + u * 9 + 1.3, base - 452, base - 445)
+    q.fill(slits, C.dark, 0.85)
+    left = bezier((tx - 10.5, base - 455), (tx - 9.5, base - 485), (tx - 3, base - 525), (tx, base - 546), 14)
+    spire = q.mask()
+    q.poly(spire, left + [(2 * tx - x, y) for x, y in reversed(left)])
+    _paint(q, spire, C.lead, C.ink, shadow=7, grain=0.1, seed=seed + 5, ow=0.6)
+    seams = q.mask()
+    for s in (-0.5, 0, 0.5):
+        q.stroke(seams, [(tx + (tx - x) * s, y) for x, y in left], 0.45)
+    q.fill(q.intersect(seams, spire), C.lead_sh, 0.8)
+    _cross(q, tx, base - 547, 5.5, C.ink)
+
+
+def _cone(q, cx, top, C):
+    """Il cono sopra l'altare: tamburo ottagonale con due giri di arcatelle, la punta di piombo a spicchi e la
+    lanterna con l'angelo dorato in cima."""
+    from pittura import bezier
+    w, dh = 44, 46
+    drum = _rect(q, q.mask(), cx - w, top - dh, cx + w, top + 2)
+    _paint(q, drum, C.brick, C.ink, shadow=w * 0.6, seed=71)
+    _courses(q, drum, top, top - dh, 3.2, C.brick_sh, 0.3)
+    holes = q.mask()
+    for row, (ys, yb, n) in enumerate(((top - dh * 0.55, top - dh * 0.12, 9), (top - dh * 0.84, top - dh * 0.66, 13))):
+        for i in range(n):
+            th = -1.25 + 2.5 * i / (n - 1)
+            x = cx + math.sin(th) * w * 0.9
+            hw = math.cos(th) * w * (0.07 if row == 0 else 0.045)
+            _arch(q, holes, x - hw, x + hw, ys, yb)
+    q.fill(q.soften(holes, 0.3), C.dark, 0.8)
+    edges = q.mask()
+    for s in (-0.42, 0.42):
+        q.stroke(edges, [(cx + s * w * 2, top), (cx + s * w * 2, top - dh)], 0.7)
+    q.fill(q.intersect(edges, drum), C.brick_sh, 0.8)
+    trim = _rect(q, q.mask(), cx - w - 3, top - dh - 3.5, cx + w + 3, top - dh + 1.5)
+    _rect(q, trim, cx - w - 1, top - dh * 0.6, cx + w + 1, top - dh * 0.55)
+    _paint(q, trim, C.stone, C.ink, shadow=w * 0.5, grain=0, rim=False, ow=0.55)
+    y0, apex = top - dh - 3, top - dh - 196
+    left = bezier((cx - w + 1, y0), (cx - w + 4, y0 - 70), (cx - 15, apex + 60), (cx, apex), 24)
+    cone = q.mask()
+    q.poly(cone, left + [(2 * cx - x, y) for x, y in reversed(left)])
+    q.fill(cone, C.lead)
+    q.fill(q.inner_shadow(cone, -w * 0.8, 0, w * 0.4), C.lead_sh, 0.9)
+    glow = q.poly(q.mask(), [(cx - w * 0.75, y0), (cx - w * 0.15, y0), (cx - 2, apex + 30)])
+    q.fill(q.intersect(q.soften(glow, 8), cone), C.lead_hi, 0.6)
+    q.fill(q.grain(cone, 0.12, 72, 1.0), C.lead_sh)
+    seams, shine = q.mask(), q.mask()
+    for k in range(-4, 5):  # gli spicchi dell'ottagono e le lastre in mezzo
+        s = math.sin(k / 5 * math.pi / 2)
+        pts = [(cx + (cx - x) * s, y) for x, y in left]
+        q.stroke(seams, pts, 0.75 if k % 2 == 0 else 0.45)
+        q.stroke(shine, [(x - 1.1, y) for x, y in pts], 0.6)
+    for j in range(1, 6):  # le giunture orizzontali delle lastre
+        yy = y0 - j * (y0 - apex) / 6.5
+        hw = next(cx - x for x, y in left if y <= yy)
+        q.stroke(seams, [(cx - hw, yy), (cx + hw, yy)], 0.35)
+    q.fill(q.intersect(q.soften(shine, 0.3), cone), C.lead_hi, 0.45)
+    q.fill(q.intersect(q.soften(seams, 0.25), cone), C.lead_sh, 0.95)
+    q.outline(cone, 0.9, C.ink)
+    lan = _rect(q, q.mask(), cx - 5.5, apex - 14, cx + 5.5, apex + 3)
+    _paint(q, lan, C.stone, C.ink, shadow=4, grain=0, rim=False, ow=0.5)
+    sl = q.mask()
+    for u in (-0.5, 0.5):
+        _arch(q, sl, cx + u * 6 - 1.2, cx + u * 6 + 1.2, apex - 9, apex - 3)
+    q.fill(sl, C.dark, 0.85)
+    capl = bezier((cx - 6.5, apex - 14), (cx - 6.5, apex - 19), (cx - 2, apex - 22), (cx, apex - 24), 8)
+    cap = q.mask()
+    q.poly(cap, capl + [(2 * cx - x, y) for x, y in reversed(capl)])
+    _paint(q, cap, C.lead, C.ink, shadow=4, grain=0, ow=0.5)
+    _angel(q, cx, apex - 23.5, C)
+
+
+def _gable_edge(q, pts, C, arches=True):
+    """Il bordo di un timpano: la copertina di pietra bianca e, sotto, gli archetti pensili lungo la falda."""
+    m = q.mask()
+    q.stroke(m, pts, 2.6)
+    if arches:
+        small = q.mask()
+        for (x0, y0), (x1, y1) in zip(pts, pts[1:]):
+            n = max(1, int(math.hypot(x1 - x0, y1 - y0) / 6.5))
+            for i in range(n):
+                u0, u1 = i / n, (i + 1) / n
+                ax0, ay0 = x0 + (x1 - x0) * u0, y0 + (y1 - y0) * u0
+                ax1, ay1 = x0 + (x1 - x0) * u1, y0 + (y1 - y0) * u1
+                mx, my = (ax0 + ax1) / 2, (ay0 + ay1) / 2 + 4.5
+                q.stroke(small, [(ax0, ay0 + 2), (mx - 1.2, my), (mx + 1.2, my), (ax1, ay1 + 2)], 0.55)
+        q.fill(q.soften(small, 0.25), C.brick_sh, 0.85)
+    q.fill(m, C.stone)
+    q.outline(m, 0.45, C.ink)
+
+
 def basilica_santo(t, cx, base):
-    """La Basilica di Sant'Antonio vista da Prato della Valle: la facciata a capanna con la loggia, il rosone e i
-    tre portali, le cupole di piombo a costoloni, il cono sopra l'altare, i due campanili a minareto con i
-    balconcini e le torrette ai lati della facciata. Mattone spento e piombo grigio, velati dalla lontananza."""
-    F, S, I = far((168, 126, 108, 255), 0.3), far((144, 106, 92, 255), 0.3), far((88, 70, 66, 255), 0.3)
-    L = far((186, 150, 132, 255), 0.3)
-    PB, PS, PL = far((150, 158, 168, 255), 0.25), far((124, 132, 144, 255), 0.25), far((170, 176, 184, 255), 0.25)
-    # i campanili a minareto dietro, ai lati dell'abside
-    for tx in (cx + 150, cx + 300):
-        t.rect(tx - 14, base - 430, tx + 14, base, fill=F, ink=True, width=1.0, ink_col=I)
-        t.rect(tx + 3, base - 430, tx + 14, base, fill=S)
-        for j in range(4):
-            yy = base - (160 + j * 70)
-            t.rect(tx - 19, yy - 5, tx + 19, yy, fill=L, ink=True, width=0.9, ink_col=I)
-            t.rect(tx - 4, yy - 40, tx + 4, yy - 14, fill=I)
-            t.pieslice(tx - 4, yy - 44, tx + 4, yy - 36, 180, 360, fill=I)
-        t.rect(tx - 11, base - 480, tx + 11, base - 430, fill=F, ink=True, width=1.0, ink_col=I)
-        t.rect(tx - 6, base - 470, tx + 6, base - 440, fill=I)
-        t.poly([(tx - 12, base - 480), (tx + 12, base - 480), (tx, base - 545)], fill=S, ink=True, width=1.0, ink_col=I)
-        t.line([(tx, base - 545), (tx, base - 562)], fill=I, width=1.2)
-        t.circle(tx, base - 563, 2.4, fill=I)
-    # corpo della chiesa con gli archetti e le finestre del fianco
-    t.rect(cx - 330, base - 150, cx + 330, base, fill=F, ink=True, width=1.1, ink_col=I)
-    t.rect(cx + 120, base - 150, cx + 330, base, fill=S)
-    for i in range(14):
-        wx = cx - 300 + i * 45
-        t.rect(wx, base - 120, wx + 12, base - 70, fill=I)
-        t.pieslice(wx, base - 128, wx + 12, base - 112, 180, 360, fill=I)
-        for k in range(4):
-            t.arc(wx - 8 + k * 6, base - 146, wx - 2 + k * 6, base - 140, 0, 180, fill=I, width=0.6)
-    # le cupole: due sulla navata, quelle del transetto e dell'abside
-    dome(t, cx - 160, base - 150, 62, 96, PB, PS, I, ribs=8)
-    dome(t, cx - 40, base - 150, 66, 104, PB, PS, I, ribs=8)
-    dome(t, cx + 230, base - 150, 58, 90, PB, PS, I, ribs=8)
-    dome(t, cx + 90, base - 170, 52, 82, PL, PB, I, ribs=6)
-    dome(t, cx + 330, base - 140, 40, 60, PB, PS, I, ribs=6)
-    # il cono sopra l'altare, a spicchi
-    ccx, cb = cx + 60, base - 210
-    t.rect(ccx - 52, cb, ccx + 52, base - 150, fill=F, ink=True, width=1.0, ink_col=I)
-    t.rect(ccx + 20, cb, ccx + 52, base - 150, fill=S)
-    t.poly([(ccx - 50, cb), (ccx + 50, cb), (ccx, cb - 190)], fill=PB)
-    t.poly([(ccx + 4, cb), (ccx + 50, cb), (ccx, cb - 190)], fill=PS)
-    for i in range(1, 5):
-        t.line([(ccx - 50 + i * 20, cb), (ccx, cb - 190)], fill=I, width=0.8)
-    t.poly([(ccx - 50, cb), (ccx + 50, cb), (ccx, cb - 190)], ink=True, width=1.1, ink_col=I)
-    t.circle(ccx, cb - 196, 6, fill=F, ink=True, width=0.9, ink_col=I)
-    # facciata a capanna, davanti a tutto
-    fx0, fx1, ftop = cx - 330, cx - 150, base - 290
-    fac = [(fx0, base), (fx0, ftop + 60), ((fx0 + fx1) / 2, ftop), (fx1, ftop + 60), (fx1, base)]
-    t.poly(fac, fill=L)
-    t.poly([((fx0 + fx1) / 2, ftop), (fx1, ftop + 60), (fx1, base), ((fx0 + fx1) / 2 + 30, base)], fill=F)
-    t.poly(fac, ink=True, width=1.2, ink_col=I)
-    for i in range(4):  # la loggia a quattro archi, con le colonnine
-        ax = fx0 + 18 + i * 38
-        t.rect(ax, base - 200, ax + 26, base - 160, fill=I)
-        t.poly([(ax, base - 200), (ax + 13, base - 216), (ax + 26, base - 200)], fill=I)
-        t.rect(ax - 4, base - 202, ax - 1, base - 160, fill=L)
-    t.rect(fx0 + 8, base - 160, fx1 - 8, base - 154, fill=L, ink=True, width=0.8, ink_col=I)
-    rx, ry = (fx0 + fx1) / 2, base - 240  # rosone
-    t.circle(rx, ry, 19, fill=S, ink=True, width=1.1, ink_col=I)
-    t.circle(rx, ry, 6, fill=I)
-    for a in range(12):
-        aa = a * math.pi / 6
-        t.line([(rx + math.cos(aa) * 6, ry + math.sin(aa) * 6), (rx + math.cos(aa) * 17, ry + math.sin(aa) * 17)], fill=I, width=0.8)
-    for i in range(3):  # portali con la lunetta
-        px = fx0 + 30 + i * 50
-        tall = 82 if i == 1 else 70
-        t.rect(px, base - tall + 12, px + 22, base, fill=I)
-        t.pieslice(px, base - tall, px + 22, base - tall + 24, 180, 360, fill=I)
-        t.arc(px - 3, base - tall - 3, px + 25, base - tall + 27, 180, 360, fill=L, width=1.4)
-    for tx in (fx0 + 6, fx1 - 6):  # torrette con la guglia
-        t.rect(tx - 7, ftop + 40, tx + 7, base, fill=L, ink=True, width=0.9, ink_col=I)
-        t.poly([(tx - 8, ftop + 40), (tx + 8, ftop + 40), (tx, ftop + 2)], fill=F, ink=True, width=0.9, ink_col=I)
+    """La Basilica di Sant'Antonio vista dal Prato (#296, dalle foto di Riccardo): la facciata a capanna di cotto con
+    la loggia bianca ad archetti, il rosone e i quattro arconi; le cupole di piombo un po' a ogiva, a costoloni, sui
+    tamburi con le arcatelle; il cono sopra l'altare con l'angelo dorato; i due campanili a minareto con i giri di
+    loggette; le torrette con il cappuccio rosso. Dipinta con il motore pittorico (pittura.py) in un riquadro e
+    incollata nello strato lontano; i colori sono velati dalla lontananza."""
+    from pittura import Quadro
+    C = _Santo(0.3)
+    x0, y0 = cx - 380, base - 600
+    q = Quadro(780, 606, origin=(x0, y0), scale=t.k)
+    # i campanili, dietro l'abside
+    _campanile(q, cx + 172, base, C, 11)
+    _campanile(q, cx + 318, base, C, 23)
+    # le cupole di dietro, che spuntano tra le altre
+    _dome(q, cx + 150, base - 176, 44, 70, C, 31)
+    btop = base - 150
+    # il corpo della chiesa: il fianco con le lesene, le finestre a sesto acuto e gli archetti sotto la gronda
+    body = _rect(q, q.mask(), cx - 330, btop, cx + 352, base)
+    _paint(q, body, C.brick, C.ink, shadow=0, seed=41, ow=0.9)
+    _courses(q, body, base, btop, 3.4, C.brick_sh, 0.3)
+    apse = _rect(q, q.mask(), cx + 240, btop, cx + 352, base)
+    q.fill(q.intersect(apse, body), C.brick_sh, 0.45)
+    pil, holes, frames = q.mask(), q.mask(), q.mask()
+    for i in range(12):
+        px = cx - 300 + i * 56
+        _rect(q, pil, px - 4, btop + 12, px + 4, base)
+        wx = px + 28
+        if wx < cx + 340:
+            _arch(q, frames, wx - 9, wx + 9, base - 108, base - 56, pointed=True)
+            _arch(q, holes, wx - 6.5, wx + 6.5, base - 106, base - 58, pointed=True)
+    q.fill(q.intersect(pil, body), light(C.brick, 1.07))
+    q.fill(q.intersect(q.inner_shadow(pil, -2.5, 0, 1), body), C.brick_sh, 0.8)
+    q.fill(frames, C.stone, 0.85)
+    q.fill(holes, C.dark, 0.9)
+    _gable_edge(q, [(cx - 330, btop + 1), (cx + 352, btop + 1)], C)
+    # le cupole: due sulla navata, il presbiterio e quella piccola dell'abside, con le torrette in mezzo
+    _turret(q, cx - 122, btop - 2, 42, 6.5, C, 51)
+    _turret(q, cx + 134, btop - 2, 50, 6.5, C, 52)
+    _turret(q, cx + 283, btop - 2, 40, 6, C, 53)
+    _dome(q, cx - 188, btop, 60, 98, C, 61)
+    _dome(q, cx - 58, btop, 64, 104, C, 62)
+    _dome(q, cx + 214, btop, 58, 94, C, 63, statue=True)
+    _dome(q, cx + 330, btop + 6, 36, 56, C, 64)
+    # il cono, dietro la testata del transetto
+    _cone(q, cx + 70, btop - 20, C)
+    tr = [(cx + 8, btop + 2), (cx + 8, btop - 40), (cx + 70, btop - 82), (cx + 132, btop - 40), (cx + 132, btop + 2)]
+    tm = q.poly(q.mask(), tr)
+    _paint(q, tm, C.brick, C.ink, shadow=26, seed=81, ow=0.8)
+    _courses(q, tm, btop, btop - 82, 3.4, C.brick_sh, 0.3)
+    th = q.mask()
+    q.ellipse(th, cx + 58, btop - 54, cx + 82, btop - 30)
+    q.fill(th, C.stone)
+    q.fill(q.ellipse(q.mask(), cx + 61, btop - 51, cx + 79, btop - 33), C.dark, 0.85)
+    spokes = q.mask()
+    for a in range(8):
+        aa = a * math.pi / 4
+        q.stroke(spokes, [(cx + 70, btop - 42), (cx + 70 + math.cos(aa) * 9, btop - 42 + math.sin(aa) * 9)], 0.7)
+    q.fill(spokes, C.stone, 0.9)
+    q.outline(th, 0.45, C.ink)
+    _gable_edge(q, tr[1:4], C)
+    # la facciata a capanna, davanti a tutto
+    fx0, fx1, ftop = cx - 352, cx - 140, base - 312
+    mid = (fx0 + fx1) / 2
+    eave = base - 214
+    fac = q.poly(q.mask(), [(fx0, base), (fx0, eave), (mid, ftop), (fx1, eave), (fx1, base)])
+    _paint(q, fac, C.brick, C.ink, shadow=60, seed=91, ow=1.0)
+    _courses(q, fac, base, ftop, 3.4, C.brick_sh, 0.32)
+    # i quattro arconi ciechi a sesto acuto, con i tre portali e la lunetta dorata in quello di mezzo
+    aw = (fx1 - fx0 - 20) / 4
+    recess, frames, doors = q.mask(), q.mask(), q.mask()
+    for i in range(4):
+        ax0 = fx0 + 10 + i * aw
+        _arch(q, frames, ax0 + 1, ax0 + aw - 1, base - 98, base, pointed=True)
+        _arch(q, recess, ax0 + 4, ax0 + aw - 4, base - 96, base, pointed=True)
+    for i, (dw, dh) in enumerate(((14, 54), (20, 70), (20, 70), (14, 54))):
+        dx = fx0 + 10 + (i + 0.5) * aw
+        if i in (1, 2):  # il portale grande sta tra i due arconi di mezzo
+            continue
+        _arch(q, doors, dx - dw / 2, dx + dw / 2, base - dh + dw / 2, base)
+    _arch(q, doors, mid - 13, mid + 13, base - 62, base)
+    q.fill(frames, light(C.brick, 1.08))
+    q.fill(recess, shade(C.brick, 0.86))
+    q.fill(q.inner_shadow(recess, 3, 3, 2), shade(C.brick, 0.7), 0.9)
+    q.fill(doors, C.dark, 0.92)
+    lun = _arch(q, q.mask(), mid - 11, mid + 11, base - 63, base - 54)
+    q.fill(lun, C.gold, 0.8)
+    q.fill(_rect(q, q.mask(), mid - 13, base - 55, mid + 13, base - 52), C.stone)
+    # la loggia bianca che attraversa la facciata
+    lg0, lg1 = base - 166, base - 140
+    band = _rect(q, q.mask(), fx0 + 2, lg0 - 4, fx1 - 2, lg1 + 3)
+    _paint(q, band, C.stone, C.ink, shadow=40, grain=0.08, seed=92, rim=False, ow=0.6)
+    holes = q.mask()
+    n = 17
+    lw = (fx1 - fx0 - 12) / n
+    for i in range(n):
+        ax = fx0 + 6 + i * lw
+        _arch(q, holes, ax + 1.6, ax + lw - 1.6, lg0 + 6, lg1 - 1)
+    q.fill(q.soften(holes, 0.3), C.dark, 0.88)
+    q.fill(_rect(q, q.mask(), fx0 + 2, lg1 - 1, fx1 - 2, lg1 + 0.6), C.ink, 0.5)
+    # il timpano: il rosone, due finestrelle e gli archetti lungo le falde
+    rx, ry = mid, base - 236
+    ros = q.ellipse(q.mask(), rx - 22, ry - 22, rx + 22, ry + 22)
+    _paint(q, ros, C.stone, C.ink, shadow=10, grain=0, rim=False, ow=0.6)
+    q.fill(q.ellipse(q.mask(), rx - 18, ry - 18, rx + 18, ry + 18), C.dark, 0.9)
+    tracery = q.mask()
+    q.ellipse(tracery, rx - 5, ry - 5, rx + 5, ry + 5)
+    for a in range(16):
+        aa = a * math.pi / 8
+        q.stroke(tracery, [(rx + math.cos(aa) * 4, ry + math.sin(aa) * 4), (rx + math.cos(aa) * 17, ry + math.sin(aa) * 17)], 0.9)
+    ring = q.minus(q.ellipse(q.mask(), rx - 18, ry - 18, rx + 18, ry + 18), q.ellipse(q.mask(), rx - 15.5, ry - 15.5, rx + 15.5, ry + 15.5))
+    q.fill(q.union(tracery, ring), C.stone, 0.95)
+    small = q.mask()
+    for s in (-1, 1):
+        _arch(q, small, rx + s * 46 - 4, rx + s * 46 + 4, base - 210, base - 182, pointed=True)
+    q.fill(small, C.dark, 0.88)
+    _gable_edge(q, [(fx0 - 2, eave), (mid, ftop - 2), (fx1 + 2, eave)], C)
+    # i due contrafforti ai lati, con le torrette ottagonali e il cappuccio rosso
+    for s, x in ((-1, fx0 + 2), (1, fx1 - 2)):
+        but = _rect(q, q.mask(), x - 7, eave - 32, x + 7, base)
+        _paint(q, but, C.brick, C.ink, shadow=6, seed=93 + s, ow=0.7)
+        _courses(q, but, base, eave - 32, 3.4, C.brick_sh, 0.3)
+        _turret(q, x, eave - 32, 22, 6.5, C, 95 + s)
+    # in cima al timpano, un tabernacolo con la croce
+    _turret(q, mid, ftop + 4, 14, 4.5, C, 99)
+    res = q.result()
+    t.img.alpha_composite(res, (int(round((x0 - t.ox) * t.k)), int(round((y0 - t.oy) * t.k))))
 
 
 def sky(t):
