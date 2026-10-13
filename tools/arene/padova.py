@@ -1,8 +1,8 @@
-"""Segnaposto grafici dell'arena Padova (#230): materiali, ringhiere, statue e sfondo, disegnati col codice.
+"""I disegni dell'arena Padova (#230, #280, #288): l'isola sospesa con la fontana, le statue, il palazzo e lo sfondo.
 
 Stile del gioco (docs/stile-grafico.md): contorno a inchiostro, ombre piatte a 2 toni, fondale più spento
 dei lottatori, bordo calpestabile chiaro, niente colori dei giocatori saturi vicino al piano di gioco.
-Sono segnaposto: chi disegna in Krita può sostituire ogni PNG tenendo lo stesso nome e la stessa misura.
+Tutto a 2x: chi disegna in Krita può sostituire ogni PNG tenendo lo stesso nome e la stessa misura.
 Le foto di Prato della Valle servono solo da riferimento e non entrano nella repo.
 
 Uso: python3 tools/arene/padova.py  (scrive in public/assets/stages/padova/)
@@ -113,80 +113,6 @@ def coping(name, w=96, h=10):
     t.save(OUT, name)
 
 
-def deck():
-    """Il fianco del ponte: piano chiaro, cornice modanata con i dentelli, fascia di conci e l'ombra sotto."""
-    W, H = 96, 20
-    t = Tela(W, H, bg=DECK, wrap=True)
-    t.rect(0, 0, W, 4, fill=EDGE)
-    t.rect(0, 0, W, 0.8, fill=(248, 245, 236, 255))
-    t.rect(0, 4, W, 7, fill=(210, 204, 190, 255))  # toro della cornice
-    t.rect(0, 6, W, 7, fill=DECK_SHADE)
-    for x in range(0, W, 8):  # dentelli
-        t.rect(x + 1, 7, x + 5, 10, fill=(200, 194, 180, 255))
-        t.rect(x + 4, 7, x + 5, 10, fill=DECK_SHADE)
-    t.rect(0, 10, W, H, fill=DECK)
-    t.rect(0, 16, W, H, fill=DECK_SHADE)
-    for x in (0, 32, 64):
-        t.line([(x, 10), (x, H)], fill=(120, 114, 102, 255), width=1.0)
-    for y in (4, 7, 10):
-        t.line([(0, y), (W, y)], fill=INK, width=0.9)
-    t.line([(0, H - 0.6), (W, H - 0.6)], fill=INK, width=1.2)
-    t.save(OUT, "ponte.png")
-
-
-def stairs():
-    """I gradini di pietra: ogni gradino prende l'angolo in alto a sinistra della piastrella (una quindicina di
-    pixel), con l'ombra sotto il naso della pedata e il fianco a inchiostro. Lo usa anche il fondo del canale."""
-    t = Tela(32, 32, bg=STAIR, wrap=True, wrap_y=True)
-    t.rect(0, 0, 32, 4, fill=STAIR_SHADE)  # ombra sotto il naso del gradino di sopra
-    t.rect(0, 20, 32, 32, fill=STAIR_SHADE)
-    t.line([(0, 20), (32, 20)], fill=(84, 80, 72, 255), width=0.8)
-    t.line([(0.5, 0), (0.5, 32)], fill=INK, width=1.0)
-    t.line([(16, 20), (16, 32)], fill=(84, 80, 72, 255), width=0.8)
-    t.save(OUT, "scala.png")
-    t = Tela(32, 5, wrap=True)  # la pedata: chiara, con il naso arrotondato
-    t.rect(0, 0, 32, 3, fill=TREAD)
-    t.rect(0, 0, 32, 0.7, fill=(236, 230, 218, 255))
-    t.rect(0, 3, 32, 5, fill=(182, 175, 162, 255))
-    t.line([(0, 4.4), (32, 4.4)], fill=INK, width=1.1)
-    t.save(OUT, "scala-bordo.png")
-
-
-def balustrade():
-    """La ringhiera traforata dei ponti del Prato: corrimano modanato, zoccolo, pilastrini e l'anello di marmo
-    con i nodi sopra e sotto. Si ripete ogni 48 pixel di mondo; il pilastrino è a metà su ogni bordo."""
-    W, H = 48, 36
-    t = Tela(W, H, wrap=True)
-    # corrimano: piano chiaro, toro e l'ombra sotto
-    t.rect(0, 0, W, 6, fill=MARBLE)
-    t.rect(0, 0, W, 1.2, fill=(236, 232, 222, 255))
-    t.rect(0, 4.2, W, 6, fill=MARBLE_SHADE)
-    t.line([(0, 0.5), (W, 0.5)], fill=INK, width=1.1)
-    t.line([(0, 6), (W, 6)], fill=INK, width=1.1)
-    # zoccolo
-    t.rect(0, H - 6, W, H, fill=MARBLE)
-    t.rect(0, H - 2.5, W, H, fill=MARBLE_SHADE)
-    t.line([(0, H - 6), (W, H - 6)], fill=INK, width=1.1)
-    t.line([(0, H - 0.6), (W, H - 0.6)], fill=INK, width=1.1)
-    # pilastrino a cavallo del bordo, col capitello
-    t.rect(-3, 6, 3, H - 6, fill=MARBLE, ink=True, width=1.0)
-    t.rect(0.8, 6, 3, H - 6, fill=MARBLE_SHADE)
-    t.rect(-4, 6, 4, 9, fill=MARBLE, ink=True, width=0.9)
-    # l'anello: pieno, l'ombra in basso a destra, poi il buco trasparente
-    cx, cy, r, th = W / 2, H / 2, 9.5, 3.4
-    t.circle(cx, cy, r, fill=MARBLE)
-    t.chord(cx - r, cy - r, cx + r, cy + r, -30, 120, fill=MARBLE_SHADE)
-    t.circle(cx, cy, r, ink=True, width=1.1)
-    t.circle(cx, cy, r - th, fill=(0, 0, 0, 0))
-    t.circle(cx, cy, r - th, ink=True, width=1.0)
-    # nodi tra anello, corrimano e zoccolo
-    for y0, y1 in ((6, cy - r + 0.5), (cy + r - 0.5, H - 6)):
-        t.rect(cx - 2, y0, cx + 2, y1, fill=MARBLE, ink=True, width=0.9)
-        t.rect(cx + 0.6, y0 + 0.6, cx + 1.6, y1 - 0.6, fill=MARBLE_SHADE)
-        t.ellipse(cx - 3, (y0 + y1) / 2 - 1.5, cx + 3, (y0 + y1) / 2 + 1.5, fill=MARBLE, ink=True, width=0.8)
-    t.save(OUT, "balaustra.png")
-
-
 def slab():
     """La lastra retta dalle statue: piano chiaro, listello modanato, fascia di marmo e l'ombra sotto."""
     W, H = 64, 12
@@ -199,61 +125,6 @@ def slab():
     t.rect(0, 8.5, W, H, fill=MARBLE_SHADE)
     t.line([(0, H - 0.6), (W, H - 0.6)], fill=INK, width=1.2)
     t.save(OUT, "lastra.png")
-
-
-def arch():
-    """Il fianco del ponte sotto il piano (x 720-1200, y 492-692): conci a raggiera attorno all'arco con la chiave
-    più grande, la pietra a corsi tra il piano curvo e i conci, le spalle ai lati. Dentro l'arco non c'è il vuoto:
-    l'intradosso in ombra e, in fondo, il muro opposto del canale."""
-    x0, x1, y_top, y_bot = 720, 1200, 492, 692
-    W, H = x1 - x0, y_bot - y_top
-    t = Tela(W, H)
-
-    def deck_y(x):
-        u = max(-1, min(1, (x - 960) / 240))
-        return 520 - 25 * (1 - u * u) - y_top
-
-    cx, cy, rx, ry = 960 - x0, 692 - y_top, 205, 148  # apertura dell'arco
-    band = 20  # spessore dei conci
-    # muratura tra il piano e l'arco: corsi di pietra orizzontali, il lato destro in ombra
-    top_pts = [(x, deck_y(x + x0)) for x in range(0, W + 1, 8)]
-    t.poly(top_pts + [(W, H), (0, H)], fill=DECK)
-    t.poly([(x, y) for x, y in top_pts if x >= W / 2] + [(W, H), (W / 2, H)], fill=mix(DECK, DECK_SHADE, 0.55))
-    rng = rand(13)
-    for row in range(1, 12):
-        y = 8 + row * 16
-        t.line([(0, y), (W, y)], fill=(140, 133, 120, 255), width=0.9)
-        off = 0 if row % 2 else 22
-        for x in range(off, W, 44):
-            t.line([(x, y - 16), (x, y)], fill=(140, 133, 120, 255), width=0.9)
-    # dentro l'arco: il muro di fronte, scuro, a grandi blocchi, ritagliato nell'apertura
-    inner = [(cx - rx * math.cos(math.pi * i / 48), cy - ry * math.sin(math.pi * i / 48)) for i in range(49)]
-    far = Tela(W, H, bg=(52, 55, 54, 255))
-    for row in range(10):
-        y = cy - ry + 4 + row * 15
-        for x in range(int(cx - rx) - (row % 2) * 20, int(cx + rx), 40):
-            far.rect(x + 1, y + 1, x + 39, y + 14, fill=(60, 63, 61, 255) if (x // 40 + row) % 3 else (56, 59, 57, 255))
-    t.paste_inside(far, inner)
-    vault = [(cx - (rx - 2) * math.cos(math.pi * i / 48), cy - (ry - 2) * math.sin(math.pi * i / 48)) for i in range(49)]
-    vault_in = [(cx - (rx - 26) * math.cos(math.pi * i / 48), cy - (ry - 18) * math.sin(math.pi * i / 48)) for i in range(48, -1, -1)]
-    t.poly(vault + vault_in, fill=(92, 90, 84, 255))  # l'intradosso, visto di sotto
-    for i in range(1, 16):
-        a = math.pi * i / 16
-        t.line([(cx - (rx - 2) * math.cos(a), cy - (ry - 2) * math.sin(a)), (cx - (rx - 26) * math.cos(a), cy - (ry - 18) * math.sin(a))], fill=(70, 68, 64, 255), width=0.9)
-    # conci: a raggiera, alternati chiaro e in ombra, la chiave in cima più alta
-    n = 17
-    for i in range(n):
-        a0, a1 = math.pi * i / n, math.pi * (i + 1) / n
-        key = i == n // 2
-        out = band + (8 if key else 0)
-        pts = [(cx - rx * math.cos(a0), cy - ry * math.sin(a0)), (cx - (rx + out) * math.cos(a0), cy - (ry + out) * math.sin(a0)),
-               (cx - (rx + out) * math.cos(a1), cy - (ry + out) * math.sin(a1)), (cx - rx * math.cos(a1), cy - ry * math.sin(a1))]
-        right = (a0 + a1) / 2 > math.pi / 2
-        t.poly(pts, fill=mix(MARBLE, MARBLE_SHADE, 0.7 if right else 0.15), ink=True, width=1.2)
-    # le spalle: il fianco del ponte finisce con uno spigolo netto contro la riva
-    for x in (0.8, W - 0.8):
-        t.line([(x, deck_y(x + x0) + 1), (x, H)], fill=INK, width=1.6)
-    t.save(OUT, "arco-ponte.png")
 
 
 def statue(name, total_h, slab_w, kind):
@@ -891,23 +762,25 @@ def lawn(t):
     base = 560
     rng = rand(11)
     t.rect(-300, base - 50, 2200, base + 70, fill=(58, 72, 54, 255))  # il prato dell'Isola Memmia, spento
-    # oltre il prato: la riva lontana del canale esterno e la sua acqua (#264), non il vuoto
-    t.rect(-300, base + 70, 2200, base + 150, fill=(120, 114, 102, 255))
-    for bx in range(-300, 2200, 60):
-        t.line([(bx, base + 70), (bx, base + 150)], fill=(100, 95, 86, 255), width=1.6)
-    t.line([(-300, base + 110), (2200, base + 110)], fill=(100, 95, 86, 255), width=1.6)
-    t.rect(-300, base + 70, 2200, base + 76, fill=(172, 166, 152, 255))
-    t.rect(-300, base + 150, 2200, 1110, fill=(70, 98, 104, 255))
-    for wy in range(base + 170, 1110, 40):  # riflessi
-        for wx in range(-300 + (wy * 7) % 90, 2200, 180):
-            t.line([(wx, wy), (wx + 50, wy)], fill=(96, 126, 130, 255), width=1.6)
+    # sotto il prato, giù in basso, la ghiaia chiara del Prato con i vialetti: l'isola ci galleggia sopra (#288)
+    t.rect(-300, base + 70, 2200, 1110, fill=(176, 168, 150, 255))
+    for k in range(9):
+        y = base + 84 + k * 46
+        t.line([(-300, y), (2200, y)], fill=(160, 152, 134, 255), width=1.4 + k * 0.3)
+    for x in range(-300, 2200, 9):  # sassolini
+        y = base + 80 + (x * 37) % 470
+        t.circle(x, y, 1.2, fill=(150, 142, 126, 255))
+    t.rect(-300, base + 66, 2200, base + 74, fill=(70, 86, 62, 255))  # bordo d'erba
+    # l'ombra dell'isola sulla ghiaia, molto più giù: si capisce che la piazza galleggia
+    t.glaze([(960 + 760 * math.cos(a), base + 300 + 70 * math.sin(a)) for a in [i * math.tau / 40 for i in range(40)]], (60, 56, 48, 70))
+    t.glaze([(960 + 520 * math.cos(a), base + 300 + 46 * math.sin(a)) for a in [i * math.tau / 40 for i in range(40)]], (60, 56, 48, 50))
     # la canaletta lontana con la balaustra e la seconda fila di statue
     t.rect(-300, base - 40, 2200, base - 30, fill=(146, 142, 132, 255))
     for sx in range(-240, 2200, 120):
         small_statue(t, sx, base - 36, rng)
     # platani, poi il vialetto, le panchine e i lampioni davanti
-    for tx in range(-230, 2200, 230):
-        plane_tree(t, tx + rng.randint(-50, 50), base - 50, rng.randint(48, 70), rng)
+    for tx in range(-230, 2200, 160):  # più fitti dal #288
+        plane_tree(t, tx + rng.randint(-40, 40), base - 50, rng.randint(48, 70), rng)
     for x in range(-300, 2200, 6):  # erba a ciuffi sul bordo
         t.line([(x, base - 50), (x + 2, base - 56 - (x * 7 % 5))], fill=(70, 86, 62, 255), width=0.8)
     t.rect(-300, base - 50, 2200, base - 44, fill=(124, 118, 106, 255))
@@ -1128,19 +1001,229 @@ def balcony_floor():
     t.save(OUT, "balcone.png")
 
 
+# --- l'isola sospesa (#288): fontana dell'Isola Memmia, fondamenta sotto la piazza, platani sulla piazza ---
+WATER, WATER_S, WATER_L = (92, 132, 136, 255), (70, 106, 112, 255), (150, 186, 186, 255)  # verde acqua spento, non il blu di P2
+IRON = (44, 42, 44, 255)
+
+
+def bollard(t, x, base, h, stone=MARBLE, sh=MARBLE_SHADE):
+    """Il paracarro della fontana: dado di pietra con lo zoccolo, il collarino e la palla in cima."""
+    w = h * 0.36
+    t.rect(x - w * 0.62, base - h * 0.14, x + w * 0.62, base, fill=stone, ink=True, width=0.9)  # zoccolo
+    t.rect(x + w * 0.1, base - h * 0.14, x + w * 0.62, base, fill=sh)
+    t.rect(x - w / 2, base - h * 0.72, x + w / 2, base - h * 0.14, fill=stone, ink=True, width=0.9)  # dado
+    t.rect(x + w * 0.12, base - h * 0.72, x + w / 2, base - h * 0.14, fill=sh)
+    t.rect(x - w * 0.58, base - h * 0.78, x + w * 0.58, base - h * 0.72, fill=stone, ink=True, width=0.8)  # cornice
+    t.rect(x - w * 0.22, base - h * 0.84, x + w * 0.22, base - h * 0.78, fill=sh, ink=True, width=0.7)  # collarino
+    r = w * 0.48
+    cy = base - h * 0.84 - r
+    t.circle(x, cy, r, fill=stone)
+    t.chord(x - r, cy - r, x + r, cy + r, -60, 110, fill=sh)
+    t.circle(x - r * 0.35, cy - r * 0.35, r * 0.22, fill=light(stone, 1.06))
+    t.circle(x, cy, r, ink=True, width=0.9)
+
+
+def railing(t, x0, x1, y_top, y_bot, curls=True):
+    """La ringhiera di ferro battuto tra due paracarri: due correnti, i ferri verticali e il riccio in mezzo."""
+    t.line([(x0, y_top), (x1, y_top)], fill=IRON, width=1.4)
+    t.line([(x0, y_bot), (x1, y_bot)], fill=IRON, width=1.1)
+    n = max(2, int((x1 - x0) / 7))
+    for k in range(1, n):
+        x = x0 + (x1 - x0) * k / n
+        t.line([(x, y_top), (x, y_bot)], fill=IRON, width=0.7)
+    if curls:
+        cx, cy = (x0 + x1) / 2, (y_top + y_bot) / 2
+        h = (y_bot - y_top) / 2
+        for side in (-1, 1):
+            t.arc(cx + side * h * 0.9 - h * 0.9, cy - h * 0.9, cx + side * h * 0.9 + h * 0.9, cy + h * 0.9, 0, 360, fill=IRON, width=1.0)
+            t.arc(cx + side * h * 1.6 - h * 0.45, cy - h * 0.45, cx + side * h * 1.6 + h * 0.45, cy + h * 0.45, 0, 300, fill=IRON, width=0.8)
+
+
+def fountain_back():
+    """La fontana dell'Isola Memmia vista di fianco e un po' dall'alto (#288): la vasca tonda di pietra con
+    l'acqua, i riflessi e il bocchettone al centro; dietro, i paracarri con la palla e la ringhiera di ferro.
+    I piedi sono a (960, 524): la vasca sta sulla piazza, lo zampillo lo disegna il gioco."""
+    t = Tela(360, 70, origin=(780, 454))
+    cx, rim_y, rx, ry = 960, 508, 152, 15
+    # paracarri e ringhiera sul lato lontano: più piccoli e più in alto
+    posts = [cx + rx * 1.08 * math.cos(a) for a in (math.pi * 0.08, math.pi * 0.3, math.pi * 0.5, math.pi * 0.7, math.pi * 0.92)]
+    ys = [rim_y - ry * 1.15 * math.sin(a) - 6 for a in (math.pi * 0.08, math.pi * 0.3, math.pi * 0.5, math.pi * 0.7, math.pi * 0.92)]
+    for k in range(len(posts) - 1):
+        railing(t, posts[k], posts[k + 1], ys[k] - 13, ys[k] - 4, curls=True)
+    for x, y in zip(posts, ys):
+        bollard(t, x, y, 26, stone=(206, 200, 186, 255), sh=(172, 164, 150, 255))
+    # il bordo della vasca: anello di pietra, la parte di dietro più scura (in ombra) e il piano chiaro
+    t.ellipse(cx - rx - 8, rim_y - ry - 5, cx + rx + 8, rim_y + ry + 5, fill=(214, 208, 194, 255), ink=True, width=1.1)
+    t.chord(cx - rx - 8, rim_y - ry - 5, cx + rx + 8, rim_y + ry + 5, 180, 360, fill=(188, 180, 166, 255))
+    t.ellipse(cx - rx - 8, rim_y - ry - 5, cx + rx + 8, rim_y + ry + 5, ink=True, width=1.1)
+    # l'acqua: verde acqua spento, l'ombra del bordo lontano, i riflessi chiari che il sole fa a strisce
+    t.ellipse(cx - rx, rim_y - ry, cx + rx, rim_y + ry, fill=WATER, ink=True, width=1.0)
+    t.chord(cx - rx, rim_y - ry, cx + rx, rim_y + ry, 190, 350, fill=WATER_S)
+    for k, (dx, dy, w) in enumerate(((-90, 4, 38), (-30, 8, 54), (40, 2, 30), (95, 7, 26), (-120, 9, 18))):
+        t.line([(cx + dx, rim_y + dy), (cx + dx + w, rim_y + dy)], fill=WATER_L, width=1.4 if k % 2 else 1.0)
+    for r_ in (24, 40, 58):  # cerchi che si allargano dove cade l'acqua
+        t.ellipse(cx - r_, rim_y + 2 - r_ * 0.1, cx + r_, rim_y + 2 + r_ * 0.1, ink=True, width=0.7, ink_col=(176, 204, 202, 255))
+    # il bocchettone al centro, di bronzo scuro
+    t.rect(cx - 6, rim_y - 6, cx + 6, rim_y + 2, fill=(96, 92, 80, 255), ink=True, width=0.9)
+    t.ellipse(cx - 8, rim_y - 9, cx + 8, rim_y - 4, fill=(120, 116, 100, 255), ink=True, width=0.8)
+    # lo spigolo di pietra davanti, sotto il quale c'è la ghiaia della piazza
+    t.rect(cx - rx - 8, rim_y, cx + rx + 8, 524, fill=(198, 192, 178, 255))
+    t.rect(cx - rx - 8, 518, cx + rx + 8, 524, fill=(172, 165, 151, 255))
+    t.line([(cx - rx - 8, rim_y), (cx - rx - 8, 524)], fill=INK, width=1.1)
+    t.line([(cx + rx + 8, rim_y), (cx + rx + 8, 524)], fill=INK, width=1.1)
+    t.chord(cx - rx - 8, rim_y - ry - 5, cx + rx + 8, rim_y + ry + 5, 0, 180, fill=(214, 208, 194, 255))
+    t.arc(cx - rx - 8, rim_y - ry - 5, cx + rx + 8, rim_y + ry + 5, 0, 180, fill=INK, width=1.1)
+    t.arc(cx - rx, rim_y - ry, cx + rx, rim_y + ry, 0, 180, fill=INK, width=1.0)
+    t.save(OUT, "fontana.png")
+
+
+def fountain_front():
+    """Il davanti della fontana (#288), davanti ai lottatori e semitrasparente: i tre paracarri vicini con la
+    ringhiera bassa. Piedi a (960, 530)."""
+    t = Tela(380, 44, origin=(770, 486))
+    posts = [802, 880, 960, 1040, 1118]
+    for k in range(len(posts) - 1):
+        railing(t, posts[k], posts[k + 1], 506, 520)
+    for x in posts:
+        bollard(t, x, 530, 40)
+    t.save(OUT, "fontana-davanti.png")
+
+
+def foundations():
+    """Sotto la piazza sospesa (#288): le fondamenta di mattoni che si stringono a imbuto, con gli archi di
+    scarico, i conci di pietra agli spigoli, la roccia che si sbriciola in fondo, l'edera e le radici che pendono.
+    Va da x 100 a 1820 e da y 590 (sotto il fianco della piazza) a 760."""
+    t = Tela(1720, 170, origin=(100, 590))
+    rng = rand(41)
+    brick, brick_s, mortar = (126, 86, 70, 255), (104, 70, 58, 255), (84, 62, 54, 255)
+    stone, stone_s = (150, 142, 128, 255), (122, 116, 104, 255)
+    # il profilo: largo in alto, poi scende a gradoni e si chiude a punta irregolare
+    left = [(100, 590), (130, 610), (190, 618), (240, 640), (330, 652), (420, 676), (560, 690), (700, 716), (820, 736), (900, 752)]
+    right = [(1820 - (x - 100), y) for x, y in left]
+    body = left + [(960, 760)] + right[::-1]
+    # i mattoni su una tela a parte, ritagliata nella sagoma: corsi sfalsati, in ombra sotto la piazza
+    wall = Tela(1720, 170, origin=(100, 590), bg=brick)
+    for row in range(int(170 / 6)):
+        y = 592 + row * 6
+        wall.line([(100, y), (1820, y)], fill=mortar, width=0.6)
+        off = 0 if row % 2 else 6
+        for x in range(100 + off, 1820, 12):
+            wall.line([(x, y), (x, y + 6)], fill=mortar, width=0.5)
+    wall.glaze([(100, 640), (1820, 640), (1820, 760), (100, 760)], (40, 30, 30, 70))
+    t.paste_inside(wall, body)
+    # archi di scarico ciechi, con i conci di pietra
+    for ax in (380, 700, 1220, 1540):
+        w, top, bot = 150, 600, 660 if ax in (380, 1540) else 690
+        t.rect(ax - w / 2, top + w * 0.3, ax + w / 2, bot, fill=brick_s)
+        t.pieslice(ax - w / 2, top, ax + w / 2, top + w * 0.6, 180, 360, fill=brick_s)
+        for k in range(11):
+            a0, a1 = math.pi * k / 11, math.pi * (k + 1) / 11
+            rr, r2 = w / 2, w / 2 + 9
+            cy = top + w * 0.3
+            pts = [(ax - rr * math.cos(a0), cy - rr * 0.6 * math.sin(a0)), (ax - r2 * math.cos(a0), cy - r2 * 0.6 * math.sin(a0)),
+                   (ax - r2 * math.cos(a1), cy - r2 * 0.6 * math.sin(a1)), (ax - rr * math.cos(a1), cy - rr * 0.6 * math.sin(a1))]
+            t.poly(pts, fill=stone if k % 2 else stone_s, ink=True, width=0.8)
+    # mensoloni di pietra sotto il bordo della piazza
+    for x in range(140, 1800, 120):
+        t.poly([(x - 10, 590), (x + 10, 590), (x + 6, 604), (x - 6, 604)], fill=stone, ink=True, width=0.8)
+        t.poly([(x + 2, 590), (x + 10, 590), (x + 6, 604), (x + 2, 604)], fill=stone_s)
+    # la roccia in fondo, che si sbriciola: massi grigi in due toni
+    for k in range(26):
+        u = k / 25
+        x = 760 + u * 400 + rng.uniform(-30, 30)
+        y = 730 + (1 - abs(u - 0.5) * 2) * 22 + rng.uniform(-6, 4)
+        r = rng.uniform(10, 20)
+        pts = [(x + math.cos(a) * r * rng.uniform(0.8, 1.1), y + math.sin(a) * r * 0.7 * rng.uniform(0.8, 1.1)) for a in [i * math.pi / 4 for i in range(8)]]
+        t.poly(pts, fill=(118, 112, 104, 255), ink=True, width=0.9)
+        t.poly(pts[1:4] + [(x, y)], fill=(96, 92, 86, 255))
+    t.poly(body, ink=True, width=1.4)
+    # edera e radici che pendono dal bordo e dagli archi, con le foglie a cuore
+    for x in list(range(150, 1800, 70)):
+        if rng.random() < 0.55:
+            continue
+        length = rng.uniform(30, 120)
+        pts = [(x, 592)]
+        for k in range(1, 7):
+            pts.append((x + math.sin(k * 0.9 + x) * 6, 592 + length * k / 6))
+        if rng.random() < 0.5:
+            t.line(pts, fill=(84, 70, 56, 255), width=1.1)  # radice
+            continue
+        t.line(pts, fill=(56, 74, 50, 255), width=1.0)
+        for k, (lx, ly) in enumerate(pts[1:]):
+            s = 4.0 if k % 2 else 3.2
+            side = 1 if k % 2 else -1
+            leaf = [(lx, ly), (lx + side * s * 1.3, ly - s * 0.6), (lx + side * s * 1.6, ly + s * 0.5), (lx + side * s * 0.4, ly + s)]
+            t.poly(leaf, fill=(74, 98, 64, 255) if k % 3 else (60, 82, 54, 255), ink=True, width=0.6, ink_col=(30, 40, 28, 255))
+    t.save(OUT, "fondamenta.png")
+
+
+def plane_tree_prop(name):
+    """Un platano sulla piazza (#288), disegnato con cura: tronco chiaro a chiazze di corteccia, i rami che si
+    aprono, la chioma a nuvole di foglie in due toni con il contorno a inchiostro e qualche foglia a mano
+    sul bordo. Piedi a (410, 522), la chioma da y 110 a 360: sta sopra le teste e lascia vedere il palco."""
+    t = Tela(300, 420, origin=(260, 102))
+    rng = rand(51)
+    x, base = 410, 522
+    bark, bark_s, bark_l, bark_d = (176, 170, 146, 255), (138, 134, 114, 255), (206, 202, 178, 255), (112, 112, 96, 255)
+    ink = (36, 40, 32, 255)
+    # tronco che si allarga al piede, un po' storto
+    trunk = [(x - 13, base), (x - 9, base - 40), (x - 8, base - 120), (x - 12, base - 170), (x + 2, base - 178), (x + 12, base - 168), (x + 8, base - 120), (x + 9, base - 40), (x + 15, base)]
+    t.poly(trunk, fill=bark)
+    t.poly([(x + 2, base), (x + 2, base - 176), (x + 12, base - 168), (x + 8, base - 120), (x + 9, base - 40), (x + 15, base)], fill=bark_s)
+    for k in range(18):  # la corteccia che si stacca a chiazze
+        py = base - rng.uniform(6, 165)
+        px = x + rng.uniform(-8, 7)
+        r = rng.uniform(2.2, 4.5)
+        t.poly([(px - r, py), (px - r * 0.3, py - r * 1.3), (px + r, py - r * 0.2), (px + r * 0.2, py + r)], fill=rng.choice([bark_l, bark_d, (156, 160, 132, 255)]))
+    t.poly(trunk, ink=True, width=1.2, ink_col=ink)
+    # rami principali verso la chioma
+    for (dx, dy, ex, ey, w) in ((0, -170, -70, -250, 6), (2, -172, 60, -262, 6), (-6, -140, -100, -200, 4), (6, -150, 96, -214, 4), (0, -175, 6, -290, 5)):
+        t.line([(x + dx, base + dy), (x + ex, base + ey)], fill=ink, width=w + 2)
+        t.line([(x + dx, base + dy), (x + ex, base + ey)], fill=bark_s, width=w)
+    # chioma: nuvole di foglie, prima il contorno, poi l'ombra, poi la luce in alto a sinistra
+    blobs = []
+    for k in range(16):
+        a = math.pi * (0.95 + 1.1 * k / 15)
+        cx = x + math.cos(a) * 92 * rng.uniform(0.75, 1.05)
+        cy = base - 270 + math.sin(a) * 120 * rng.uniform(0.7, 1.0) * -1 * -1
+        blobs.append((cx, min(cy, base - 190), rng.uniform(30, 46)))
+    for k in range(7):
+        blobs.append((x + rng.uniform(-70, 70), base - 300 + rng.uniform(-40, 40), rng.uniform(34, 48)))
+    for cx, cy, r in blobs:
+        t.circle(cx, cy, r + 1.8, fill=ink)
+    for cx, cy, r in blobs:
+        t.circle(cx, cy, r, fill=(56, 76, 52, 255))
+    for cx, cy, r in blobs:
+        t.circle(cx - r * 0.2, cy - r * 0.24, r * 0.66, fill=(72, 96, 64, 255))
+    for cx, cy, r in blobs[::2]:
+        t.circle(cx - r * 0.34, cy - r * 0.4, r * 0.3, fill=(90, 116, 76, 255))
+    # foglie palmate sul bordo della chioma
+    for cx, cy, r in blobs[:16]:
+        for j in range(2):
+            a = rng.uniform(0, math.tau)
+            lx, ly = cx + math.cos(a) * r, cy + math.sin(a) * r
+            leaf = [(lx + 4.5 * math.cos(b) * (1 if i % 2 == 0 else 0.45), ly + 4.5 * math.sin(b) * (1 if i % 2 == 0 else 0.45)) for i, b in enumerate([a + i * math.pi / 5 for i in range(10)])]
+            t.poly(leaf, fill=(64, 88, 58, 255), ink=True, width=0.6, ink_col=ink)
+    # i rametti che si vedono tra le foglie
+    for k in range(5):
+        sx, sy = x + rng.uniform(-60, 60), base - rng.uniform(230, 320)
+        t.line([(sx, sy), (sx + rng.uniform(-14, 14), sy - rng.uniform(10, 20))], fill=bark_d, width=1.6)
+    t.save(OUT, name)
+
+
 if __name__ == "__main__":
     paving()
     quay_wall()
     coping("bordo.png")
-    deck()
-    stairs()
-    balustrade()
     slab()
     statue("statua-ponte.png", 112, 180, "giovane")  # regge la lastra a y 410 dalla piazza a y 520 (+2 di appoggio)
     statue("statua-alta.png", 192, 140, "filosofo")  # regge la lastra a y 330
     statue("statua-piazza.png", 142, 180, "dama")  # regge la lastra a y 380
-    arch()
     palazzo("palazzo.png")
+    fountain_back()
+    fountain_front()
+    foundations()
+    plane_tree_prop("platano.png")
     balcony_rail()
     balcony_floor()
     layer("sfondo-0.png", sky)

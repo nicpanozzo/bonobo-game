@@ -75,10 +75,10 @@ Una piattaforma sottile con `y2` è una rampa: va dritta da `y` (estremità sini
 
 - La pendenza arriva al massimo a 1:1, come una scala vera; `arch` e `y2` non vanno insieme. `npm test` controlla tutte e due le cose.
 - Da un blocco pieno si sale sulla rampa camminando, se parte poco più su dei piedi. Per passare in cima da una rampa a un blocco pieno, la rampa deve arrivare 2 px sopra il blocco, a 22 px dal suo bordo (mezzo lottatore): altrimenti il blocco ti spinge di lato.
-- Tenendo giù su una piattaforma sottile si scende attraverso. Una rampa o un arco **chiaramente più in basso** ti prende mentre cadi: è così che dal ponte di Padova si scende sulla scala sotto. Con le sole piattaforme dritte non cambia niente.
+- Tenendo giù su una piattaforma sottile si scende attraverso. Una rampa o un arco **chiaramente più in basso** ti prende mentre cadi: è così che da un ponte si scende su una scala sotto (com'era Padova prima del #288). Con le sole piattaforme dritte non cambia niente.
 
 ```ts
-{ x: 742, y: 518, width: 180, y2: 690 } // la scala sinistra di Padova (#230): dalla piazza (520) al fondo del canale (690)
+{ x: 742, y: 518, width: 180, y2: 690 } // una scala dalla piazza (520) al fondo di un canale (690)
 ```
 
 ## Gli elementi che esistono
@@ -136,7 +136,7 @@ Ogni giro, alla fine di `periodMs`: **calma**, poi **avviso** (piove ma l'acqua 
 
 ```ts
 { kind: "acqua", x: 440, y: 660, width: 400, height: 30, damage: 6, knockback: 550, knockbackGrowth: 3, angleDeg: 85,
-  flood: { highY: 550, periodMs: 40000, warnMs: 4000, riseMs: 3000, holdMs: 6000, fallMs: 3000 } } // il canale di Padova (#230)
+  flood: { highY: 550, periodMs: 40000, warnMs: 4000, riseMs: 3000, holdMs: 6000, fallMs: 3000 } } // un canale che sale con la pioggia
 ```
 
 ### Trappola che viaggia (`travel` in una trappola): il ciclista arrabbiato
@@ -172,7 +172,7 @@ hazardSprites: [{ hazard: 1, file: "ciclista.png", frames: 8, fps: 16, scale: 0.
 
 Cancaro Man di Padova lo disegna `tools/arene/ciclista.py`: un disegno vero lo sostituisce tenendo le stesse misure (8 fotogrammi da 300×320).
 
-Le piattaforme mobili hanno lo stesso meccanismo con `art.moverSprites` (#273): `{ mover, file, frames, fps, scale, footX, footY }`, dove `mover` è l'indice in `movers` e `footX`, `footY` va sul centro della superficie. L'animazione si gira nel verso in cui va la piattaforma, e da ferma verso il centro dell'arena. Le barche di Padova le disegna `tools/arene/barca.py` (6 fotogrammi da 580×260, con il barcaiolo che voga).
+Le piattaforme mobili hanno lo stesso meccanismo con `art.moverSprites` (#273): `{ mover, file, frames, fps, scale, footX, footY }`, dove `mover` è l'indice in `movers` e `footX`, `footY` va sul centro della superficie. L'animazione si gira nel verso in cui va la piattaforma, e da ferma verso il centro dell'arena. Le barche che Padova aveva prima del #288 erano fatte così; il generatore è nella storia di git (`tools/arene/barca.py`).
 
 ```ts
 { kind: "ciclista", x: 0, y: 0, width: 80, height: 95, damage: 10, knockback: 600, knockbackGrowth: 5, angleDeg: 35,
@@ -181,11 +181,12 @@ Le piattaforme mobili hanno lo stesso meccanismo con `art.moverSprites` (#273): 
 
 ### Canale: acqua bassa innocua, getti e oggetti (`lowSafe`, `jets`, `itemSpots`)
 
-Servono a dare un motivo per scendere in una zona rischiosa, come il canale di Padova (#253).
+Servono a dare un motivo per andare in una zona rischiosa (#253). A Padova la fontana al centro della piazza è un getto con `idle` (#288).
 
 - **`flood.lowSafe: true`** (nell'acqua alta): l'acqua bassa non fa male, solo quella che sale, resta alta e scende.
 - **Riparo dal ciclista:** la trappola che viaggia colpisce solo chi ha i piedi all'altezza del suo percorso, entro `HAZARD.travelFeetPx`. Chi sta più in basso, per esempio sotto il ponte, è al riparo.
-- **`jets`**, getti d'acqua a tempo: `{ x, y, width, height, speed, periodMs, warnMs, activeMs, offsetMs? }`.
+- **`jets`**, getti d'acqua a tempo: `{ x, y, width, height, speed, periodMs, warnMs, activeMs, offsetMs?, idle? }`.
+  - Con `idle` (solo grafica, #288) è una fontana: a riposo uno zampillo alto `idle` pixel, con l'avviso cresce e gorgoglia, poi parte il getto alto, che ricade a ventaglio.
   - La colonna parte da `y` e sale per `height`.
   - Dopo la calma ci sono le **bolle** (`warnMs`), poi il **getto** (`activeMs`): chi è nella colonna viene spinto in alto a `speed` pixel/s, senza danno, e può di nuovo usare il recupero.
 - **`itemSpots`**, zone dove gli oggetti cadono più spesso: `{ x, y, width, weight }`. Si sceglie a caso tra i pezzi larghi almeno 80 px (peso 1) e le zone (il loro peso). Senza zone, gli oggetti cadono come prima, con lo stesso seme.
@@ -284,6 +285,7 @@ Facoltativo, solo grafica: elementi animati che fanno sembrare il posto abitato.
 | `flyers: { y, parallax, count }` | `count` uccelli vicini da `y` in giù (#278): rondini che sfrecciano di giorno, pipistrelli di notte (servono `daycycle`) |
 | `planes: { y, everyMs }` | un aereo lontanissimo che attraversa il cielo in 40 s ogni `everyMs` (più di 40000): la scia di giorno, le luci che lampeggiano di notte |
 | `bar: { x, y, parallax, tables, spacing }` | i tavolini di un bar (#278), da `x` verso destra ogni `spacing`: due persone per tavolino che bevono lo spritz e ogni tanto brindano, gli ombrelloni, il cameriere col vassoio e di sera le lucine |
+| `rain: { periodMs, rainMs, offsetMs? }` | pioggia solo grafica (#288): ogni `periodMs` piove per `rainMs`, senza trappole; i passanti aprono l'ombrello |
 | `outerWater: { y, highY?, flood? }` | acqua intorno all'arena, da `y` in giù, disegnata davanti a chi cade, con lo splash. Con `flood` (indice di una trappola con l'acqua alta) sale fino a `highY` insieme a lei. Le rive possono scendere fino all'acqua: l'arena non sembra sospesa nel vuoto |
 | `daycycle: { cycleMs, startAt?, lamps? }` | giorno e notte: un giro intero in `cycleMs` dall'inizio della partita, partendo da `startAt` (0 mezzogiorno, 0,25 tramonto, 0,5 mezzanotte, 0,75 alba). Di notte si vedono le stelle; i lampioni `{ x, y, parallax }` si accendono al tramonto e si spengono all'alba, le finestre `windows: [{ x, y, width, height }]` si accendono una alla volta. Con `sky: true` il cielo è vivo (#267): gradiente con i colori del momento (alba rosa, giorno azzurro, tramonto arancio e viola, notte blu), sole e luna che tramontano dietro gli strati, stelle e nuvole che scorrono; lo strato più lontano allora va disegnato con il cielo trasparente, solo le sagome. La luce del momento moltiplica strati, decorazioni, acqua e sfondo vivo, il palco solo un po' |
 
