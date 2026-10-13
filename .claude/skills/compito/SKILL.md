@@ -87,8 +87,7 @@ Per ogni contenuto non deciso nell'issue (nomi, frasi, mosse, arene, suoni) segu
 ```bash
 npm run typecheck && npm test && npm run build
 npm run export:godot                                  # se hai toccato src/shared o public/assets
-godot --headless --path godot --import
-godot --headless --path godot --quit-after 60         # nessun "SCRIPT ERROR"
+# Godot (script, test del client, screenshot) lo controlla la CI: non scaricarlo solo per questo
 npm run dev        # poi in Godot F5 con due istanze, o: godot --path godot -- --room=test --name=A
 ```
 
