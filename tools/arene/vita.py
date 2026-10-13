@@ -660,41 +660,57 @@ def bus():
 
 
 def tram():
-    """Il tram di Padova: tre casse articolate bianche con la fascia spenta, i finestrini lunghi, le porte, il
-    pantografo sul tetto e i soffietti tra le casse. Ruote gommate nascoste dalle carenature."""
+    """Il tram di Padova come nella foto di Riccardo (#288): blu, a quattro casse con i soffietti, il muso tondo con il
+    grande parabrezza inclinato, la fascia dei finestrini scura incorniciata di blu, le porte, la gonna più scura
+    che nasconde le ruote gommate, il tetto grigio con le carenature e il pantografo. Blu un po' spento: sta in
+    fondo alla strada, dietro al palco."""
     L, H = 300, 52
-    q = Quadro(L + 8, H + 22)
-    x0, base = 4, H + 20
-    col, band = (216, 214, 206), (138, 112, 100)
-    segs = [(x0, x0 + 96), (x0 + 102, x0 + 198), (x0 + 204, x0 + 300)]
+    q = Quadro(L + 12, H + 24)
+    x0, base = 4, H + 22
+    blue, blue_d, blue_l = (52, 100, 160), (36, 70, 118), (92, 140, 196)
+    roof = (176, 180, 186)
+    segs = [(x0, x0 + 78), (x0 + 82, x0 + 152), (x0 + 156, x0 + 226), (x0 + 230, x0 + 304)]
     for k, (a, b) in enumerate(segs):
-        nose = 10 if k == 2 else 0
-        tail = 10 if k == 0 else 0
-        pts = [(a + tail, base - H), (b - nose, base - H)] + (bezier((b - nose, base - H), (b, base - H + 4), (b + 1, base - 14), (b, base - 4), 8) if nose else [(b, base - H), (b, base - 4)]) + [(a, base - 4)] + (list(reversed(bezier((a + tail, base - H), (a, base - H + 4), (a - 1, base - 14), (a, base - 4), 8))) if tail else [(a, base - H)])
+        nose = k == 3
+        top = base - H
+        if nose:  # il muso tondo con il parabrezza inclinato
+            pts = [(a, top + 2), (b - 22, top + 2)] + bezier((b - 22, top + 2), (b - 6, top + 3), (b + 2, base - 30), (b + 3, base - 14), 10) + [(b + 1, base - 4), (a, base - 4)]
+        else:
+            pts = [(a, top + 2), (b, top + 2), (b, base - 4), (a, base - 4)]
         m = q.smooth(q.poly(q.mask(), pts), 0.6)
-        q.fill(m, col)
-        q.fill(q.intersect(q.poly(q.mask(), [(a, base - 16), (b, base - 16), (b, base - 11), (a, base - 11)]), m), band)
-        q.fill(q.inner_shadow(m, 0, -9, 4), (150, 150, 146), 0.7)
-        wm = q.smooth(q.poly(q.mask(), [(a + 8, base - 42), (b - 8 - nose, base - 42), (b - 8 - nose, base - 22), (a + 8, base - 22)]), 0.5)
-        q.fill(wm, GLASS)
-        for j in range(int((b - a - 16) / 18)):
-            gx = a + 10 + j * 18
-            q.fill(q.intersect(q.poly(q.mask(), [(gx, base - 22), (gx + 6, base - 42), (gx + 9, base - 42), (gx + 3, base - 22)]), wm), GLASS_L, 0.45)
-            q.line([(gx + 16, base - 42), (gx + 16, base - 22)], 0.6, col)
+        q.fill(m, blue)
+        q.fill(q.intersect(q.poly(q.mask(), [(a, base - 13), (b + 4, base - 13), (b + 4, base - 4), (a, base - 4)]), m), blue_d)  # la gonna
+        q.fill(q.inner_shadow(m, 0, -8, 3.5), blue_d, 0.7)
+        q.fill(q.rim(m, -1, -2, 1.2), blue_l, 0.8)
+        # la fascia dei finestrini, scura, con i montanti blu e il riflesso
+        wx0, wx1 = a + 5, (b - 26 if nose else b - 5)
+        wm = q.smooth(q.poly(q.mask(), [(wx0, base - 44), (wx1, base - 44), (wx1, base - 20), (wx0, base - 20)]), 0.4)
+        q.fill(wm, (40, 50, 66))
+        for gx in range(int(wx0) + 3, int(wx1) - 4, 16):
+            q.fill(q.intersect(q.poly(q.mask(), [(gx, base - 20), (gx + 6, base - 44), (gx + 9, base - 44), (gx + 3, base - 20)]), wm), (120, 146, 170), 0.5)
+            q.line([(gx + 13, base - 44), (gx + 13, base - 20)], 0.8, blue)
+        q.fill(q.ellipse(q.mask(), wx0 + 8, base - 33, wx0 + 13, base - 27), (110, 92, 80), 0.8)  # un passeggero
         q.outline(wm, 0.4, INK)
-        dx = (a + b) / 2 - 6
-        _part(q, [(dx, base - 44), (dx + 12, base - 44), (dx + 12, base - 6), (dx, base - 6)], GLASS, ink=0.4)
-        q.line([(dx + 6, base - 44), (dx + 6, base - 6)], 0.4, (40, 40, 44))
-        _part(q, [(a + 4, base - 6), (b - 4, base - 6), (b - 6, base), (a + 6, base)], (70, 70, 74), ink=0.4)  # carenatura
+        if nose:
+            ws = q.smooth(q.poly(q.mask(), [(b - 24, base - 44)] + bezier((b - 21, base - 44), (b - 8, base - 43), (b - 1, base - 34), (b + 1, base - 24), 8) + [(b - 24, base - 22)]), 0.4)
+            q.fill(ws, (46, 58, 76))
+            q.fill(q.intersect(q.poly(q.mask(), [(b - 18, base - 22), (b - 10, base - 44), (b - 6, base - 44), (b - 13, base - 22)]), ws), (140, 166, 190), 0.6)
+            q.outline(ws, 0.4, INK)
+            q.fill(q.ellipse(q.mask(), b - 4, base - 12, b, base - 9), (236, 230, 200))  # fanale
+            q.line([(b - 30, base - 9), (b - 8, base - 9)], 0.6, (210, 200, 160), 0.8)  # la striscia gialla del muso
+        else:
+            dx = (a + b) / 2 - 7  # la porta, con i vetri
+            _part(q, [(dx, base - 45), (dx + 14, base - 45), (dx + 14, base - 5), (dx, base - 5)], blue_d, ink=0.4)
+            for ddx in (dx + 2, dx + 8):
+                q.fill(q.poly(q.mask(), [(ddx, base - 42), (ddx + 4, base - 42), (ddx + 4, base - 16), (ddx, base - 16)]), (52, 64, 82))
+        # il tetto grigio con la carenatura
+        _part(q, [(a + 3, top + 2), (b - (20 if nose else 3), top + 2), (b - (24 if nose else 6), top - 3), (a + 6, top - 3)], roof, ink=0.4)
         q.outline(m, 0.7, INK)
-    for a in (x0 + 96, x0 + 198):  # i soffietti
-        _part(q, [(a, base - H + 6), (a + 6, base - H + 6), (a + 6, base - 6), (a, base - 6)], (90, 90, 94), ink=0.3)
-        for j in range(5):
-            q.line([(a + 1 + j * 1.1, base - H + 7), (a + 1 + j * 1.1, base - 7)], 0.2, (60, 60, 64), 0.8)
-    pc = x0 + 150  # pantografo sul tetto della cassa centrale
-    q.line([(pc - 12, base - H), (pc, base - H - 14), (pc + 12, base - H)], 0.8, (60, 60, 62))
-    q.line([(pc - 10, base - H - 14), (pc + 10, base - H - 14)], 1.0, (60, 60, 62))
-    q.fill(q.ellipse(q.mask(), x0 + 297, base - 15, x0 + 300, base - 11), (236, 226, 190))
+    for a in (x0 + 78, x0 + 152, x0 + 226):  # soffietti scuri
+        _part(q, [(a, base - H + 6), (a + 4, base - H + 6), (a + 4, base - 6), (a, base - 6)], (54, 58, 66), ink=0.3)
+    pc = x0 + 117  # il pantografo
+    q.line([(pc - 10, base - H - 3), (pc + 2, base - H - 18), (pc + 12, base - H - 3)], 0.8, (60, 60, 62))
+    q.line([(pc - 7, base - H - 18), (pc + 11, base - H - 18)], 1.0, (60, 60, 62))
     return q.result()
 
 
