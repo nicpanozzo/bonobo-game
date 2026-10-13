@@ -16,6 +16,8 @@ const DIR := "user://server/"
 const DOWNLOAD_TIMEOUT_S := 300.0 # il server pesa decine di MB, anche con una rete lenta
 const START_TIMEOUT_S := 45.0 # il tunnel di Cloudflare da solo ne aspetta 30 (TUNNEL_TIMEOUT_MS in host.ts)
 const POLL_S := 0.25
+const FIRST_PORT := 3000 # la porta del server di sempre; se è occupata (npm run dev, un altro server) si va avanti
+const PORT_TRIES := 20
 
 var info := {} # l'ultimo stato letto dal server, vuoto finché non è pronto
 var _pid := 0
@@ -24,6 +26,7 @@ var _timer := Timer.new()
 var _waited := 0.0
 var _room := ""
 var _shown_mb := -1
+var _port := 0 # la porta provata per ultima, per ripartire dalla successiva se il server la trova occupata
 
 
 # Il server che fa da host c'è solo nell'app scaricata per computer, con la sua versione
@@ -58,6 +61,7 @@ func running() -> bool:
 
 func start(room: String) -> void:
 	_room = room
+	_port = 0
 	if running():
 		ready_to_play.emit(info)
 		return
@@ -166,6 +170,12 @@ func _launch() -> void:
 	var info_path := ProjectSettings.globalize_path(_dir() + "info.json")
 	DirAccess.remove_absolute(info_path)
 	info = {}
+	var port := _free_port(maxi(FIRST_PORT, _port + 1) if _port > 0 else FIRST_PORT)
+	_port = port
+	if port == 0:
+		failed.emit("Le porte da %d a %d sono tutte occupate." % [FIRST_PORT, FIRST_PORT + PORT_TRIES - 1])
+		return
+	OS.set_environment("PORT", str(port)) # il server la legge da qui (src/server/index.ts), lo eredita da questo processo
 	_pid = OS.create_process(ProjectSettings.globalize_path(_exe()), [
 		"--app-info=" + info_path,
 		"--parent-pid=%d" % OS.get_process_id(),
@@ -187,6 +197,11 @@ func _poll() -> void:
 		_timer.stop()
 		info = read
 		ready_to_play.emit(info)
+	elif read is Dictionary and read.get("state") == "error" and str(read.get("busy", "")) == "true" and _port > 0:
+		# La prova della porta non vede tutto (es. un server solo su IPv6): si riparte dalla porta dopo
+		_timer.stop()
+		_pid = 0
+		_launch()
 	elif (read is Dictionary and read.get("state") == "error") or not OS.is_process_running(_pid) or _waited > START_TIMEOUT_S:
 		_timer.stop()
 		stop()
@@ -198,6 +213,16 @@ func _url() -> String:
 		if a.begins_with("--host-from="):
 			return a.trim_prefix("--host-from=").trim_suffix("/") + "/bonobo-server-%s.zip" % _platform()
 	return RELEASE_URL % [_build_version(), _platform()]
+
+
+# La prima porta libera da FIRST_PORT in su: si prova ad aprirla e la si richiude subito
+static func _free_port(from: int) -> int:
+	for port in range(from, FIRST_PORT + PORT_TRIES):
+		var probe := TCPServer.new()
+		if probe.listen(port) == OK:
+			probe.stop()
+			return port
+	return 0
 
 
 func _dir() -> String:

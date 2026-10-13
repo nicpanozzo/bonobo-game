@@ -171,7 +171,8 @@ process.on("uncaughtException", (err: NodeJS.ErrnoException) => {
   if (err.syscall !== "listen") return;
   tunnel?.kill();
   if (APP_INFO) {
-    writeAppInfo("error", { error: err.code === "EADDRINUSE" ? `La porta ${PORT} è già occupata` : err.message });
+    if (err.code === "EADDRINUSE") writeAppInfo("error", { error: `La porta ${PORT} è già occupata`, busy: "true" });
+    else writeAppInfo("error", { error: err.message });
     process.exit(1);
   }
   line();
