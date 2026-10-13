@@ -594,7 +594,14 @@
     "shieldBreakShake": 10,
     "shardMs": 550,
     "shards": 10,
-    "stunStars": 3
+    "stunStars": 3,
+    "hitReactMs": 420,
+    "hitReactHz": 5,
+    "hitReactFullKnockback": 1200,
+    "hitReactMinStrength": 0.25,
+    "hitReactTilt": 0.35,
+    "hitReactSquash": 0.22,
+    "hitReactRecoil": 10
   },
   "items": {
     "banana": {

@@ -366,6 +366,14 @@ export const EFFECTS = {
   shardMs: 550, // durata delle schegge della bolla rotta
   shards: 10, // schegge della bolla rotta
   stunStars: 3, // stelline che girano sopra chi è stordito
+  // Reazione procedurale al colpo (#305), solo nel client: lo sprite si piega dove è colpito
+  hitReactMs: 420, // durata della reazione, poi lo sprite torna dritto
+  hitReactHz: 5, // oscillazioni al secondo della molla che riporta dritti
+  hitReactFullKnockback: 1200, // px/s: da qui in su la reazione è piena
+  hitReactMinStrength: 0.25, // frazione della reazione piena anche per il colpo più debole
+  hitReactTilt: 0.35, // radianti: inclinazione massima (testa all'indietro o gambe portate via)
+  hitReactSquash: 0.22, // frazione: schiacciamento massimo per un colpo alla pancia
+  hitReactRecoil: 10, // pixel: rinculo massimo lontano da chi colpisce
 };
 
 // Bot del server (#20, src/server/bot.ts): quanto è svelto e quando attacca
