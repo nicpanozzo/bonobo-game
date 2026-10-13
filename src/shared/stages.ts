@@ -471,7 +471,9 @@ export const STAGES: Record<string, StageSpec> = {
         { hazard: 0, file: "ciclista.png", frames: 8, fps: 16, scale: 0.58, footX: 150, footY: 312, shout: { text: "CANCAROOOO!", x: 200, y: 110 } },
       ],
       props: [
-        { file: "palazzo.png", x: 960, y: 480, scale: 0.5 }, // il palazzo signorile: la facciata, dietro a tutto il palco
+        { file: "palazzo.png", x: 960, y: 522, scale: 0.5 }, // il palazzo signorile: la facciata, dietro a tutto il palco
+        // Il piano dell'isola in profondità (#300): il lastricato dietro il bordo, su cui poggiano palazzo, statue e platani
+        { file: "piano.png", x: 960, y: 524, scale: 0.5 },
         // Due platani sulla piazza (#288), dietro alle statue: la chioma sta sopra le teste e lascia vedere il palco
         { file: "platano.png", x: 410, y: 522, scale: 0.5 },
         { file: "platano.png", x: 1510, y: 522, scale: 0.5, flip: true },
@@ -516,21 +518,22 @@ export const STAGES: Record<string, StageSpec> = {
         birds: { y: 40, parallax: 0.2, everyMs: 14000 },
         // Sulle punte delle lastre delle statue e sul cornicione del palazzo
         pigeons: [{ x: 485, y: 330 }, { x: 1435, y: 330 }, { x: 235, y: 380 }, { x: 1685, y: 380 }, { x: 790, y: 100 }, { x: 1130, y: 100 }],
-        walkers: { y: 510, parallax: 0.75, count: 14, umbrellas: true },
+        // Lo sfondo è salito per stare dietro il piano dell'isola (#300, LIFT in padova.py): prato e bar 30 px, strada 24
+        walkers: { y: 480, parallax: 0.75, count: 14, umbrellas: true },
         // Il tram e il traffico passano sulla strada davanti ai portici (#278): più giù le piazze li coprirebbero
-        vehicles: { y: 488, parallax: 0.5, everyMs: 23000, kind: "tram" },
-        traffic: { y: 488, parallax: 0.5, everyMs: 2600, kinds: ["auto", "auto", "auto", "vespa", "vespa", "furgone", "bici", "bus"] },
+        vehicles: { y: 464, parallax: 0.5, everyMs: 23000, kind: "tram" },
+        traffic: { y: 464, parallax: 0.5, everyMs: 2600, kinds: ["auto", "auto", "auto", "vespa", "vespa", "furgone", "bici", "bus"] },
         flyers: { y: 90, parallax: 0.6, count: 7 }, // rondini sul Prato, di notte i pipistrelli
         planes: { y: -60, everyMs: 75000 },
-        bar: { x: 120, y: 504, parallax: 0.8, tables: 3, spacing: 72 }, // il chiosco dello spritz sul prato
+        bar: { x: 120, y: 474, parallax: 0.8, tables: 3, spacing: 72 }, // il chiosco dello spritz sul prato
         daycycle: {
           cycleMs: 240000, // un giorno intero in 4 minuti: alba, giorno, tramonto e notte
           startAt: 0.8, // si parte poco dopo l'alba
           sky: true, // il cielo vivo dietro alle sagome di Santa Giustina e del Santo (#267)
-          lamps: [90, 390, 690, 990, 1290, 1590, 1890, 2190].map((x) => ({ x: x - 260, y: 409, parallax: 0.75 })), // i lampioni del prato
+          lamps: [90, 390, 690, 990, 1290, 1590, 1890, 2190].map((x) => ({ x: x - 260, y: 379, parallax: 0.75 })), // i lampioni del prato
           // Di notte i vetri accesi del palazzo, delle case e della città lontana, e le lanterne dei lampioni (#288)
           lightLayers: [0, 1, 2].map((i) => ({ file: `sfondo-${i}-luci.png`, parallax: [0.15, 0.45, 0.75][i] })),
-          lightProps: [{ file: "palazzo-luci.png", x: 960, y: 480, scale: 0.5 }],
+          lightProps: [{ file: "palazzo-luci.png", x: 960, y: 522, scale: 0.5 }],
         },
       },
     },

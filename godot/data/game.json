@@ -1408,7 +1408,13 @@
           {
             "file": "palazzo.png",
             "x": 960,
-            "y": 480,
+            "y": 522,
+            "scale": 0.5
+          },
+          {
+            "file": "piano.png",
+            "x": 960,
+            "y": 524,
             "scale": 0.5
           },
           {
@@ -1595,19 +1601,19 @@
             }
           ],
           "walkers": {
-            "y": 510,
+            "y": 480,
             "parallax": 0.75,
             "count": 14,
             "umbrellas": true
           },
           "vehicles": {
-            "y": 488,
+            "y": 464,
             "parallax": 0.5,
             "everyMs": 23000,
             "kind": "tram"
           },
           "traffic": {
-            "y": 488,
+            "y": 464,
             "parallax": 0.5,
             "everyMs": 2600,
             "kinds": [
@@ -1632,7 +1638,7 @@
           },
           "bar": {
             "x": 120,
-            "y": 504,
+            "y": 474,
             "parallax": 0.8,
             "tables": 3,
             "spacing": 72
@@ -1644,42 +1650,42 @@
             "lamps": [
               {
                 "x": -170,
-                "y": 409,
+                "y": 379,
                 "parallax": 0.75
               },
               {
                 "x": 130,
-                "y": 409,
+                "y": 379,
                 "parallax": 0.75
               },
               {
                 "x": 430,
-                "y": 409,
+                "y": 379,
                 "parallax": 0.75
               },
               {
                 "x": 730,
-                "y": 409,
+                "y": 379,
                 "parallax": 0.75
               },
               {
                 "x": 1030,
-                "y": 409,
+                "y": 379,
                 "parallax": 0.75
               },
               {
                 "x": 1330,
-                "y": 409,
+                "y": 379,
                 "parallax": 0.75
               },
               {
                 "x": 1630,
-                "y": 409,
+                "y": 379,
                 "parallax": 0.75
               },
               {
                 "x": 1930,
-                "y": 409,
+                "y": 379,
                 "parallax": 0.75
               }
             ],
@@ -1701,7 +1707,7 @@
               {
                 "file": "palazzo-luci.png",
                 "x": 960,
-                "y": 480,
+                "y": 522,
                 "scale": 0.5
               }
             ]
