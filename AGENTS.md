@@ -73,6 +73,8 @@ godot --headless --path godot --import            # Godot 4.5.1: carica il proge
 godot --headless --path godot --quit-after 60     # nessun "SCRIPT ERROR" = gli script si caricano
 ```
 
+**Per risparmiare token, in locale bastano `npm run typecheck` e `npm test`** (più `npm run export:godot` se tocchi `src/shared` o `public/assets`). Caricamento degli script Godot, test e prestazioni del client e screenshot li fa la CI in meno di un minuto: un agente che non ha già Godot non lo scarica. Se la CI è rossa, leggi il log del job e correggi.
+
 Per provare il multiplayer, con `npm run dev` acceso apri `godot/project.godot` in Godot 4.5 e premi F5 in due istanze (menu Debug, più istanze), oppure da terminale `godot --path godot -- --room=test --name=A` due volte. Se aggiungi o cambi logica in `src/shared/`, aggiungi un test accanto al file (`nome.test.ts`, runner di Node) e rilancia `npm run export:godot`. La CI (`.github/workflows/ci.yml`) lancia typecheck, test, build, il controllo di `godot/data` e il caricamento degli script Godot su ogni PR. Un push nuovo annulla le esecuzioni ancora in corso sulla stessa PR (anche Release, anteprime e sito su `main`), quindi non serve aspettare quelle vecchie; per un commit che non va controllato (solo testo, piano) scrivi `[skip ci]` nel messaggio.
 
 ## Struttura
@@ -156,5 +158,5 @@ public/assets/     immagini e suoni (arrivano in Godot con npm run export:godot)
 
 1. `npm run typecheck`, `npm test` e `npm run build` passano, e il controllo CI della PR è verde.
 2. Il *Fatto quando* del passo che hai fatto (scritto nell'issue) è verificato, e nella PR dici come.
-3. Gli script Godot si caricano senza `SCRIPT ERROR` e, se la modifica tocca il gioco, l'hai provata nel client Godot con due istanze.
+3. Il job `godot` della CI è verde (script senza `SCRIPT ERROR`, test e screenshot) e, se la modifica tocca il gioco e hai Godot a portata di mano (o un umano), l'hai provata nel client con due istanze.
 4. La PR usa il template e dice quale agente ha scritto il codice e come l'hai provata.
