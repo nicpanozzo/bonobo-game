@@ -141,6 +141,8 @@ func _show_lobby(kind := "create", rejoin := false) -> void:
 	ui_layer.add_child(lobby)
 	var p := params.duplicate()
 	p.rejoin = rejoin
+	if _local_host():
+		p.server = settings.profile.get("server", _default_server()) # nel campo Server non va 127.0.0.1
 	lobby.setup(game, p, room_link, "join" if url_params.has("room") else (kind if kind != "" else "create"))
 	UI.fade_in(lobby)
 	lobby.join_requested.connect(_join)
@@ -243,7 +245,9 @@ func _join(choice: Dictionary) -> void:
 		params.server = _default_server()
 	# La palestra (E15) non diventa l'ultima scelta: la lobby resta com'era
 	if not choice.get("gym", false):
-		settings.profile = {"name": params.name, "room": params.room, "char": params.get("char", ""), "stage": params.get("stage", ""), "rules": params.get("rules", {}), "server": params.server}
+		# Ospitando (#308) il server è 127.0.0.1: si ricorda quello di prima, per quando non si ospita
+		var saved_server: String = settings.profile.get("server", "") if _local_host() else params.server
+		settings.profile = {"name": params.name, "room": params.room, "char": params.get("char", ""), "stage": params.get("stage", ""), "rules": params.get("rules", {}), "server": saved_server, "host": params.get("host", false)}
 		settings.save()
 	_set_url(params.room)
 	if is_instance_valid(lobby):
@@ -315,8 +319,15 @@ func room_link(room: String) -> String:
 		same_origin = str(JavaScriptBridge.eval("window.location.origin", true)) == params.server
 	var link := base + "?room=" + room.uri_encode()
 	if not same_origin:
-		link += "&server=" + str(params.server).uri_encode()
+		# Chi ospita dal suo computer (#308) gioca su 127.0.0.1: agli amici va il tunnel o l'indirizzo di casa
+		var server := HostServer.instance(get_tree()).public_server() if _local_host() else str(params.server)
+		link += "&server=" + server.uri_encode()
 	return link
+
+
+# Si gioca sul server acceso da questa app (#308)
+func _local_host() -> bool:
+	return str(params.get("server", "")).begins_with("http://127.0.0.1:") and get_tree().root.has_node("HostServer")
 
 
 # Nella versione web la stanza va nell'indirizzo, così ricaricare la pagina riporta lì
