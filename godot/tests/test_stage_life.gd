@@ -142,3 +142,15 @@ func test_aereo_e_rondini() -> void:
 	runner.check(StageLife.plane_at(75000, 80000).dir == -1, "il giro dopo nell'altro verso")
 	var f := StageLife.flyer_at(2, 12345, 2700, 90)
 	runner.check(f.x >= 0 and f.x < 2700 and f.y > 0 and f.y < 320, "la rondine resta in cielo: %s" % f)
+
+
+# Fogli dipinti (#288): Padova li ha, un'arena senza resta con le forme semplici
+func test_fogli_dipinti_dello_sfondo_vivo() -> void:
+	var game: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/game.json"))
+	var life := StageLife.new()
+	life.setup(game.stages.padova, 1920, 720)
+	for n in ["nuvole", "gabbiano", "rondine", "pipistrello", "piccione"]:
+		runner.check(life.has_sheet(n), "Padova ha il foglio %s" % n)
+	var empty := StageLife.new()
+	empty.setup({"art": {"life": {"birds": {"y": 40, "parallax": 0.2, "everyMs": 14000}}}}, 1280, 720)
+	runner.check(not empty.has_sheet("gabbiano"), "senza fogli, le forme di prima")

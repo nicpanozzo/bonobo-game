@@ -130,6 +130,9 @@ export interface StageLife {
   // Acqua intorno all'arena (#264): da y in giù, davanti a chi cade (splash). Con flood (indice di una trappola con
   // l'acqua alta) sale fino a highY insieme a lei
   outerWater?: { y: number; highY?: number; flood?: number };
+  // Fogli di fotogrammi dipinti (#288) per lo sfondo vivo, per nome: nuvole, gabbiano, rondine, pipistrello, piccione.
+  // Fotogrammi in fila da sinistra, a 2x (scale 0.5 se manca). Senza, si disegnano le forme semplici di prima
+  sheets?: Record<string, { file: string; frames: number; scale?: number }>;
   // Pioggia solo grafica (#288): ogni periodMs piove per rainMs, senza trappole. I passanti aprono l'ombrello
   rain?: { periodMs: number; rainMs: number; offsetMs?: number };
   daycycle?: {
@@ -210,6 +213,7 @@ export function stageArtFiles(art: StageArt): string[] {
   for (const h of art.hazardSprites ?? []) files.push(h.file);
   for (const m of art.moverSprites ?? []) files.push(m.file);
   for (const l of [...(art.life?.daycycle?.lightLayers ?? []), ...(art.life?.daycycle?.lightProps ?? [])]) files.push(l.file);
+  for (const sh of Object.values(art.life?.sheets ?? {})) files.push(sh.file);
   return [...new Set(files)];
 }
 
@@ -486,6 +490,14 @@ export const STAGES: Record<string, StageSpec> = {
       // quando piove, il tram davanti ai portici e il giorno che passa: tramonto, notte con le stelle e i lampioni, alba
       life: {
         rain: { periodMs: 40000, rainMs: 12000, offsetMs: 26000 }, // ogni tanto piove: i passanti aprono l'ombrello
+        // Nuvole e uccelli dipinti (#288), da tools/arene/vita.py
+        sheets: {
+          nuvole: { file: "nuvole.png", frames: 8 },
+          gabbiano: { file: "gabbiano.png", frames: 8 },
+          rondine: { file: "rondine.png", frames: 4 },
+          pipistrello: { file: "pipistrello.png", frames: 4 },
+          piccione: { file: "piccione.png", frames: 6 },
+        },
         birds: { y: 40, parallax: 0.2, everyMs: 14000 },
         // Sulle punte delle lastre delle statue e sul cornicione del palazzo
         pigeons: [{ x: 485, y: 330 }, { x: 1435, y: 330 }, { x: 235, y: 380 }, { x: 1685, y: 380 }, { x: 790, y: 100 }, { x: 1130, y: 100 }],
