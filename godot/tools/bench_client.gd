@@ -1,7 +1,7 @@
 # Misura quanto costa un frame del client: _process e _draw di world_view.gd e hud.gd
 # con 8 lottatori che si muovono, colpi e KO finti. Non serve il server.
 # Uso: godot --headless --path godot --script res://tools/bench_client.gd
-# (con -- --frames=N per cambiare la durata). In headless non si disegna davvero:
+# (con -- --frames=N per cambiare la durata, -- --stage=padova per un'arena diversa dal palco). In headless non si disegna davvero:
 # si misura il costo degli script, che è la parte che scriviamo noi.
 # Con -- --check (E3 passo 4) divide i frame in 3 giri, tiene il migliore ed esce con 1
 # se supera perfBudget.clientScriptUs di game.json (PERF_BUDGET in constants.ts).
@@ -19,6 +19,7 @@ var _last_send := -1000.0
 var _rng := RandomNumberGenerator.new()
 var _percent := {} # id -> danno: sale solo ai colpi, come in partita
 var _check := false
+var _stage_id := "" # arena da misurare: quelle con lo sfondo vivo costano di più
 var _budget_us := 0.0
 var _rounds: Array[float] = [] # µs di script per frame di ogni giro (con --check)
 var _round_start_us := 0
@@ -55,6 +56,8 @@ func _initialize() -> void:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--frames="):
 			frames = int(arg.trim_prefix("--frames="))
+		elif arg.begins_with("--stage="):
+			_stage_id = arg.trim_prefix("--stage=")
 		elif arg == "--check":
 			_check = true
 	_rng.seed = 1
@@ -63,12 +66,15 @@ func _initialize() -> void:
 	_world = TimedWorld.new()
 	_world.setup(game)
 	_world.my_id = "p0"
+	if _stage_id == "":
+		_stage_id = game.defaultStageId
+	_world.set_stage(_stage_id)
 	root.add_child(_world)
 	_hud = TimedHud.new()
 	_hud.game = game
 	_hud.size = Vector2(game.world.width, game.world.height)
 	root.add_child(_hud)
-	_hud.on_welcome({"id": "p0", "room": "bench", "stageId": game.defaultStageId, "rules": {"mode": "ffa", "stocks": 3}}, _world.stage)
+	_hud.on_welcome({"id": "p0", "room": "bench", "stageId": _stage_id, "rules": {"mode": "ffa", "stocks": 3}}, _world.stage)
 
 
 func _process(_delta: float) -> bool:
