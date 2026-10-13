@@ -47,6 +47,15 @@ jobs:
           curl -sSL -o /tmp/godot.zip https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip
           unzip -oq /tmp/godot.zip -d ~/godot
           mv ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 ~/godot/godot
+      # Cache dell'import (godot/.godot e i .import accanto agli asset): l'import da zero costa ~18 s, con la cache ~5 s.
+      # La chiave non guarda gli script, così una PR che cambia solo .gd riusa la cache di main; gli script si ricaricano comunque.
+      - uses: actions/cache@v4
+        with:
+          path: |
+            godot/.godot
+            godot/**/*.import
+          key: godot-import-${{ env.GODOT_VERSION }}-${{ hashFiles('godot/**', '!godot/**/*.gd', '!godot/.godot/**') }}
+          restore-keys: godot-import-${{ env.GODOT_VERSION }}-
       - name: Carica il progetto e gli script
         run: |
           ~/godot/godot --headless --path godot --import 2>&1 | tee /tmp/import.log
