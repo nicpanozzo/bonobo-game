@@ -236,6 +236,8 @@ func _match_page(params: Dictionary) -> Control:
 	if HostServer.available():
 		_host = UI.toggle("Ospita dal mio computer: più fluido, niente server lontano", params.get("host", false), func(_on): pass)
 		create.add_child(_host)
+		# Molti non sanno che si può giocare in casa senza lag: lo si dice qui (#308)
+		create.add_child(UI.note("Siete nella stessa casa? Ospita e manda il link di casa (in partita, in alto a sinistra): niente lag, anche senza internet."))
 	_kind_boxes.create = create
 	page.add_child(create)
 

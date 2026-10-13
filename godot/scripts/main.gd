@@ -22,6 +22,7 @@ var params := {}
 var url_params := {} # solo quelli dell'indirizzo o della riga di comando
 var ui_layer := CanvasLayer.new()
 var _link_button: Button
+var _lan_link_button: Button
 var pause_menu: Control
 var world: Node2D
 var camera := Camera2D.new()
@@ -96,9 +97,19 @@ func _ready() -> void:
 		UI.copy(room_link(params.room))
 		UI.toast(ui_layer, "Link copiato: incollalo sul Discord"))
 	_link_button.focus_mode = Control.FOCUS_NONE # niente fuoco: spazio e invio restano ai comandi
-	_link_button.position = LINK_BUTTON_POS
 	_link_button.visible = false
-	layer.add_child(_link_button)
+	var link_row := HBoxContainer.new()
+	link_row.position = LINK_BUTTON_POS
+	link_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(link_row)
+	link_row.add_child(_link_button)
+	# Chi ospita (#308) ha anche il link per chi è sulla stessa rete: niente tunnel, niente lag
+	_lan_link_button = UI.small_button("Copia link di casa", func():
+		UI.copy(PAGES_URL + "?room=" + str(params.room).uri_encode() + "&server=" + str(HostServer.instance(get_tree()).info.get("lanServer", "")).uri_encode())
+		UI.toast(ui_layer, "Link di casa copiato: per chi è sul tuo stesso Wi-Fi"))
+	_lan_link_button.focus_mode = Control.FOCUS_NONE
+	_lan_link_button.visible = false
+	link_row.add_child(_lan_link_button)
 	touch = TouchControls.new()
 	touch.visible = false
 	layer.add_child(touch)
@@ -265,6 +276,7 @@ func _join(choice: Dictionary) -> void:
 		lobby.queue_free()
 	playing = true
 	_link_button.visible = not choice.get("gym", false) and not params.tutorial and params.challenge.is_empty()
+	_lan_link_button.visible = _local_host() and str(HostServer.instance(get_tree()).info.get("lanServer", "")) != ""
 	_connect()
 	if _local_host(): # chi ospita (#308): il link per gli amici va negli appunti, e va detto
 		# Solo qui: prima di _join params.server non è ancora 127.0.0.1 e il link uscirebbe con Render
@@ -279,6 +291,7 @@ func _join(choice: Dictionary) -> void:
 func _leave(page := "match") -> void:
 	playing = false
 	_link_button.visible = false
+	_lan_link_button.visible = false
 	_retry_at = -1
 	_lost_at = -1
 	_join_since = -1
