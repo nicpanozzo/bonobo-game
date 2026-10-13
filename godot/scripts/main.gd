@@ -10,6 +10,7 @@ const PRODUCTION_SERVER := "https://bonobo-game.onrender.com" # server fisso (re
 const RECONNECT_MS := 1500 # attesa prima di riprovare a collegarsi
 const WAKE_HINT_MS := 5000 # dopo quanti ms senza risposta si avvisa che il server forse si sta svegliando
 const REMATCH_PAD_BUTTON := JOY_BUTTON_Y # rivincita dal pad: Y è libero finché non arriva la speciale (E10)
+const RESULTS_BAR_BOTTOM := 150 # distanza dal fondo dei pulsanti di fine partita, sopra le schede dei giocatori, pixel
 const PAGES_URL := "https://nicpanozzo.github.io/bonobo-game/godot/" # dove sta la versione web (pages.yml)
 
 var game: Dictionary
@@ -46,6 +47,7 @@ var training: Control # pannello dell'allenamento (E15), solo nelle stanze "trai
 var tutorial: Control # riquadro del tutorial a tappe (E15), solo se si è entrati da "Tutorial"
 var challenge_run: Control # sfida in corso (E15 passo 3), solo se si è entrati da "Sfide"
 var _picked: Dictionary = {} # sfida appena scelta nell'elenco
+var results_bar: Control # Rivincita e Cambia lottatore a fine partita (#250), null durante la partita
 var _last_players: Array = [] # giocatori dell'ultimo snapshot, per il tasto Segnala (#214)
 
 
@@ -130,13 +132,16 @@ func _ready() -> void:
 		_join(params)
 
 
-# kind: dove parte la prima pagina della lobby (create, join o bot, #250); con un link si entra in quella stanza
-func _show_lobby(kind := "create") -> void:
+# kind: dove parte la prima pagina della lobby (create, join o bot, #250); con un link si entra in quella stanza.
+# rejoin: si torna da una partita, quindi la lobby propone la stessa stanza (per rientrarci con un altro lottatore)
+func _show_lobby(kind := "create", rejoin := false) -> void:
 	audio.play_music("lobby")
 	lobby = preload("res://scripts/lobby.gd").new()
 	lobby.theme = UI.theme()
 	ui_layer.add_child(lobby)
-	lobby.setup(game, params, room_link, "join" if url_params.has("room") else kind)
+	var p := params.duplicate()
+	p.rejoin = rejoin
+	lobby.setup(game, p, room_link, "join" if url_params.has("room") else (kind if kind != "" else "create"))
 	UI.fade_in(lobby)
 	lobby.join_requested.connect(_join)
 	lobby.back_requested.connect(func():
@@ -150,8 +155,9 @@ func _show_lobby(kind := "create") -> void:
 		var scale := Access.text_scale
 		options.closed.connect(func():
 			if Access.text_scale != scale: # testo più grande o più piccolo: la lobby si rifà con le misure nuove
+				var was: String = lobby._kind
 				lobby.queue_free()
-				_show_lobby()
+				_show_lobby(was)
 			else:
 				lobby.restore_focus()))
 	lobby.credits_requested.connect(func():
@@ -232,6 +238,7 @@ func _join(choice: Dictionary) -> void:
 	params.merge(choice, true)
 	params.tutorial = choice.get("tutorial", false) # vale solo per questa entrata
 	params.challenge = choice.get("challenge", {})
+	params.kind = choice.get("kind", "") # come si è entrati dalla lobby (#250): vale solo per questa entrata
 	if params.server == "":
 		params.server = _default_server()
 	# La palestra (E15) non diventa l'ultima scelta: la lobby resta com'era
@@ -245,8 +252,9 @@ func _join(choice: Dictionary) -> void:
 	_connect()
 
 
-# Esce dalla stanza e torna alla lobby (dal menu di pausa)
-func _leave() -> void:
+# Esce dalla stanza e torna alla lobby (dal menu di pausa o dalla fine della partita).
+# page: la pagina della lobby da aprire, "fighter" per "Cambia lottatore" a fine partita (#250)
+func _leave(page := "match") -> void:
 	playing = false
 	_retry_at = -1
 	_lost_at = -1
@@ -261,7 +269,9 @@ func _leave() -> void:
 	camera.position = Vector2.ZERO
 	camera.zoom = Vector2.ONE
 	_hide_connecting()
-	_show_lobby()
+	_hide_results()
+	_show_lobby(str(params.get("kind", "")), true)
+	lobby.open_page(page)
 
 
 # Un avviso che sparisce da solo dopo qualche secondo, se nel frattempo non ne è arrivato un altro
@@ -516,6 +526,12 @@ func _process(_delta: float) -> void:
 	_rotate_hint.visible = touch.active and TouchControls.portrait(Vector2(DisplayServer.window_get_size()))
 	if touch.active and playing:
 		hud.rematch_key = "Tocca lo schermo"
+	# A fine partita i pulsanti Rivincita e Cambia lottatore; spariscono quando la rivincita comincia
+	var over: bool = playing and hud._snap.get("winnerId") != null and not is_instance_valid(challenge_run) and not is_instance_valid(tutorial)
+	if over and not is_instance_valid(results_bar) and not is_instance_valid(pause_menu):
+		_show_results()
+	elif not over and is_instance_valid(results_bar):
+		_hide_results()
 	if playing:
 		_send_input()
 		# Solo i percorsi della Corsa (con il traguardo) seguono il proprio lottatore; le arene,
@@ -632,6 +648,33 @@ func _input(event: InputEvent) -> void:
 	if pad or event is InputEventKey:
 		var kind := Settings.pad_kind(Input.get_joy_name(event.device))
 		hud.rematch_key = Settings.pad_label(REMATCH_PAD_BUTTON, kind) if pad else "R"
+
+
+# Sotto la classifica di fine partita: Rivincita (come R o Y) e Cambia lottatore, che torna alla lobby
+# sulla stessa stanza e apre la pagina dei lottatori (#250)
+func _show_results() -> void:
+	results_bar = HBoxContainer.new()
+	results_bar.add_theme_constant_override("separation", UI.GAP_L)
+	var again := UI.button("Rivincita", func(): socket.emit("rematch"), true)
+	again.custom_minimum_size = Vector2(220, 0)
+	results_bar.add_child(again)
+	var change := UI.button("Cambia lottatore", func(): _leave("fighter"))
+	change.custom_minimum_size = Vector2(220, 0)
+	results_bar.add_child(change)
+	results_bar.theme = UI.theme()
+	ui_layer.add_child(results_bar)
+	results_bar.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM, Control.PRESET_MODE_MINSIZE)
+	results_bar.position.y -= RESULTS_BAR_BOTTOM * Access.text_scale
+	UI.fade_in(results_bar)
+	# Col pad il fuoco sta su Rivincita; con la tastiera R resta la scorciatoia
+	if not Input.get_connected_joypads().is_empty():
+		again.grab_focus()
+
+
+func _hide_results() -> void:
+	if is_instance_valid(results_bar):
+		results_bar.queue_free()
+	results_bar = null
 
 
 # Pad in partita: Start apre il menu, il pulsante di rivincita la chiede a partita finita

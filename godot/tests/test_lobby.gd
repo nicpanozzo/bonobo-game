@@ -169,3 +169,16 @@ func test_anteprima_che_mostra_gia_il_palco() -> void:
 	var p: Control = Preview.new()
 	runner.check(p.clip_contents, "il disegno resta nel riquadro")
 	p.free()
+
+
+func test_torna_dalla_partita_sulla_stessa_stanza() -> void:
+	var lobby := _lobby(false, {"room": "serata", "kind": "create", "rejoin": true})
+	runner.check(lobby._new_room.text == "serata", "si ripropone la stanza di prima: %s" % lobby._new_room.text)
+	lobby.open_page("fighter")
+	runner.check(lobby._page == "fighter", "Cambia lottatore apre i lottatori")
+	var c := _last_choice(lobby, lobby._submit)
+	runner.check(c.room == "serata" and c.kind == "create", "e si rientra lì: %s" % [c])
+	lobby.free()
+	lobby = _lobby(false, {"room": "vecchia", "kind": "create"})
+	runner.check(lobby._new_room.text != "vecchia", "aprendo il gioco la stanza è nuova")
+	lobby.free()

@@ -210,7 +210,9 @@ func _match_page(params: Dictionary) -> Control:
 	create.add_child(UI.heading("La tua stanza"))
 	var row := HBoxContainer.new()
 	_new_room.max_length = 24
-	_new_room.text = _random_room()
+	# Tornando da una partita si ripropone la stessa stanza: gli amici sono ancora lì
+	var rejoin: bool = params.get("rejoin", false) and str(params.get("room", "")) != ""
+	_new_room.text = str(params.room) if rejoin and params.get("kind") == "create" else _random_room()
 	_new_room.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_new_room.text_submitted.connect(func(_t): _forward())
 	_new_room.text_changed.connect(func(_t): _update_summary())
@@ -687,6 +689,12 @@ func _show_page(page: String, focus := true) -> void:
 		_focus_page()
 
 
+# Apre una pagina da fuori (main.gd: "Cambia lottatore" a fine partita apre "fighter")
+func open_page(page: String) -> void:
+	if page != _page and flow().has(page):
+		_show_page(page)
+
+
 func _focus_page() -> void:
 	var target: Control = _next_button
 	match _page:
@@ -860,6 +868,7 @@ func _choice(bot: String) -> Dictionary:
 		"rules": {"mode": mode, "stocks": _stocks.selected + 1, "timeLimitSec": TIMES[_time.selected][0], "friendlyFire": _ff.button_pressed},
 		"server": _server.text.strip_edges(),
 		"bot": "manichino" if mode == "training" and bot == "" else bot, # conta solo se la stanza è nuova
+		"kind": _kind, # per tornare alla stessa scheda dopo la partita
 	}
 
 
