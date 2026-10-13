@@ -371,11 +371,33 @@ L_ORIGIN = (960 - LW / 2, 360 - LH / 2)
 HAZE = (176, 190, 202, 255)  # la foschia del giorno, verso cui sbiadiscono le cose lontane
 
 
-def layer(name, draw):
-    """Uno strato dello sfondo: draw(t) disegna sulla tela in pixel di mondo; il file esce a 2x (art.scale 0.5)."""
+LIT = (255, 206, 120, 255)  # luce calda di una finestra accesa
+LIT_CORE = (255, 236, 186, 255)  # il centro, più chiaro
+
+
+def lit_window(lt, pts):
+    """Un vetro acceso nell'immagine delle luci (#288): il colore caldo e, dentro, il centro più chiaro."""
+    if lt is None:
+        return
+    lt.poly(pts, fill=LIT)
+    cx = sum(p[0] for p in pts) / len(pts)
+    cy = sum(p[1] for p in pts) / len(pts)
+    lt.poly([(cx + (x - cx) * 0.55, cy + (y - cy) * 0.55) for x, y in pts], fill=LIT_CORE)
+
+
+def lit_rect(lt, x0, y0, x1, y1):
+    lit_window(lt, [(x0, y0), (x1, y0), (x1, y1), (x0, y1)])
+
+
+def layer(name, draw, lights=None):
+    """Uno strato dello sfondo: draw(t) disegna sulla tela in pixel di mondo; il file esce a 2x (art.scale 0.5).
+    Con lights, anche l'immagine delle luci della notte (#288): solo i vetri accesi, nello stesso posto."""
     t = Tela(LW, LH, origin=L_ORIGIN, ss=1)
+    t.lights = Tela(LW, LH, origin=L_ORIGIN, ss=1) if lights else None
     draw(t)
     t.save(OUT, name, colors=256)
+    if lights:
+        t.lights.save(OUT, lights, colors=64)
 
 
 def far(col, k):
@@ -423,6 +445,8 @@ def skyline(t, base, rng):
         t.poly([(x - 3, base - h), (x + w * 0.5, base - h - rng.randint(8, 16)), (x + w + 3, base - h)], fill=roof)
         for wx in range(int(x + 8), int(x + w - 8), 14):
             t.rect(wx, base - h + 8, wx + 4, base - h + 15, fill=far((70, 66, 64, 255), 0.6))
+            if t.lights is not None and rng.random() < 0.3:
+                t.lights.rect(wx, base - h + 8, wx + 4, base - h + 15, fill=(230, 190, 120, 255))
         if rng.random() < 0.15:  # un campanile
             tx = x + w * 0.5
             th = rng.randint(110, 160)
@@ -581,6 +605,9 @@ def portico_house(t, x, w, base, rng):
         elif rng.random() < 0.3:
             t.line([(ax + aw / 2, base - 44), (ax + aw / 2, base - 38)], fill=ink, width=0.6)
             t.rect(ax + aw / 2 - 2.5, base - 38, ax + aw / 2 + 2.5, base - 32, fill=(160, 146, 108, 255))
+            if t.lights is not None:  # la lanterna del portico accesa e il suo alone sotto l'arco
+                t.lights.ellipse(ax + 6, base - 46, ax + aw - 6, base - 6, fill=(150, 110, 60, 255))
+                lit_rect(t.lights, ax + aw / 2 - 2.5, base - 38, ax + aw / 2 + 2.5, base - 32)
     t.line([(x, base - 62), (x + w, base - 62)], fill=ink, width=1.0)
     # i piani
     win = rng.choice(SHUTTERS)
@@ -592,6 +619,8 @@ def portico_house(t, x, w, base, rng):
             wx = x + 10 + c * step + step / 2 - 6
             if f == 0 and rng.random() < 0.5:  # piano nobile: finestra ad arco con il balconcino in ferro
                 t.rect(wx, fy + 10, wx + 12, fy + fh - 6, fill=(54, 54, 56, 255))
+                if rng.random() < 0.45:
+                    lit_window(t.lights, [(wx, fy + fh - 6), (wx, fy + 10), (wx + 6, fy + 4), (wx + 12, fy + 10), (wx + 12, fy + fh - 6)])
                 t.pieslice(wx, fy + 4, wx + 12, fy + 16, 180, 360, fill=(54, 54, 56, 255))
                 t.rect(wx - 3, fy + fh - 6, wx + 15, fy + fh - 4, fill=stone)
                 for b in range(4):
@@ -599,6 +628,8 @@ def portico_house(t, x, w, base, rng):
                 t.line([(wx - 3, fy + fh - 14), (wx + 15, fy + fh - 14)], fill=ink, width=0.8)
             else:
                 t.rect(wx, fy + 10, wx + 12, fy + fh - 8, fill=(56, 56, 58, 255))
+                if rng.random() < 0.35:
+                    lit_rect(t.lights, wx + 1, fy + 11, wx + 11, fy + fh - 9)
                 if rng.random() < 0.7:  # persiane aperte, a volte una chiusa
                     if rng.random() < 0.2:
                         t.rect(wx, fy + 10, wx + 12, fy + fh - 8, fill=far(win, 0.15))
@@ -729,6 +760,7 @@ def lamp(t, x, base, h):
     for k in range(3):
         t.rect(x - 3.4, base - 24 - k * 26, x + 3.4, base - 21 - k * 26, fill=iron)
     t.poly([(x - 8, base - h), (x + 8, base - h), (x + 10, base - h - 18), (x - 10, base - h - 18)], fill=(176, 166, 128, 255), ink=True, width=0.9, ink_col=ink)
+    lit_window(getattr(t, "lights", None), [(x - 7, base - h - 1), (x + 7, base - h - 1), (x + 9, base - h - 17), (x - 9, base - h - 17)])
     t.line([(x, base - h), (x, base - h - 18)], fill=ink, width=0.7)
     t.poly([(x - 12, base - h - 18), (x + 12, base - h - 18), (x, base - h - 30)], fill=iron, ink=True, width=0.8, ink_col=ink)
     t.circle(x, base - h - 31, 2, fill=iron)
@@ -805,6 +837,7 @@ def palazzo(name):
     cornicione con le mensole, tetto di coppi e camini a imbuto. L'intonaco caldo ha qualche scrostatura che mostra
     i mattoni. I balconi veri sono piattaforme (y 300 e 180): qui ci sono solo le mensole sotto."""
     t = Tela(440, 440, origin=(740, 40))
+    lt = Tela(440, 440, origin=(740, 40))  # le luci della notte (#288): solo i vetri accesi, nello stesso posto
     rng = rand(21)
     plaster, plaster_s = (156, 122, 94, 255), (132, 102, 78, 255)
     stone, stone_s = (188, 182, 168, 255), (156, 148, 135, 255)  # un po' più spenta dei balconi, che si calpestano
@@ -862,6 +895,11 @@ def palazzo(name):
         wx = 786 + i * 64
         t.rect(wx - 3, 337, wx + 31, 367, fill=stone, ink=True, width=0.9)
         t.rect(wx, 340, wx + 28, 364, fill=glass)
+        if i in (1, 4):  # due finestre del mezzanino accese, con le sbarre davanti alla luce
+            lit_rect(lt, wx, 340, wx + 28, 364)
+            for b in range(1, 4):
+                lt.line([(wx + b * 7, 340), (wx + b * 7, 364)], fill=(30, 28, 26, 255), width=0.9)
+            lt.line([(wx, 352), (wx + 28, 352)], fill=(30, 28, 26, 255), width=0.9)
         for b in range(1, 4):
             t.line([(wx + b * 7, 340), (wx + b * 7, 364)], fill=(30, 28, 26, 255), width=0.9)
         t.line([(wx, 352), (wx + 28, 352)], fill=(30, 28, 26, 255), width=0.9)
@@ -876,7 +914,7 @@ def palazzo(name):
         t.poly([(mx, 314), (mx + 14, 314), (mx + 14, 318), (mx + 10, 330), (mx + 4, 330), (mx, 318)], fill=stone, ink=True, width=0.9)
         t.poly([(mx + 9, 316), (mx + 14, 316), (mx + 10, 330), (mx + 8, 328)], fill=stone_s)
 
-    def gothic(wx, wy, ww, wh, lights):
+    def gothic(wx, wy, ww, wh, lights, lit=True):
         # cornice di pietra con il cappello a punta, luci a sesto acuto con le colonnine, quadrilobo in cima
         frame = [(wx - 7, wy + wh), (wx - 7, wy + 6), (wx + ww / 2, wy - 16), (wx + ww + 7, wy + 6), (wx + ww + 7, wy + wh)]
         t.poly(frame, fill=stone, ink=True, width=1.1)
@@ -886,6 +924,8 @@ def palazzo(name):
             lx = wx + j * lw_
             pts = [(lx + 3, wy + wh - 3), (lx + 3, wy + 18), (lx + lw_ / 2, wy + 4), (lx + lw_ - 3, wy + 18), (lx + lw_ - 3, wy + wh - 3)]
             t.poly(pts, fill=glass, ink=True, width=0.9)
+            if lit:
+                lit_window(lt, pts)
             t.poly([(lx + lw_ * 0.55, wy + 14), (lx + lw_ - 4, wy + 22), (lx + lw_ - 4, wy + 30), (lx + lw_ * 0.55, wy + 24)], fill=(76, 82, 86, 255))  # riflesso
             if j:
                 t.rect(lx - 1.6, wy + 16, lx + 1.6, wy + wh - 3, fill=stone, ink=True, width=0.7)  # colonnina
@@ -897,7 +937,7 @@ def palazzo(name):
         t.rect(wx - 9, wy + wh - 2, wx + ww + 9, wy + wh + 3, fill=stone, ink=True, width=0.9)  # davanzale
     gothic(905, 212, 110, 84, 3)
     gothic(800, 222, 60, 74, 2)
-    gothic(1060, 222, 60, 74, 2)
+    gothic(1060, 222, 60, 74, 2, lit=False)
     t.rect(756, 196, 1164, 204, fill=stone)
     t.rect(756, 201, 1164, 204, fill=stone_s)
     t.rect(756, 196, 1164, 204, ink=True, width=1.0)
@@ -911,6 +951,10 @@ def palazzo(name):
         t.rect(wx - 4, 124, wx + 20, 128, fill=stone, ink=True, width=0.8)  # cappello
         t.rect(wx - 2, 128, wx + 18, 172, fill=stone, ink=True, width=0.8)
         t.rect(wx, 130, wx + 16, 170, fill=glass)
+        if wx in (790, 990, 1120):
+            lit_rect(lt, wx, 130, wx + 16, 170)
+            lt.line([(wx + 8, 130), (wx + 8, 170)], fill=(120, 90, 50, 255), width=0.8)  # l'infisso
+            lt.line([(wx, 146), (wx + 16, 146)], fill=(120, 90, 50, 255), width=0.8)
         t.line([(wx + 8, 130), (wx + 8, 170)], fill=stone_s, width=0.8)
         t.line([(wx, 146), (wx + 16, 146)], fill=stone_s, width=0.8)
         for sx in (wx - 10, wx + 18):  # persiane a stecche
@@ -961,6 +1005,7 @@ def palazzo(name):
     # contorno del palazzo
     t.rect(760, 110, 1160, 480, ink=True, width=1.4)
     t.save(OUT, name)
+    lt.save(OUT, name.replace(".png", "-luci.png"))
 
 
 def balcony_rail():
@@ -1226,6 +1271,6 @@ if __name__ == "__main__":
     plane_tree_prop("platano.png")
     balcony_rail()
     balcony_floor()
-    layer("sfondo-0.png", sky)
-    layer("sfondo-1.png", buildings)
-    layer("sfondo-2.png", lawn)
+    layer("sfondo-0.png", sky, "sfondo-0-luci.png")
+    layer("sfondo-1.png", buildings, "sfondo-1-luci.png")
+    layer("sfondo-2.png", lawn, "sfondo-2-luci.png")

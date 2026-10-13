@@ -38,6 +38,8 @@ var _props_back: Array = [] # decorazioni dietro ai lottatori (#237): [texture, 
 var _props_front: Array = [] # e davanti
 var _hazard_sprites := {} # indice della trappola -> {tex, frames, fps, scale, footX, footY}: animazioni disegnate (#270)
 var _mover_sprites := {} # indice della piattaforma mobile -> come sopra (#273)
+var _light_layers := {} # parallasse -> Texture2D con i vetri accesi di quello strato (#288)
+var _light_props: Array = [] # [texture, decorazione] con i vetri accesi, sopra le decorazioni (#288)
 var _life: RefCounted = preload("res://scripts/stage_life.gd").new() # sfondo vivo (#260)
 var _ambient := Color.WHITE # luce del momento del giorno (#267): moltiplica strati e decorazioni, un po' il palco
 var _textures := {} # id personaggio -> Texture2D dello spritesheet (nel formato cartella, quella di idle)
@@ -234,6 +236,19 @@ func _load_stage_dressing(dir: String, art: Dictionary) -> void:
 		if tex != null:
 			_mover_sprites[int(ms.mover)] = {"tex": tex, "frames": int(ms.frames), "fps": float(ms.fps), "scale": float(ms.get("scale", 1.0)),
 				"footX": float(ms.get("footX", tex.get_width() / float(ms.frames) / 2.0)), "footY": float(ms.get("footY", tex.get_height()))}
+	# Luci della notte precise (#288): strati e decorazioni con solo i vetri accesi
+	_light_layers = {}
+	_light_props = []
+	var life: Dictionary = art.get("life", {}) if art.get("life") is Dictionary else {}
+	var day: Dictionary = life.get("daycycle", {}) if life.get("daycycle") is Dictionary else {}
+	for ll in day.get("lightLayers", []):
+		var tex := _stage_texture(dir, ll.file)
+		if tex != null:
+			_light_layers[snappedf(float(ll.parallax), 0.001)] = tex
+	for lp in day.get("lightProps", []):
+		var tex := _stage_texture(dir, lp.file)
+		if tex != null:
+			_light_props.append([tex, lp])
 
 
 static func _stage_texture(dir: String, file: String) -> Texture2D:
@@ -364,10 +379,10 @@ static func _stage_layer(dir: String, layer: Dictionary) -> Array:
 	return [_sprite_texture(path, "linear"), clampf(layer.parallax, 0.0, 1.0)]
 
 
-func _draw_layer(layer: Array) -> void:
+func _draw_layer(layer: Array, mod := Color(-1, 0, 0)) -> void:
 	var tex: Texture2D = layer[0]
 	var center := Vector2(stage_width() / 2.0, game.world.height / 2.0)
-	draw_texture_rect(tex, layer_rect(tex.get_size() * _layer_scale, layer[1], center, view_rect.get_center()), false, _ambient)
+	draw_texture_rect(tex, layer_rect(tex.get_size() * _layer_scale, layer[1], center, view_rect.get_center()), false, _ambient if mod.r < 0.0 else mod)
 
 
 # Dove sta uno strato: centrato sull'arena, poi trascinato verso il centro della vista tanto più quanto è lontano.
@@ -568,14 +583,26 @@ func _draw() -> void:
 		_life.draw_sky(self, t_stage, view_rect) # cielo vivo, sole, luna, stelle e nuvole, dietro agli strati
 	# Sfondo vivo (#260): ogni elemento si disegna dopo gli strati più lontani di lui
 	var far := -1.0
+	var night: float = _life.night_lights(t_stage) if not _life.is_empty() else 0.0
 	for l in _layers:
 		if not _life.is_empty():
 			_life.draw_band(self, far, l[1], t_stage, view_center, rain, _ambient)
 		_draw_layer(l)
+		var lights: Variant = _light_layers.get(snappedf(float(l[1]), 0.001))
+		if lights != null and night > 0.0:
+			_draw_layer([lights, l[1]], Color(1, 1, 1, night)) # i vetri accesi, senza la luce ambiente
+		if night > 0.0:
+			_life.draw_lamps(self, t_stage, view_rect, float(l[1]))
 		far = l[1]
 	if not _life.is_empty():
 		_life.draw_band(self, far, 1.01, t_stage, view_center, rain, _ambient)
 	_draw_props(_props_back) # statue e decorazioni dietro al palco (#237): le lastre che reggono ci stanno sopra
+	if night > 0.0:
+		for entry in _light_props: # i vetri accesi delle decorazioni (#288)
+			var tex: Texture2D = entry[0]
+			var pr: Dictionary = entry[1]
+			var size := tex.get_size() * float(pr.get("scale", _layer_scale))
+			draw_texture_rect(tex, Rect2(float(pr.x) - size.x / 2.0, float(pr.y) - size.y, size.x, size.y), false, Color(1, 1, 1, night))
 	if not _life.is_empty():
 		_life.draw_daycycle(self, t_stage, view_rect) # di notte lampioni e finestre accese
 	for i in stage.solids.size():

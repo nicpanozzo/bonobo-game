@@ -137,6 +137,10 @@ export interface StageLife {
     startAt?: number;
     lamps?: { x: number; y: number; parallax: number }[];
     windows?: { x: number; y: number; width: number; height: number }[]; // finestre che si accendono di notte, una alla volta
+    // Luci della notte precise (#288): immagini con solo i vetri accesi, sopra uno strato (stessa parallasse e misura)
+    // o sopra una decorazione (come i props). Si accendono al tramonto e si spengono all'alba
+    lightLayers?: { file: string; parallax: number }[];
+    lightProps?: { file: string; x: number; y: number; scale?: number }[];
     sky?: boolean; // cielo vivo (#267): gradiente, sole, luna, stelle e nuvole calcolati, dietro a uno strato del cielo trasparente
   };
 }
@@ -205,6 +209,7 @@ export function stageArtFiles(art: StageArt): string[] {
   for (const p of art.props ?? []) files.push(p.file);
   for (const h of art.hazardSprites ?? []) files.push(h.file);
   for (const m of art.moverSprites ?? []) files.push(m.file);
+  for (const l of [...(art.life?.daycycle?.lightLayers ?? []), ...(art.life?.daycycle?.lightProps ?? [])]) files.push(l.file);
   return [...new Set(files)];
 }
 
@@ -496,17 +501,9 @@ export const STAGES: Record<string, StageSpec> = {
           startAt: 0.8, // si parte poco dopo l'alba
           sky: true, // il cielo vivo dietro alle sagome di Santa Giustina e del Santo (#267)
           lamps: [90, 390, 690, 990, 1290, 1590, 1890, 2190].map((x) => ({ x: x - 260, y: 409, parallax: 0.75 })), // i lampioni del prato
-          // Le finestre del palazzo che si accendono la sera: la trifora, le bifore, l'ultimo piano, il mezzanino
-          windows: [
-            { x: 909, y: 220, width: 102, height: 72 },
-            { x: 803, y: 230, width: 54, height: 62 },
-            { x: 1063, y: 230, width: 54, height: 62 },
-            { x: 790, y: 130, width: 16, height: 38 },
-            { x: 990, y: 130, width: 16, height: 38 },
-            { x: 1120, y: 130, width: 16, height: 38 },
-            { x: 852, y: 342, width: 24, height: 20 },
-            { x: 1044, y: 342, width: 24, height: 20 },
-          ],
+          // Di notte i vetri accesi del palazzo, delle case e della città lontana, e le lanterne dei lampioni (#288)
+          lightLayers: [0, 1, 2].map((i) => ({ file: `sfondo-${i}-luci.png`, parallax: [0.15, 0.45, 0.75][i] })),
+          lightProps: [{ file: "palazzo-luci.png", x: 960, y: 480, scale: 0.5 }],
         },
       },
     },
