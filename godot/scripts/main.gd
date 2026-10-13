@@ -6,6 +6,7 @@
 extends Node2D
 
 const DEFAULT_SERVER := "http://localhost:3000" # npm run dev
+const LINK_BUTTON_POS := Vector2(12, 36) # "Copia link" in partita, sotto la riga della stanza, pixel
 const HOST_LINK_TOAST_S := 10.0 # quanto resta l'avviso "link copiato" a chi ospita, secondi
 const PRODUCTION_SERVER := "https://bonobo-game.onrender.com" # server fisso (render.yaml, #19): lo usa il gioco esportato
 const RECONNECT_MS := 1500 # attesa prima di riprovare a collegarsi
@@ -20,6 +21,7 @@ var socket := SocketIO.new()
 var params := {}
 var url_params := {} # solo quelli dell'indirizzo o della riga di comando
 var ui_layer := CanvasLayer.new()
+var _link_button: Button
 var pause_menu: Control
 var world: Node2D
 var camera := Camera2D.new()
@@ -89,6 +91,14 @@ func _ready() -> void:
 	hud.set_anchors_preset(Control.PRESET_FULL_RECT)
 	hud.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(hud)
+	# In alto a sinistra, sotto la riga della stanza: il link per gli amici a portata di clic (#308)
+	_link_button = UI.small_button("Copia link", func():
+		UI.copy(room_link(params.room))
+		UI.toast(ui_layer, "Link copiato: incollalo sul Discord"))
+	_link_button.focus_mode = Control.FOCUS_NONE # niente fuoco: spazio e invio restano ai comandi
+	_link_button.position = LINK_BUTTON_POS
+	_link_button.visible = false
+	layer.add_child(_link_button)
 	touch = TouchControls.new()
 	touch.visible = false
 	layer.add_child(touch)
@@ -254,8 +264,11 @@ func _join(choice: Dictionary) -> void:
 	if is_instance_valid(lobby):
 		lobby.queue_free()
 	playing = true
+	_link_button.visible = not choice.get("gym", false) and not params.tutorial and params.challenge.is_empty()
 	_connect()
-	if _local_host(): # chi ospita (#308): il link è già negli appunti, ma va detto
+	if _local_host(): # chi ospita (#308): il link per gli amici va negli appunti, e va detto
+		# Solo qui: prima di _join params.server non è ancora 127.0.0.1 e il link uscirebbe con Render
+		UI.copy(room_link(params.room))
 		var lan_only := not HostServer.instance(get_tree()).info.has("server")
 		UI.toast(ui_layer, "Link copiato: vale solo per chi è sul tuo Wi-Fi (il tunnel non è partito)" if lan_only \
 				else "Link della serata copiato: incollalo sul Discord (anche da Esc → Copia link)", UI.WARN if lan_only else UI.OK, HOST_LINK_TOAST_S)
@@ -265,6 +278,7 @@ func _join(choice: Dictionary) -> void:
 # page: la pagina della lobby da aprire, "fighter" per "Cambia lottatore" a fine partita (#250)
 func _leave(page := "match") -> void:
 	playing = false
+	_link_button.visible = false
 	_retry_at = -1
 	_lost_at = -1
 	_join_since = -1

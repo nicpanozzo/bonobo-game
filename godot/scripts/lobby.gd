@@ -875,7 +875,6 @@ func _host_and_join(choice: Dictionary) -> void:
 		_host_done(host)
 		choice.server = host.local_server()
 		choice.host = true
-		UI.copy(room_link.call(choice.room)) # main.room_link mette il server pubblico al posto di 127.0.0.1
 		join_requested.emit(choice), CONNECT_ONE_SHOT)
 	host.start(choice.room)
 
