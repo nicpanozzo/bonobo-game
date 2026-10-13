@@ -115,3 +115,14 @@ func test_il_mio_lottatore_dopo_il_rientro_non_scivola() -> void:
 	b.push(1100, 1120, _me(1000)) # rientro dopo un KO: oltre teleport_distance
 	var s: Variant = b.sample("me", 1140)
 	runner.check(s.x == 1000.0, "un salto lungo non diventa una velocità: %s" % [s.x])
+
+
+# #227: nell'intervallo in cui atterra, il lottatore scende alla velocità che aveva in aria, non più piano
+func test_atterraggio_senza_rallentare() -> void:
+	var b := SnapshotBuffer.new()
+	b.push(1000, 1020, [{"id": "a", "x": 0, "y": 580, "vy": 950, "onGround": false}])
+	b.push(1033, 1053, [{"id": "a", "x": 0, "y": 600, "vy": 0, "onGround": true}])
+	var s: Variant = b.sample("a", 1030 + b.delay_ms) # ora del server 1010
+	runner.check(absf(s.y - 589.5) < 0.01, "a 10 ms si cade a 950 px/s, y attesa 589,5: %s" % [s.y])
+	s = b.sample("a", 1050 + b.delay_ms) # ora del server 1030
+	runner.check(s.y == 600.0, "toccato il suolo si resta lì: %s" % [s.y])

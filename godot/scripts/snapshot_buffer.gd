@@ -96,6 +96,11 @@ func _interpolate(id: String, a: Dictionary, b: Dictionary, render_time: float) 
 	var out: Dictionary = pa.duplicate()
 	out.x = lerpf(pa.x, pb.x, k)
 	out.y = lerpf(pa.y, pb.y, k)
+	# Atterraggio (#227): il lottatore tocca terra a metà intervallo, e la retta tra i due snapshot
+	# lo farebbe rallentare prima del suolo. Si scende alla velocità che aveva in aria, poi si resta a terra.
+	if pb.get("onGround", false) and not pa.get("onGround", false) and pb.y > pa.y:
+		var fall_speed := maxf(float(pa.get("vy", 0.0)) / 1000.0, (pb.y - pa.y) / (b.t - a.t))
+		out.y = minf(pa.y + fall_speed * (render_time - a.t), pb.y)
 	return out
 
 
