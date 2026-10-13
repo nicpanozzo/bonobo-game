@@ -32,8 +32,10 @@ await build({
   target: "node22",
   // Moduli nativi facoltativi di ws: se mancano ws usa la sua versione in JavaScript
   external: ["bufferutil", "utf-8-validate"],
-  // Serve solo per la cartella dist/ in produzione, che l'eseguibile non usa
-  define: { "import.meta.url": '"file:///bonobo-server"' },
+  // import.meta.url non esiste in CommonJS: si usa il percorso vero dell'eseguibile. Una costante come
+  // "file:///bonobo-server" su Windows non è un percorso assoluto e fileURLToPath fa cadere il server (#308)
+  banner: { js: '"use strict"; var __bonoboUrl = require("node:url").pathToFileURL(process.execPath).href;' },
+  define: { "import.meta.url": "__bonoboUrl" },
   logLevel: "warning",
 });
 

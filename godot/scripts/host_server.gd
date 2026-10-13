@@ -117,6 +117,7 @@ func _on_downloaded(result: int, code: int, _headers: PackedStringArray, _body: 
 		return
 	progress.emit("Preparo il server...")
 	if not _unzip(zip_path):
+		DirAccess.remove_absolute(zip_path)
 		failed.emit("Il server scaricato è rotto. Riprova.")
 		return
 	DirAccess.remove_absolute(zip_path)
@@ -132,6 +133,11 @@ func _unzip(zip_path: String) -> bool:
 	for name in zip.get_files():
 		if name.ends_with("/"):
 			continue
+		# Solo nomi semplici dentro la cartella del server: un "../" o un percorso assoluto nello zip
+		# scriverebbe fuori (zip slip), quindi lo zip si scarta tutto
+		if name.begins_with("/") or name.contains("..") or name.contains("\\") or name.contains(":"):
+			zip.close()
+			return false
 		var out := dir.path_join(name)
 		DirAccess.make_dir_recursive_absolute(out.get_base_dir())
 		var f := FileAccess.open(out, FileAccess.WRITE)
