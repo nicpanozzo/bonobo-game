@@ -3,7 +3,7 @@
 // sul Discord. È il punto d'ingresso del server da scaricare (scripts/build-server.mjs),
 // ma va anche da sorgente: npm run host.
 import { spawn, type ChildProcess } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, writeFileSync } from "node:fs";
 import { networkInterfaces } from "node:os";
 import path from "node:path";
 import { createInterface } from "node:readline";
@@ -13,7 +13,17 @@ const PORT = Number(process.env.PORT) || 3000;
 const PAGES_URL = "https://nicpanozzo.github.io/bonobo-game/godot/"; // lo stesso di godot/scripts/main.gd
 const TUNNEL_TIMEOUT_MS = 30_000; // oltre questo il tunnel non arriva più: si spiega come giocare in casa
 
-const room = `serata-${Math.random().toString(36).slice(2, 6)}`;
+// Dall'app (#308): l'app avvia il server in sottofondo con --app-info=<file> e legge da lì
+// stanza e link, quindi niente browser né appunti; con --parent-pid si spegne quando l'app si chiude
+function arg(name: string): string | undefined {
+  const prefix = `--${name}=`;
+  return process.argv.find((a) => a.startsWith(prefix))?.slice(prefix.length);
+}
+const APP_INFO = arg("app-info");
+const PARENT_PID = Number(arg("parent-pid")) || 0;
+const PARENT_CHECK_MS = 2000; // ogni quanto si guarda se l'app è ancora aperta
+
+const room = arg("room") || `serata-${Math.random().toString(36).slice(2, 6)}`;
 let tunnel: ChildProcess | undefined;
 
 function line(text = ""): void {
@@ -57,8 +67,29 @@ function lanAddress(): string | undefined {
   return undefined;
 }
 
+function roomLink(server: string): string {
+  return `${PAGES_URL}?room=${encodeURIComponent(room)}&server=${encodeURIComponent(server)}`;
+}
+
+// Lo stato per l'app: "ready" con l'indirizzo del tunnel, "lan" solo in casa, "error" se il server non parte
+function writeAppInfo(state: "ready" | "lan" | "error", extra: Record<string, string> = {}): void {
+  if (!APP_INFO) return;
+  const ip = lanAddress();
+  const info = { state, room, port: PORT, lanServer: ip ? `http://${ip}:${PORT}` : "", ...extra };
+  try {
+    writeFileSync(APP_INFO, JSON.stringify(info));
+  } catch (err) {
+    console.error("non riesco a scrivere il file per l'app:", err);
+  }
+}
+
 function announce(server: string): void {
-  const link = `${PAGES_URL}?room=${encodeURIComponent(room)}&server=${encodeURIComponent(server)}`;
+  const link = roomLink(server);
+  if (APP_INFO) {
+    writeAppInfo("ready", { server });
+    line(`Serata pronta: ${link}`);
+    return;
+  }
   copyToClipboard(link);
   line();
   line("==============================================================");
@@ -80,6 +111,7 @@ function announce(server: string): void {
 }
 
 function withoutTunnel(reason: string, hint: string): void {
+  writeAppInfo("lan", { error: reason });
   const ip = lanAddress();
   line();
   line(`⚠️  ${reason}`);
@@ -138,6 +170,10 @@ function shutdown(): void {
 process.on("uncaughtException", (err: NodeJS.ErrnoException) => {
   if (err.syscall !== "listen") return;
   tunnel?.kill();
+  if (APP_INFO) {
+    writeAppInfo("error", { error: err.code === "EADDRINUSE" ? `La porta ${PORT} è già occupata` : err.message });
+    process.exit(1);
+  }
   line();
   if (err.code === "EADDRINUSE") line(`❌ La porta ${PORT} è già occupata: forse il server è già acceso in un'altra finestra.`);
   else line(`❌ Non riesco ad aprire la porta ${PORT}: ${err.message}`);
@@ -148,6 +184,16 @@ process.on("uncaughtException", (err: NodeJS.ErrnoException) => {
 process.on("SIGINT", shutdown);
 process.on("SIGTERM", shutdown);
 process.on("exit", () => tunnel?.kill());
+
+if (PARENT_PID) {
+  setInterval(() => {
+    try {
+      process.kill(PARENT_PID, 0); // 0: non manda niente, controlla solo che il processo ci sia
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code === "ESRCH") shutdown();
+    }
+  }, PARENT_CHECK_MS).unref();
+}
 
 line("Accendo il server di gioco e apro il tunnel, un attimo...");
 startTunnel();

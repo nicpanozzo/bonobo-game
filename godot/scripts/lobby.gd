@@ -59,6 +59,8 @@ var _mode_cards := HBoxContainer.new()
 var _stocks := Stepper.new()
 var _time := Stepper.new()
 var _ff := CheckButton.new()
+var _host: CheckButton # Crea: ospita dal proprio computer (#308), solo nell'app per computer
+var _host_status: Label # a che punto è il server mentre si accende
 var _bot := Stepper.new()
 var _stocks_box: Control # titoletto e selettore delle vite, si nascondono insieme
 var _stocks_label: Label
@@ -221,12 +223,19 @@ func _match_page(params: Dictionary) -> Control:
 		_new_room.text = _random_room()
 		_update_summary()))
 	row.add_child(UI.button("Copia link", func():
-		UI.copy(room_link.call(_clean_room(_new_room.text)))
-		_msg.text = "Link copiato: incollalo sul Discord"
+		if _hosting_new():
+			_msg.text = "Ospitando dal tuo computer, il link si copia da solo quando entri"
+		else:
+			UI.copy(room_link.call(_clean_room(_new_room.text)))
+			_msg.text = "Link copiato: incollalo sul Discord"
 		_msg.show()))
 	create.add_child(row)
 	_msg = UI.label("Manda il link agli amici: chi lo apre entra nella tua stessa partita.", UI.SIZE_NOTE, Color(UI.TEXT, 0.7))
 	create.add_child(_msg)
+	# Il server sul proprio computer invece che su Render: chi ospita gioca senza latenza
+	if HostServer.available():
+		_host = UI.toggle("Ospita dal mio computer: più fluido, niente server lontano", params.get("host", false), func(_on): pass)
+		create.add_child(_host)
 	_kind_boxes.create = create
 	page.add_child(create)
 
@@ -844,7 +853,64 @@ func _submit() -> void:
 			bot = ""
 		"bot":
 			bot = bot if bot != "" else QUICK_BOT
+	if _hosting_new() and _kind == "create":
+		_host_and_join(_choice(bot))
+		return
 	join_requested.emit(_choice(bot))
+
+
+func _hosting_new() -> bool:
+	return _host != null and _host.button_pressed
+
+
+# Accende il server sul computer (o usa quello già acceso), copia il link per gli amici ed entra
+func _host_and_join(choice: Dictionary) -> void:
+	if _host_status != null:
+		return # già in corso
+	var host := HostServer.instance(get_tree())
+	_host_status = UI.toast(self, "", UI.OK, 600.0)
+	host.progress.connect(_on_host_progress)
+	host.failed.connect(_on_host_failed, CONNECT_ONE_SHOT)
+	host.ready_to_play.connect(func(_info: Dictionary):
+		_host_done(host)
+		choice.server = host.local_server()
+		choice.host = true
+		UI.copy(room_link.call(choice.room)) # main.room_link mette il server pubblico al posto di 127.0.0.1
+		join_requested.emit(choice), CONNECT_ONE_SHOT)
+	host.start(choice.room)
+
+
+func _on_host_progress(text: String) -> void:
+	if is_instance_valid(_host_status):
+		_host_status.text = text
+
+
+func _on_host_failed(text: String) -> void:
+	_cancel_host()
+	UI.toast(self, text + " Togli \"Ospita\" per giocare sul server online.", UI.WARN, 8.0)
+
+
+# Lobby chiusa mentre il server si accende: il server resta, ma non si entra più da qui
+func _exit_tree() -> void:
+	if _host_status != null:
+		_cancel_host()
+
+
+func _cancel_host() -> void:
+	var host := HostServer.instance(get_tree())
+	_host_done(host)
+	for c in host.ready_to_play.get_connections():
+		host.ready_to_play.disconnect(c.callable)
+
+
+func _host_done(host: HostServer) -> void:
+	if host.progress.is_connected(_on_host_progress):
+		host.progress.disconnect(_on_host_progress)
+	if host.failed.is_connected(_on_host_failed):
+		host.failed.disconnect(_on_host_failed)
+	if is_instance_valid(_host_status):
+		_host_status.queue_free()
+	_host_status = null
 
 
 func _choice(bot: String) -> Dictionary:
@@ -869,6 +935,7 @@ func _choice(bot: String) -> Dictionary:
 		"server": _server.text.strip_edges(),
 		"bot": "manichino" if mode == "training" and bot == "" else bot, # conta solo se la stanza è nuova
 		"kind": _kind, # per tornare alla stessa scheda dopo la partita
+		"host": _hosting_new(), # ricordato per la prossima volta; il server vero lo mette _host_and_join
 	}
 
 
