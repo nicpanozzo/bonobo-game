@@ -886,11 +886,21 @@ func _on_host_progress(text: String) -> void:
 
 
 func _on_host_failed(text: String) -> void:
+	_cancel_host()
+	UI.toast(self, text + " Togli \"Ospita\" per giocare sul server online.", UI.WARN, 8.0)
+
+
+# Lobby chiusa mentre il server si accende: il server resta, ma non si entra più da qui
+func _exit_tree() -> void:
+	if _host_status != null:
+		_cancel_host()
+
+
+func _cancel_host() -> void:
 	var host := HostServer.instance(get_tree())
 	_host_done(host)
 	for c in host.ready_to_play.get_connections():
 		host.ready_to_play.disconnect(c.callable)
-	UI.toast(self, text + " Togli \"Ospita\" per giocare sul server online.", UI.WARN, 8.0)
 
 
 func _host_done(host: HostServer) -> void:
