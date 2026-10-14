@@ -207,6 +207,10 @@ func _draw_supreme(r: Rect2, value: float) -> void:
 # una barra verde che si accorcia col tempo che resta
 # Col bong (#302) la barra invece si riempie, dal giallo al rosso: piena si crolla
 func _draw_powerup(card: Rect2, ms_left: float, kind: String = "fiore") -> void:
+	if kind == "trip":
+		# I funghetti (#302): barra viola che si accorcia
+		draw_rect(Rect2(card.position, Vector2(card.size.x * clampf(ms_left / float(game.get("funghi", {}).get("tripMs", 3000)), 0.0, 1.0), 4)), Color(0.75, 0.4, 0.95))
+		return
 	if kind == "bong":
 		var high := 1.0 - clampf(ms_left / float(game.get("bong", {}).get("highMs", 7000)), 0.0, 1.0)
 		var col := Color(1, 0.85, 0.3).lerp(Color(1, 0.25, 0.2), high)
