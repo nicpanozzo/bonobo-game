@@ -14,6 +14,8 @@ export interface ItemSpec {
   weight?: number; // quanto spesso compare rispetto agli altri (1 se manca)
   // Oggetto da consumare (#231): raccolto non si tiene in mano, dà subito il potenziamento per ms
   consume?: { powerup: string; ms: number };
+  mushrooms?: boolean; // il sacchetto dei funghetti di Teemo (#302): giù + J ne pianta uno, senza giù si lancia
+  planted?: boolean; // un funghetto piantato: non si raccoglie, scatta su chi lo calpesta
   bong?: boolean; // si tiene in mano e si fuma in tre fasi (#302): J carica, K lancia come gli altri
 }
 
@@ -23,5 +25,8 @@ export const ITEMS: Record<string, ItemSpec> = {
   // TODO community: il nome nel gioco (#231). Intoccabili, colpi più forti, passo lento (POWERUP)
   fiore: { id: "fiore", name: "Fiore", damage: 0, knockback: 0, width: 26, height: 26, color: 0x4caf50, weight: 1, consume: { powerup: "fiore", ms: POWERUP.flowerMs } },
   // TODO community: il nome nel gioco (#302). Carica, fatto, nuvola di fumo (BONG)
+  // TODO community: il nome nel gioco (#302). Teemo di LoL: trappole quasi invisibili che fanno "viaggiare" (FUNGHI)
+  funghetti: { id: "funghetti", name: "Funghetti", damage: 4, knockback: 250, width: 24, height: 20, color: 0x9b59b6, weight: 2, mushrooms: true },
+  fungo: { id: "fungo", name: "Funghetto", damage: 0, knockback: 0, width: 20, height: 16, color: 0xc0392b, weight: 0, planted: true },
   bong: { id: "bong", name: "Bong", damage: 10, knockback: 380, width: 22, height: 40, color: 0x7fd8c4, weight: 2, bong: true },
 };

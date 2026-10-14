@@ -16,6 +16,7 @@ import type { GameEvent, GameSnapshot, InputState, MatchRules, PlayerState, Pred
 export interface MatchOptions {
   stageId?: string;
   rules?: Partial<MatchRules>;
+  items?: boolean; // false = niente oggetti anche dove ci sarebbero (es. i test di bilanciamento dei personaggi, #302)
 }
 
 export type MatchEndEvent = Extract<GameEvent, { type: "matchEnd" }>;
@@ -51,7 +52,8 @@ export class Match {
       unlimitedStocks: rules.mode === "flag" || rules.mode === "race" || rules.mode === "training",
       projectiles: this.projectiles,
     };
-    this.items = rules.mode === "ffa" || rules.mode === "teams" ? createItemWorld(seedOf(this.stage.id)) : null;
+    const withItems = options.items !== false && (rules.mode === "ffa" || rules.mode === "teams");
+    this.items = withItems ? createItemWorld(seedOf(this.stage.id)) : null;
   }
 
   get size() {

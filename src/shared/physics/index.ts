@@ -17,7 +17,7 @@ import { resolveHits, tryStartAttack, updateAttack } from "./attacks";
 import { applyJets, carryRider, resolveHazards } from "./elements";
 import { tickBuffer, type Fighter, type PhysicsContext } from "./fighter";
 import { grabbing, inGrab, resolveGrabs, stepGrabs } from "./grab";
-import { tickPowerup } from "./items";
+import { swapTripInput, tickPowerup } from "./items";
 import { holdLedge, tryGrabLedge } from "./ledge";
 import { applyControls, applyGravity, tickCoyote } from "./movement";
 import { holdShield } from "./shield";
@@ -130,7 +130,11 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
 export function stepWorld(fighters: Fighter[], dtMs: number, ctx: PhysicsContext): void {
   ctx.timeMs = (ctx.timeMs ?? 0) + dtMs;
   stepGrabs(fighters, dtMs, ctx);
+  const tripping = swapTripInput(fighters); // funghetti (#302): destra e sinistra invertite solo per il passo
   for (const f of fighters) stepFighter(f, dtMs, ctx);
+  for (const f of tripping) f.powerup = "trip";
+  swapTripInput(tripping);
+  for (const f of tripping) if (f.powerupMs <= 0) f.powerup = null;
   for (const f of fighters) if (!f.away) tryGrabLedge(f, fighters, ctx);
   resolveHits(fighters, ctx);
   stepProjectiles(fighters, dtMs, ctx);

@@ -455,6 +455,16 @@ export const BONG = {
   cooldownMs: 350, // ms dopo la nuvola prima di poter attaccare
 };
 
+// I funghetti di Teemo (#302): dal sacchetto giù + J ne pianta uno ai piedi; quasi invisibili agli altri, chi li calpesta "viaggia"
+export const FUNGHI = {
+  uses: 3, // funghetti in un sacchetto
+  armMs: 600, // ms dopo averlo piantato prima che scatti (non lo si calpesta da soli piantandolo)
+  lifeMs: 20000, // ms prima che un funghetto piantato sparisca
+  damage: 6, // percentuale a chi lo calpesta
+  tripMs: 3000, // ms con destra e sinistra invertite
+  popVy: 520, // pixel/s verso l'alto: il funghetto che scoppia fa saltellare
+};
+
 // Limiti della rete (#105): il server non si fida di quello che riceve
 export const NET_LIMITS = {
   maxMessageBytes: 16_384, // byte massimi di un messaggio Socket.IO (il predefinito è 1 MB)

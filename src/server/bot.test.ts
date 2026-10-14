@@ -351,7 +351,8 @@ describe("bot", () => {
     const stages = ["palco", "isole", "fabbrica", "palestra", "casuale-1"];
     const wins = { default: 0, orsoblu: 0 };
     for (let i = 0; i < 20; i++) {
-      const match = new Match({ stageId: stages[i % stages.length] });
+      // Senza oggetti: ogni oggetto nuovo cambia quello che cade e sposterebbe il conto senza c'entrare coi personaggi (#302)
+      const match = new Match({ stageId: stages[i % stages.length], items: false });
       const bots = new Bots();
       // Metà delle partite con i lati scambiati
       const order = i % 2 === 0 ? (["default", "orsoblu"] as const) : (["orsoblu", "default"] as const);
