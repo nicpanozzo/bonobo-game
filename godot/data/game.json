@@ -31,7 +31,8 @@
     "tapMaxMs": 120,
     "speed": 900,
     "durationMs": 300,
-    "runSpeed": 560
+    "runSpeed": 560,
+    "byTap": false
   },
   "dodge": {
     "durationMs": 260,

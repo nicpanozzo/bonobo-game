@@ -45,6 +45,7 @@ export const DASH = {
   speed: 900, // pixel/s durante lo scatto (la camminata è FIGHTER.groundSpeed, 380)
   durationMs: 300, // ms di scatto, anche lasciando il tasto
   runSpeed: 560, // pixel/s di corsa tenendo la direzione dopo lo scatto
+  byTap: false, // il doppio tocco fa scattare: spento per ora, faceva scivolare senza volerlo (Nicola, 14 ottobre 2026)
 };
 
 export interface AttackSpec {

@@ -1,7 +1,7 @@
 // Lo stato completo di un lottatore sul server: quello che vedono i client (PlayerState)
 // più i timer interni che non viaggiano in rete.
 
-import { FIGHTER, INPUT, SHIELD } from "../constants";
+import { DASH, FIGHTER, INPUT, SHIELD } from "../constants";
 import type { StageSpec } from "../stages";
 import type { GameEvent, InputState, PlayerState, SpecialKind } from "../types";
 import type { ProjectileWorld } from "./projectiles";
@@ -134,7 +134,7 @@ export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
     dashTapDir: 0,
     dashTapTimer: 0,
     dashHoldMs: 0,
-    dashByTap: true,
+    dashByTap: DASH.byTap,
     coyoteTimer: 0,
     jumpRising: false,
     shortHop: true,

@@ -14,6 +14,7 @@ function setup(x = 400) {
   const ctx: PhysicsContext = { stage, events: [] };
   const f = createFighter({ id: "a", name: "A", characterId: "default", color: 0, team: 0, index: 0, stocks: 3 }, stage);
   f.x = x;
+  f.dashByTap = true; // il meccanismo si prova anche finché DASH.byTap è spento
   run([f], ctx, 20); // a terra
   ctx.events.length = 0;
   return { ctx, f };
