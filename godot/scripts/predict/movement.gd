@@ -229,7 +229,7 @@ func _step_dash(s: Dictionary, dir: int, dt_ms: float) -> Variant:
 		return null
 	var prev_dir := (1 if s.prev.get("right", false) else 0) - (1 if s.prev.get("left", false) else 0)
 	if dir != 0 and dir != prev_dir:
-		if not s.dashing and s.tapTimer > 0 and s.tapDir == dir:
+		if bool(dash.get("byTap", true)) and not s.dashing and s.tapTimer > 0 and s.tapDir == dir:
 			s.dashing = true
 			s.dash = float(dash.durationMs)
 			s.facing = dir
