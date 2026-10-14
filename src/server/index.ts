@@ -10,6 +10,8 @@ import { health } from "./health";
 import { Leaderboard, leaderboardPage } from "./leaderboard";
 
 const PORT = Number(process.env.PORT) || 3000;
+const GAME_PAGE_URL = "https://nicpanozzo.github.io/bonobo-game/godot/"; // come PAGES_URL in host.ts
+
 const app = express();
 const http = createServer(app);
 // Gli snapshot sono JSON molto ripetitivi (stessi nomi di campo 30 volte al secondo):
@@ -23,11 +25,10 @@ const io = new Server<ClientToServer, ServerToClient>(http, {
   pingTimeout: PING_TIMEOUT_MS,
 });
 
-// In produzione lo stesso server serve anche il gioco già compilato (npm run build)
-if (process.env.NODE_ENV === "production") {
-  const dist = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../dist");
-  app.use(express.static(dist));
-}
+// Il gioco si apre dal sito (client Godot per il web): chi visita il server finisce lì
+app.get("/", (_req, res) => {
+  res.redirect(GAME_PAGE_URL);
+});
 app.get("/health", (_req, res) => {
   res.json(health(rooms.values(), process.env));
 });

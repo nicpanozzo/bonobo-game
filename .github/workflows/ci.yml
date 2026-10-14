@@ -1,4 +1,4 @@
-# Arbitro automatico: ogni PR e ogni push su main devono passare typecheck, test, build e il caricamento del client Godot.
+# Arbitro automatico: ogni PR e ogni push su main devono passare typecheck, test e il caricamento del client Godot.
 name: CI
 
 on:
@@ -21,7 +21,6 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
-      - run: npm run build
       # I test arrivano con #26; finché lo script non esiste il passo non fa niente
       - run: npm run test --if-present
       # godot/data/game.json è generato dai dati del gioco: deve restare allineato (#59)
