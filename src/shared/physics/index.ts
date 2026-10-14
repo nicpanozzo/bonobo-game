@@ -78,7 +78,7 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
   tickBuffer(f, dtMs);
   f.hitstun = f.hitstunTimer > 0;
   tickPowerup(f, dtMs, ctx); // #231
-  f.invulnerable = f.invulnerableTimer > 0 || f.powerupMs > 0;
+  f.invulnerable = f.invulnerableTimer > 0 || (f.powerup === "fiore" && f.powerupMs > 0); // il bong (#302) non protegge
   if (f.hitstun) f.ledgeGrabs = 0; // un colpo ridà le prese del bordo (#110)
 
   // Nella presa (#109) si sta fermi: la posizione di chi è tenuto la decide stepGrabs

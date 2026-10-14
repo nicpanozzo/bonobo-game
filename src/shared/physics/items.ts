@@ -4,7 +4,7 @@
 //   stepItems() dopo stepWorld: comparsa, caduta, oggetti in mano e colpi di quelli lanciati
 
 import { characterStats } from "../characters";
-import { FIGHTER, HITSTOP, HITSTUN_PER_KNOCKBACK, ITEM_RULES } from "../constants";
+import { BONG, FIGHTER, HITSTOP, HITSTUN_PER_KNOCKBACK, ITEM_RULES } from "../constants";
 import { ITEMS } from "../items";
 import type { ItemSpot } from "../stages";
 import { rng } from "../stageGenerator";
@@ -21,6 +21,7 @@ export interface Item extends ItemState {
   riding: number; // indice della piattaforma mobile su cui è appoggiato, -1 se nessuna (#14)
   thrownBy: string | null;
   lifeMs: number; // ms che restano a terra prima di sparire
+  loadMs?: number; // il bong (#302): ms di carica tenendo J, assente o -1 se non lo si carica
 }
 
 export interface ItemWorld {
@@ -53,7 +54,20 @@ function consumeAttackKeys(f: Fighter) {
 export function handleItemInput(world: ItemWorld, fighters: Fighter[], ctx: PhysicsContext): void {
   for (const f of fighters) {
     if (busy(f) || f.cooldownTimer > 0 || !(pressed(f, "light") || pressed(f, "heavy"))) continue;
+    // Fatti col bong (#302): J o K soffia la nuvola, prima di tutto il resto
+    if (f.powerup === "bong") {
+      blowCloud(f, fighters, ctx);
+      consumeAttackKeys(f);
+      continue;
+    }
     const held = world.items.find((i) => i.heldBy === f.id);
+    // Il bong in mano: J comincia a caricarlo (lo si tiene premuto, stepItems conta), K lo lancia come gli altri
+    if (held && ITEMS[held.kind].bong && pressed(f, "light") && !f.input.down && (held.loadMs ?? -1) < 0) {
+      held.loadMs = 0;
+      ctx.events.push({ type: "bong", phase: "load", id: f.id, x: Math.round(f.x), y: Math.round(f.y) });
+      consumeAttackKeys(f);
+      continue;
+    }
     if (held) {
       throwItem(held, f, ctx);
       consumeAttackKeys(f);
@@ -90,12 +104,94 @@ export function tickPowerup(f: Fighter, dtMs: number, ctx: PhysicsContext): void
   f.powerupMs = Math.max(0, f.powerupMs - dtMs);
   if (f.powerupMs > 0) return;
   ctx.events.push({ type: "powerEnd", id: f.id, kind: f.powerup });
+  // Troppo fatti (#302): non si è soffiato in tempo, si crolla tramortiti come con lo scudo rotto
+  if (f.powerup === "bong") {
+    f.stunTimer = BONG.stunMs;
+    f.stunned = true;
+    f.attack = null;
+    f.attackActive = false;
+    ctx.events.push({ type: "bong", phase: "stun", id: f.id, x: Math.round(f.x), y: Math.round(f.y) });
+  }
   f.powerup = null;
+}
+
+// Il bong (#302) si carica tenendo J. Carico, lasciando J si è fatti e il bong è finito; lasciando prima si perde la carica
+function loadBong(world: ItemWorld, item: Item, f: Fighter, dtMs: number, ctx: PhysicsContext) {
+  if (item.loadMs === undefined || item.loadMs < 0) return;
+  if (f.input.light) {
+    item.loadMs = Math.min(BONG.loadMs, item.loadMs + dtMs);
+    return;
+  }
+  if (item.loadMs < BONG.loadMs) {
+    item.loadMs = -1;
+    return;
+  }
+  item.loadMs = Infinity; // fumato: sparisce al filtro di stepItems
+  f.powerup = "bong";
+  f.powerupMs = BONG.highMs;
+  ctx.events.push({ type: "powerUp", itemId: item.id, id: f.id, kind: "bong", x: Math.round(f.x), y: Math.round(f.y) });
+}
+
+// Da fatti l'effetto cresce col tempo (#302): da 0 appena fumato a 1 quando si sta per crollare
+export const highLevel = (f: Fighter) => (f.powerup === "bong" ? 1 - f.powerupMs / BONG.highMs : 0);
+
+// La nuvola di fumo (#302): colpisce tutti quelli dentro il cerchio davanti, più forte quanto più si è aspettato
+function blowCloud(f: Fighter, fighters: Fighter[], ctx: PhysicsContext) {
+  const level = highLevel(f);
+  const damage = Math.round(BONG.minDamage + (BONG.maxDamage - BONG.minDamage) * level);
+  const base = BONG.minKnockback + (BONG.maxKnockback - BONG.minKnockback) * level;
+  const cx = f.x + f.facing * BONG.cloudOffsetX;
+  const cy = f.y - FIGHTER.height / 2;
+  f.powerup = null;
+  f.powerupMs = 0;
+  f.cooldownTimer = Math.max(f.cooldownTimer, BONG.cooldownMs);
+  ctx.events.push({ type: "bong", phase: "smoke", id: f.id, x: Math.round(cx), y: Math.round(cy), dir: f.facing, damage });
+  ctx.events.push({ type: "powerEnd", id: f.id, kind: "bong" });
+  for (const target of fighters) {
+    if (target === f || target.eliminated || target.respawning || target.invulnerable) continue;
+    if (ctx.canHit && !ctx.canHit(f, target)) continue;
+    const body = bodyBox(target);
+    const nx = Math.max(body.x, Math.min(cx, body.x + body.w));
+    const ny = Math.max(body.y, Math.min(cy, body.y + body.h));
+    if ((nx - cx) ** 2 + (ny - cy) ** 2 > BONG.cloudRadius ** 2) continue;
+    const dir = target.x >= f.x ? 1 : -1;
+    if (target.shielding) {
+      hitShield(target, f.id, damage, dir, Math.round(nx), Math.round(ny), ctx);
+      continue;
+    }
+    target.percent = Math.min(999, target.percent + damage);
+    chargeFromHit(f, target, damage);
+    const knockback = (base + BONG.knockbackGrowth * target.percent) / characterStats(target.characterId).weight;
+    const angle = (BONG.angleDeg * Math.PI) / 180;
+    target.vx = dir * Math.cos(angle) * knockback;
+    target.vy = -Math.sin(angle) * knockback;
+    target.onGround = false;
+    target.hitstunTimer = knockback * HITSTUN_PER_KNOCKBACK;
+    target.attack = null;
+    target.attackActive = false;
+    target.facing = (-dir) as 1 | -1;
+    target.lastHitById = f.id;
+    clearStun(target);
+    target.hitstopTimer = Math.max(target.hitstopTimer, Math.min(HITSTOP.maxMs, HITSTOP.baseMs + HITSTOP.perDamageMs * damage));
+    ctx.events.push({
+      type: "hit",
+      attackerId: f.id,
+      targetId: target.id,
+      kind: "item",
+      itemKind: "bong",
+      damage,
+      percent: target.percent,
+      knockback: Math.round(knockback),
+      x: Math.round(nx),
+      y: Math.round(ny),
+    });
+  }
 }
 
 // Avanti con un arco, tenendo su verso l'alto, tenendo giù lo si posa e basta
 function throwItem(item: Item, f: Fighter, ctx: PhysicsContext) {
   item.heldBy = null;
+  item.loadMs = -1;
   if (f.input.down && !f.input.up) {
     item.vx = 0;
     item.vy = 0;
@@ -132,12 +228,14 @@ export function stepItems(world: ItemWorld, fighters: Fighter[], dtMs: number, c
         item.y = holder.y - ITEM_RULES.holdOffsetY;
         item.vx = holder.vx;
         item.vy = holder.vy;
+        if (spec.bong) loadBong(world, item, holder, dtMs, ctx);
         continue;
       }
       // Chi lo teneva è stato colpito o è uscito: l'oggetto cade dov'è
       item.heldBy = null;
       item.vx = 0;
       item.vy = 0;
+      item.loadMs = -1; // la carica del bong va persa
     }
 
     carry(item, dtMs, ctx);
@@ -153,7 +251,7 @@ export function stepItems(world: ItemWorld, fighters: Fighter[], dtMs: number, c
   }
 
   const z = ctx.stage.blastZone;
-  world.items = world.items.filter((i) => i.lifeMs > 0 && i.x > z.left && i.x < z.right && i.y < z.bottom);
+  world.items = world.items.filter((i) => i.lifeMs > 0 && !(ITEMS[i.kind].bong && i.loadMs === Infinity) && i.x > z.left && i.x < z.right && i.y < z.bottom);
 }
 
 function spawn(world: ItemWorld, ctx: PhysicsContext) {
@@ -163,7 +261,7 @@ function spawn(world: ItemWorld, ctx: PhysicsContext) {
   const kind = pickKind(world.random());
   const x = Math.round(s.x + 30 + world.random() * (s.width - 60));
   const y = s.y - ITEM_RULES.dropHeight;
-  const item: Item = { id: world.nextId++, kind, x, y, vx: 0, vy: 0, heldBy: null, thrown: false, onGround: false, riding: -1, thrownBy: null, lifeMs: ITEM_RULES.lifeMs };
+  const item: Item = { id: world.nextId++, kind, x, y, vx: 0, vy: 0, heldBy: null, thrown: false, onGround: false, riding: -1, thrownBy: null, lifeMs: ITEM_RULES.lifeMs, loadMs: -1 };
   world.items.push(item);
   ctx.events.push({ type: "itemSpawn", itemId: item.id, kind, x, y });
 }
@@ -301,4 +399,5 @@ export const itemStates = (world: ItemWorld): ItemState[] =>
     vy: Math.round(i.vy),
     heldBy: i.heldBy,
     thrown: i.thrown,
+    ...(ITEMS[i.kind].bong && (i.loadMs ?? -1) >= 0 ? { load: Math.round((Math.min(i.loadMs!, BONG.loadMs) / BONG.loadMs) * 100) / 100 } : {}),
   }));

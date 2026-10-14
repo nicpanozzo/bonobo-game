@@ -1,7 +1,7 @@
 // Corsa, controllo in aria, salti, caduta veloce e gravità.
 
 import { characterStats } from "../characters";
-import { DODGE, FIGHTER, FLAG, HITSTUN_AIR_DRAG, POWERUP, RECOVERY } from "../constants";
+import { BONG, DODGE, FIGHTER, FLAG, HITSTUN_AIR_DRAG, POWERUP, RECOVERY } from "../constants";
 import { startAttack } from "./attacks";
 import { endDash, stepDash } from "./dash";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
@@ -51,7 +51,7 @@ export function applyControls(f: Fighter, dt: number, ctx: PhysicsContext): void
     return;
   }
   const stats = characterStats(f.characterId);
-  const speed = (f.carrier ? FLAG.carrierSpeed : 1) * (f.powerup ? POWERUP.speedMult : 1); // la bandiera pesa, il fiore rilassa (#231)
+  const speed = (f.carrier ? FLAG.carrierSpeed : 1) * (f.powerup === "fiore" ? POWERUP.speedMult : 1); // la bandiera pesa, il fiore rilassa (#231)
   // Durante un attacco da terra si resta fermi, in aria si mantiene lo slancio
   const dashSpeed = stepDash(f, dir, dt * 1000, ctx); // scatto e corsa (#199)
   if (f.onGround && dashSpeed !== null) {
@@ -115,6 +115,7 @@ export function tickCoyote(f: Fighter, dtMs: number): void {
 export function applyGravity(f: Fighter, dt: number): void {
   const fastFall = f.input.down && !f.hitstun;
   const maxFall = fastFall ? FIGHTER.fastFallSpeed : FIGHTER.maxFallSpeed;
-  f.vy = Math.min(f.vy + FIGHTER.gravity * characterStats(f.characterId).gravity * dt, f.hitstun ? Infinity : maxFall);
+  const high = f.powerup === "bong" ? BONG.gravityMult : 1; // fatti col bong si è più leggeri (#302)
+  f.vy = Math.min(f.vy + FIGHTER.gravity * characterStats(f.characterId).gravity * high * dt, f.hitstun ? Infinity : maxFall);
   if (fastFall && !f.onGround && f.vy > 0) f.vy = Math.max(f.vy, maxFall * 0.8);
 }

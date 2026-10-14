@@ -438,6 +438,23 @@ export const POWERUP = {
   endingMs: 1500, // ms finali in cui l'alone lampeggia nel client, per avvisare che sta finendo
 };
 
+// Il bong (#302): si carica tenendo J, lasciandolo si è "fatti", J o K soffia la nuvola. Troppo tardi e si crolla
+export const BONG = {
+  loadMs: 1200, // ms tenendo J per caricarlo; lasciando prima la carica si perde
+  highMs: 7000, // ms da fatti prima di crollare se non si soffia
+  gravityMult: 0.7, // frazione della gravità da fatti: più leggeri, salti più alti e cadute lente
+  stunMs: 2500, // ms tramortiti quando si crolla: fermi e colpibili come con lo scudo rotto
+  cloudRadius: 95, // pixel del raggio della nuvola
+  cloudOffsetX: 55, // pixel davanti al centro del lottatore dove sta il centro della nuvola
+  minDamage: 12, // percentuale della nuvola soffiata subito
+  maxDamage: 28, // percentuale della nuvola soffiata all'ultimo: l'effetto cresce col tempo
+  minKnockback: 520, // pixel/s di lancio subito
+  maxKnockback: 820, // pixel/s di lancio all'ultimo
+  knockbackGrowth: 6, // pixel/s in più per ogni punto di percentuale del bersaglio
+  angleDeg: 40, // angolo di lancio di chi prende la nuvola
+  cooldownMs: 350, // ms dopo la nuvola prima di poter attaccare
+};
+
 // Limiti della rete (#105): il server non si fida di quello che riceve
 export const NET_LIMITS = {
   maxMessageBytes: 16_384, // byte massimi di un messaggio Socket.IO (il predefinito è 1 MB)
