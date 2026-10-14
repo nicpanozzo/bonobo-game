@@ -96,6 +96,7 @@ var first_run_done := false # primo avvio guidato (E14) già fatto o saltato: Ri
 var video := {} # come VIDEO_DEFAULTS
 var access := {} # come ACCESS_DEFAULTS
 var touch := {} # come TOUCH_DEFAULTS
+var p2_pad := -1 # il pad del secondo giocatore sullo stesso schermo (second_player.gd): il primo non lo legge. Non si salva
 var medals := {} # sfide (E15): id → {"medal": 1-3, "best": punteggio migliore}, sezione [medals]
 
 var _defaults := {}
@@ -222,18 +223,25 @@ func record_medal(id: String, medal: int, score: float, lower_is_better: bool) -
 	return best
 
 
-# Tastiera o qualsiasi pad collegato
+# Tastiera o qualsiasi pad collegato, tranne quello del secondo giocatore
 func is_pressed(action: String) -> bool:
 	for k in bindings[action]:
 		if Input.is_physical_key_pressed(k):
 			return true
 	for device in Input.get_connected_joypads():
-		for code in pad_bindings[action]:
-			if code >= AXIS_BASE:
-				if axis_active(Input.get_joy_axis(device, (code - AXIS_BASE) / 2), code % 2, stick_deadzone):
-					return true
-			elif Input.is_joy_button_pressed(device, code):
+		if device != p2_pad and pad_pressed(action, device):
+			return true
+	return false
+
+
+# Solo un pad: quello del secondo giocatore
+func pad_pressed(action: String, device: int) -> bool:
+	for code in pad_bindings[action]:
+		if code >= AXIS_BASE:
+			if axis_active(Input.get_joy_axis(device, (code - AXIS_BASE) / 2), code % 2, stick_deadzone):
 				return true
+		elif Input.is_joy_button_pressed(device, code):
+			return true
 	return false
 
 
