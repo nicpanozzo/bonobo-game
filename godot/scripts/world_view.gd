@@ -58,6 +58,8 @@ var _variants := {} # id giocatore -> variante di colore (0 = originale), ricalc
 const HitReaction := preload("res://scripts/hit_reaction.gd") # il corpo si piega dove è colpito (#305)
 const SunLight := preload("res://scripts/sun_light.gd") # luce e ombre del sole e della luna (#288)
 const VARIANT_HUES := [0.5, 0.25, 0.75, 0.125, 0.625, 0.375, 0.875] # spostamento della tinta per la variante 1, 2, ...
+static var _screen_px_per_world := 0.0 # pixel dello schermo per pixel di mondo alla telecamera più vicina; 0 = non si sa (headless)
+var _character_sprites := {} # id personaggio -> true quando i suoi sprite sono caricati
 var _supreme_view: Node2D # liana, orsogufo e gnomo della suprema di Bonobot (#102), disegnati sopra i lottatori
 
 
@@ -80,28 +82,43 @@ func setup(game_data: Dictionary) -> void:
 		var palette := ShaderMaterial.new()
 		palette.shader = load("res://shaders/palette.gdshader")
 		material = palette
-	for id in game.characters:
-		var c: Dictionary = game.characters[id]
-		if c.get("sprite") == null:
-			continue
-		var filter: String = c.sprite.get("filter", "linear")
-		if c.sprite.has("dir"):
-			# Formato cartella: un PNG per stato, <dir>/<stato>.png, con i fotogrammi in fila.
-			# Nella tabella ci sono tutti gli stati; quelli senza disegno puntano a quello del ripiego (src)
-			var states := {}
-			for state in c.sprite.animations:
-				var src: String = c.sprite.animations[state].src
-				if not states.has(src):
-					states[src] = _sprite_texture("res://data/%s/%s.png" % [c.sprite.dir, src], filter)
-			_state_textures[id] = states
-			_textures[id] = states.idle
-		else:
-			_textures[id] = _sprite_texture("res://data/" + c.sprite.path, filter)
+	# Al massimo quanti pixel dello schermo copre un pixel di mondo (#320): lo schermo intero
+	# alla telecamera più vicina. Le immagini più fini di così si rimpiccioliscono al caricamento
+	var screen := float(DisplayServer.screen_get_size().x) * DisplayServer.screen_get_scale()
+	_screen_px_per_world = screen / float(game.world.width) * float(game.get("camera", {}).get("maxZoom", 1.0)) if screen > 0.0 else 0.0
+	_character_sprites = {}
+
+
+# Gli sprite di un personaggio si caricano quando entra in partita, non tutti all'avvio (#320):
+# i fogli di Bonobot da soli occupano centinaia di MB di memoria video
+func _load_character(id: String) -> void:
+	if _character_sprites.has(id) or not game.characters.has(id):
+		return
+	_character_sprites[id] = true
+	var c: Dictionary = game.characters[id]
+	if c.get("sprite") == null:
+		return
+	var filter: String = c.sprite.get("filter", "linear")
+	var k := float(c.sprite.get("scale", 1.0))
+	if c.sprite.has("dir"):
+		# Formato cartella: un PNG per stato, <dir>/<stato>.png, con i fotogrammi in fila.
+		# Nella tabella ci sono tutti gli stati; quelli senza disegno puntano a quello del ripiego (src)
+		var states := {}
+		for state in c.sprite.animations:
+			var src: String = c.sprite.animations[state].src
+			if not states.has(src):
+				states[src] = _sprite_texture("res://data/%s/%s.png" % [c.sprite.dir, src], filter, k)
+		_state_textures[id] = states
+		_textures[id] = states.idle
+	else:
+		_textures[id] = _sprite_texture("res://data/" + c.sprite.path, filter, k)
 
 
 # La texture di uno sprite con il suo filtro: lineare con mipmap per l'illustrato, così rimpicciolito
 # dalla telecamera non sfarfalla; nearest per la pixel art, che resta a quadretti netti (E7 passo 3)
-static func _sprite_texture(path: String, filter: String) -> Texture2D:
+# world_scale = pixel di mondo per pixel dell'immagine: con lo schermo piccolo l'immagine si rimpicciolisce (#320),
+# così non occupa memoria video e banda per dettagli che non si vedono (gli sfondi di Padova sono 4880x2960)
+static func _sprite_texture(path: String, filter: String, world_scale := 0.0) -> Texture2D:
 	var tex: Texture2D = load(path)
 	var canvas := CanvasTexture.new()
 	if filter == "nearest":
@@ -111,6 +128,9 @@ static func _sprite_texture(path: String, filter: String) -> Texture2D:
 	var img := tex.get_image()
 	if img == null or img.is_compressed(): # una texture compressa per la GPU non si rifà: resta senza mipmap
 		return tex
+	var keep := minf(1.0, _screen_px_per_world * world_scale)
+	if keep > 0.0 and keep < 0.9:
+		img.resize(maxi(1, roundi(img.get_width() * keep)), maxi(1, roundi(img.get_height() * keep)), Image.INTERPOLATE_CUBIC)
 	img.generate_mipmaps()
 	canvas.diffuse_texture = ImageTexture.create_from_image(img)
 	canvas.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
@@ -159,11 +179,11 @@ func set_stage_spec(spec: Dictionary) -> void:
 	_foreground = []
 	var art: Dictionary = spec.get("art", {})
 	for l in art.get("layers", []):
-		var layer := _stage_layer(art.get("dir", spec.id), l)
+		var layer := _stage_layer(art.get("dir", spec.id), l, float(art.get("scale", 1.0)))
 		if not layer.is_empty():
 			_layers.append(layer)
 	if art.has("foreground"):
-		_foreground = _stage_layer(art.get("dir", spec.id), art.foreground)
+		_foreground = _stage_layer(art.get("dir", spec.id), art.foreground, float(art.get("scale", 1.0)))
 	_layer_scale = art.get("scale", 1.0)
 	_load_stage_dressing(art.get("dir", spec.id), art)
 	_life.setup(spec, stage_width(), game.world.height)
@@ -257,7 +277,7 @@ func _load_stage_dressing(dir: String, art: Dictionary) -> void:
 	var life: Dictionary = art.get("life", {}) if art.get("life") is Dictionary else {}
 	var day: Dictionary = life.get("daycycle", {}) if life.get("daycycle") is Dictionary else {}
 	for ll in day.get("lightLayers", []):
-		var tex := _stage_texture(dir, ll.file)
+		var tex := _stage_texture(dir, ll.file, _layer_scale)
 		if tex != null:
 			_light_layers[snappedf(float(ll.parallax), 0.001)] = tex
 	for lp in day.get("lightProps", []):
@@ -266,12 +286,12 @@ func _load_stage_dressing(dir: String, art: Dictionary) -> void:
 			_light_props.append([tex, lp])
 
 
-static func _stage_texture(dir: String, file: String) -> Texture2D:
+static func _stage_texture(dir: String, file: String, world_scale := 0.0) -> Texture2D:
 	var path := "res://data/assets/stages/%s/%s" % [dir, file]
 	if not ResourceLoader.exists(path):
 		push_warning("Immagine dell'arena mancante: " + path)
 		return null
-	return _sprite_texture(path, "linear")
+	return _sprite_texture(path, "linear", world_scale)
 
 
 # Il materiale di un pezzo: l'eccezione in art.pieces (null = tinta unita), o quello di base; {} se non c'è
@@ -386,12 +406,12 @@ func _draw_props(list: Array) -> void:
 
 
 # Uno strato dello sfondo (E12): [texture, parallasse], o [] se il file non c'è (si vede il colore del cielo)
-static func _stage_layer(dir: String, layer: Dictionary) -> Array:
+static func _stage_layer(dir: String, layer: Dictionary, world_scale := 0.0) -> Array:
 	var path := "res://data/assets/stages/%s/%s" % [dir, layer.file]
 	if not ResourceLoader.exists(path):
 		push_warning("Sfondo mancante: " + path)
 		return []
-	return [_sprite_texture(path, "linear"), clampf(layer.parallax, 0.0, 1.0)]
+	return [_sprite_texture(path, "linear", world_scale), clampf(layer.parallax, 0.0, 1.0)]
 
 
 func _draw_layer(layer: Array, mod := Color(-1, 0, 0)) -> void:
@@ -427,6 +447,7 @@ func on_snapshot(snap: Dictionary) -> void:
 	buffer.push(snap.t, Time.get_ticks_msec(), snap.players, float(snap.get("stageMs", 0)))
 	predictor.items_present = not snap.get("items", []).is_empty()
 	for p in snap.players:
+		_load_character(str(p.get("characterId", "")))
 		if p.id == my_id:
 			predictor.on_server(p, Time.get_ticks_msec(), positions.get(my_id, Vector2(NAN, NAN)))
 	player_ids = snap.players.map(func(p): return p.id)

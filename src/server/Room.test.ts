@@ -86,3 +86,20 @@ test("a velocità 0.5 servono 2 s per 60 passi, a 0.25 ne servono 4", () => {
   assert.equal(ticksIn(2000, 0.5), 60);
   assert.equal(ticksIn(4000, 0.25), 60);
 });
+
+// Ora degli snapshot (#320): due passi fatti nello stesso giro (orologio che sbanda) non hanno la stessa ora,
+// se no il client li scarta come doppi o calcola velocità assurde e il movimento va a scatti
+test("due passi nello stesso giro mandano snapshot a un passo di distanza", () => {
+  const times: number[] = [];
+  const io = {
+    to: () => ({ emit: (_name: string, snap: { t: number }) => times.push(snap.t) }),
+    in: () => ({ disconnectSockets: () => {} }),
+  } as unknown as Server<ClientToServer, ServerToClient>;
+  const room = new Room("scatti", io);
+  room.destroy(); // niente timer veri: l'orologio lo muove la prova
+  room.advance(1000 / TICK_RATE);
+  room.advance((2 * 1000) / TICK_RATE + 0.5); // due passi maturati insieme
+  assert.equal(times.length, 3);
+  assert.ok(Math.abs(times[1] - times[0] - 1000 / TICK_RATE) < 0.01);
+  assert.ok(Math.abs(times[2] - times[1] - 1000 / TICK_RATE) < 0.01);
+});
