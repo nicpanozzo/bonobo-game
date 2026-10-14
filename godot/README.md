@@ -1,6 +1,6 @@
 # Client Godot
 
-**Il gioco ufficiale di Bonobo Game**, fatto con [Godot 4.5](https://godotengine.org) (dal 6 ottobre 2026, decisione di Nicola, vedi #59). Le regole restano sul **server Node** (`src/server/`, `src/shared/`): questo client manda i tasti premuti e disegna e suona gli snapshot che riceve. Ogni funzione nuova che si vede o si sente va qui; il vecchio client web in `src/client/` è congelato.
+**Il gioco ufficiale di Bonobo Game**, fatto con [Godot 4.5](https://godotengine.org) (dal 6 ottobre 2026, decisione di Nicola, vedi #59). Le regole restano sul **server Node** (`src/server/`, `src/shared/`): questo client manda i tasti premuti e disegna e suona gli snapshot che riceve. Ogni funzione nuova che si vede o si sente va qui.
 
 ## Provarlo
 

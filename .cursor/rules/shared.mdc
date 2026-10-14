@@ -1,0 +1,7 @@
+---
+description: Regole della logica e del server di bonobo-game
+globs: src/**
+alwaysApply: false
+---
+
+Segui le regole in @src/shared/AGENTS.md.

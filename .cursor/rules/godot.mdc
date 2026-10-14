@@ -1,0 +1,7 @@
+---
+description: Regole del client Godot di bonobo-game
+globs: godot/**
+alwaysApply: false
+---
+
+Segui le regole in @godot/AGENTS.md.

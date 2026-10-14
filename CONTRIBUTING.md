@@ -21,7 +21,7 @@ npm run dev
 
 Lascia `npm run dev` acceso (è il server di gioco). Apri Godot, **Importa** `godot/project.godot` e premi Play (F5) due volte, o una volta con due istanze (menu Debug): se nella stessa stanza vedi due lottatori che si muovono, sei pronto.
 
-> Il gioco ufficiale è quello in `godot/`. La cartella `src/client/` è il vecchio client web: non ci si aggiungono più funzioni.
+> Il gioco ufficiale è quello in `godot/`. Il vecchio client web Phaser è stato tolto (resta nel branch `archivio/phaser`).
 
 ## 2. Scegliere cosa fare
 

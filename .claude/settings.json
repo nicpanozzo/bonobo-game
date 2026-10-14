@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(./godot/data/**)",
+      "Read(./package-lock.json)",
+      "Read(./docs/archivio/**)",
+      "Read(./node_modules/**)",
+      "Read(./dist/**)"
+    ]
+  }
+}

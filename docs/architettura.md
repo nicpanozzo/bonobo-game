@@ -10,7 +10,7 @@ src/server/   LA RETE      stanze, Socket.IO, orologio a passo fisso.
 godot/        LO SCHERMO   client Godot 4.5 (GDScript): disegno, menu, suoni. È il gioco ufficiale.
 ```
 
-Le frecce vanno in una sola direzione: `server` usa `shared`, mai il contrario; Godot riceve i dati di `shared` come JSON (`npm run export:godot`) e parla col server solo con il protocollo di `types.ts`. `shared` non importa Socket.IO, Express o il DOM. Il vecchio client web in `src/client/` (Phaser) è congelato: solo correzioni.
+Le frecce vanno in una sola direzione: `server` usa `shared`, mai il contrario; Godot riceve i dati di `shared` come JSON (`npm run export:godot`) e parla col server solo con il protocollo di `types.ts`. `shared` non importa Socket.IO, Express o il DOM.
 
 | Strato | File principali | Cosa sa |
 |---|---|---|
