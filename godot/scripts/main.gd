@@ -13,6 +13,7 @@ const RECONNECT_MS := 1500 # attesa prima di riprovare a collegarsi
 const WAKE_HINT_MS := 5000 # dopo quanti ms senza risposta si avvisa che il server forse si sta svegliando
 const REMATCH_PAD_BUTTON := JOY_BUTTON_Y # rivincita dal pad: Y è libero finché non arriva la speciale (E10)
 const RESULTS_BAR_BOTTOM := 150 # distanza dal fondo dei pulsanti di fine partita, sopra le schede dei giocatori, pixel
+const P2_NAME_CHARS := 13 # caratteri del nome tenuti per il secondo giocatore, che ci aggiunge " 2" (il server ne tiene 16)
 const PAGES_URL := "https://nicpanozzo.github.io/bonobo-game/godot/" # dove sta la versione web (pages.yml)
 
 var game: Dictionary
@@ -53,6 +54,9 @@ var challenge_run: Control # sfida in corso (E15 passo 3), solo se si è entrati
 var _picked: Dictionary = {} # sfida appena scelta nell'elenco
 var results_bar: Control # Rivincita e Cambia lottatore a fine partita (#250), null durante la partita
 var _last_players: Array = [] # giocatori dell'ultimo snapshot, per il tasto Segnala (#214)
+var p2: SecondPlayer # il secondo giocatore sullo stesso schermo, col suo pad; null se non c'è
+var _p1_pad := -1 # l'ultimo pad usato dal primo giocatore: Start da un altro pad fa entrare il secondo
+var _p2_hint: Label
 
 
 func _ready() -> void:
@@ -110,6 +114,10 @@ func _ready() -> void:
 	_lan_link_button.focus_mode = Control.FOCUS_NONE
 	_lan_link_button.visible = false
 	link_row.add_child(_lan_link_button)
+	# Due sullo stesso schermo: chi ha un pad in mano lo deve sapere
+	_p2_hint = UI.note("Secondo giocatore: prendi un pad e premi Start")
+	_p2_hint.visible = false
+	link_row.add_child(_p2_hint)
 	touch = TouchControls.new()
 	touch.visible = false
 	layer.add_child(touch)
@@ -292,6 +300,8 @@ func _leave(page := "match") -> void:
 	playing = false
 	_link_button.visible = false
 	_lan_link_button.visible = false
+	if p2 != null:
+		p2.stop()
 	_retry_at = -1
 	_lost_at = -1
 	_join_since = -1
@@ -575,6 +585,9 @@ func _process(_delta: float) -> void:
 		_show_results()
 	elif not over and is_instance_valid(results_bar):
 		_hide_results()
+	if p2 != null:
+		p2.poll()
+	_p2_hint.visible = _p2_allowed() and p2 == null and _free_pads().size() > 0
 	if playing:
 		_send_input()
 		# Solo i percorsi della Corsa (con il traguardo) seguono il proprio lottatore; le arene,
@@ -670,6 +683,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
 
 # Un pad collegato o staccato si annuncia per un attimo, sopra lobby, menu e partita
 func _on_joy_changed(device: int, connected: bool) -> void:
+	if not connected and p2 != null and device == p2.device:
+		p2.stop("Pad del giocatore 2 scollegato")
 	var pad_name := Input.get_joy_name(device)
 	var toast := UI.label(("Pad collegato: " + pad_name).trim_suffix(": ") if connected else "Pad scollegato")
 	var box := StyleBoxFlat.new()
@@ -688,6 +703,11 @@ func _input(event: InputEvent) -> void:
 		_fullscreen_asked = true
 		_go_fullscreen()
 	var pad: bool = event is InputEventJoypadButton or (event is InputEventJoypadMotion and absf(event.axis_value) > settings.stick_deadzone)
+	# Start non conta: è proprio il tasto con cui un secondo pad entra in partita
+	if pad and event.device != settings.p2_pad and not (event is InputEventJoypadButton and event.button_index == JOY_BUTTON_START):
+		_p1_pad = event.device
+	if pad and event.device == settings.p2_pad:
+		return # l'HUD mostra i tasti del primo giocatore
 	if pad or event is InputEventKey:
 		var kind := Settings.pad_kind(Input.get_joy_name(event.device))
 		hud.rematch_key = Settings.pad_label(REMATCH_PAD_BUTTON, kind) if pad else "R"
@@ -725,7 +745,15 @@ func _unhandled_input(event: InputEvent) -> void:
 	var b := event as InputEventJoypadButton
 	if b == null or not b.pressed or not playing:
 		return
-	if b.button_index == JOY_BUTTON_START and not is_instance_valid(pause_menu):
+	if p2 != null and b.device == p2.device:
+		if b.button_index == SecondPlayer.LEAVE_BUTTON:
+			p2.stop("Giocatore 2 è uscito")
+		elif b.button_index == REMATCH_PAD_BUTTON:
+			p2.rematch()
+		return
+	if b.button_index == JOY_BUTTON_START and p2 == null and _p2_allowed() and _free_pads().has(b.device):
+		_add_p2(b.device)
+	elif b.button_index == JOY_BUTTON_START and not is_instance_valid(pause_menu):
 		_open_pause()
 	elif b.button_index == REMATCH_PAD_BUTTON:
 		socket.emit("rematch") # il server lo accetta solo a partita finita
@@ -779,6 +807,26 @@ func _send_input() -> void:
 		sent.seq = local_tick(Time.get_ticks_msec(), float(game.get("tickRate", 60)))
 		socket.emit("input", sent)
 		world.predictor.record_input(input, sent.seq)
+
+
+# Il secondo giocatore entra solo nelle partite vere: non in palestra, tutorial e sfide
+func _p2_allowed() -> bool:
+	return playing and _link_button.visible and not is_instance_valid(pause_menu)
+
+
+# I pad che non sono in mano al primo giocatore
+func _free_pads() -> Array:
+	return Input.get_connected_joypads().filter(func(d): return d != _p1_pad)
+
+
+func _add_p2(device: int) -> void:
+	p2 = SecondPlayer.new(device, settings, game)
+	p2.left.connect(func(reason: String):
+		p2 = null
+		if reason != "":
+			UI.toast(ui_layer, reason, UI.WARN))
+	p2.start(params.server, params.room, str(params.name).left(P2_NAME_CHARS) + " 2", _my_version(), int(params.get("protocol", game.protocol)))
+	UI.toast(ui_layer, "Giocatore 2 entra col pad (Select per uscire)")
 
 
 static func local_tick(now_ms: int, tick_rate: float) -> int:
