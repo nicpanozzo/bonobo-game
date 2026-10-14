@@ -1,6 +1,10 @@
 # Regole del progetto e piano: Nicola ne è il proprietario (decisione del 6 ottobre 2026).
 # GitHub gli chiede la review su ogni PR che tocca questi file. Vedi AGENTS.md, "Di chi sono le istruzioni".
 /AGENTS.md               @nicpanozzo
+/godot/AGENTS.md         @nicpanozzo
+/src/shared/AGENTS.md    @nicpanozzo
+/docs/community.md       @nicpanozzo
+/docs/archivio/          @nicpanozzo
 /CLAUDE.md               @nicpanozzo
 /GEMINI.md               @nicpanozzo
 /CONTRIBUTING.md         @nicpanozzo

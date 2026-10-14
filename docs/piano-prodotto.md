@@ -5,7 +5,7 @@
 - **Provare dev'essere facilissimo.** Ogni passo ha un *Fatto quando* verificabile, e chi tocca il client aggiunge un test in `godot/tests/` appena E3 passo 1 è in `main`.
 - **Deploy e distribuzione snelli.** Ogni merge è un rilascio (le Release `app-N` e la build web), niente tag a mano, niente staging, niente allarmi per ora, e nessuno resta fuori da una stanza per una versione vecchia. Il link nel browser è la via principale per provare; l'app desktop si aggiorna da sola (E16).
 
-Il piano ha 16 evolutive in due ondate. Ogni evolutiva è un'issue `sviluppo` (una PR per passo) con una specifica completa in [`docs/evolutive/`](evolutive/). Le corsie servono a lavorare in parallelo senza toccare gli stessi file. Il piano l'ha scritto un team di agenti, uno per reparto (produzione, QA, rete, gameplay, arte, audio, interfaccia).
+Il piano ha 16 evolutive in due ondate. Ogni evolutiva è un'issue `sviluppo` (una PR per passo) con una specifica completa in [`docs/evolutive/`](evolutive/); quelle chiuse (E1-E6, E8-E10, E14-E16) sono in [`docs/archivio/`](archivio/). Le corsie servono a lavorare in parallelo senza toccare gli stessi file. Il piano l'ha scritto un team di agenti, uno per reparto (produzione, QA, rete, gameplay, arte, audio, interfaccia).
 
 ## Ondata 1: basi solide e facili da provare
 

@@ -11,7 +11,7 @@ Closes #
 ## Checklist
 
 - [ ] Il gioco parte: `npm run dev` più il client Godot
-- [ ] `npm run typecheck`, `npm test` e `npm run build` passano
+- [ ] `npm run typecheck` e `npm test` passano
 - [ ] Gli script Godot si caricano senza errori (lo controlla anche la CI)
 - [ ] Ho provato con almeno due istanze del client Godot
 

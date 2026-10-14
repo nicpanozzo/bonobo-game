@@ -4,7 +4,7 @@
 
 ![Due giocatori nell'arena con le piattaforme](docs/godot/partita.png)
 
-> Dal 6 ottobre 2026 il gioco ufficiale è il client Godot in [`godot/`](godot/). Il server Node resta l'arbitro; il vecchio client web in `src/client/` non riceve più funzioni nuove.
+> Dal 6 ottobre 2026 il gioco ufficiale è il client Godot in [`godot/`](godot/). Il server Node resta l'arbitro; il vecchio client web Phaser è stato tolto (resta nel branch `archivio/phaser`).
 
 > Siamo agli inizi, ma le regole base ci sono già. La grafica sono rettangoli, quindi c'è spazio per tutti: grafici, programmatori, chi fa i suoni, chi inventa le mosse.
 
@@ -52,7 +52,7 @@ npm install
 npm run dev
 ```
 
-`npm run dev` avvia il **server di gioco** sulla porta 3000, che fa da arbitro e calcola la fisica (e, per confronto, il vecchio client web sulla 5173).
+`npm run dev` avvia il **server di gioco** sulla porta 3000, che fa da arbitro e calcola la fisica.
 
 Poi apri Godot, **Importa** e scegli `godot/project.godot`, premi Play (F5): scegli nome, stanza e arena e premi **Gioca**. Per vedere due giocatori avvia due istanze (menu Debug, più istanze) o lancia da terminale `godot --path godot -- --room=amici --name=Nico` due volte.
 
@@ -75,7 +75,6 @@ src/
   server/
     index.ts       server Express + Socket.IO, gestisce le stanze
     Room.ts        una partita: riceve i tasti, fa girare la fisica 60 volte al secondo, decide chi vince
-  client/      il vecchio client web (Phaser): congelato
 ```
 
 Il principio chiave: **il server è l'arbitro**. Il gioco manda solo quali tasti sono premuti, il server calcola dove sono tutti e chi ha colpito chi, poi manda lo stato a tutti 30 volte al secondo. Così nessuno può barare modificando il proprio client. Più dettagli in [docs/architettura.md](docs/architettura.md) e [godot/README.md](godot/README.md).
@@ -145,4 +144,4 @@ Non ripete le regole: le legge ogni volta da quei file, così resta valido anche
 Le parti sono due: il **server** Node (l'arbitro) e il **gioco** Godot esportato per il web.
 
 - **Il gioco** si pubblica da solo su GitHub Pages a ogni merge su `main`: https://nicpanozzo.github.io/bonobo-game/godot/. Gli si dice quale server usare con l'indirizzo: `.../godot/?server=https://il-server&room=amici`. Il link giusto lo copia il gioco stesso (Copia link nella lobby o nel menu Esc).
-- **Il server** gira su un PC con `npm run dev` (o `npm start`) e si condivide con un tunnel, per esempio `cloudflared tunnel --url http://localhost:3000`, oppure su un hosting che supporti Node e WebSocket come [Render](https://render.com) (build `npm install --include=dev && npm run build`, start `npm start`; sul piano gratuito si addormenta e il primo accesso impiega circa un minuto).
+- **Il server** gira su un PC con `npm run dev` (o `npm start`) e si condivide con un tunnel, per esempio `cloudflared tunnel --url http://localhost:3000`, oppure su un hosting che supporti Node e WebSocket come [Render](https://render.com) (build `npm ci`, start `npm start`; sul piano gratuito si addormenta e il primo accesso impiega circa un minuto).
