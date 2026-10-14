@@ -431,7 +431,7 @@ func _check_server_version(server_version: String) -> void:
 		if web:
 			JavaScriptBridge.eval("location.reload()")
 		else:
-			OS.shell_open("https://nicpanozzo.github.io/bonobo-game/#gioca")))
+			UI.open_url("https://nicpanozzo.github.io/bonobo-game/#gioca")))
 
 
 func _on_disconnected() -> void:

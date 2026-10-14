@@ -321,3 +321,11 @@ static func keep_focus(menu: Control, first: Control) -> void:
 # Copia negli appunti (nel browser passa da navigator.clipboard)
 static func copy(text: String) -> void:
 	DisplayServer.clipboard_set(text)
+
+
+# Apre un link nel browser. Su Linux OS.shell_open aspetta che xdg-open finisca, e con alcuni browser
+# vuol dire finché il browser resta aperto: il gioco si blocca (#321). Lì xdg-open parte staccato.
+static func open_url(url: String) -> void:
+	if OS.get_name() in ["Linux", "FreeBSD", "NetBSD", "OpenBSD", "BSD"] and OS.create_process("xdg-open", [url]) != -1:
+		return
+	OS.shell_open(url)
