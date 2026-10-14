@@ -86,6 +86,13 @@ func input_at(tick: int) -> Dictionary:
 
 # Il proprio lottatore in uno snapshot. shown: dove era disegnato finora (NAN se da nessuna parte)
 func on_server(p: Dictionary, now_ms: float, shown := Vector2(NAN, NAN)) -> void:
+	# Dove si disegnerebbe adesso con la predizione di prima (#320). shown è il frame scorso: confrontarlo
+	# con il previsto di adesso conta come errore il movimento di un frame, e con uno snapshot a ogni frame
+	# (60/s) quell'errore non si spalmava mai: il lottatore restava indietro, salti e atterraggi al rallentatore
+	var before := Vector2(NAN, NAN)
+	if _active and _movement != null and not _state.is_empty():
+		_advance(now_ms)
+		before = _position(now_ms) + _decayed_error(now_ms)
 	_server = p
 	_active = enabled and predictable(p, _stage) and not _pressed_action_since(int(p.predict.seq) if p.get("predict") is Dictionary else 0)
 	if not _active:
@@ -105,6 +112,8 @@ func on_server(p: Dictionary, now_ms: float, shown := Vector2(NAN, NAN)) -> void
 		return
 	_advance(now_ms)
 	var now_xy := _position(now_ms)
+	if not is_nan(before.x):
+		shown = before
 	_error = shown - now_xy if not is_nan(shown.x) else Vector2.ZERO
 	if _error.length() > teleport_distance:
 		_error = Vector2.ZERO
@@ -140,13 +149,17 @@ func sample(now_ms: float, server: Variant = null) -> Variant:
 				_error = Vector2.ZERO
 			_error_at = now_ms
 	_was_active = _active
-	if smooth_ms > 0:
-		_error *= exp(-(now_ms - _error_at) / smooth_ms)
+	_error = _decayed_error(now_ms)
 	_error_at = now_ms
 	out.x += _error.x
 	out.y += _error.y
 	_last_out = Vector2(out.x, out.y)
 	return out
+
+
+# La correzione ancora da spalmare all'istante now_ms
+func _decayed_error(now_ms: float) -> Vector2:
+	return _error * exp(-(now_ms - _error_at) / smooth_ms) if smooth_ms > 0 else _error
 
 
 func is_active() -> bool:

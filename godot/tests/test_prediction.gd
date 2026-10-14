@@ -225,3 +225,24 @@ func test_col_fiore_non_si_predice() -> void:
 	runner.check(Predictor.predictable(p, {}), "senza fiore si predice")
 	p.powerup = "fiore"
 	runner.check(not Predictor.predictable(p, {}), "col fiore no")
+
+
+# #320: con uno snapshot a ogni frame (60/s) il lottatore che corre resta sul previsto, non indietro di un frame per volta
+func test_snapshot_a_ogni_frame_non_frenano_il_lottatore() -> void:
+	var game := _game()
+	var pr := _predictor(game)
+	var right := {"left": false, "right": true, "jump": false, "down": false}
+	pr.record_input(right, 100)
+	var step: float = float(game.fighter.groundSpeed) / 60.0
+	var shown := Vector2(NAN, NAN)
+	var s: Variant
+	for k in 20:
+		# Il server ha visto la destra da 2 tick in più a ogni snapshot, e x è già andata avanti di tanto
+		pr.on_server(_server_me(game, 100, 2 + k, {"x": 640.0 + (1 + k) * step, "vx": float(game.fighter.groundSpeed)}), _ms(104 + k), shown)
+		s = pr.sample(_ms(104 + k))
+		shown = Vector2(s.x, s.y)
+	var fresh := _predictor(game) # lo stesso ultimo snapshot senza niente da correggere
+	fresh.record_input(right, 100)
+	fresh.on_server(_server_me(game, 100, 21, {"x": 640.0 + 20 * step, "vx": float(game.fighter.groundSpeed)}), _ms(123))
+	var expected: float = fresh.sample(_ms(123)).x
+	runner.check(absf(s.x - expected) < step, "dopo 20 snapshot si è sul previsto (%s), non indietro: %s" % [expected, s.x])
