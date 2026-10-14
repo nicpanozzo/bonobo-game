@@ -629,6 +629,28 @@
         "ms": 8000
       }
     },
+    "funghetti": {
+      "id": "funghetti",
+      "name": "Funghetti",
+      "damage": 4,
+      "knockback": 250,
+      "width": 24,
+      "height": 20,
+      "color": 10181046,
+      "weight": 2,
+      "mushrooms": true
+    },
+    "fungo": {
+      "id": "fungo",
+      "name": "Funghetto",
+      "damage": 0,
+      "knockback": 0,
+      "width": 20,
+      "height": 16,
+      "color": 12597547,
+      "weight": 0,
+      "planted": true
+    },
     "bong": {
       "id": "bong",
       "name": "Bong",
@@ -677,6 +699,14 @@
     "knockbackGrowth": 6,
     "angleDeg": 40,
     "cooldownMs": 350
+  },
+  "funghi": {
+    "uses": 3,
+    "armMs": 600,
+    "lifeMs": 20000,
+    "damage": 6,
+    "tripMs": 3000,
+    "popVy": 520
   },
   "colors": [
     15158332,

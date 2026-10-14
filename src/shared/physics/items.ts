@@ -4,7 +4,7 @@
 //   stepItems() dopo stepWorld: comparsa, caduta, oggetti in mano e colpi di quelli lanciati
 
 import { characterStats } from "../characters";
-import { BONG, FIGHTER, HITSTOP, HITSTUN_PER_KNOCKBACK, ITEM_RULES } from "../constants";
+import { BONG, FIGHTER, FUNGHI, HITSTOP, HITSTUN_PER_KNOCKBACK, ITEM_RULES } from "../constants";
 import { ITEMS } from "../items";
 import type { ItemSpot } from "../stages";
 import { rng } from "../stageGenerator";
@@ -21,6 +21,9 @@ export interface Item extends ItemState {
   riding: number; // indice della piattaforma mobile su cui è appoggiato, -1 se nessuna (#14)
   thrownBy: string | null;
   lifeMs: number; // ms che restano a terra prima di sparire
+  ownerId?: string; // il funghetto piantato (#302): chi l'ha piantato, a lui non scatta
+  uses?: number; // il sacchetto dei funghetti: quanti ne restano
+  armMs?: number; // il funghetto piantato: ms prima che scatti
   loadMs?: number; // il bong (#302): ms di carica tenendo J, assente o -1 se non lo si carica
 }
 
@@ -68,13 +71,19 @@ export function handleItemInput(world: ItemWorld, fighters: Fighter[], ctx: Phys
       consumeAttackKeys(f);
       continue;
     }
+    // Il sacchetto dei funghetti (#302): giù + J ne pianta uno ai piedi, finiti sparisce. Senza giù si lancia come gli altri
+    if (held && ITEMS[held.kind].mushrooms && pressed(f, "light") && f.input.down && f.onGround) {
+      plantMushroom(world, held, f, ctx);
+      consumeAttackKeys(f);
+      continue;
+    }
     if (held) {
       throwItem(held, f, ctx);
       consumeAttackKeys(f);
       continue;
     }
     const near = world.items.find(
-      (i) => !i.heldBy && !i.thrown && Math.abs(i.x - f.x) < ITEM_RULES.pickRange && i.y > f.y - FIGHTER.height && i.y < f.y + 12,
+      (i) => !i.heldBy && !i.thrown && !ITEMS[i.kind].planted && Math.abs(i.x - f.x) < ITEM_RULES.pickRange && i.y > f.y - FIGHTER.height && i.y < f.y + 12,
     );
     if (near && ITEMS[near.kind].consume) {
       powerUp(world, near, f, ctx);
@@ -96,6 +105,52 @@ function powerUp(world: ItemWorld, item: Item, f: Fighter, ctx: PhysicsContext) 
   f.powerupMs = use.ms;
   f.invulnerable = true;
   ctx.events.push({ type: "powerUp", itemId: item.id, id: f.id, kind: use.powerup, x: Math.round(f.x), y: Math.round(f.y) });
+}
+
+function plantMushroom(world: ItemWorld, bag: Item, f: Fighter, ctx: PhysicsContext) {
+  const x = Math.round(f.x);
+  const y = Math.round(f.y);
+  const item: Item = { id: world.nextId++, kind: "fungo", x, y, vx: 0, vy: 0, heldBy: null, thrown: false, onGround: false, riding: -1, thrownBy: null, lifeMs: FUNGHI.lifeMs, ownerId: f.id, armMs: FUNGHI.armMs };
+  world.items.push(item);
+  ctx.events.push({ type: "itemSpawn", itemId: item.id, kind: "fungo", x, y });
+  bag.uses = (bag.uses ?? FUNGHI.uses) - 1;
+  if (bag.uses <= 0) bag.lifeMs = 0; // sacchetto vuoto: sparisce al filtro
+}
+
+// Chi calpesta un funghetto armato (#302): piccolo danno, saltello e destra/sinistra invertite per un po'
+function triggerMushroom(item: Item, fighters: Fighter[], ctx: PhysicsContext) {
+  if ((item.armMs ?? 0) > 0) return;
+  const owner = fighters.find((f) => f.id === item.ownerId);
+  for (const target of fighters) {
+    if (target.id === item.ownerId || target.eliminated || target.respawning || target.invulnerable) continue;
+    if (owner && ctx.canHit && !ctx.canHit(owner, target)) continue;
+    const body = bodyBox(target);
+    const half = ITEMS.fungo.width / 2;
+    if (!(item.x + half > body.x && item.x - half < body.x + body.w && item.y > body.y && item.y - ITEMS.fungo.height < body.y + body.h)) continue;
+    item.lifeMs = 0;
+    target.percent = Math.min(999, target.percent + FUNGHI.damage);
+    target.vy = -FUNGHI.popVy;
+    target.onGround = false;
+    target.lastHitById = item.ownerId ?? null;
+    if (target.powerup !== "fiore") {
+      // Il viaggio prende il posto del bong: chi era fatto ora è confuso
+      target.powerup = "trip";
+      target.powerupMs = FUNGHI.tripMs;
+    }
+    ctx.events.push({ type: "powerUp", itemId: item.id, id: target.id, kind: "trip", x: Math.round(item.x), y: Math.round(item.y) });
+    return;
+  }
+}
+
+// Il viaggio dei funghetti (#302): per chi ce l'ha destra e sinistra si scambiano, prima e dopo il passo di stepWorld
+// Restituisce chi ha scambiato: si rimettono a posto proprio loro, anche se il viaggio finisce nel passo
+export function swapTripInput(fighters: Fighter[]): Fighter[] {
+  const tripping = fighters.filter((f) => f.powerup === "trip");
+  for (const f of tripping) {
+    f.input = { ...f.input, left: f.input.right, right: f.input.left };
+    f.prevInput = { ...f.prevInput, left: f.prevInput.right, right: f.prevInput.left };
+  }
+  return tripping;
 }
 
 // Il tempo del potenziamento scorre come gli altri timer del lottatore (fermo nell'hitstop)
@@ -216,7 +271,7 @@ export function stepItems(world: ItemWorld, fighters: Fighter[], dtMs: number, c
   world.spawnTimer -= dtMs;
   if (world.spawnTimer <= 0) {
     world.spawnTimer = ITEM_RULES.spawnEveryMs;
-    if (world.items.length < ITEM_RULES.maxOnStage) spawn(world, ctx);
+    if (world.items.filter((i) => !ITEMS[i.kind].planted).length < ITEM_RULES.maxOnStage) spawn(world, ctx);
   }
 
   for (const item of world.items) {
@@ -247,6 +302,11 @@ export function stepItems(world: ItemWorld, fighters: Fighter[], dtMs: number, c
     land(item, prevY, spec.width / 2, dtMs, ctx);
 
     if (item.thrown) hitWithItem(item, fighters, ctx);
+    if (spec.planted) {
+      item.armMs = Math.max(0, (item.armMs ?? 0) - dtMs);
+      triggerMushroom(item, fighters, ctx);
+      if (!item.onGround) item.lifeMs -= dtMs; // anche se cade nel vuoto prima o poi sparisce
+    }
     if (item.onGround) item.lifeMs -= dtMs;
   }
 
@@ -268,7 +328,7 @@ function spawn(world: ItemWorld, ctx: PhysicsContext) {
 
 // Quale oggetto cade: a caso pesando ITEMS[k].weight (#231), con un solo numero casuale
 export function pickKind(r: number): string {
-  const kinds = Object.keys(ITEMS).sort();
+  const kinds = Object.keys(ITEMS).filter((k) => (ITEMS[k].weight ?? 1) > 0).sort(); // i funghetti piantati non cadono
   const weight = (k: string) => ITEMS[k].weight ?? 1;
   let left = r * kinds.reduce((sum, k) => sum + weight(k), 0);
   for (const k of kinds) {
@@ -399,5 +459,6 @@ export const itemStates = (world: ItemWorld): ItemState[] =>
     vy: Math.round(i.vy),
     heldBy: i.heldBy,
     thrown: i.thrown,
+    ...(i.ownerId ? { owner: i.ownerId } : {}),
     ...(ITEMS[i.kind].bong && (i.loadMs ?? -1) >= 0 ? { load: Math.round((Math.min(i.loadMs!, BONG.loadMs) / BONG.loadMs) * 100) / 100 } : {}),
   }));

@@ -181,7 +181,7 @@ func on_event(e: Dictionary) -> void:
 			_play("light", {"volume": 0.7, "x": e.x, "pitch": 0.8})
 		# Il fiore (#231): un respiro lungo che entra, e uno che esce quando finisce
 		"powerUp":
-			_play("inhale", {"x": e.x})
+			_play("dizzy" if e.get("kind") == "trip" else "inhale", {"x": e.x}) # i funghetti (#302) fanno girare la testa
 		"powerEnd":
 			_play("exhale", {"volume": 0.6})
 		# Il bong (#302): gorgoglio quando si carica, colpo di tosse con la nuvola, giramento di testa nel crollo

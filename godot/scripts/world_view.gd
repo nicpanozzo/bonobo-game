@@ -491,7 +491,7 @@ func on_event(e: Dictionary) -> void:
 				_sparks.append({"x": e.x, "y": e.y, "age": 0.0, "size": 18.0, "color": Color.WHITE}) # anche due proiettili che si annullano
 		"powerUp":
 			# Il fiore (#231): uno sbuffo verde dove lo si prende, più grande di una scintilla. Il bong (#302): una boccata grigia
-			var col: Color = SMOKE_GREY if e.kind == "bong" else FLOWER_GREEN.lightened(0.3)
+			var col: Color = SMOKE_GREY if e.kind == "bong" else (Color(0.75, 0.4, 0.95) if e.kind == "trip" else FLOWER_GREEN.lightened(0.3))
 			_sparks.append({"x": e.x, "y": float(e.y) - float(game.fighter.height) * 0.5, "age": 0.0, "size": 50.0, "color": col})
 			_puff(e.x, e.y)
 		"bong":
@@ -830,7 +830,10 @@ func _draw_items(now: int) -> void:
 		_item_pos[it.id] = pos
 		seen[it.id] = true
 		var spin := now / 1000.0 * 14.0 if it.thrown else 0.0
-		_draw_item(it.kind, pos, spin, float(it.get("load", -1.0)))
+		# Il funghetto piantato (#302): chi l'ha piantato lo vede, gli altri appena appena
+		var owner: Variant = it.get("owner")
+		var alpha := 1.0 if owner == null or owner == my_id else 0.13
+		_draw_item(it.kind, pos, spin, float(it.get("load", -1.0)), alpha)
 	for id in _item_pos.keys():
 		if not seen.has(id):
 			_item_pos.erase(id)
@@ -838,7 +841,7 @@ func _draw_items(now: int) -> void:
 
 # La banana è una mezzaluna gialla con le punte scure; gli altri oggetti, finché non hanno
 # un disegno, sono un rettangolo del loro colore
-func _draw_item(kind: String, base: Vector2, spin: float, load: float = -1.0) -> void:
+func _draw_item(kind: String, base: Vector2, spin: float, load: float = -1.0, alpha: float = 1.0) -> void:
 	var spec: Dictionary = game.items.get(kind, {"width": 24, "height": 16, "color": 0xffffff})
 	var w: float = spec.width
 	var h: float = spec.height
@@ -855,6 +858,14 @@ func _draw_item(kind: String, base: Vector2, spin: float, load: float = -1.0) ->
 		draw_leaf(self, Vector2(0, h / 2), h * 1.3, FLOWER_GREEN.lightened(0.1))
 	elif kind == "bong":
 		_draw_bong(spec, h, load)
+	elif kind == "fungo":
+		_draw_mushroom(w, h, alpha)
+	elif kind == "funghetti":
+		# Il sacchetto: viola chiuso col laccio, e tre cappelli che spuntano
+		draw_circle(Vector2(0, h * 0.1), w * 0.45, Color(0.45, 0.25, 0.55))
+		draw_line(Vector2(-w * 0.25, -h * 0.25), Vector2(w * 0.25, -h * 0.25), Color(0.9, 0.8, 0.5), 2.0)
+		for k in 3:
+			_draw_mushroom(w * 0.45, h * 0.45, 1.0, Vector2((k - 1) * w * 0.28, -h * 0.3))
 	else:
 		draw_rect(Rect2(-w / 2, -h / 2, w, h), _color(spec.color))
 	draw_set_transform(Vector2.ZERO)
@@ -891,6 +902,19 @@ func _draw_bong(spec: Dictionary, h: float, load: float) -> void:
 		draw_rect(Rect2(bar.position, Vector2(bar.size.x * clampf(load, 0.0, 1.0), bar.size.y)), col)
 
 
+# Un funghetto di Teemo (#302): cappello rosso a pallini su un gambo chiaro, base in basso al centro
+func _draw_mushroom(w: float, h: float, alpha: float, offset := Vector2.ZERO) -> void:
+	var base := offset + Vector2(0, h / 2)
+	draw_rect(Rect2(base + Vector2(-w * 0.15, -h * 0.55), Vector2(w * 0.3, h * 0.55)), Color(0.95, 0.9, 0.8, alpha))
+	var cap := PackedVector2Array()
+	for k in 13:
+		var a := PI + PI * k / 12.0
+		cap.append(base + Vector2(0, -h * 0.5) + Vector2(cos(a) * w * 0.5, sin(a) * h * 0.55))
+	draw_colored_polygon(cap, Color(0.8, 0.15, 0.2, alpha))
+	for d in [Vector2(-0.22, -0.72), Vector2(0.15, -0.85), Vector2(0.3, -0.62)]:
+		draw_circle(base + Vector2(d.x * w, d.y * h), maxf(1.5, w * 0.08), Color(1, 1, 1, alpha))
+
+
 # La nuvola soffiata (#302): sbuffi che si allargano davanti, grigio-verdi, più grandi se fa più danno
 func _draw_cloud(c: Dictionary) -> void:
 	var k: float = c.age / CLOUD_MS
@@ -904,6 +928,8 @@ func _draw_cloud(c: Dictionary) -> void:
 
 # Quanto è fatto il proprio lottatore (#302): da 0,25 appena fumato a 1 prima di crollare; 0 se non lo è
 static func high_level(p: Variant, high_ms: float) -> float:
+	if p is Dictionary and p.get("powerup") == "trip":
+		return 0.45 # i funghetti (#302): un viaggio leggero, sempre uguale
 	if not (p is Dictionary) or p.get("powerup") != "bong":
 		return 0.0
 	return 0.25 + 0.75 * clampf(1.0 - float(p.get("powerupMs", 0)) / high_ms, 0.0, 1.0)
@@ -1692,6 +1718,12 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 		draw_set_transform(Vector2.ZERO)
 	if powered or high:
 		_draw_power_smoke(p, now, fh)
+	if p.get("powerup") == "trip" and not away:
+		# In viaggio coi funghetti (#302): tre spirali colorate che girano sopra la testa
+		for k in 3:
+			var a := now / 300.0 + k * TAU / 3.0
+			var c := Color.from_hsv(fmod(now / 2000.0 + k / 3.0, 1.0), 0.7, 1.0)
+			draw_circle(Vector2(p.x + cos(a) * 22.0, p.y - fh - 14.0 + sin(a) * 6.0), 5.0, c)
 
 	# Appeso al bordo (#110): il braccio arriva fino allo spigolo, sopra la testa.
 	# Chi ha l'animazione ledge nello spritesheet (#171) ha già la mano disegnata sullo spigolo.

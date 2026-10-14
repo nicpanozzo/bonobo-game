@@ -238,4 +238,5 @@ func test_quanto_si_e_fatti_col_bong() -> void:
 	runner.check(WorldView.high_level({"powerup": "fiore", "powerupMs": 5000}, 7000.0) == 0.0, "il fiore non distorce")
 	var soon := WorldView.high_level({"powerup": "bong", "powerupMs": 7000}, 7000.0)
 	var late := WorldView.high_level({"powerup": "bong", "powerupMs": 500}, 7000.0)
+	runner.check(WorldView.high_level({"powerup": "trip", "powerupMs": 2000}, 7000.0) > 0.0, "i funghetti distorcono un po'")
 	runner.check(soon > 0.0 and soon < late and late <= 1.0, "cresce col tempo: %s → %s" % [soon, late])

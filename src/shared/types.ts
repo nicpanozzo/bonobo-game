@@ -126,6 +126,7 @@ export interface ItemState {
   vy: number;
   heldBy: string | null; // chi lo tiene in mano
   thrown: boolean; // lanciato: colpisce chi tocca
+  owner?: string; // il funghetto piantato (#302): chi l'ha piantato, solo lui lo vede bene
   load?: number; // il bong in carica (#302), da 0 a 1; assente se non lo si carica
 }
 

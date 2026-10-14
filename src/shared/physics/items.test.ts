@@ -2,7 +2,7 @@
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { BONG, FIGHTER, ITEM_RULES, POWERUP, TICK_RATE } from "../constants";
+import { BONG, FIGHTER, FUNGHI, ITEM_RULES, POWERUP, TICK_RATE } from "../constants";
 import { ITEMS } from "../items";
 import { getStage } from "../stages";
 import type { GameEvent, InputState } from "../types";
@@ -154,11 +154,13 @@ describe("zone degli oggetti (#253)", () => {
 describe("il fiore, oggetto da consumare (#231)", () => {
   const fiore = (x: number, y: number): Item => ({ ...banana(x, y), kind: "fiore" });
 
-  it("compare una volta ogni tre banane (e due bong, #302)", () => {
-    const kinds = Array.from({ length: 600 }, (_, i) => pickKind(i / 600));
+  it("compare una volta ogni tre banane (e due bong e due sacchetti di funghetti, #302)", () => {
+    const kinds = Array.from({ length: 800 }, (_, i) => pickKind(i / 800));
     assert.equal(kinds.filter((k) => k === "fiore").length, 100);
     assert.equal(kinds.filter((k) => k === "banana").length, 300);
     assert.equal(kinds.filter((k) => k === "bong").length, 200);
+    assert.equal(kinds.filter((k) => k === "funghetti").length, 200);
+    assert.equal(kinds.filter((k) => k === "fungo").length, 0, "i funghetti piantati non cadono dal cielo");
   });
 
   it("raccolto sparisce e potenzia subito, senza attaccare", () => {
@@ -374,5 +376,74 @@ describe("il bong, in tre fasi (#302)", () => {
     run(s.world, s.fighters, s.ctx, 1);
     assert.equal(ofType(s.ctx.events, "itemThrow").length, 1);
     assert.equal(s.world.items[0].thrown, true);
+  });
+});
+
+describe("i funghetti di Teemo (#302)", () => {
+  const bag = (x: number, y: number): Item => ({ ...banana(x, y), kind: "funghetti" });
+
+  // a raccoglie il sacchetto e pianta un funghetto dove sta
+  function plant() {
+    const s = setup();
+    const [a, b] = s.fighters;
+    a.x = 500;
+    b.x = 900;
+    s.world.items.push(bag(a.x + 10, a.y));
+    for (const keys of [{ light: true }, {}, { light: true, down: true }, {}]) {
+      press(a, keys);
+      run(s.world, s.fighters, s.ctx, 1);
+    }
+    return s;
+  }
+
+  it("giù + J pianta un funghetto ai piedi, senza attaccare; tre e il sacchetto è finito", () => {
+    const { ctx, world, fighters } = plant();
+    const [a] = fighters;
+    const planted = world.items.filter((i) => i.kind === "fungo");
+    assert.equal(planted.length, 1);
+    assert.equal(planted[0].ownerId, a.id);
+    assert.equal(itemStates(world).find((i) => i.kind === "fungo")!.owner, a.id);
+    assert.equal(ofType(ctx.events, "attack").length, 0);
+    for (let k = 0; k < 2; k++) {
+      a.x += 60;
+      for (const keys of [{ light: true, down: true }, {}]) {
+        press(a, keys);
+        run(world, fighters, ctx, 1);
+      }
+    }
+    assert.equal(world.items.filter((i) => i.kind === "fungo").length, FUNGHI.uses);
+    assert.equal(world.items.filter((i) => i.kind === "funghetti").length, 0, "sacchetto vuoto, sparito");
+  });
+
+  it("chi lo pianta non lo fa scattare; chi lo calpesta prende danno e ha destra e sinistra invertite", () => {
+    const { ctx, world, fighters } = plant();
+    const [a, b] = fighters;
+    const fungo = world.items.find((i) => i.kind === "fungo")!;
+    run(world, fighters, ctx, Math.ceil(FUNGHI.armMs / DT) + 1);
+    assert.ok(world.items.includes(fungo), "il proprietario ci sta sopra e non scatta");
+    a.x = 200;
+    b.x = fungo.x;
+    b.y = fungo.y;
+    run(world, fighters, ctx, 1);
+    assert.ok(!world.items.includes(fungo));
+    assert.equal(b.percent, FUNGHI.damage);
+    assert.equal(b.powerup, "trip");
+    run(world, fighters, ctx, 30); // a terra
+    press(b, { right: true });
+    run(world, fighters, ctx, 3);
+    assert.ok(b.vx < 0, "destra porta a sinistra");
+    assert.equal(b.input.right, true, "l'input vero resta quello premuto");
+    run(world, fighters, ctx, Math.ceil(FUNGHI.tripMs / DT));
+    assert.equal(b.powerup, null);
+    press(b, { right: true });
+    run(world, fighters, ctx, 3);
+    assert.ok(b.vx > 0, "finito il viaggio si torna normali");
+  });
+
+  it("i funghetti piantati non tolgono posto agli oggetti che cadono", () => {
+    const { ctx, world, fighters } = plant();
+    world.spawnTimer = 0;
+    run(world, fighters, ctx, 1);
+    assert.equal(ofType(ctx.events, "itemSpawn").filter((e) => e.kind !== "fungo").length, 1);
   });
 });
