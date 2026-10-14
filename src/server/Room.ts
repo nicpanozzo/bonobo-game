@@ -3,7 +3,7 @@
 // e manda a tutti lo stato.
 
 import type { Server } from "socket.io";
-import { MAX_CATCHUP_TICKS, RECONNECT_HOLD_MS, ROOM_MAX_ERRORS, SEND_RATE, TICK_RATE } from "../shared/constants";
+import { MAX_CATCHUP_TICKS, RECONNECT_HOLD_MS, SNAPSHOT_CLOCK_RESYNC_MS, ROOM_MAX_ERRORS, SEND_RATE, TICK_RATE } from "../shared/constants";
 import { Match, type MatchEndEvent, type MatchOptions } from "../shared/match";
 import type { Fighter } from "../shared/physics";
 import type { ClientToServer, GameEvent, InputState, ServerToClient } from "../shared/types";
@@ -37,6 +37,10 @@ export class Room {
   private ticks = 0;
   private lastTime = performance.now();
   private accumulator = 0;
+  // Ora (ms) del prossimo snapshot: avanza di un passo per tick, non è Date.now() (#320).
+  // Quando l'orologio sbanda si fanno due passi in un giro solo: con Date.now() i due snapshot avrebbero
+  // la stessa ora e il client li vedrebbe come doppi o con velocità assurde, il movimento a scatti
+  private clock = Date.now();
   private pendingEvents: GameEvent[] = []; // eventi accumulati fino al prossimo snapshot
   private humans = new Set<string>(); // i bot (#20) non tengono aperta la stanza
   readonly seats: Seats; // token e posti tenuti per la riconnessione (#107)
@@ -135,6 +139,9 @@ export class Room {
     this.accumulator += elapsedMs * this.speed;
     // Dopo un blocco lungo (debugger, server sovraccarico) non si recupera tutto in un colpo
     this.accumulator = Math.min(this.accumulator, TICK_MS * MAX_CATCHUP_TICKS);
+    // L'ora degli snapshot resta vicina a quella vera: dopo un blocco (o un cambio di velocità) si riallinea
+    const late = Date.now() - this.accumulator / this.speed - this.clock;
+    if (Math.abs(late) > SNAPSHOT_CLOCK_RESYNC_MS) this.clock += late;
     while (this.accumulator >= TICK_MS) {
       this.accumulator -= TICK_MS;
       // Un errore nella partita o in un gancio (bot, Discord) ferma solo questa stanza, mai il server
@@ -179,8 +186,9 @@ export class Room {
     }
 
     this.ticks++;
+    this.clock += TICK_MS / this.speed;
     if (this.ticks % TICKS_PER_SNAPSHOT === 0) {
-      this.io.to(this.code).emit("snapshot", this.match.snapshot(this.pendingEvents, Date.now()));
+      this.io.to(this.code).emit("snapshot", this.match.snapshot(this.pendingEvents, this.clock));
       this.pendingEvents = [];
     }
   }
