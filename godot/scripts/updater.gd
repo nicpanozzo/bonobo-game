@@ -151,7 +151,7 @@ static func new_app_notice() -> CanvasLayer:
 	row.add_child(label)
 	var get := Button.new()
 	get.text = "Scarica l'app nuova"
-	get.pressed.connect(func(): OS.shell_open(DOWNLOAD_PAGE))
+	get.pressed.connect(func(): UI.open_url(DOWNLOAD_PAGE))
 	row.add_child(get)
 	var close := Button.new()
 	close.text = "×"

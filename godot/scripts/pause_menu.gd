@@ -50,7 +50,7 @@ func _send_report() -> void:
 	var game = JSON.parse_string(FileAccess.get_file_as_string("res://data/game.json"))
 	var body := report_body(_report, UI.version_text(game if game is Dictionary else {}), OS.get_name())
 	UI.copy(body)
-	OS.shell_open(report_url(body))
+	UI.open_url(report_url(body))
 	_note.text = "Si apre GitHub con i dati della partita: scrivi cosa è successo. Il testo è anche negli appunti."
 
 
