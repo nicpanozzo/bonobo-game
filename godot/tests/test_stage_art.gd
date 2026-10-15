@@ -60,3 +60,17 @@ func test_arena_casuale_con_lo_sfondo_condiviso() -> void:
 	w.set_stage_spec(spec)
 	runner.check(w._layers.size() == 2, "due strati: %d" % w._layers.size())
 	w.free()
+
+
+# I vetri accesi di Padova si tengono solo dove ce ne sono: interi costavano tre strati in più a ogni frame di notte
+func test_luci_della_notte_ritagliate() -> void:
+	var game := _game()
+	var w: Node2D = WorldView.new()
+	w.setup(game)
+	w.set_stage_spec(game.stages.padova)
+	runner.check(w._light_layers.size() == 3, "tre strati di luci: %d" % w._light_layers.size())
+	for k in w._light_layers:
+		var part: Rect2 = w._light_layers[k][1]
+		runner.check(part.size.x * part.size.y < 0.5, "strato %s ritagliato: %s" % [k, part])
+		runner.check(Rect2(0, 0, 1, 1).encloses(part), "dentro allo strato: %s" % part)
+	w.free()

@@ -42,7 +42,7 @@ var _props_back: Array = [] # decorazioni dietro ai lottatori (#237): [texture, 
 var _props_front: Array = [] # e davanti
 var _hazard_sprites := {} # indice della trappola -> {tex, frames, fps, scale, footX, footY}: animazioni disegnate (#270)
 var _mover_sprites := {} # indice della piattaforma mobile -> come sopra (#273)
-var _light_layers := {} # parallasse -> Texture2D con i vetri accesi di quello strato (#288)
+var _light_layers := {} # parallasse -> [Texture2D, Rect2]: i vetri accesi di quello strato (#288), ritagliati; Rect2 in frazioni dello strato
 var _light_props: Array = [] # [texture, decorazione] con i vetri accesi, sopra le decorazioni (#288)
 var _life: RefCounted = preload("res://scripts/stage_life.gd").new() # sfondo vivo (#260)
 var _ambient := Color.WHITE # luce del momento del giorno (#267): moltiplica strati e decorazioni, un po' il palco
@@ -277,9 +277,9 @@ func _load_stage_dressing(dir: String, art: Dictionary) -> void:
 	var life: Dictionary = art.get("life", {}) if art.get("life") is Dictionary else {}
 	var day: Dictionary = life.get("daycycle", {}) if life.get("daycycle") is Dictionary else {}
 	for ll in day.get("lightLayers", []):
-		var tex := _stage_texture(dir, ll.file, _layer_scale)
-		if tex != null:
-			_light_layers[snappedf(float(ll.parallax), 0.001)] = tex
+		var lit := _lit_texture(dir, ll.file, _layer_scale)
+		if not lit.is_empty():
+			_light_layers[snappedf(float(ll.parallax), 0.001)] = lit
 	for lp in day.get("lightProps", []):
 		var tex := _stage_texture(dir, lp.file)
 		if tex != null:
@@ -292,6 +292,32 @@ static func _stage_texture(dir: String, file: String, world_scale := 0.0) -> Tex
 		push_warning("Immagine dell'arena mancante: " + path)
 		return null
 	return _sprite_texture(path, "linear", world_scale)
+
+
+# I vetri accesi di uno strato sono grandi quanto lo strato ma quasi tutti trasparenti: disegnarli interi di notte
+# costava tre strati in più da fondere a ogni frame (gli fps calavano al tramonto). Si tiene solo la parte con qualcosa,
+# con la sua posizione in frazioni dello strato. [] se manca il file
+static func _lit_texture(dir: String, file: String, world_scale := 0.0) -> Array:
+	var path := "res://data/assets/stages/%s/%s" % [dir, file]
+	if not ResourceLoader.exists(path):
+		push_warning("Immagine dell'arena mancante: " + path)
+		return []
+	var img: Image = (load(path) as Texture2D).get_image()
+	if img == null or img.is_compressed():
+		return [_sprite_texture(path, "linear", world_scale), Rect2(0, 0, 1, 1)]
+	var full := Vector2(img.get_size())
+	var used := img.get_used_rect()
+	if used.size.x <= 0 or used.size.y <= 0:
+		return [] # niente da accendere
+	var part := img.get_region(used)
+	var keep := minf(1.0, _screen_px_per_world * world_scale)
+	if keep > 0.0 and keep < 0.9:
+		part.resize(maxi(1, roundi(part.get_width() * keep)), maxi(1, roundi(part.get_height() * keep)), Image.INTERPOLATE_CUBIC)
+	part.generate_mipmaps()
+	var canvas := CanvasTexture.new()
+	canvas.diffuse_texture = ImageTexture.create_from_image(part)
+	canvas.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	return [canvas, Rect2(Vector2(used.position) / full, Vector2(used.size) / full)]
 
 
 # Il materiale di un pezzo: l'eccezione in art.pieces (null = tinta unita), o quello di base; {} se non c'è
@@ -662,8 +688,10 @@ func _draw() -> void:
 			_life.draw_band(self, far, l[1], t_stage, view_center, rain, _ambient)
 		_draw_layer(l)
 		var lights: Variant = _light_layers.get(snappedf(float(l[1]), 0.001))
-		if lights != null and night > 0.0:
-			_draw_layer([lights, l[1]], Color(1, 1, 1, night)) # i vetri accesi, senza la luce ambiente
+		if lights != null and night > 0.0: # i vetri accesi, senza la luce ambiente, solo dove ce ne sono
+			var whole := layer_rect((l[0] as Texture2D).get_size() * _layer_scale, l[1], Vector2(stage_width() / 2.0, h / 2.0), view_center)
+			var part: Rect2 = lights[1]
+			draw_texture_rect(lights[0], Rect2(whole.position + part.position * whole.size, part.size * whole.size), false, Color(1, 1, 1, night))
 		if night > 0.0:
 			_life.draw_lamps(self, t_stage, view_rect, float(l[1]))
 		far = l[1]
