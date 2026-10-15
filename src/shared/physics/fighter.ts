@@ -199,8 +199,6 @@ export function resetForMatch(f: Fighter, index: number, stocks: number, stage: 
   Object.assign(f, fresh, { input: f.input, prevInput: f.prevInput, away: f.away, dashByTap: f.dashByTap, shortHop: f.shortHop, inputSeq: f.inputSeq, inputTicks: f.inputTicks }); // chi è disconnesso resta tale nella rivincita
 }
 
-export const isAlive = (f: Fighter) => !f.eliminated;
-
 // Tasti col buffer (E6): una pressione più corta di un tick, o arrivata un attimo prima che l'azione
 // possa partire (fine del colpo, atterraggio), conta lo stesso per INPUT.bufferMs
 export const BUFFERED_KEYS = ["light", "heavy", "up", "jump", "dodge", "special", "supreme"] as const;

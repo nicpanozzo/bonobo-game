@@ -25,8 +25,6 @@ export interface Challenge {
   medals: [number, number, number]; // soglie di bronzo, argento e oro
 }
 
-export const MEDALS = ["", "Bronzo", "Argento", "Oro"];
-
 export const CHALLENGES: Challenge[] = [
   { id: "primo-ko", title: "Primo KO", text: "Il manichino parte da 0%: buttalo fuori il prima possibile.", stage: "palco", bot: "manichino", botPercent: 0, goal: "koTime", limitSec: 60, medals: [12, 7, 5] },
   { id: "colpo-di-grazia", title: "Colpo di grazia", text: "Il manichino è già al 150%: un colpo pesante ben dato basta.", stage: "palestra", bot: "manichino", botPercent: 150, goal: "koTime", limitSec: 20, medals: [5, 3, 2] },

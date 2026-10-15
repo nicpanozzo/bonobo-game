@@ -1,4 +1,4 @@
-# Il menu opzioni (come src/client/OptionsPanel.ts), a schede: Audio, Comandi, Video (E14, solo nell'app) e Accessibilità.
+# Il menu opzioni, a schede: Audio, Comandi, Video (E14, solo nell'app) e Accessibilità.
 # Lo aprono la lobby e il menu di pausa. I comandi hanno due schede, Tastiera e Pad (E6).
 extends Control
 

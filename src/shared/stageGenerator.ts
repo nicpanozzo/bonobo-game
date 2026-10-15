@@ -27,10 +27,6 @@ export const RANDOM_STAGE_ART: StageArt = {
   ],
 };
 
-export function randomStageId(): string {
-  return `${RANDOM_STAGE_PREFIX}${Math.floor(Math.random() * MAX_SEED)}`;
-}
-
 // Il seme dentro un id "casuale-123", o null se l'id non è di un'arena generata
 export function seedFromStageId(id: string): number | null {
   const m = /^casuale-(\d{1,6})$/.exec(id);
