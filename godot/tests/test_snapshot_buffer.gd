@@ -1,4 +1,4 @@
-# Interpolazione degli snapshot (snapshot_buffer.gd), gli stessi casi di src/client/interpolation.test.ts
+# Interpolazione degli snapshot (snapshot_buffer.gd)
 extends RefCounted
 
 var runner

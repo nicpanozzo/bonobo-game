@@ -1,4 +1,4 @@
-# Menu con Esc (o Start sul pad) durante la partita (come src/client/PauseMenu.ts). La partita è online e non
+# Menu con Esc (o Start sul pad) durante la partita. La partita è online e non
 # si ferma: il menu spegne solo i tasti di chi lo apre.
 extends Control
 

@@ -601,8 +601,8 @@ func _process(_delta: float) -> void:
 		audio.view_left = view.position.x
 
 
-# Nei percorsi della Corsa, più larghi dello schermo, la telecamera segue il proprio lottatore
-# (come src/client/render/camera.ts): un po' a sinistra del centro, per vedere la strada davanti
+# Nei percorsi della Corsa, più larghi dello schermo, la telecamera segue il proprio lottatore:
+# un po' a sinistra del centro, per vedere la strada davanti
 func _follow(delta: float) -> void:
 	var w: float = game.world.width
 	if not world.positions.has(world.my_id):

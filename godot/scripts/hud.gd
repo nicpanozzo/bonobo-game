@@ -1,4 +1,4 @@
-# Scritte sopra la partita, come src/client/render/hud.ts e results.ts: riga della stanza,
+# Scritte sopra la partita: riga della stanza,
 # schede con percentuale e vite, tempo, punti della Bandiera, vincitore e classifica di fine partita.
 extends Control
 
@@ -334,7 +334,7 @@ func _progress(x: float) -> int:
 	return roundi(clampf((x - start) / (end - start), 0, 1) * 100)
 
 
-# Bianco a 0%, poi giallo, arancione e rosso man mano che si accumula danno (percentColor in hud.ts)
+# Bianco a 0%, poi giallo, arancione e rosso man mano che si accumula danno
 static func _percent_color(percent: float, eliminated: bool) -> Color:
 	if eliminated:
 		return Color("777777")

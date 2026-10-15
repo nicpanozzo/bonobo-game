@@ -1826,7 +1826,7 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 
 
 # Un fotogramma dello spritesheet, con i piedi dello sprite su quelli del giocatore
-# e girato dalla parte in cui guarda (come FighterViews in src/client/render/fighters.ts)
+# e girato dalla parte in cui guarda
 func _draw_sprite(p: Dictionary, character: Dictionary, now: float, react := Transform2D.IDENTITY) -> void:
 	var sheet: Dictionary = character.sprite
 	var anims: Dictionary = sheet.animations # tutti gli stati, già risolti con il ripiego (export:godot)

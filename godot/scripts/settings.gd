@@ -1,5 +1,5 @@
-# Preferenze di chi gioca (volumi, tasti) e ultimo profilo usato (nome, stanza, lottatore, arena, regole),
-# come src/client/settings.ts e network.ts. Si salvano in user://: nel browser finiscono
+# Preferenze di chi gioca (volumi, tasti) e ultimo profilo usato (nome, stanza, lottatore, arena, regole).
+# Si salvano in user://: nel browser finiscono
 # nell'archivio della pagina, su desktop nella cartella dei dati di Godot.
 class_name Settings
 extends RefCounted

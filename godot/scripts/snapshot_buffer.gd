@@ -1,4 +1,4 @@
-# Interpolazione degli snapshot, la stessa di src/client/interpolation.ts:
+# Interpolazione degli snapshot:
 # si disegna il mondo com'era qualche ms fa, a metà tra i due snapshot attorno a quell'istante,
 # così il movimento resta fluido anche se i pacchetti arrivano a scatti.
 class_name SnapshotBuffer

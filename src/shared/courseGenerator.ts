@@ -4,14 +4,10 @@
 // Ogni appoggio si raggiunge con un salto dal precedente (lo controlla stages.test.ts).
 
 import { COURSE, MAX_PLAYERS_PER_ROOM, WORLD } from "./constants";
-import { MAX_SEED, PALETTES, rng } from "./stageGenerator";
+import { PALETTES, rng } from "./stageGenerator";
 import type { Rect, StageSpec, ThinPlatform } from "./stages";
 
 export const COURSE_PREFIX = "corsa-";
-
-export function randomCourseId(): string {
-  return `${COURSE_PREFIX}${Math.floor(Math.random() * MAX_SEED)}`;
-}
 
 export function seedFromCourseId(id: string): number | null {
   const m = /^corsa-(\d{1,6})$/.exec(id);
