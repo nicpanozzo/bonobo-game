@@ -93,7 +93,7 @@ func draw_sky(ci: CanvasItem, t: float, view: Rect2) -> void:
 	var top: Color = cols[0]
 	var horizon: Color = cols[1]
 	var vc := view.get_center()
-	var hy := 470.0 + _l.offset(0.08, vc).y # l'orizzonte, dietro i palazzi
+	var hy: float = 470.0 + _l.offset(0.08, vc).y # l'orizzonte, dietro i palazzi
 	var r := view.grow(60)
 	var mid := top.lerp(horizon, 0.45)
 	var my := lerpf(r.position.y, hy, 0.55)
@@ -101,17 +101,17 @@ func draw_sky(ci: CanvasItem, t: float, view: Rect2) -> void:
 	ci.draw_polygon(PackedVector2Array([Vector2(r.position.x, my), Vector2(r.end.x, my), Vector2(r.end.x, hy), Vector2(r.position.x, hy)]), PackedColorArray([mid, mid, horizon, horizon]))
 	ci.draw_rect(Rect2(r.position.x, hy, r.size.x, maxf(0.0, r.end.y - hy)), horizon)
 	var dark := darkness(phase)
-	var off := _l.offset(0.08, vc)
+	var off: Vector2 = _l.offset(0.08, vc)
 	# stelle, prima del resto
 	if dark > 0.45:
 		var a := clampf((dark - 0.45) / 0.4, 0.0, 1.0)
 		for i in 90:
-			var sx := fposmod(i * 0.6180339 * 3000.0, _l.width + 1400.0) - 700.0
+			var sx: float = fposmod(i * 0.6180339 * 3000.0, _l.width + 1400.0) - 700.0
 			var sy := -420.0 + fposmod(i * 0.4142136 * 1000.0, 700.0)
 			var tw := 0.55 + 0.45 * sin(t / 280.0 + i * 1.7)
 			ci.draw_circle(Vector2(sx, sy) + off, 1.2 + (i % 3) * 0.6, Color(1, 1, 0.92, a * tw))
 	# sole di giorno, luna di notte
-	var body := sky_body(phase, _l.width) + off
+	var body: Vector2 = sky_body(phase, _l.width) + off
 	if phase < 0.25 or phase >= 0.75:
 		var low := clampf(absf(fposmod(phase + 0.25, 0.5) / 0.5 - 0.5) * 2.0, 0.0, 1.0) # 1 vicino all'orizzonte
 		var col := Color(1.0, 0.97, 0.82).lerp(Color(1.0, 0.55, 0.28), low * low)
@@ -128,10 +128,10 @@ func draw_sky(ci: CanvasItem, t: float, view: Rect2) -> void:
 	var lit := Color(0.96, 0.97, 0.98).lerp(horizon.lightened(0.25), 0.5 * clampf(dark * 2.0, 0.0, 1.0))
 	lit = lit.lerp(Color(0.32, 0.36, 0.5), clampf((dark - 0.5) * 2.0, 0.0, 1.0))
 	var shade := lit.darkened(0.16).lerp(top, 0.25)
-	var span := _l.width + 1600.0
+	var span: float = _l.width + 1600.0
 	for i in 12:
 		var c := cloud_at(i, t, span)
-		var o := _l.offset(float(c.parallax), vc)
+		var o: Vector2 = _l.offset(float(c.parallax), vc)
 		var cp := Vector2(float(c.x) - 800.0, float(c.y)) + o
 		var sh: Variant = _l._sheets.get("nuvole")
 		if sh != null:
@@ -164,7 +164,7 @@ func draw_lamps(ci: CanvasItem, t: float, view: Rect2, parallax: float, ground :
 	for l in d.get("lamps", []):
 		if absf(float(l.parallax) - parallax) > 0.001:
 			continue
-		var p := Vector2(l.x, l.y) + _l.offset(float(l.parallax), view.get_center())
+		var p: Vector2 = Vector2(l.x, l.y) + _l.offset(float(l.parallax), view.get_center())
 		var warm := Color(1.0, 0.84, 0.55)
 		ci.draw_colored_polygon(PackedVector2Array([p + Vector2(-7, 8), p + Vector2(7, 8), p + Vector2(34, ground), p + Vector2(-34, ground)]), Color(warm, 0.12 * on))
 		var pool := PackedVector2Array()
