@@ -2,7 +2,7 @@
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { BONG, FIGHTER, FUNGHI, ITEM_RULES, POWERUP, TICK_RATE } from "../constants";
+import { BIRRA, BONG, FIGHTER, FUNGHI, ITEM_RULES, POWERUP, TICK_RATE } from "../constants";
 import { ITEMS } from "../items";
 import { getStage } from "../stages";
 import type { GameEvent, InputState } from "../types";
@@ -154,8 +154,9 @@ describe("zone degli oggetti (#253)", () => {
 describe("il fiore, oggetto da consumare (#231)", () => {
   const fiore = (x: number, y: number): Item => ({ ...banana(x, y), kind: "fiore" });
 
-  it("compare una volta ogni tre banane (e due bong e due sacchetti di funghetti, #302)", () => {
-    const kinds = Array.from({ length: 800 }, (_, i) => pickKind(i / 800));
+  it("compare una volta ogni tre banane (e due bong, due sacchetti di funghetti e due birre, #302)", () => {
+    const kinds = Array.from({ length: 1000 }, (_, i) => pickKind(i / 1000));
+    assert.equal(kinds.filter((k) => k === "birra").length, 200);
     assert.equal(kinds.filter((k) => k === "fiore").length, 100);
     assert.equal(kinds.filter((k) => k === "banana").length, 300);
     assert.equal(kinds.filter((k) => k === "bong").length, 200);
@@ -445,5 +446,31 @@ describe("i funghetti di Teemo (#302)", () => {
     world.spawnTimer = 0;
     run(world, fighters, ctx, 1);
     assert.equal(ofType(ctx.events, "itemSpawn").filter((e) => e.kind !== "fungo").length, 1);
+  });
+});
+
+describe("la birra (#302)", () => {
+  it("raccolta dà il cappello: colpi ×1,4, si barcolla ma si resta colpibili", () => {
+    const { ctx, fighters, world } = setup();
+    const [a, b] = fighters;
+    world.items.push({ ...banana(a.x + 10, a.y), kind: "birra" });
+    press(a, { light: true });
+    run(world, fighters, ctx, 1);
+    assert.equal(a.powerup, "birra");
+    assert.equal(a.invulnerable, false);
+    launch(b, a, "light", 0, 0, ctx);
+    const drunk = b.percent;
+    b.percent = 0;
+    a.powerup = null;
+    launch(b, a, "light", 0, 0, ctx);
+    assert.equal(drunk, Math.round(b.percent * BIRRA.damageMult * 10) / 10);
+    a.powerup = "birra";
+    press(a, {});
+    const xs: number[] = [];
+    for (let i = 0; i < 40; i++) {
+      run(world, fighters, ctx, 1);
+      xs.push(a.vx);
+    }
+    assert.ok(Math.max(...xs) > 20 && Math.min(...xs) < -20, "da fermi si barcolla avanti e indietro");
   });
 });

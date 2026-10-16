@@ -466,6 +466,15 @@ export const FUNGHI = {
   popVy: 520, // pixel/s verso l'alto: il funghetto che scoppia fa saltellare
 };
 
+// La birra (#302, idea di Nicola): cappello da tirolese, si barcolla ma si picchia più forte
+export const BIRRA = {
+  ms: 8000, // ms di effetto dalla raccolta
+  damageMult: 1.4, // danno dei colpi dati da ubriachi
+  speedMult: 1.1, // frazione della velocità orizzontale: si va un po' più svelti
+  swayPxS: 110, // pixel/s di barcollamento a terra, avanti e indietro
+  swayPeriodMs: 900, // ms di un'oscillazione completa del barcollamento
+};
+
 // Limiti della rete (#105): il server non si fida di quello che riceve
 export const NET_LIMITS = {
   maxMessageBytes: 16_384, // byte massimi di un messaggio Socket.IO (il predefinito è 1 MB)
