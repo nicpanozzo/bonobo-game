@@ -4,6 +4,7 @@ extends RefCounted
 var runner
 
 const StageLife := preload("res://scripts/stage_life.gd")
+const StageSky := preload("res://scripts/stage_sky.gd")
 
 
 func test_stormo_a_giri_alterni() -> void:
@@ -30,11 +31,11 @@ func test_piccioni_scappano_da_chi_arriva_vicino() -> void:
 func test_giorno_e_notte() -> void:
 	var life := StageLife.new()
 	life.setup({"art": {"life": {"daycycle": {"cycleMs": 100000, "startAt": 0.0, "lamps": [{"x": 0, "y": 0, "parallax": 0.75}]}}}}, 1920, 720)
-	runner.check(life.day_phase(5000) == 0.0, "la partita comincia a mezzogiorno (startAt 0)")
-	runner.check(is_equal_approx(life.day_phase(55000), 0.5), "a metà giro è mezzanotte")
-	runner.check(is_equal_approx(life.day_phase(105000), 0.0), "poi il giorno ricomincia")
-	runner.check(StageLife.darkness(0.0) == 0.0 and StageLife.darkness(0.5) == 1.0, "buio solo di notte")
-	runner.check(StageLife.darkness(0.25) > 0.0 and StageLife.darkness(0.25) < 1.0, "al tramonto a metà")
+	runner.check(life.sky.day_phase(5000) == 0.0, "la partita comincia a mezzogiorno (startAt 0)")
+	runner.check(is_equal_approx(life.sky.day_phase(55000), 0.5), "a metà giro è mezzanotte")
+	runner.check(is_equal_approx(life.sky.day_phase(105000), 0.0), "poi il giorno ricomincia")
+	runner.check(StageSky.darkness(0.0) == 0.0 and StageSky.darkness(0.5) == 1.0, "buio solo di notte")
+	runner.check(StageSky.darkness(0.25) > 0.0 and StageSky.darkness(0.25) < 1.0, "al tramonto a metà")
 	var empty := StageLife.new()
 	empty.setup({}, 1280, 720)
 	runner.check(empty.is_empty() and empty.day_phase(99999) == 0.0, "senza life l'arena resta com'è")
@@ -43,35 +44,35 @@ func test_giorno_e_notte() -> void:
 
 # I colori del cielo e della luce (#267): alba rosa, giorno azzurro, tramonto arancio, notte blu e luce fredda
 func test_colori_del_cielo() -> void:
-	var noon: Array = StageLife.sky_colors(0.0)
-	var sunset: Array = StageLife.sky_colors(0.25)
-	var night: Array = StageLife.sky_colors(0.5)
-	var dawn: Array = StageLife.sky_colors(0.75)
+	var noon: Array = StageSky.sky_colors(0.0)
+	var sunset: Array = StageSky.sky_colors(0.25)
+	var night: Array = StageSky.sky_colors(0.5)
+	var dawn: Array = StageSky.sky_colors(0.75)
 	runner.check((noon[0] as Color).b > (noon[0] as Color).r, "a mezzogiorno il cielo è azzurro")
 	runner.check((sunset[1] as Color).r > 0.9 and (sunset[1] as Color).b < 0.5, "al tramonto l'orizzonte è arancio")
 	runner.check((night[0] as Color).v < 0.2, "di notte il cielo è scuro")
 	runner.check((dawn[1] as Color).r > (dawn[1] as Color).b, "all'alba l'orizzonte è caldo")
 	runner.check((night[2] as Color).v < 0.65 and (noon[2] as Color) == Color.WHITE, "la luce: piena a mezzogiorno, fredda e bassa di notte")
-	var a: Color = StageLife.sky_colors(0.249)[1]
-	var b: Color = StageLife.sky_colors(0.251)[1]
+	var a: Color = StageSky.sky_colors(0.249)[1]
+	var b: Color = StageSky.sky_colors(0.251)[1]
 	runner.check(a.is_equal_approx(b) or absf(a.r - b.r) < 0.02, "i colori sfumano senza salti")
 
 
 func test_nuvole_che_scorrono() -> void:
-	var c0 := StageLife.cloud_at(3, 0, 3500)
-	var c1 := StageLife.cloud_at(3, 10000, 3500)
+	var c0 := StageSky.cloud_at(3, 0, 3500)
+	var c1 := StageSky.cloud_at(3, 10000, 3500)
 	runner.check(c1.x != c0.x, "le nuvole si muovono")
-	runner.check(StageLife.cloud_at(3, 10000, 3500).x == c1.x, "sempre uguali allo stesso tempo")
+	runner.check(StageSky.cloud_at(3, 10000, 3500).x == c1.x, "sempre uguali allo stesso tempo")
 	runner.check(c0.x >= 0 and c0.x < 3500, "dentro il tratto")
 
 
 func test_sole_e_luna_attraversano_il_cielo() -> void:
-	var rise := StageLife.sky_body(0.76, 1920)
-	var noon := StageLife.sky_body(0.0, 1920)
-	var set_ := StageLife.sky_body(0.24, 1920)
+	var rise := StageSky.sky_body(0.76, 1920)
+	var noon := StageSky.sky_body(0.0, 1920)
+	var set_ := StageSky.sky_body(0.24, 1920)
 	runner.check(rise.x < noon.x and noon.x < set_.x, "il sole va da sinistra a destra")
 	runner.check(noon.y < rise.y and noon.y < set_.y, "a mezzogiorno è in alto")
-	runner.check(is_equal_approx(StageLife.sky_body(0.5, 1920).x, noon.x), "a mezzanotte la luna è in cima")
+	runner.check(is_equal_approx(StageSky.sky_body(0.5, 1920).x, noon.x), "a mezzanotte la luna è in cima")
 
 
 func test_acqua_intorno_e_splash() -> void:
