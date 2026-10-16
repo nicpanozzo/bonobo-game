@@ -8,7 +8,7 @@ import { hazardActive, moverPosition } from "./physics/elements";
 import { courseSteps, generateCourse } from "./courseGenerator";
 import { generateStage, seedFromStageId } from "./stageGenerator";
 import { JUMP_HEIGHT, reachable, SIDE_REACH, stageCheckData } from "./stageCheck";
-import { CHORD_NAME, getStage, STAGE_MUSIC_LEADS, STAGES, stageArtFiles, stageWidth, type StageMusic, type StageSpec } from "./stages";
+import { CHORD_NAME, getStage, MELODY_TOKEN, STAGE_MUSIC_LEADS, STAGES, stageArtFiles, stageWidth, type StageMusic, type StageSpec } from "./stages";
 
 function checkStage(stage: StageSpec) {
   for (const p of [...stage.solids, ...stage.platforms]) {
@@ -46,6 +46,12 @@ function musicProblems(music: StageMusic): string[] {
   if (music.chords.length < 1 || music.chords.length > 8) problems.push("da 1 a 8 accordi");
   for (const c of music.chords) if (!CHORD_NAME.test(c)) problems.push(`accordo "${c}" sconosciuto (es. "C", "F#", "Bbm")`);
   if (!STAGE_MUSIC_LEADS.includes(music.lead)) problems.push(`timbro "${music.lead}" sconosciuto`);
+  if (music.melody !== undefined) {
+    const notes = music.melody.trim().split(/\s+/);
+    if (notes.length !== music.chords.length * 8) problems.push(`melodia di ${notes.length} ottavi, ne servono ${music.chords.length * 8} (8 per accordo)`);
+    for (const n of notes) if (!MELODY_TOKEN.test(n)) problems.push(`nota "${n}" sconosciuta (es. "A4", "Bb5", "-", ".")`);
+    if (notes[0] === "-") problems.push("la melodia non può cominciare tenendo una nota");
+  }
   return problems;
 }
 
@@ -148,6 +154,10 @@ describe("arene", () => {
     assert.equal(musicProblems({ bpm: 300, chords: ["H", "Am"], lead: "square" }).length, 2);
     assert.equal(musicProblems({ bpm: 120, chords: [], lead: "organo" as never }).length, 2);
     assert.deepEqual(musicProblems({ bpm: 120, chords: ["C#m", "Bb", "F"], lead: "sine" }), []);
+    // #286: la melodia ha 8 ottavi per accordo, note con l'ottava, e non comincia tenendo
+    assert.deepEqual(musicProblems({ bpm: 100, chords: ["F"], lead: "sine", melody: "A4 - C5 . F5 - Bb4 F#5" }), []);
+    assert.equal(musicProblems({ bpm: 100, chords: ["F"], lead: "sine", melody: "A4 - C5" }).length, 1);
+    assert.equal(musicProblems({ bpm: 100, chords: ["F"], lead: "sine", melody: "- H4 C5 . F5 - E5 D9" }).length, 3);
   });
 
   it("ogni personaggio raggiunge tutte le piattaforme delle arene fatte a mano (E11)", () => {
