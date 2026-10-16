@@ -666,13 +666,13 @@ func _draw() -> void:
 	var t_stage := buffer.sample_stage_ms(Time.get_ticks_msec())
 	var view_center := view_rect.get_center()
 	var rain := _rain_now(t_stage)
-	_ambient = _life.ambient(t_stage) # la luce del momento del giorno (#267), bianca senza ciclo
+	_ambient = _life.sky.ambient(t_stage) # la luce del momento del giorno (#267), bianca senza ciclo
 	if not _life.is_empty():
 		_life.view = view_rect # lo sfondo vivo non disegna quello che sta fuori dall'inquadratura (#278)
-		_life.draw_sky(self, t_stage, view_rect) # cielo vivo, sole, luna, stelle e nuvole, dietro agli strati
+		_life.sky.draw_sky(self, t_stage, view_rect) # cielo vivo, sole, luna, stelle e nuvole, dietro agli strati
 	# Sfondo vivo (#260): ogni elemento si disegna dopo gli strati più lontani di lui
 	var far := -1.0
-	var night: float = _life.night_lights(t_stage) if not _life.is_empty() else 0.0
+	var night: float = _life.sky.night_lights(t_stage) if not _life.is_empty() else 0.0
 	for l in _layers:
 		if not _life.is_empty():
 			_life.draw_band(self, far, l[1], t_stage, view_center, rain, _ambient)
@@ -683,7 +683,7 @@ func _draw() -> void:
 			var part: Rect2 = lights[1]
 			draw_texture_rect(lights[0], Rect2(whole.position + part.position * whole.size, part.size * whole.size), false, Color(1, 1, 1, night))
 		if night > 0.0:
-			_life.draw_lamps(self, t_stage, view_rect, float(l[1]))
+			_life.sky.draw_lamps(self, t_stage, view_rect, float(l[1]))
 		far = l[1]
 	if not _life.is_empty():
 		_life.draw_band(self, far, 1.01, t_stage, view_center, rain, _ambient)
@@ -695,7 +695,7 @@ func _draw() -> void:
 			var size := tex.get_size() * float(pr.get("scale", _layer_scale))
 			draw_texture_rect(tex, Rect2(float(pr.x) - size.x / 2.0, float(pr.y) - size.y, size.x, size.y), false, Color(1, 1, 1, night))
 	if not _life.is_empty():
-		_life.draw_daycycle(self, t_stage, view_rect) # di notte lampioni e finestre accese
+		_life.sky.draw_daycycle(self, t_stage, view_rect) # di notte lampioni e finestre accese
 	for i in stage.solids.size():
 		var s: Dictionary = stage.solids[i]
 		var skin := _skin_for("solids", i)
@@ -1156,7 +1156,7 @@ func _draw_stairs(p: Dictionary, col: Color) -> void:
 func _draw_sun_light(t: float) -> void:
 	if _life.is_empty() or not _life.life.get("daycycle") is Dictionary:
 		return
-	var l := SunLight.light(_life.day_phase(t))
+	var l := SunLight.light(_life.sky.day_phase(t))
 	var r := view_rect
 	var side: float = l.side
 	if absf(side) > 0.05 and not Access.calm:

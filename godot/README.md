@@ -33,6 +33,9 @@ scripts/main.gd        collegamento, tasti → InputState, telecamera, apre lobb
 scripts/socket_io.gd   client Socket.IO minimo (Engine.IO v4 su WebSocket), niente plugin
 scripts/snapshot_buffer.gd   interpolazione (80 ms nel passato)
 scripts/world_view.gd  arena, lottatori e sprite animati, scintille e scossa sui KO
+  stage_motion.gd      dove sono trappole, piattaforme mobili, getti e pioggia in un istante (funzioni pure)
+  fighter_pose.gd      posa, fotogramma e colori di un lottatore dallo snapshot (funzioni pure)
+  stage_life.gd        sfondo vivo: passanti, traffico, uccelli, bar; stage_sky.gd giorno, notte e cielo
 scripts/hud.gd         schede con percentuale e vite, tempo, punti, vincitore e classifica
 scripts/lobby.gd       nome, stanza, lottatore, arena (stage_preview.gd), regole, server
 scripts/audio.gd       quale suono per quale evento, musica; synth.gd li calcola, niente file audio
