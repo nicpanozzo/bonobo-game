@@ -4,6 +4,7 @@ extends RefCounted
 var runner
 
 const WorldView := preload("res://scripts/world_view.gd")
+const StageMotion := preload("res://scripts/stage_motion.gd")
 const StagePreview := preload("res://scripts/stage_preview.gd")
 
 
@@ -15,11 +16,11 @@ func test_parallasse() -> void:
 	var size := Vector2(1920, 1080)
 	var world := Vector2(640, 360)
 	var view := Vector2(840, 300) # la telecamera è andata a destra e in alto
-	var fermo := WorldView.layer_rect(size, 1.0, world, view)
+	var fermo := StageMotion.layer_rect(size, 1.0, world, view)
 	runner.check(fermo.get_center() == world, "parallasse 1: fermo con il palco")
-	var lontano := WorldView.layer_rect(size, 0.0, world, view)
+	var lontano := StageMotion.layer_rect(size, 0.0, world, view)
 	runner.check(lontano.get_center() == view, "parallasse 0: segue la telecamera")
-	var mezzo := WorldView.layer_rect(size, 0.5, world, view)
+	var mezzo := StageMotion.layer_rect(size, 0.5, world, view)
 	runner.check(mezzo.get_center() == Vector2(740, 330), "a metà strada: %s" % mezzo.get_center())
 	runner.check(mezzo.size == size, "la grandezza non cambia")
 
