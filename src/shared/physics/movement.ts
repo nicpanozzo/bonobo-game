@@ -1,7 +1,7 @@
 // Corsa, controllo in aria, salti, caduta veloce e gravità.
 
 import { characterStats } from "../characters";
-import { BONG, DODGE, FIGHTER, FLAG, HITSTUN_AIR_DRAG, POWERUP, RECOVERY } from "../constants";
+import { BIRRA, BONG, DODGE, FIGHTER, FLAG, HITSTUN_AIR_DRAG, POWERUP, RECOVERY } from "../constants";
 import { startAttack } from "./attacks";
 import { endDash, stepDash } from "./dash";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
@@ -51,13 +51,15 @@ export function applyControls(f: Fighter, dt: number, ctx: PhysicsContext): void
     return;
   }
   const stats = characterStats(f.characterId);
-  const speed = (f.carrier ? FLAG.carrierSpeed : 1) * (f.powerup === "fiore" ? POWERUP.speedMult : 1); // la bandiera pesa, il fiore rilassa (#231)
+  const speed = (f.carrier ? FLAG.carrierSpeed : 1) * (f.powerup === "fiore" ? POWERUP.speedMult : f.powerup === "birra" ? BIRRA.speedMult : 1); // la bandiera pesa, il fiore rilassa (#231), la birra spinge (#302)
   // Durante un attacco da terra si resta fermi, in aria si mantiene lo slancio
   const dashSpeed = stepDash(f, dir, dt * 1000, ctx); // scatto e corsa (#199)
   if (f.onGround && dashSpeed !== null) {
     f.vx = dashSpeed * speed;
   } else if (f.onGround) {
     f.vx = f.attack ? 0 : dir * FIGHTER.groundSpeed * stats.speed * speed;
+    // Ubriachi (#302): a terra si barcolla avanti e indietro, anche da fermi
+    if (f.powerup === "birra" && !f.attack) f.vx += BIRRA.swayPxS * Math.sin((2 * Math.PI * f.powerupMs) / BIRRA.swayPeriodMs);
   } else if (dir !== 0) {
     f.vx += dir * FIGHTER.airAccel * dt;
     const max = FIGHTER.airSpeed * stats.airSpeed * speed;

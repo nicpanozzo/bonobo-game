@@ -651,6 +651,20 @@
       "weight": 0,
       "planted": true
     },
+    "birra": {
+      "id": "birra",
+      "name": "Birra",
+      "damage": 0,
+      "knockback": 0,
+      "width": 22,
+      "height": 30,
+      "color": 15773744,
+      "weight": 2,
+      "consume": {
+        "powerup": "birra",
+        "ms": 8000
+      }
+    },
     "bong": {
       "id": "bong",
       "name": "Bong",
@@ -707,6 +721,13 @@
     "damage": 6,
     "tripMs": 3000,
     "popVy": 520
+  },
+  "birra": {
+    "ms": 8000,
+    "damageMult": 1.4,
+    "speedMult": 1.1,
+    "swayPxS": 110,
+    "swayPeriodMs": 900
   },
   "colors": [
     15158332,

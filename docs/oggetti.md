@@ -17,7 +17,9 @@ Tutti i nomi sono provvisori: `// TODO community` finché il canale non li scegl
 | --- | --- |
 | Banana | Si lancia, colpisce chi tocca. |
 | Fiore (#231) | Si consuma: 8 s intoccabili, colpi ×1,3, passo lento. |
-| **Bong** (questa PR) | Tre fasi, sotto. |
+| **Bong** (#303) | Tre fasi, sotto. |
+| Funghetti di Teemo (#317) | Giù + J pianta funghetti quasi invisibili: chi li calpesta ha i comandi invertiti per 3 s. |
+| **Birra** (idea di Nicola) | Cappello da tirolese per 8 s: colpi ×1,4, un po' più veloci, ma si barcolla avanti e indietro. |
 
 ## Il Bong (idea di Nicola)
 

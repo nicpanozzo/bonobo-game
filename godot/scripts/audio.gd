@@ -181,7 +181,8 @@ func on_event(e: Dictionary) -> void:
 			_play("light", {"volume": 0.7, "x": e.x, "pitch": 0.8})
 		# Il fiore (#231): un respiro lungo che entra, e uno che esce quando finisce
 		"powerUp":
-			_play("dizzy" if e.get("kind") == "trip" else "inhale", {"x": e.x}) # i funghetti (#302) fanno girare la testa
+			var power_kind := str(e.get("kind"))
+			_play("dizzy" if power_kind == "trip" else ("burp" if power_kind == "birra" else "inhale"), {"x": e.x}) # funghetti e birra (#302)
 		"powerEnd":
 			_play("exhale", {"volume": 0.6})
 		# Il bong (#302): gorgoglio quando si carica, colpo di tosse con la nuvola, giramento di testa nel crollo
@@ -716,6 +717,10 @@ func _build_sounds() -> void:
 		s.noise(0, "bandpass", 900, 400, 0.35, 0.7)
 		s.noise(0.38, "bandpass", 1300, 500, 0.14, 0.55)
 		s.noise(0.6, "bandpass", 1200, 450, 0.16, 0.5))
+	# La birra (#302): un rutto basso che vibra
+	_sounds.burp = make.call(0.6, func(s):
+		s.tone(0, "square", 110, 70, 0.5, 0.25)
+		s.noise(0, "lowpass", 400, 150, 0.45, 0.4))
 	# Troppo fatto: note che scendono e ondeggiano
 	_sounds.dizzy = make.call(1.2, func(s):
 		for k in 5:
