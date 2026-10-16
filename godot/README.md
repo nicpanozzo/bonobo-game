@@ -30,6 +30,7 @@ Da riga di comando: `godot --headless --path godot --export-release Web build/we
 project.godot          impostazioni (1280x720 come WORLD, renderer Compatibility per il web)
 main.tscn              la scena unica
 scripts/main.gd        collegamento, tasti → InputState, telecamera, apre lobby e menu
+  gym_flow.gd          palestra, tutorial e sfide: stanze proprie, pannello dell'allenamento
 scripts/socket_io.gd   client Socket.IO minimo (Engine.IO v4 su WebSocket), niente plugin
 scripts/snapshot_buffer.gd   interpolazione (80 ms nel passato)
 scripts/world_view.gd  arena, lottatori e sprite animati, scintille e scossa sui KO
