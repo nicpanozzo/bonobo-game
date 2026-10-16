@@ -4,7 +4,7 @@
 # altrimenti la ricetta sintetizzata qui sotto (synth.gd), che resta sempre il ripiego.
 extends Node2D
 
-const WorldView := preload("res://scripts/world_view.gd")
+const StageMotion := preload("res://scripts/stage_motion.gd")
 const PLAYERS := 12 # suoni che possono sovrapporsi
 const MUSIC_STEPS_PER_FRAME := 4 # la musica si calcola un pezzo per frame, senza bloccare il gioco
 const STEPS := 16 # sedicesimi in una battuta
@@ -222,14 +222,14 @@ func on_snapshot(data: Dictionary) -> void:
 		var h: Dictionary = stage_hazards[i]
 		if not h.get("travel") is Dictionary:
 			continue
-		var phase: String = WorldView.travel_phase(h, stage_ms).phase
+		var phase: String = StageMotion.travel_phase(h, stage_ms).phase
 		var cue := travel_cue(str(_travel.get(i, "")), phase)
 		if cue != "":
-			_play(cue, {"x": WorldView.hazard_rect(h, stage_ms).get_center().x})
+			_play(cue, {"x": StageMotion.hazard_rect(h, stage_ms).get_center().x})
 		_travel[i] = phase
 	for i in stage_jets.size():
 		var j: Dictionary = stage_jets[i]
-		var jp: String = WorldView.jet_phase(j, stage_ms)
+		var jp: String = StageMotion.jet_phase(j, stage_ms)
 		var before := str(_jets.get(i, ""))
 		if before != "" and before != jp:
 			if jp == "warn":

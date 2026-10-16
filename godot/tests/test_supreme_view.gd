@@ -46,8 +46,8 @@ func test_bonobot_ha_omar_e_non_lampeggia_finche_dura() -> void:
 
 func test_numeri_della_suprema_per_personaggio() -> void:
 	var game := _game()
-	var WorldView := load("res://scripts/world_view.gd")
-	var own: Dictionary = WorldView.attack_spec(game, "bonobot", "supreme")
+	var FighterPose := load("res://scripts/fighter_pose.gd")
+	var own: Dictionary = FighterPose.attack_spec(game, "bonobot", "supreme")
 	runner.check(own.get("outward", false) == true, "Bonobot: Omar, ad area")
-	var base: Dictionary = WorldView.attack_spec(game, "default", "supreme")
+	var base: Dictionary = FighterPose.attack_spec(game, "default", "supreme")
 	runner.check(base == game.attacks.supreme, "gli altri: la suprema di base")

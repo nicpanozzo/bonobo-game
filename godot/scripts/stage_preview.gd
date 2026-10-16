@@ -6,7 +6,7 @@ const WORLD_WIDTH := 1280.0 # WORLD.width
 const WORLD_HEIGHT := 720.0 # WORLD.height
 
 var spec: Dictionary
-const WorldView := preload("res://scripts/world_view.gd")
+const StageMotion := preload("res://scripts/stage_motion.gd")
 static var _previews := {} # percorso -> Texture2D, le anteprime già caricate (E12)
 
 
@@ -38,7 +38,7 @@ func _draw() -> void:
 		draw_rect(Rect2(o + Vector2(s.x, s.y) * k, Vector2(s.width, s.height) * k), _c(spec.colors.solid))
 	for p in spec.platforms:
 		if PredictMovement.curved(p):
-			draw_colored_polygon(WorldView.arch_polygon(p, 2.0 / k, k, o), _c(spec.colors.platform)) # ponte ad arco (#244) o scala (#246)
+			draw_colored_polygon(StageMotion.arch_polygon(p, 2.0 / k, k, o), _c(spec.colors.platform)) # ponte ad arco (#244) o scala (#246)
 		else:
 			draw_rect(Rect2(o + Vector2(p.x, p.y) * k, Vector2(p.width * k, 2)), _c(spec.colors.platform))
 	# Ascensori (al primo punto, in giallo) e trappole (in rosso), #14

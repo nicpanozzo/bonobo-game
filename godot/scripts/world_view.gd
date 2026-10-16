@@ -54,10 +54,12 @@ var attack_boxes := true # rettangolo del colpo in corso (opzioni → Video), ma
 var _air_jumps := {} # id giocatore -> quando ha fatto il doppio salto (ms), per l'animazione doubleJump (#103)
 var _taunts := {} # id giocatore -> quando ha provocato (ms), per l'animazione taunt (E7)
 var _holding := {} # id di chi tiene qualcuno con la presa (#109), dall'ultimo snapshot
+var _palette := {} # colori dell'arena già convertiti (stage.colors), per non rifarlo a ogni frame
 var _variants := {} # id giocatore -> variante di colore (0 = originale), ricalcolata a ogni snapshot (E11)
+const StageMotion := preload("res://scripts/stage_motion.gd")
+const FighterPose := preload("res://scripts/fighter_pose.gd")
 const HitReaction := preload("res://scripts/hit_reaction.gd") # il corpo si piega dove è colpito (#305)
 const SunLight := preload("res://scripts/sun_light.gd") # luce e ombre del sole e della luna (#288)
-const VARIANT_HUES := [0.5, 0.25, 0.75, 0.125, 0.625, 0.375, 0.875] # spostamento della tinta per la variante 1, 2, ...
 static var _screen_px_per_world := 0.0 # pixel dello schermo per pixel di mondo alla telecamera più vicina; 0 = non si sa (headless)
 var _character_sprites := {} # id personaggio -> true quando i suoi sprite sono caricati
 var _supreme_view: Node2D # liana, orsogufo e gnomo della suprema di Bonobot (#102), disegnati sopra i lottatori
@@ -175,6 +177,9 @@ func set_stage(stage_id: String) -> void:
 func set_stage_spec(spec: Dictionary) -> void:
 	stage = spec
 	predictor.set_stage(spec)
+	_palette = {}
+	for k in spec.get("colors", {}):
+		_palette[k] = _color(spec.colors[k])
 	_layers = []
 	_foreground = []
 	var art: Dictionary = spec.get("art", {})
@@ -200,7 +205,7 @@ func _flood_up(t: float) -> float:
 	if not w is Dictionary or w.get("flood") == null or int(w.flood) >= hazards.size():
 		return 0.0
 	var h: Dictionary = hazards[int(w.flood)]
-	var r := hazard_rect(h, t)
+	var r := StageMotion.hazard_rect(h, t)
 	var low: float = h.y
 	var high: float = h.get("flood", {}).get("highY", low)
 	return clampf((low - r.position.y) / (low - high), 0.0, 1.0) if high != low else 0.0
@@ -210,29 +215,20 @@ func _flood_up(t: float) -> float:
 func _rain_now(t: float) -> float:
 	var rain := 0.0
 	for h in stage.get("hazards", []) if stage.get("hazards") is Array else []:
-		rain = maxf(rain, rain_strength(h, t))
+		rain = maxf(rain, StageMotion.rain_strength(h, t))
 	var art: Dictionary = stage.get("art", {}) if stage.get("art") is Dictionary else {}
 	var life: Dictionary = art.get("life", {}) if art.get("life") is Dictionary else {}
 	if life.get("rain") is Dictionary:
-		rain = maxf(rain, life_rain(life.rain, t))
+		rain = maxf(rain, StageMotion.life_rain(life.rain, t))
 	return rain
-
-
-# Pioggia solo grafica (#288): 2 s per arrivare e 2 per smettere, dentro i rainMs di ogni giro
-static func life_rain(r: Dictionary, t: float) -> float:
-	var k := fposmod(t + float(r.get("offsetMs", 0)), float(r.periodMs))
-	var dur: float = r.rainMs
-	if k >= dur:
-		return 0.0
-	return clampf(minf(k, dur - k) / 2000.0, 0.0, 1.0)
 
 
 # Dove passa adesso una trappola che viaggia: i piccioni scappano anche dal ciclista (#260)
 func _threats(t: float) -> Array:
 	var out := []
 	for h in stage.get("hazards", []) if stage.get("hazards") is Array else []:
-		if h.get("travel") is Dictionary and travel_phase(h, t).phase == "cross":
-			out.append(hazard_rect(h, t))
+		if h.get("travel") is Dictionary and StageMotion.travel_phase(h, t).phase == "cross":
+			out.append(StageMotion.hazard_rect(h, t))
 	return out
 
 
@@ -443,14 +439,7 @@ static func _stage_layer(dir: String, layer: Dictionary, world_scale := 0.0) -> 
 func _draw_layer(layer: Array, mod := Color(-1, 0, 0)) -> void:
 	var tex: Texture2D = layer[0]
 	var center := Vector2(stage_width() / 2.0, game.world.height / 2.0)
-	draw_texture_rect(tex, layer_rect(tex.get_size() * _layer_scale, layer[1], center, view_rect.get_center()), false, _ambient if mod.r < 0.0 else mod)
-
-
-# Dove sta uno strato: centrato sull'arena, poi trascinato verso il centro della vista tanto più quanto è lontano.
-# parallax 1 = fermo con il palco, 0 = fermo con la telecamera
-static func layer_rect(size: Vector2, parallax: float, world_center: Vector2, view_center: Vector2) -> Rect2:
-	var center := world_center + (view_center - world_center) * (1.0 - parallax)
-	return Rect2(center - size / 2.0, size)
+	draw_texture_rect(tex, StageMotion.layer_rect(tex.get_size() * _layer_scale, layer[1], center, view_rect.get_center()), false, _ambient if mod.r < 0.0 else mod)
 
 
 # Piedi dei lottatori in gioco (non eliminati), per la telecamera
@@ -478,7 +467,7 @@ func on_snapshot(snap: Dictionary) -> void:
 			predictor.on_server(p, Time.get_ticks_msec(), positions.get(my_id, Vector2(NAN, NAN)))
 	player_ids = snap.players.map(func(p): return p.id)
 	# Colore, personaggio e id arrivano solo con lo snapshot: le varianti non cambiano tra un frame e l'altro
-	_variants = variant_ranks(snap.players)
+	_variants = FighterPose.variant_ranks(snap.players)
 	_holding = {}
 	for p in snap.players:
 		if p.get("grabbedBy") != null:
@@ -525,7 +514,7 @@ func on_event(e: Dictionary) -> void:
 			var p: Variant = buffer.sample(e.id, Time.get_ticks_msec())
 			var col: Color = Access.color(p.color).lightened(0.3) if p != null else Color.WHITE
 			var center := Vector2(e.x, e.y - float(game.fighter.height) / 2)
-			for s in shard_velocities(int(game.effects.shards)):
+			for s in FighterPose.shard_velocities(int(game.effects.shards)):
 				_shards.append({"x": center.x, "y": center.y, "vx": s.x, "vy": s.y, "age": 0.0, "color": col})
 		"grab":
 			# Presa (#109): un lampo bianco dove la mano afferra
@@ -631,24 +620,16 @@ func _puff(x: float, y: float) -> void:
 
 func _process(delta: float) -> void:
 	var fx: Dictionary = game.effects
-	for s in _sparks:
-		s.age += delta * 1000.0
-	_sparks = _sparks.filter(func(s): return s.age < fx.hitSparkMs)
-	for d in _dust:
-		d.age += delta * 1000.0
-	_dust = _dust.filter(func(d): return d.age < fx.dustMs)
-	for b in _beams:
-		b.age += delta * 1000.0
-	_beams = _beams.filter(func(b): return b.age < fx.koBeamMs)
+	var dt_ms := delta * 1000.0
+	_sparks = _aged(_sparks, dt_ms, fx.hitSparkMs)
+	_dust = _aged(_dust, dt_ms, fx.dustMs)
+	_beams = _aged(_beams, dt_ms, fx.koBeamMs)
 	for s in _shards:
-		s.age += delta * 1000.0
 		s.x += s.vx * delta
 		s.y += s.vy * delta
 		s.vy += 900.0 * delta # le schegge ricadono
-	_shards = _shards.filter(func(s): return s.age < fx.shardMs)
-	for c in _clouds:
-		c.age += delta * 1000.0
-	_clouds = _clouds.filter(func(c): return c.age < CLOUD_MS)
+	_shards = _aged(_shards, dt_ms, fx.shardMs)
+	_clouds = _aged(_clouds, dt_ms, CLOUD_MS)
 	_update_high_overlay()
 	for id in _shield_hits.keys():
 		_shield_hits[id] += delta * 1000.0
@@ -663,16 +644,25 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 
+# Invecchia gli effetti e toglie quelli finiti. Gira a ogni frame: senza effetti in corso non crea array nuovi
+static func _aged(list: Array, dt_ms: float, life_ms: float) -> Array:
+	if list.is_empty():
+		return list
+	for e in list:
+		e.age += dt_ms
+	return list.filter(func(e): return e.age < life_ms)
+
+
 func _draw() -> void:
 	if stage.is_empty():
 		return
 	var w: float = game.world.width
 	var h: float = game.world.height
-	draw_rect(Rect2(-400, -400, stage_width() + 800, h + 800), _color(stage.colors.sky))
+	draw_rect(Rect2(-400, -400, stage_width() + 800, h + 800), _palette.sky)
 	# Nelle arene grandi (#240) la telecamera si allontana fino alle zone di espulsione: il cielo arriva fin lì
 	var bz: Variant = stage.get("blastZone")
 	if bz is Dictionary:
-		draw_rect(Rect2(bz.left - 200, bz.top - 200, bz.right - bz.left + 400, bz.bottom - bz.top + 400), _color(stage.colors.sky))
+		draw_rect(Rect2(bz.left - 200, bz.top - 200, bz.right - bz.left + 400, bz.bottom - bz.top + 400), _palette.sky)
 	var t_stage := buffer.sample_stage_ms(Time.get_ticks_msec())
 	var view_center := view_rect.get_center()
 	var rain := _rain_now(t_stage)
@@ -689,7 +679,7 @@ func _draw() -> void:
 		_draw_layer(l)
 		var lights: Variant = _light_layers.get(snappedf(float(l[1]), 0.001))
 		if lights != null and night > 0.0: # i vetri accesi, senza la luce ambiente, solo dove ce ne sono
-			var whole := layer_rect((l[0] as Texture2D).get_size() * _layer_scale, l[1], Vector2(stage_width() / 2.0, h / 2.0), view_center)
+			var whole := StageMotion.layer_rect((l[0] as Texture2D).get_size() * _layer_scale, l[1], Vector2(stage_width() / 2.0, h / 2.0), view_center)
 			var part: Rect2 = lights[1]
 			draw_texture_rect(lights[0], Rect2(whole.position + part.position * whole.size, part.size * whole.size), false, Color(1, 1, 1, night))
 		if night > 0.0:
@@ -710,8 +700,8 @@ func _draw() -> void:
 		var s: Dictionary = stage.solids[i]
 		var skin := _skin_for("solids", i)
 		if skin.is_empty():
-			draw_rect(Rect2(s.x, s.y, s.width, s.height), _color(stage.colors.solid))
-			draw_rect(Rect2(s.x, s.y, s.width, 6), _color(stage.colors.solidEdge))
+			draw_rect(Rect2(s.x, s.y, s.width, s.height), _palette.solid)
+			draw_rect(Rect2(s.x, s.y, s.width, 6), _palette.solidEdge)
 		else:
 			_draw_skinned_solid(s, skin)
 	for i in stage.platforms.size():
@@ -720,16 +710,16 @@ func _draw() -> void:
 		if not skin.is_empty():
 			_draw_skinned_platform(p, skin)
 		elif p.get("y2") != null:
-			_draw_stairs(p, _color(stage.colors.platform))
+			_draw_stairs(p, _palette.platform)
 		elif float(p.get("arch", 0)) != 0.0:
-			draw_colored_polygon(arch_polygon(p, 8.0), _color(stage.colors.platform))
+			draw_colored_polygon(StageMotion.arch_polygon(p, 8.0), _palette.platform)
 		else:
-			draw_rect(Rect2(p.x, p.y, p.width, 8), _color(stage.colors.platform))
+			draw_rect(Rect2(p.x, p.y, p.width, 8), _palette.platform)
 	_draw_rails(false) # ringhiere dietro ai lottatori
 	if not _life.is_empty():
 		_life.draw_pigeons(self, t_stage, Time.get_ticks_msec(), positions.values(), _threats(t_stage))
 
-	_draw_elements(buffer.sample_stage_ms(Time.get_ticks_msec()))
+	_draw_elements(t_stage) # lo stesso istante di tutto il resto del frame
 	_draw_course()
 
 	var now := Time.get_ticks_msec()
@@ -815,11 +805,11 @@ func _draw_beam(b: Dictionary) -> void:
 func _draw_projectiles() -> void:
 	var dt := (Time.get_ticks_msec() - _projectiles_ms) / 1000.0
 	for pr in _projectiles:
-		var spec := attack_spec(game, str(pr.characterId), str(pr.kind))
+		var spec := FighterPose.attack_spec(game, str(pr.characterId), str(pr.kind))
 		var size := Vector2(float(spec.get("range", 24)), float(spec.get("height", 16)))
 		var vel := Vector2(pr.vx, pr.vy)
 		var c := Vector2(pr.x, pr.y) + vel * minf(dt, 0.1)
-		var color := projectile_color(game, str(pr.characterId), str(pr.kind))
+		var color := FighterPose.projectile_color(game, str(pr.characterId), str(pr.kind))
 		var angle := vel.angle() if vel.length() > 1.0 else 0.0
 		for i in [3, 2, 1]: # la scia: copie più piccole e trasparenti dietro
 			var tc := color
@@ -835,27 +825,8 @@ func _draw_oval(c: Vector2, angle: float, size: Vector2, color: Color) -> void:
 	draw_set_transform(Vector2.ZERO)
 
 
-const SLOT_OF_KIND := {"specialNeutral": "neutral", "specialSide": "side", "specialDown": "down"}
-
-
-# Il colore del proiettile: quello della speciale del personaggio, poi quello del personaggio base
-static func projectile_color(game_data: Dictionary, character_id: String, kind: String) -> Color:
-	var slot: String = SLOT_OF_KIND.get(kind, "neutral")
-	for id in [character_id, str(game_data.get("defaultCharacterId", ""))]:
-		var c: Dictionary = game_data.characters.get(id, {})
-		var sp: Dictionary = c.get("specials", {}).get(slot, {})
-		if sp.has("color"):
-			return Color.hex((int(sp.color) << 8) | 0xff)
-	return Color(1, 0.85, 0.3)
-
-
-# Alone della carica (E10): cresce con la carica, da giallo ad arancione
-static func charge_radius(fighter_height: float, charge: float) -> float:
-	return fighter_height * (0.45 + 0.35 * clampf(charge, 0.0, 1.0))
-
-
 func _draw_charge(center: Vector2, charge: float, now: float) -> void:
-	var r := charge_radius(float(game.fighter.height), charge)
+	var r := FighterPose.charge_radius(float(game.fighter.height), charge)
 	var col := Color(1, 0.85, 0.3).lerp(Color(1, 0.45, 0.1), charge)
 	var full := charge >= 0.99
 	if full and not Access.calm: # carica piena: l'alone pulsa
@@ -975,20 +946,11 @@ func _draw_cloud(c: Dictionary) -> void:
 	draw_circle(Vector2(c.x, c.y), radius * 0.5, Color(SMOKE_GREY.lightened(0.2), 0.55 * (1.0 - k)))
 
 
-# Quanto è fatto il proprio lottatore (#302): da 0,25 appena fumato a 1 prima di crollare; 0 se non lo è
-static func high_level(p: Variant, high_ms: float) -> float:
-	if p is Dictionary and p.get("powerup") == "trip":
-		return 0.45 # i funghetti (#302): un viaggio leggero, sempre uguale
-	if not (p is Dictionary) or p.get("powerup") != "bong":
-		return 0.0
-	return 0.25 + 0.75 * clampf(1.0 - float(p.get("powerupMs", 0)) / high_ms, 0.0, 1.0)
-
-
 # Lo schermo distorto copre la parte di mondo che si vede; con "meno scossa e lampi" è più leggero
 func _update_high_overlay() -> void:
 	if _high_overlay == null:
 		return
-	var level := high_level(_sampled.get(my_id), float(game.get("bong", {}).get("highMs", 7000)))
+	var level := FighterPose.high_level(_sampled.get(my_id), float(game.get("bong", {}).get("highMs", 7000)))
 	if Access.calm:
 		level *= 0.35
 	_high_overlay.visible = level > 0.0
@@ -1051,19 +1013,9 @@ static func leaf_leaflets(size: float) -> Array:
 	return out
 
 
-# Potenziati dal fiore (#231): quanto si vede l'alone. Pieno e lento che respira; negli ultimi secondi
-# lampeggia per avvisare che sta finendo
-static func aura_alpha(ms_left: float, now_ms: float, ending_ms: float) -> float:
-	if ms_left <= 0.0:
-		return 0.0
-	if ms_left < ending_ms and int(now_ms / 120.0) % 2 == 0:
-		return 0.15
-	return 0.45 + 0.12 * sin(now_ms / 420.0)
-
-
 # Alone verde dietro al lottatore potenziato
 func _draw_power_aura(p: Dictionary, now: float, height: float) -> void:
-	var a := aura_alpha(float(p.get("powerupMs", 0)), now, float(game.get("powerup", {}).get("endingMs", 1500)))
+	var a := FighterPose.aura_alpha(float(p.get("powerupMs", 0)), now, float(game.get("powerup", {}).get("endingMs", 1500)))
 	var center := Vector2(p.x, p.y - height * 0.55)
 	var glow := FLOWER_GREEN.lightened(0.35)
 	for k in 3:
@@ -1111,21 +1063,21 @@ func _draw_elements(t: float) -> void:
 	var movers: Array = stage.get("movers") if stage.get("movers") != null else []
 	for mi in movers.size():
 		var m: Dictionary = movers[mi]
-		var pos := mover_position(m, t)
+		var pos := StageMotion.mover_position(m, t)
 		if _mover_sprites.has(mi):
 			_draw_mover_sprite(_mover_sprites[mi], m, pos, t)
 			continue
 		if m.get("kind", "") == "barca":
 			_draw_boat(pos, float(m.width), t)
 			continue
-		draw_rect(Rect2(pos.x, pos.y, m.width, 10), _color(stage.colors.platform))
+		draw_rect(Rect2(pos.x, pos.y, m.width, 10), _palette.platform)
 		# Strisce gialle e nere sotto: si capisce che si muove
 		for x in range(0, int(m.width), 20):
 			draw_rect(Rect2(pos.x + x, pos.y + 10, minf(10, m.width - x), 5), Color("f1c40f"))
 	var hazards: Array = stage.get("hazards") if stage.get("hazards") != null else []
 	for i in hazards.size():
 		var h: Dictionary = hazards[i]
-		_draw_hazard(h, hazard_active(h, t), t, i)
+		_draw_hazard(h, StageMotion.hazard_active(h, t), t, i)
 	var rain := _rain_now(t) # dall'acqua alta o dalla pioggia dello sfondo vivo (#288)
 	if rain > 0.0:
 		_draw_rain(rain, t)
@@ -1135,7 +1087,7 @@ func _draw_elements(t: float) -> void:
 
 
 func _draw_hazard(h: Dictionary, on: bool, t: float, index := -1) -> void:
-	var r := hazard_rect(h, t)
+	var r := StageMotion.hazard_rect(h, t)
 	match h.kind:
 		"ciclista":
 			_draw_cyclist(h, r, t, index)
@@ -1181,40 +1133,6 @@ func _draw_hazard(h: Dictionary, on: bool, t: float, index := -1) -> void:
 			draw_rect(r, Color(1, 0.2, 0.2, a))
 
 
-# Posizione di una piattaforma mobile al tempo t: la stessa formula di moverPosition() in physics/elements.ts
-static func mover_position(m: Dictionary, t: float) -> Vector2:
-	var pts: Array = m.path
-	if pts.size() < 2:
-		return Vector2(pts[0].x, pts[0].y)
-	var route: Array = pts.duplicate()
-	if m.get("loop", false):
-		route.append(pts[0])
-	else:
-		for i in range(pts.size() - 2, -1, -1):
-			route.append(pts[i])
-	var segments := route.size() - 1
-	var pause: float = m.get("pauseMs", 0)
-	var lengths: Array[float] = []
-	var total := 0.0
-	for i in segments:
-		var d := Vector2(route[i + 1].x - route[i].x, route[i + 1].y - route[i].y).length()
-		lengths.append(d)
-		total += d
-	var period: float = m.periodMs
-	var travel := maxf(1.0, period - pause * segments)
-	var left := fposmod(t + float(m.get("offsetMs", 0)), period)
-	for i in segments:
-		var a := Vector2(route[i].x, route[i].y)
-		if left < pause:
-			return a
-		left -= pause
-		var seg_ms: float = travel * lengths[i] / total if total > 0 else travel / segments
-		if left < seg_ms:
-			return a.lerp(Vector2(route[i + 1].x, route[i + 1].y), left / seg_ms)
-		left -= seg_ms
-	return Vector2(route[segments].x, route[segments].y)
-
-
 # Piattaforma inclinata (#246), disegno provvisorio: gradini di pietra lungo la rampa. La fisica vede la rampa;
 # i piedi stanno sulla rampa, che tocca lo spigolo di ogni gradino (al massimo un gradino sopra la pedata).
 func _draw_stairs(p: Dictionary, col: Color) -> void:
@@ -1230,20 +1148,6 @@ func _draw_stairs(p: Dictionary, col: Color) -> void:
 		draw_rect(Rect2(x0, top, step + 0.5, minf(6.0, bottom - top)), col)
 		if top + 6.0 < bottom:
 			draw_rect(Rect2(x0, top + 6, step + 0.5, minf(rise / n, bottom - top - 6.0)), dark)
-
-
-# Piattaforma ad arco (#244): la striscia spessa thick che segue la curva di PredictMovement.surface_y
-static func arch_polygon(p: Dictionary, thick: float, k := 1.0, o := Vector2.ZERO) -> PackedVector2Array:
-	var top := PackedVector2Array()
-	var bottom := PackedVector2Array()
-	var steps := maxi(2, int(float(p.width) / 16.0))
-	for i in steps + 1:
-		var x: float = float(p.x) + float(p.width) * i / steps
-		var y := PredictMovement.surface_y(p, x)
-		top.append(o + Vector2(x, y) * k)
-		bottom.insert(0, o + Vector2(x, y + thick) * k)
-	top.append_array(bottom)
-	return top
 
 
 # Luce del sole e della luna (#288), solo nelle arene col giorno che passa: una luce calda (o fredda di notte)
@@ -1322,7 +1226,7 @@ func _surface_below(x: float, y: float) -> float:
 # Getto d'acqua (#253): bolle durante l'avviso, poi una colonna d'acqua spumosa che sale. Stessa fase di jetPhase().
 # Con idle (#288) è una fontana: a riposo lo zampillo resta basso, con l'avviso cresce, poi sale tutto
 func _draw_jet(j: Dictionary, t: float) -> void:
-	var phase := jet_phase(j, t)
+	var phase := StageMotion.jet_phase(j, t)
 	var idle := float(j.get("idle", 0))
 	if phase == "calm" and idle <= 0.0:
 		return
@@ -1398,15 +1302,6 @@ func _draw_fountain_plume(cx: float, base: float, w: float, h: float, t: float, 
 		draw_circle(Vector2(cx + (i - 3) * w * 0.22 + sin(a) * 3.0, base - 4.0 + cos(a * 1.4) * 1.5), 4.5 if strong else 3.0, Color(0.95, 0.98, 0.97, 0.7))
 
 
-# Come jetPhase() in physics/elements.ts: "calm", "warn" (bolle) o "active" (getto)
-static func jet_phase(j: Dictionary, t: float) -> String:
-	var period: float = j.periodMs
-	var left := fposmod(t + float(j.get("offsetMs", 0)), period) - (period - float(j.warnMs) - float(j.activeMs))
-	if left < 0:
-		return "calm"
-	return "warn" if left < float(j.warnMs) else "active"
-
-
 # La barca del canale (#264): ponte di legno dove si sta in piedi (y), scafo scuro sotto, prua e poppa rialzate
 func _draw_boat(pos: Vector2, w: float, t: float) -> void:
 	var ink := Color("1e1a17")
@@ -1415,7 +1310,7 @@ func _draw_boat(pos: Vector2, w: float, t: float) -> void:
 	draw_colored_polygon(hull, Color("4a3a2e"))
 	draw_polyline(PackedVector2Array([hull[0], hull[1], hull[2], hull[3], hull[0]]), ink, 2.0)
 	draw_rect(Rect2(pos.x - 14, pos.y - 2 + bob, w + 28, 6), Color("8a6a4c")) # il bordo di legno chiaro
-	draw_rect(Rect2(pos.x, pos.y + bob, w, 4), _color(stage.colors.solidEdge)) # dove si sta in piedi: chiaro
+	draw_rect(Rect2(pos.x, pos.y + bob, w, 4), _palette.solidEdge) # dove si sta in piedi: chiaro
 	draw_line(Vector2(pos.x + w * 0.7, pos.y + bob), Vector2(pos.x + w * 0.7, pos.y - 46 + bob), ink, 2.0) # asta della bandierina
 	draw_colored_polygon(PackedVector2Array([Vector2(pos.x + w * 0.7, pos.y - 46 + bob), Vector2(pos.x + w * 0.7 + 22, pos.y - 40 + bob), Vector2(pos.x + w * 0.7, pos.y - 34 + bob)]), Color("b8a88a"))
 
@@ -1426,35 +1321,11 @@ func _draw_mover_sprite(spr: Dictionary, m: Dictionary, pos: Vector2, t: float) 
 	var tex: Texture2D = spr.tex
 	var fw := tex.get_width() / float(spr.frames)
 	var w: float = m.width
-	var dir := mover_facing(m, t, stage_width())
+	var dir := StageMotion.mover_facing(m, t, stage_width())
 	var bob := sin(t / 500.0) * 1.2 if m.get("kind", "") == "barca" else 0.0
 	var surface := Rect2(pos.x, pos.y - 1.0 + bob, w, 1.0)
-	var frame := hazard_frame(t, spr.fps, spr.frames)
-	draw_texture_rect_region(tex, hazard_sprite_rect(spr, fw, tex.get_height(), surface, dir), Rect2(frame * fw, 0, fw, tex.get_height()), _stage_light())
-
-
-# Il verso di una piattaforma mobile: quello in cui va, o da ferma verso il centro dell'arena
-static func mover_facing(m: Dictionary, t: float, arena_width: float) -> int:
-	var dx := mover_position(m, t + 50.0).x - mover_position(m, t).x
-	if absf(dx) > 0.01:
-		return 1 if dx > 0 else -1
-	var x := mover_position(m, t).x + float(m.width) / 2.0
-	return 1 if x < arena_width / 2.0 else -1
-
-
-# Il fotogramma dell'animazione di una trappola al tempo t dell'arena (#270)
-static func hazard_frame(t: float, fps: float, frames: int) -> int:
-	return posmod(int(floorf(t / 1000.0 * fps)), frames)
-
-
-# Dove si disegna un fotogramma: il piede (footX, footY) sul centro del lato basso del rettangolo che fa male.
-# Andando a sinistra si specchia sul posto: la larghezza negativa gira l'immagine (canvas_item_add_texture_rect)
-static func hazard_sprite_rect(spr: Dictionary, fw: float, fh: float, r: Rect2, dir: int) -> Rect2:
-	var k: float = spr.scale
-	var foot_x: float = spr.footX
-	var left := r.get_center().x - (foot_x if dir > 0 else fw - foot_x) * k
-	var top: float = r.end.y - float(spr.footY) * k
-	return Rect2(left, top, fw * k, fh * k) if dir > 0 else Rect2(left, top, -fw * k, fh * k)
+	var frame := StageMotion.hazard_frame(t, spr.fps, spr.frames)
+	draw_texture_rect_region(tex, StageMotion.hazard_sprite_rect(spr, fw, tex.get_height(), surface, dir), Rect2(frame * fw, 0, fw, tex.get_height()), _stage_light())
 
 
 # Il fumetto di una trappola che urla, come il "CANCAROOOO!" di Cancaro Man (#270): una nuvola a punte che compare
@@ -1493,10 +1364,10 @@ func _draw_shout(text: String, mouth: Vector2, dir: int, k: float, t: float) -> 
 # signore pelato e rosso dalla rabbia, maglietta bianca, pettorina catarifrangente (lime spento, non il
 # giallo di P4) e la catena che gira sopra la testa. Durante l'avviso, "DRIN DRIN!" dal lato dove entra.
 func _draw_cyclist(h: Dictionary, r: Rect2, t: float, index := -1) -> void:
-	var tp := travel_phase(h, t)
+	var tp := StageMotion.travel_phase(h, t)
 	if tp.phase == "calm":
 		return
-	var dir := travel_direction(h, t)
+	var dir := StageMotion.travel_direction(h, t)
 	if tp.phase == "warn":
 		_draw_bell_warning(r, dir, t)
 		return
@@ -1505,8 +1376,8 @@ func _draw_cyclist(h: Dictionary, r: Rect2, t: float, index := -1) -> void:
 		var spr: Dictionary = _hazard_sprites[index]
 		var tex: Texture2D = spr.tex
 		var fw := tex.get_width() / float(spr.frames)
-		var frame := hazard_frame(t, spr.fps, spr.frames)
-		draw_texture_rect_region(tex, hazard_sprite_rect(spr, fw, tex.get_height(), r, dir), Rect2(frame * fw, 0, fw, tex.get_height()), _stage_light())
+		var frame := StageMotion.hazard_frame(t, spr.fps, spr.frames)
+		draw_texture_rect_region(tex, StageMotion.hazard_sprite_rect(spr, fw, tex.get_height(), r, dir), Rect2(frame * fw, 0, fw, tex.get_height()), _stage_light())
 		var shout: Dictionary = spr.shout
 		if not shout.is_empty():
 			var k: float = spr.scale
@@ -1571,124 +1442,6 @@ func _draw_bell_warning(r: Rect2, dir: int, t: float) -> void:
 	var tw := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
 	draw_string(font, Vector2(x - tw / 2, y - 30 * s), text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, col)
 	draw_string(font, Vector2(x - 4 * s, y + 6 * s), "!", HORIZONTAL_ALIGNMENT_LEFT, -1, int(20 * s), col)
-
-
-# Come hazardActive() in physics/elements.ts
-static func hazard_active(h: Dictionary, t: float) -> bool:
-	var period: float = h.get("periodMs", 0)
-	if period <= 0:
-		return true
-	return fposmod(t + float(h.get("offsetMs", 0)), period) < float(h.get("activeMs", period / 2.0))
-
-
-# Come floodPhase() in physics/elements.ts: fase dell'acqua alta (#228) e quanto è avanti (k da 0 a 1)
-static func flood_phase(h: Dictionary, t: float) -> Dictionary:
-	var f: Dictionary = h.get("flood", {})
-	if f.is_empty():
-		return {"phase": "calm", "k": 0.0}
-	var warn: float = f.warnMs
-	var rise: float = f.riseMs
-	var hold: float = f.holdMs
-	var fall: float = f.get("fallMs", rise)
-	var period: float = f.periodMs
-	var left := fposmod(t + float(f.get("offsetMs", 0)), period) - (period - (warn + rise + hold + fall))
-	if left < 0:
-		return {"phase": "calm", "k": 0.0}
-	if left < warn:
-		return {"phase": "warn", "k": left / warn}
-	left -= warn
-	if left < rise:
-		return {"phase": "rise", "k": left / rise}
-	left -= rise
-	if left < hold:
-		return {"phase": "high", "k": left / hold}
-	left -= hold
-	return {"phase": "fall", "k": minf(1.0, left / fall) if fall > 0 else 1.0}
-
-
-# Come hazardRect() in physics/elements.ts: con l'acqua alta la superficie sale, il fondo resta fermo
-static func hazard_rect(h: Dictionary, t: float) -> Rect2:
-	var tr: Variant = h.get("travel")
-	if tr is Dictionary and tr.path.size() >= 2:
-		# Trappola che viaggia (#229): lungo il percorso, come hazardRect() in physics/elements.ts
-		var tp := travel_phase(h, t)
-		var k: float = tp.k
-		var along: float = (1.0 - k if tp.reverse else k) if tp.phase == "cross" else (1.0 if tp.reverse else 0.0)
-		var p := path_point(tr.path, along)
-		return Rect2(p.x, p.y, h.width, h.height)
-	var y: float = h.y
-	var bottom: float = h.y + h.height
-	if h.has("flood"):
-		var fp := flood_phase(h, t)
-		var k: float = fp.k
-		var up := 0.0
-		match fp.phase:
-			"rise":
-				up = k
-			"high":
-				up = 1.0
-			"fall":
-				up = 1.0 - k
-		y = h.y + (float(h.flood.highY) - h.y) * up
-	return Rect2(h.x, y, h.width, bottom - y)
-
-
-# Quanto piove (0-1) per l'acqua alta: cresce durante l'avviso, piena con l'acqua che sale e alta, cala con la discesa
-static func rain_strength(h: Dictionary, t: float) -> float:
-	if not h.has("flood"):
-		return 0.0
-	var fp := flood_phase(h, t)
-	var k: float = fp.k
-	match fp.phase:
-		"warn":
-			return k
-		"rise", "high":
-			return 1.0
-		"fall":
-			return 1.0 - k
-	return 0.0
-
-
-# Come travelPhase() in physics/elements.ts: calma, avviso o passaggio della trappola che viaggia (#229)
-static func travel_phase(h: Dictionary, t: float) -> Dictionary:
-	var tr: Variant = h.get("travel")
-	if not tr is Dictionary:
-		return {"phase": "calm", "k": 0.0, "reverse": false}
-	var period: float = tr.periodMs
-	var warn: float = tr.warnMs
-	var cross: float = tr.crossMs
-	var tt: float = t + float(tr.get("offsetMs", 0))
-	var reverse: bool = bool(tr.get("alternate", false)) and int(fposmod(floorf(tt / period), 2.0)) == 1
-	var left := fposmod(tt, period) - (period - warn - cross)
-	if left < 0:
-		return {"phase": "calm", "k": 0.0, "reverse": reverse}
-	if left < warn:
-		return {"phase": "warn", "k": left / warn, "reverse": reverse}
-	return {"phase": "cross", "k": minf(1.0, (left - warn) / cross), "reverse": reverse}
-
-
-# Punto del percorso a una frazione k della sua lunghezza (come pathPoint in physics/elements.ts)
-static func path_point(path: Array, k: float) -> Vector2:
-	var lengths: Array[float] = []
-	var total := 0.0
-	for i in range(1, path.size()):
-		var d := Vector2(path[i].x - path[i - 1].x, path[i].y - path[i - 1].y).length()
-		lengths.append(d)
-		total += d
-	var left := k * total
-	for i in lengths.size():
-		if left <= lengths[i] or i == lengths.size() - 1:
-			var f: float = minf(1.0, left / lengths[i]) if lengths[i] > 0 else 0.0
-			return Vector2(path[i].x, path[i].y).lerp(Vector2(path[i + 1].x, path[i + 1].y), f)
-		left -= lengths[i]
-	return Vector2(path[0].x, path[0].y)
-
-
-# Da che parte va in questo giro: 1 verso destra, -1 verso sinistra (come travelDirection)
-static func travel_direction(h: Dictionary, t: float) -> int:
-	var path: Array = h.travel.path
-	var forward := -1 if path[path.size() - 1].x < path[0].x else 1
-	return -forward if travel_phase(h, t).reverse else forward
 
 
 # Pioggia su tutta l'arena: gocce oblique in posizioni fisse che scorrono col tempo dell'arena
@@ -1756,7 +1509,7 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 		var color := Access.color(p.color)
 		if p.hitstun or p.get("stunned", false) or p.get("grabbedBy") != null:
 			color = color.lightened(0.5)
-		color.a = away_alpha(p)
+		color.a = FighterPose.away_alpha(p)
 		var body := Rect2(p.x - fw / 2, p.y - fh, fw, fh)
 		draw_rect(body, color)
 		if p.id == my_id:
@@ -1776,7 +1529,7 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 
 	# Appeso al bordo (#110): il braccio arriva fino allo spigolo, sopra la testa.
 	# Chi ha l'animazione ledge nello spritesheet (#171) ha già la mano disegnata sullo spigolo.
-	var own_hang: bool = _textures.has(character.id) and has_own(character.sprite.animations, "ledge")
+	var own_hang: bool = _textures.has(character.id) and FighterPose.has_own(character.sprite.animations, "ledge")
 	if str(p.get("ledge", "")) == "hang" and not own_hang:
 		var hand := Vector2(p.x + p.facing * fw / 2, p.y - float(game.ledge.hangOffsetY))
 		var shoulder := Vector2(p.x + p.facing * fw * 0.2, p.y - fh * 0.55)
@@ -1785,25 +1538,25 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 		draw_circle(hand, 6.0, arm)
 
 	# Presa (#109): il braccio di chi tiene arriva a chi è tenuto, se lo sprite non ha la sua posa
-	var own_grab: bool = _textures.has(character.id) and has_own(character.sprite.animations, "grab")
+	var own_grab: bool = _textures.has(character.id) and FighterPose.has_own(character.sprite.animations, "grab")
 	if _holding.has(p.id) and not own_grab:
 		var reach: float = fw / 2 + float(game.attacks.grab.range) * 0.6
 		var hand := Vector2(p.x + p.facing * reach, p.y - fh * 0.55)
 		var arm := Access.color(p.color).darkened(0.2)
-		arm.a = away_alpha(p)
+		arm.a = FighterPose.away_alpha(p)
 		draw_line(Vector2(p.x + p.facing * fw * 0.2, p.y - fh * 0.55), hand, arm, 6.0)
 		draw_circle(hand, 7.0, arm)
 
 	# Scudo (#109): una bolla del colore del giocatore che rimpicciolisce con i punti rimasti
 	if p.get("shielding", false):
-		var r := shield_radius(float(p.get("shieldHp", 0)), float(game.shield.maxHp), fh)
+		var r := FighterPose.shield_radius(float(p.get("shieldHp", 0)), float(game.shield.maxHp), fh)
 		var bubble := Access.color(p.color).lightened(0.3)
 		var lit: float = 1.0 - float(_shield_hits[p.id]) / game.effects.shieldFlashMs if _shield_hits.has(p.id) else 0.0
 		bubble = bubble.lerp(Color.WHITE, 0.6 * lit) # si illumina quando para un colpo
-		bubble.a = (0.35 + 0.3 * lit) * away_alpha(p)
+		bubble.a = (0.35 + 0.3 * lit) * FighterPose.away_alpha(p)
 		var center := Vector2(p.x, p.y - fh / 2)
 		draw_circle(center, r, bubble)
-		bubble.a = 0.9 * away_alpha(p)
+		bubble.a = 0.9 * FighterPose.away_alpha(p)
 		draw_arc(center, r, 0, TAU, 40, bubble, 3.0)
 
 	# Stordito dopo la rottura dello scudo: stelline che girano sopra la testa
@@ -1820,7 +1573,7 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 	# Colpo in corso: la stessa hitbox di attackBox() in src/shared/physics/attacks.ts,
 	# spostata da boxX/boxY per le varianti direzionali (#2)
 	# Si può nascondere dalle opzioni; in allenamento "Mostra hitbox" lo fa vedere comunque
-	var spec := attack_spec(game, p.characterId, str(p.attack)) if p.attack != null and (attack_boxes or show_hitboxes) else {}
+	var spec := FighterPose.attack_spec(game, p.characterId, str(p.attack)) if p.attack != null and (attack_boxes or show_hitboxes) else {}
 	if not spec.is_empty(): # un attacco che questa versione non conosce non ha rettangolo
 		var front: float = spec.get("boxX", fw / 2)
 		var o := Vector2(p.x, p.y)
@@ -1858,7 +1611,7 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 func _draw_sprite(p: Dictionary, character: Dictionary, now: float, react := Transform2D.IDENTITY) -> void:
 	var sheet: Dictionary = character.sprite
 	var anims: Dictionary = sheet.animations # tutti gli stati, già risolti con il ripiego (export:godot)
-	var name := _animation_for(p, _holding.has(p.id))
+	var name := FighterPose.animation_for(p, _holding.has(p.id))
 	var state: Dictionary = _anims.get(p.id, {})
 	var prev_name: String = state.get("name", "")
 	var kind: String = str(p.attack) if p.attack != null else ""
@@ -1866,27 +1619,27 @@ func _draw_sprite(p: Dictionary, character: Dictionary, now: float, react := Tra
 	# se si resta fermi a terra lasciamo finire l'animazione del colpo
 	var prev_kind: String = state.get("kind", "")
 	if name == "idle" and kind == "" and prev_kind != "" and anims.has(prev_name):
-		if now - float(state.since) < animation_ms(anims[prev_name], attack_spec(game, p.characterId, prev_kind)):
+		if now - float(state.since) < FighterPose.animation_ms(anims[prev_name], FighterPose.attack_spec(game, p.characterId, prev_kind)):
 			name = prev_name
 	# Gli stati di passaggio si mostrano solo a chi li ha disegnati: il ripiego fermerebbe la corsa o il salto
 	var flying: bool = p.hitstun and not p.onGround
-	if name == "hit" and has_own(anims, "tumble") and flying:
+	if name == "hit" and FighterPose.has_own(anims, "tumble") and flying:
 		# Una volta lanciato si continua a rotolare finché dura lo stordimento, anche rallentando
 		if prev_name == "tumble" or Vector2(p.vx, p.vy).length() > float(game.effects.tumbleSpeed):
 			name = "tumble"
 	var air_jump: float = float(_air_jumps.get(p.id, -1.0))
-	if (name == "jump" or name == "fall") and has_own(anims, "doubleJump") and air_jump >= 0.0:
-		if now - air_jump < animation_ms(anims.doubleJump):
+	if (name == "jump" or name == "fall") and FighterPose.has_own(anims, "doubleJump") and air_jump >= 0.0:
+		if now - air_jump < FighterPose.animation_ms(anims.doubleJump):
 			name = "doubleJump"
 	var since := now
-	if (name == "idle" or name == "walk") and has_own(anims, "land"):
+	if (name == "idle" or name == "walk") and FighterPose.has_own(anims, "land"):
 		# Atterraggio: dal passaggio aria -> terra dello stato disegnato, non dall'evento che arriva prima
 		if prev_name in ["jump", "fall", "doubleJump", "recovery", "tumble"]:
 			name = "land"
-		elif prev_name == "land" and now - float(state.since) < animation_ms(anims.land):
+		elif prev_name == "land" and now - float(state.since) < FighterPose.animation_ms(anims.land):
 			name = "land"
 	var taunted: float = float(_taunts.get(p.id, -1.0))
-	if name == "idle" and has_own(anims, "taunt") and taunted >= 0.0 and now - taunted < animation_ms(anims.taunt):
+	if name == "idle" and FighterPose.has_own(anims, "taunt") and taunted >= 0.0 and now - taunted < FighterPose.animation_ms(anims.taunt):
 		name = "taunt"
 		since = taunted
 	elif name == "doubleJump":
@@ -1897,8 +1650,8 @@ func _draw_sprite(p: Dictionary, character: Dictionary, now: float, react := Tra
 		_anims[p.id] = state
 	state["attacking"] = p.attack != null
 	var a: Dictionary = anims[name]
-	var attack := attack_spec(game, p.characterId, str(state.get("kind", "")))
-	var frame := sprite_frame(a, now - float(state.since), attack)
+	var attack := FighterPose.attack_spec(game, p.characterId, str(state.get("kind", "")))
+	var frame := FighterPose.sprite_frame(a, now - float(state.since), attack)
 	var fw: float = sheet.frameWidth
 	var fh: float = sheet.frameHeight
 	# Nel foglio unico ogni animazione è una riga; nel formato cartella è un PNG a sé, con una riga sola
@@ -1910,86 +1663,8 @@ func _draw_sprite(p: Dictionary, character: Dictionary, now: float, react := Tra
 	var scale: float = sheet.get("scale", 1.0) # 0.5 per i disegni fatti a 2x
 	draw_set_transform_matrix(react * Transform2D(0.0, Vector2(p.facing * scale, scale), 0.0, Vector2(p.x, p.y)))
 	var foot_y: float = sheet.get("footY", fh) # dove stanno i piedi nel fotogramma: sotto c'è chi è appeso al bordo
-	draw_texture_rect_region(texture, Rect2(-fw / 2, -foot_y, fw, fh), src, sprite_modulate(int(_variants.get(p.id, 0)), away_alpha(p)))
+	draw_texture_rect_region(texture, Rect2(-fw / 2, -foot_y, fw, fh), src, FighterPose.sprite_modulate(int(_variants.get(p.id, 0)), FighterPose.away_alpha(p)))
 	draw_set_transform(Vector2.ZERO)
-
-
-# Chi ha lo stesso personaggio di un altro giocatore prende una variante di colore: il primo in ordine
-# di colore resta originale, gli altri 1, 2, ... Il colore lo dà il server, così ogni client vede lo stesso.
-# Anche gli eliminati contano: chi resta non cambia colore a metà partita
-static func variant_ranks(players: Array) -> Dictionary:
-	var by_character := {}
-	for p in players:
-		if p == null:
-			continue
-		var id: String = str(p.get("characterId", ""))
-		if not by_character.has(id):
-			by_character[id] = []
-		by_character[id].append(p)
-	var ranks := {}
-	for id in by_character:
-		var same: Array = by_character[id]
-		same.sort_custom(func(a, b): return int(a.color) < int(b.color) or (int(a.color) == int(b.color) and str(a.id) < str(b.id)))
-		for i in same.size():
-			ranks[same[i].id] = i
-	return ranks
-
-
-# Il modulate dello sprite: con una variante il rosso oltre 1 dice allo shader di quanto spostare la tinta
-static func sprite_modulate(variant: int, alpha: float) -> Color:
-	if variant <= 0:
-		return Color(1, 1, 1, alpha)
-	return Color(2.0 + VARIANT_HUES[(variant - 1) % VARIANT_HUES.size()], 1, 1, alpha)
-
-
-# I numeri di un attacco per un personaggio, come attackSpecFor() in src/shared/physics/attacks.ts:
-# quelli di ATTACKS con i ritocchi del personaggio (il recupero). {} se l'attacco non esiste
-static func attack_spec(game_data: Dictionary, character_id: String, kind: String) -> Dictionary:
-	if kind == "supreme": # la suprema (#101, #102): quella del personaggio, o quella di base
-		var c: Dictionary = game_data.characters.get(character_id, {})
-		var own: Variant = c.get("supremeAttack")
-		return own if own is Dictionary else game_data.attacks.get("supreme", {})
-	if kind.begins_with("special"): # le speciali (E10) sono del personaggio
-		var c: Dictionary = game_data.characters.get(character_id, game_data.characters.get(game_data.get("defaultCharacterId", ""), {}))
-		return c.get("specialAttacks", {}).get(kind, {})
-	var spec: Dictionary = game_data.attacks.get(kind, {})
-	if kind != "recovery" or spec.is_empty():
-		return spec
-	var character: Dictionary = game_data.characters.get(character_id, {})
-	var own: Variant = character.get("recovery")
-	return spec.merged(own, true) if own is Dictionary else spec
-
-
-# Il personaggio ha il disegno di questo stato, non quello del ripiego
-static func has_own(animations: Dictionary, name: String) -> bool:
-	return animations.has(name) and str(animations[name].get("src", name)) == name
-
-
-# Il fotogramma da mostrare dopo elapsed_ms. Negli attacchi con hitFrame il fotogramma d'impatto cade quando
-# la hitbox si accende (startupMs) e l'animazione finisce con cooldownMs; senza, si va a fps.
-static func sprite_frame(a: Dictionary, elapsed_ms: float, attack: Dictionary = {}) -> int:
-	var frames := int(a.frames)
-	if attack.is_empty() or not a.has("hitFrame"):
-		var f := int(elapsed_ms / 1000.0 * float(a.fps))
-		return f % frames if a.loop else mini(f, frames - 1)
-	var hit := int(a.hitFrame)
-	var startup: float = attack.startupMs
-	if elapsed_ms < startup:
-		return int(elapsed_ms / startup * hit)
-	var rest := maxf(1.0, animation_ms(a, attack) - startup)
-	return mini(hit + int((elapsed_ms - startup) / rest * (frames - hit)), frames - 1)
-
-
-# Quanto dura un giro dell'animazione, in ms
-static func animation_ms(a: Dictionary, attack: Dictionary = {}) -> float:
-	if not attack.is_empty() and a.has("hitFrame"):
-		return maxf(float(attack.cooldownMs), float(attack.startupMs) + float(attack.activeMs))
-	return float(a.frames) / float(a.fps) * 1000.0
-
-
-# Chi ha perso la rete (#107) si vede semitrasparente finché rientra o il suo posto scade
-static func away_alpha(p: Dictionary) -> float:
-	return 0.4 if p.get("away", false) else 1.0
 
 
 # Stellina a quattro punte
@@ -2000,56 +1675,6 @@ func _draw_star(c: Vector2, r: float, color: Color) -> void:
 		var a := TAU * k / 8.0
 		pts.append(c + Vector2(cos(a), sin(a)) * rr)
 	draw_colored_polygon(pts, color)
-
-
-# Velocità delle schegge della bolla rotta: a raggiera, un po' più verso l'alto
-static func shard_velocities(n: int) -> Array:
-	var out := []
-	for i in n:
-		var a := TAU * i / float(n)
-		out.append(Vector2(cos(a), sin(a) - 0.5) * 320.0)
-	return out
-
-
-# Raggio della bolla: copre il lottatore con lo scudo pieno, a vuoto ne resta un terzo
-static func shield_radius(hp: float, max_hp: float, fighter_height: float) -> float:
-	var full := fighter_height * 0.62
-	return lerpf(full / 3.0, full, clampf(hp / max_hp, 0.0, 1.0))
-
-
-# Quale animazione mostrare, dai soli campi dello snapshot (animationFor in fighters.ts)
-static func _animation_for(p: Dictionary, holding := false) -> String:
-	if p.hitstun or p.get("stunned", false): # lo stordito dopo lo scudo rotto (#109) ha la posa di chi è colpito
-		return "hit"
-	if p.get("grabbedBy") != null:
-		return "grabbed" # tenuto con la presa (#109); senza disegno, la posa di chi è colpito
-	if holding:
-		return "grab" # chi tiene resta nella posa della presa
-	if p.attack != null and str(p.attack).begins_with("throw"):
-		return "throw" # i quattro lanci; senza disegno, la posa della presa
-	if p.attack != null and str(p.attack).begins_with("special"):
-		# le speciali (E10): specialNeutral, specialSide o specialDown (#257); senza disegno "special", poi il pesante
-		return str(p.attack)
-	if p.attack != null:
-		# Lo stato del colpo preciso (lightUp, heavyAir, recovery...): chi non l'ha disegnato mostra il ripiego.
-		# L'attacco dal bordo (#110) non ha uno stato suo: usa il colpo leggero
-		return "light" if p.attack == "ledgeAttack" else str(p.attack)
-	var ledge := str(p.get("ledge", ""))
-	if ledge == "hang":
-		return "ledge" # appeso al bordo (#110)
-	if ledge == "climb":
-		return "climb"
-	if ledge == "roll":
-		return "walk"
-	if p.get("shielding", false):
-		return "shield" # scudo (#109): chi non l'ha disegnato resta fermo, dentro la bolla
-	if not p.onGround:
-		return "jump" if p.vy < 0 else "fall"
-	if p.get("dashing", false):
-		return "dash" # scatto e corsa (#199); senza disegno, la camminata
-	if absf(p.vx) > 20:
-		return "walk"
-	return "idle"
 
 
 # Freccia sul bordo dello schermo per chi è stato lanciato fuori (o resta indietro nella Corsa)

@@ -22,6 +22,7 @@ var _portraits := {} # id personaggio -> [Texture2D, Rect2] del ritratto, o [] s
 var _variants := {} # id giocatore -> variante di colore, come in world_view.gd
 
 const WorldView := preload("res://scripts/world_view.gd")
+const FighterPose := preload("res://scripts/fighter_pose.gd")
 const PORTRAIT := 40.0 # lato del ritratto che spunta sopra la scheda, pixel
 const PORTRAIT_ROW := 26.0 # lato del ritratto accanto al nome nella classifica
 
@@ -79,7 +80,7 @@ func on_snapshot(snap: Dictionary) -> void:
 			var amp: float = minf(fx.percentShakeMax, (p.percent - before) * fx.percentShakePerDamage)
 			_jolts[p.id] = {"ms": float(fx.percentShakeMs), "amp": maxf(amp, _jolts.get(p.id, {}).get("amp", 0.0))}
 		_last_percent[p.id] = p.percent
-	_variants = WorldView.variant_ranks(snap.players)
+	_variants = FighterPose.variant_ranks(snap.players)
 	_supreme_full = false
 	for p in snap.players:
 		if not p.get("eliminated", false) and float(p.get("supreme", 0)) >= _supreme_max():
@@ -282,7 +283,7 @@ func _draw_portrait(p: Dictionary, r: Rect2) -> void:
 	var region: Rect2 = src[1]
 	var fit := fit_rect(region.size, r)
 	var alpha := 0.35 if p.get("eliminated", false) else 1.0
-	draw_texture_rect_region(tex, fit, region, WorldView.sprite_modulate(int(_variants.get(p.id, 0)), alpha))
+	draw_texture_rect_region(tex, fit, region, FighterPose.sprite_modulate(int(_variants.get(p.id, 0)), alpha))
 
 
 # Da dove prendere il ritratto: portrait.png se c'è, altrimenti il primo fotogramma di idle,
