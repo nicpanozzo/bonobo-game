@@ -54,6 +54,7 @@ var attack_boxes := true # rettangolo del colpo in corso (opzioni → Video), ma
 var _air_jumps := {} # id giocatore -> quando ha fatto il doppio salto (ms), per l'animazione doubleJump (#103)
 var _taunts := {} # id giocatore -> quando ha provocato (ms), per l'animazione taunt (E7)
 var _holding := {} # id di chi tiene qualcuno con la presa (#109), dall'ultimo snapshot
+var _palette := {} # colori dell'arena già convertiti (stage.colors), per non rifarlo a ogni frame
 var _variants := {} # id giocatore -> variante di colore (0 = originale), ricalcolata a ogni snapshot (E11)
 const StageMotion := preload("res://scripts/stage_motion.gd")
 const FighterPose := preload("res://scripts/fighter_pose.gd")
@@ -176,6 +177,9 @@ func set_stage(stage_id: String) -> void:
 func set_stage_spec(spec: Dictionary) -> void:
 	stage = spec
 	predictor.set_stage(spec)
+	_palette = {}
+	for k in spec.get("colors", {}):
+		_palette[k] = _color(spec.colors[k])
 	_layers = []
 	_foreground = []
 	var art: Dictionary = spec.get("art", {})
@@ -616,24 +620,16 @@ func _puff(x: float, y: float) -> void:
 
 func _process(delta: float) -> void:
 	var fx: Dictionary = game.effects
-	for s in _sparks:
-		s.age += delta * 1000.0
-	_sparks = _sparks.filter(func(s): return s.age < fx.hitSparkMs)
-	for d in _dust:
-		d.age += delta * 1000.0
-	_dust = _dust.filter(func(d): return d.age < fx.dustMs)
-	for b in _beams:
-		b.age += delta * 1000.0
-	_beams = _beams.filter(func(b): return b.age < fx.koBeamMs)
+	var dt_ms := delta * 1000.0
+	_sparks = _aged(_sparks, dt_ms, fx.hitSparkMs)
+	_dust = _aged(_dust, dt_ms, fx.dustMs)
+	_beams = _aged(_beams, dt_ms, fx.koBeamMs)
 	for s in _shards:
-		s.age += delta * 1000.0
 		s.x += s.vx * delta
 		s.y += s.vy * delta
 		s.vy += 900.0 * delta # le schegge ricadono
-	_shards = _shards.filter(func(s): return s.age < fx.shardMs)
-	for c in _clouds:
-		c.age += delta * 1000.0
-	_clouds = _clouds.filter(func(c): return c.age < CLOUD_MS)
+	_shards = _aged(_shards, dt_ms, fx.shardMs)
+	_clouds = _aged(_clouds, dt_ms, CLOUD_MS)
 	_update_high_overlay()
 	for id in _shield_hits.keys():
 		_shield_hits[id] += delta * 1000.0
@@ -648,16 +644,25 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 
+# Invecchia gli effetti e toglie quelli finiti. Gira a ogni frame: senza effetti in corso non crea array nuovi
+static func _aged(list: Array, dt_ms: float, life_ms: float) -> Array:
+	if list.is_empty():
+		return list
+	for e in list:
+		e.age += dt_ms
+	return list.filter(func(e): return e.age < life_ms)
+
+
 func _draw() -> void:
 	if stage.is_empty():
 		return
 	var w: float = game.world.width
 	var h: float = game.world.height
-	draw_rect(Rect2(-400, -400, stage_width() + 800, h + 800), _color(stage.colors.sky))
+	draw_rect(Rect2(-400, -400, stage_width() + 800, h + 800), _palette.sky)
 	# Nelle arene grandi (#240) la telecamera si allontana fino alle zone di espulsione: il cielo arriva fin lì
 	var bz: Variant = stage.get("blastZone")
 	if bz is Dictionary:
-		draw_rect(Rect2(bz.left - 200, bz.top - 200, bz.right - bz.left + 400, bz.bottom - bz.top + 400), _color(stage.colors.sky))
+		draw_rect(Rect2(bz.left - 200, bz.top - 200, bz.right - bz.left + 400, bz.bottom - bz.top + 400), _palette.sky)
 	var t_stage := buffer.sample_stage_ms(Time.get_ticks_msec())
 	var view_center := view_rect.get_center()
 	var rain := _rain_now(t_stage)
@@ -695,8 +700,8 @@ func _draw() -> void:
 		var s: Dictionary = stage.solids[i]
 		var skin := _skin_for("solids", i)
 		if skin.is_empty():
-			draw_rect(Rect2(s.x, s.y, s.width, s.height), _color(stage.colors.solid))
-			draw_rect(Rect2(s.x, s.y, s.width, 6), _color(stage.colors.solidEdge))
+			draw_rect(Rect2(s.x, s.y, s.width, s.height), _palette.solid)
+			draw_rect(Rect2(s.x, s.y, s.width, 6), _palette.solidEdge)
 		else:
 			_draw_skinned_solid(s, skin)
 	for i in stage.platforms.size():
@@ -705,16 +710,16 @@ func _draw() -> void:
 		if not skin.is_empty():
 			_draw_skinned_platform(p, skin)
 		elif p.get("y2") != null:
-			_draw_stairs(p, _color(stage.colors.platform))
+			_draw_stairs(p, _palette.platform)
 		elif float(p.get("arch", 0)) != 0.0:
-			draw_colored_polygon(StageMotion.arch_polygon(p, 8.0), _color(stage.colors.platform))
+			draw_colored_polygon(StageMotion.arch_polygon(p, 8.0), _palette.platform)
 		else:
-			draw_rect(Rect2(p.x, p.y, p.width, 8), _color(stage.colors.platform))
+			draw_rect(Rect2(p.x, p.y, p.width, 8), _palette.platform)
 	_draw_rails(false) # ringhiere dietro ai lottatori
 	if not _life.is_empty():
 		_life.draw_pigeons(self, t_stage, Time.get_ticks_msec(), positions.values(), _threats(t_stage))
 
-	_draw_elements(buffer.sample_stage_ms(Time.get_ticks_msec()))
+	_draw_elements(t_stage) # lo stesso istante di tutto il resto del frame
 	_draw_course()
 
 	var now := Time.get_ticks_msec()
@@ -1065,7 +1070,7 @@ func _draw_elements(t: float) -> void:
 		if m.get("kind", "") == "barca":
 			_draw_boat(pos, float(m.width), t)
 			continue
-		draw_rect(Rect2(pos.x, pos.y, m.width, 10), _color(stage.colors.platform))
+		draw_rect(Rect2(pos.x, pos.y, m.width, 10), _palette.platform)
 		# Strisce gialle e nere sotto: si capisce che si muove
 		for x in range(0, int(m.width), 20):
 			draw_rect(Rect2(pos.x + x, pos.y + 10, minf(10, m.width - x), 5), Color("f1c40f"))
@@ -1305,7 +1310,7 @@ func _draw_boat(pos: Vector2, w: float, t: float) -> void:
 	draw_colored_polygon(hull, Color("4a3a2e"))
 	draw_polyline(PackedVector2Array([hull[0], hull[1], hull[2], hull[3], hull[0]]), ink, 2.0)
 	draw_rect(Rect2(pos.x - 14, pos.y - 2 + bob, w + 28, 6), Color("8a6a4c")) # il bordo di legno chiaro
-	draw_rect(Rect2(pos.x, pos.y + bob, w, 4), _color(stage.colors.solidEdge)) # dove si sta in piedi: chiaro
+	draw_rect(Rect2(pos.x, pos.y + bob, w, 4), _palette.solidEdge) # dove si sta in piedi: chiaro
 	draw_line(Vector2(pos.x + w * 0.7, pos.y + bob), Vector2(pos.x + w * 0.7, pos.y - 46 + bob), ink, 2.0) # asta della bandierina
 	draw_colored_polygon(PackedVector2Array([Vector2(pos.x + w * 0.7, pos.y - 46 + bob), Vector2(pos.x + w * 0.7 + 22, pos.y - 40 + bob), Vector2(pos.x + w * 0.7, pos.y - 34 + bob)]), Color("b8a88a"))
 
