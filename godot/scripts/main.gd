@@ -5,6 +5,7 @@
 # che parte dall'ultima scelta salvata. ?bot=manichino aggiunge un avversario del server (#20).
 extends Node2D
 
+const GymFlow := preload("res://scripts/gym_flow.gd")
 const DEFAULT_SERVER := "http://localhost:3000" # npm run dev
 const LINK_BUTTON_POS := Vector2(12, 36) # "Copia link" in partita, sotto la riga della stanza, pixel
 const HOST_LINK_TOAST_S := 10.0 # quanto resta l'avviso "link copiato" a chi ospita, secondi
@@ -38,7 +39,6 @@ var title: Control # schermata del titolo (E14)
 var connecting: Control # schermata "Mi collego..." (E14), null quando si è dentro
 var playing := false
 var _last_input := {}
-var _training_speed := 1.0 # velocità scelta nel pannello dell'allenamento
 var _retry_at := -1
 var _token := "" # segreto del welcome: solo in memoria, vale per la stanza _token_room (#107)
 var _token_room := ""
@@ -48,10 +48,7 @@ var _join_since := -1 # ms in cui si è cominciato a entrare nella stanza, -1 qu
 var _version_warned := false # banner "versione nuova" già mostrato (E2)
 var _try_hint := "" # prova del primo avvio (E14): si mostra appena si entra nella stanza
 var _last_snapshot := 0 # ms dell'ultimo snapshot: in partita il silenzio dice che la rete è caduta
-var training: Control # pannello dell'allenamento (E15), solo nelle stanze "training"
-var tutorial: Control # riquadro del tutorial a tappe (E15), solo se si è entrati da "Tutorial"
-var challenge_run: Control # sfida in corso (E15 passo 3), solo se si è entrati da "Sfide"
-var _picked: Dictionary = {} # sfida appena scelta nell'elenco
+var gym := GymFlow.new(self) # palestra, tutorial e sfide (E15): pannelli e stanze tutte proprie
 var results_bar: Control # Rivincita e Cambia lottatore a fine partita (#250), null durante la partita
 var _last_players: Array = [] # giocatori dell'ultimo snapshot, per il tasto Segnala (#214)
 var p2: SecondPlayer # il secondo giocatore sullo stesso schermo, col suo pad; null se non c'è
@@ -126,8 +123,8 @@ func _ready() -> void:
 	touch.pause_pressed.connect(func(): if not is_instance_valid(pause_menu): _open_pause())
 	touch.free_tap.connect(func(): socket.emit("rematch")) # come R: il server lo accetta solo a partita finita
 	touch.extra_pressed.connect(func(extra: String):
-		if extra == "panel" and is_instance_valid(training):
-			training.toggle())
+		if extra == "panel" and is_instance_valid(gym.training):
+			gym.training.toggle())
 	ui_layer.layer = 2 # menu sopra l'HUD
 	add_child(ui_layer)
 	var top := CanvasLayer.new()
@@ -228,14 +225,14 @@ func _show_title(skip_press := false) -> void:
 				title.restore_focus()))
 	title.tutorial_requested.connect(func():
 		title.queue_free()
-		_join_gym(true))
+		gym.join_gym(true))
 	title.training_requested.connect(func():
 		title.queue_free()
-		_join_gym(false))
+		gym.join_gym(false))
 	title.challenges_requested.connect(func():
-		_show_challenges(func():
+		gym.show_challenges(func():
 			title.queue_free()
-			_join_challenge.call_deferred(_picked), title.restore_focus))
+			gym.join_challenge.call_deferred(gym.picked), title.restore_focus))
 	title.credits_requested.connect(func():
 		var credits := preload("res://scripts/credits.gd").new()
 		credits.theme = UI.theme()
@@ -309,9 +306,7 @@ func _leave(page := "match") -> void:
 	socket.close()
 	world.reset()
 	hud.reset()
-	_set_training(false)
-	_set_tutorial(false)
-	_set_challenge(false)
+	gym.close_all()
 	camera.position = Vector2.ZERO
 	camera.zoom = Vector2.ONE
 	_hide_connecting()
@@ -330,14 +325,7 @@ func _flash_status(text: String) -> void:
 
 # Predizione (E17): accesa dall'opzione, e solo a velocità normale (l'allenamento rallentato fa meno tick)
 func _apply_prediction() -> void:
-	world.predictor.enabled = bool(settings.video.get("predict", true)) and _training_speed == 1.0
-
-
-func _training_command(data: Dictionary) -> void:
-	if data.has("speed"):
-		_training_speed = float(data.speed)
-		_apply_prediction()
-	socket.emit("training", data)
+	world.predictor.enabled = bool(settings.video.get("predict", true)) and gym.speed == 1.0
 
 
 func _apply_volumes() -> void:
@@ -502,7 +490,7 @@ func _on_event(name: String, data: Variant) -> void:
 	match name:
 		"welcome":
 			audio.play_music("match")
-			_training_speed = 1.0
+			gym.speed = 1.0
 			_apply_prediction()
 			_token = str(data.get("token", ""))
 			_token_room = str(params.room)
@@ -528,10 +516,7 @@ func _on_event(name: String, data: Variant) -> void:
 			audio.set_stage_music(world.stage.get("music")) # la musica dell'arena, se ne ha una (E12)
 			audio.stage_hazards = world.stage.get("hazards", []) if world.stage.get("hazards") is Array else [] # il ciclista (#229)
 			audio.stage_jets = world.stage.get("jets", []) if world.stage.get("jets") is Array else [] # i getti d'acqua (#253)
-			# In una sfida niente pannello: rallentatore e percentuale cambierebbero il risultato
-			_set_training(data.get("rules", {}).get("mode", "") == "training" and params.get("challenge", {}).is_empty())
-			_set_tutorial(params.get("tutorial", false))
-			_set_challenge(not params.get("challenge", {}).is_empty())
+			gym.on_welcome(data)
 			_check_server_version(str(data.get("serverVersion", "")))
 			camera.position = Vector2.ZERO
 			camera.zoom = Vector2.ONE
@@ -542,17 +527,11 @@ func _on_event(name: String, data: Variant) -> void:
 				world.on_event(e)
 				audio.on_event(e)
 				rumble.on_event(e)
-				if is_instance_valid(training):
-					training.on_event(e, world.my_id)
-				if is_instance_valid(tutorial):
-					tutorial.on_event(e, world.my_id)
+				gym.on_event(e)
 			world.on_snapshot(data)
 			hud.on_snapshot(data)
 			audio.on_snapshot(data)
-			if is_instance_valid(training):
-				training.on_snapshot(data)
-			if is_instance_valid(challenge_run):
-				challenge_run.on_snapshot(data)
+			gym.on_snapshot(data)
 		"roomFull":
 			_show_connecting("Stanza piena!", "Prova con un'altra stanza: Annulla torna alla lobby.")
 		"refused": # il server non ci fa entrare e dice perché (E2): si torna alla lobby con il messaggio
@@ -573,14 +552,14 @@ func _process(_delta: float) -> void:
 	if playing and _last_snapshot > 0 and Time.get_ticks_msec() - _last_snapshot > int(game.reconnect.snapshotSilenceMs):
 		_last_snapshot = 0
 		socket.drop()
-	var panel_open: bool = is_instance_valid(training) and training.is_open()
+	var panel_open: bool = is_instance_valid(gym.training) and gym.training.is_open()
 	touch.visible = playing and touch.active and not is_instance_valid(pause_menu) and not panel_open
-	touch.extras = {"panel": "Pannello"} if is_instance_valid(training) else {}
+	touch.extras = {"panel": "Pannello"} if is_instance_valid(gym.training) else {}
 	_rotate_hint.visible = touch.active and TouchControls.portrait(Vector2(DisplayServer.window_get_size()))
 	if touch.active and playing:
 		hud.rematch_key = "Tocca lo schermo"
 	# A fine partita i pulsanti Rivincita e Cambia lottatore; spariscono quando la rivincita comincia
-	var over: bool = playing and hud._snap.get("winnerId") != null and not is_instance_valid(challenge_run) and not is_instance_valid(tutorial)
+	var over: bool = playing and hud._snap.get("winnerId") != null and not gym.hides_results()
 	if over and not is_instance_valid(results_bar) and not is_instance_valid(pause_menu):
 		_show_results()
 	elif not over and is_instance_valid(results_bar):
@@ -855,104 +834,3 @@ func _read_params() -> Dictionary:
 # In editor si gioca con npm run dev; il gioco esportato (web, app) va sul server fisso
 func _default_server() -> String:
 	return PRODUCTION_SERVER if OS.has_feature("template") else DEFAULT_SERVER
-
-
-# In palestra (E15) compaiono il conta combo e il pannello; altrove spariscono, hitbox comprese
-func _set_training(on: bool) -> void:
-	if on == is_instance_valid(training):
-		return
-	if not on:
-		training.queue_free()
-		training = null
-		world.show_hitboxes = false
-		return
-	training = preload("res://scripts/training.gd").new()
-	training.theme = UI.theme()
-	ui_layer.add_child(training)
-	training.setup(game)
-	training.command.connect(func(data: Dictionary): _training_command(data))
-	training.hitboxes_toggled.connect(func(on_off: bool): world.show_hitboxes = on_off)
-
-
-# Dal titolo (E15): una palestra tutta propria, col tutorial e lo sparring o col manichino.
-# Stanza nuova ogni volta: i comandi dell'allenamento valgono solo da soli
-func _join_gym(with_tutorial: bool) -> void:
-	var tut: Dictionary = game.get("tutorial", {})
-	var player_name := str(settings.profile.get("name", ""))
-	_join({
-		"name": player_name if player_name != "" else "Bonobo",
-		"room": ("tutorial-" if with_tutorial else "palestra-") + str(randi() % 100000),
-		"char": settings.profile.get("char", ""),
-		"stage": str(tut.get("stage", "")) if with_tutorial else "",
-		"rules": {"mode": "training"},
-		"bot": str(tut.get("bot", "manichino")) if with_tutorial else "manichino",
-		"tutorial": with_tutorial,
-		"gym": true,
-	})
-
-
-func _set_tutorial(on: bool) -> void:
-	if on == is_instance_valid(tutorial):
-		return
-	if not on:
-		tutorial.queue_free()
-		tutorial = null
-		return
-	tutorial = preload("res://scripts/tutorial.gd").new()
-	tutorial.theme = UI.theme()
-	ui_layer.add_child(tutorial)
-	tutorial.setup(settings, game)
-	# "Fatto!": lo stesso suono di un punto
-	tutorial.lesson_done.connect(func(_i: int): audio.on_event({"type": "flag"}))
-
-
-# Elenco delle sfide (E15 passo 3) sopra il titolo o la lobby; on_pick parte con la sfida in _picked
-func _show_challenges(on_pick: Callable, on_close: Callable) -> void:
-	var list := preload("res://scripts/challenges.gd").new()
-	list.theme = UI.theme()
-	ui_layer.add_child(list)
-	list.setup(game, settings)
-	list.chosen.connect(func(c: Dictionary):
-		_picked = c
-		list.queue_free()
-		on_pick.call())
-	list.closed.connect(on_close)
-
-
-# Ogni sfida in una palestra nuova tutta propria, col suo bot e la sua arena
-func _join_challenge(c: Dictionary) -> void:
-	var player_name := str(settings.profile.get("name", ""))
-	_join({
-		"name": player_name if player_name != "" else "Bonobo",
-		"room": "sfida-" + str(randi() % 100000),
-		"char": settings.profile.get("char", ""),
-		"stage": str(c.stage),
-		"rules": {"mode": "training"},
-		"bot": str(c.bot),
-		"challenge": c,
-		"gym": true,
-	})
-
-
-func _set_challenge(on: bool) -> void:
-	if is_instance_valid(challenge_run):
-		challenge_run.queue_free()
-		challenge_run = null
-	if not on:
-		return
-	challenge_run = preload("res://scripts/challenge_run.gd").new()
-	challenge_run.theme = UI.theme()
-	challenge_run.my_id = world.my_id
-	ui_layer.add_child(challenge_run)
-	challenge_run.setup(params.challenge, settings)
-	_start_challenge()
-	challenge_run.retry_requested.connect(_start_challenge)
-	challenge_run.back_requested.connect(func():
-		_leave()
-		_show_challenges(func(): _join_challenge.call_deferred(_picked), func(): pass))
-
-
-# Tutti al loro posto e il bot alla percentuale della sfida (comandi dell'allenamento), poi si riparte
-func _start_challenge() -> void:
-	socket.emit("training", {"reset": true, "percent": float(params.challenge.get("botPercent", 0))})
-	challenge_run.start()

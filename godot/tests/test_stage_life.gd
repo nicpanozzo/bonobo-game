@@ -38,8 +38,8 @@ func test_giorno_e_notte() -> void:
 	runner.check(StageSky.darkness(0.25) > 0.0 and StageSky.darkness(0.25) < 1.0, "al tramonto a metà")
 	var empty := StageLife.new()
 	empty.setup({}, 1280, 720)
-	runner.check(empty.is_empty() and empty.day_phase(99999) == 0.0, "senza life l'arena resta com'è")
-	runner.check(empty.ambient(12345) == Color.WHITE, "e la luce resta bianca")
+	runner.check(empty.is_empty() and empty.sky.day_phase(99999) == 0.0, "senza life l'arena resta com'è")
+	runner.check(empty.sky.ambient(12345) == Color.WHITE, "e la luce resta bianca")
 
 
 # I colori del cielo e della luce (#267): alba rosa, giorno azzurro, tramonto arancio, notte blu e luce fredda
