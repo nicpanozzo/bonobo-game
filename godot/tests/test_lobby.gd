@@ -4,6 +4,7 @@ extends RefCounted
 var runner
 
 const Lobby := preload("res://scripts/lobby.gd")
+const FighterPose := preload("res://scripts/fighter_pose.gd")
 
 
 func _lobby(start_join: bool, params := {}, start_kind := "") -> Control:
@@ -101,7 +102,7 @@ func test_scheda_del_lottatore() -> void:
 func test_skin_del_lottatore() -> void:
 	var lobby := _lobby(false, {"char": "lampione", "skin": "jax"})
 	runner.check(lobby._skin == "jax", "la skin ricordata resta: %s" % lobby._skin)
-	var shown := lobby._big_skins.get_children().filter(func(n): return not n.is_queued_for_deletion()).size()
+	var shown: int = lobby._big_skins.get_children().filter(func(n): return not n.is_queued_for_deletion()).size()
 	runner.check(shown == 3, "la scritta, Base e Jax: %d" % shown)
 	var c := _last_choice(lobby, lobby._submit)
 	runner.check(c.skin == "jax", "e va nella scelta: %s" % [c])

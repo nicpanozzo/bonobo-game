@@ -11,6 +11,7 @@ signal options_requested
 signal credits_requested
 signal back_requested # Indietro, Esc o B dal primo passo: torna al titolo (E14)
 
+const FighterPose := preload("res://scripts/fighter_pose.gd")
 const MAX_SEED := 999999 # come stageGenerator.ts: "casuale-<seme>" e "corsa-<seme>"
 # Modalità: id, nome, spiegazione sulla scheda
 const MODES := [
