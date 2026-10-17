@@ -12,6 +12,7 @@ signal credits_requested
 signal back_requested # Indietro, Esc o B dal primo passo: torna al titolo (E14)
 
 const FighterPose := preload("res://scripts/fighter_pose.gd")
+const FighterPreview := preload("res://scripts/fighter_preview.gd")
 const MAX_SEED := 999999 # come stageGenerator.ts: "casuale-<seme>" e "corsa-<seme>"
 # Modalità: id, nome, spiegazione sulla scheda
 const MODES := [
@@ -38,10 +39,10 @@ const KINDS := [
 	["bot", "Contro un bot", "Da solo, contro il computer"],
 ]
 const PAGE_NAMES := {"match": "Partita", "stage": "Arena", "fighter": "Lottatore"}
-const PAGE_W := 940.0 # larghezza del contenuto delle pagine, pixel
-const PAGE_TOP := 28 # spazio sopra il titolo della pagina, pixel
+const PAGE_W := 1010.0 # larghezza del contenuto delle pagine, pixel
+const PAGE_TOP := 16 # spazio sopra il titolo della pagina, pixel
 const BIG_STAGE := Vector2(560, 315) # anteprima grande dell'arena (16:9), pixel
-const BIG_FACE := Vector2(260, 260) # ritratto grande del lottatore, pixel
+const BIG_FACE := Vector2(300, 224) # anteprima grande del lottatore, pixel
 # Il colore del badge di ogni compagnia del lore (#13); i nomi arrivano da game.json (CREWS in characters.ts)
 const CREW_COLORS := {"cuamm": Color("c0392b"), "cologna": Color("d35400"), "schio": Color("27ae60"), "lolhardcore": Color("8e44ad")}
 
@@ -93,12 +94,13 @@ var _advanced_button: Button
 var _back_to: Control # dove torna il fuoco quando si chiudono opzioni o crediti
 var _big_stage: Control
 var _big_stage_name: Label
-var _big_face: TextureRect
+var _big_face: Control # FighterPreview: il lottatore scelto, intero e animato (#339)
+var _skin_arrows: Array[Button] = [] # ‹ e › sull'anteprima, per cambiare skin come in un carosello
 var _big_name: Label
 var _big_stats: VBoxContainer
 var _big_moves: Label
 var _big_crews: HFlowContainer
-var _big_skins: HFlowContainer # i pulsanti delle skin, solo per chi ne ha (#339)
+var _big_skins: HBoxContainer # sotto l'anteprima: il nome della skin e i pallini del carosello (#339)
 
 
 # start_kind: da dove si parte nella prima pagina. "join" se si arriva da un link con la stanza,
@@ -111,6 +113,21 @@ func setup(game_data: Dictionary, params: Dictionary, link: Callable, start_kind
 	bg.color = UI.BG
 	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
+	# sopra al fondo una luce calda che scende dall'alto, appena accennata: la lobby non è un foglio piatto
+	var sky := Gradient.new()
+	sky.colors = PackedColorArray([Color(UI.BORDER, 0.35), Color(UI.BORDER, 0.0)])
+	var light := GradientTexture2D.new()
+	light.gradient = sky
+	light.fill = GradientTexture2D.FILL_RADIAL
+	light.fill_from = Vector2(0.5, 0.0)
+	light.fill_to = Vector2(1.1, 0.9)
+	var glow := TextureRect.new()
+	glow.texture = light
+	glow.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	glow.stretch_mode = TextureRect.STRETCH_SCALE
+	glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	glow.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(glow)
 	var root := VBoxContainer.new()
 	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	root.add_theme_constant_override("separation", 0)
@@ -486,12 +503,26 @@ func _fighter_page(params: Dictionary) -> Control:
 	var left := VBoxContainer.new()
 	left.add_theme_constant_override("separation", UI.GAP_S)
 	card.add_child(left)
-	_big_face = TextureRect.new()
-	_big_face.custom_minimum_size = BIG_FACE
-	_big_face.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_big_face.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	_big_face.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	left.add_child(_big_face)
+	# L'anteprima: il lottatore intero sotto un faro, con le frecce del carosello delle skin ai lati
+	var stage := Control.new()
+	stage.custom_minimum_size = BIG_FACE
+	left.add_child(stage)
+	_big_face = FighterPreview.new()
+	_big_face.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	stage.add_child(_big_face)
+	_skin_arrows.clear()
+	for side in [-1, 1]:
+		var arrow := UI.small_button("◀" if side < 0 else "▶", func(): _next_skin(side))
+		arrow.tooltip_text = "Skin precedente" if side < 0 else "Skin successiva"
+		arrow.custom_minimum_size = Vector2(40, 48)
+		var preset := Control.PRESET_CENTER_LEFT if side < 0 else Control.PRESET_CENTER_RIGHT
+		arrow.set_anchors_and_offsets_preset(preset, Control.PRESET_MODE_MINSIZE, 4)
+		stage.add_child(arrow)
+		_skin_arrows.append(arrow)
+	_big_skins = HBoxContainer.new()
+	_big_skins.alignment = BoxContainer.ALIGNMENT_CENTER
+	_big_skins.add_theme_constant_override("separation", UI.GAP_S)
+	left.add_child(_big_skins)
 	_big_name = UI.header("")
 	_big_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	left.add_child(_big_name)
@@ -499,10 +530,6 @@ func _fighter_page(params: Dictionary) -> Control:
 	_big_crews.alignment = FlowContainer.ALIGNMENT_CENTER
 	_big_crews.add_theme_constant_override("h_separation", UI.GAP_S)
 	left.add_child(_big_crews)
-	_big_skins = HFlowContainer.new()
-	_big_skins.alignment = FlowContainer.ALIGNMENT_CENTER
-	_big_skins.add_theme_constant_override("h_separation", UI.GAP_S)
-	left.add_child(_big_skins)
 	_big_stats = VBoxContainer.new()
 	_big_stats.add_theme_constant_override("separation", UI.GAP_S)
 	left.add_child(_big_stats)
@@ -515,7 +542,7 @@ func _fighter_page(params: Dictionary) -> Control:
 	right.add_theme_constant_override("separation", UI.GAP_S)
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(right)
-	_chars.columns = 5
+	_chars.columns = 6
 	_chars.add_theme_constant_override("h_separation", UI.GAP_M)
 	_chars.add_theme_constant_override("v_separation", UI.GAP_M)
 	right.add_child(_chars)
@@ -548,25 +575,31 @@ func _draw_chars() -> void:
 	for id in game.characters:
 		var c: Dictionary = game.characters[id]
 		var b := Button.new()
-		b.custom_minimum_size = Vector2(104, 148)
+		b.custom_minimum_size = Vector2(98, 134)
 		b.tooltip_text = stats_text(c)
 		UI.set_selected(b, id == _character)
 		var v := VBoxContainer.new()
 		v.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		v.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		b.add_child(v)
-		v.add_child(_face(c, Vector2(56, 62)))
+		v.add_child(_face(c, Vector2(56, 52)))
 		var l := UI.label(c.name, UI.SIZE_SMALL)
 		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		l.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		v.add_child(l)
 		v.add_child(_stat_bars(c))
+		var n_skins: int = c.get("skins", {}).size()
+		if n_skins > 0: # chi ha delle skin lo dice nell'angolo del riquadro (#339)
+			var tag := UI.label("+%d skin" % n_skins, UI.SIZE_NOTE - 2, UI.ACCENT)
+			tag.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT, Control.PRESET_MODE_MINSIZE, 4)
+			tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			b.add_child(tag)
 		b.set_meta("id", id)
 		b.pressed.connect(func():
 			_character = id
 			_skin = ""
 			_select_cards(_chars, _character)
-			_show_big_fighter())
+			_show_big_fighter(1))
 		_chars.add_child(b)
 
 
@@ -607,21 +640,14 @@ static func face_texture(c: Dictionary) -> Texture2D:
 
 
 # La scheda grande: ritratto, nome, statistiche con i numeri e le mosse speciali
-func _show_big_fighter() -> void:
+# side: da che lato entra il disegno nuovo nell'anteprima (0 subito, 1 da destra, -1 da sinistra)
+func _show_big_fighter(side := 0) -> void:
 	var c: Dictionary = game.characters[_character]
 	var skins: Dictionary = c.get("skins", {})
 	if not skins.has(_skin):
 		_skin = ""
 	_draw_skins(skins)
-	var tex := face_texture(FighterPose.look(game, _character, _skin))
-	_big_face.texture = tex
-	if tex == null: # senza disegno: un rettangolo, come nei riquadri
-		var img := Image.create(9, 16, false, Image.FORMAT_RGBA8)
-		img.fill(UI.PRIMARY)
-		_big_face.texture = ImageTexture.create_from_image(img)
-		_big_face.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	else:
-		_big_face.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	_big_face.show_look(FighterPose.look(game, _character, _skin), side)
 	_big_name.text = str(c.name)
 	for child in _big_crews.get_children():
 		child.queue_free()
@@ -644,19 +670,31 @@ func _show_big_fighter() -> void:
 	_update_summary()
 
 
-# Le skin del lottatore scelto (#339): "Base" e una per skin; niente se non ne ha
+# Il carosello delle skin (#339): sotto l'anteprima il nome dell'aspetto e un pallino per ognuno; le frecce
+# ai lati dell'anteprima ci girano dentro. Chi non ha skin non vede né frecce né pallini
 func _draw_skins(skins: Dictionary) -> void:
 	for child in _big_skins.get_children():
 		child.queue_free()
+	for arrow in _skin_arrows:
+		arrow.visible = not skins.is_empty()
 	if skins.is_empty():
 		return
-	_big_skins.add_child(UI.label("Skin:", UI.SIZE_SMALL, Color(UI.TEXT, 0.8)))
-	for id in [""] + skins.keys():
-		var b := UI.small_button("Base" if id == "" else str(skins[id].name), func():
-			_skin = id
-			_show_big_fighter())
-		UI.set_selected(b, id == _skin)
-		_big_skins.add_child(b)
+	var ids := _skin_ids()
+	_big_skins.add_child(UI.label("Skin: " + ("Base" if _skin == "" else str(skins[_skin].name)), UI.SIZE_SMALL, UI.ACCENT))
+	var dots := UI.label(" ".join(ids.map(func(id): return "●" if id == _skin else "○")), UI.SIZE_SMALL, Color(UI.TEXT, 0.7))
+	_big_skins.add_child(dots)
+
+
+# Le skin del lottatore scelto, con "" (l'aspetto base) per prima
+func _skin_ids() -> Array:
+	return [""] + game.characters[_character].get("skins", {}).keys()
+
+
+# Freccia del carosello: la skin dopo (dir 1) o prima (dir -1), girando in tondo
+func _next_skin(dir: int) -> void:
+	var ids := _skin_ids()
+	_skin = ids[posmod(ids.find(_skin) + dir, ids.size())]
+	_show_big_fighter(dir)
 
 
 # Il badge di una compagnia: il nome su una pillola del suo colore
@@ -871,7 +909,8 @@ func _update_summary() -> void:
 		if mode != "race":
 			parts.append(stage_name(game, _stage))
 	if _character != "":
-		parts.append(str(game.characters[_character].name))
+		var skins: Dictionary = game.characters[_character].get("skins", {})
+		parts.append(str(game.characters[_character].name) + (" (%s)" % skins[_skin].name if skins.has(_skin) else ""))
 	_summary.text = " · ".join(parts)
 
 
