@@ -1,5 +1,5 @@
-// Scatto (#199): a terra, due tocchi in fretta della stessa direzione fanno scattare il lottatore per
-// DASH.durationMs; se si tiene la direzione si continua a correre. È movimento, non colpisce
+// Scatto (#199): a terra, due tocchi in fretta della stessa direzione (o il tasto corsa con una direzione) fanno
+// scattare il lottatore per DASH.durationMs; se si tiene la direzione si continua a correre. È movimento, non colpisce
 // (diverso dalla speciale laterale "Scatto" di E10). Lo chiama applyControls in movement.ts.
 
 import { characterStats } from "../characters";
@@ -26,6 +26,7 @@ export function stepDash(f: Fighter, dir: number, dtMs: number, ctx: PhysicsCont
     f.dashTapTimer = DASH.doubleTapMs;
     f.dashHoldMs = 0;
   }
+  if (f.input.run && dir !== 0 && !f.dashing) startDash(f, dir as 1 | -1, ctx); // il tasto corsa non aspetta il doppio tocco
   if (!f.dashing) return null;
   const speed = characterStats(f.characterId).speed;
   if (dir === -f.facing) {
@@ -36,7 +37,7 @@ export function stepDash(f: Fighter, dir: number, dtMs: number, ctx: PhysicsCont
     f.dashTimer = Math.max(0, f.dashTimer - dtMs);
     return f.facing * DASH.speed * speed; // lo scatto va fino in fondo anche lasciando il tasto
   }
-  if (dir === f.facing) return f.facing * DASH.runSpeed * speed; // tenendo premuto si corre
+  if (dir === f.facing && (f.input.run || f.dashByTap)) return f.facing * DASH.runSpeed * speed; // tenendo premuto si corre
   endDash(f);
   return null;
 }

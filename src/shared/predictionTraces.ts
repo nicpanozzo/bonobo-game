@@ -78,10 +78,10 @@ export interface PredictionTrace {
   characterId: string;
   stats: { speed: number; airSpeed: number; jump: number; gravity: number };
   start: TraceState;
-  ticks: { input: string; state: TraceState }[]; // input: lettere dei tasti tenuti, l r j d, x per la schivata, a e h per leggero e pesante, u per su
+  ticks: { input: string; state: TraceState }[]; // input: lettere dei tasti tenuti, l r j d, x per la schivata, a e h per leggero e pesante, u per su, s per la corsa
 }
 
-const KEYS: Record<string, keyof InputState> = { l: "left", r: "right", j: "jump", d: "down", x: "dodge", a: "light", h: "heavy", u: "up" };
+const KEYS: Record<string, keyof InputState> = { l: "left", r: "right", j: "jump", d: "down", x: "dodge", a: "light", h: "heavy", u: "up", s: "run" };
 const round = (v: number) => Math.round(v * 1e6) / 1e6;
 
 function stateOf(f: Fighter): TraceState {
@@ -118,8 +118,8 @@ function stateOf(f: Fighter): TraceState {
 }
 
 // Pezzi di tasti tenuti da 1 a 30 tick: direzioni, salti lunghi e corti, giù per cadere più in fretta,
-// schivate, attacchi (con su o giù per le varianti, su + pesante in aria è il recupero); ogni tanto un doppio tocco veloce della stessa direzione, che fa scattare
-function nextSegments(random: () => number): { keys: string; hold: number }[] {
+// schivate, attacchi (con su o giù per le varianti, su + pesante in aria è il recupero); ogni tanto un doppio tocco veloce della stessa direzione, che fa scattare, o la corsa
+function nextSegments(random: () => number, runRandom: () => number): { keys: string; hold: number }[] {
   const r = random();
   const dir = r < 0.35 ? "l" : r < 0.7 ? "r" : "";
   if (dir && random() < 0.25) {
@@ -132,7 +132,8 @@ function nextSegments(random: () => number): { keys: string; hold: number }[] {
   const a = random();
   const attack = a < 0.1 ? "a" : a < 0.18 ? "h" : "";
   const up = random() < 0.12 ? "u" : "";
-  return [{ keys: dir + jump + down + dodge + attack + up, hold: 1 + Math.floor(random() * 30) }];
+  const run = dir && runRandom() < 0.2 ? "s" : ""; // la corsa, e col pesante l'attacco in corsa
+  return [{ keys: dir + jump + down + dodge + attack + up + run, hold: 1 + Math.floor(random() * 30) }];
 }
 
 const outOfScope = (f: Fighter) => f.respawning || f.eliminated || f.hitstun || f.ledgeIndex >= 0 || f.riding >= 0;
@@ -140,6 +141,7 @@ const outOfScope = (f: Fighter) => f.respawning || f.eliminated || f.hitstun || 
 export function predictionTraces(): PredictionTrace[] {
   return CASES.map(({ stage, characterId, seed }) => {
     const random = rng(seed).next;
+    const runRandom = rng(seed + 1).next; // a parte, così la corsa non cambia il resto delle tracce
     const f = createFighter({ id: "p", name: "P", characterId, color: 0, team: 0, index: 0, stocks: 3 }, stage);
     const ctx = { stage, events: [], timeMs: 0 };
     const stats = characterStats(characterId);
@@ -154,7 +156,7 @@ export function predictionTraces(): PredictionTrace[] {
     };
     const queue: { keys: string; hold: number }[] = [];
     for (let i = 0; i < MAX_TICKS; i++) {
-      if (queue.length === 0) queue.push(...nextSegments(random));
+      if (queue.length === 0) queue.push(...nextSegments(random, runRandom));
       const keys = queue[0].keys;
       if (--queue[0].hold === 0) queue.shift();
       const input = emptyInput();

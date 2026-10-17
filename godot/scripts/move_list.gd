@@ -30,6 +30,7 @@ static func rows(game: Dictionary, character_id: String, keys: Dictionary) -> Ar
 		["Pesante in su", plus.call("up", "heavy"), "lancia in verticale, si carica anche lui"],
 		["Pesante in giù", plus.call("down", "heavy"), "spazzata radente, si carica anche lui"],
 		["Pesante in aria", k.call("heavy") + " saltando", "il colpo forte in aria"],
+		["Attacco in corsa", "%s + %s" % [k.call("run"), k.call("heavy")], "il pesante mentre corri: scivoli avanti colpendo"],
 	]
 	var specials := []
 	var sp: Dictionary = c.get("specials", {})
@@ -47,6 +48,7 @@ static func rows(game: Dictionary, character_id: String, keys: Dictionary) -> Ar
 		["Schivata", k.call("dodge"), "invulnerabile per un attimo, con una direzione rotola"],
 		["Rialzata al volo", k.call("shield") + " prima di toccare terra", "dopo un colpo ti rialzi subito, con una direzione rotoli"],
 		["Recupero", plus.call("up", "heavy") + " in aria", "una spinta in su per tornare sul palco"],
+		["Corsa", "%s + %s/%s" % [k.call("run"), k.call("left"), k.call("right")], "tienila con una direzione: scatti e poi corri"],
 		["Doppio salto", k.call("jump") + " in aria", "il secondo salto, una volta per volo"],
 		["Provocazione", k.call("taunt"), "per far arrabbiare gli amici"],
 	]
