@@ -511,6 +511,7 @@ export const SPORE = {
 export const MICELIO = {
   ms: 6000, // ms in cui Dr. Micelium picchia più forte
   damageMult: 1.3, // danno dei colpi dati
+  attackSpeedMult: 1.25, // velocità degli attacchi normali (la scheda: "più forte e più veloce")
 };
 
 export const BIRRA = {

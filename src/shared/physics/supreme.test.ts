@@ -382,6 +382,21 @@ describe("suprema che infetta, il filo di Kirschner di Dr. Micelium (#358)", () 
     assert.ok(SPORE.speedMult < 1 && MICELIO.damageMult > 1);
   });
 
+  it("il micelio rende più veloci gli attacchi normali", () => {
+    const timerAfter = (powerup: Fighter["powerup"]) => {
+      const { ctx, fighters, a } = setup(400);
+      a.characterId = "drmicelium";
+      a.powerup = powerup;
+      a.powerupMs = MICELIO.ms;
+      press(a, { light: true });
+      run(fighters, ctx, 1);
+      press(a, {});
+      run(fighters, ctx, 3);
+      return a.attackTimer;
+    };
+    assert.ok(timerAfter("micelio") > timerAfter(null) * 1.15);
+  });
+
   it("le spore rallentano la corsa", () => {
     const { ctx, fighters, b } = infectSetup(250);
     run(fighters, ctx, ticks(800)); // finisce di volare
@@ -436,5 +451,26 @@ describe("suprema che torna indietro, …COSA? di Marcomunista (#358)", () => {
     loseStock(marco, ctx);
     assert.equal(marco.rewindTrail.length, 0);
     assert.equal(supremeAttackSpec("marcomunista")!.damage, 0);
+  });
+});
+
+describe("le Ciacole di Bradipo Giallo (#13)", () => {
+  it("partono in direzioni diverse, sempre le stesse", () => {
+    const shots = () => {
+      const { ctx, fighters, a } = setup(400);
+      a.characterId = "bradipo";
+      const vys: number[] = [];
+      for (let i = 0; i < 3; i++) {
+        press(a, { special: true });
+        run(fighters, ctx, 1);
+        press(a, {});
+        run(fighters, ctx, ticks(400));
+        vys.push(...(ctx.projectiles?.list ?? []).map((p) => Math.round(p.vy)));
+      }
+      return [...new Set(vys)];
+    };
+    const first = shots();
+    assert.ok(first.length >= 2, `velocità verticali ${first}`);
+    assert.deepEqual(shots(), first);
   });
 });
