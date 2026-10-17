@@ -514,6 +514,16 @@ export const MICELIO = {
   attackSpeedMult: 1.25, // velocità degli attacchi normali (la scheda: "più forte e più veloce")
 };
 
+// Il compagno di un lottatore (#369), il beagle di Lampione: come lo segue
+export const COMPANION = {
+  gapPx: 46, // pixel dietro al padrone dove aspetta
+  slackPx: 14, // pixel di distanza da quel posto entro cui sta fermo
+  groundAccel: 2600, // pixel/s² a terra
+  airAccel: 900, // pixel/s² in aria
+  jumpIfAbovePx: 40, // pixel: se il padrone è a terra più in alto di così, salta
+  teleportPx: 520, // pixel: più lontano di così torna di colpo accanto al padrone
+};
+
 // Le pozze dell'IRA di Lendmar (#13): la merda che cade su un blocco fa scivolare chi ci passa
 export const SLICK = {
   lifeMs: 5000, // ms prima che una pozza sparisca

@@ -334,6 +334,15 @@ export interface SkinSpec {
   sprite: SpriteFolderSpec; // con portrait.png nella stessa cartella
 }
 
+// Il compagno (#369): il disegno è in Godot, qui solo come si muove
+export interface CompanionSpec {
+  name: string; // come si chiama nei menu
+  width: number; // pixel
+  height: number;
+  speed: number; // corsa, in multipli di FIGHTER.groundSpeed
+  jump: number; // pixel/s verso l'alto quando salta
+}
+
 export interface CharacterSpec {
   id: string;
   name: string;
@@ -343,6 +352,7 @@ export interface CharacterSpec {
   stats?: Partial<CharacterStats>; // quelle che mancano valgono 1
   specials?: Partial<SpecialSet>; // quelle che mancano sono DEFAULT_SPECIALS (E10)
   supreme?: SupremeSpec; // senza, la suprema di base (ATTACKS.supreme, #101)
+  companion?: CompanionSpec; // un compagno che lo segue da solo (#369)
   recovery?: Partial<AttackSpec & typeof RECOVERY>; // numeri propri del recupero (#11): quelli che mancano restano i soliti
   quotes?: CharacterQuotes; // le battute della scheda, scritte in un fumetto (solo disegno, Godot)
 }
@@ -712,6 +722,8 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     },
     // pesante, salto esplosivo, bravo negli scatti brevi ma poco agile in aria
     stats: { weight: 1.1, jump: 1.15, speed: 1.05, airSpeed: 0.9 },
+    // dalla scheda: "un beagle che fa gli attacchi base" (#369). TODO community: il nome del cane
+    companion: { name: "Beagle", width: 44, height: 30, speed: 1.2, jump: 900 },
     // dalla scheda: "snaack", allunga il braccio, afferra e scaraventa giù (#358)
     supreme: {
       type: "grab",

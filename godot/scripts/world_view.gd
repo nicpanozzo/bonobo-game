@@ -30,6 +30,7 @@ var _items: Array = [] # oggetti dell'ultimo snapshot (#17)
 var _projectiles: Array = [] # proiettili delle speciali dell'ultimo snapshot (E10)
 var _projectiles_ms := 0 # quando è arrivato: tra uno snapshot e l'altro volano con la loro velocità
 var _puddles: Array = [] # pozze di merda dell'IRA di Lendmar a terra (#13)
+var _companions: RefCounted = preload("res://scripts/companion_view.gd").new() # il beagle di Lampione (#369)
 var _item_pos := {} # id oggetto -> Vector2 disegnata, che insegue quella dello snapshot
 var _facings := {} # id giocatore -> verso, per mettere in mano gli oggetti
 var _font: Font = ThemeDB.fallback_font
@@ -202,6 +203,7 @@ func reset() -> void:
 	_items = []
 	_projectiles = []
 	_puddles = []
+	_companions.clear()
 	_item_pos = {}
 	_dust = []
 	_trails = {}
@@ -510,6 +512,7 @@ func on_snapshot(snap: Dictionary) -> void:
 	buffer.push(snap.t, Time.get_ticks_msec(), snap.players, float(snap.get("stageMs", 0)))
 	predictor.items_present = not snap.get("items", []).is_empty()
 	_puddles = snap.get("puddles", [])
+	_companions.on_snapshot(snap.players)
 	predictor.puddles = _puddles
 	for p in snap.players:
 		_load_character(_look(p))
@@ -796,6 +799,7 @@ func _draw() -> void:
 	if mine != null:
 		_sampled[my_id] = mine
 	_draw_sun_light(t_stage) # ombre a terra e luce dal lato del sole o della luna (#288), sotto i lottatori
+	_companions.draw(self, now) # dietro ai lottatori: il beagle di Lampione (#369)
 	for id in player_ids:
 		var p: Variant = _sampled.get(id)
 		if p != null:

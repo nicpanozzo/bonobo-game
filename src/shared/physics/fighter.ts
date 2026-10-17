@@ -5,6 +5,7 @@ import { DASH, FIGHTER, INPUT, SHIELD } from "../constants";
 import type { StageSpec } from "../stages";
 import type { GameEvent, InputState, PlayerState, SpecialKind } from "../types";
 import type { ProjectileWorld } from "./projectiles";
+import type { Companion } from "./companion";
 
 export interface Fighter extends PlayerState {
   input: InputState;
@@ -59,6 +60,7 @@ export interface Fighter extends PlayerState {
   supremeY: number; // terreno dell'impatto: i piedi alla partenza
   rewindTrail: { x: number; y: number; percent: number }[]; // la suprema "rewind" (#358): com'era a ogni tick, i più vecchi prima
   rewindDone: boolean; // la "rewind" in corso è già tornata indietro
+  pet: Companion | null; // il compagno che lo segue (#369), null se il personaggio non ne ha
   supremeBusyMs: number; // ms che restano della suprema in corso, attesa finale compresa: intanto la barra non si carica col tempo
   dashTimer: number; // ms di scatto rimasti (#199); finito, se si tiene la direzione si corre
   dashTapDir: number; // direzione dell'ultimo tocco, per riconoscere il doppio tocco
@@ -206,6 +208,7 @@ export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
     supremeY: 0,
     rewindTrail: [],
     rewindDone: false,
+    pet: null,
     supremeBusyMs: 0,
   };
 }

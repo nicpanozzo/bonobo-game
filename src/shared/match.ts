@@ -6,6 +6,7 @@ import { getCharacter, skinFor } from "./characters";
 import { COLORS, FIGHTER, MATCH_RESTART_MS, MAX_PLAYERS_PER_ROOM, RECONNECT_RESUME_INVULNERABLE_MS, TEAM_COLORS, TRAINING } from "./constants";
 import { bufferPresses, createFighter, emptyInput, resetForMatch, stepWorld, type Fighter, type PhysicsContext } from "./physics";
 import { createItemWorld, handleItemInput, itemStates, resetItems, stepItems, type ItemWorld } from "./physics/items";
+import { companionState } from "./physics/companion";
 import { createProjectileWorld, projectileStates, puddleStates, type ProjectileWorld } from "./physics/projectiles";
 import { canHitWithRules, flagWinnerTeam, isTeamMode, lastStanding, leaderOnTime, sanitizeRules } from "./rules";
 import { COURSE_PREFIX, seedFromCourseId } from "./courseGenerator";
@@ -211,6 +212,7 @@ export class Match {
         powerup: f.powerup,
         powerupMs: Math.ceil(f.powerupMs),
         ...(f.inputSeq >= 0 && { predict: predictionState(f) }),
+        ...(f.pet && { companion: companionState(f.pet) }),
       });
     }
     const teamScores = this.rules.mode === "flag" ? { ...this.scores } : null;

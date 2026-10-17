@@ -3672,6 +3672,13 @@
         "weight": 1.1,
         "gravity": 1
       },
+      "companion": {
+        "name": "Beagle",
+        "width": 44,
+        "height": 30,
+        "speed": 1.2,
+        "jump": 900
+      },
       "supreme": {
         "type": "grab",
         "name": "snaack",

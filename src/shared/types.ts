@@ -78,6 +78,15 @@ export interface PlayerState {
   powerup: string | null; // potenziamento in corso da un oggetto consumato (#231), null se nessuno
   powerupMs: number; // ms che restano del potenziamento, 0 se nessuno
   predict?: PredictionState; // E17: solo per chi manda InputState.seq
+  companion?: CompanionState; // il compagno che lo segue (#369, il beagle di Lampione); manca se non ne ha
+}
+
+// Il compagno di un lottatore (#369): dove è e dove guarda
+export interface CompanionState {
+  x: number; // centro
+  y: number; // piedi
+  facing: 1 | -1;
+  onGround: boolean;
 }
 
 // Quello che serve al client per rigiocare il proprio movimento da questo snapshot (E17):

@@ -13,8 +13,10 @@
 //   projectiles.ts  proiettili delle speciali (E10)
 //   supreme.ts   barra della suprema (#101)
 //   tech.ts      rialzata al volo dopo un colpo
+//   companion.ts il compagno che segue il lottatore (#369)
 
 import { resolveHits, tryStartAttack, updateAttack } from "./attacks";
+import { stepCompanion } from "./companion";
 import { applyJets, carryRider, resolveHazards } from "./elements";
 import { tickBuffer, type Fighter, type PhysicsContext } from "./fighter";
 import { grabbing, inGrab, resolveGrabs, stepGrabs } from "./grab";
@@ -142,6 +144,7 @@ export function stepWorld(fighters: Fighter[], dtMs: number, ctx: PhysicsContext
   swapTripInput(tripping);
   for (const f of tripping) if (f.powerupMs <= 0) f.powerup = null;
   for (const f of fighters) if (!f.away) tryGrabLedge(f, fighters, ctx);
+  for (const f of fighters) stepCompanion(f, dtMs, ctx); // il beagle di Lampione (#369)
   resolveHits(fighters, ctx);
   stepProjectiles(fighters, dtMs, ctx);
   stepRewinds(fighters, dtMs, ctx); // …COSA? di Marcomunista (#358)
