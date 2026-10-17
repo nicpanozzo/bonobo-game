@@ -502,6 +502,17 @@ export const FUNGHI = {
 };
 
 // La birra (#302, idea di Nicola): cappello da tirolese, si barcolla ma si picchia più forte
+// Il filo di Kirschner di Dr. Micelium (#358): chi è infettato dalle spore va più piano, lui picchia più forte.
+// Sono potenziamenti come quelli degli oggetti (powerup "spore" e "micelio"), così il client li vede nello snapshot
+export const SPORE = {
+  ms: 4000, // ms di infezione
+  speedMult: 0.6, // frazione della velocità orizzontale, a terra e in aria
+};
+export const MICELIO = {
+  ms: 6000, // ms in cui Dr. Micelium picchia più forte
+  damageMult: 1.3, // danno dei colpi dati
+};
+
 export const BIRRA = {
   ms: 8000, // ms di effetto dalla raccolta
   damageMult: 1.4, // danno dei colpi dati da ubriachi

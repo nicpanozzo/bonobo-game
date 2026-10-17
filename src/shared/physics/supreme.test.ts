@@ -2,8 +2,8 @@
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { getCharacter, supremeAttackSpec, type BurstSupreme, type DropSupreme, type GrabSupreme, type SpinSupreme } from "../characters";
-import { ATTACKS, FIGHTER, SUPREME, TICK_RATE } from "../constants";
+import { getCharacter, supremeAttackSpec, type BurstSupreme, type DropSupreme, type GrabSupreme, type InfectSupreme, type SpinSupreme } from "../characters";
+import { ATTACKS, FIGHTER, MICELIO, SPORE, SUPREME, TICK_RATE } from "../constants";
 import { Match } from "../match";
 import { getStage } from "../stages";
 import type { GameEvent, InputState } from "../types";
@@ -355,5 +355,48 @@ describe("suprema a raffiche, IRA di Lendmar (#358)", () => {
     run(fighters, ctx, ticks(ira.waves * ira.waveEveryMs + 1500));
     const hits = ofType(ctx.events, "hit").filter((h) => h.targetId === b.id);
     assert.ok(hits.length > 0 && hits.every((h) => h.kind === "specialNeutral"), `${hits.length} colpi di merda`);
+  });
+});
+
+describe("suprema che infetta, il filo di Kirschner di Dr. Micelium (#358)", () => {
+  const filo = getCharacter("drmicelium").supreme as InfectSupreme;
+
+  function infectSetup(gap: number) {
+    const { ctx, fighters, a, b } = setup(gap);
+    a.characterId = "drmicelium";
+    a.supreme = SUPREME.max;
+    b.characterId = "egiainuso";
+    press(a, { supreme: true });
+    run(fighters, ctx, 1);
+    press(a, {});
+    run(fighters, ctx, ticks(filo.windupMs + filo.activeMs));
+    return { ctx, fighters, micelium: a, b };
+  }
+
+  it("da lontano infetta: lui rallenta, Dr. Micelium picchia più forte", () => {
+    const { ctx, micelium, b } = infectSetup(250);
+    assert.equal(b.powerup, "spore");
+    assert.equal(micelium.powerup, "micelio");
+    const ups = ofType(ctx.events, "powerUp").map((e) => e.kind).sort();
+    assert.deepEqual(ups, ["micelio", "spore"]);
+    assert.ok(SPORE.speedMult < 1 && MICELIO.damageMult > 1);
+  });
+
+  it("le spore rallentano la corsa", () => {
+    const { ctx, fighters, b } = infectSetup(250);
+    run(fighters, ctx, ticks(800)); // finisce di volare
+    const x0 = b.x;
+    press(b, { right: true });
+    run(fighters, ctx, ticks(300));
+    const slow = b.x - x0;
+    b.powerup = null;
+    const x1 = b.x;
+    run(fighters, ctx, ticks(300));
+    assert.ok(slow < (b.x - x1) * 0.8, `infetto ${Math.round(slow)} px, sano ${Math.round(b.x - x1)} px`);
+  });
+
+  it("oltre il filo non infetta nessuno", () => {
+    const { b } = infectSetup(filo.reach + 40);
+    assert.equal(b.powerup, null);
   });
 });

@@ -2,8 +2,8 @@
 // Piena, il tasto suprema lancia la mossa e la barra torna a 0. La mossa di ogni personaggio
 // arriva a parte (Bonobot: #102); finché non c'è, tutti usano ATTACKS.supreme.
 
-import { getCharacter, specialsFor, supremeAttackSpec, type BurstSupreme, type DropSupreme, type GrabSupreme, type SpinSupreme } from "../characters";
-import { ATTACKS, FIGHTER, GRAB, SUPREME } from "../constants";
+import { getCharacter, specialsFor, supremeAttackSpec, type BurstSupreme, type DropSupreme, type GrabSupreme, type InfectSupreme, type SpinSupreme } from "../characters";
+import { ATTACKS, FIGHTER, GRAB, MICELIO, SPORE, SUPREME } from "../constants";
 import { startAttack } from "./attacks";
 import type { StageSpec } from "../stages";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
@@ -98,6 +98,25 @@ export function burstFire(f: Fighter, dtMs: number, ctx: PhysicsContext): void {
   }
 }
 
+function infectOf(characterId: string): InfectSupreme | null {
+  const sp = getCharacter(characterId).supreme;
+  return sp?.type === "infect" ? sp : null;
+}
+
+// La suprema "infect" (#358) ha preso target: lui prende le spore, chi la fa il micelio. Il fiore protegge già
+// (invulnerabili), il resto lo sostituisce come fanno i funghetti
+export function infect(attacker: Fighter, target: Fighter, ctx: PhysicsContext): void {
+  if (attacker.attack !== "supreme" || !infectOf(attacker.characterId)) return;
+  const x = Math.round(target.x);
+  const y = Math.round(target.y);
+  target.powerup = "spore";
+  target.powerupMs = SPORE.ms;
+  ctx.events.push({ type: "powerUp", itemId: -1, id: target.id, kind: "spore", x, y }); // itemId -1: nessun oggetto
+  attacker.powerup = "micelio";
+  attacker.powerupMs = MICELIO.ms;
+  ctx.events.push({ type: "powerUp", itemId: -1, id: attacker.id, kind: "micelio", x: Math.round(attacker.x), y: Math.round(attacker.y) });
+}
+
 // La suprema "grab" (#358) ha preso target: lo tira davanti a chi la fa e dice l'angolo del lancio.
 // A terra la schiacciata rimbalza in alto, in aria resta verso il basso. Per le altre l'angolo resta quello
 export function snatch(attacker: Fighter, target: Fighter, angleDeg: number): number {
@@ -171,5 +190,6 @@ export function supremeReach(characterId: string): number {
   if (own?.type === "spin") return own.width / 2;
   if (own?.type === "grab") return FIGHTER.width / 2 + own.reach;
   if (own?.type === "burst") return own.speed * 0.6; // dove cadono più o meno i proiettili
+  if (own?.type === "infect") return FIGHTER.width / 2 + own.reach;
   return (ATTACKS.supreme.boxX ?? FIGHTER.width / 2) + ATTACKS.supreme.range;
 }

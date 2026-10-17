@@ -8,7 +8,7 @@ import { basename, dirname, extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { SpriteFolderSpec } from "../src/shared/characters";
 import { CHARACTERS, CREWS, DEFAULT_CHARACTER_ID, isSpriteFolder, resolvedAnimations, SPECIAL_KINDS, SPECIAL_SLOTS, specialAttackSpec, specialsFor, spriteStatePath, supremeAttackSpec } from "../src/shared/characters";
-import { ATTACKS, AUDIO, BIRRA, BONG, CAMERA, FUNGHI, COLORS, EFFECTS, FIGHTER, INPUT, ITEM_RULES, LEDGE, NET, POWERUP, PROTOCOL_VERSION, RUMBLE, SHIELD, TEAM_COLORS, TEAM_NAMES, WORLD } from "../src/shared/constants";
+import { ATTACKS, AUDIO, BIRRA, BONG, CAMERA, FUNGHI, COLORS, EFFECTS, FIGHTER, INPUT, ITEM_RULES, LEDGE, MICELIO, NET, POWERUP, PROTOCOL_VERSION, RUMBLE, SHIELD, SPORE, TEAM_COLORS, TEAM_NAMES, WORLD } from "../src/shared/constants";
 import { RECONNECT, RECONNECT_HOLD_MS } from "../src/shared/constants";
 import { COLORS_COLORBLIND, TEAM_COLORS_COLORBLIND } from "../src/shared/constants";
 import { TRAINING } from "../src/shared/constants";
@@ -180,6 +180,8 @@ const data = {
   powerup: POWERUP, // #231
   bong: BONG, // #302
   funghi: FUNGHI, // #302
+  spore: SPORE, // #358
+  micelio: MICELIO, // #358
   birra: BIRRA, // #302
   colors: COLORS,
   teamColors: TEAM_COLORS,

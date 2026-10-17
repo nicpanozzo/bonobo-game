@@ -1,7 +1,7 @@
 // I personaggi giocabili. Aggiungerne uno = un blocco qui e una cartella in public/assets/characters/<id>/.
 // Cambiano aspetto e statistiche (E11 passo B); le mosse proprie arrivano con le speciali (E10).
 
-import { CHARACTER_STATS, CHARGE_EXAMPLE, DEFAULT_SPECIALS, RECOVERY, type AttackSpec } from "./constants";
+import { CHARACTER_STATS, CHARGE_EXAMPLE, DEFAULT_SPECIALS, FIGHTER, RECOVERY, type AttackSpec } from "./constants";
 import type { SpecialKind } from "./types";
 
 // Gli stati che ogni lottatore con sprite deve avere
@@ -285,7 +285,23 @@ export interface BurstSupreme {
   lift: number;
   endLagMs: number; // dopo l'ultima raffica, fermi
 }
-export type SupremeSpec = DropSupreme | SpinSupreme | GrabSupreme | BurstSupreme;
+// Suprema "infect" (#358), il filo di Kirschner di Dr. Micelium: dopo windupMs un filo sottile parte davanti fino a
+// reach pixel per activeMs. Chi tocca prende le spore (powerup "spore": più lento per SPORE.ms) e chi la fa diventa
+// più forte (powerup "micelio" per MICELIO.ms)
+export interface InfectSupreme {
+  type: "infect";
+  name: string; // come si chiama nei menu
+  windupMs: number;
+  activeMs: number;
+  endLagMs: number;
+  reach: number; // pixel davanti a chi la fa
+  height: number; // pixel di spessore del filo
+  damage: number;
+  baseKnockback: number;
+  knockbackGrowth: number;
+  angleDeg: number;
+}
+export type SupremeSpec = DropSupreme | SpinSupreme | GrabSupreme | BurstSupreme | InfectSupreme;
 
 export type SpecialSpec = ProjectileSpecial | DashSpecial | ChargeSpecial | CounterSpecial;
 export type SpecialSet = Record<SpecialSlot, SpecialSpec>;
@@ -804,6 +820,8 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     crews: ["cuamm"],
     sprite: communitySprite("drmicelium"),
     // tutto nella media: le statistiche restano quelle di Bonobot
+    // dalla scheda: "filo di Kirschner", infetta e rallenta il nemico e lui diventa più forte (#358)
+    supreme: { type: "infect", name: "Filo di Kirschner", windupMs: 220, activeMs: 200, endLagMs: 380, reach: 340, height: 18, damage: 10, baseKnockback: 200, knockbackGrowth: 3, angleDeg: 30 },
     specials: {
       // un tiro di canna e il fumo infetto: lento, corto, poco danno
       neutral: { type: "projectile", name: "Fumo infetto", startupMs: 260, cooldownMs: 600, speed: 300, gravity: 0, lifeMs: 800, maxAlive: 1, range: 40, height: 36, damage: 4, baseKnockback: 140, knockbackGrowth: 2.5, angleDeg: 25, color: 0xc9a27a },
@@ -894,6 +912,20 @@ function toSupremeAttack(sp: SupremeSpec | undefined): AttackSpec | null {
     // niente colpo corpo a corpo: colpiscono i proiettili (supremeMelee in physics/supreme.ts)
     const activeMs = sp.waves * sp.waveEveryMs;
     return { damage: 0, baseKnockback: 0, knockbackGrowth: 0, angleDeg: 0, startupMs: sp.windupMs, activeMs, cooldownMs: sp.windupMs + activeMs + sp.endLagMs, range: 0, height: 0 };
+  }
+  if (sp.type === "infect") {
+    return {
+      damage: sp.damage,
+      baseKnockback: sp.baseKnockback,
+      knockbackGrowth: sp.knockbackGrowth,
+      angleDeg: sp.angleDeg,
+      startupMs: sp.windupMs,
+      activeMs: sp.activeMs,
+      cooldownMs: sp.windupMs + sp.activeMs + sp.endLagMs,
+      range: sp.reach,
+      height: sp.height,
+      boxY: -FIGHTER.height * 0.6, // all'altezza del petto
+    };
   }
   if (sp.type === "grab") {
     return {

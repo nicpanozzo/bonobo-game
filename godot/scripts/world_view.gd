@@ -569,7 +569,7 @@ func on_event(e: Dictionary) -> void:
 				_sparks.append({"x": e.x, "y": e.y, "age": 0.0, "size": 18.0, "color": Color.WHITE}) # anche due proiettili che si annullano
 		"powerUp":
 			# Il fiore (#231): uno sbuffo verde dove lo si prende, più grande di una scintilla. Il bong (#302): una boccata grigia
-			var col: Color = SMOKE_GREY if e.kind == "bong" else (Color(0.75, 0.4, 0.95) if e.kind == "trip" else (Color(1, 0.75, 0.2) if e.kind == "birra" else FLOWER_GREEN.lightened(0.3)))
+			var col: Color = Color(0.66, 0.77, 0.42) if e.kind in ["spore", "micelio"] else SMOKE_GREY if e.kind == "bong" else (Color(0.75, 0.4, 0.95) if e.kind == "trip" else (Color(1, 0.75, 0.2) if e.kind == "birra" else FLOWER_GREEN.lightened(0.3)))
 			_sparks.append({"x": e.x, "y": float(e.y) - float(game.fighter.height) * 0.5, "age": 0.0, "size": 50.0, "color": col})
 			_puff(e.x, e.y)
 		"bong":
@@ -1621,6 +1621,14 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 		_draw_power_smoke(p, now, fh)
 	if p.get("powerup") == "birra" and not away:
 		_draw_tyrolean_hat(Vector2(p.x, p.y - fh), float(p.facing), now)
+	if p.get("powerup") == "spore" and not away:
+		# Infettati dal filo di Kirschner (#358): spore verdi che salgono intorno al corpo
+		for k in 6:
+			var t := fmod(now / 1400.0 + k / 6.0, 1.0)
+			draw_circle(Vector2(p.x + sin(k * 2.1 + now / 500.0) * fw * 0.6, p.y - fh * t), 3.5, Color(0.66, 0.77, 0.42, 1.0 - t))
+	if p.get("powerup") == "micelio" and not away:
+		# Dr. Micelium più forte (#358): un alone di micelio che pulsa
+		draw_arc(Vector2(p.x, p.y - fh * 0.5), fh * (0.62 + 0.04 * sin(now / 160.0)), 0, TAU, 32, Color(0.66, 0.77, 0.42, 0.55), 4.0)
 	if p.get("powerup") == "trip" and not away:
 		# In viaggio coi funghetti (#302): tre spirali colorate che girano sopra la testa
 		for k in 3:

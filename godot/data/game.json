@@ -752,6 +752,14 @@
     "tripMs": 3000,
     "popVy": 520
   },
+  "spore": {
+    "ms": 4000,
+    "speedMult": 0.6
+  },
+  "micelio": {
+    "ms": 6000,
+    "damageMult": 1.3
+  },
   "birra": {
     "ms": 8000,
     "damageMult": 1.4,
@@ -5310,6 +5318,19 @@
           }
         }
       },
+      "supreme": {
+        "type": "infect",
+        "name": "Filo di Kirschner",
+        "windupMs": 220,
+        "activeMs": 200,
+        "endLagMs": 380,
+        "reach": 340,
+        "height": 18,
+        "damage": 10,
+        "baseKnockback": 200,
+        "knockbackGrowth": 3,
+        "angleDeg": 30
+      },
       "specials": {
         "neutral": {
           "type": "projectile",
@@ -5408,7 +5429,18 @@
           "cooldownMs": 1580
         }
       },
-      "supremeAttack": null,
+      "supremeAttack": {
+        "damage": 10,
+        "baseKnockback": 200,
+        "knockbackGrowth": 3,
+        "angleDeg": 30,
+        "startupMs": 220,
+        "activeMs": 200,
+        "cooldownMs": 800,
+        "range": 340,
+        "height": 18,
+        "boxY": -52.8
+      },
       "skins": {}
     },
     "coachcartier": {
