@@ -70,6 +70,7 @@ const SpeechBubbles := preload("res://scripts/speech_bubbles.gd")
 var _spin_view: Node2D # i vortici della suprema che gira (DEMACIAAA di Bradipo Giallo, #358)
 var _grab_view: Node2D # il braccio della suprema che afferra (snaack di Lampione, #358)
 var _burst_view: Node2D # la vampata della suprema a raffiche (IRA di Lendmar, #358)
+var _rewind_view: Node2D # l'orologio della suprema che torna indietro (…COSA? di Marcomunista, #358)
 
 
 func setup(game_data: Dictionary) -> void:
@@ -99,6 +100,10 @@ func setup(game_data: Dictionary) -> void:
 	_burst_view.fighter_height = float(game.fighter.height)
 	_burst_view.where = _spin_view.where
 	add_child(_burst_view)
+	_rewind_view = preload("res://scripts/supreme_rewind_view.gd").new()
+	_rewind_view.fighter_height = float(game.fighter.height)
+	_rewind_view.where = _spin_view.where
+	add_child(_rewind_view)
 	_high_overlay = ColorRect.new()
 	var fatto := ShaderMaterial.new()
 	fatto.shader = load("res://shaders/fatto.gdshader")
@@ -204,6 +209,7 @@ func reset() -> void:
 	_spin_view.clear()
 	_grab_view.clear()
 	_burst_view.clear()
+	_rewind_view.clear()
 	my_id = ""
 	predictor.reset()
 	set_stage(game.defaultStageId)
@@ -611,6 +617,7 @@ func on_event(e: Dictionary) -> void:
 					_spin_view.start(e.id, game.characters.get(p.characterId, {}))
 					_grab_view.start(e.id, game.characters.get(p.characterId, {}))
 					_burst_view.start(e.id, game.characters.get(p.characterId, {}))
+					_rewind_view.start(e.id, game.characters.get(p.characterId, {}))
 		"dash":
 			# Scatto (#199): uno sbuffo di polvere dove parte e uno un po' indietro
 			_puff(e.x, e.y)

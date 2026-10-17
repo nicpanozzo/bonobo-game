@@ -27,7 +27,7 @@ import { cancelSpecial, specialing } from "./specials";
 import { endDash } from "./dash";
 import { collideWithStage, loseStock, outOfBlastZone, respawn } from "./stage";
 export { platformSurfaceY } from "./stage";
-import { burstFire, supreming, tickSupreme } from "./supreme";
+import { burstFire, stepRewinds, supreming, tickSupreme } from "./supreme";
 import { landTech, tickTech } from "./tech";
 
 export * from "./fighter";
@@ -144,6 +144,7 @@ export function stepWorld(fighters: Fighter[], dtMs: number, ctx: PhysicsContext
   for (const f of fighters) if (!f.away) tryGrabLedge(f, fighters, ctx);
   resolveHits(fighters, ctx);
   stepProjectiles(fighters, dtMs, ctx);
+  stepRewinds(fighters, dtMs, ctx); // …COSA? di Marcomunista (#358)
   resolveGrabs(fighters, ctx); // dopo i colpi: un colpo nello stesso tick vince sulla presa
   resolveHazards(fighters, ctx);
   applyJets(fighters, ctx); // getti d'acqua (#253)

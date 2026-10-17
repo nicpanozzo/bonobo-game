@@ -57,6 +57,8 @@ export interface Fighter extends PlayerState {
   supremeY0: number;
   supremeX: number; // dove sta la liana, centro dell'impatto
   supremeY: number; // terreno dell'impatto: i piedi alla partenza
+  rewindTrail: { x: number; y: number; percent: number }[]; // la suprema "rewind" (#358): com'era a ogni tick, i più vecchi prima
+  rewindDone: boolean; // la "rewind" in corso è già tornata indietro
   supremeBusyMs: number; // ms che restano della suprema in corso, attesa finale compresa: intanto la barra non si carica col tempo
   dashTimer: number; // ms di scatto rimasti (#199); finito, se si tiene la direzione si corre
   dashTapDir: number; // direzione dell'ultimo tocco, per riconoscere il doppio tocco
@@ -202,6 +204,8 @@ export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
     supremeY0: 0,
     supremeX: 0,
     supremeY: 0,
+    rewindTrail: [],
+    rewindDone: false,
     supremeBusyMs: 0,
   };
 }

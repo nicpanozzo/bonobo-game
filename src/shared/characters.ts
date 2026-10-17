@@ -301,7 +301,18 @@ export interface InfectSupreme {
   knockbackGrowth: number;
   angleDeg: number;
 }
-export type SupremeSpec = DropSupreme | SpinSupreme | GrabSupreme | BurstSupreme | InfectSupreme;
+// Suprema "rewind" (#358), …COSA? di Marcomunista: dopo windupMs torna dov'era e con la percentuale di backMs prima,
+// e chi gli sta entro stunRadius pixel dove arriva resta stordito per stunMs. Imbersagliabile dall'inizio alla fine
+export interface RewindSupreme {
+  type: "rewind";
+  name: string; // come si chiama nei menu
+  windupMs: number;
+  backMs: number;
+  endLagMs: number;
+  stunRadius: number;
+  stunMs: number;
+}
+export type SupremeSpec = DropSupreme | SpinSupreme | GrabSupreme | BurstSupreme | InfectSupreme | RewindSupreme;
 
 export type SpecialSpec = ProjectileSpecial | DashSpecial | ChargeSpecial | CounterSpecial;
 export type SpecialSet = Record<SpecialSlot, SpecialSpec>;
@@ -788,6 +799,8 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     sprite: sheetSprite("marcomunista", 304, 196, 182),
     // #352: "pesante". Pesa e cade di più, più lento a terra e in aria
     stats: { weight: 1.05, speed: 0.88, airSpeed: 0.9, jump: 0.92, gravity: 1.08 },
+    // dalla scheda: "…COSA?", torna a com'era 3 secondi prima e stordisce chi è vicino (#358)
+    supreme: { type: "rewind", name: "…COSA?", windupMs: 500, backMs: 3000, endLagMs: 300, stunRadius: 150, stunMs: 1200 },
     specials: {
       // gira una canna mentre para; tiro e scatto restano quelli di base finché la scheda non li dice
       down: { type: "counter", name: "Rolling", startupMs: 60, windowMs: 420, endLagMs: 460, minDamage: 8, multiplier: 1.3, range: 60, height: 60, baseKnockback: 440, knockbackGrowth: 9, angleDeg: 40 },
@@ -908,6 +921,10 @@ export function supremeAttackSpec(id: string | undefined): AttackSpec | null {
 }
 function toSupremeAttack(sp: SupremeSpec | undefined): AttackSpec | null {
   if (!sp) return null;
+  if (sp.type === "rewind") {
+    // niente colpo: torna indietro e stordisce (stepRewinds in physics/supreme.ts)
+    return { damage: 0, baseKnockback: 0, knockbackGrowth: 0, angleDeg: 0, startupMs: sp.windupMs, activeMs: 100, cooldownMs: sp.windupMs + 100 + sp.endLagMs, range: 0, height: 0 };
+  }
   if (sp.type === "burst") {
     // niente colpo corpo a corpo: colpiscono i proiettili (supremeMelee in physics/supreme.ts)
     const activeMs = sp.waves * sp.waveEveryMs;

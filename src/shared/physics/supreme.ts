@@ -2,9 +2,9 @@
 // Piena, il tasto suprema lancia la mossa e la barra torna a 0. La mossa di ogni personaggio
 // arriva a parte (Bonobot: #102); finché non c'è, tutti usano ATTACKS.supreme.
 
-import { getCharacter, specialsFor, supremeAttackSpec, type BurstSupreme, type DropSupreme, type GrabSupreme, type InfectSupreme, type SpinSupreme } from "../characters";
+import { getCharacter, specialsFor, supremeAttackSpec, type BurstSupreme, type DropSupreme, type GrabSupreme, type InfectSupreme, type RewindSupreme, type SpinSupreme } from "../characters";
 import { ATTACKS, FIGHTER, GRAB, MICELIO, SPORE, SUPREME } from "../constants";
-import { startAttack } from "./attacks";
+import { canBeHit, startAttack } from "./attacks";
 import type { StageSpec } from "../stages";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
 import { fire } from "./projectiles";
@@ -79,8 +79,8 @@ function burstOf(characterId: string): BurstSupreme | null {
   return sp?.type === "burst" ? sp : null;
 }
 
-// La suprema colpisce col suo rettangolo? Non la "burst", che colpisce coi proiettili
-export const supremeMelee = (characterId: string) => !burstOf(characterId);
+// La suprema colpisce col suo rettangolo? Non la "burst", che colpisce coi proiettili, né la "rewind", che stordisce
+export const supremeMelee = (characterId: string) => !burstOf(characterId) && !rewindOf(characterId);
 
 // La suprema "burst" (#358): a ogni raffica tira count proiettili della speciale neutra a ventaglio, da una parte
 // all'altra; le raffiche dispari sono spostate di mezzo passo, così non passano dagli stessi punti
@@ -115,6 +115,53 @@ export function infect(attacker: Fighter, target: Fighter, ctx: PhysicsContext):
   attacker.powerup = "micelio";
   attacker.powerupMs = MICELIO.ms;
   ctx.events.push({ type: "powerUp", itemId: -1, id: attacker.id, kind: "micelio", x: Math.round(attacker.x), y: Math.round(attacker.y) });
+}
+
+function rewindOf(characterId: string): RewindSupreme | null {
+  const sp = getCharacter(characterId).supreme;
+  return sp?.type === "rewind" ? sp : null;
+}
+
+// La suprema "rewind" (#358), dopo il passo di tutti: chi ce l'ha si ricorda com'era a ogni tick per backMs; finita la
+// carica torna al più vecchio (posizione e percentuale) e stordisce chi è vicino a dove arriva
+export function stepRewinds(fighters: Fighter[], dtMs: number, ctx: PhysicsContext): void {
+  for (const f of fighters) {
+    const sp = rewindOf(f.characterId);
+    if (!sp) continue;
+    if (f.attack !== "supreme") f.rewindDone = false;
+    else if (!f.rewindDone && f.attackTimer >= sp.windupMs) {
+      f.rewindDone = true;
+      rewind(f, sp, fighters, ctx);
+      continue; // da qui ricomincia a ricordare
+    }
+    if (f.eliminated || f.respawning || f.away) continue;
+    f.rewindTrail.push({ x: f.x, y: f.y, percent: f.percent });
+    while (f.rewindTrail.length > Math.ceil(sp.backMs / dtMs) + 1) f.rewindTrail.shift();
+  }
+}
+
+function rewind(f: Fighter, sp: RewindSupreme, fighters: Fighter[], ctx: PhysicsContext): void {
+  const then = f.rewindTrail[0];
+  f.rewindTrail = [];
+  if (then) {
+    f.x = then.x;
+    f.y = then.y;
+    f.percent = Math.min(f.percent, then.percent);
+  }
+  f.vx = 0;
+  f.vy = 0;
+  f.onGround = false; // se era a terra, ci ricade subito
+  for (const t of fighters) {
+    if (t === f || !canBeHit(t) || t.away || (ctx.canHit && !ctx.canHit(f, t))) continue;
+    if (Math.hypot(t.x - f.x, t.y - f.y) > sp.stunRadius) continue;
+    t.stunTimer = Math.max(t.stunTimer, sp.stunMs);
+    t.stunned = true;
+    t.attack = null;
+    t.attackActive = false;
+    t.vx = 0;
+    t.lastHitById = f.id;
+    ctx.events.push({ type: "hit", attackerId: f.id, targetId: t.id, kind: "supreme", damage: 0, percent: t.percent, knockback: 0, x: Math.round(t.x), y: Math.round(t.y - FIGHTER.height / 2) });
+  }
 }
 
 // La suprema "grab" (#358) ha preso target: lo tira davanti a chi la fa e dice l'angolo del lancio.
@@ -191,5 +238,6 @@ export function supremeReach(characterId: string): number {
   if (own?.type === "grab") return FIGHTER.width / 2 + own.reach;
   if (own?.type === "burst") return own.speed * 0.6; // dove cadono più o meno i proiettili
   if (own?.type === "infect") return FIGHTER.width / 2 + own.reach;
+  if (own?.type === "rewind") return own.stunRadius;
   return (ATTACKS.supreme.boxX ?? FIGHTER.width / 2) + ATTACKS.supreme.range;
 }
