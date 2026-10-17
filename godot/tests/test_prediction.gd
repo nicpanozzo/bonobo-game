@@ -227,6 +227,17 @@ func test_col_fiore_non_si_predice() -> void:
 	runner.check(not Predictor.predictable(p, {}), "col fiore no")
 
 
+# Sulle pozze dell'IRA (#13) si scivola e il port non lo sa: solo chi le ha tirate si predice
+func test_vicino_alla_pozza_non_si_predice() -> void:
+	var Predictor := preload("res://scripts/predictor.gd")
+	var p := {"id": "a", "x": 500.0, "y": 600.0}
+	var puddles := [{"id": 1, "ownerId": "b", "x": 520, "y": 600, "width": 70}]
+	runner.check(Predictor.near_puddle(p, puddles), "sopra la pozza di un altro")
+	runner.check(not Predictor.near_puddle({"id": "b", "x": 500.0, "y": 600.0}, puddles), "sulla propria si predice")
+	p.x = 900.0
+	runner.check(not Predictor.near_puddle(p, puddles), "lontano sì")
+
+
 # #320: con uno snapshot a ogni frame (60/s) il lottatore che corre resta sul previsto, non indietro di un frame per volta
 func test_snapshot_a_ogni_frame_non_frenano_il_lottatore() -> void:
 	var game := _game()

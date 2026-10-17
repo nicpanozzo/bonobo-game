@@ -3,7 +3,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { getCharacter, supremeAttackSpec, type BurstSupreme, type DropSupreme, type GrabSupreme, type InfectSupreme, type RewindSupreme, type SpinSupreme } from "../characters";
-import { ATTACKS, FIGHTER, MICELIO, SPORE, SUPREME, TICK_RATE } from "../constants";
+import { ATTACKS, FIGHTER, MICELIO, SLICK, SPORE, SUPREME, TICK_RATE } from "../constants";
 import { Match } from "../match";
 import { getStage } from "../stages";
 import type { GameEvent, InputState } from "../types";
@@ -355,6 +355,37 @@ describe("suprema a raffiche, IRA di Lendmar (#358)", () => {
     run(fighters, ctx, ticks(ira.waves * ira.waveEveryMs + 1500));
     const hits = ofType(ctx.events, "hit").filter((h) => h.targetId === b.id);
     assert.ok(hits.length > 0 && hits.every((h) => h.kind === "specialNeutral"), `${hits.length} colpi di merda`);
+  });
+
+  it("dove la merda cade per terra restano pozze, poi spariscono (#13)", () => {
+    const { ctx, fighters } = burstSetup(400);
+    run(fighters, ctx, ticks(ira.windupMs + ira.waves * ira.waveEveryMs + 1500));
+    const puddles = ctx.projectiles?.puddles ?? [];
+    assert.ok(puddles.length > 0 && puddles.length <= SLICK.max, `${puddles.length} pozze`);
+    assert.ok(puddles.every((q) => stage.solids.some((s) => s.y === q.y)), "sopra un blocco");
+    run(fighters, ctx, ticks(SLICK.lifeMs));
+    assert.equal(ctx.projectiles?.puddles.length, 0);
+  });
+
+  it("sulla pozza gli altri scivolano, Lendmar no (#13)", () => {
+    const slide = (owner: string) => {
+      const { ctx, fighters, b } = setup(400);
+      run(fighters, ctx, 30);
+      ctx.projectiles = { list: [], nextId: 1, puddles: [] };
+      ctx.projectiles.puddles = [{ id: 99, ownerId: owner, x: Math.round(b.x), y: Math.round(b.y), width: SLICK.width, lifeMs: SLICK.lifeMs }];
+      press(b, { right: true });
+      run(fighters, ctx, 2);
+      const start = b.vx;
+      run(fighters, ctx, 10);
+      press(b, {});
+      run(fighters, ctx, 2);
+      return { start, after: b.vx };
+    };
+    const other = slide("p0");
+    assert.ok(other.start < FIGHTER.groundSpeed * 0.3, `parte piano: ${Math.round(other.start)}`);
+    assert.ok(other.after > 0, `lasciato il tasto scivola ancora: ${Math.round(other.after)}`);
+    const own = slide("p1");
+    assert.equal(own.after, 0, "sulla sua pozza si ferma subito");
   });
 });
 

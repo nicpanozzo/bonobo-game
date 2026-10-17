@@ -6,7 +6,7 @@ import { getCharacter, skinFor } from "./characters";
 import { COLORS, FIGHTER, MATCH_RESTART_MS, MAX_PLAYERS_PER_ROOM, RECONNECT_RESUME_INVULNERABLE_MS, TEAM_COLORS, TRAINING } from "./constants";
 import { bufferPresses, createFighter, emptyInput, resetForMatch, stepWorld, type Fighter, type PhysicsContext } from "./physics";
 import { createItemWorld, handleItemInput, itemStates, resetItems, stepItems, type ItemWorld } from "./physics/items";
-import { createProjectileWorld, projectileStates, type ProjectileWorld } from "./physics/projectiles";
+import { createProjectileWorld, projectileStates, puddleStates, type ProjectileWorld } from "./physics/projectiles";
 import { canHitWithRules, flagWinnerTeam, isTeamMode, lastStanding, leaderOnTime, sanitizeRules } from "./rules";
 import { COURSE_PREFIX, seedFromCourseId } from "./courseGenerator";
 import { seedFromStageId } from "./stageGenerator";
@@ -217,7 +217,8 @@ export class Match {
     const stageMs = Math.round(this.ctx.timeMs ?? 0);
     const items = this.items ? itemStates(this.items) : [];
     const projectiles = projectileStates(this.projectiles);
-    return { t, players, winnerId: this.winnerId, timeLeftMs: this.timeLeftMs(), teamScores, items, projectiles, events, stageMs };
+    const puddles = puddleStates(this.projectiles);
+    return { t, players, winnerId: this.winnerId, timeLeftMs: this.timeLeftMs(), teamScores, items, projectiles, puddles, events, stageMs };
   }
 
   // Si entra nella squadra con meno giocatori (a parità, la Rossa)
@@ -333,6 +334,7 @@ export class Match {
     this.matchTimeMs = 0;
     this.scores = { 1: 0, 2: 0 };
     if (this.items) resetItems(this.items);
+    this.projectiles.puddles = [];
     this.projectiles.list = []; // gli id continuano: un client non confonde un proiettile vecchio con uno nuovo
     for (const f of this.fighters.values()) resetForMatch(f, this.slots.get(f.id) ?? 0, this.rules.stocks, this.stage);
     this.assignFlags(); // si riparte dal primo di ogni squadra
