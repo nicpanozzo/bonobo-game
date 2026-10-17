@@ -12,6 +12,7 @@
 //   specials.ts  mosse speciali per personaggio (E10)
 //   projectiles.ts  proiettili delle speciali (E10)
 //   supreme.ts   barra della suprema (#101)
+//   tech.ts      rialzata al volo dopo un colpo
 
 import { resolveHits, tryStartAttack, updateAttack } from "./attacks";
 import { applyJets, carryRider, resolveHazards } from "./elements";
@@ -27,6 +28,7 @@ import { endDash } from "./dash";
 import { collideWithStage, loseStock, outOfBlastZone, respawn } from "./stage";
 export { platformSurfaceY } from "./stage";
 import { supreming, tickSupreme } from "./supreme";
+import { landTech, tickTech } from "./tech";
 
 export * from "./fighter";
 export { resolveHits } from "./attacks";
@@ -75,6 +77,7 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
   f.regrabTimer = Math.max(0, f.regrabTimer - dtMs);
   tickCoyote(f, dtMs);
   tickSupreme(f, dtMs); // #101: anche il tempo carica la barra
+  tickTech(f, dtMs); // rialzata al volo: lo scudo premuto in volo da storditi
   tickBuffer(f, dtMs);
   f.hitstun = f.hitstunTimer > 0;
   tickPowerup(f, dtMs, ctx); // #231
@@ -114,10 +117,12 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
   applyGravity(f, dt);
 
   const prevY = f.y;
+  const wasOnGround = f.onGround;
   f.x += f.vx * dt;
   f.y += f.vy * dt;
 
   collideWithStage(f, prevY, ctx, dtMs);
+  landTech(f, wasOnGround, ctx);
 
   if (f.onGround && f.hitstun) f.vx *= 0.8; // attrito quando si atterra stordito
 

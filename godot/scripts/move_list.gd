@@ -45,6 +45,7 @@ static func rows(game: Dictionary, character_id: String, keys: Dictionary) -> Ar
 		["Scudo", k.call("shield"), "para i colpi ma si consuma"],
 		["Presa", plus.call("shield", "light"), "afferra chi si ripara; poi una direzione per lanciarlo"],
 		["Schivata", k.call("dodge"), "invulnerabile per un attimo, con una direzione rotola"],
+		["Rialzata al volo", k.call("shield") + " prima di toccare terra", "dopo un colpo ti rialzi subito, con una direzione rotoli"],
 		["Recupero", plus.call("up", "heavy") + " in aria", "una spinta in su per tornare sul palco"],
 		["Doppio salto", k.call("jump") + " in aria", "il secondo salto, una volta per volo"],
 		["Provocazione", k.call("taunt"), "per far arrabbiare gli amici"],
