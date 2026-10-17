@@ -171,6 +171,18 @@ func test_colpo_caricato_lampeggia() -> void:
 	runner.check(FighterPose.sprite_modulate(0, 1.0, 0.0).g == 1.0, "senza lampo il verde resta 1")
 
 
+# Suprema pronta (#101): solo con la barra piena e in gioco; le fiammelle restano attorno al corpo
+func test_suprema_pronta_si_vede() -> void:
+	runner.check(FighterPose.supreme_ready({"supreme": 100}, 100.0), "barra piena: pronta")
+	runner.check(not FighterPose.supreme_ready({"supreme": 99.5}, 100.0), "quasi piena: non ancora")
+	runner.check(not FighterPose.supreme_ready({"supreme": 100, "respawning": true}, 100.0), "chi rientra non si accende")
+	var flames := FighterPose.supreme_flames("a", 1234.0, 88.0)
+	runner.check(flames.size() == 7, "sette fiammelle")
+	for f in flames:
+		runner.check(absf(f.pos.x) < 40.0 and f.pos.y <= 0.0 and f.pos.y > -110.0, "fiammella fuori dal corpo: %s" % f.pos)
+	runner.check(FighterPose.supreme_flames("a", 1234.0, 88.0) == flames, "stesso istante, stesse fiammelle")
+
+
 # Acqua alta (#228): stessi numeri di hazardRect() e floodPhase() in physics/elements.test.ts
 func test_acqua_alta_come_il_server() -> void:
 	var water := {"kind": "acqua", "x": 300, "y": 620, "width": 400, "height": 30,

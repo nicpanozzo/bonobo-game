@@ -209,3 +209,21 @@ static func high_level(p: Variant, high_ms: float) -> float:
 	if not (p is Dictionary) or p.get("powerup") != "bong":
 		return 0.0
 	return 0.25 + 0.75 * clampf(1.0 - float(p.get("powerupMs", 0)) / high_ms, 0.0, 1.0)
+
+
+# La suprema è pronta (#101): barra piena e in gioco. Il lottatore si accende come in Smash con la Final Smash
+static func supreme_ready(p: Dictionary, supreme_max: float) -> bool:
+	return not p.get("eliminated", false) and not p.get("respawning", false) and float(p.get("supreme", 0)) >= supreme_max
+
+
+# Le fiammelle dorate di chi ha la suprema pronta: salgono dai piedi alla testa e si spengono, sempre le stesse
+# per lo stesso istante (niente stato). Ognuna è {"pos": scostamento dai piedi, "r": raggio, "a": trasparenza}
+static func supreme_flames(id: String, now: float, height: float, count := 7) -> Array:
+	var out := []
+	var offset := float(hash(id) % 1000) / 1000.0
+	for k in count:
+		var t := fmod(now / 900.0 + offset + float(k) / count, 1.0) # da 0 (piedi) a 1 (sopra la testa)
+		var side := sin(float(k) * 2.4 + offset * TAU) # da che parte del corpo sale
+		var x := side * height * 0.28 + sin(now / 160.0 + k) * 4.0
+		out.append({"pos": Vector2(x, -t * height * 1.15), "r": lerpf(7.0, 2.0, t), "a": sin(t * PI)})
+	return out
