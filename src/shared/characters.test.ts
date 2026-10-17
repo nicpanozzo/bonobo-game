@@ -187,3 +187,14 @@ describe("skin (#339)", () => {
     }
   });
 });
+
+describe("battute (#13)", () => {
+  it("sono frasi corte che stanno in un fumetto", () => {
+    for (const c of Object.values(CHARACTERS)) {
+      for (const [line, text] of Object.entries(c.quotes ?? {})) {
+        assert.ok(text && text.trim() === text, `${c.id}.${line}: vuota o con spazi ai bordi`);
+        assert.ok(text.length <= 80, `${c.id}.${line}: più di 80 caratteri`);
+      }
+    }
+  });
+});

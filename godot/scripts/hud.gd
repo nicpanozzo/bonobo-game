@@ -22,6 +22,7 @@ var _portraits := {} # id personaggio (con la skin, #339) -> [Texture2D, Rect2] 
 var _variants := {} # id giocatore -> variante di colore, come in world_view.gd
 
 const WorldView := preload("res://scripts/world_view.gd")
+const SpeechBubbles := preload("res://scripts/speech_bubbles.gd")
 const FighterPose := preload("res://scripts/fighter_pose.gd")
 const PORTRAIT := 40.0 # lato del ritratto che spunta sopra la scheda, pixel
 const PORTRAIT_ROW := 26.0 # lato del ritratto accanto al nome nella classifica
@@ -247,6 +248,14 @@ func _draw_results(w: float, _h: float) -> void:
 		var team: bool = rules.get("mode", "ffa") != "ffa"
 		title = ("Squadra %s vince!" % game.teamNames[str(int(winner.team))]) if team else "%s vince!" % winner.name
 	_centered(title, Vector2(w / 2, 200), 48, UI.ACCENT)
+	# La frase di vittoria del suo personaggio (#13), o la provocazione se la scheda ha solo quella
+	if not winner.is_empty() and rules.get("mode", "ffa") == "ffa":
+		var c: Dictionary = game.characters.get(winner.get("characterId", ""), {})
+		var line := SpeechBubbles.quote(c, "victory")
+		if line == "":
+			line = SpeechBubbles.quote(c, "taunt")
+		if line != "":
+			_centered("«%s»" % line, Vector2(w / 2, 236), 20, Color.WHITE)
 
 	players.sort_custom(func(a, b):
 		var sa := _stat(a.id)
