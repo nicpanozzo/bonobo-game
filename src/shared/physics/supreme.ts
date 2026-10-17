@@ -2,11 +2,12 @@
 // Piena, il tasto suprema lancia la mossa e la barra torna a 0. La mossa di ogni personaggio
 // arriva a parte (Bonobot: #102); finché non c'è, tutti usano ATTACKS.supreme.
 
-import { getCharacter, supremeAttackSpec, type DropSupreme, type GrabSupreme, type SpinSupreme } from "../characters";
+import { getCharacter, specialsFor, supremeAttackSpec, type BurstSupreme, type DropSupreme, type GrabSupreme, type SpinSupreme } from "../characters";
 import { ATTACKS, FIGHTER, GRAB, SUPREME } from "../constants";
 import { startAttack } from "./attacks";
 import type { StageSpec } from "../stages";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
+import { fire } from "./projectiles";
 
 export const supremeReady = (f: Fighter) => f.supreme >= SUPREME.max;
 
@@ -71,6 +72,30 @@ function spinOf(characterId: string): SpinSupreme | null {
 function grabOf(characterId: string): GrabSupreme | null {
   const sp = getCharacter(characterId).supreme;
   return sp?.type === "grab" ? sp : null;
+}
+
+function burstOf(characterId: string): BurstSupreme | null {
+  const sp = getCharacter(characterId).supreme;
+  return sp?.type === "burst" ? sp : null;
+}
+
+// La suprema colpisce col suo rettangolo? Non la "burst", che colpisce coi proiettili
+export const supremeMelee = (characterId: string) => !burstOf(characterId);
+
+// La suprema "burst" (#358): a ogni raffica tira count proiettili della speciale neutra a ventaglio, da una parte
+// all'altra; le raffiche dispari sono spostate di mezzo passo, così non passano dagli stessi punti
+export function burstFire(f: Fighter, dtMs: number, ctx: PhysicsContext): void {
+  const sp = f.attack === "supreme" ? burstOf(f.characterId) : null;
+  const neutral = specialsFor(f.characterId).neutral;
+  if (!sp || neutral.type !== "projectile" || f.attackTimer < sp.windupMs) return;
+  const wave = (ms: number) => Math.floor((ms - sp.windupMs) / sp.waveEveryMs);
+  const w = wave(f.attackTimer);
+  const prev = f.attackTimer - dtMs;
+  if (w >= sp.waves || (prev >= sp.windupMs && wave(prev) === w)) return;
+  for (let i = 0; i < sp.count; i++) {
+    const k = Math.min(1, ((i + 0.5 + (w % 2) * 0.5) / sp.count) * 2 - 1); // da -1 (sinistra) a 1 (destra)
+    fire(f, "specialNeutral", neutral, ctx, { vx: k * sp.speed, vy: -sp.lift * (1 - 0.35 * Math.abs(k)) });
+  }
 }
 
 // La suprema "grab" (#358) ha preso target: lo tira davanti a chi la fa e dice l'angolo del lancio.
@@ -145,5 +170,6 @@ export function supremeReach(characterId: string): number {
   if (own?.type === "drop") return own.leapDx + own.width / 2;
   if (own?.type === "spin") return own.width / 2;
   if (own?.type === "grab") return FIGHTER.width / 2 + own.reach;
+  if (own?.type === "burst") return own.speed * 0.6; // dove cadono più o meno i proiettili
   return (ATTACKS.supreme.boxX ?? FIGHTER.width / 2) + ATTACKS.supreme.range;
 }

@@ -4981,6 +4981,17 @@
         "weight": 0.95,
         "gravity": 1
       },
+      "supreme": {
+        "type": "burst",
+        "name": "IRA",
+        "windupMs": 350,
+        "waves": 3,
+        "waveEveryMs": 260,
+        "count": 6,
+        "speed": 560,
+        "lift": 820,
+        "endLagMs": 400
+      },
       "specials": {
         "neutral": {
           "type": "projectile",
@@ -5065,7 +5076,17 @@
           "cooldownMs": 900
         }
       },
-      "supremeAttack": null,
+      "supremeAttack": {
+        "damage": 0,
+        "baseKnockback": 0,
+        "knockbackGrowth": 0,
+        "angleDeg": 0,
+        "startupMs": 350,
+        "activeMs": 780,
+        "cooldownMs": 1530,
+        "range": 0,
+        "height": 0
+      },
       "skins": {}
     },
     "drmicelium": {

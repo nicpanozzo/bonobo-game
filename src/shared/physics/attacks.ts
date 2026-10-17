@@ -6,7 +6,7 @@ import type { AttackKind, SpecialKind } from "../types";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
 import { clearStun, hitShield } from "./shield";
 import { counterHit, isCountering, tryStartSpecial } from "./specials";
-import { chargeFromHit, hitOrigin, snatch, spinRehit, tryStartSupreme } from "./supreme";
+import { chargeFromHit, hitOrigin, snatch, spinRehit, supremeMelee, tryStartSupreme } from "./supreme";
 
 export function tryStartAttack(f: Fighter, ctx: PhysicsContext): void {
   if (f.hitstun || f.attack || f.helpless || f.dodgeTimer > 0) return;
@@ -166,6 +166,7 @@ export function resolveHits(fighters: Fighter[], ctx: PhysicsContext): void {
     if (!attacker.attackActive || !attacker.attack || attacker.eliminated || attacker.respawning) continue;
     if (isGrabKind(attacker.attack)) continue; // presa e lanci non colpiscono col rettangolo (grab.ts)
     if (isCountering(attacker)) continue; // il contrattacco para, non colpisce (specials.ts)
+    if (attacker.attack === "supreme" && !supremeMelee(attacker.characterId)) continue; // IRA colpisce coi proiettili (#358)
     const spec = attackSpecFor(attacker);
     const box = attackBox(attacker);
     for (const target of fighters) {

@@ -2,7 +2,7 @@
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { getCharacter, supremeAttackSpec, type DropSupreme, type GrabSupreme, type SpinSupreme } from "../characters";
+import { getCharacter, supremeAttackSpec, type BurstSupreme, type DropSupreme, type GrabSupreme, type SpinSupreme } from "../characters";
 import { ATTACKS, FIGHTER, SUPREME, TICK_RATE } from "../constants";
 import { Match } from "../match";
 import { getStage } from "../stages";
@@ -322,5 +322,38 @@ describe("suprema che afferra, snaack di Lampione (#358)", () => {
     const x = b.x;
     assert.equal(snatch(lampione, b, 60), 60);
     assert.equal(b.x, x);
+  });
+});
+
+describe("suprema a raffiche, IRA di Lendmar (#358)", () => {
+  const ira = getCharacter("lendmar").supreme as BurstSupreme;
+
+  function burstSetup(gap: number) {
+    const { ctx, fighters, a, b } = setup(gap);
+    a.characterId = "lendmar";
+    a.supreme = SUPREME.max;
+    b.characterId = "egiainuso";
+    press(a, { supreme: true });
+    run(fighters, ctx, 1);
+    press(a, {});
+    return { ctx, fighters, lendmar: a, b };
+  }
+
+  it("tira tutte le raffiche, da tutte e due le parti", () => {
+    const { ctx, fighters } = burstSetup(400);
+    run(fighters, ctx, ticks(ira.windupMs + ira.waves * ira.waveEveryMs));
+    const shots = ofType(ctx.events, "projectile");
+    assert.equal(shots.length, ira.waves * ira.count);
+    const vx = (ctx.projectiles?.list ?? []).map((p) => p.vx);
+    assert.ok(vx.some((v) => v < 0) && vx.some((v) => v > 0), "a sinistra e a destra");
+  });
+
+  it("colpisce coi proiettili, non col corpo", () => {
+    const { ctx, fighters, b } = burstSetup(10);
+    run(fighters, ctx, ticks(ira.windupMs) + 1);
+    assert.equal(ofType(ctx.events, "hit").length, 0, "appena attaccato non colpisce col corpo");
+    run(fighters, ctx, ticks(ira.waves * ira.waveEveryMs + 1500));
+    const hits = ofType(ctx.events, "hit").filter((h) => h.targetId === b.id);
+    assert.ok(hits.length > 0 && hits.every((h) => h.kind === "specialNeutral"), `${hits.length} colpi di merda`);
   });
 });
