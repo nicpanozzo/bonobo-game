@@ -253,6 +253,49 @@ export interface CharacterSpec {
 
 export const DEFAULT_CHARACTER_ID = "default";
 
+// Gli sprite provvisori dei lottatori della community (#13): pezzi disegnati col codice sullo scheletro di Bonobot,
+// in piedi, con le sue animazioni e la corsa umana (tools/rig/genera_pezzi_lottatore.py e animazioni_lottatore.py).
+// Stessi stati e tempi di Bonobot, tranne la suprema, che resta quella di base
+function communitySprite(id: string): SpriteFolderSpec {
+  return {
+    dir: `assets/characters/${id}`,
+    frameWidth: 336,
+    frameHeight: 368,
+    footY: 286,
+    scale: 0.5,
+    animations: {
+      idle: { fps: 12, loop: true },
+      walk: { fps: 24, loop: true }, // corsa in piedi alla velocità di groundSpeed
+      jump: { fps: 24, loop: false },
+      fall: { fps: 24, loop: true },
+      light: { fps: 24, loop: false, hitFrame: 2 },
+      heavy: { fps: 24, loop: false, hitFrame: 8 },
+      hit: { fps: 24, loop: false },
+      doubleJump: { fps: 24, loop: false },
+      tumble: { fps: 24, loop: true },
+      ledge: { fps: 12, loop: true },
+      climb: { fps: 24, loop: false },
+      land: { fps: 24, loop: false },
+      taunt: { fps: 12, loop: false },
+      dash: { fps: 24, loop: true },
+      shield: { fps: 12, loop: true },
+      grab: { fps: 24, loop: false, hitFrame: 2 },
+      throw: { fps: 24, loop: false, hitFrame: 0 },
+      grabbed: { fps: 12, loop: true },
+      lightUp: { fps: 24, loop: false, hitFrame: 2 },
+      lightDown: { fps: 24, loop: false, hitFrame: 2 },
+      lightAir: { fps: 24, loop: false, hitFrame: 2 },
+      heavyUp: { fps: 24, loop: false, hitFrame: 7 },
+      heavyDown: { fps: 24, loop: false, hitFrame: 6 },
+      heavyAir: { fps: 24, loop: false, hitFrame: 5 },
+      recovery: { fps: 24, loop: false, hitFrame: 0 },
+      specialNeutral: { fps: 24, loop: false, hitFrame: 5 },
+      specialSide: { fps: 24, loop: false, hitFrame: 3 }, // in piedi: carica, due giri di corsa, frena
+      specialDown: { fps: 24, loop: false, hitFrame: 1 },
+    },
+  };
+}
+
 export const CHARACTERS: Record<string, CharacterSpec> = {
   default: {
     id: "default",
@@ -470,7 +513,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     },
   },
   // Lottatori dalle schede della community (#13), compilate a ottobre 2026 nella cartella Drive del gruppo.
-  // Ancora senza disegni: si vedono come il rettangolo colorato del giocatore finché non arriva lo sprite.
+  // Disegni provvisori fatti col codice (communitySprite), da sostituire con quelli veri.
   // Le supreme chieste (presa, rotazione, ritorno indietro, pioggia di merda...) richiedono codice nuovo:
   // per ora usano quella di base. TODO community: statistiche e numeri provvisori, da provare al playtest (#22)
 
@@ -478,6 +521,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
   lampione: {
     id: "lampione",
     name: "Lampione",
+    sprite: communitySprite("lampione"),
     // pesante, salto esplosivo, bravo negli scatti brevi ma poco agile in aria
     stats: { weight: 1.1, jump: 1.15, speed: 1.05, airSpeed: 0.9 },
     specials: {
@@ -494,6 +538,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
   bradipo: {
     id: "bradipo",
     name: "Bradipo Giallo",
+    sprite: communitySprite("bradipo"),
     // piccolo e leggero, veloce a terra e in aria, salta tanto
     stats: { weight: 0.95, speed: 1.1, airSpeed: 1.1, jump: 1.1 },
     specials: {
@@ -509,6 +554,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
   giovannifrana: {
     id: "giovannifrana",
     name: "Giovanni fRana",
+    sprite: communitySprite("giovannifrana"),
     // pesante e veloce a terra, ma salta poco e cade presto. Peso da 1,1 a 1 e corsa da 1,1 a 1,05: vinceva il 62-68% in npm run balance
     stats: { weight: 1, speed: 1.05, airSpeed: 0.9, jump: 0.9, gravity: 1.05 },
     specials: {
@@ -524,6 +570,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
   marcomunista: {
     id: "marcomunista",
     name: "Marcomunista",
+    sprite: communitySprite("marcomunista"),
     // leggero e fluttuante: lento a terra, agile in aria
     stats: { weight: 0.95, speed: 0.95, airSpeed: 1.05, jump: 1.05, gravity: 0.95 },
     specials: {
@@ -536,6 +583,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
   lendmar: {
     id: "lendmar",
     name: "Lendmar",
+    sprite: communitySprite("lendmar"),
     // TODO community: la scheda non ha statistiche; magro, quindi leggero e scattante
     stats: { weight: 0.95, speed: 1.05 },
     specials: {
@@ -550,6 +598,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
   drmicelium: {
     id: "drmicelium",
     name: "Dr. Micelium",
+    sprite: communitySprite("drmicelium"),
     // tutto nella media: le statistiche restano quelle di Bonobot
     specials: {
       // un tiro di canna e il fumo infetto: lento, corto, poco danno
@@ -565,6 +614,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
   coachcartier: {
     id: "coachcartier",
     name: "Coach Cartier",
+    sprite: communitySprite("coachcartier"),
     // dalla scheda: velocissimo a terra, lento in aria
     stats: { speed: 1.2, airSpeed: 0.8, jump: 0.95, gravity: 0.95 },
     specials: {
