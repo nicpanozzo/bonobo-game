@@ -22,3 +22,4 @@
 | `characters/drmicelium/` (sprite, ritratti e pezzi `rig/`, #13) | Claude Code per Nicola, provvisori disegnati col codice con `tools/rig/genera_pezzi_lottatore.py`, dalle schede della community | fatto da noi | CC0 |
 | `characters/coachcartier/` (sprite, ritratti e pezzi `rig/`, #13) | Claude Code per Nicola, provvisori disegnati col codice con `tools/rig/genera_pezzi_lottatore.py`, dalle schede della community | fatto da noi | CC0 |
 | `godot/assets/fonts/Nunito.ttf` (font dei menu e dell'HUD) | The Nunito Project Authors | [google/fonts](https://github.com/google/fonts/tree/main/ofl/nunito) | SIL Open Font License 1.1 (`godot/assets/fonts/OFL.txt`) |
+| `godot/assets/icon/` (icona dell'app, tre bonobo) | Claude Code per Nicola, disegnata a mano in SVG (`icon.svg`), `icon.png` esportata a 1024 px | fatto da noi | CC0 |

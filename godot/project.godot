@@ -9,6 +9,7 @@ config/name="Bonobo Game"
 config/description="Picchiaduro multiplayer tra amici: client Godot sul server Node"
 run/main_scene="res://boot.tscn"
 config/features=PackedStringArray("4.5", "GL Compatibility")
+config/icon="res://assets/icon/icon.png"
 
 [display]
 
