@@ -15,6 +15,7 @@ export interface InputState {
   shield: boolean; // scudo (#109): tenuto a terra para i colpi e si consuma; con una direzione rotola, con su si salta fuori
   special: boolean; // mossa speciale (E10): da fermi, con una direzione o con giù, diversa per ogni personaggio
   supreme: boolean; // suprema (#101): parte solo con la barra piena (PlayerState.supreme)
+  run?: boolean; // corsa: tenuto con una direzione a terra si scatta e si corre (DASH). I client vecchi non lo mandano
   seq?: number; // E17: numero crescente del client (il suo tick), torna in PlayerState.predict. I client vecchi non lo mandano
 }
 
@@ -31,6 +32,7 @@ export type AttackKind =
   | "heavyAir"
   | "recovery"
   | "ledgeAttack"
+  | "dashAttack" // attacco in corsa: il pesante mentre si corre, scivolando in avanti
   | "grab"
   | "throwForward"
   | "throwBack"

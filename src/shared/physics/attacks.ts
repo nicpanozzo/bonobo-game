@@ -15,7 +15,7 @@ export function tryStartAttack(f: Fighter, ctx: PhysicsContext): void {
   if (tryStartSupreme(f, ctx)) return; // #101: solo con la barra piena
   if (pressed(f, "special")) tryStartSpecial(f, ctx); // E10
   else if (pressed(f, "heavy")) {
-    const kind = variant(f, "heavy");
+    const kind = f.dashing && f.onGround && !f.input.up && !f.input.down ? "dashAttack" : variant(f, "heavy"); // correndo, l'attacco in corsa
     startAttack(f, kind, ctx);
     if (f.onGround && SMASH_CHARGE.kinds.includes(kind)) f.smashChargeMs = 0; // tenendo premuto si carica
   }

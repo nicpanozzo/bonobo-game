@@ -33,6 +33,7 @@ export const OPTIONAL_ANIMATION_NAMES = [
   "specialNeutral", // le tre speciali, una per tasto (#257): senza disegno, la posa di "special"
   "specialSide",
   "specialDown",
+  "dashAttack", // attacco in corsa: senza disegno, la posa del pesante
 ] as const;
 export type OptionalAnimationName = (typeof OPTIONAL_ANIMATION_NAMES)[number];
 export type SpriteState = AnimationName | OptionalAnimationName;
@@ -52,6 +53,7 @@ export const ANIMATION_FALLBACK: Record<OptionalAnimationName, SpriteState> = {
   heavyUp: "heavy",
   heavyDown: "heavy",
   heavyAir: "heavy",
+  dashAttack: "heavy",
   recovery: "jump",
   taunt: "idle",
   shield: "idle",

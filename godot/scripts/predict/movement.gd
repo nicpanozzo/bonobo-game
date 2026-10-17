@@ -142,7 +142,7 @@ func _apply_controls(s: Dictionary, dt: float) -> void:
 	if s.onGround and dash_speed != null:
 		s.vx = float(dash_speed)
 	elif s.onGround:
-		s.vx = 0.0 if s.attack != "" else dir * float(fighter.groundSpeed) * float(stats.speed)
+		s.vx = _attack_slide(s) if s.attack != "" else dir * float(fighter.groundSpeed) * float(stats.speed)
 	elif dir != 0:
 		s.vx += dir * float(fighter.airAccel) * dt
 		var top := float(fighter.airSpeed) * float(stats.airSpeed)
@@ -181,7 +181,8 @@ func _try_start_attack(s: Dictionary) -> void:
 	if s.attack != "" or s.cooldown > 0 or s.helpless or s.dodge > 0:
 		return
 	if _pressed(s, "heavy") or s.heavyBuffer > 0:
-		var kind := _variant(s, "heavy")
+		var running: bool = s.dashing and s.onGround and not s.input.get("up", false) and not s.input.get("down", false)
+		var kind := "dashAttack" if running else _variant(s, "heavy")
 		_start_attack(s, kind)
 		if s.onGround and kind in smash_charge.kinds:
 			s.smashCharge = 0.0 # tenendo premuto si carica
@@ -260,6 +261,10 @@ func _step_dash(s: Dictionary, dir: int, dt_ms: float) -> Variant:
 		s.tapDir = dir
 		s.tapTimer = float(dash.doubleTapMs)
 		s.tapHold = 0.0
+	if s.input.get("run", false) and dir != 0 and not s.dashing:
+		s.dashing = true # il tasto corsa non aspetta il doppio tocco
+		s.dash = float(dash.durationMs)
+		s.facing = dir
 	if not s.dashing:
 		return null
 	if dir == -s.facing:
@@ -268,10 +273,18 @@ func _step_dash(s: Dictionary, dir: int, dt_ms: float) -> Variant:
 	if s.dash > 0:
 		s.dash = maxf(0.0, s.dash - dt_ms)
 		return s.facing * float(dash.speed) * float(stats.speed)
-	if dir == s.facing:
+	if dir == s.facing and (s.input.get("run", false) or bool(dash.get("byTap", true))):
 		return s.facing * float(dash.runSpeed) * float(stats.speed)
 	_end_dash(s)
 	return null
+
+
+# L'attacco in corsa scivola finché il colpo è attivo (attackSlide in movement.ts)
+func _attack_slide(s: Dictionary) -> float:
+	if s.attack != "dashAttack":
+		return 0.0
+	var spec := attack_spec("dashAttack")
+	return s.facing * float(dash.attackSlide) if s.attackTimer < float(spec.startupMs) + float(spec.activeMs) else 0.0
 
 
 func _end_dash(s: Dictionary) -> void:

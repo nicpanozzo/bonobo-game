@@ -1,7 +1,7 @@
 // Corsa, controllo in aria, salti, caduta veloce e gravità.
 
 import { characterStats } from "../characters";
-import { BIRRA, BONG, DODGE, FIGHTER, FLAG, HITSTUN_AIR_DRAG, POWERUP, RECOVERY } from "../constants";
+import { ATTACKS, BIRRA, BONG, DASH, DODGE, FIGHTER, FLAG, HITSTUN_AIR_DRAG, POWERUP, RECOVERY } from "../constants";
 import { startAttack } from "./attacks";
 import { endDash, stepDash } from "./dash";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
@@ -58,7 +58,10 @@ export function applyControls(f: Fighter, dt: number, ctx: PhysicsContext): void
   if (f.onGround && dashSpeed !== null) {
     f.vx = dashSpeed * speed;
   } else if (f.onGround) {
-    f.vx = dir * FIGHTER.groundSpeed * stats.speed * speed * (f.attack ? attackMoveFactor(f) : 1); // fermi, tranne la suprema che gira (#358)
+    // fermi durante gli attacchi, tranne la scivolata dell'attacco in corsa e la suprema che gira (#358)
+    f.vx = f.attack
+      ? (attackSlide(f) + dir * FIGHTER.groundSpeed * stats.speed * attackMoveFactor(f)) * speed
+      : dir * FIGHTER.groundSpeed * stats.speed * speed;
     // Ubriachi (#302): a terra si barcolla avanti e indietro, anche da fermi
     if (f.powerup === "birra" && !f.attack) f.vx += BIRRA.swayPxS * Math.sin((2 * Math.PI * f.powerupMs) / BIRRA.swayPeriodMs);
   } else if (dir !== 0) {
@@ -102,6 +105,13 @@ export function applyControls(f: Fighter, dt: number, ctx: PhysicsContext): void
 
   // Provocazione: solo da fermi a terra, la usano voci e animazioni (#16)
   if (pressed(f, "taunt") && f.onGround && !f.attack) ctx.events.push({ type: "taunt", id: f.id });
+}
+
+// L'attacco in corsa scivola in avanti finché il colpo è attivo, poi ci si ferma; gli altri attacchi da terra stanno fermi
+function attackSlide(f: Fighter): number {
+  if (f.attack !== "dashAttack") return 0;
+  const spec = ATTACKS.dashAttack;
+  return f.attackTimer < spec.startupMs + spec.activeMs ? f.facing * DASH.attackSlide : 0;
 }
 
 // Finito il tempo di grazia senza saltare, il salto da terra è perso (resta quello in aria)

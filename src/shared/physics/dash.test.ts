@@ -2,7 +2,7 @@
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { DASH, FIGHTER, TICK_RATE } from "../constants";
+import { ATTACKS, DASH, FIGHTER, TICK_RATE } from "../constants";
 import { getStage } from "../stages";
 import type { GameEvent, InputState } from "../types";
 import { createFighter, emptyInput, stepWorld, type Fighter, type PhysicsContext } from "./index";
@@ -108,5 +108,67 @@ describe("scatto con doppio tocco", () => {
     run([f], ctx, 3);
     assert.equal(f.onGround, false);
     assert.equal(f.dashing, false);
+  });
+});
+
+describe("tasto corsa", () => {
+  function setupRun(x = 300) {
+    const { ctx, f } = setup(x);
+    f.dashByTap = false; // come i giocatori oggi: niente doppio tocco
+    return { ctx, f };
+  }
+
+  it("corsa con una direzione scatta subito e poi corre", () => {
+    const { ctx, f } = setupRun();
+    hold(f, { right: true, run: true });
+    run([f], ctx, 1);
+    assert.equal(dashes(ctx.events), 1);
+    assert.equal(f.vx, DASH.speed);
+    run([f], ctx, Math.ceil(DASH.durationMs / DT) + 5);
+    assert.equal(f.vx, DASH.runSpeed);
+  });
+
+  it("lasciata la corsa si torna a camminare", () => {
+    const { ctx, f } = setupRun();
+    hold(f, { right: true, run: true });
+    run([f], ctx, Math.ceil(DASH.durationMs / DT) + 5);
+    hold(f, { right: true });
+    run([f], ctx, 1);
+    assert.equal(f.dashing, false);
+    assert.equal(f.vx, FIGHTER.groundSpeed);
+  });
+
+  it("corsa da sola, senza direzione, non muove", () => {
+    const { ctx, f } = setupRun();
+    hold(f, { run: true });
+    run([f], ctx, 5);
+    assert.equal(dashes(ctx.events), 0);
+    assert.equal(f.vx, 0);
+  });
+
+  it("il pesante correndo è l'attacco in corsa e scivola in avanti", () => {
+    const { ctx, f } = setupRun();
+    hold(f, { right: true, run: true });
+    run([f], ctx, 10);
+    hold(f, { right: true, run: true, heavy: true });
+    run([f], ctx, 1);
+    assert.equal(f.attack, "dashAttack");
+    assert.equal(f.smashChargeMs, -1, "l'attacco in corsa non si carica");
+    const x = f.x;
+    run([f], ctx, 3);
+    assert.equal(f.vx, DASH.attackSlide);
+    assert.ok(f.x > x + 20);
+    hold(f, {});
+    run([f], ctx, Math.ceil((ATTACKS.dashAttack.startupMs + ATTACKS.dashAttack.activeMs) / DT));
+    assert.equal(f.vx, 0, "finito il colpo ci si ferma");
+  });
+
+  it("il pesante camminando resta il pesante", () => {
+    const { ctx, f } = setupRun();
+    hold(f, { right: true });
+    run([f], ctx, 10);
+    hold(f, { right: true, heavy: true });
+    run([f], ctx, 1);
+    assert.equal(f.attack, "heavy");
   });
 });

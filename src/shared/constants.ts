@@ -47,6 +47,7 @@ export const DASH = {
   durationMs: 300, // ms di scatto, anche lasciando il tasto
   runSpeed: 560, // pixel/s di corsa tenendo la direzione dopo lo scatto
   byTap: false, // il doppio tocco fa scattare: spento per ora, faceva scivolare senza volerlo (Nicola, 14 ottobre 2026)
+  attackSlide: 640, // pixel/s in avanti durante l'attacco in corsa (ATTACKS.dashAttack), fino alla fine del colpo attivo
 };
 
 export interface AttackSpec {
@@ -95,6 +96,8 @@ export const ATTACKS: Record<Exclude<AttackKind, SpecialKind>, AttackSpec> = {
   heavyUp: { damage: 14, baseKnockback: 430, knockbackGrowth: 11.5, startupMs: 280, activeMs: 130, cooldownMs: 800, range: 80, height: 64, angleDeg: 88, boxX: -40, boxY: -144 }, // lancia in verticale
   heavyDown: { damage: 12, baseKnockback: 400, knockbackGrowth: 10, startupMs: 240, activeMs: 140, cooldownMs: 760, range: 88, height: 30, angleDeg: 25, boxX: 8, boxY: -30 }, // spazzata radente
   heavyAir: { damage: 12, baseKnockback: 410, knockbackGrowth: 10.5, startupMs: 200, activeMs: 140, cooldownMs: 700, range: 66, height: 60, angleDeg: 32, boxX: 12, boxY: -82 },
+  // Attacco in corsa: il pesante tenendo la corsa (DASH.attackSlide), più veloce del pesante ma meno forte
+  dashAttack: { damage: 10, baseKnockback: 400, knockbackGrowth: 9, startupMs: 100, activeMs: 160, cooldownMs: 620, range: 58, height: 44, angleDeg: 45 },
   // Mossa di recupero (#11): la spinta sta in RECOVERY, qui solo il colpetto che dà salendo
   recovery: {
     damage: 4,

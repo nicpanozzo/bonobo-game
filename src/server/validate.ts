@@ -71,6 +71,7 @@ export function parseInput(raw: unknown): InputState | null {
     shield: raw.shield === true,
     special: raw.special === true,
     supreme: raw.supreme === true,
+    run: raw.run === true,
     // E17: il numero dell'input torna nello snapshot; qualunque altra cosa non è un numero
     ...(Number.isSafeInteger(raw.seq) && (raw.seq as number) >= 0 && { seq: raw.seq as number }),
   };

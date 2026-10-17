@@ -112,6 +112,7 @@ export class Match {
       shield: !!input.shield,
       special: !!input.special,
       supreme: !!input.supreme,
+      run: !!input.run,
     };
     bufferPresses(f, next); // una pressione più corta di un tick non si perde (E6)
     f.input = next;
