@@ -3702,205 +3702,189 @@
       ],
       "sprite": {
         "dir": "assets/characters/bradipo",
-        "frameWidth": 336,
-        "frameHeight": 368,
-        "footY": 286,
+        "frameWidth": 298,
+        "frameHeight": 200,
+        "footY": 185,
         "scale": 0.5,
         "animations": {
           "idle": {
-            "fps": 12,
+            "fps": 1,
             "loop": true,
-            "frames": 24,
+            "frames": 1,
             "src": "idle"
           },
           "walk": {
-            "fps": 24,
+            "fps": 6,
             "loop": true,
-            "frames": 8,
+            "frames": 2,
             "src": "walk"
           },
           "jump": {
-            "fps": 24,
+            "fps": 1,
             "loop": false,
-            "frames": 7,
+            "frames": 1,
             "src": "jump"
           },
           "fall": {
-            "fps": 24,
-            "loop": true,
-            "frames": 12,
+            "fps": 1,
+            "loop": false,
+            "frames": 1,
             "src": "fall"
           },
           "light": {
-            "fps": 24,
+            "fps": 1,
             "loop": false,
-            "hitFrame": 2,
-            "frames": 10,
+            "frames": 1,
             "src": "light"
           },
           "heavy": {
-            "fps": 24,
+            "fps": 1,
             "loop": false,
-            "hitFrame": 8,
-            "frames": 18,
+            "frames": 1,
             "src": "heavy"
           },
           "hit": {
-            "fps": 24,
+            "fps": 1,
             "loop": false,
-            "frames": 8,
+            "frames": 1,
             "src": "hit"
           },
           "doubleJump": {
-            "fps": 24,
+            "fps": 1,
             "loop": false,
-            "frames": 9,
-            "src": "doubleJump"
+            "frames": 1,
+            "src": "jump"
           },
           "tumble": {
-            "fps": 24,
-            "loop": true,
-            "frames": 12,
-            "src": "tumble"
+            "fps": 1,
+            "loop": false,
+            "frames": 1,
+            "src": "hit"
           },
           "ledge": {
-            "fps": 12,
-            "loop": true,
-            "frames": 24,
-            "src": "ledge"
+            "fps": 1,
+            "loop": false,
+            "frames": 1,
+            "src": "jump"
           },
           "climb": {
-            "fps": 24,
+            "fps": 1,
             "loop": false,
-            "frames": 10,
-            "src": "climb"
+            "frames": 1,
+            "src": "jump"
           },
           "land": {
-            "fps": 24,
+            "fps": 1,
             "loop": false,
-            "frames": 6,
+            "frames": 1,
             "src": "land"
           },
           "lightUp": {
-            "fps": 24,
+            "fps": 1,
             "loop": false,
-            "hitFrame": 2,
-            "frames": 8,
+            "frames": 1,
             "src": "lightUp"
           },
           "lightDown": {
-            "fps": 24,
+            "fps": 1,
             "loop": false,
-            "hitFrame": 2,
-            "frames": 8,
+            "frames": 1,
             "src": "lightDown"
           },
           "lightAir": {
-            "fps": 24,
+            "fps": 1,
             "loop": false,
-            "hitFrame": 2,
-            "frames": 8,
+            "frames": 1,
             "src": "lightAir"
           },
           "heavyUp": {
-            "fps": 24,
+            "fps": 1,
             "loop": false,
-            "hitFrame": 7,
-            "frames": 19,
+            "frames": 1,
             "src": "heavyUp"
           },
           "heavyDown": {
-            "fps": 24,
+            "fps": 1,
             "loop": false,
-            "hitFrame": 6,
-            "frames": 18,
+            "frames": 1,
             "src": "heavyDown"
           },
           "heavyAir": {
-            "fps": 24,
+            "fps": 1,
             "loop": false,
-            "hitFrame": 5,
-            "frames": 17,
+            "frames": 1,
             "src": "heavyAir"
           },
           "recovery": {
-            "fps": 24,
+            "fps": 1,
             "loop": false,
-            "hitFrame": 0,
-            "frames": 6,
+            "frames": 1,
             "src": "recovery"
           },
           "taunt": {
-            "fps": 12,
-            "loop": false,
-            "frames": 24,
-            "src": "taunt"
+            "fps": 1,
+            "loop": true,
+            "frames": 1,
+            "src": "idle"
           },
           "shield": {
-            "fps": 12,
-            "loop": true,
-            "frames": 12,
+            "fps": 1,
+            "loop": false,
+            "frames": 1,
             "src": "shield"
           },
           "grab": {
-            "fps": 24,
+            "fps": 1,
             "loop": false,
-            "hitFrame": 2,
-            "frames": 15,
+            "frames": 1,
             "src": "grab"
           },
           "throw": {
-            "fps": 24,
+            "fps": 1,
             "loop": false,
-            "hitFrame": 0,
-            "frames": 8,
+            "frames": 1,
             "src": "throw"
           },
           "grabbed": {
-            "fps": 12,
-            "loop": true,
-            "frames": 12,
-            "src": "grabbed"
+            "fps": 1,
+            "loop": false,
+            "frames": 1,
+            "src": "hit"
           },
           "special": {
-            "fps": 24,
+            "fps": 1,
             "loop": false,
-            "hitFrame": 8,
-            "frames": 18,
+            "frames": 1,
             "src": "heavy"
           },
           "dash": {
-            "fps": 24,
-            "loop": true,
-            "frames": 8,
+            "fps": 1,
+            "loop": false,
+            "frames": 1,
             "src": "dash"
           },
           "supreme": {
-            "fps": 24,
+            "fps": 1,
             "loop": false,
-            "hitFrame": 8,
-            "frames": 18,
-            "src": "heavy"
+            "frames": 1,
+            "src": "supreme"
           },
           "specialNeutral": {
-            "fps": 24,
+            "fps": 1,
             "loop": false,
-            "hitFrame": 5,
-            "frames": 15,
+            "frames": 1,
             "src": "specialNeutral"
           },
           "specialSide": {
-            "fps": 24,
+            "fps": 1,
             "loop": false,
-            "hitFrame": 3,
-            "frames": 18,
-            "src": "specialSide"
+            "frames": 1,
+            "src": "heavy"
           },
           "specialDown": {
-            "fps": 24,
+            "fps": 1,
             "loop": false,
-            "hitFrame": 1,
-            "frames": 17,
+            "frames": 1,
             "src": "specialDown"
           }
         }
