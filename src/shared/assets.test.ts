@@ -233,11 +233,12 @@ const report = (problems: string[]) => assert.equal(problems.length, 0, `\n${pro
 
 describe("file grafici (E7 passo 5)", () => {
   for (const c of Object.values(CHARACTERS)) {
-    if (!c.sprite && !c.supreme?.art) continue;
+    const art = c.supreme?.type === "drop" ? c.supreme.art : undefined;
+    if (!c.sprite && !art) continue;
     it(`${c.id}: misure, nomi degli stati e trasparenza`, () => {
       const problems: string[] = [];
       if (c.sprite) problems.push(...(isSpriteFolder(c.sprite) ? folderProblems(c.sprite, realPng, realDir) : sheetProblems(c.sprite, realPng)));
-      if (c.supreme?.art) problems.push(...supremeArtProblems(c.supreme.art, realPng));
+      if (art) problems.push(...supremeArtProblems(art, realPng));
       report(problems);
     });
   }

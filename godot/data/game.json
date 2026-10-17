@@ -3892,6 +3892,21 @@
           }
         }
       },
+      "supreme": {
+        "type": "spin",
+        "name": "DEMACIAAA",
+        "windupMs": 150,
+        "durationMs": 1800,
+        "hitEveryMs": 225,
+        "endLagMs": 300,
+        "moveSpeed": 0.55,
+        "width": 130,
+        "height": 100,
+        "damage": 3,
+        "baseKnockback": 200,
+        "knockbackGrowth": 1.6,
+        "angleDeg": 60
+      },
       "stats": {
         "speed": 1.1,
         "airSpeed": 1.1,
@@ -3985,7 +4000,20 @@
           "cooldownMs": 900
         }
       },
-      "supremeAttack": null,
+      "supremeAttack": {
+        "damage": 3,
+        "baseKnockback": 200,
+        "knockbackGrowth": 1.6,
+        "angleDeg": 60,
+        "startupMs": 150,
+        "activeMs": 1800,
+        "cooldownMs": 2250,
+        "range": 130,
+        "height": 100,
+        "boxX": -65,
+        "boxY": -92,
+        "outward": true
+      },
       "skins": {}
     },
     "giovannifrana": {

@@ -67,6 +67,7 @@ var _looks := {} # "<personaggio>/<skin>" -> il suo disegno (FighterPose.look), 
 var _supreme_view: Node2D # liana, orsogufo e gnomo della suprema di Bonobot (#102), disegnati sopra i lottatori
 var _speech: Node2D # i fumetti con le battute dei lottatori (speech_bubbles.gd), sopra a tutto
 const SpeechBubbles := preload("res://scripts/speech_bubbles.gd")
+var _spin_view: Node2D # i vortici della suprema che gira (DEMACIAAA di Bradipo Giallo, #358)
 
 
 func setup(game_data: Dictionary) -> void:
@@ -80,6 +81,11 @@ func setup(game_data: Dictionary) -> void:
 		var p: Variant = buffer.sample(id, Time.get_ticks_msec())
 		return Vector2(p.x, float(p.y) - float(game.fighter.height) * 1.15) if p != null and not p.eliminated else null
 	add_child(_speech)
+	_spin_view = preload("res://scripts/supreme_spin_view.gd").new()
+	_spin_view.where = func(id: String) -> Variant:
+		var p: Variant = buffer.sample(id, Time.get_ticks_msec())
+		return Vector2(p.x, p.y) if p != null and not p.eliminated else null
+	add_child(_spin_view)
 	_high_overlay = ColorRect.new()
 	var fatto := ShaderMaterial.new()
 	fatto.shader = load("res://shaders/fatto.gdshader")
@@ -182,6 +188,7 @@ func reset() -> void:
 	_flash = 0.0
 	_supreme_view.clear()
 	_speech.clear()
+	_spin_view.clear()
 	my_id = ""
 	predictor.reset()
 	set_stage(game.defaultStageId)
@@ -586,6 +593,7 @@ func on_event(e: Dictionary) -> void:
 				var p: Variant = buffer.sample(e.id, Time.get_ticks_msec())
 				if p != null:
 					_supreme_view.start(p, game.characters.get(p.characterId, {}))
+					_spin_view.start(e.id, game.characters.get(p.characterId, {}))
 		"dash":
 			# Scatto (#199): uno sbuffo di polvere dove parte e uno un po' indietro
 			_puff(e.x, e.y)

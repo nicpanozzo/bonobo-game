@@ -2,7 +2,7 @@
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { getCharacter, supremeAttackSpec } from "../characters";
+import { getCharacter, supremeAttackSpec, type DropSupreme, type SpinSupreme } from "../characters";
 import { ATTACKS, FIGHTER, SUPREME, TICK_RATE } from "../constants";
 import { Match } from "../match";
 import { getStage } from "../stages";
@@ -132,7 +132,7 @@ describe("tasto della suprema", () => {
 });
 
 describe("suprema di Bonobot, Omar (#102)", () => {
-  const omar = getCharacter("bonobot").supreme!;
+  const omar = getCharacter("bonobot").supreme as DropSupreme;
   const impactAt = omar.leapMs + omar.pullMs + omar.warnMs;
   const total = impactAt + omar.impactMs + omar.recoverMs;
   const vineX = 640 + omar.leapDx; // Bonobot parte da 640 guardando a destra
@@ -223,5 +223,57 @@ describe("suprema di Bonobot, Omar (#102)", () => {
     assert.equal(supremeAttackSpec("default"), null);
     assert.equal(supremeAttackSpec("bonobot")?.outward, true);
     assert.ok(omar.flipMs <= omar.warnMs, "la capriola finisce prima dell'impatto");
+  });
+});
+
+describe("suprema che gira, DEMACIAAA di Bradipo Giallo (#358)", () => {
+  const spin = getCharacter("bradipo").supreme as SpinSupreme;
+
+  function spinSetup() {
+    const { ctx, fighters, a, b } = setup(10);
+    a.characterId = "bradipo";
+    a.supreme = SUPREME.max;
+    b.characterId = "egiainuso"; // uno qualunque senza contrattacco in corso
+    return { ctx, fighters, bradipo: a, b };
+  }
+
+  it("colpisce più volte chi gli sta vicino, un colpo a giro", () => {
+    const { ctx, fighters, bradipo, b } = spinSetup();
+    b.percent = 0;
+    press(bradipo, { supreme: true });
+    run(fighters, ctx, 1);
+    press(bradipo, {});
+    assert.equal(bradipo.attack, "supreme");
+    // b resta vicino: lo si rimette accanto a ogni passo, come se tornasse dentro
+    for (let i = 0; i < ticks(spin.windupMs + spin.durationMs); i++) {
+      b.x = bradipo.x + FIGHTER.width;
+      b.y = bradipo.y;
+      b.vx = b.vy = 0;
+      run(fighters, ctx, 1);
+    }
+    const hits = ofType(ctx.events, "hit").filter((h) => h.targetId === b.id);
+    const turns = Math.floor(spin.durationMs / spin.hitEveryMs);
+    assert.ok(hits.length >= turns - 1 && hits.length <= turns + 1, `${hits.length} colpi su ${turns} giri`);
+    assert.ok(hits.every((h) => h.kind === "supreme" && h.damage === spin.damage));
+  });
+
+  it("mentre gira si muove piano, poi torna fermo come negli altri attacchi", () => {
+    const { ctx, fighters, bradipo } = spinSetup();
+    press(bradipo, { supreme: true });
+    run(fighters, ctx, 1);
+    press(bradipo, { right: true });
+    run(fighters, ctx, ticks(spin.windupMs) + 2);
+    const x0 = bradipo.x;
+    run(fighters, ctx, ticks(500));
+    const moved = bradipo.x - x0;
+    assert.ok(moved > 0, "si sposta");
+    assert.ok(moved < FIGHTER.groundSpeed * 0.5 * 0.9, `più piano della corsa (${moved} px in 0,5 s)`);
+  });
+
+  it("l'area è tutto intorno e i bot sanno fin dove arriva", () => {
+    const sp = supremeAttackSpec("bradipo")!;
+    assert.equal(sp.boxX, -spin.width / 2);
+    assert.equal(sp.outward, true);
+    assert.equal(sp.cooldownMs, spin.windupMs + spin.durationMs + spin.endLagMs);
   });
 });

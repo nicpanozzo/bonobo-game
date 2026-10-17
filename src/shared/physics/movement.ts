@@ -5,6 +5,7 @@ import { BIRRA, BONG, DODGE, FIGHTER, FLAG, HITSTUN_AIR_DRAG, POWERUP, RECOVERY 
 import { startAttack } from "./attacks";
 import { endDash, stepDash } from "./dash";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
+import { attackMoveFactor } from "./supreme";
 
 // Cosa fa il lottatore con i tasti premuti (solo se non è stordito)
 export function applyControls(f: Fighter, dt: number, ctx: PhysicsContext): void {
@@ -57,7 +58,7 @@ export function applyControls(f: Fighter, dt: number, ctx: PhysicsContext): void
   if (f.onGround && dashSpeed !== null) {
     f.vx = dashSpeed * speed;
   } else if (f.onGround) {
-    f.vx = f.attack ? 0 : dir * FIGHTER.groundSpeed * stats.speed * speed;
+    f.vx = dir * FIGHTER.groundSpeed * stats.speed * speed * (f.attack ? attackMoveFactor(f) : 1); // fermi, tranne la suprema che gira (#358)
     // Ubriachi (#302): a terra si barcolla avanti e indietro, anche da fermi
     if (f.powerup === "birra" && !f.attack) f.vx += BIRRA.swayPxS * Math.sin((2 * Math.PI * f.powerupMs) / BIRRA.swayPeriodMs);
   } else if (dir !== 0) {
