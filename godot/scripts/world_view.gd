@@ -53,6 +53,7 @@ var show_hitboxes := false # allenamento (E15): corpo dei lottatori visibile anc
 var attack_boxes := true # rettangolo del colpo in corso (opzioni → Video), main.gd lo legge dalle preferenze
 var _air_jumps := {} # id giocatore -> quando ha fatto il doppio salto (ms), per l'animazione doubleJump (#103)
 var _taunts := {} # id giocatore -> quando ha provocato (ms), per l'animazione taunt (E7)
+var _supreme_ready := {} # id giocatore -> true se aveva la suprema pronta all'ultimo disegno: al passaggio un'onda dorata
 var _holding := {} # id di chi tiene qualcuno con la presa (#109), dall'ultimo snapshot
 var _palette := {} # colori dell'arena già convertiti (stage.colors), per non rifarlo a ogni frame
 var _variants := {} # id giocatore -> variante di colore (0 = originale), ricalcolata a ogni snapshot (E11)
@@ -985,6 +986,7 @@ const SMOKE_GREY := Color(0.82, 0.86, 0.8)
 
 # Il fiore (#231): verde salvia scuro, non quello acceso del giocatore 3
 const FLOWER_GREEN := Color("5f9e4a")
+const SUPREME_GOLD := Color("ffc83d") # suprema pronta (#101)
 
 
 # La foglia del fiore: sette foglioline dentellate a ventaglio sul gambo, dal punto stem verso l'alto.
@@ -1037,6 +1039,19 @@ func _draw_power_aura(p: Dictionary, now: float, height: float) -> void:
 	for k in 3:
 		draw_circle(center, height * (0.5 + 0.12 * k), Color(glow, a * (0.7 - 0.2 * k)))
 	draw_arc(center, height * 0.76, 0, TAU, 40, Color(glow.lightened(0.3), a * 1.4), 3.0)
+
+
+# Suprema pronta (#101): alone dorato che respira e fiammelle che salgono, sotto lo sprite
+func _draw_supreme_ready(p: Dictionary, now: float, height: float) -> void:
+	var center := Vector2(p.x, p.y - height * 0.55)
+	var pulse := 1.0 if Access.calm else 0.75 + 0.25 * sin(now / 180.0)
+	for k in 3:
+		draw_circle(center, height * (0.48 + 0.1 * k) * (0.95 + 0.05 * pulse), Color(SUPREME_GOLD, 0.13 * pulse * (1.0 - 0.3 * k)))
+	draw_arc(center, height * 0.7, 0, TAU, 40, Color(SUPREME_GOLD.lightened(0.4), 0.55 * pulse), 2.5)
+	if Access.calm:
+		return
+	for f in FighterPose.supreme_flames(str(p.id), now, height):
+		draw_circle(Vector2(p.x, p.y) + f.pos, f.r, Color(SUPREME_GOLD.lightened(0.3), 0.8 * float(f.a)))
 
 
 # La birra (#302): cappello da tirolese verde con la piuma, che dondola col barcollamento
@@ -1526,6 +1541,12 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 		head = maxf(fh, float(character.sprite.get("footY", character.sprite.frameHeight)) * character.sprite.get("scale", 1.0))
 	if powered:
 		_draw_power_aura(p, now, fh)
+	var ready := FighterPose.supreme_ready(p, float(game.get("supreme", {}).get("max", 100)))
+	if ready and not _supreme_ready.get(p.id, false):
+		_sparks.append({"x": p.x, "y": p.y - fh / 2, "age": 0.0, "size": fh * 1.2, "color": SUPREME_GOLD}) # appena pronta
+	_supreme_ready[p.id] = ready
+	if ready:
+		_draw_supreme_ready(p, now, fh)
 	var charge := float(p.get("charge", 0.0))
 	if charge > 0.0:
 		_draw_charge(Vector2(p.x, p.y - fh / 2), charge, now)

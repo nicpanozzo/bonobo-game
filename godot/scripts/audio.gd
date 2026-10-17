@@ -48,6 +48,7 @@ var _phrases := {} # frase -> Array[AudioStream] (game.audioFiles.announcer)
 var _queue: AnnouncerQueue
 var _time_left := -1.0 # tempo rimasto nell'ultimo snapshot, ms (-1 = senza limite)
 var _charges := {} # id -> carica della speciale nell'ultimo snapshot (E10)
+var _supremes := {} # id -> barra della suprema piena nell'ultimo snapshot (#101)
 var _voices := {} # id personaggio -> battuta (taunt, ko, victory) -> Array[AudioStream] (E13 passo 3)
 var _characters := {} # id giocatore -> id personaggio, dagli snapshot
 var _voice_players := {} # id giocatore -> AudioStreamPlayer2D: una voce per giocatore alla volta
@@ -245,6 +246,11 @@ func on_snapshot(data: Dictionary) -> void:
 		if cue != "":
 			_play(cue, {"x": p.x})
 		_charges[p.id] = now
+		# Suprema pronta (#101): uno scintillio che sale, una volta quando la barra si riempie
+		var full: bool = float(p.get("supreme", 0)) >= float(game.get("supreme", {}).get("max", 100))
+		if full and _supremes.has(p.id) and not _supremes[p.id]:
+			_play("supremeReady", {"x": p.x})
+		_supremes[p.id] = full
 
 
 # Il ciclista (#229): "bell" quando comincia l'avviso, "bikeRattle" quando entra, "" altrimenti
@@ -729,6 +735,11 @@ func _build_sounds() -> void:
 	_sounds.chargeFull = make.call(0.3, func(s):
 		s.tone(0, "triangle", 1320, 1320, 0.12, 0.25)
 		s.tone(0.08, "triangle", 1760, 1760, 0.2, 0.25))
+	# Suprema pronta: arpeggio che sale e brilla
+	_sounds.supremeReady = make.call(0.7, func(s):
+		for k in 4:
+			s.tone(k * 0.09, "triangle", 660 * pow(1.26, k), 660 * pow(1.26, k), 0.3, 0.2)
+		s.noise(0.3, "highpass", 6000, 9000, 0.35, 0.12))
 	# Lancio: un "whoop" che sale, come qualcosa che parte in aria
 	_sounds.throw = make.call(0.32, func(s):
 		s.noise(0, "bandpass", 600, 2600, 0.28, 0.55)

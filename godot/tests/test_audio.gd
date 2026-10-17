@@ -92,7 +92,7 @@ func test_presa_e_lancio_hanno_il_loro_suono() -> void:
 
 func test_proiettili_e_carica_hanno_il_loro_suono() -> void:
 	var a: Node = _audio()
-	for name in ["projectile", "projectilePop", "charge", "chargeFull"]:
+	for name in ["projectile", "projectilePop", "charge", "chargeFull", "supremeReady"]:
 		runner.check(a.stream_for(name) is AudioStreamWAV, "manca il suono %s" % name)
 	runner.check(Audio.charge_cue(0.0, 0.05) == "charge", "la carica parte")
 	runner.check(Audio.charge_cue(0.5, 0.6) == "", "mentre sale non si ripete")
