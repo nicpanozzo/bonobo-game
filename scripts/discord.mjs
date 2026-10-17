@@ -8,6 +8,7 @@
 //   node scripts/discord.mjs results <id-messaggio>
 //   node scripts/discord.mjs pr-merged          (usato dalla GitHub Action)
 //   node scripts/discord.mjs weekly             (riepilogo del venerdì, dalla GitHub Action)
+//   node scripts/discord.mjs seduta             (sondaggio di una seduta del Parlamento, dalla GitHub Action)
 
 import { readFile } from 'node:fs/promises';
 import { basename } from 'node:path';
@@ -115,8 +116,10 @@ async function poll(question, answers, options) {
       allow_multiselect: Boolean(options.multi),
     },
   });
-  console.log(`Sondaggio aperto per ${hours} ore: ${await messageLink(message)}`);
+  const link = await messageLink(message);
+  console.log(`Sondaggio aperto per ${hours} ore: ${link}`);
   console.log(`Per leggere i voti: npm run discord -- results ${message.id}`);
+  return link;
 }
 
 // Il webhook può rileggere i propri messaggi: i conteggi dei voti stanno in poll.results
@@ -137,13 +140,16 @@ async function results(messageId) {
   console.log(closed ? '(sondaggio chiuso)' : `(aperto fino a ${message.poll.expiry})`);
 }
 
-// Chiamata all'API di GitHub con il token dell'Action
-async function github(path) {
-  const res = await fetch(`https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}${path}`, {
+// Chiamata all'API di GitHub con il token dell'Action (body: per scrivere, con PATCH o POST)
+async function github(path, method = 'GET', body = undefined) {
+  const api = process.env.GITHUB_API_URL ?? 'https://api.github.com';
+  const res = await fetch(`${api}/repos/${process.env.GITHUB_REPOSITORY}${path}`, {
+    method,
     headers: {
       Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
       Accept: 'application/vnd.github+json',
     },
+    body: body === undefined ? undefined : JSON.stringify(body),
   });
   if (!res.ok) throw new Error(`GitHub ha risposto ${res.status}: ${await res.text()}`);
   return res.json();
@@ -203,6 +209,76 @@ async function prMerged() {
   }
 }
 
+// ---------- Parlamento ----------
+// Una seduta convocata dal sito è un'issue "🏛️ SEDUTA ..." (o con l'etichetta parlamento, o col modulo del sito): qui diventa da sola
+// il sondaggio sul Discord e il link torna nell'issue, così nessuno deve ricordarsi di pubblicarlo.
+// Il canale è del gruppo: chi non è collaboratore del repo non posta da solo, la sua seduta parte quando un
+// collaboratore le mette l'etichetta (solo chi ha permessi sul repo può mettere etichette).
+const PARLIAMENT_LABEL = 'parlamento';
+const SEDUTA_TITLE = /^(🏛️?\s*)?SEDUTA/iu;
+const DISCORD_LINK = /https:\/\/(?:www\.)?(?:discord\.com|discordapp\.com|discord\.gg)\/[^\s)>\]]+/;
+// Chi apre dal sito a volte cambia il titolo precompilato: la seduta si riconosce anche dal modulo
+const SEDUTA_BODY = /^[ \t]*Ordine del giorno[ \t]*:/im;
+const POLL_LINE = /^[ \t]*Sondaggio[ \t]*:.*$/im;
+const TRUSTED = ['OWNER', 'MEMBER', 'COLLABORATOR'];
+const SEDUTA_HOURS = 48;
+// Limiti di Discord: caratteri della domanda e di ogni risposta
+const MAX_QUESTION = 300;
+const MAX_ANSWER = 55;
+// Segni nei commenti del bot, per non ripetere lo stesso avviso a ogni modifica dell'issue
+const WAIT_MARK = '<!-- seduta:attesa -->';
+const FIX_MARK = '<!-- seduta:incompleta -->';
+
+// Dal modulo del sito: "Ordine del giorno: ..." e le righe a elenco; i segnaposto "<opzione 1>" si tolgono
+function parseSeduta(issue) {
+  const text = issue.body ?? '';
+  const clean = (line) => line.replace(/<[^>]*>/g, '').replace(/\*\*/g, '').trim();
+  const topic = clean(/^\s*Ordine del giorno\s*:\s*(.+)$/im.exec(text)?.[1] ?? '');
+  const options = [];
+  for (const line of text.split('\n')) {
+    const match = /^\s*[-*]\s+(?!\[)(.+)$/.exec(line);
+    const option = match && clean(match[1]);
+    if (option) options.push(option.slice(0, MAX_ANSWER));
+  }
+  return { topic, options };
+}
+
+async function commentOnce(issue, mark, text) {
+  const comments = await github(`/issues/${issue.number}/comments?per_page=100`);
+  if (comments.some((c) => c.body?.includes(mark))) return;
+  await github(`/issues/${issue.number}/comments`, 'POST', { body: `${mark}\n${text}` });
+}
+
+async function seduta() {
+  const event = JSON.parse(await readFile(process.env.GITHUB_EVENT_PATH, 'utf8'));
+  // Si rilegge l'issue: due eventi vicini (aperta e poi etichettata) non devono aprire due sondaggi
+  const issue = await github(`/issues/${event.issue.number}`);
+  const labelled = issue.labels.some((l) => l.name === PARLIAMENT_LABEL);
+  const isSeduta = labelled || SEDUTA_TITLE.test(issue.title) || SEDUTA_BODY.test(issue.body ?? '');
+  if (issue.state !== 'open' || !isSeduta) return console.log('Non è una seduta aperta.');
+  if (DISCORD_LINK.test(issue.body ?? '')) return console.log('Il sondaggio è già sul Discord.');
+  const { topic, options } = parseSeduta(issue);
+  if (!topic || options.length < 2 || options.length > MAX_POLL_ANSWERS) {
+    await commentOnce(issue, FIX_MARK, `Per aprire il sondaggio sul Discord servono la riga "Ordine del giorno: ..." e da 2 a ${MAX_POLL_ANSWERS} opzioni a elenco (\`- Opzione\`). Sistema la descrizione e il sondaggio parte da solo.`);
+    return console.log('Seduta incompleta.');
+  }
+  if (!labelled && !TRUSTED.includes(issue.author_association)) {
+    await commentOnce(issue, WAIT_MARK, `Seduta ricevuta! Il sondaggio parte sul Discord appena un collaboratore aggiunge l'etichetta \`${PARLIAMENT_LABEL}\`.`);
+    return console.log('In attesa di un collaboratore.');
+  }
+  const question = `🏛️ SEDUTA DEL PARLAMENTO DEI BONOBI, convocata da ${issue.user.login}. Ordine del giorno: ${topic}`;
+  const link = await poll(question.slice(0, MAX_QUESTION), options, { hours: SEDUTA_HOURS });
+  const body = issue.body ?? '';
+  const line = `Sondaggio: ${link}`;
+  await github(`/issues/${issue.number}`, 'PATCH', {
+    body: POLL_LINE.test(body) ? body.replace(POLL_LINE, line) : `${body}\n\n${line}`,
+    // il titolo è quello che il sito mostra nella sezione Parlamento
+    title: SEDUTA_TITLE.test(issue.title) ? issue.title : `🏛️ SEDUTA DEL PARLAMENTO DEI BONOBI: ${topic}`,
+  });
+  if (!labelled) await github(`/issues/${issue.number}/labels`, 'POST', { labels: [PARLIAMENT_LABEL] });
+  await github(`/issues/${issue.number}/comments`, 'POST', { body: `🗳️ La seduta è aperta: si vota sul Discord per ${SEDUTA_HOURS} ore. ${link}` });
+}
+
 const [command, ...rest] = process.argv.slice(2);
 const { positional, options } = parseArgs(rest);
 
@@ -219,6 +295,7 @@ try {
   else if (command === 'results') await results(positional[0]);
   else if (command === 'pr-merged') await prMerged();
   else if (command === 'weekly') await weekly();
+  else if (command === 'seduta') await seduta();
   else usage(`comando sconosciuto: ${command}`);
 } catch (err) {
   console.error(`Errore: ${err.message}`);

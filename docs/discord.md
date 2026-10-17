@@ -7,6 +7,7 @@ Cosa fa:
 - **Quando una PR con l'etichetta `per-giocatori` viene unita** a `main`, una GitHub Action la annuncia nel canale con titolo, autore, link e il primo screenshot della descrizione. Le altre PR non si annunciano, così il canale resta per chi gioca.
 - **Ogni venerdì sera** posta "La settimana dei Bonobi": cosa è entrato nel gioco (le PR `per-giocatori` della settimana) e le issue facili ancora libere, per chi vuole iniziare. Si può lanciare a mano da **Actions → Discord settimanale → Run workflow**.
 - **A fine partita** il server di gioco posta il risultato: chi ha vinto e, per ognuno, KO, danni inflitti e cadute. Serve la stessa variabile `DISCORD_WEBHOOK_URL` nell'ambiente del server (su Render o sul Mac che ospita la serata). Le partite con meno di due persone, per esempio da soli contro un bot, non vengono postate.
+- **Quando si convoca una seduta del Parlamento** (dal sito, issue "🏛️ SEDUTA ..."), una GitHub Action apre da sola il sondaggio nel canale (48 ore) e mette il link nell'issue. Se la seduta l'ha aperta chi non è collaboratore del repo, il sondaggio parte quando un collaboratore aggiunge l'etichetta `parlamento`.
 - **Chiunque (anche il tuo agente)** può postare un progresso con screenshot o lanciare un sondaggio con `npm run discord`.
 
 ## Da fare una volta sola (Nicola o un admin del server)

@@ -1,0 +1,35 @@
+# Una seduta del Parlamento convocata dal sito (issue "🏛️ SEDUTA ...") diventa da sola il sondaggio sul
+# Discord, e il link torna nell'issue. Se l'ha aperta chi non è collaboratore, parte quando un collaboratore
+# le mette l'etichetta "parlamento". Serve il secret DISCORD_WEBHOOK_URL (vedi docs/discord.md).
+name: Parlamento
+
+on:
+  issues:
+    types: [opened, edited, labeled]
+
+permissions:
+  contents: read
+  issues: write
+
+# Aperta ed etichettata quasi insieme: i due job vanno uno dopo l'altro e il secondo trova il link
+concurrency:
+  group: parlamento-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  sondaggio:
+    if: >-
+      contains(github.event.issue.title, 'SEDUTA') ||
+      contains(github.event.issue.body, 'Ordine del giorno') ||
+      contains(github.event.issue.labels.*.name, 'parlamento')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      # Titolo e testo dell'issue si leggono dall'API nello script, mai dalla shell
+      - run: node scripts/discord.mjs seduta
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          GITHUB_TOKEN: ${{ github.token }}
