@@ -1,5 +1,6 @@
 // Il compagno di un lottatore (#369), per ora il beagle di Lampione: lo segue da solo, corre,
 // salta sulle piattaforme e cade. Se resta troppo indietro o esce dall'arena torna accanto a lui.
+// Si può colpire: con abbastanza danni va KO e torna dopo un po' (passo 3).
 
 import { getCharacter, type CompanionSpec } from "../characters";
 import { COMPANION, FIGHTER } from "../constants";
@@ -15,12 +16,15 @@ export interface Companion {
   facing: 1 | -1;
   onGround: boolean;
   lunged: boolean; // nel morso in corso ha già scattato
+  percent: number; // danni presi: a COMPANION.koPercent va KO
+  hurtMs: number; // ms in cui vola via dopo un colpo, senza seguire il padrone
+  koMs: number; // ms prima che torni dopo il KO; 0 = in gioco
 }
 
 export const companionOf = (characterId: string): CompanionSpec | null => getCharacter(characterId).companion ?? null;
 
 // Il compagno sta facendo l'attacco in corso di f? (il beagle morde negli attacchi base, #369 passo 2)
-export const biting = (f: Fighter): boolean => !!f.pet && !!f.attack && !!companionOf(f.characterId)?.bites.includes(f.attack);
+export const biting = (f: Fighter): boolean => !!f.pet && f.pet.koMs <= 0 && !!f.attack && !!companionOf(f.characterId)?.bites.includes(f.attack);
 
 // Il rettangolo del morso: davanti al compagno, alto quanto lui
 export function biteBox(f: Fighter, range: number, height: number): { x: number; y: number; w: number; h: number } {
@@ -33,7 +37,12 @@ export function biteBox(f: Fighter, range: number, height: number): { x: number;
 const homeX = (f: Fighter) => f.x - f.facing * COMPANION.gapPx;
 
 function placeBeside(f: Fighter): Companion {
-  return { x: homeX(f), y: f.y, vx: 0, vy: 0, facing: f.facing, onGround: f.onGround, lunged: false };
+  return { x: homeX(f), y: f.y, vx: 0, vy: 0, facing: f.facing, onGround: f.onGround, lunged: false, percent: 0, hurtMs: 0, koMs: 0 };
+}
+
+// Torna accanto al padrone tenendosi i danni
+function sendHome(f: Fighter, c: Companion) {
+  f.pet = { ...placeBeside(f), percent: c.percent };
 }
 
 // Un tick del compagno di f, dopo che f si è mosso
@@ -49,11 +58,22 @@ export function stepCompanion(f: Fighter, dtMs: number, ctx: PhysicsContext): vo
     return;
   }
   const c = f.pet;
+  if (c.koMs > 0) {
+    c.koMs -= dtMs;
+    if (c.koMs <= 0) f.pet = placeBeside(f);
+    return;
+  }
   const dt = dtMs / 1000;
   const dx = homeX(f) - c.x;
   const z = ctx.stage.blastZone;
   if (Math.abs(dx) > COMPANION.teleportPx || Math.abs(f.y - c.y) > COMPANION.teleportPx || c.y > z.bottom || c.x < z.left || c.x > z.right) {
-    f.pet = placeBeside(f);
+    sendHome(f, c);
+    return;
+  }
+  // Colpito: vola via per un po', poi torna a seguire
+  if (c.hurtMs > 0) {
+    c.hurtMs -= dtMs;
+    move(c, spec, f, dt, ctx);
     return;
   }
   // Il morso: all'inizio dell'attacco scatta in avanti dalla parte in cui guarda f, poi frena
@@ -103,5 +123,32 @@ function land(c: Companion, prevY: number, half: number, drop: boolean, ctx: Phy
   }
 }
 
-// Quello che va nello snapshot
-export const companionState = (c: Companion): CompanionState => ({ x: Math.round(c.x), y: Math.round(c.y), facing: c.facing, onGround: c.onGround });
+// Un colpo di attacker col rettangolo box tocca i compagni degli altri? Prendono danni e volano via;
+// a COMPANION.koPercent vanno KO. hit: chi è già stato colpito da questo attacco (le chiavi "pet:<id padrone>")
+export function hitPets(attacker: Fighter, box: { x: number; y: number; w: number; h: number }, damage: number, fighters: Fighter[], hit: Set<string>, ctx: PhysicsContext): void {
+  for (const owner of fighters) {
+    const c = owner.pet;
+    if (owner === attacker || !c || c.koMs > 0 || hit.has(`pet:${owner.id}`)) continue;
+    if (ctx.canHit && !ctx.canHit(attacker, owner)) continue;
+    const spec = companionOf(owner.characterId);
+    if (!spec) continue;
+    const h = Math.max(spec.height, COMPANION.hurtHeight);
+    const body = { x: c.x - spec.width / 2, y: c.y - h, w: spec.width, h };
+    if (!(box.x < body.x + body.w && box.x + box.w > body.x && box.y < body.y + body.h && box.y + box.h > body.y)) continue;
+    hit.add(`pet:${owner.id}`);
+    c.percent += damage;
+    if (c.percent >= COMPANION.koPercent) {
+      c.koMs = COMPANION.koMs;
+      continue;
+    }
+    const push = COMPANION.knockBase + COMPANION.knockPerDamage * damage;
+    c.vx = attacker.facing * push;
+    c.vy = -push * 0.6;
+    c.onGround = false;
+    c.hurtMs = COMPANION.hurtMs;
+  }
+}
+
+// Quello che va nello snapshot: niente mentre è KO
+export const companionState = (c: Companion): CompanionState | null =>
+  c.koMs > 0 ? null : { x: Math.round(c.x), y: Math.round(c.y), facing: c.facing, onGround: c.onGround, percent: Math.round(c.percent) };

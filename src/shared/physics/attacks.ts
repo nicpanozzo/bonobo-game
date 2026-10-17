@@ -3,7 +3,7 @@
 import { characterStats, getCharacter, SPECIAL_KINDS, specialAttackSpec, specialsFor, supremeAttackSpec, type SpecialSlot } from "../characters";
 import { ATTACKS, BIRRA, FIGHTER, HITSTOP, HITSTUN_PER_KNOCKBACK, JAB, MICELIO, POWERUP, SMASH_CHARGE, type AttackSpec } from "../constants";
 import type { AttackKind, SpecialKind } from "../types";
-import { biteBox, biting } from "./companion";
+import { biteBox, biting, hitPets } from "./companion";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
 import { clearStun, hitShield } from "./shield";
 import { counterHit, isCountering, tryStartSpecial } from "./specials";
@@ -202,6 +202,7 @@ export function resolveHits(fighters: Fighter[], ctx: PhysicsContext): void {
       launch(target, attacker, attacker.attack, Math.round(ix), Math.round(iy), ctx);
       armJab(attacker);
     }
+    hitPets(attacker, box, spec.damage, fighters, attacker.alreadyHit, ctx); // anche il beagle di Lampione si colpisce (#369)
   }
 }
 

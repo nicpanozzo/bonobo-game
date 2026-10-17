@@ -6,6 +6,7 @@ import { COMPANION, TICK_RATE } from "../constants";
 import { Match } from "../match";
 import { getStage } from "../stages";
 import { attackBox } from "./attacks";
+import { biting, companionState } from "./companion";
 import { createFighter, emptyInput, stepWorld, type Fighter, type PhysicsContext } from "./index";
 
 const DT = 1000 / TICK_RATE;
@@ -114,5 +115,51 @@ describe("i morsi del beagle negli attacchi base (#369 passo 2)", () => {
     const { a } = duel("lampione", 400);
     a.attack = "lightAir";
     assert.ok(attackBox(a).y < a.y - 40);
+  });
+});
+
+describe("il beagle si può colpire (#369 passo 3)", () => {
+  // b (default) a destra del beagle, girato verso di lui; Lampione guarda a destra lontano
+  function setupHit() {
+    const ctx: PhysicsContext = { stage, events: [] };
+    const [a, b] = [0, 1].map((i) => createFighter({ id: `p${i}`, name: `P${i}`, characterId: i === 0 ? "lampione" : "default", color: 0, team: 0, index: i, stocks: 3 }, stage));
+    a.x = 700;
+    a.facing = -1; // il beagle aspetta dietro, a destra
+    b.x = 900;
+    b.facing = -1;
+    run([a, b], ctx, 40);
+    b.x = a.pet!.x + 60;
+    run([a, b], ctx, 1);
+    return { ctx, a, b };
+  }
+  function jab(b: Fighter, a: Fighter, ctx: PhysicsContext) {
+    b.input = { ...emptyInput(), light: true };
+    run([a, b], ctx, 1);
+    b.input = emptyInput();
+    run([a, b], ctx, 30);
+  }
+
+  it("un colpo gli fa danni e lo fa volare via, Lampione no", () => {
+    const { ctx, a, b } = setupHit();
+    const x0 = a.pet!.x;
+    b.input = { ...emptyInput(), light: true };
+    run([a, b], ctx, 1);
+    b.input = emptyInput();
+    run([a, b], ctx, 10);
+    assert.ok(a.pet!.percent > 0, "danni al beagle");
+    assert.equal(a.percent, 0, "Lampione non è stato toccato");
+    assert.ok(a.pet!.x < x0 - 10, `spinto via: da ${Math.round(x0)} a ${Math.round(a.pet!.x)}`);
+  });
+
+  it("con abbastanza danni va KO, sparisce dallo snapshot e torna dopo un po'", () => {
+    const { ctx, a, b } = setupHit();
+    a.pet!.percent = COMPANION.koPercent - 1;
+    jab(b, a, ctx);
+    assert.ok(a.pet!.koMs > 0, "KO");
+    assert.equal(companionState(a.pet!), null, "non va nello snapshot");
+    assert.equal(biting({ ...a, attack: "light" } as Fighter), false, "senza beagle niente morsi");
+    run([a, b], ctx, Math.ceil(COMPANION.koMs / DT) + 1);
+    assert.equal(a.pet!.koMs <= 0, true, "è tornato");
+    assert.equal(a.pet!.percent, 0, "senza danni");
   });
 });

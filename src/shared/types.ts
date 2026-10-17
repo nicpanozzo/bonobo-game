@@ -87,6 +87,7 @@ export interface CompanionState {
   y: number; // piedi
   facing: 1 | -1;
   onGround: boolean;
+  percent: number; // danni presi (#369 passo 3); manca mentre è KO, perché manca tutto il compagno
 }
 
 // Quello che serve al client per rigiocare il proprio movimento da questo snapshot (E17):

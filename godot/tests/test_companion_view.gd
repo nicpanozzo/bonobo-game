@@ -26,3 +26,16 @@ func test_morde_solo_negli_attacchi_del_compagno() -> void:
 	runner.check(not View.biting({"characterId": "lampione", "attack": "lightAir"}, characters), "in aria no")
 	runner.check(not View.biting({"characterId": "lampione", "attack": null}, characters), "senza attacco no")
 	runner.check(not View.biting({"characterId": "default", "attack": "light"}, characters), "senza compagno no")
+
+
+func test_lampeggia_se_colpito_e_fa_la_nuvoletta_al_ko() -> void:
+	var view: RefCounted = preload("res://scripts/companion_view.gd").new()
+	view.on_snapshot([{"id": "a", "companion": {"x": 100, "y": 500, "facing": 1, "onGround": true, "percent": 0}}], {}, 0)
+	view.advance()
+	view.on_snapshot([{"id": "a", "companion": {"x": 100, "y": 500, "facing": 1, "onGround": true, "percent": 8}}], {}, 50)
+	view.advance()
+	runner.check(view.poof_count() == 0, "colpito ma ancora in gioco")
+	view.on_snapshot([{"id": "a"}], {}, 100)
+	runner.check(view.poof_count() == 1, "sparito col padrone in gioco: KO")
+	view.on_snapshot([{"id": "a", "respawning": true}], {}, 150)
+	runner.check(view.poof_count() == 1, "chi esce dall'arena non fa altre nuvolette")
