@@ -4197,6 +4197,38 @@
           }
         }
       },
+      "supreme": {
+        "type": "drop",
+        "name": "Ramarro",
+        "label": "Ramarro",
+        "leapMs": 325,
+        "leapDx": 60,
+        "leapDy": 110,
+        "pullMs": 195,
+        "warnMs": 650,
+        "fallMs": 390,
+        "flipMs": 455,
+        "flipDx": 130,
+        "flipArc": 50,
+        "impactMs": 100,
+        "recoverMs": 390,
+        "width": 132,
+        "height": 150,
+        "damage": 35,
+        "baseKnockback": 600,
+        "knockbackGrowth": 11,
+        "angleDeg": 70,
+        "runSpeed": 520,
+        "art": {
+          "dir": "assets/characters/giovannifrana/supreme",
+          "falling": "ramarro-cade.png",
+          "landed": "ramarro-a-terra.png",
+          "runner": "ramarro-corre.png",
+          "runnerFrames": 4,
+          "runnerFps": 12,
+          "scale": 0.5
+        }
+      },
       "stats": {
         "speed": 1.05,
         "airSpeed": 0.9,
@@ -4290,7 +4322,20 @@
           "cooldownMs": 940
         }
       },
-      "supremeAttack": null,
+      "supremeAttack": {
+        "damage": 35,
+        "baseKnockback": 600,
+        "knockbackGrowth": 11,
+        "angleDeg": 70,
+        "startupMs": 1170,
+        "activeMs": 100,
+        "cooldownMs": 1660,
+        "range": 132,
+        "height": 150,
+        "boxX": -66,
+        "boxY": -140,
+        "outward": true
+      },
       "skins": {}
     },
     "marcomunista": {
@@ -5218,6 +5263,10 @@
     "coachcartier": {
       "id": "coachcartier",
       "name": "Coach Cartier",
+      "crews": [
+        "cuamm",
+        "cologna"
+      ],
       "sprite": {
         "dir": "assets/characters/coachcartier",
         "frameWidth": 336,
@@ -5423,6 +5472,38 @@
           }
         }
       },
+      "supreme": {
+        "type": "drop",
+        "name": "MVP",
+        "label": "MVP",
+        "leapMs": 325,
+        "leapDx": 60,
+        "leapDy": 110,
+        "pullMs": 195,
+        "warnMs": 650,
+        "fallMs": 390,
+        "flipMs": 455,
+        "flipDx": 130,
+        "flipArc": 50,
+        "impactMs": 100,
+        "recoverMs": 390,
+        "width": 132,
+        "height": 150,
+        "damage": 35,
+        "baseKnockback": 600,
+        "knockbackGrowth": 11,
+        "angleDeg": 70,
+        "runSpeed": 520,
+        "art": {
+          "dir": "assets/characters/coachcartier/supreme",
+          "falling": "mvp-cade.png",
+          "landed": "mvp-a-terra.png",
+          "runner": "mvp-corre.png",
+          "runnerFrames": 4,
+          "runnerFps": 12,
+          "scale": 0.5
+        }
+      },
       "stats": {
         "speed": 1.2,
         "airSpeed": 0.8,
@@ -5518,7 +5599,20 @@
           "cooldownMs": 920
         }
       },
-      "supremeAttack": null,
+      "supremeAttack": {
+        "damage": 35,
+        "baseKnockback": 600,
+        "knockbackGrowth": 11,
+        "angleDeg": 70,
+        "startupMs": 1170,
+        "activeMs": 100,
+        "cooldownMs": 1660,
+        "range": 132,
+        "height": 150,
+        "boxX": -66,
+        "boxY": -140,
+        "outward": true
+      },
       "skins": {}
     }
   },

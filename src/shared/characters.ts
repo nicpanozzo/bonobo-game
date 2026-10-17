@@ -313,6 +313,44 @@ function communitySprite(id: string): SpriteFolderSpec {
   };
 }
 
+// Una suprema "drop" con i tempi di quella di Omar (Bonobot, già provati al playtest #257) e i disegni provvisori
+// fatti da tools/rig/genera_supreme_drop.py in assets/characters/<id>/supreme/<nome>-{cade,a-terra,corre}.png
+function communityDrop(id: string, art: string, name: string, more: Partial<DropSupreme> = {}): DropSupreme {
+  return {
+    type: "drop",
+    name,
+    label: name,
+    leapMs: 325,
+    leapDx: 60,
+    leapDy: 110,
+    pullMs: 195,
+    warnMs: 650,
+    fallMs: 390,
+    flipMs: 455,
+    flipDx: 130,
+    flipArc: 50,
+    impactMs: 100,
+    recoverMs: 390,
+    width: 132,
+    height: 150,
+    damage: 35,
+    baseKnockback: 600,
+    knockbackGrowth: 11,
+    angleDeg: 70,
+    runSpeed: 520,
+    art: {
+      dir: `assets/characters/${id}/supreme`,
+      falling: `${art}-cade.png`,
+      landed: `${art}-a-terra.png`,
+      runner: `${art}-corre.png`,
+      runnerFrames: 4,
+      runnerFps: 12,
+      scale: 0.5,
+    },
+    ...more,
+  };
+}
+
 export const CHARACTERS: Record<string, CharacterSpec> = {
   default: {
     id: "default",
@@ -534,8 +572,8 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
   },
   // Lottatori dalle schede della community (#13), compilate a ottobre 2026 nella cartella Drive del gruppo.
   // Disegni provvisori fatti col codice (communitySprite), da sostituire con quelli veri.
-  // Le supreme chieste (presa, rotazione, ritorno indietro, pioggia di merda...) richiedono codice nuovo:
-  // per ora usano quella di base. TODO community: statistiche e numeri provvisori, da provare al playtest (#22)
+  // Le supreme chieste che sono "qualcosa che cade dall'alto" usano la drop di Omar (communityDrop); le altre
+  // (presa, rotazione, ritorno indietro, pioggia di merda...) richiedono codice nuovo e per ora usano quella di base. TODO community: statistiche e numeri provvisori, da provare al playtest (#22)
 
   // Baldo: pazzo scatenato, ipercompetitivo, grosso, con i guanti da portiere e la racchetta da ping pong
   lampione: {
@@ -614,6 +652,8 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     name: "Giovanni fRana",
     crews: ["cuamm", "cologna"],
     sprite: communitySprite("giovannifrana"),
+    // dalla scheda: "Ramarro, sorprendimi". Cade un ramarro gigante appeso per la coda, poi scappa via
+    supreme: communityDrop("giovannifrana", "ramarro", "Ramarro"),
     // pesante e veloce a terra, ma salta poco e cade presto. Peso da 1,1 a 1 e corsa da 1,1 a 1,05: vinceva il 62-68% in npm run balance
     stats: { weight: 1, speed: 1.05, airSpeed: 0.9, jump: 0.9, gravity: 1.05 },
     specials: {
@@ -676,7 +716,10 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
   coachcartier: {
     id: "coachcartier",
     name: "Coach Cartier",
+    crews: ["cuamm", "cologna"], // dal LORE
     sprite: communitySprite("coachcartier"),
+    // dalla scheda c'è solo il nome, "MVP": cade il trofeo di MVP e dopo il puff scappa una moneta (il cashback)
+    supreme: communityDrop("coachcartier", "mvp", "MVP"),
     // dalla scheda: velocissimo a terra, lento in aria
     stats: { speed: 1.2, airSpeed: 0.8, jump: 0.95, gravity: 0.95 },
     specials: {
