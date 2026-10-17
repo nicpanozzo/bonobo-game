@@ -142,6 +142,16 @@ export const JAB = {
   ] as AttackSpec[],
 };
 
+// Rialzata al volo (tech di Smash e Brawlhalla): lanciati da un colpo, premere scudo poco prima di toccare terra
+// fa rialzare subito, fermi o rotolando nella direzione tenuta, invece di restare storditi a terra
+export const TECH = {
+  windowMs: 330, // ms prima di toccare terra in cui lo scudo premuto vale (20 fotogrammi, come Smash)
+  lockoutMs: 670, // ms dopo una pressione in cui un'altra non vale: premere a caso non basta
+  rollSpeed: 520, // pixel/s della rotolata con una direzione tenuta
+  rollMs: 300, // ms di rotolata (o di rialzata sul posto)
+  invulnerableMs: 330, // ms intoccabili dopo la rialzata
+};
+
 // Barra della suprema (#101): da 0 a max. Valori provvisori pensati per arrivare piena circa una volta per vita
 // (come la Final Smash con la barra in Smash Ultimate): in una vita si danno e si prendono circa 100 punti di percentuale
 // in circa un minuto, cioè 100 * 0.5 + 100 * 0.3 + 60 * 0.3 = 98. Da rivedere al playtest (#22)
