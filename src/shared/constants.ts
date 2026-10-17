@@ -384,6 +384,10 @@ export const EFFECTS = {
   hitReactTilt: 0.35, // radianti: inclinazione massima (testa all'indietro o gambe portate via)
   hitReactSquash: 0.22, // frazione: schiacciamento massimo per un colpo alla pancia
   hitReactRecoil: 10, // pixel: rinculo massimo lontano da chi colpisce
+  hitShakePx: 7, // pixel: quanto trema chi è colpito durante il fermo (HITSTOP), come in Smash
+  hitShakeHz: 30, // tremolii al secondo nel fermo
+  impactLines: 8, // linee a raggiera attorno ai colpi forti
+  impactLinesKnockback: 700, // px/s: da qui in su il colpo ha le linee a raggiera
 };
 
 // Bot del server (#20, src/server/bot.ts): quanto è svelto e quando attacca
