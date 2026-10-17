@@ -358,7 +358,8 @@ function communitySprite(id: string): SpriteFolderSpec {
 
 // I lottatori dai fogli delle pose a colori (tools/sprite/foglio_a_colori.py): una posa per stato, due per la corsa.
 // Misure del fotogramma e dei piedi come le stampa lo script
-function sheetSprite(id: string, frameWidth: number, frameHeight: number, footY: number): SpriteFolderSpec {
+// extra: le pose che il foglio non ha, disegnate a parte nel suo stile (la mossa resta quella della scheda)
+function sheetSprite(id: string, frameWidth: number, frameHeight: number, footY: number, extra: Partial<SpriteFolderSpec["animations"]> = {}): SpriteFolderSpec {
   return {
     dir: `assets/characters/${id}`,
     frameWidth,
@@ -388,6 +389,7 @@ function sheetSprite(id: string, frameWidth: number, frameHeight: number, footY:
       specialNeutral: { fps: 1, loop: false }, // "Pummel": le mani alla bocca
       specialDown: { fps: 1, loop: false }, // "Shield", per il contrattacco
       supreme: { fps: 1, loop: false }, // "Final Smash"
+      ...extra,
     },
   };
 }
@@ -698,7 +700,8 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     id: "bradipo",
     name: "Bradipo Giallo",
     crews: ["lolhardcore"],
-    sprite: sheetSprite("bradipo", 298, 200, 185),
+    // la Bassline col basso a tracolla: tools/sprite/bradipo_bassline.py
+    sprite: sheetSprite("bradipo", 298, 200, 185, { specialSide: { fps: 1, loop: false } }),
     // dalla scheda: "DEMACIAAA", gira come Garen e fa danno a chi tocca (#358). Nel foglio è la palla della Final Smash
     supreme: {
       type: "spin",

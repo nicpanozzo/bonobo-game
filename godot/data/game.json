@@ -3958,7 +3958,7 @@
             "fps": 1,
             "loop": false,
             "frames": 1,
-            "src": "heavy"
+            "src": "specialSide"
           },
           "specialDown": {
             "fps": 1,
