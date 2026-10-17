@@ -241,7 +241,7 @@ function renderIssues() {
   // Le issue senza stato (appena aperte) non devono sparire: le mostriamo a parte.
   // Roadmap, sedute e proposte di lottatori hanno già la loro sezione.
   const fresh = visible.filter((i) => !has(i, 'pronto') && !has(i, 'in attesa') && !has(i, 'roadmap')
-    && !has(i, PARLIAMENT_LABEL) && !has(i, FIGHTER_LABEL) && !SEDUTA_TITLE.test(i.title) && !FIGHTER_TITLE.test(i.title));
+    && !has(i, PARLIAMENT_LABEL) && !has(i, FIGHTER_LABEL) && !isSeduta(i) && !FIGHTER_TITLE.test(i.title));
   document.getElementById('new-block').hidden = fresh.length === 0;
   fill(document.getElementById('issues-new'), fresh, '');
 }
@@ -305,6 +305,9 @@ async function loadRoadmap() {
 // Chi apre l'issue dal sito senza permessi sul repo non può mettere etichette:
 // riconosciamo le sedute e le schede anche dal titolo
 const SEDUTA_TITLE = /^(🏛️?\s*)?SEDUTA/iu;
+// ...o dal modulo, se chi la convoca ha cambiato il titolo precompilato
+const SEDUTA_BODY = /^[ \t]*Ordine del giorno[ \t]*:/im;
+const isSeduta = (i) => SEDUTA_TITLE.test(i.title) || SEDUTA_BODY.test(i.body ?? '');
 const FIGHTER_TITLE = /^Lottatore:/i;
 const hasLabel = (issue, name) => issue.labels.some((l) => l.name === name);
 let everyIssuePromise;
@@ -324,7 +327,9 @@ function parseSeduta(body) {
   const options = [];
   for (const line of text.split('\n')) {
     const match = /^\s*[-*]\s+(?!\[)(.+)$/.exec(line);
-    if (match) options.push(match[1].replace(/\*\*/g, '').trim());
+    // i segnaposto del modulo ("<opzione 1> Schio") non si mostrano
+    const option = match?.[1].replace(/<[^>]*>/g, '').replace(/\*\*/g, '').trim();
+    if (option) options.push(option);
   }
   const outcome = OUTCOME_LINE.exec(text)?.[1].replace(/\*\*/g, '').trim();
   return { options, poll: DISCORD_LINK.exec(text)?.[0], outcome };
@@ -362,7 +367,7 @@ Si vota nel sondaggio sul canale Discord. Almeno un'opzione assurda è obbligato
 - <opzione 3>
 - <opzione assurda>
 
-Sondaggio: <link al messaggio del sondaggio su Discord>
+Sondaggio: lo apre da solo il bot sul Discord appena salvi la seduta, e mette qui il link
 
 A seduta chiusa aggiungi la riga "Esito: <opzione vincente>" e chiudi l'issue. Il risultato va nella PR e in \`constants.ts\`.`;
 
@@ -374,7 +379,7 @@ async function loadParliament() {
     body: NEW_SEDUTA_BODY,
   })}`;
   try {
-    const sedute = (await everyIssue()).filter((i) => hasLabel(i, PARLIAMENT_LABEL) || SEDUTA_TITLE.test(i.title));
+    const sedute = (await everyIssue()).filter((i) => hasLabel(i, PARLIAMENT_LABEL) || isSeduta(i));
     const open = sedute.filter((i) => i.state === 'open');
     const closed = sedute.filter((i) => i.state === 'closed').slice(0, 2);
     if (open.length + closed.length === 0) {
