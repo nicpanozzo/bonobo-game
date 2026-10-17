@@ -22,7 +22,8 @@ func test_speciali_col_nome_del_personaggio() -> void:
 	var game := _game()
 	var rows := _all(MoveList.rows(game, "bonobot", {"special": "U", "heavy": "K", "up": "W"}))
 	var names := rows.map(func(r): return r[0])
-	runner.check("Banana" in names, "la speciale neutra di Bonobot: %s" % [names])
+	var neutral: String = game.characters.bonobot.specials.neutral.name
+	runner.check(neutral in names, "la speciale neutra di Bonobot (%s): %s" % [neutral, names])
 	var heavy: Array = rows.filter(func(r): return r[0] == "Pesante")[0]
 	runner.check(heavy[1] == "K" and heavy[2].contains("caricarlo"), "il pesante dice che si carica: %s" % [heavy])
 	var up: Array = rows.filter(func(r): return r[0] == "Pesante in su")[0]
