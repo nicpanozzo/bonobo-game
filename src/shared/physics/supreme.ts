@@ -2,7 +2,7 @@
 // Piena, il tasto suprema lancia la mossa e la barra torna a 0. La mossa di ogni personaggio
 // arriva a parte (Bonobot: #102); finché non c'è, tutti usano ATTACKS.supreme.
 
-import { getCharacter, supremeAttackSpec, type DropSupreme } from "../characters";
+import { getCharacter, supremeAttackSpec, type DropSupreme, type SpinSupreme } from "../characters";
 import { ATTACKS, FIGHTER, SUPREME } from "../constants";
 import { startAttack } from "./attacks";
 import type { StageSpec } from "../stages";
@@ -41,7 +41,7 @@ export function tryStartSupreme(f: Fighter, ctx: PhysicsContext): boolean {
   f.supreme = 0;
   startAttack(f, "supreme", ctx);
   const own = supremeAttackSpec(f.characterId);
-  const drop = getCharacter(f.characterId).supreme;
+  const drop = dropOf(f.characterId);
   f.supremeBusyMs = (own ?? ATTACKS.supreme).cooldownMs;
   // Quella di base si può interrompere dopo l'avvio; quella propria (#102) no, dall'inizio alla fine
   f.invulnerableTimer = Math.max(f.invulnerableTimer, own ? own.cooldownMs : SUPREME.invulnerableMs);
@@ -58,11 +58,36 @@ export function tryStartSupreme(f: Fighter, ctx: PhysicsContext): boolean {
 
 const motionMs = (sp: DropSupreme) => sp.leapMs + sp.pullMs + sp.flipMs;
 
+// La suprema propria di un personaggio, se è di quel tipo
+function dropOf(characterId: string): DropSupreme | null {
+  const sp = getCharacter(characterId).supreme;
+  return sp?.type === "drop" ? sp : null;
+}
+function spinOf(characterId: string): SpinSupreme | null {
+  const sp = getCharacter(characterId).supreme;
+  return sp?.type === "spin" ? sp : null;
+}
+
+// La suprema "spin" (#358) colpisce più volte: a ogni giro (hitEveryMs) chi è già stato colpito può esserlo di nuovo.
+// t è attackTimer dopo il passo di dtMs
+export function spinRehit(f: Fighter, t: number, dtMs: number): void {
+  const sp = f.attack === "supreme" ? spinOf(f.characterId) : null;
+  if (!sp || t <= sp.windupMs) return;
+  const turn = (ms: number) => Math.floor((ms - sp.windupMs) / sp.hitEveryMs);
+  if (turn(t) !== turn(Math.max(sp.windupMs, t - dtMs))) f.alreadyHit.clear();
+}
+
+// Quanto si corre a terra durante un attacco: fermi, tranne mentre la "spin" gira (#358)
+export function attackMoveFactor(f: Fighter): number {
+  const sp = f.attack === "supreme" ? spinOf(f.characterId) : null;
+  return sp && f.attackActive ? sp.moveSpeed : 0;
+}
+
 // Un passo della suprema propria in corso (#102): la fisica muove chi la fa lungo un percorso fisso
 // (salto alla liana, appeso mentre tira, capriola all'indietro fuori dall'impatto). true finché lo guida:
 // niente controlli, attacchi né gravità. Dopo la capriola si ricade normalmente, sempre imbersagliabili
 export function supreming(f: Fighter, dtMs: number): boolean {
-  const sp = getCharacter(f.characterId).supreme;
+  const sp = dropOf(f.characterId);
   if (f.supremeTimer <= 0 || !sp) return false;
   f.supremeTimer = Math.max(0, f.supremeTimer - dtMs);
   const t = motionMs(sp) - f.supremeTimer;
@@ -96,12 +121,13 @@ export function groundBelow(stage: StageSpec, x: number, y: number): number {
 
 // Il punto da cui parte il colpo: la liana per la suprema propria (#102), altrimenti chi colpisce
 export function hitOrigin(f: Fighter): { x: number; y: number } {
-  return f.attack === "supreme" && getCharacter(f.characterId).supreme ? { x: f.supremeX, y: f.supremeY } : { x: f.x, y: f.y };
+  return f.attack === "supreme" && dropOf(f.characterId) ? { x: f.supremeX, y: f.supremeY } : { x: f.x, y: f.y };
 }
 
 // Fino a dove arriva la suprema di questo personaggio, in orizzontale dal suo centro (per i bot)
 export function supremeReach(characterId: string): number {
   const own = getCharacter(characterId).supreme;
-  if (own) return own.leapDx + own.width / 2;
+  if (own?.type === "drop") return own.leapDx + own.width / 2;
+  if (own?.type === "spin") return own.width / 2;
   return (ATTACKS.supreme.boxX ?? FIGHTER.width / 2) + ATTACKS.supreme.range;
 }

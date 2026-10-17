@@ -6,7 +6,7 @@ import type { AttackKind, SpecialKind } from "../types";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
 import { clearStun, hitShield } from "./shield";
 import { counterHit, isCountering, tryStartSpecial } from "./specials";
-import { chargeFromHit, hitOrigin, tryStartSupreme } from "./supreme";
+import { chargeFromHit, hitOrigin, spinRehit, tryStartSupreme } from "./supreme";
 
 export function tryStartAttack(f: Fighter, ctx: PhysicsContext): void {
   if (f.hitstun || f.attack || f.helpless || f.dodgeTimer > 0) return;
@@ -108,6 +108,7 @@ export function updateAttack(f: Fighter, dtMs: number): void {
   if (f.smashChargeMs >= 0 && smashCharging(f, dtMs)) return;
   const spec = attackSpecFor(f);
   f.attackTimer += dtMs;
+  spinRehit(f, f.attackTimer, dtMs); // la suprema che gira colpisce a ogni giro (#358)
   f.attackActive = f.attackTimer >= spec.startupMs && f.attackTimer < spec.startupMs + spec.activeMs;
   if (f.attackTimer >= spec.startupMs + spec.activeMs) {
     f.attack = null;

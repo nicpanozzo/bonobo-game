@@ -112,7 +112,7 @@ for (const [id, spec] of Object.entries(CHARACTERS)) {
   const c = { ...spec, stats: characterStats(id), portrait, specials, specialAttacks, supremeAttack: supremeAttackSpec(id) };
   characters[id] = c;
   // I disegni della suprema propria (#102): si copiano come gli sprite
-  const art = spec.supreme?.art;
+  const art = spec.supreme?.type === "drop" ? spec.supreme.art : undefined;
   for (const file of art ? [art.falling, art.landed, art.runner] : []) {
     const path = `${art!.dir}/${file}`;
     if (existsSync(publicDir + path)) spriteFiles.push(path);

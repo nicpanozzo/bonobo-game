@@ -238,7 +238,24 @@ export interface DropSupremeArt {
   runnerFps: number;
   scale: number; // 0.5 per i disegni fatti a 2x
 }
-export type SupremeSpec = DropSupreme;
+// Suprema "spin" (#358): dopo windupMs gira su se stesso per durationMs, muovendosi piano (moveSpeed, frazione
+// della corsa a terra), e colpisce chi gli sta intorno ogni hitEveryMs. Imbersagliabile dall'inizio alla fine
+export interface SpinSupreme {
+  type: "spin";
+  name: string; // come si chiama nei menu
+  windupMs: number;
+  durationMs: number;
+  hitEveryMs: number;
+  endLagMs: number; // dopo, fermi
+  moveSpeed: number;
+  width: number; // area del colpo, pixel, centrata su chi gira
+  height: number; // pixel dai piedi in su
+  damage: number; // per ogni colpo
+  baseKnockback: number;
+  knockbackGrowth: number;
+  angleDeg: number; // verso l'alto e lontano dal centro
+}
+export type SupremeSpec = DropSupreme | SpinSupreme;
 
 export type SpecialSpec = ProjectileSpecial | DashSpecial | ChargeSpecial | CounterSpecial;
 export type SpecialSet = Record<SpecialSlot, SpecialSpec>;
@@ -652,6 +669,22 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     name: "Bradipo Giallo",
     crews: ["lolhardcore"],
     sprite: sheetSprite("bradipo", 298, 200, 185),
+    // dalla scheda: "DEMACIAAA", gira come Garen e fa danno a chi tocca (#358). Nel foglio è la palla della Final Smash
+    supreme: {
+      type: "spin",
+      name: "DEMACIAAA",
+      windupMs: 150,
+      durationMs: 1800,
+      hitEveryMs: 225, // 8 colpi
+      endLagMs: 300,
+      moveSpeed: 0.55,
+      width: 130,
+      height: 100,
+      damage: 3,
+      baseKnockback: 200,
+      knockbackGrowth: 1.6,
+      angleDeg: 60,
+    },
     // piccolo e leggero, veloce a terra e in aria, salta tanto
     stats: { weight: 0.95, speed: 1.1, airSpeed: 1.1, jump: 1.1 },
     specials: {
@@ -808,6 +841,22 @@ export function supremeAttackSpec(id: string | undefined): AttackSpec | null {
 }
 function toSupremeAttack(sp: SupremeSpec | undefined): AttackSpec | null {
   if (!sp) return null;
+  if (sp.type === "spin") {
+    return {
+      damage: sp.damage,
+      baseKnockback: sp.baseKnockback,
+      knockbackGrowth: sp.knockbackGrowth,
+      angleDeg: sp.angleDeg,
+      startupMs: sp.windupMs,
+      activeMs: sp.durationMs,
+      cooldownMs: sp.windupMs + sp.durationMs + sp.endLagMs,
+      range: sp.width,
+      height: sp.height,
+      boxX: -sp.width / 2, // tutto intorno
+      boxY: -sp.height + 8,
+      outward: true,
+    };
+  }
   const startupMs = sp.leapMs + sp.pullMs + sp.warnMs;
   return {
     damage: sp.damage,
