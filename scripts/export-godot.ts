@@ -14,7 +14,7 @@ import { COLORS_COLORBLIND, TEAM_COLORS_COLORBLIND } from "../src/shared/constan
 import { TRAINING } from "../src/shared/constants";
 import { DASH, DODGE, RECOVERY, TICK_RATE } from "../src/shared/constants";
 import { predictionTraces } from "../src/shared/predictionTraces";
-import { SMASH_CHARGE, SUPREME } from "../src/shared/constants";
+import { HITSTOP, SMASH_CHARGE, SUPREME } from "../src/shared/constants";
 import { LESSONS, TUTORIAL_BOT, TUTORIAL_STAGE_ID } from "../src/shared/tutorial";
 import { CHALLENGES } from "../src/shared/challenges";
 import { ITEMS } from "../src/shared/items";
@@ -157,6 +157,7 @@ const data = {
   dash: DASH, // scatto e corsa (#199), per la predizione (E17)
   dodge: DODGE, // schivata (#3), per la predizione (E17)
   attacks: ATTACKS,
+  hitstop: HITSTOP, // fermo dei colpi (#15): chi è colpito trema per tanto
   smashCharge: SMASH_CHARGE, // colpi caricati: il pesante a terra tenuto, per la predizione (E17)
   recovery: RECOVERY, // spinta del recupero (#11), per la predizione (E17)
   ledge: { hangOffsetY: LEDGE.hangOffsetY }, // bordo del palco (#110): dove sta la mano di chi è appeso

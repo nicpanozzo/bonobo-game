@@ -239,6 +239,11 @@
       "boxY": -130
     }
   },
+  "hitstop": {
+    "baseMs": 30,
+    "perDamageMs": 6,
+    "maxMs": 200
+  },
   "smashCharge": {
     "maxMs": 1000,
     "maxMultiplier": 1.4,
@@ -611,7 +616,11 @@
     "hitReactMinStrength": 0.25,
     "hitReactTilt": 0.35,
     "hitReactSquash": 0.22,
-    "hitReactRecoil": 10
+    "hitReactRecoil": 10,
+    "hitShakePx": 7,
+    "hitShakeHz": 30,
+    "impactLines": 8,
+    "impactLinesKnockback": 700
   },
   "items": {
     "banana": {

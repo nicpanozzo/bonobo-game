@@ -42,3 +42,20 @@ func test_si_spegne_da_sola() -> void:
 	var late := HitReaction.sample(r, FX, 1000 + 419)
 	runner.check(absf(late.angle) < 0.005 and absf(late.offset) < 0.1, "quasi dritto a fine durata (%s)" % late)
 	runner.check(HitReaction.sample(r, FX, 1000 + 420).angle == 0.0, "poi dritto")
+
+
+# Nel fermo del colpo (HITSTOP) chi è colpito trema sul posto, poi il tremolio finisce
+func test_trema_nel_fermo() -> void:
+	var fx := FX.duplicate()
+	fx.hitShakePx = 7.0
+	fx.hitShakeHz = 30.0
+	var stop := HitReaction.stop_ms({"baseMs": 30, "perDamageMs": 6, "maxMs": 200}, 13)
+	runner.check(stop == 108.0, "fermo del pesante come il server: %s" % stop)
+	runner.check(HitReaction.stop_ms({}, 13) == 0.0, "senza numeri niente fermo")
+	var r := HitReaction.start(fx, 0.5, 1, 1200, 0, stop)
+	var plain := HitReaction.start(FX, 0.5, 1, 1200, 0)
+	var swing := 0.0
+	for t in range(1, 100, 3):
+		swing = maxf(swing, absf(HitReaction.sample(r, fx, t).offset - HitReaction.sample(plain, FX, t).offset))
+	runner.check(swing > 2.0, "nel fermo trema: %s" % swing)
+	runner.check(HitReaction.sample(r, fx, 200).offset == HitReaction.sample(plain, FX, 200).offset, "dopo il fermo solo il rinculo")

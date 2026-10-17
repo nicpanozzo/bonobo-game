@@ -497,10 +497,12 @@ func on_event(e: Dictionary) -> void:
 				_reached = int(e.index)
 		"hit":
 			var big: bool = str(e.kind).begins_with("heavy")
-			_sparks.append({"x": e.x, "y": e.y, "age": 0.0, "size": 34.0 if big else 20.0, "color": Color(1, 0.85, 0.3) if big else Color.WHITE})
-			# Più il colpo lancia lontano, più lo schermo trema; i colpi enormi fanno anche un lampo
 			var fx: Dictionary = game.effects
 			var kb := float(e.get("knockback", 0))
+			# I colpi forti hanno anche le linee a raggiera, come i fumetti e Smash
+			var lines: int = int(fx.get("impactLines", 0)) if kb >= float(fx.get("impactLinesKnockback", INF)) else 0
+			_sparks.append({"x": e.x, "y": e.y, "age": 0.0, "size": (34.0 if big else 20.0) + float(e.get("damage", 0)), "color": Color(1, 0.85, 0.3) if big else Color.WHITE, "lines": lines})
+			# Più il colpo lancia lontano, più lo schermo trema; i colpi enormi fanno anche un lampo
 			if kb > fx.shakeFromKnockback:
 				_shake = maxf(_shake, minf(fx.shakeMax, (kb - fx.shakeFromKnockback) * fx.shakePerKnockback))
 			if kb >= fx.flashKnockback:
@@ -605,7 +607,8 @@ func _react(e: Dictionary) -> void:
 	var from: Vector2 = positions.get(e.attackerId, Vector2(e.x, e.y)) if e.attackerId != e.targetId else Vector2(e.x, e.y)
 	var dir := 1 if target.x >= from.x else -1
 	var height := (target.y - float(e.y)) / float(game.fighter.height)
-	_reactions[e.targetId] = HitReaction.start(game.effects, height, dir, float(e.get("knockback", 0)), Time.get_ticks_msec())
+	var stop := HitReaction.stop_ms(game.get("hitstop", {}), float(e.get("damage", 0)))
+	_reactions[e.targetId] = HitReaction.start(game.effects, height, dir, float(e.get("knockback", 0)), Time.get_ticks_msec(), stop)
 
 
 # La deformazione di chi sta reagendo a un colpo, con il perno sui piedi; identità quando è finita
@@ -770,6 +773,9 @@ func _draw() -> void:
 		var c: Color = s.color
 		c.a = 1.0 - k
 		draw_arc(Vector2(s.x, s.y), s.size * (0.4 + k), 0, TAU, 20, c, 4.0)
+		for i in int(s.get("lines", 0)):
+			var dir := Vector2.from_angle(TAU * i / float(s.lines) + float(s.size)) # sempre le stesse per lo stesso colpo
+			draw_line(Vector2(s.x, s.y) + dir * s.size * (0.6 + k), Vector2(s.x, s.y) + dir * s.size * (1.1 + 1.4 * k), c, 3.0)
 
 	for c in _clouds:
 		_draw_cloud(c)
