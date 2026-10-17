@@ -213,6 +213,10 @@ func _draw_powerup(card: Rect2, ms_left: float, kind: String = "fiore") -> void:
 		# La birra (#302): barra dorata che si accorcia
 		draw_rect(Rect2(card.position, Vector2(card.size.x * clampf(ms_left / float(game.get("birra", {}).get("ms", 8000)), 0.0, 1.0), 4)), Color(1, 0.75, 0.2))
 		return
+	if kind in ["spore", "micelio"]:
+		# Il filo di Kirschner (#358): barra verde muschio che si accorcia
+		draw_rect(Rect2(card.position, Vector2(card.size.x * clampf(ms_left / float(game.get(kind, {}).get("ms", 4000)), 0.0, 1.0), 4)), Color(0.66, 0.77, 0.42))
+		return
 	if kind == "trip":
 		# I funghetti (#302): barra viola che si accorcia
 		draw_rect(Rect2(card.position, Vector2(card.size.x * clampf(ms_left / float(game.get("funghi", {}).get("tripMs", 3000)), 0.0, 1.0), 4)), Color(0.75, 0.4, 0.95))

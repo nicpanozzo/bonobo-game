@@ -1,12 +1,12 @@
 // Attacchi: inizio, finestra attiva, hitbox e cosa succede a chi viene colpito.
 
 import { characterStats, getCharacter, SPECIAL_KINDS, specialAttackSpec, specialsFor, supremeAttackSpec, type SpecialSlot } from "../characters";
-import { ATTACKS, BIRRA, FIGHTER, HITSTOP, HITSTUN_PER_KNOCKBACK, JAB, POWERUP, SMASH_CHARGE, type AttackSpec } from "../constants";
+import { ATTACKS, BIRRA, FIGHTER, HITSTOP, HITSTUN_PER_KNOCKBACK, JAB, MICELIO, POWERUP, SMASH_CHARGE, type AttackSpec } from "../constants";
 import type { AttackKind, SpecialKind } from "../types";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
 import { clearStun, hitShield } from "./shield";
 import { counterHit, isCountering, tryStartSpecial } from "./specials";
-import { chargeFromHit, hitOrigin, snatch, spinRehit, supremeMelee, tryStartSupreme } from "./supreme";
+import { chargeFromHit, hitOrigin, infect, snatch, spinRehit, supremeMelee, tryStartSupreme } from "./supreme";
 
 export function tryStartAttack(f: Fighter, ctx: PhysicsContext): void {
   if (f.hitstun || f.attack || f.helpless || f.dodgeTimer > 0) return;
@@ -208,7 +208,7 @@ export function launch(target: Fighter, attacker: Fighter, kind: AttackKind, x: 
   const base = damage === undefined ? attackSpecFor(attacker, kind) : { ...attackSpecFor(attacker, kind), damage };
   // Potenziati dal fiore (#231) i colpi fanno più danno; il volo cresce già con la percentuale
   // La birra (#302) picchia ancora più forte
-  const mult = attacker.powerup === "fiore" ? POWERUP.damageMult : attacker.powerup === "birra" ? BIRRA.damageMult : 1;
+  const mult = attacker.powerup === "fiore" ? POWERUP.damageMult : attacker.powerup === "birra" ? BIRRA.damageMult : attacker.powerup === "micelio" ? MICELIO.damageMult : 1; // il micelio di Dr. Micelium (#358)
   const spec = mult !== 1 ? { ...base, damage: Math.round(base.damage * mult * 10) / 10 } : base;
   // Stile Smash/Brawlhalla: il danno non toglie vita, fa volare più lontano
   target.percent = Math.min(999, target.percent + spec.damage);
@@ -216,7 +216,7 @@ export function launch(target: Fighter, attacker: Fighter, kind: AttackKind, x: 
   // Colpo ad area (#102): si vola via dal centro di chi colpisce
   const dir = spec.outward ? ((Math.sign(target.x - hitOrigin(attacker).x) || attacker.facing) as 1 | -1) : attacker.facing;
   const knockback = (spec.baseKnockback + spec.knockbackGrowth * target.percent) / characterStats(target.characterId).weight; // E11
-  const angle = (snatch(attacker, target, spec.angleDeg) * Math.PI) / 180; // snaack di Lampione (#358) tira e schiaccia
+  const angle = ((kind === "supreme" ? snatch(attacker, target, spec.angleDeg) : spec.angleDeg) * Math.PI) / 180; // snaack di Lampione (#358) tira e schiaccia
   target.vx = dir * Math.cos(angle) * knockback;
   target.vy = -Math.sin(angle) * knockback;
   target.onGround = false;
@@ -229,6 +229,7 @@ export function launch(target: Fighter, attacker: Fighter, kind: AttackKind, x: 
   target.recoveryUsed = false;
   target.helpless = false;
   clearStun(target);
+  if (kind === "supreme") infect(attacker, target, ctx); // il filo di Kirschner di Dr. Micelium (#358)
   ctx.events.push({
     type: "hit",
     attackerId: attacker.id,

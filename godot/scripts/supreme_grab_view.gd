@@ -1,5 +1,6 @@
 # Suprema "grab" (#358), snaack di Lampione: il braccio che si allunga davanti fino a dove afferra, la mano aperta
-# in fondo e il nome della mossa gridato sopra. Solo disegno: parte dall'evento attack con kind "supreme" e segue i
+# in fondo e il nome della mossa gridato sopra. Anche la "infect", il filo di Kirschner di Dr. Micelium: lo stesso
+# allungarsi, ma è un filo d'acciaio con la punta e le spore. Solo disegno: parte dall'evento attack con kind "supreme" e segue i
 # tempi del personaggio in game.json (characters.<id>.supreme). Chi viene preso e dove vola lo decide il server.
 extends Node2D
 
@@ -7,6 +8,8 @@ const SHOUT_MS := 700.0 # quanto resta il nome gridato
 const ARM_W := 14.0 # spessore del braccio, pixel
 const INK := Color("221c1a")
 const SKIN := Color("e9c39b")
+const STEEL := Color("d8dde3")
+const SPORE := Color("a8c46a")
 
 var where: Callable # id giocatore -> il suo campione (x, y dei piedi, facing), o null; lo imposta world_view
 var fighter_width := 48.0 # da game.fighter, li imposta world_view
@@ -22,8 +25,11 @@ func _now() -> float:
 
 func start(id: String, character: Dictionary) -> void:
 	var sp: Variant = character.get("supreme")
-	if not (sp is Dictionary) or str(sp.get("type", "")) != "grab":
+	if not (sp is Dictionary) or not (str(sp.get("type", "")) in ["grab", "infect"]):
 		return
+	if str(sp.type) == "infect": # stessi tempi con i nomi della sua scheda
+		sp = sp.duplicate()
+		sp.reachMs = sp.activeMs
 	_runs = _runs.filter(func(r): return r.id != id)
 	_runs.append({"id": id, "sp": sp, "t0": _now()})
 
@@ -77,7 +83,15 @@ func _draw_arm(sp: Dictionary, ms: float, p: Dictionary) -> void:
 	var hand_y := float(p.y) - fighter_height * 0.7 + float(sp.height) / 2.0 # a metà del rettangolo della presa
 	var from := Vector2(float(p.x) + facing * fighter_width * 0.3, hand_y)
 	var length := arm_length(sp, ms)
-	if length > 2.0:
+	if length > 2.0 and str(sp.type) == "infect":
+		var tip := from + Vector2(facing * (fighter_width * 0.2 + length), 0)
+		draw_line(from, tip, INK, 6.0)
+		draw_line(from, tip, STEEL, 3.0)
+		draw_colored_polygon(PackedVector2Array([tip + Vector2(0, -5), tip + Vector2(facing * 14.0, 0), tip + Vector2(0, 5)]), STEEL)
+		for i in 6: # le spore che cadono dal filo
+			var k := fmod(i / 6.0 + ms / 900.0, 1.0)
+			draw_circle(from.lerp(tip, (i + 0.5) / 6.0) + Vector2(0, 10.0 * k), 3.0, Color(SPORE, 1.0 - k))
+	elif length > 2.0:
 		var to := from + Vector2(facing * (fighter_width * 0.2 + length), 0)
 		draw_line(from, to, INK, ARM_W + 6.0)
 		draw_line(from, to, SKIN, ARM_W)

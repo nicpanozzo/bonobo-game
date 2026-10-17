@@ -26,3 +26,15 @@ func test_il_braccio_di_lampione() -> void:
 	v.fixed_now = 1000.0 + float(sp.windupMs) + float(sp.reachMs) + float(sp.endLagMs)
 	runner.check(v.reaching("l") < 1.0, "alla fine il braccio è tornato")
 	v.free()
+
+
+func test_il_filo_di_micelium() -> void:
+	var game := _game()
+	var sp: Dictionary = game.characters.drmicelium.supreme
+	runner.check(str(sp.type) == "infect", "Dr. Micelium ha il filo di Kirschner")
+	var v := GrabView.new()
+	v.fixed_now = 1000.0
+	v.start("m", game.characters.drmicelium)
+	v.fixed_now = 1000.0 + float(sp.windupMs) + 10.0
+	runner.check(is_equal_approx(v.reaching("m"), float(sp.reach)), "il filo arriva fin dove infetta")
+	v.free()
