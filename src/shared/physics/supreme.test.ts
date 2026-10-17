@@ -2,13 +2,14 @@
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { getCharacter, supremeAttackSpec, type DropSupreme, type SpinSupreme } from "../characters";
+import { getCharacter, supremeAttackSpec, type DropSupreme, type GrabSupreme, type SpinSupreme } from "../characters";
 import { ATTACKS, FIGHTER, SUPREME, TICK_RATE } from "../constants";
 import { Match } from "../match";
 import { getStage } from "../stages";
 import type { GameEvent, InputState } from "../types";
 import { createFighter, emptyInput, stepWorld, type Fighter, type PhysicsContext } from "./index";
 import { loseStock } from "./stage";
+import { snatch } from "./supreme";
 
 const DT = 1000 / TICK_RATE;
 const stage = getStage(undefined);
@@ -275,5 +276,51 @@ describe("suprema che gira, DEMACIAAA di Bradipo Giallo (#358)", () => {
     assert.equal(sp.boxX, -spin.width / 2);
     assert.equal(sp.outward, true);
     assert.equal(sp.cooldownMs, spin.windupMs + spin.durationMs + spin.endLagMs);
+  });
+});
+
+describe("suprema che afferra, snaack di Lampione (#358)", () => {
+  const grab = getCharacter("lampione").supreme as GrabSupreme;
+
+  function grabSetup(gap: number) {
+    const { ctx, fighters, a, b } = setup(gap);
+    a.characterId = "lampione";
+    a.supreme = SUPREME.max;
+    b.characterId = "egiainuso";
+    press(a, { supreme: true });
+    run(fighters, ctx, 1);
+    press(a, {});
+    return { ctx, fighters, lampione: a, b };
+  }
+
+  it("prende da lontano, tira davanti a sé e a terra fa rimbalzare in alto", () => {
+    const { ctx, fighters, lampione, b } = grabSetup(200);
+    let hit = false;
+    for (let i = 0; i < ticks(grab.windupMs + grab.reachMs) + 2 && !hit; i++) {
+      run(fighters, ctx, 1);
+      hit = ofType(ctx.events, "hit").some((h) => h.targetId === b.id && h.kind === "supreme");
+    }
+    assert.ok(hit, "lo prende a 200 pixel");
+    assert.ok(Math.abs(b.x - lampione.x) < 120, `tirato vicino (${Math.round(b.x - lampione.x)} px)`);
+    assert.ok(b.vy < 0, "rimbalza in alto");
+    assert.equal(b.percent, grab.damage);
+  });
+
+  it("oltre il braccio non prende nessuno", () => {
+    const { ctx, fighters, b } = grabSetup(grab.reach + 40);
+    run(fighters, ctx, ticks(grab.windupMs + grab.reachMs + grab.endLagMs));
+    assert.equal(ofType(ctx.events, "hit").filter((h) => h.targetId === b.id).length, 0);
+  });
+
+  it("in aria schiaccia verso il basso; le altre supreme non tirano", () => {
+    const { lampione, b } = grabSetup(200);
+    lampione.attack = "supreme";
+    lampione.onGround = false;
+    assert.equal(snatch(lampione, b, grab.angleDeg), grab.angleDeg);
+    assert.ok(grab.angleDeg < 0);
+    lampione.characterId = "bradipo";
+    const x = b.x;
+    assert.equal(snatch(lampione, b, 60), 60);
+    assert.equal(b.x, x);
   });
 });

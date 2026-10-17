@@ -2,8 +2,8 @@
 // Piena, il tasto suprema lancia la mossa e la barra torna a 0. La mossa di ogni personaggio
 // arriva a parte (Bonobot: #102); finché non c'è, tutti usano ATTACKS.supreme.
 
-import { getCharacter, supremeAttackSpec, type DropSupreme, type SpinSupreme } from "../characters";
-import { ATTACKS, FIGHTER, SUPREME } from "../constants";
+import { getCharacter, supremeAttackSpec, type DropSupreme, type GrabSupreme, type SpinSupreme } from "../characters";
+import { ATTACKS, FIGHTER, GRAB, SUPREME } from "../constants";
 import { startAttack } from "./attacks";
 import type { StageSpec } from "../stages";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
@@ -68,6 +68,21 @@ function spinOf(characterId: string): SpinSupreme | null {
   return sp?.type === "spin" ? sp : null;
 }
 
+function grabOf(characterId: string): GrabSupreme | null {
+  const sp = getCharacter(characterId).supreme;
+  return sp?.type === "grab" ? sp : null;
+}
+
+// La suprema "grab" (#358) ha preso target: lo tira davanti a chi la fa e dice l'angolo del lancio.
+// A terra la schiacciata rimbalza in alto, in aria resta verso il basso. Per le altre l'angolo resta quello
+export function snatch(attacker: Fighter, target: Fighter, angleDeg: number): number {
+  const sp = attacker.attack === "supreme" ? grabOf(attacker.characterId) : null;
+  if (!sp) return angleDeg;
+  target.x = attacker.x + attacker.facing * GRAB.holdDistance;
+  target.y = attacker.y;
+  return attacker.onGround ? Math.abs(angleDeg) : angleDeg;
+}
+
 // La suprema "spin" (#358) colpisce più volte: a ogni giro (hitEveryMs) chi è già stato colpito può esserlo di nuovo.
 // t è attackTimer dopo il passo di dtMs
 export function spinRehit(f: Fighter, t: number, dtMs: number): void {
@@ -129,5 +144,6 @@ export function supremeReach(characterId: string): number {
   const own = getCharacter(characterId).supreme;
   if (own?.type === "drop") return own.leapDx + own.width / 2;
   if (own?.type === "spin") return own.width / 2;
+  if (own?.type === "grab") return FIGHTER.width / 2 + own.reach;
   return (ATTACKS.supreme.boxX ?? FIGHTER.width / 2) + ATTACKS.supreme.range;
 }

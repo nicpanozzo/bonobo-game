@@ -68,6 +68,7 @@ var _supreme_view: Node2D # liana, orsogufo e gnomo della suprema di Bonobot (#1
 var _speech: Node2D # i fumetti con le battute dei lottatori (speech_bubbles.gd), sopra a tutto
 const SpeechBubbles := preload("res://scripts/speech_bubbles.gd")
 var _spin_view: Node2D # i vortici della suprema che gira (DEMACIAAA di Bradipo Giallo, #358)
+var _grab_view: Node2D # il braccio della suprema che afferra (snaack di Lampione, #358)
 
 
 func setup(game_data: Dictionary) -> void:
@@ -86,6 +87,13 @@ func setup(game_data: Dictionary) -> void:
 		var p: Variant = buffer.sample(id, Time.get_ticks_msec())
 		return Vector2(p.x, p.y) if p != null and not p.eliminated else null
 	add_child(_spin_view)
+	_grab_view = preload("res://scripts/supreme_grab_view.gd").new()
+	_grab_view.fighter_width = float(game.fighter.width)
+	_grab_view.fighter_height = float(game.fighter.height)
+	_grab_view.where = func(id: String) -> Variant:
+		var p: Variant = buffer.sample(id, Time.get_ticks_msec())
+		return p if p != null and not p.eliminated else null
+	add_child(_grab_view)
 	_high_overlay = ColorRect.new()
 	var fatto := ShaderMaterial.new()
 	fatto.shader = load("res://shaders/fatto.gdshader")
@@ -189,6 +197,7 @@ func reset() -> void:
 	_supreme_view.clear()
 	_speech.clear()
 	_spin_view.clear()
+	_grab_view.clear()
 	my_id = ""
 	predictor.reset()
 	set_stage(game.defaultStageId)
@@ -594,6 +603,7 @@ func on_event(e: Dictionary) -> void:
 				if p != null:
 					_supreme_view.start(p, game.characters.get(p.characterId, {}))
 					_spin_view.start(e.id, game.characters.get(p.characterId, {}))
+					_grab_view.start(e.id, game.characters.get(p.characterId, {}))
 		"dash":
 			# Scatto (#199): uno sbuffo di polvere dove parte e uno un po' indietro
 			_puff(e.x, e.y)

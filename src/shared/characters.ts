@@ -255,7 +255,23 @@ export interface SpinSupreme {
   knockbackGrowth: number;
   angleDeg: number; // verso l'alto e lontano dal centro
 }
-export type SupremeSpec = DropSupreme | SpinSupreme;
+// Suprema "grab" (#358), snaack di Lampione: dopo windupMs il braccio si allunga davanti fino a reach pixel per
+// reachMs; chi tocca viene tirato davanti a chi lo fa e scaraventato giù (angleDeg negativo). A terra
+// rimbalza in alto con lo stesso angolo, in aria (fuori dal bordo) cade come una schiacciata. Imbersagliabile
+export interface GrabSupreme {
+  type: "grab";
+  name: string; // come si chiama nei menu
+  windupMs: number; // il braccio si allunga
+  reachMs: number; // tutto allungato: qui afferra
+  endLagMs: number; // il braccio torna, fermi
+  reach: number; // pixel davanti a chi la fa
+  height: number; // pixel di altezza della mano
+  damage: number;
+  baseKnockback: number;
+  knockbackGrowth: number;
+  angleDeg: number; // negativo: verso il basso
+}
+export type SupremeSpec = DropSupreme | SpinSupreme | GrabSupreme;
 
 export type SpecialSpec = ProjectileSpecial | DashSpecial | ChargeSpecial | CounterSpecial;
 export type SpecialSet = Record<SpecialSlot, SpecialSpec>;
@@ -651,6 +667,20 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     },
     // pesante, salto esplosivo, bravo negli scatti brevi ma poco agile in aria
     stats: { weight: 1.1, jump: 1.15, speed: 1.05, airSpeed: 0.9 },
+    // dalla scheda: "snaack", allunga il braccio, afferra e scaraventa giù (#358)
+    supreme: {
+      type: "grab",
+      name: "snaack",
+      windupMs: 260,
+      reachMs: 240,
+      endLagMs: 450,
+      reach: 280,
+      height: 50,
+      damage: 16,
+      baseKnockback: 520,
+      knockbackGrowth: 9,
+      angleDeg: -70,
+    },
     specials: {
       // la battuta di ping pong: pallina dritta e velocissima, colpo piccolo
       neutral: { type: "projectile", name: "3° campione regionale", startupMs: 180, cooldownMs: 480, speed: 1050, gravity: 0, lifeMs: 700, maxAlive: 1, range: 14, height: 14, damage: 5, baseKnockback: 200, knockbackGrowth: 3.5, angleDeg: 25, color: 0xf4f1e8 },
@@ -841,6 +871,19 @@ export function supremeAttackSpec(id: string | undefined): AttackSpec | null {
 }
 function toSupremeAttack(sp: SupremeSpec | undefined): AttackSpec | null {
   if (!sp) return null;
+  if (sp.type === "grab") {
+    return {
+      damage: sp.damage,
+      baseKnockback: sp.baseKnockback,
+      knockbackGrowth: sp.knockbackGrowth,
+      angleDeg: sp.angleDeg,
+      startupMs: sp.windupMs,
+      activeMs: sp.reachMs,
+      cooldownMs: sp.windupMs + sp.reachMs + sp.endLagMs,
+      range: sp.reach,
+      height: sp.height,
+    };
+  }
   if (sp.type === "spin") {
     return {
       damage: sp.damage,
