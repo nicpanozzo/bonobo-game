@@ -1,7 +1,7 @@
 // Attacchi: inizio, finestra attiva, hitbox e cosa succede a chi viene colpito.
 
 import { characterStats, getCharacter, SPECIAL_KINDS, specialAttackSpec, specialsFor, supremeAttackSpec, type SpecialSlot } from "../characters";
-import { ATTACKS, BIRRA, FIGHTER, HITSTOP, HITSTUN_PER_KNOCKBACK, POWERUP, SMASH_CHARGE, type AttackSpec } from "../constants";
+import { ATTACKS, BIRRA, FIGHTER, HITSTOP, HITSTUN_PER_KNOCKBACK, JAB, POWERUP, SMASH_CHARGE, type AttackSpec } from "../constants";
 import type { AttackKind, SpecialKind } from "../types";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
 import { clearStun, hitShield } from "./shield";
@@ -9,7 +9,9 @@ import { counterHit, isCountering, tryStartSpecial } from "./specials";
 import { chargeFromHit, hitOrigin, tryStartSupreme } from "./supreme";
 
 export function tryStartAttack(f: Fighter, ctx: PhysicsContext): void {
-  if (f.hitstun || f.attack || f.cooldownTimer > 0 || f.helpless || f.dodgeTimer > 0) return;
+  if (f.hitstun || f.attack || f.helpless || f.dodgeTimer > 0) return;
+  if (canChainJab(f) && pressed(f, "light")) return startJab(f, f.jabStep + 1, ctx); // la combo non aspetta l'attesa
+  if (f.cooldownTimer > 0) return;
   if (tryStartSupreme(f, ctx)) return; // #101: solo con la barra piena
   if (pressed(f, "special")) tryStartSpecial(f, ctx); // E10
   else if (pressed(f, "heavy")) {
@@ -17,7 +19,28 @@ export function tryStartAttack(f: Fighter, ctx: PhysicsContext): void {
     startAttack(f, kind, ctx);
     if (f.onGround && SMASH_CHARGE.kinds.includes(kind)) f.smashChargeMs = 0; // tenendo premuto si carica
   }
-  else if (pressed(f, "light")) startAttack(f, variant(f, "light"), ctx);
+  else if (pressed(f, "light")) {
+    const kind = variant(f, "light");
+    if (kind === "light" && f.onGround) startJab(f, 0, ctx);
+    else startAttack(f, kind, ctx);
+  }
+}
+
+// La combo di leggeri (JAB): il leggero neutro a terra andato a segno, premuto di nuovo entro windowMs dalla fine del colpo
+const canChainJab = (f: Fighter) =>
+  f.jabTimer > 0 && f.onGround && !f.input.up && !f.input.down && f.jabStep < JAB.steps.length;
+
+function startJab(f: Fighter, step: number, ctx: PhysicsContext): void {
+  startAttack(f, "light", ctx);
+  f.jabStep = step;
+  f.cooldownTimer = attackSpecFor(f).cooldownMs;
+}
+
+// Il leggero della combo è entrato: per un attimo dopo la sua fine il leggero fa il colpo dopo (dopo il finale si ricomincia)
+function armJab(f: Fighter): void {
+  if (f.attack !== "light" || !f.onGround || f.jabStep >= JAB.steps.length) return;
+  const spec = attackSpecFor(f);
+  f.jabTimer = Math.max(0, spec.startupMs + spec.activeMs - f.attackTimer) + JAB.windowMs;
 }
 
 // La variante viene dai tasti tenuti: su vince su tutto, poi l'aria, poi giù (a terra)
@@ -36,7 +59,7 @@ export function attackSpecFor(f: Fighter, kind: AttackKind | null = f.attack): A
     return kind === f.attack && f.chargeMultiplier !== 1 ? charged(spec, f.chargeMultiplier) : spec;
   }
   if (kind === "supreme") return supremeAttackSpec(f.characterId) ?? ATTACKS.supreme; // #102: la sua, se ce l'ha
-  const base = ATTACKS[kind ?? "light"];
+  const base = kind === "light" && kind === f.attack && f.jabStep > 0 ? JAB.steps[f.jabStep - 1] : ATTACKS[kind ?? "light"];
   const recovery = kind === "recovery" ? getCharacter(f.characterId).recovery : undefined;
   const spec = recovery ? { ...base, ...recovery } : base;
   return kind === f.attack && f.chargeMultiplier !== 1 ? charged(spec, f.chargeMultiplier) : spec; // colpo caricato
@@ -67,6 +90,8 @@ export function startAttack(f: Fighter, kind: AttackKind, ctx: PhysicsContext) {
   f.attackTimer = 0;
   f.chargeMultiplier = 1; // solo il rilascio della carica lo cambia, dopo questa chiamata
   if (f.smashChargeMs >= 0) endSmashCharge(f);
+  f.jabStep = 0; // la combo la riprende startJab
+  f.jabTimer = 0;
   f.cooldownTimer = attackSpecFor(f, kind).cooldownMs;
   f.alreadyHit.clear();
   consume(f, "light", "heavy", "special"); // anche il recupero, l'attacco dal bordo e le speciali passano da qui
@@ -74,6 +99,7 @@ export function startAttack(f: Fighter, kind: AttackKind, ctx: PhysicsContext) {
 }
 
 export function updateAttack(f: Fighter, dtMs: number): void {
+  f.jabTimer = Math.max(0, f.jabTimer - dtMs);
   if (!f.attack) {
     f.attackActive = false;
     if (f.smashChargeMs >= 0) endSmashCharge(f); // colpiti, presi o finiti fuori mentre si caricava
@@ -169,6 +195,7 @@ export function resolveHits(fighters: Fighter[], ctx: PhysicsContext): void {
       }
 
       launch(target, attacker, attacker.attack, Math.round(ix), Math.round(iy), ctx);
+      armJab(attacker);
     }
   }
 }

@@ -22,6 +22,7 @@ static func rows(game: Dictionary, character_id: String, keys: Dictionary) -> Ar
 	var plus := func(a: String, b: String) -> String: return "%s + %s" % [k.call(a), k.call(b)]
 	var attacks := [
 		["Leggero", k.call("light"), "veloce, apre le combo"],
+		["Combo di leggeri", "%s %s %s" % [k.call("light"), k.call("light"), k.call("light")], "leggero di fila quando entra: due colpi e un finale che lancia"],
 		["Leggero in su", plus.call("up", "light"), "sopra la testa"],
 		["Leggero in giù", plus.call("down", "light"), "sgambetto basso"],
 		["Leggero in aria", k.call("light") + " saltando", "per le combo in aria"],

@@ -47,6 +47,8 @@ export interface Fighter extends PlayerState {
   chargeMs: number; // ms di carica della speciale tenuta premuta (E10), -1 se non si carica
   chargeMultiplier: number; // moltiplicatore del colpo caricato in corso (1 per tutti gli altri)
   smashChargeMs: number; // ms di carica del pesante a terra tenuto premuto (colpo caricato), -1 se non si carica
+  jabStep: number; // colpo della combo di leggeri in corso (JAB): 0 il primo, 1 il secondo, 2 il finale
+  jabTimer: number; // ms in cui un leggero premuto continua la combo
   pendingSpecial: SpecialKind | null; // la speciale che aspetta: proiettile in uscita o carica tenuta
   supremeTimer: number; // ms di movimento ancora guidati dalla suprema propria (#102): salto, liana, capriola
   supremeX0: number; // da dove è partita la suprema propria (piedi)
@@ -187,6 +189,8 @@ export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
     chargeMs: -1,
     chargeMultiplier: 1,
     smashChargeMs: -1,
+    jabStep: 0,
+    jabTimer: 0,
     pendingSpecial: null,
     supremeTimer: 0,
     supremeX0: 0,
