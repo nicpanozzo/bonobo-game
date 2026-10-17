@@ -170,6 +170,7 @@ export interface ProjectileSpecial extends SpecialBase, SpecialHit {
   speed: number; // pixel/s in orizzontale
   gravity: number; // pixel/s²: 0 = dritto
   lift?: number; // pixel/s verso l'alto alla partenza, per i tiri ad arco (con gravity)
+  spreadDeg?: number[]; // gradi sopra l'orizzontale, uno per tiro a rotazione: "a caso" ma deterministico
   lifeMs: number; // dopo quanto sparisce da solo
   maxAlive: number; // proiettili dello stesso giocatore in volo insieme
   color?: number; // colore del proiettile in Godot (0xRRGGBB); senza, quello del Tiro
@@ -762,8 +763,8 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     // piccolo e leggero, veloce a terra e in aria, salta tanto
     stats: { weight: 0.95, speed: 1.1, airSpeed: 1.1, jump: 1.1 },
     specials: {
-      // spara parole: tante, piccole e deboli (la direzione a caso non c'è, la fisica è deterministica)
-      neutral: { type: "projectile", name: "Ciacole", startupMs: 150, cooldownMs: 320, speed: 820, gravity: 0, lifeMs: 600, maxAlive: 3, range: 16, height: 12, damage: 3, baseKnockback: 150, knockbackGrowth: 2.5, angleDeg: 25, color: 0xf5c211 },
+      // spara parole: tante, piccole e deboli, in direzioni "un po' a caso" (angoli fissi a rotazione: la fisica è deterministica)
+      neutral: { type: "projectile", name: "Ciacole", startupMs: 150, cooldownMs: 320, speed: 820, gravity: 0, spreadDeg: [0, 14, -8, 22, 6, -14], lifeMs: 600, maxAlive: 3, range: 16, height: 12, damage: 3, baseKnockback: 150, knockbackGrowth: 2.5, angleDeg: 25, color: 0xf5c211 },
       // l'onda del basso: lenta, alta e larga, spinge poco
       side: { type: "projectile", name: "Bassline", startupMs: 240, cooldownMs: 700, speed: 420, gravity: 0, lifeMs: 1000, maxAlive: 1, range: 26, height: 70, damage: 5, baseKnockback: 260, knockbackGrowth: 3, angleDeg: 20, color: 0xb48cff },
       down: { type: "counter", name: "Cambio pannolino", startupMs: 50, windowMs: 400, endLagMs: 450, minDamage: 8, multiplier: 1.3, range: 60, height: 60, baseKnockback: 450, knockbackGrowth: 9, angleDeg: 40 },
@@ -778,8 +779,8 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     sprite: communitySprite("giovannifrana"),
     // dalla scheda: "Ramarro, sorprendimi". Cade un ramarro gigante appeso per la coda, poi scappa via
     supreme: communityDrop("giovannifrana", "ramarro", "Ramarro"),
-    // pesante e veloce a terra, ma salta poco e cade presto. Peso da 1,1 a 1 e corsa da 1,1 a 1,05: vinceva il 62-68% in npm run balance
-    stats: { weight: 1, speed: 1.05, airSpeed: 0.9, jump: 0.9, gravity: 1.05 },
+    // dalla scheda: pesante e veloce a terra, ma salta poco e cade presto
+    stats: { weight: 1.1, speed: 1.1, airSpeed: 0.9, jump: 0.9, gravity: 1.05 },
     specials: {
       // il pallone calciato, con un po' di parabola
       neutral: { type: "projectile", name: "Rigore", startupMs: 240, cooldownMs: 620, speed: 780, gravity: 700, lift: 180, lifeMs: 1200, maxAlive: 1, range: 22, height: 22, damage: 8, baseKnockback: 280, knockbackGrowth: 4, angleDeg: 40, color: 0xffffff },
@@ -797,8 +798,8 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     crews: ["cuamm", "cologna"],
     // Il disegno è il suo foglio delle pose in #352, ritagliato da tools/sprite/foglio_a_colori.py come Bradipo Giallo
     sprite: sheetSprite("marcomunista", 304, 196, 182),
-    // #352: "pesante". Pesa e cade di più, più lento a terra e in aria
-    stats: { weight: 1.05, speed: 0.88, airSpeed: 0.9, jump: 0.92, gravity: 1.08 },
+    // dalla scheda: corsa non molto, aria e salto abbastanza, leggero, gravità bassa (la #352 dà lo stile del disegno, non i numeri)
+    stats: { weight: 0.95, speed: 0.95, airSpeed: 1.05, jump: 1.05, gravity: 0.95 },
     // dalla scheda: "…COSA?", torna a com'era 3 secondi prima e stordisce chi è vicino (#358)
     supreme: { type: "rewind", name: "…COSA?", windupMs: 500, backMs: 3000, endLagMs: 300, stunRadius: 150, stunMs: 1200 },
     specials: {
@@ -858,7 +859,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     stats: { speed: 1.2, airSpeed: 0.8, jump: 0.95, gravity: 0.95 },
     specials: {
       // fa ruotare la collana d'oro e colpisce tutto intorno al rilascio
-      neutral: { type: "charge", name: "Cashback", minMs: 200, maxMs: 1100, maxMultiplier: 1.8, activeMs: 300, endLagMs: 400, range: 120, height: 70, boxX: -60, boxY: -76, damage: 9, baseKnockback: 380, knockbackGrowth: 9, angleDeg: 45 },
+      neutral: { type: "charge", name: "Cashback", minMs: 200, maxMs: 1100, maxMultiplier: 1.8, activeMs: 500, endLagMs: 400, range: 120, height: 70, boxX: -60, boxY: -76, damage: 9, baseKnockback: 380, knockbackGrowth: 9, angleDeg: 45 },
       // lancia la lavagnetta
       side: { type: "projectile", name: "Corri!", startupMs: 200, cooldownMs: 560, speed: 820, gravity: 0, lifeMs: 800, maxAlive: 1, range: 26, height: 20, damage: 7, baseKnockback: 260, knockbackGrowth: 4, angleDeg: 30, color: 0x2f6b3a },
       // urla e allontana: risposta debole ma che spinge lontano

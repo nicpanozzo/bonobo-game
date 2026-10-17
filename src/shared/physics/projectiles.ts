@@ -30,6 +30,8 @@ export const aliveOf = (f: Fighter, ctx: PhysicsContext) => worldOf(ctx).list.fi
 // Il proiettile esce dalle mani di f, nella direzione in cui guarda. v: un'altra velocità (la suprema "burst", #358)
 export function fire(f: Fighter, kind: SpecialKind, sp: ProjectileSpecial, ctx: PhysicsContext, v?: { vx: number; vy: number }): void {
   const world = worldOf(ctx);
+  // le Ciacole di Bradipo: ogni tiro prende l'angolo successivo della lista (#13)
+  const deg = !v && sp.spreadDeg?.length ? sp.spreadDeg[world.nextId % sp.spreadDeg.length] : 0;
   const p: Projectile = {
     id: world.nextId++,
     ownerId: f.id,
@@ -37,8 +39,8 @@ export function fire(f: Fighter, kind: SpecialKind, sp: ProjectileSpecial, ctx: 
     characterId: f.characterId,
     x: v ? f.x : f.x + f.facing * (FIGHTER.width / 2 + sp.range / 2),
     y: f.y - SPECIAL_MOVES.projectileY,
-    vx: v ? v.vx : f.facing * sp.speed,
-    vy: v ? v.vy : -(sp.lift ?? 0),
+    vx: v ? v.vx : f.facing * sp.speed * Math.cos((deg * Math.PI) / 180),
+    vy: v ? v.vy : -(sp.lift ?? 0) - sp.speed * Math.sin((deg * Math.PI) / 180),
     ageMs: 0,
   };
   world.list.push(p);

@@ -107,7 +107,8 @@ export function updateAttack(f: Fighter, dtMs: number): void {
   }
   if (f.smashChargeMs >= 0 && smashCharging(f, dtMs)) return;
   const spec = attackSpecFor(f);
-  f.attackTimer += dtMs;
+  // il micelio rende più veloci gli attacchi normali di Dr. Micelium, non speciali e suprema
+  f.attackTimer += f.powerup === "micelio" && f.attack !== "supreme" && !isSpecialKind(f.attack) ? dtMs * MICELIO.attackSpeedMult : dtMs;
   spinRehit(f, f.attackTimer, dtMs); // la suprema che gira colpisce a ogni giro (#358)
   f.attackActive = f.attackTimer >= spec.startupMs && f.attackTimer < spec.startupMs + spec.activeMs;
   if (f.attackTimer >= spec.startupMs + spec.activeMs) {
