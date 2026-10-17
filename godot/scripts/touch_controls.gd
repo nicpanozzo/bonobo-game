@@ -28,6 +28,7 @@ const STICK_AREA_X := 560.0 # a sinistra di qui un tocco prende la levetta
 const STICK_RADIUS := 110.0 # spostamento che conta come levetta tutta piegata
 const STICK_DEAD := 0.35 # sotto questa frazione del raggio, in orizzontale, non si va da nessuna parte
 const STICK_VERTICAL := 0.55 # su e giù vogliono una spinta più decisa, per non attaccare in su correndo
+const STICK_RUN := 0.9 # levetta piegata fin quasi in fondo di lato: si corre, come il tasto corsa (Maiusc)
 # Opzioni > Touch (E18 passo 3): indici salvati in Settings.touch
 const SIZES := [0.8, 1.0, 1.25]
 const SIZE_NAMES := ["Piccoli", "Normali", "Grandi"]
@@ -131,6 +132,8 @@ func pressed(action: String) -> bool:
 			return _stick_vec.y < -STICK_VERTICAL * _stick_radius
 		"down":
 			return _stick_vec.y > STICK_VERTICAL * _stick_radius
+		"run":
+			return absf(_stick_vec.x) > STICK_RUN * _stick_radius
 	return _fingers.values().has(action)
 
 
@@ -156,6 +159,8 @@ static func hint(action: String) -> String:
 			return "levetta in su"
 		"down":
 			return "levetta in giù"
+		"run":
+			return "levetta tutta di lato"
 	if BUTTONS.has(action):
 		return "tasto %s" % BUTTONS[action].label
 	return "solo da tastiera o pad" # la provocazione non ha un tasto a schermo
