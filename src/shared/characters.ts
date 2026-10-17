@@ -241,9 +241,19 @@ export type SupremeSpec = DropSupreme;
 export type SpecialSpec = ProjectileSpecial | DashSpecial | ChargeSpecial | CounterSpecial;
 export type SpecialSet = Record<SpecialSlot, SpecialSpec>;
 
+// Le compagnie del lore (#13), dalla cartella delle schede: chi viene da dove. Nella lobby sono badge sul lottatore
+export const CREWS = {
+  cuamm: "Cuamm", // lo zoccolo duro: il collegio a Padova
+  cologna: "Cologna Veneta",
+  schio: "Schio",
+  lolhardcore: "Lol Hardcore", // conosciuti giocando a LoL, più competitivi
+} as const;
+export type CrewId = keyof typeof CREWS;
+
 export interface CharacterSpec {
   id: string;
   name: string;
+  crews?: CrewId[]; // compagnie del lore, mostrate come badge nella lobby
   sprite?: SpriteSheetSpec | SpriteFolderSpec; // senza sprite si disegna il rettangolo colorato
   stats?: Partial<CharacterStats>; // quelle che mancano valgono 1
   specials?: Partial<SpecialSet>; // quelle che mancano sono DEFAULT_SPECIALS (E10)
@@ -312,6 +322,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
   orsoblu: {
     id: "orsoblu",
     name: "Capt. OrsoBlu",
+    crews: ["cuamm", "lolhardcore"],
     // Con la barchetta addosso è un po' più pesante e lento di Bonobot (E11)
     // TODO community: statistiche provvisorie, da confermare con @MauroGrecchi
     stats: { weight: 1.05, speed: 0.9, airSpeed: 0.95, jump: 0.95 },
@@ -443,6 +454,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
   elvedeo: {
     id: "elvedeo",
     name: "Elvedeo",
+    crews: ["cuamm"],
     // Con la pancia è più pesante e un po' lento, salta meno (E11). Peso da 1,15 a 1,05 (#276): con 1,15 vinceva
     // il 67-73% contro il bot in npm run balance, sopra la soglia del 60%
     // TODO community: statistiche provvisorie, da confermare con @MauroGrecchi
@@ -481,6 +493,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
   egiainuso: {
     id: "egiainuso",
     name: "Egiainuso",
+    crews: ["lolhardcore"],
     // TODO community: statistiche e mosse speciali di base, da decidere con @Marcomunista
     sprite: {
       dir: "assets/characters/egiainuso",
@@ -521,6 +534,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
   lampione: {
     id: "lampione",
     name: "Lampione",
+    crews: ["cuamm", "schio"],
     sprite: communitySprite("lampione"),
     // pesante, salto esplosivo, bravo negli scatti brevi ma poco agile in aria
     stats: { weight: 1.1, jump: 1.15, speed: 1.05, airSpeed: 0.9 },
@@ -538,6 +552,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
   bradipo: {
     id: "bradipo",
     name: "Bradipo Giallo",
+    crews: ["lolhardcore"],
     sprite: communitySprite("bradipo"),
     // piccolo e leggero, veloce a terra e in aria, salta tanto
     stats: { weight: 0.95, speed: 1.1, airSpeed: 1.1, jump: 1.1 },
@@ -554,6 +569,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
   giovannifrana: {
     id: "giovannifrana",
     name: "Giovanni fRana",
+    crews: ["cuamm", "cologna"],
     sprite: communitySprite("giovannifrana"),
     // pesante e veloce a terra, ma salta poco e cade presto. Peso da 1,1 a 1 e corsa da 1,1 a 1,05: vinceva il 62-68% in npm run balance
     stats: { weight: 1, speed: 1.05, airSpeed: 0.9, jump: 0.9, gravity: 1.05 },
@@ -570,6 +586,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
   marcomunista: {
     id: "marcomunista",
     name: "Marcomunista",
+    crews: ["cuamm", "cologna"],
     sprite: communitySprite("marcomunista"),
     // leggero e fluttuante: lento a terra, agile in aria
     stats: { weight: 0.95, speed: 0.95, airSpeed: 1.05, jump: 1.05, gravity: 0.95 },
@@ -583,6 +600,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
   lendmar: {
     id: "lendmar",
     name: "Lendmar",
+    crews: ["lolhardcore"],
     sprite: communitySprite("lendmar"),
     // TODO community: la scheda non ha statistiche; magro, quindi leggero e scattante
     stats: { weight: 0.95, speed: 1.05 },
@@ -598,6 +616,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
   drmicelium: {
     id: "drmicelium",
     name: "Dr. Micelium",
+    crews: ["cuamm"],
     sprite: communitySprite("drmicelium"),
     // tutto nella media: le statistiche restano quelle di Bonobot
     specials: {

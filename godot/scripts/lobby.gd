@@ -41,6 +41,8 @@ const PAGE_W := 940.0 # larghezza del contenuto delle pagine, pixel
 const PAGE_TOP := 28 # spazio sopra il titolo della pagina, pixel
 const BIG_STAGE := Vector2(560, 315) # anteprima grande dell'arena (16:9), pixel
 const BIG_FACE := Vector2(260, 260) # ritratto grande del lottatore, pixel
+# Il colore del badge di ogni compagnia del lore (#13); i nomi arrivano da game.json (CREWS in characters.ts)
+const CREW_COLORS := {"cuamm": Color("c0392b"), "cologna": Color("d35400"), "schio": Color("27ae60"), "lolhardcore": Color("8e44ad")}
 
 var game: Dictionary
 var room_link: Callable # stanza -> link da mandare agli amici
@@ -93,6 +95,7 @@ var _big_face: TextureRect
 var _big_name: Label
 var _big_stats: VBoxContainer
 var _big_moves: Label
+var _big_crews: HFlowContainer
 
 
 # start_kind: da dove si parte nella prima pagina. "join" se si arriva da un link con la stanza,
@@ -489,6 +492,10 @@ func _fighter_page(params: Dictionary) -> Control:
 	_big_name = UI.header("")
 	_big_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	left.add_child(_big_name)
+	_big_crews = HFlowContainer.new()
+	_big_crews.alignment = FlowContainer.ALIGNMENT_CENTER
+	_big_crews.add_theme_constant_override("h_separation", UI.GAP_S)
+	left.add_child(_big_crews)
 	_big_stats = VBoxContainer.new()
 	_big_stats.add_theme_constant_override("separation", UI.GAP_S)
 	left.add_child(_big_stats)
@@ -603,6 +610,10 @@ func _show_big_fighter() -> void:
 	else:
 		_big_face.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	_big_name.text = str(c.name)
+	for child in _big_crews.get_children():
+		child.queue_free()
+	for crew in c.get("crews", []):
+		_big_crews.add_child(_crew_badge(str(crew)))
 	for child in _big_stats.get_children():
 		child.queue_free()
 	var stats: Dictionary = c.get("stats", {})
@@ -618,6 +629,21 @@ func _show_big_fighter() -> void:
 		_big_stats.add_child(r)
 	_big_moves.text = moves_text(c)
 	_update_summary()
+
+
+# Il badge di una compagnia: il nome su una pillola del suo colore
+func _crew_badge(crew: String) -> Control:
+	var pill := PanelContainer.new()
+	var box := StyleBoxFlat.new()
+	box.bg_color = CREW_COLORS.get(crew, UI.BORDER)
+	box.set_corner_radius_all(UI.RADIUS)
+	box.content_margin_left = UI.GAP_M
+	box.content_margin_right = UI.GAP_M
+	box.content_margin_top = 1
+	box.content_margin_bottom = 1
+	pill.add_theme_stylebox_override("panel", box)
+	pill.add_child(UI.label(str(game.get("crews", {}).get(crew, crew)), UI.SIZE_NOTE))
+	return pill
 
 
 # "Speciali: Tiro, Scatto, Contrattacco · Suprema: Omar"

@@ -1908,6 +1908,10 @@
     "orsoblu": {
       "id": "orsoblu",
       "name": "Capt. OrsoBlu",
+      "crews": [
+        "cuamm",
+        "lolhardcore"
+      ],
       "stats": {
         "speed": 0.9,
         "airSpeed": 0.95,
@@ -2567,6 +2571,9 @@
     "elvedeo": {
       "id": "elvedeo",
       "name": "Elvedeo",
+      "crews": [
+        "cuamm"
+      ],
       "stats": {
         "speed": 0.85,
         "airSpeed": 0.95,
@@ -2865,6 +2872,9 @@
     "egiainuso": {
       "id": "egiainuso",
       "name": "Egiainuso",
+      "crews": [
+        "lolhardcore"
+      ],
       "sprite": {
         "dir": "assets/characters/egiainuso",
         "frameWidth": 318,
@@ -3149,6 +3159,10 @@
     "lampione": {
       "id": "lampione",
       "name": "Lampione",
+      "crews": [
+        "cuamm",
+        "schio"
+      ],
       "sprite": {
         "dir": "assets/characters/lampione",
         "frameWidth": 336,
@@ -3451,6 +3465,9 @@
     "bradipo": {
       "id": "bradipo",
       "name": "Bradipo Giallo",
+      "crews": [
+        "lolhardcore"
+      ],
       "sprite": {
         "dir": "assets/characters/bradipo",
         "frameWidth": 336,
@@ -3754,6 +3771,10 @@
     "giovannifrana": {
       "id": "giovannifrana",
       "name": "Giovanni fRana",
+      "crews": [
+        "cuamm",
+        "cologna"
+      ],
       "sprite": {
         "dir": "assets/characters/giovannifrana",
         "frameWidth": 336,
@@ -4057,6 +4078,10 @@
     "marcomunista": {
       "id": "marcomunista",
       "name": "Marcomunista",
+      "crews": [
+        "cuamm",
+        "cologna"
+      ],
       "sprite": {
         "dir": "assets/characters/marcomunista",
         "frameWidth": 336,
@@ -4357,6 +4382,9 @@
     "lendmar": {
       "id": "lendmar",
       "name": "Lendmar",
+      "crews": [
+        "lolhardcore"
+      ],
       "sprite": {
         "dir": "assets/characters/lendmar",
         "frameWidth": 336,
@@ -4658,6 +4686,9 @@
     "drmicelium": {
       "id": "drmicelium",
       "name": "Dr. Micelium",
+      "crews": [
+        "cuamm"
+      ],
       "sprite": {
         "dir": "assets/characters/drmicelium",
         "frameWidth": 336,
@@ -5268,5 +5299,11 @@
       },
       "supremeAttack": null
     }
+  },
+  "crews": {
+    "cuamm": "Cuamm",
+    "cologna": "Cologna Veneta",
+    "schio": "Schio",
+    "lolhardcore": "Lol Hardcore"
   }
 }

@@ -6,7 +6,7 @@
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { basename, dirname, extname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { CHARACTERS, DEFAULT_CHARACTER_ID, isSpriteFolder, resolvedAnimations, SPECIAL_KINDS, SPECIAL_SLOTS, specialAttackSpec, specialsFor, spriteStatePath, supremeAttackSpec } from "../src/shared/characters";
+import { CHARACTERS, CREWS, DEFAULT_CHARACTER_ID, isSpriteFolder, resolvedAnimations, SPECIAL_KINDS, SPECIAL_SLOTS, specialAttackSpec, specialsFor, spriteStatePath, supremeAttackSpec } from "../src/shared/characters";
 import { ATTACKS, AUDIO, BIRRA, BONG, CAMERA, FUNGHI, COLORS, EFFECTS, FIGHTER, INPUT, ITEM_RULES, LEDGE, NET, POWERUP, PROTOCOL_VERSION, RUMBLE, SHIELD, TEAM_COLORS, TEAM_NAMES, WORLD } from "../src/shared/constants";
 import { RECONNECT, RECONNECT_HOLD_MS } from "../src/shared/constants";
 import { COLORS_COLORBLIND, TEAM_COLORS_COLORBLIND } from "../src/shared/constants";
@@ -177,6 +177,7 @@ const data = {
   characterStats: CHARACTER_STATS, // limiti delle statistiche, per le barre della lobby (E11)
   perfBudget: { clientScriptUs: PERF_BUDGET.clientScriptUs }, // budget del client per bench_client.gd --check (E3)
   characters, // CHARACTERS, con i fotogrammi degli sprite in formato cartella
+  crews: CREWS, // i nomi delle compagnie del lore, per i badge della lobby (#13)
 };
 
 const out = new URL("../godot/data/game.json", import.meta.url);
