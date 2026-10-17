@@ -2,7 +2,7 @@
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { getCharacter, supremeAttackSpec, type BurstSupreme, type DropSupreme, type GrabSupreme, type InfectSupreme, type SpinSupreme } from "../characters";
+import { getCharacter, supremeAttackSpec, type BurstSupreme, type DropSupreme, type GrabSupreme, type InfectSupreme, type RewindSupreme, type SpinSupreme } from "../characters";
 import { ATTACKS, FIGHTER, MICELIO, SPORE, SUPREME, TICK_RATE } from "../constants";
 import { Match } from "../match";
 import { getStage } from "../stages";
@@ -398,5 +398,43 @@ describe("suprema che infetta, il filo di Kirschner di Dr. Micelium (#358)", () 
   it("oltre il filo non infetta nessuno", () => {
     const { b } = infectSetup(filo.reach + 40);
     assert.equal(b.powerup, null);
+  });
+});
+
+describe("suprema che torna indietro, …COSA? di Marcomunista (#358)", () => {
+  const cosa = getCharacter("marcomunista").supreme as RewindSupreme;
+
+  it("torna dov'era e con la percentuale di 3 secondi prima, e stordisce chi è lì", () => {
+    const { ctx, fighters, a: marco, b } = setup(10);
+    marco.characterId = "marcomunista";
+    b.characterId = "egiainuso";
+    run(fighters, ctx, ticks(cosa.backMs) + 2); // fermo vicino a b: si ricorda qui
+    const x0 = marco.x;
+    marco.percent = 0;
+    press(marco, { right: true }); // poi scappa via e prende danni
+    b.x = 200; // b va dall'altra parte, lontano
+    run(fighters, ctx, ticks(1500));
+    press(marco, {});
+    marco.percent = 40;
+    b.x = x0 + 60; // e poi torna dove stava Marcomunista
+    marco.supreme = SUPREME.max;
+    press(marco, { supreme: true });
+    run(fighters, ctx, 1);
+    press(marco, {});
+    assert.ok(Math.abs(marco.x - x0) > 100, "si è allontanato");
+    run(fighters, ctx, ticks(cosa.windupMs) + 1);
+    assert.ok(Math.abs(marco.x - x0) < 40, `tornato indietro (${Math.round(marco.x - x0)} px)`);
+    assert.ok(marco.percent < 40, `percentuale di prima (${marco.percent})`);
+    assert.ok(b.stunned, "b vicino resta stordito");
+  });
+
+  it("non colpisce col corpo e il KO cancella il passato", () => {
+    const { ctx, fighters, a: marco } = setup(10);
+    marco.characterId = "marcomunista";
+    run(fighters, ctx, 5);
+    assert.ok(marco.rewindTrail.length > 0);
+    loseStock(marco, ctx);
+    assert.equal(marco.rewindTrail.length, 0);
+    assert.equal(supremeAttackSpec("marcomunista")!.damage, 0);
   });
 });

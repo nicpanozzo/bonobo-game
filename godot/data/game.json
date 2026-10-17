@@ -4678,6 +4678,15 @@
         "weight": 1.05,
         "gravity": 1.08
       },
+      "supreme": {
+        "type": "rewind",
+        "name": "…COSA?",
+        "windupMs": 500,
+        "backMs": 3000,
+        "endLagMs": 300,
+        "stunRadius": 150,
+        "stunMs": 1200
+      },
       "specials": {
         "neutral": {
           "type": "projectile",
@@ -4761,7 +4770,17 @@
           "cooldownMs": 940
         }
       },
-      "supremeAttack": null,
+      "supremeAttack": {
+        "damage": 0,
+        "baseKnockback": 0,
+        "knockbackGrowth": 0,
+        "angleDeg": 0,
+        "startupMs": 500,
+        "activeMs": 100,
+        "cooldownMs": 900,
+        "range": 0,
+        "height": 0
+      },
       "skins": {}
     },
     "lendmar": {
