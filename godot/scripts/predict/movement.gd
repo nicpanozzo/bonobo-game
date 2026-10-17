@@ -13,6 +13,7 @@ var fighter: Dictionary # FIGHTER di constants.ts (game.json)
 var dash: Dictionary # DASH
 var dodge: Dictionary # DODGE
 var attacks: Dictionary # ATTACKS: durata di ogni attacco
+var smash_charge: Dictionary # SMASH_CHARGE: il pesante a terra tenuto si carica
 var recovery: Dictionary # RECOVERY: spinta del recupero
 var own_recovery: Dictionary # i numeri propri del recupero del personaggio (characters.ts), se ne ha
 var buffer_ms: float # INPUT.bufferMs: per quanto una pressione del salto vale ancora
@@ -26,6 +27,7 @@ func _init(game: Dictionary, character_stats: Dictionary, stage_solids: Array, s
 	dash = game.dash
 	dodge = game.dodge
 	attacks = game.attacks
+	smash_charge = game.smashCharge
 	recovery = game.recovery
 	own_recovery = character_recovery
 	buffer_ms = float(game.input.bufferMs)
@@ -46,11 +48,21 @@ static func state_from(p: Dictionary, timers: Dictionary, input: Dictionary) -> 
 		"dodge": float(timers.get("dodge", 0)), "dodgeCooldown": float(timers.get("dodgeCooldown", 0)),
 		"airDodge": bool(timers.get("airDodge", false)), "dodgeBuffer": float(timers.get("dodgeBuffer", 0)),
 		"attack": str(p.attack) if p.get("attack") != null else "", "attackTimer": float(timers.get("attackTimer", 0)),
+		"smashCharge": float(timers.get("smashCharge", _smash_charge_guess(p, timers))),
 		"cooldown": float(timers.get("cooldown", 0)), "hitstop": float(timers.get("hitstop", 0)),
 		"recoveryUsed": bool(timers.get("recoveryUsed", false)), "helpless": bool(timers.get("helpless", false)),
 		"lightBuffer": float(timers.get("lightBuffer", 0)), "heavyBuffer": float(timers.get("heavyBuffer", 0)),
 		"input": input.duplicate(), "prev": input.duplicate(),
 	}
+
+
+# Lo snapshot non porta la carica del pesante (PredictionState): un pesante a terra ancora a 0 ms è appena partito,
+# quindi sta caricando. Con la carica sopra zero il predittore lascia comunque decidere il server
+static func _smash_charge_guess(p: Dictionary, timers: Dictionary) -> float:
+	var kind := str(p.attack) if p.get("attack") != null else ""
+	if kind in ["heavy", "heavyUp", "heavyDown"] and bool(p.onGround) and float(timers.get("attackTimer", 0)) == 0.0:
+		return 0.0
+	return -1.0
 
 
 # Un tasto nuovo (Match.setInput): salto, schivata e attacchi appena premuti finiscono nel buffer (E6)
@@ -169,7 +181,10 @@ func _try_start_attack(s: Dictionary) -> void:
 	if s.attack != "" or s.cooldown > 0 or s.helpless or s.dodge > 0:
 		return
 	if _pressed(s, "heavy") or s.heavyBuffer > 0:
-		_start_attack(s, _variant(s, "heavy"))
+		var kind := _variant(s, "heavy")
+		_start_attack(s, kind)
+		if s.onGround and kind in smash_charge.kinds:
+			s.smashCharge = 0.0 # tenendo premuto si carica
 	elif _pressed(s, "light") or s.lightBuffer > 0:
 		_start_attack(s, _variant(s, "light"))
 
@@ -189,13 +204,22 @@ func _start_attack(s: Dictionary, kind: String) -> void:
 	s.attack = kind
 	s.attackTimer = 0.0
 	s.cooldown = float(attack_spec(kind).cooldownMs)
+	s.smashCharge = -1.0
 	s.lightBuffer = 0.0
 	s.heavyBuffer = 0.0
 
 
 func _update_attack(s: Dictionary, dt_ms: float) -> void:
 	if s.attack == "":
+		s.smashCharge = -1.0
 		return
+	# Il colpo caricato (smashCharging in attacks.ts): fermo finché si tiene il pesante, fino a maxMs
+	if s.smashCharge >= 0.0:
+		if s.input.get("heavy", false) and s.smashCharge < float(smash_charge.maxMs):
+			s.smashCharge = minf(float(smash_charge.maxMs), s.smashCharge + dt_ms)
+			s.cooldown += dt_ms
+			return
+		s.smashCharge = -1.0
 	var spec := attack_spec(s.attack)
 	s.attackTimer += dt_ms
 	if s.attackTimer >= float(spec.startupMs) + float(spec.activeMs):
