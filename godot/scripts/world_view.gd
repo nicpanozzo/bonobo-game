@@ -65,6 +65,8 @@ static var _screen_px_per_world := 0.0 # pixel dello schermo per pixel di mondo 
 var _character_sprites := {} # id personaggio -> true quando i suoi sprite sono caricati
 var _looks := {} # "<personaggio>/<skin>" -> il suo disegno (FighterPose.look), #339
 var _supreme_view: Node2D # liana, orsogufo e gnomo della suprema di Bonobot (#102), disegnati sopra i lottatori
+var _speech: Node2D # i fumetti con le battute dei lottatori (speech_bubbles.gd), sopra a tutto
+const SpeechBubbles := preload("res://scripts/speech_bubbles.gd")
 
 
 func setup(game_data: Dictionary) -> void:
@@ -73,6 +75,11 @@ func setup(game_data: Dictionary) -> void:
 	_supreme_view.game = game
 	_supreme_view.impact.connect(func(strength: float): _shake = maxf(_shake, strength)) # l'orsogufo tocca terra
 	add_child(_supreme_view)
+	_speech = SpeechBubbles.new()
+	_speech.where = func(id: String) -> Variant:
+		var p: Variant = buffer.sample(id, Time.get_ticks_msec())
+		return Vector2(p.x, float(p.y) - float(game.fighter.height) * 1.15) if p != null and not p.eliminated else null
+	add_child(_speech)
 	_high_overlay = ColorRect.new()
 	var fatto := ShaderMaterial.new()
 	fatto.shader = load("res://shaders/fatto.gdshader")
@@ -174,6 +181,7 @@ func reset() -> void:
 	_trails = {}
 	_flash = 0.0
 	_supreme_view.clear()
+	_speech.clear()
 	my_id = ""
 	predictor.reset()
 	set_stage(game.defaultStageId)
@@ -571,6 +579,7 @@ func on_event(e: Dictionary) -> void:
 					_puff(p.x, p.y - float(game.ledge.hangOffsetY)) # polvere sullo spigolo, da dove parte la rotolata
 		"taunt":
 			_taunts[e.id] = Time.get_ticks_msec()
+			_speech.say(e.id, SpeechBubbles.quote(_character_of(e.id), "taunt"))
 		"attack":
 			# Suprema propria (#102): la scena (liana, orsogufo, gnomo) la disegna supreme_view.gd
 			if e.kind == "supreme":
@@ -595,6 +604,15 @@ func on_event(e: Dictionary) -> void:
 			var p: Variant = buffer.sample(e.id, Time.get_ticks_msec())
 			var col: Color = Access.color(p.color) if p != null else Color(1, 0.4, 0.3)
 			_beams.append({"x": e.x, "y": e.y, "age": 0.0, "color": col})
+			# L'urlo di chi va KO, dove è uscito ma dentro l'inquadratura
+			var at := Vector2(clampf(e.x, view_rect.position.x + 60, view_rect.end.x - 60), clampf(e.y, view_rect.position.y + 90, view_rect.end.y - 40))
+			_speech.say(e.id, SpeechBubbles.quote(_character_of(e.id), "ko"), at)
+
+
+# Il blocco del personaggio di un giocatore in game.json, vuoto se non si sa
+func _character_of(id: String) -> Dictionary:
+	var p: Variant = buffer.sample(id, Time.get_ticks_msec())
+	return game.characters.get(p.characterId, {}) if p != null else {}
 
 
 # Sbuffi di polvere ai piedi, a destra e a sinistra
@@ -753,6 +771,7 @@ func _draw() -> void:
 				_draw_fighter(p, now)
 
 	_supreme_view.view_rect = view_rect
+	_speech.view_rect = view_rect
 	_draw_items(now)
 	_draw_projectiles()
 	if not _life.is_empty():

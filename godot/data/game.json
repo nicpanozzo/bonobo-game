@@ -3180,6 +3180,9 @@
     "lampione": {
       "id": "lampione",
       "name": "Lampione",
+      "quotes": {
+        "ko": "Grazie per essere passato nel nostro canale"
+      },
       "crews": [
         "cuamm",
         "schio"
@@ -4341,6 +4344,9 @@
     "marcomunista": {
       "id": "marcomunista",
       "name": "Marcomunista",
+      "quotes": {
+        "taunt": "Viva il comunismo!"
+      },
       "crews": [
         "cuamm",
         "cologna"
@@ -4935,6 +4941,9 @@
     "drmicelium": {
       "id": "drmicelium",
       "name": "Dr. Micelium",
+      "quotes": {
+        "taunt": "Vi insegnerò la via del fungo"
+      },
       "crews": [
         "cuamm"
       ],
@@ -5247,6 +5256,9 @@
     "coachcartier": {
       "id": "coachcartier",
       "name": "Coach Cartier",
+      "quotes": {
+        "taunt": "Va bene perdere se sei ricco!"
+      },
       "crews": [
         "cuamm",
         "cologna"

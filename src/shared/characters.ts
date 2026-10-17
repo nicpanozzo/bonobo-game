@@ -266,6 +266,14 @@ export interface CharacterSpec {
   specials?: Partial<SpecialSet>; // quelle che mancano sono DEFAULT_SPECIALS (E10)
   supreme?: SupremeSpec; // senza, la suprema di base (ATTACKS.supreme, #101)
   recovery?: Partial<AttackSpec & typeof RECOVERY>; // numeri propri del recupero (#11): quelli che mancano restano i soliti
+  quotes?: CharacterQuotes; // le battute della scheda, scritte in un fumetto (solo disegno, Godot)
+}
+
+// Le battute dalla scheda del personaggio (#13). Solo testo: le voci registrate restano a parte (E13)
+export interface CharacterQuotes {
+  taunt?: string; // la provocazione, quando provoca
+  ko?: string; // l'urlo quando va KO
+  victory?: string; // nella schermata finale, quando vince (senza, la provocazione)
 }
 
 export const DEFAULT_CHARACTER_ID = "default";
@@ -615,6 +623,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
   lampione: {
     id: "lampione",
     name: "Lampione",
+    quotes: { ko: "Grazie per essere passato nel nostro canale" }, // dalla scheda: l'urlo del KO
     crews: ["cuamm", "schio"],
     sprite: communitySprite("lampione"),
     skins: {
@@ -675,6 +684,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
   marcomunista: {
     id: "marcomunista",
     name: "Marcomunista",
+    quotes: { taunt: "Viva il comunismo!" }, // il suo tormentone; la scheda e la #352 non dicono altro
     crews: ["cuamm", "cologna"],
     // Il disegno è il suo foglio delle pose in #352, ritagliato da tools/sprite/foglio_a_colori.py come Bradipo Giallo
     sprite: sheetSprite("marcomunista", 304, 196, 182),
@@ -706,6 +716,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
   drmicelium: {
     id: "drmicelium",
     name: "Dr. Micelium",
+    quotes: { taunt: "Vi insegnerò la via del fungo" },
     crews: ["cuamm"],
     sprite: communitySprite("drmicelium"),
     // tutto nella media: le statistiche restano quelle di Bonobot
@@ -723,6 +734,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
   coachcartier: {
     id: "coachcartier",
     name: "Coach Cartier",
+    quotes: { taunt: "Va bene perdere se sei ricco!" },
     crews: ["cuamm", "cologna"], // dal LORE
     sprite: communitySprite("coachcartier"),
     // dalla scheda c'è solo il nome, "MVP": cade il trofeo di MVP e dopo il puff scappa una moneta (il cashback)
