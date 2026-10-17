@@ -111,6 +111,19 @@ func test_mancini_e_tasti_grandi() -> void:
 	normal.free()
 
 
+func test_levetta_in_fondo_corre() -> void:
+	var t := TouchControls.new()
+	t.handle(_touch(0, Vector2(300, 500)))
+	t.handle(_drag(0, Vector2(380, 500)))
+	runner.check(t.pressed("right") and not t.pressed("run"), "piegata a metà si cammina")
+	t.handle(_drag(0, Vector2(500, 500)))
+	runner.check(t.pressed("right") and t.pressed("run"), "piegata fino in fondo si corre")
+	t.handle(_drag(0, Vector2(150, 500)))
+	runner.check(t.pressed("left") and t.pressed("run"), "anche a sinistra")
+	runner.check(TouchControls.hint("run") == "levetta tutta di lato", TouchControls.hint("run"))
+	t.free()
+
+
 func test_guide_col_touch() -> void:
 	runner.check(TouchControls.hint("jump") == "tasto Salto", TouchControls.hint("jump"))
 	runner.check(TouchControls.hint("up") == "levetta in su", TouchControls.hint("up"))
