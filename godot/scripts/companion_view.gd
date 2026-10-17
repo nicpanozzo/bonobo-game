@@ -15,6 +15,9 @@ var _biting := {} # id -> true se il compagno sta mordendo (un attacco del padro
 var _hurt_at := {} # id -> ms in cui ha preso l'ultimo colpo (#369 passo 3): lampeggia rosso
 var _poofs: Array = [] # [{pos, t}]: nuvolette dove un compagno è andato KO
 
+var _bounce_at := {} # id -> ms in cui il padrone gli è rimbalzato sopra (#369 passo 4): si schiaccia
+
+const BOUNCE_MS := 260.0
 const HURT_MS := 220.0
 const POOF_MS := 600.0
 
@@ -34,6 +37,8 @@ func on_snapshot(players: Array, characters: Dictionary = {}, now := -1) -> void
 			_biting[p.id] = biting(p, characters)
 			if before.has(p.id) and float(c.get("percent", 0)) > float(before[p.id].get("percent", 0)):
 				_hurt_at[p.id] = now
+			if bounced_on(p, c) and now - int(_bounce_at.get(p.id, -100000)) > BOUNCE_MS:
+				_bounce_at[p.id] = now
 		elif before.has(p.id) and _pos.has(p.id) and not p.get("respawning", false) and not p.get("eliminated", false):
 			# Il compagno è sparito ma il padrone c'è ancora: è andato KO
 			_poofs.append({"pos": _pos[p.id], "t": now})
@@ -45,6 +50,15 @@ static func biting(p: Dictionary, characters: Dictionary) -> bool:
 		return false
 	var spec: Variant = characters.get(p.get("characterId", ""), {}).get("companion")
 	return spec is Dictionary and str(p.attack) in spec.get("bites", [])
+
+
+# Il padrone sta schizzando in alto appena sopra il compagno: ci è appena rimbalzato (trampolino in companion.ts)
+static func bounced_on(p: Dictionary, c: Dictionary) -> bool:
+	return float(p.get("vy", 0)) < -800.0 and absf(float(p.x) - float(c.x)) < 50.0 and float(c.y) - float(p.y) < 90.0 and float(c.y) - float(p.y) > 0.0
+
+
+func bounced_recently(id: String, now: int) -> bool:
+	return now - int(_bounce_at.get(id, -100000)) < BOUNCE_MS
 
 
 func is_biting(id: String) -> bool:
@@ -61,6 +75,7 @@ func clear() -> void:
 	_moving = {}
 	_biting = {}
 	_hurt_at = {}
+	_bounce_at = {}
 	_poofs = []
 
 
@@ -73,7 +88,13 @@ func draw(canvas: CanvasItem, now: int) -> void:
 	advance()
 	for id in _pos:
 		var c: Dictionary = _target[id]
-		draw_beagle(canvas, _pos[id], int(c.facing), now, float(_moving[id]) > 0.6, bool(c.get("onGround", true)), is_biting(id))
+		# Trampolino: si schiaccia e torna su, allargandosi
+		var squash := 0.0
+		if bounced_recently(id, now):
+			squash = sin(PI * (now - int(_bounce_at[id])) / BOUNCE_MS)
+		canvas.draw_set_transform(_pos[id], 0.0, Vector2(1.0 + 0.3 * squash, 1.0 - 0.4 * squash))
+		draw_beagle(canvas, Vector2.ZERO, int(c.facing), now, float(_moving[id]) > 0.6, bool(c.get("onGround", true)), is_biting(id))
+		canvas.draw_set_transform(Vector2.ZERO)
 		if now - int(_hurt_at.get(id, -100000)) < HURT_MS:
 			canvas.draw_circle(_pos[id] + Vector2(0, -20), 22.0, Color(1, 0.2, 0.15, 0.45))
 	# KO: una nuvoletta grigia che si allarga e svanisce, con tre stelline
