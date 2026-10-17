@@ -121,7 +121,7 @@ export function attachGame(io: Server<ClientToServer, ServerToClient>, deps: Gam
       room = r;
       socket.join(code);
       const name = sanitizeName(data.name, r.match.players.map((p) => p.name));
-      r.addPlayer(playerId, name, characterId);
+      r.addPlayer(playerId, name, characterId, data.skinId);
       owners.set(playerId, socket);
       const fresh = r.seats.issue(playerId);
       socket.emit("welcome", { id: playerId, room: code, stageId: r.stage.id, rules: r.rules, stage: r.stage, token: fresh, resumed: false, serverVersion: SERVER_VERSION });

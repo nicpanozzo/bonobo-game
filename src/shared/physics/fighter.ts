@@ -94,6 +94,7 @@ export interface FighterSetup {
   id: string;
   name: string;
   characterId: string;
+  skinId?: string; // solo disegno (#339)
   color: number;
   team: number;
   index: number; // posto nella stanza: decide punto di partenza e verso
@@ -106,6 +107,7 @@ export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
     id: s.id,
     name: s.name,
     characterId: s.characterId,
+    skinId: s.skinId,
     color: s.color,
     team: s.team,
     x: spawn.x,

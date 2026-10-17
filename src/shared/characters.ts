@@ -250,10 +250,17 @@ export const CREWS = {
 } as const;
 export type CrewId = keyof typeof CREWS;
 
+// Una skin (#339): solo un altro disegno dello stesso lottatore. Fisica, colpi e statistiche non cambiano
+export interface SkinSpec {
+  name: string; // nella lobby, es. "Jax"
+  sprite: SpriteFolderSpec; // con portrait.png nella stessa cartella
+}
+
 export interface CharacterSpec {
   id: string;
   name: string;
   crews?: CrewId[]; // compagnie del lore, mostrate come badge nella lobby
+  skins?: Record<string, SkinSpec>; // aspetti alternativi da scegliere nella lobby (#339)
   sprite?: SpriteSheetSpec | SpriteFolderSpec; // senza sprite si disegna il rettangolo colorato
   stats?: Partial<CharacterStats>; // quelle che mancano valgono 1
   specials?: Partial<SpecialSet>; // quelle che mancano sono DEFAULT_SPECIALS (E10)
@@ -536,6 +543,10 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     name: "Lampione",
     crews: ["cuamm", "schio"],
     sprite: communitySprite("lampione"),
+    skins: {
+      // Alla Jax di League of Legends, col lampione come arma; a tratto come Egiainuso (tools/rig/rendi_tratto.py)
+      jax: { name: "Jax", sprite: { ...communitySprite("lampione/skins/jax"), frameWidth: 324, frameHeight: 262, footY: 223, scale: 0.909 } },
+    },
     // pesante, salto esplosivo, bravo negli scatti brevi ma poco agile in aria
     stats: { weight: 1.1, jump: 1.15, speed: 1.05, airSpeed: 0.9 },
     specials: {
@@ -650,6 +661,12 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
 // Un id sconosciuto (o mancante) diventa il personaggio base
 export function getCharacter(id: string | undefined): CharacterSpec {
   return (id && Object.hasOwn(CHARACTERS, id) && CHARACTERS[id]) || CHARACTERS[DEFAULT_CHARACTER_ID];
+}
+
+// La skin chiesta, se quel lottatore ce l'ha; altrimenti nessuna (l'aspetto base). Arriva dalla rete: non ci si fida
+export function skinFor(characterId: string | undefined, skinId: string | undefined): string | undefined {
+  const skins = getCharacter(characterId).skins;
+  return skinId && skins && Object.hasOwn(skins, skinId) ? skinId : undefined;
 }
 
 // Le statistiche di un personaggio, quelle che mancano a 1 e tutte dentro i limiti

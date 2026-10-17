@@ -2,7 +2,7 @@
 // Il server la fa avanzare a passo fisso e manda gli snapshot; un client potrebbe farla
 // girare in locale (allenamento, predizione) e un porting su un altro motore parte da qui.
 
-import { getCharacter } from "./characters";
+import { getCharacter, skinFor } from "./characters";
 import { COLORS, FIGHTER, MATCH_RESTART_MS, MAX_PLAYERS_PER_ROOM, RECONNECT_RESUME_INVULNERABLE_MS, TEAM_COLORS, TRAINING } from "./constants";
 import { bufferPresses, createFighter, emptyInput, resetForMatch, stepWorld, type Fighter, type PhysicsContext } from "./physics";
 import { createItemWorld, handleItemInput, itemStates, resetItems, stepItems, type ItemWorld } from "./physics/items";
@@ -68,7 +68,7 @@ export class Match {
     return [...this.fighters.values()];
   }
 
-  addPlayer(id: string, name: string, characterId?: string) {
+  addPlayer(id: string, name: string, characterId?: string, skinId?: string) {
     const index = this.freeIndex();
     const team = isTeamMode(this.rules) ? this.smallerTeam() : 0;
     const fighter = createFighter(
@@ -76,6 +76,7 @@ export class Match {
         id,
         name: shortName(name) || "Bonobo",
         characterId: getCharacter(characterId).id,
+        skinId: skinFor(characterId, skinId),
         color: team ? this.teamColor(team as 1 | 2) : COLORS[index],
         team,
         index,
@@ -179,6 +180,7 @@ export class Match {
         id: f.id,
         name: f.name,
         characterId: f.characterId,
+        skinId: f.skinId,
         color: f.color,
         team: f.team,
         x: Math.round(f.x),

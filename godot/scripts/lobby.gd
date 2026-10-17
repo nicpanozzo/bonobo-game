@@ -68,6 +68,7 @@ var _stocks_box: Control # titoletto e selettore delle vite, si nascondono insie
 var _stocks_label: Label
 var _time_box: Control
 var _character := ""
+var _skin := "" # skin del lottatore scelto (#339), "" = aspetto base
 var _stage := ""
 var _random_stage := ""
 var _server_len := 0 # per riconoscere un link incollato nel campo del server
@@ -96,6 +97,7 @@ var _big_name: Label
 var _big_stats: VBoxContainer
 var _big_moves: Label
 var _big_crews: HFlowContainer
+var _big_skins: HFlowContainer # i pulsanti delle skin, solo per chi ne ha (#339)
 
 
 # start_kind: da dove si parte nella prima pagina. "join" se si arriva da un link con la stanza,
@@ -496,6 +498,10 @@ func _fighter_page(params: Dictionary) -> Control:
 	_big_crews.alignment = FlowContainer.ALIGNMENT_CENTER
 	_big_crews.add_theme_constant_override("h_separation", UI.GAP_S)
 	left.add_child(_big_crews)
+	_big_skins = HFlowContainer.new()
+	_big_skins.alignment = FlowContainer.ALIGNMENT_CENTER
+	_big_skins.add_theme_constant_override("h_separation", UI.GAP_S)
+	left.add_child(_big_skins)
 	_big_stats = VBoxContainer.new()
 	_big_stats.add_theme_constant_override("separation", UI.GAP_S)
 	left.add_child(_big_stats)
@@ -515,6 +521,7 @@ func _fighter_page(params: Dictionary) -> Control:
 	_character = params.get("char", game.defaultCharacterId)
 	if not game.characters.has(_character):
 		_character = game.defaultCharacterId
+	_skin = str(params.get("skin", ""))
 	_draw_chars()
 	var gap := Control.new()
 	gap.custom_minimum_size = Vector2(0, UI.GAP_L)
@@ -556,6 +563,7 @@ func _draw_chars() -> void:
 		b.set_meta("id", id)
 		b.pressed.connect(func():
 			_character = id
+			_skin = ""
 			_select_cards(_chars, _character)
 			_show_big_fighter())
 		_chars.add_child(b)
@@ -600,7 +608,11 @@ static func face_texture(c: Dictionary) -> Texture2D:
 # La scheda grande: ritratto, nome, statistiche con i numeri e le mosse speciali
 func _show_big_fighter() -> void:
 	var c: Dictionary = game.characters[_character]
-	var tex := face_texture(c)
+	var skins: Dictionary = c.get("skins", {})
+	if not skins.has(_skin):
+		_skin = ""
+	_draw_skins(skins)
+	var tex := face_texture(FighterPose.look(game, _character, _skin))
 	_big_face.texture = tex
 	if tex == null: # senza disegno: un rettangolo, come nei riquadri
 		var img := Image.create(9, 16, false, Image.FORMAT_RGBA8)
@@ -629,6 +641,21 @@ func _show_big_fighter() -> void:
 		_big_stats.add_child(r)
 	_big_moves.text = moves_text(c)
 	_update_summary()
+
+
+# Le skin del lottatore scelto (#339): "Base" e una per skin; niente se non ne ha
+func _draw_skins(skins: Dictionary) -> void:
+	for child in _big_skins.get_children():
+		child.queue_free()
+	if skins.is_empty():
+		return
+	_big_skins.add_child(UI.label("Skin:", UI.SIZE_SMALL, Color(UI.TEXT, 0.8)))
+	for id in [""] + skins.keys():
+		var b := UI.small_button("Base" if id == "" else str(skins[id].name), func():
+			_skin = id
+			_show_big_fighter())
+		UI.set_selected(b, id == _skin)
+		_big_skins.add_child(b)
 
 
 # Il badge di una compagnia: il nome su una pillola del suo colore
@@ -956,6 +983,7 @@ func _choice(bot: String) -> Dictionary:
 		# Contro un bot la stanza è nuova e tua
 		"room": _random_room() if (mode == "training" and _creating) or room == "" else room,
 		"char": _character,
+		"skin": _skin,
 		# Chi entra in una stanza che non c'è ancora la crea con le regole di questa pagina
 		"stage": _new_id("corsa-") if mode == "race" else _stage,
 		"rules": {"mode": mode, "stocks": _stocks.selected + 1, "timeLimitSec": TIMES[_time.selected][0], "friendlyFire": _ff.button_pressed},

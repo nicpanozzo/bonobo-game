@@ -62,6 +62,7 @@ const HitReaction := preload("res://scripts/hit_reaction.gd") # il corpo si pieg
 const SunLight := preload("res://scripts/sun_light.gd") # luce e ombre del sole e della luna (#288)
 static var _screen_px_per_world := 0.0 # pixel dello schermo per pixel di mondo alla telecamera più vicina; 0 = non si sa (headless)
 var _character_sprites := {} # id personaggio -> true quando i suoi sprite sono caricati
+var _looks := {} # "<personaggio>/<skin>" -> il suo disegno (FighterPose.look), #339
 var _supreme_view: Node2D # liana, orsogufo e gnomo della suprema di Bonobot (#102), disegnati sopra i lottatori
 
 
@@ -93,11 +94,11 @@ func setup(game_data: Dictionary) -> void:
 
 # Gli sprite di un personaggio si caricano quando entra in partita, non tutti all'avvio (#320):
 # i fogli di Bonobot da soli occupano centinaia di MB di memoria video
-func _load_character(id: String) -> void:
-	if _character_sprites.has(id) or not game.characters.has(id):
+func _load_character(c: Dictionary) -> void:
+	var id: String = c.get("id", "")
+	if id == "" or _character_sprites.has(id):
 		return
 	_character_sprites[id] = true
-	var c: Dictionary = game.characters[id]
 	if c.get("sprite") == null:
 		return
 	var filter: String = c.sprite.get("filter", "linear")
@@ -114,6 +115,14 @@ func _load_character(id: String) -> void:
 		_textures[id] = states.idle
 	else:
 		_textures[id] = _sprite_texture("res://data/" + c.sprite.path, filter, k)
+
+
+# Il disegno di un giocatore, con la sua skin (#339): si tiene da parte, perché si chiede a ogni frame
+func _look(p: Dictionary) -> Dictionary:
+	var key := "%s/%s" % [p.get("characterId", ""), FighterPose.skin_of(p)]
+	if not _looks.has(key):
+		_looks[key] = FighterPose.look(game, str(p.get("characterId", "")), FighterPose.skin_of(p))
+	return _looks[key]
 
 
 # La texture di uno sprite con il suo filtro: lineare con mipmap per l'illustrato, così rimpicciolito
@@ -462,7 +471,7 @@ func on_snapshot(snap: Dictionary) -> void:
 	buffer.push(snap.t, Time.get_ticks_msec(), snap.players, float(snap.get("stageMs", 0)))
 	predictor.items_present = not snap.get("items", []).is_empty()
 	for p in snap.players:
-		_load_character(str(p.get("characterId", "")))
+		_load_character(_look(p))
 		if p.id == my_id:
 			predictor.on_server(p, Time.get_ticks_msec(), positions.get(my_id, Vector2(NAN, NAN)))
 	player_ids = snap.players.map(func(p): return p.id)
@@ -1510,7 +1519,7 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 	var blink: bool = p.invulnerable and not away and not powered and not _supreme_view.holds(p.id, now)
 	if p.respawning or (blink and int(now / 100) % 2 == 0):
 		return
-	var character: Dictionary = game.characters.get(p.characterId, game.characters[game.defaultCharacterId])
+	var character := _look(p)
 	var head := fh # altezza della testa sopra i piedi: lo sprite può essere più alto del corpo
 	if _textures.has(character.id):
 		# footY (E7 passo 4): i piedi possono stare più su del bordo basso, la testa resta sopra di loro

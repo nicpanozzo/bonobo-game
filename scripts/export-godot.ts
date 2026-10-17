@@ -6,6 +6,7 @@
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { basename, dirname, extname } from "node:path";
 import { fileURLToPath } from "node:url";
+import type { SpriteFolderSpec } from "../src/shared/characters";
 import { CHARACTERS, CREWS, DEFAULT_CHARACTER_ID, isSpriteFolder, resolvedAnimations, SPECIAL_KINDS, SPECIAL_SLOTS, specialAttackSpec, specialsFor, spriteStatePath, supremeAttackSpec } from "../src/shared/characters";
 import { ATTACKS, AUDIO, BIRRA, BONG, CAMERA, FUNGHI, COLORS, EFFECTS, FIGHTER, INPUT, ITEM_RULES, LEDGE, NET, POWERUP, PROTOCOL_VERSION, RUMBLE, SHIELD, TEAM_COLORS, TEAM_NAMES, WORLD } from "../src/shared/constants";
 import { RECONNECT, RECONNECT_HOLD_MS } from "../src/shared/constants";
@@ -64,6 +65,38 @@ function pngSize(file: string): { width: number; height: number } {
 // fotogrammi si ricava dalla larghezza e va in game.json, così Godot non deve aprire i file per saperlo.
 const spriteFiles: string[] = [];
 const spriteErrors: string[] = [];
+
+// Gli stati di uno sprite in formato cartella, con i fotogrammi contati dai PNG e il ripiego già deciso (E7 passo 3).
+// id: di chi è, nei messaggi d'errore (il lottatore, o "lottatore, skin ...")
+function folderSprite(id: string, sprite: SpriteFolderSpec): SpriteFolderSpec {
+  const animations: Record<string, object> = {};
+  for (const [state, a] of Object.entries(sprite.animations)) {
+    const path = spriteStatePath(sprite, state as keyof typeof sprite.animations);
+    if (!existsSync(publicDir + path)) {
+      spriteErrors.push(`${id}: manca public/${path} (lo stato "${state}" è nel blocco del personaggio)`);
+      continue;
+    }
+    const { width, height } = pngSize(publicDir + path);
+    if (height !== sprite.frameHeight || width % sprite.frameWidth !== 0 || width === 0) {
+      spriteErrors.push(`${id}: public/${path} è ${width}×${height}, ma i fotogrammi sono ${sprite.frameWidth}×${sprite.frameHeight}: la larghezza dev'essere un multiplo di ${sprite.frameWidth} e l'altezza ${sprite.frameHeight}`);
+      continue;
+    }
+    const frames = width / sprite.frameWidth;
+    if (a.hitFrame !== undefined && (a.hitFrame < 0 || a.hitFrame >= frames)) {
+      spriteErrors.push(`${id}: hitFrame ${a.hitFrame} di "${state}" è fuori dai ${frames} fotogrammi di public/${path} (si conta da 0)`);
+    }
+    animations[state] = { ...a, frames };
+    spriteFiles.push(path);
+  }
+  // Un PNG nella cartella che il blocco non nomina non si usa: lo si dice, potrebbe essere un nome sbagliato
+  for (const file of existsSync(publicDir + sprite.dir) ? readdirSync(publicDir + sprite.dir) : []) {
+    if (extname(file) === ".png" && file !== "portrait.png" && !Object.hasOwn(sprite.animations, basename(file, ".png"))) {
+      console.warn(`Attenzione: ${sprite.dir}/${file} non è uno stato di ${id} in characters.ts, non si usa`);
+    }
+  }
+  return { ...sprite, animations: resolvedAnimations(animations) as SpriteFolderSpec["animations"] };
+}
+
 const characters: Record<string, unknown> = {};
 for (const [id, spec] of Object.entries(CHARACTERS)) {
   // Le speciali (E10) arrivano già complete: le sue e, per quelle che mancano, DEFAULT_SPECIALS
@@ -93,33 +126,13 @@ for (const [id, spec] of Object.entries(CHARACTERS)) {
     characters[id] = { ...c, sprite: { ...c.sprite, animations: resolvedAnimations(c.sprite.animations) } };
     continue;
   }
-  const sprite = c.sprite;
-  const animations: Record<string, object> = {};
-  for (const [state, a] of Object.entries(sprite.animations)) {
-    const path = spriteStatePath(sprite, state as keyof typeof sprite.animations);
-    if (!existsSync(publicDir + path)) {
-      spriteErrors.push(`${id}: manca public/${path} (lo stato "${state}" è nel blocco del personaggio)`);
-      continue;
-    }
-    const { width, height } = pngSize(publicDir + path);
-    if (height !== sprite.frameHeight || width % sprite.frameWidth !== 0 || width === 0) {
-      spriteErrors.push(`${id}: public/${path} è ${width}×${height}, ma i fotogrammi sono ${sprite.frameWidth}×${sprite.frameHeight}: la larghezza dev'essere un multiplo di ${sprite.frameWidth} e l'altezza ${sprite.frameHeight}`);
-      continue;
-    }
-    const frames = width / sprite.frameWidth;
-    if (a.hitFrame !== undefined && (a.hitFrame < 0 || a.hitFrame >= frames)) {
-      spriteErrors.push(`${id}: hitFrame ${a.hitFrame} di "${state}" è fuori dai ${frames} fotogrammi di public/${path} (si conta da 0)`);
-    }
-    animations[state] = { ...a, frames };
-    spriteFiles.push(path);
-  }
-  // Un PNG nella cartella che il blocco non nomina non si usa: lo si dice, potrebbe essere un nome sbagliato
-  for (const file of existsSync(publicDir + sprite.dir) ? readdirSync(publicDir + sprite.dir) : []) {
-    if (extname(file) === ".png" && file !== "portrait.png" && !Object.hasOwn(sprite.animations, basename(file, ".png"))) {
-      console.warn(`Attenzione: ${sprite.dir}/${file} non è uno stato di ${id} in characters.ts, non si usa`);
-    }
-  }
-  characters[id] = { ...c, sprite: { ...sprite, animations: resolvedAnimations(animations) } };
+  // Le skin (#339): solo un altro disegno, con gli stessi controlli dello sprite del lottatore
+  const skins = Object.fromEntries(Object.entries(spec.skins ?? {}).map(([skin, s]) => {
+    const portraitPath = `${s.sprite.dir}/portrait.png`;
+    if (existsSync(publicDir + portraitPath)) spriteFiles.push(portraitPath);
+    return [skin, { ...s, sprite: folderSprite(`${id}, skin ${skin}`, s.sprite), portrait: existsSync(publicDir + portraitPath) ? portraitPath : undefined }];
+  }));
+  characters[id] = { ...c, sprite: folderSprite(id, c.sprite), skins };
 }
 // Sfondi delle arene (E12 passo 3): ogni file nominato in art deve esserci
 for (const [id, art] of [...Object.entries(STAGES).map(([id, s]) => [id, s.art] as const), ["casuali", RANDOM_STAGE_ART] as const]) {

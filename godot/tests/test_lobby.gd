@@ -98,6 +98,21 @@ func test_scheda_del_lottatore() -> void:
 	lobby.free()
 
 
+func test_skin_del_lottatore() -> void:
+	var lobby := _lobby(false, {"char": "lampione", "skin": "jax"})
+	runner.check(lobby._skin == "jax", "la skin ricordata resta: %s" % lobby._skin)
+	var shown := lobby._big_skins.get_children().filter(func(n): return not n.is_queued_for_deletion()).size()
+	runner.check(shown == 3, "la scritta, Base e Jax: %d" % shown)
+	var c := _last_choice(lobby, lobby._submit)
+	runner.check(c.skin == "jax", "e va nella scelta: %s" % [c])
+	lobby._card(lobby._chars, "bonobot").pressed.emit()
+	runner.check(lobby._skin == "", "un altro lottatore torna all'aspetto base")
+	var look := FighterPose.look(lobby.game, "lampione", "jax")
+	runner.check(look.id == "lampione/jax" and str(look.sprite.dir).ends_with("skins/jax"), "il disegno della skin: %s" % look.id)
+	runner.check(FighterPose.look(lobby.game, "bonobot", "jax").id == "bonobot", "chi non ha la skin resta com'è")
+	lobby.free()
+
+
 func test_entra_con_il_link_incollato() -> void:
 	var lobby := _lobby(false)
 	lobby._room.text = "https://bonobo.example/godot/?room=Amici&server=https%3A%2F%2Fsrv.example"
