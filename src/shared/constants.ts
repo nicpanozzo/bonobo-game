@@ -524,6 +524,12 @@ export const COMPANION = {
   teleportPx: 520, // pixel: più lontano di così torna di colpo accanto al padrone
   lungeSpeed: 800, // pixel/s: lo scatto in avanti del morso, che poi frena
   lungeFriction: 1800, // pixel/s² di frenata dopo lo scatto del morso
+  koPercent: 35, // danni dopo cui va KO
+  hurtHeight: 50, // pixel: alto così per chi lo colpisce, anche se è più basso, sennò i colpi in piedi gli passano sopra
+  koMs: 6000, // ms prima che torni dopo il KO
+  hurtMs: 350, // ms in cui vola via colpito, senza seguire
+  knockBase: 320, // pixel/s di spinta di un colpo
+  knockPerDamage: 22, // pixel/s in più per ogni punto di danno
 };
 
 // Le pozze dell'IRA di Lendmar (#13): la merda che cade su un blocco fa scivolare chi ci passa

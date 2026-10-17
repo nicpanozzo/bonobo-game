@@ -12,10 +12,19 @@ var _target := {} # id del padrone -> {x, y, facing, onGround} dell'ultimo snaps
 var _pos := {} # id -> Vector2 disegnato: va verso il bersaglio, così tra due snapshot non scatta
 var _moving := {} # id -> pixel/frame dell'ultimo spostamento, per far muovere le zampe
 var _biting := {} # id -> true se il compagno sta mordendo (un attacco del padrone in companion.bites, #369 passo 2)
+var _hurt_at := {} # id -> ms in cui ha preso l'ultimo colpo (#369 passo 3): lampeggia rosso
+var _poofs: Array = [] # [{pos, t}]: nuvolette dove un compagno è andato KO
+
+const HURT_MS := 220.0
+const POOF_MS := 600.0
 
 
 # characters: game.characters, per sapere quali attacchi fa il compagno
-func on_snapshot(players: Array, characters: Dictionary = {}) -> void:
+# now: l'orologio in ms (i test lo passano, sennò quello vero)
+func on_snapshot(players: Array, characters: Dictionary = {}, now := -1) -> void:
+	if now < 0:
+		now = Time.get_ticks_msec()
+	var before := _target
 	_target = {}
 	_biting = {}
 	for p in players:
@@ -23,6 +32,11 @@ func on_snapshot(players: Array, characters: Dictionary = {}) -> void:
 		if c is Dictionary:
 			_target[p.id] = c
 			_biting[p.id] = biting(p, characters)
+			if before.has(p.id) and float(c.get("percent", 0)) > float(before[p.id].get("percent", 0)):
+				_hurt_at[p.id] = now
+		elif before.has(p.id) and _pos.has(p.id) and not p.get("respawning", false) and not p.get("eliminated", false):
+			# Il compagno è sparito ma il padrone c'è ancora: è andato KO
+			_poofs.append({"pos": _pos[p.id], "t": now})
 
 
 # Il compagno di p sta facendo il suo attacco in corso? Come biting() in src/shared/physics/companion.ts
@@ -37,11 +51,17 @@ func is_biting(id: String) -> bool:
 	return _biting.get(id, false)
 
 
+func poof_count() -> int:
+	return _poofs.size()
+
+
 func clear() -> void:
 	_target = {}
 	_pos = {}
 	_moving = {}
 	_biting = {}
+	_hurt_at = {}
+	_poofs = []
 
 
 # Dov'è disegnato il compagno di id (per i test e per gli effetti), o null
@@ -54,6 +74,19 @@ func draw(canvas: CanvasItem, now: int) -> void:
 	for id in _pos:
 		var c: Dictionary = _target[id]
 		draw_beagle(canvas, _pos[id], int(c.facing), now, float(_moving[id]) > 0.6, bool(c.get("onGround", true)), is_biting(id))
+		if now - int(_hurt_at.get(id, -100000)) < HURT_MS:
+			canvas.draw_circle(_pos[id] + Vector2(0, -20), 22.0, Color(1, 0.2, 0.15, 0.45))
+	# KO: una nuvoletta grigia che si allarga e svanisce, con tre stelline
+	_poofs = _poofs.filter(func(q): return now - int(q.t) < POOF_MS)
+	for q in _poofs:
+		var k := (now - int(q.t)) / POOF_MS
+		var center: Vector2 = q.pos + Vector2(0, -18 - 20 * k)
+		for i in 5:
+			var a := TAU * i / 5.0
+			canvas.draw_circle(center + Vector2(cos(a), sin(a)) * (10 + 18 * k), 9.0 * (1.0 - k * 0.5), Color(0.85, 0.85, 0.85, 1.0 - k))
+		for i in 3:
+			var a := TAU * i / 3.0 + k * 4.0
+			canvas.draw_circle(center + Vector2(cos(a), sin(a) * 0.4) * 22.0 + Vector2(0, -16), 3.0, Color(1, 0.9, 0.3, 1.0 - k))
 
 
 # Un frame: ognuno va verso il posto dell'ultimo snapshot
