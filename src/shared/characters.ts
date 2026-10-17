@@ -315,6 +315,42 @@ function communitySprite(id: string): SpriteFolderSpec {
   };
 }
 
+// I lottatori dai fogli delle pose a colori (tools/sprite/foglio_a_colori.py): una posa per stato, due per la corsa.
+// Misure del fotogramma e dei piedi come le stampa lo script
+function sheetSprite(id: string, frameWidth: number, frameHeight: number, footY: number): SpriteFolderSpec {
+  return {
+    dir: `assets/characters/${id}`,
+    frameWidth,
+    frameHeight,
+    footY,
+    scale: 0.5, // il foglio è disegnato grande come un disegno a 2x
+    animations: {
+      idle: { fps: 1, loop: true },
+      walk: { fps: 6, loop: true }, // passo e corsa del foglio, alternati
+      jump: { fps: 1, loop: false },
+      fall: { fps: 1, loop: false },
+      light: { fps: 1, loop: false }, // "Side Tilt"
+      heavy: { fps: 1, loop: false }, // "Side Smash"
+      hit: { fps: 1, loop: false }, // nel foglio non c'è: il fermo piegato all'indietro
+      land: { fps: 1, loop: false }, // "Crouch"
+      dash: { fps: 1, loop: false },
+      lightUp: { fps: 1, loop: false },
+      lightDown: { fps: 1, loop: false },
+      lightAir: { fps: 1, loop: false }, // "Neutral Air"
+      heavyUp: { fps: 1, loop: false },
+      heavyDown: { fps: 1, loop: false },
+      heavyAir: { fps: 1, loop: false }, // "Forward Air"
+      recovery: { fps: 1, loop: false }, // "Up Air"
+      shield: { fps: 1, loop: false },
+      grab: { fps: 1, loop: false },
+      throw: { fps: 1, loop: false }, // "Throw (forward)"
+      specialNeutral: { fps: 1, loop: false }, // "Pummel": le mani alla bocca
+      specialDown: { fps: 1, loop: false }, // "Shield", per il contrattacco
+      supreme: { fps: 1, loop: false }, // "Final Smash"
+    },
+  };
+}
+
 // Una suprema "drop" con i tempi di quella di Omar (Bonobot, già provati al playtest #257) e i disegni provvisori
 // fatti da tools/rig/genera_supreme_drop.py in assets/characters/<id>/supreme/<nome>-{cade,a-terra,corre}.png
 function communityDrop(id: string, art: string, name: string, more: Partial<DropSupreme> = {}): DropSupreme {
@@ -601,42 +637,12 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
 
   // Giovanni: bradipo giallo piccoletto, casinista e chiacchierone, suona il basso (anche #335: saltatore, #f5c211).
   // Il disegno è il foglio delle pose di @Marcomunista in #335, una posa per stato (due per la corsa), ritagliate da
-  // tools/sprite/bradipo_dal_foglio.py come per Egiainuso
+  // tools/sprite/foglio_a_colori.py come per Egiainuso (sheetSprite)
   bradipo: {
     id: "bradipo",
     name: "Bradipo Giallo",
     crews: ["lolhardcore"],
-    sprite: {
-      dir: "assets/characters/bradipo",
-      frameWidth: 298,
-      frameHeight: 200,
-      footY: 185,
-      scale: 0.5, // il foglio è disegnato grande come un disegno a 2x
-      animations: {
-        idle: { fps: 1, loop: true },
-        walk: { fps: 6, loop: true }, // passo e corsa del foglio, alternati
-        jump: { fps: 1, loop: false },
-        fall: { fps: 1, loop: false },
-        light: { fps: 1, loop: false }, // "Side Tilt"
-        heavy: { fps: 1, loop: false }, // "Side Smash"
-        hit: { fps: 1, loop: false }, // nel foglio non c'è: il fermo piegato all'indietro
-        land: { fps: 1, loop: false }, // "Crouch"
-        dash: { fps: 1, loop: false },
-        lightUp: { fps: 1, loop: false },
-        lightDown: { fps: 1, loop: false },
-        lightAir: { fps: 1, loop: false }, // "Neutral Air"
-        heavyUp: { fps: 1, loop: false },
-        heavyDown: { fps: 1, loop: false },
-        heavyAir: { fps: 1, loop: false }, // "Forward Air"
-        recovery: { fps: 1, loop: false }, // "Up Air"
-        shield: { fps: 1, loop: false },
-        grab: { fps: 1, loop: false },
-        throw: { fps: 1, loop: false }, // "Throw (forward)"
-        specialNeutral: { fps: 1, loop: false }, // "Pummel": le mani alla bocca, per le Ciacole
-        specialDown: { fps: 1, loop: false }, // "Shield", per il contrattacco
-        supreme: { fps: 1, loop: false }, // "Final Smash"
-      },
-    },
+    sprite: sheetSprite("bradipo", 298, 200, 185),
     // piccolo e leggero, veloce a terra e in aria, salta tanto
     stats: { weight: 0.95, speed: 1.1, airSpeed: 1.1, jump: 1.1 },
     specials: {
@@ -672,9 +678,10 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     id: "marcomunista",
     name: "Marcomunista",
     crews: ["cuamm", "cologna"],
-    sprite: communitySprite("marcomunista"),
-    // leggero e fluttuante: lento a terra, agile in aria
-    stats: { weight: 0.95, speed: 0.95, airSpeed: 1.05, jump: 1.05, gravity: 0.95 },
+    // Il disegno è il suo foglio delle pose in #352, ritagliato da tools/sprite/foglio_a_colori.py come Bradipo Giallo
+    sprite: sheetSprite("marcomunista", 304, 196, 182),
+    // #352: "pesante". Pesa e cade di più, più lento a terra e in aria
+    stats: { weight: 1.05, speed: 0.88, airSpeed: 0.9, jump: 0.92, gravity: 1.08 },
     specials: {
       // gira una canna mentre para; tiro e scatto restano quelli di base finché la scheda non li dice
       down: { type: "counter", name: "Rolling", startupMs: 60, windowMs: 420, endLagMs: 460, minDamage: 8, multiplier: 1.3, range: 60, height: 60, baseKnockback: 440, knockbackGrowth: 9, angleDeg: 40 },
