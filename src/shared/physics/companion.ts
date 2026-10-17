@@ -18,6 +18,16 @@ export interface Companion {
 
 export const companionOf = (characterId: string): CompanionSpec | null => getCharacter(characterId).companion ?? null;
 
+// Il compagno sta facendo l'attacco in corso di f? (il beagle morde negli attacchi base, #369 passo 2)
+export const biting = (f: Fighter): boolean => !!f.pet && !!f.attack && !!companionOf(f.characterId)?.bites.includes(f.attack);
+
+// Il rettangolo del morso: davanti al compagno, alto quanto lui
+export function biteBox(f: Fighter, range: number, height: number): { x: number; y: number; w: number; h: number } {
+  const c = f.pet!;
+  const half = (companionOf(f.characterId)?.width ?? 0) / 2;
+  return { x: c.facing === 1 ? c.x + half : c.x - half - range, y: c.y - height, w: range, h: height };
+}
+
 // Accanto a f, un po' dietro: lì aspetta
 const homeX = (f: Fighter) => f.x - f.facing * COMPANION.gapPx;
 
@@ -45,6 +55,14 @@ export function stepCompanion(f: Fighter, dtMs: number, ctx: PhysicsContext): vo
     f.pet = placeBeside(f);
     return;
   }
+  // Il morso: all'inizio dell'attacco scatta in avanti dalla parte in cui guarda f, poi frena
+  if (biting(f)) {
+    c.facing = f.facing;
+    if (f.attackTimer < dtMs) c.vx = f.facing * COMPANION.lungeSpeed;
+    else c.vx = Math.sign(c.vx) * Math.max(0, Math.abs(c.vx) - COMPANION.lungeFriction * dt);
+    move(c, spec, f, dt, ctx);
+    return;
+  }
   // Corre verso il suo posto e si ferma vicino; in aria va più piano
   const want = Math.abs(dx) < COMPANION.slackPx ? 0 : Math.sign(dx) * FIGHTER.groundSpeed * spec.speed;
   const accel = (c.onGround ? COMPANION.groundAccel : COMPANION.airAccel) * dt;
@@ -53,6 +71,10 @@ export function stepCompanion(f: Fighter, dtMs: number, ctx: PhysicsContext): vo
   else if (Math.abs(f.x - c.x) > 4) c.facing = f.x > c.x ? 1 : -1;
   // Salta se f è più in alto, su una piattaforma
   if (c.onGround && (f.onGround && c.y - f.y > COMPANION.jumpIfAbovePx)) c.vy = -spec.jump;
+  move(c, spec, f, dt, ctx);
+}
+
+function move(c: Companion, spec: CompanionSpec, f: Fighter, dt: number, ctx: PhysicsContext) {
   c.vy = Math.min(FIGHTER.maxFallSpeed, c.vy + FIGHTER.gravity * dt);
   const prevY = c.y;
   c.x += c.vx * dt;

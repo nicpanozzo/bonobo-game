@@ -2,7 +2,7 @@
 // Cambiano aspetto e statistiche (E11 passo B); le mosse proprie arrivano con le speciali (E10).
 
 import { CHARACTER_STATS, CHARGE_EXAMPLE, DEFAULT_SPECIALS, FIGHTER, RECOVERY, type AttackSpec } from "./constants";
-import type { SpecialKind } from "./types";
+import type { AttackKind, SpecialKind } from "./types";
 
 // Gli stati che ogni lottatore con sprite deve avere
 export const ANIMATION_NAMES = ["idle", "walk", "jump", "fall", "light", "heavy", "hit"] as const;
@@ -341,6 +341,7 @@ export interface CompanionSpec {
   height: number;
   speed: number; // corsa, in multipli di FIGHTER.groundSpeed
   jump: number; // pixel/s verso l'alto quando salta
+  bites: AttackKind[]; // attacchi del padrone che fa il compagno, partendo da dove è lui (#369 passo 2)
 }
 
 export interface CharacterSpec {
@@ -723,7 +724,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     // pesante, salto esplosivo, bravo negli scatti brevi ma poco agile in aria
     stats: { weight: 1.1, jump: 1.15, speed: 1.05, airSpeed: 0.9 },
     // dalla scheda: "un beagle che fa gli attacchi base" (#369). TODO community: il nome del cane
-    companion: { name: "Beagle", width: 44, height: 30, speed: 1.2, jump: 900 },
+    companion: { name: "Beagle", width: 44, height: 30, speed: 1.2, jump: 900, bites: ["light", "heavy"] },
     // dalla scheda: "snaack", allunga il braccio, afferra e scaraventa giù (#358)
     supreme: {
       type: "grab",
