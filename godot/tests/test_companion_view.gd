@@ -39,3 +39,13 @@ func test_lampeggia_se_colpito_e_fa_la_nuvoletta_al_ko() -> void:
 	runner.check(view.poof_count() == 1, "sparito col padrone in gioco: KO")
 	view.on_snapshot([{"id": "a", "respawning": true}], {}, 150)
 	runner.check(view.poof_count() == 1, "chi esce dall'arena non fa altre nuvolette")
+
+
+func test_si_schiaccia_quando_lampione_ci_rimbalza_sopra() -> void:
+	var view: RefCounted = preload("res://scripts/companion_view.gd").new()
+	var dog := {"x": 100, "y": 500, "facing": 1, "onGround": true, "percent": 0}
+	view.on_snapshot([{"id": "a", "x": 100, "y": 470, "vy": 0, "companion": dog}], {}, 0)
+	runner.check(not view.bounced_recently("a", 0), "fermo sopra di lui non conta")
+	view.on_snapshot([{"id": "a", "x": 105, "y": 460, "vy": -1000, "companion": dog}], {}, 20)
+	runner.check(view.bounced_recently("a", 40), "schizza su appena sopra: rimbalzo")
+	runner.check(not view.bounced_recently("a", 400), "dopo un po' torna normale")

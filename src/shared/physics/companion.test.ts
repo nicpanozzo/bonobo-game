@@ -163,3 +163,32 @@ describe("il beagle si può colpire (#369 passo 3)", () => {
     assert.equal(a.pet!.percent, 0, "senza danni");
   });
 });
+
+describe("il beagle fa da trampolino (#369 passo 4)", () => {
+  // Lampione sopra il beagle che aspetta a terra, poi si lascia cadere
+  function dropOnDog(keys: Partial<ReturnType<typeof emptyInput>> = {}) {
+    const { ctx, f } = setup();
+    const c = f.pet!;
+    f.x = c.x;
+    f.y = c.y - 90; // sotto la piattaforma sopra il punto di partenza
+    f.vy = 0;
+    f.onGround = false;
+    f.input = { ...emptyInput(), ...keys };
+    let minVy = 0;
+    for (let i = 0; i < 40; i++) {
+      run([f], ctx, 1);
+      minVy = Math.min(minVy, f.vy);
+    }
+    return { f, minVy };
+  }
+
+  it("Lampione che gli cade sopra rimbalza in alto", () => {
+    const { minVy } = dropOnDog();
+    assert.ok(minVy <= -COMPANION.bounceVy + 50, `velocità verso l'alto ${Math.round(minVy)}`);
+  });
+
+  it("tenendo giù non rimbalza", () => {
+    const { minVy } = dropOnDog({ down: true });
+    assert.ok(minVy > -100, `velocità verso l'alto ${Math.round(minVy)}`);
+  });
+});

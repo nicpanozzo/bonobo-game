@@ -1,6 +1,7 @@
 // Il compagno di un lottatore (#369), per ora il beagle di Lampione: lo segue da solo, corre,
 // salta sulle piattaforme e cade. Se resta troppo indietro o esce dall'arena torna accanto a lui.
 // Si può colpire: con abbastanza danni va KO e torna dopo un po' (passo 3).
+// Fa da trampolino: il padrone che gli cade sopra rimbalza in alto, una volta per salto (passo 4).
 
 import { getCharacter, type CompanionSpec } from "../characters";
 import { COMPANION, FIGHTER } from "../constants";
@@ -19,6 +20,7 @@ export interface Companion {
   percent: number; // danni presi: a COMPANION.koPercent va KO
   hurtMs: number; // ms in cui vola via dopo un colpo, senza seguire il padrone
   koMs: number; // ms prima che torni dopo il KO; 0 = in gioco
+  bounced: boolean; // il padrone ci è già rimbalzato sopra in questo salto
 }
 
 export const companionOf = (characterId: string): CompanionSpec | null => getCharacter(characterId).companion ?? null;
@@ -37,7 +39,7 @@ export function biteBox(f: Fighter, range: number, height: number): { x: number;
 const homeX = (f: Fighter) => f.x - f.facing * COMPANION.gapPx;
 
 function placeBeside(f: Fighter): Companion {
-  return { x: homeX(f), y: f.y, vx: 0, vy: 0, facing: f.facing, onGround: f.onGround, lunged: false, percent: 0, hurtMs: 0, koMs: 0 };
+  return { x: homeX(f), y: f.y, vx: 0, vy: 0, facing: f.facing, onGround: f.onGround, lunged: false, percent: 0, hurtMs: 0, koMs: 0, bounced: false };
 }
 
 // Torna accanto al padrone tenendosi i danni
@@ -70,6 +72,7 @@ export function stepCompanion(f: Fighter, dtMs: number, ctx: PhysicsContext): vo
     sendHome(f, c);
     return;
   }
+  bounce(f, c, spec, dt);
   // Colpito: vola via per un po', poi torna a seguire
   if (c.hurtMs > 0) {
     c.hurtMs -= dtMs;
@@ -88,7 +91,9 @@ export function stepCompanion(f: Fighter, dtMs: number, ctx: PhysicsContext): vo
   }
   c.lunged = false;
   // Corre verso il suo posto e si ferma vicino; in aria va più piano
-  const want = Math.abs(dx) < COMPANION.slackPx ? 0 : Math.sign(dx) * FIGHTER.groundSpeed * spec.speed;
+  // Mentre il padrone salta lì vicino aspetta fermo: così gli può ricadere sopra (trampolino)
+  const wait = Math.abs(dx) < COMPANION.slackPx || (!f.onGround && Math.abs(f.x - c.x) < COMPANION.waitAirPx);
+  const want = wait ? 0 : Math.sign(dx) * FIGHTER.groundSpeed * spec.speed;
   const accel = (c.onGround ? COMPANION.groundAccel : COMPANION.airAccel) * dt;
   c.vx += Math.max(-accel, Math.min(accel, want - c.vx));
   if (Math.abs(c.vx) > 1) c.facing = c.vx > 0 ? 1 : -1;
@@ -121,6 +126,20 @@ function land(c: Companion, prevY: number, half: number, drop: boolean, ctx: Phy
       return;
     }
   }
+}
+
+// Il trampolino: f che scende sulla schiena del compagno fermo a terra rimbalza in alto e riprende un salto.
+// Tenendo giù ci si posa senza rimbalzare
+function bounce(f: Fighter, c: Companion, spec: CompanionSpec, dt: number) {
+  if (f.onGround) c.bounced = false;
+  if (c.bounced || !c.onGround || c.hurtMs > 0 || f.onGround || f.vy <= 0 || f.input.down || f.ledge) return;
+  const top = c.y - spec.height;
+  const prevY = f.y - f.vy * dt;
+  if (Math.abs(f.x - c.x) > spec.width / 2 + FIGHTER.width / 4 || f.y < top || prevY > top + COMPANION.bounceSlackPx) return;
+  f.y = top;
+  f.vy = -COMPANION.bounceVy;
+  f.jumpsLeft = Math.max(f.jumpsLeft, 1);
+  c.bounced = true;
 }
 
 // Un colpo di attacker col rettangolo box tocca i compagni degli altri? Prendono danni e volano via;
