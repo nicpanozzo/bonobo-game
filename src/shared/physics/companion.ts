@@ -14,6 +14,7 @@ export interface Companion {
   vy: number;
   facing: 1 | -1;
   onGround: boolean;
+  lunged: boolean; // nel morso in corso ha già scattato
 }
 
 export const companionOf = (characterId: string): CompanionSpec | null => getCharacter(characterId).companion ?? null;
@@ -32,7 +33,7 @@ export function biteBox(f: Fighter, range: number, height: number): { x: number;
 const homeX = (f: Fighter) => f.x - f.facing * COMPANION.gapPx;
 
 function placeBeside(f: Fighter): Companion {
-  return { x: homeX(f), y: f.y, vx: 0, vy: 0, facing: f.facing, onGround: f.onGround };
+  return { x: homeX(f), y: f.y, vx: 0, vy: 0, facing: f.facing, onGround: f.onGround, lunged: false };
 }
 
 // Un tick del compagno di f, dopo che f si è mosso
@@ -58,11 +59,14 @@ export function stepCompanion(f: Fighter, dtMs: number, ctx: PhysicsContext): vo
   // Il morso: all'inizio dell'attacco scatta in avanti dalla parte in cui guarda f, poi frena
   if (biting(f)) {
     c.facing = f.facing;
-    if (f.attackTimer < dtMs) c.vx = f.facing * COMPANION.lungeSpeed;
-    else c.vx = Math.sign(c.vx) * Math.max(0, Math.abs(c.vx) - COMPANION.lungeFriction * dt);
+    if (!c.lunged && f.smashChargeMs < 0) {
+      c.vx = f.facing * COMPANION.lungeSpeed; // caricando il pesante aspetta, scatta quando parte il colpo
+      c.lunged = true;
+    } else c.vx = Math.sign(c.vx) * Math.max(0, Math.abs(c.vx) - COMPANION.lungeFriction * dt);
     move(c, spec, f, dt, ctx);
     return;
   }
+  c.lunged = false;
   // Corre verso il suo posto e si ferma vicino; in aria va più piano
   const want = Math.abs(dx) < COMPANION.slackPx ? 0 : Math.sign(dx) * FIGHTER.groundSpeed * spec.speed;
   const accel = (c.onGround ? COMPANION.groundAccel : COMPANION.airAccel) * dt;

@@ -97,6 +97,19 @@ describe("i morsi del beagle negli attacchi base (#369 passo 2)", () => {
     assert.equal(hits.length, 1);
   });
 
+  it("mentre carica il pesante il beagle aspetta, poi scatta", () => {
+    const ctx: PhysicsContext = { stage, events: [] };
+    const a = createFighter({ id: "p0", name: "P0", characterId: "lampione", color: 0, team: 0, index: 0, stocks: 3 }, stage);
+    run([a], ctx, 30);
+    const x0 = a.pet!.x;
+    a.input = { ...emptyInput(), heavy: true };
+    run([a], ctx, 30);
+    assert.ok(Math.abs(a.pet!.x - x0) < 20, `fermo durante la carica: da ${Math.round(x0)} a ${Math.round(a.pet!.x)}`);
+    a.input = emptyInput();
+    run([a], ctx, 6);
+    assert.ok(a.pet!.x - x0 > 20, "lasciato il tasto scatta");
+  });
+
   it("gli altri attacchi restano di Lampione", () => {
     const { a } = duel("lampione", 400);
     a.attack = "lightAir";
