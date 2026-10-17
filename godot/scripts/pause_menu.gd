@@ -11,8 +11,10 @@ var _note: Label
 var _dim: Control
 var _in_options := false
 var _options_button: Button
+var _moves_button: Button
 var _report := {} # dati della partita per il tasto Segnala (#214)
 
+const MoveList := preload("res://scripts/move_list.gd")
 const ISSUES_URL := "https://github.com/nicpanozzo/bonobo-game/issues/new"
 
 
@@ -30,6 +32,8 @@ func setup(s: Settings, room_link: String, report := {}) -> void:
 	box.add_child(resume_button)
 	_options_button = UI.button("Opzioni", _open_options)
 	box.add_child(_options_button)
+	_moves_button = UI.button("Mosse del lottatore", _open_moves)
+	box.add_child(_moves_button)
 	box.add_child(UI.button("Copia link della stanza", func():
 		UI.copy(link)
 		_note.text = "Link copiato: incollalo sul Discord"))
@@ -95,6 +99,32 @@ func _open_options() -> void:
 		_in_options = false
 		_dim.show()
 		_options_button.grab_focus())
+
+
+# La lista delle mosse (move_list.gd) del mio lottatore, con i tasti del pad se ce n'è uno collegato
+func _open_moves() -> void:
+	var game = JSON.parse_string(FileAccess.get_file_as_string("res://data/game.json"))
+	if not game is Dictionary:
+		return
+	_in_options = true
+	_dim.hide()
+	var pad := not Input.get_connected_joypads().is_empty()
+	var keys := MoveList.keys_for(settings, pad, Settings.pad_kind(Input.get_joy_name(0)) if pad else "xbox")
+	var moves := MoveList.new()
+	add_child(moves)
+	moves.setup(game, my_character(_report), keys)
+	moves.closed.connect(func():
+		_in_options = false
+		_dim.show()
+		_moves_button.grab_focus())
+
+
+# Il personaggio di chi apre il menu, dai giocatori dell'ultimo snapshot
+static func my_character(report: Dictionary) -> String:
+	for p in report.get("players", []):
+		if p is Dictionary and p.get("id") == report.get("me"):
+			return str(p.get("characterId", ""))
+	return ""
 
 
 # Esc, B o Start riprendono la partita
