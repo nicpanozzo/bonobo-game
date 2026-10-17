@@ -221,7 +221,7 @@ const DISCORD_LINK = /https:\/\/(?:www\.)?(?:discord\.com|discordapp\.com|discor
 const SEDUTA_BODY = /^[ \t]*Ordine del giorno[ \t]*:/im;
 const POLL_LINE = /^[ \t]*Sondaggio[ \t]*:.*$/im;
 const TRUSTED = ['OWNER', 'MEMBER', 'COLLABORATOR'];
-const SEDUTA_HOURS = 48;
+const SEDUTA_HOURS = 6; // Nicola, 17 ottobre 2026: le sedute durano poco, se no ci si dimentica
 // Limiti di Discord: caratteri della domanda e di ogni risposta
 const MAX_QUESTION = 300;
 const MAX_ANSWER = 55;
