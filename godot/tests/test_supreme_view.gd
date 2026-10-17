@@ -51,3 +51,13 @@ func test_numeri_della_suprema_per_personaggio() -> void:
 	runner.check(own.get("outward", false) == true, "Bonobot: Omar, ad area")
 	var base: Dictionary = FighterPose.attack_spec(game, "default", "supreme")
 	runner.check(base == game.attacks.supreme, "gli altri: la suprema di base")
+
+
+func test_supreme_della_community_con_i_disegni() -> void:
+	var game := _game()
+	for id in ["giovannifrana", "coachcartier"]:
+		var sp: Dictionary = game.characters[id].supreme
+		runner.check(sp.type == "drop", "%s: suprema che cade dall'alto" % id)
+		for key in ["falling", "landed", "runner"]:
+			var path := "res://data/%s/%s" % [sp.art.dir, sp.art[key]]
+			runner.check(load(path) is Texture2D, "%s: c'è il disegno %s" % [id, key])
