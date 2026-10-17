@@ -2,6 +2,7 @@
 // world_view.gd disegna tutto con questo materiale; uno sprite da ricolorare arriva con il rosso del
 // modulate oltre 1 (2 + spostamento della tinta, da 0 a 1), che nessun altro disegno usa.
 // I pixel quasi grigi (contorni, bianchi, neri) restano com'erano.
+// Il verde oltre 1 (2 + quanto, da 0 a 1) schiarisce lo sprite verso il bianco: il lampo del colpo caricato.
 shader_type canvas_item;
 
 varying vec4 tint;
@@ -24,12 +25,19 @@ vec3 hsv2rgb(vec3 c) {
 }
 
 void fragment() {
-	if (tint.r > 1.5) {
+	if (tint.r > 1.5 || tint.g > 1.5) {
 		vec4 tex = texture(TEXTURE, UV);
-		vec3 hsv = rgb2hsv(tex.rgb);
-		if (hsv.y > 0.2) {
-			hsv.x = fract(hsv.x + tint.r - 2.0);
+		vec3 rgb = tex.rgb;
+		if (tint.r > 1.5) {
+			vec3 hsv = rgb2hsv(rgb);
+			if (hsv.y > 0.2) {
+				hsv.x = fract(hsv.x + tint.r - 2.0);
+			}
+			rgb = hsv2rgb(hsv);
 		}
-		COLOR = vec4(hsv2rgb(hsv), tex.a * tint.a);
+		if (tint.g > 1.5) {
+			rgb = mix(rgb, vec3(1.0, 0.97, 0.85), clamp(tint.g - 2.0, 0.0, 1.0));
+		}
+		COLOR = vec4(rgb, tex.a * tint.a);
 	}
 }

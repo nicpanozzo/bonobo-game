@@ -157,6 +157,8 @@ describe("attacchi", () => {
   it("hitstop: dopo il colpo attaccante e bersaglio restano fermi, poi il bersaglio vola", () => {
     const { ctx, fighters, a, b } = facingPair();
     press(a, { heavy: true });
+    run(fighters, ctx, 1);
+    press(a, {}); // lasciato subito: senza carica
     let ticks = 0;
     while (ofType(ctx.events, "hit").length === 0 && ticks++ < 60) run(fighters, ctx, 1);
     assert.equal(ofType(ctx.events, "hit").length, 1, "il pesante è entrato");

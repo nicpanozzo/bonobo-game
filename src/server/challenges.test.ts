@@ -38,7 +38,7 @@ function juggler(me: Fighter, target: Fighter, tick: number) {
   if (Math.abs(dx) > 20) input[dx > 0 ? "right" : "left"] = true;
   if (target.onGround) {
     input.up = input.jump = Math.abs(dx) < 70;
-    input.heavy = tick % 2 === 0 && Math.abs(dx) < 70;
+    input.heavy = tick % 2 === 0 && !me.attack && Math.abs(dx) < 70; // premuto e lasciato: niente colpo caricato
   } else {
     input.up = input.jump = dy < -90 && tick % 6 === 0;
     input.light = tick % 2 === 0 && Math.abs(dy) < 120;

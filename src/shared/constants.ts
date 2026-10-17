@@ -124,6 +124,14 @@ export const ATTACKS: Record<Exclude<AttackKind, SpecialKind>, AttackSpec> = {
   supreme: { damage: 20, baseKnockback: 620, knockbackGrowth: 12, startupMs: 350, activeMs: 200, cooldownMs: 1000, range: 190, height: 130, angleDeg: 45, boxX: -60, boxY: -130 },
 };
 
+// Colpi caricati alla Smash: il pesante a terra (anche su e giù) tenuto premuto si ferma all'inizio e si carica,
+// al rilascio parte più forte. Come gli smash attack di Smash Ultimate (fino a 1.4 dopo un secondo)
+export const SMASH_CHARGE = {
+  maxMs: 1000, // ms di carica massima: arrivati qui il colpo parte da solo
+  maxMultiplier: 1.4, // danno e knockback a carica piena (cresce in modo lineare da 1)
+  kinds: ["heavy", "heavyUp", "heavyDown"] as AttackKind[], // gli attacchi che si caricano, solo da terra
+};
+
 // Barra della suprema (#101): da 0 a max. Valori provvisori pensati per arrivare piena circa una volta per vita
 // (come la Final Smash con la barra in Smash Ultimate): in una vita si danno e si prendono circa 100 punti di percentuale
 // in circa un minuto, cioè 100 * 0.5 + 100 * 0.3 + 60 * 0.3 = 98. Da rivedere al playtest (#22)

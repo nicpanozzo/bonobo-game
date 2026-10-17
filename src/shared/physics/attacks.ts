@@ -1,7 +1,7 @@
 // Attacchi: inizio, finestra attiva, hitbox e cosa succede a chi viene colpito.
 
 import { characterStats, getCharacter, SPECIAL_KINDS, specialAttackSpec, specialsFor, supremeAttackSpec, type SpecialSlot } from "../characters";
-import { ATTACKS, BIRRA, FIGHTER, HITSTOP, HITSTUN_PER_KNOCKBACK, POWERUP, type AttackSpec } from "../constants";
+import { ATTACKS, BIRRA, FIGHTER, HITSTOP, HITSTUN_PER_KNOCKBACK, POWERUP, SMASH_CHARGE, type AttackSpec } from "../constants";
 import type { AttackKind, SpecialKind } from "../types";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
 import { clearStun, hitShield } from "./shield";
@@ -12,7 +12,11 @@ export function tryStartAttack(f: Fighter, ctx: PhysicsContext): void {
   if (f.hitstun || f.attack || f.cooldownTimer > 0 || f.helpless || f.dodgeTimer > 0) return;
   if (tryStartSupreme(f, ctx)) return; // #101: solo con la barra piena
   if (pressed(f, "special")) tryStartSpecial(f, ctx); // E10
-  else if (pressed(f, "heavy")) startAttack(f, variant(f, "heavy"), ctx);
+  else if (pressed(f, "heavy")) {
+    const kind = variant(f, "heavy");
+    startAttack(f, kind, ctx);
+    if (f.onGround && SMASH_CHARGE.kinds.includes(kind)) f.smashChargeMs = 0; // tenendo premuto si carica
+  }
   else if (pressed(f, "light")) startAttack(f, variant(f, "light"), ctx);
 }
 
@@ -34,7 +38,8 @@ export function attackSpecFor(f: Fighter, kind: AttackKind | null = f.attack): A
   if (kind === "supreme") return supremeAttackSpec(f.characterId) ?? ATTACKS.supreme; // #102: la sua, se ce l'ha
   const base = ATTACKS[kind ?? "light"];
   const recovery = kind === "recovery" ? getCharacter(f.characterId).recovery : undefined;
-  return recovery ? { ...base, ...recovery } : base;
+  const spec = recovery ? { ...base, ...recovery } : base;
+  return kind === f.attack && f.chargeMultiplier !== 1 ? charged(spec, f.chargeMultiplier) : spec; // colpo caricato
 }
 
 export const isSpecialKind = (kind: AttackKind): kind is SpecialKind => kind.startsWith("special");
@@ -61,6 +66,7 @@ export function startAttack(f: Fighter, kind: AttackKind, ctx: PhysicsContext) {
   f.attack = kind;
   f.attackTimer = 0;
   f.chargeMultiplier = 1; // solo il rilascio della carica lo cambia, dopo questa chiamata
+  if (f.smashChargeMs >= 0) endSmashCharge(f);
   f.cooldownTimer = attackSpecFor(f, kind).cooldownMs;
   f.alreadyHit.clear();
   consume(f, "light", "heavy", "special"); // anche il recupero, l'attacco dal bordo e le speciali passano da qui
@@ -70,8 +76,10 @@ export function startAttack(f: Fighter, kind: AttackKind, ctx: PhysicsContext) {
 export function updateAttack(f: Fighter, dtMs: number): void {
   if (!f.attack) {
     f.attackActive = false;
+    if (f.smashChargeMs >= 0) endSmashCharge(f); // colpiti, presi o finiti fuori mentre si caricava
     return;
   }
+  if (f.smashChargeMs >= 0 && smashCharging(f, dtMs)) return;
   const spec = attackSpecFor(f);
   f.attackTimer += dtMs;
   f.attackActive = f.attackTimer >= spec.startupMs && f.attackTimer < spec.startupMs + spec.activeMs;
@@ -79,6 +87,26 @@ export function updateAttack(f: Fighter, dtMs: number): void {
     f.attack = null;
     f.attackActive = false;
   }
+}
+
+// Il pesante tenuto premuto (SMASH_CHARGE): il colpo resta fermo prima dell'avvio finché si tiene il tasto,
+// fino a maxMs. true se si sta ancora caricando. Al rilascio danno e knockback crescono con la carica
+function smashCharging(f: Fighter, dtMs: number): boolean {
+  if (f.input.heavy && f.smashChargeMs < SMASH_CHARGE.maxMs) {
+    f.smashChargeMs = Math.min(SMASH_CHARGE.maxMs, f.smashChargeMs + dtMs);
+    f.charge = Math.round((f.smashChargeMs / SMASH_CHARGE.maxMs) * 100) / 100;
+    f.cooldownTimer += dtMs; // l'attesa dopo il colpo conta dal rilascio
+    f.attackActive = false;
+    return true;
+  }
+  f.chargeMultiplier = 1 + (SMASH_CHARGE.maxMultiplier - 1) * (f.smashChargeMs / SMASH_CHARGE.maxMs);
+  endSmashCharge(f);
+  return false;
+}
+
+function endSmashCharge(f: Fighter): void {
+  f.smashChargeMs = -1;
+  f.charge = 0;
 }
 
 type Box = { x: number; y: number; w: number; h: number };

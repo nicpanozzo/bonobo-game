@@ -49,11 +49,31 @@ static func variant_ranks(players: Array) -> Dictionary:
 	return ranks
 
 
-# Il modulate dello sprite: con una variante il rosso oltre 1 dice allo shader di quanto spostare la tinta
-static func sprite_modulate(variant: int, alpha: float) -> Color:
+# Il modulate dello sprite: con una variante il rosso oltre 1 dice allo shader di quanto spostare la tinta,
+# con flash (da 0 a 1) il verde oltre 1 gli dice di quanto schiarirlo verso il bianco
+static func sprite_modulate(variant: int, alpha: float, flash := 0.0) -> Color:
+	var g := 2.0 + clampf(flash, 0.0, 1.0) if flash > 0.0 else 1.0
 	if variant <= 0:
-		return Color(1, 1, 1, alpha)
-	return Color(2.0 + VARIANT_HUES[(variant - 1) % VARIANT_HUES.size()], 1, 1, alpha)
+		return Color(1, g, 1, alpha)
+	return Color(2.0 + VARIANT_HUES[(variant - 1) % VARIANT_HUES.size()], g, 1, alpha)
+
+
+# Il colpo caricato (SMASH_CHARGE): il pesante a terra tenuto, cioè un attacco in corso con la carica sopra zero.
+# La carica della speciale (E10) invece arriva senza attacco
+static func smash_charging(p: Dictionary) -> bool:
+	return p.get("attack") != null and float(p.get("charge", 0.0)) > 0.0
+
+
+# Quanto lampeggia lo sprite di chi carica, come in Smash: più veloce e più forte man mano che si carica.
+# Con meno lampi (accessibilità) resta un bagliore fermo
+static func charge_flash(p: Dictionary, now: float, calm: bool) -> float:
+	if not smash_charging(p):
+		return 0.0
+	var charge := clampf(float(p.charge), 0.0, 1.0)
+	if calm:
+		return 0.2 + 0.2 * charge
+	var hz := 4.0 + 8.0 * charge
+	return (0.5 + 0.5 * sin(now / 1000.0 * TAU * hz)) * (0.25 + 0.5 * charge)
 
 
 # I numeri di un attacco per un personaggio, come attackSpecFor() in src/shared/physics/attacks.ts:
