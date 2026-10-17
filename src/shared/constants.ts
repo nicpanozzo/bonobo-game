@@ -132,6 +132,16 @@ export const SMASH_CHARGE = {
   kinds: ["heavy", "heavyUp", "heavyDown"] as AttackKind[], // gli attacchi che si caricano, solo da terra
 };
 
+// Combo di leggeri (jab di Smash): a terra il leggero premuto di nuovo subito dopo il primo continua la combo,
+// anche durante l'attesa del colpo. Il secondo tiene vicino, il terzo è il finale che lancia
+export const JAB = {
+  windowMs: 220, // ms dopo la fine di un colpo della combo in cui il leggero premuto fa il colpo dopo
+  steps: [
+    { damage: 3, baseKnockback: 150, knockbackGrowth: 1, startupMs: 40, activeMs: 90, cooldownMs: 280, range: 54, height: 30, angleDeg: 20 }, // il secondo: tiene vicino
+    { damage: 6, baseKnockback: 380, knockbackGrowth: 6.5, startupMs: 70, activeMs: 110, cooldownMs: 420, range: 64, height: 40, angleDeg: 38 }, // il finale: lancia
+  ] as AttackSpec[],
+};
+
 // Barra della suprema (#101): da 0 a max. Valori provvisori pensati per arrivare piena circa una volta per vita
 // (come la Final Smash con la barra in Smash Ultimate): in una vita si danno e si prendono circa 100 punti di percentuale
 // in circa un minuto, cioè 100 * 0.5 + 100 * 0.3 + 60 * 0.3 = 98. Da rivedere al playtest (#22)
