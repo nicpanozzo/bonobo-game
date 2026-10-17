@@ -1,0 +1,103 @@
+# Il compagno di un lottatore (#369), il beagle di Lampione: disegnato col codice, con la stessa linea scura
+# degli altri disegni provvisori. Solo disegno: dove è e dove guarda arrivano dallo snapshot (PlayerState.companion).
+extends RefCounted
+
+const INK := Color("221c1a")
+const WHITE := Color("f4efe6")
+const TAN := Color("c8843c")
+const BLACK := Color("2b2522")
+const EAR := Color("8a4f22")
+
+var _target := {} # id del padrone -> {x, y, facing, onGround} dell'ultimo snapshot
+var _pos := {} # id -> Vector2 disegnato: va verso il bersaglio, così tra due snapshot non scatta
+var _moving := {} # id -> pixel/frame dell'ultimo spostamento, per far muovere le zampe
+
+
+func on_snapshot(players: Array) -> void:
+	_target = {}
+	for p in players:
+		var c: Variant = p.get("companion")
+		if c is Dictionary:
+			_target[p.id] = c
+
+
+func clear() -> void:
+	_target = {}
+	_pos = {}
+	_moving = {}
+
+
+# Dov'è disegnato il compagno di id (per i test e per gli effetti), o null
+func position_of(id: String) -> Variant:
+	return _pos.get(id)
+
+
+func draw(canvas: CanvasItem, now: int) -> void:
+	advance()
+	for id in _pos:
+		var c: Dictionary = _target[id]
+		draw_beagle(canvas, _pos[id], int(c.facing), now, float(_moving[id]) > 0.6, bool(c.get("onGround", true)))
+
+
+# Un frame: ognuno va verso il posto dell'ultimo snapshot
+func advance() -> void:
+	for id in _pos.keys():
+		if not _target.has(id):
+			_pos.erase(id)
+			_moving.erase(id)
+	for id in _target:
+		var c: Dictionary = _target[id]
+		var target := Vector2(float(c.x), float(c.y))
+		var pos: Vector2 = _pos.get(id, target)
+		var next := target if pos.distance_to(target) > 200 else pos.lerp(target, 0.5)
+		_moving[id] = absf(next.x - pos.x)
+		_pos[id] = next
+
+
+# Il beagle di profilo, piedi in base: bianco sotto, sella nera e testa marrone con l'orecchio lungo
+static func draw_beagle(canvas: CanvasItem, base: Vector2, facing: int, now: int, moving: bool, on_ground: bool) -> void:
+	var s := float(facing)
+	var t := now / 90.0
+	var step := sin(t) * 5.0 if moving and on_ground else 0.0
+	var body := base + Vector2(0, -20)
+	# Zampe: due davanti e due dietro, che vanno avanti e indietro quando corre
+	for k in 4:
+		var x0 := (-14.0 + 9.0 * k) * s
+		var swing := step * (1.0 if k % 2 == 0 else -1.0)
+		var foot := base + Vector2(x0 + swing * s, 0) if on_ground else base + Vector2(x0 - 4.0 * s, -4)
+		canvas.draw_line(body + Vector2(x0, 4), foot, INK, 6.0)
+		canvas.draw_line(body + Vector2(x0, 4), foot, WHITE, 3.5)
+	# Coda dritta all'insù con la punta bianca, che scodinzola
+	var wag := sin(now / 70.0) * 4.0
+	var tail_root := body + Vector2(-20 * s, -4)
+	var tail_tip := tail_root + Vector2((-6 + wag) * s, -16)
+	canvas.draw_line(tail_root, tail_tip, INK, 6.0)
+	canvas.draw_line(tail_root, tail_tip, TAN, 3.5)
+	canvas.draw_circle(tail_tip, 3.0, WHITE)
+	# Corpo, con la sella nera sulla schiena
+	var torso := PackedVector2Array()
+	for k in 16:
+		var a := TAU * k / 16.0
+		torso.append(body + Vector2(cos(a) * 22.0, sin(a) * 11.0))
+	canvas.draw_colored_polygon(torso, WHITE)
+	var saddle := PackedVector2Array()
+	for k in 9:
+		var a := PI + PI * k / 8.0
+		saddle.append(body + Vector2(cos(a) * 17.0 - 2.0 * s, sin(a) * 9.5 - 1.0))
+	canvas.draw_colored_polygon(saddle, BLACK)
+	torso.append(torso[0])
+	canvas.draw_polyline(torso, INK, 2.0)
+	# Testa marrone col muso bianco, l'occhio e l'orecchio lungo che pende
+	var head := body + Vector2(20 * s, -12)
+	canvas.draw_circle(head, 10.5, INK)
+	canvas.draw_circle(head, 9.0, TAN)
+	var muzzle := head + Vector2(9 * s, 4)
+	canvas.draw_circle(muzzle, 6.0, INK)
+	canvas.draw_circle(muzzle, 4.8, WHITE)
+	canvas.draw_circle(muzzle + Vector2(4 * s, -1), 2.2, BLACK)
+	canvas.draw_circle(head + Vector2(3 * s, -3), 1.8, BLACK)
+	var ear_sway := sin(t * 0.8) * 2.0 if moving else 0.0
+	var ear := PackedVector2Array([head + Vector2(-3 * s, -7), head + Vector2(-8 * s, -4), head + Vector2((-7 + ear_sway) * s, 11), head + Vector2((-1 + ear_sway) * s, 10)])
+	canvas.draw_colored_polygon(ear, EAR)
+	ear.append(ear[0])
+	canvas.draw_polyline(ear, INK, 1.5)
