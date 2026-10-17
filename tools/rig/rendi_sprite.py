@@ -92,7 +92,9 @@ def rendi(cartella_rig, file_anim, uscita, solo=None):
         img = pit.disegna(fr["bones"], fr["root"], misura, piedi)
         (hx, hy), _, _ = sk.fk(fr["bones"], fr["root"])["head"]
         lato = 150
-        cx, cy = hx + piedi[0] - 4, hy + piedi[1] + 6
+        # dove sta il centro della faccia rispetto all'osso della testa: rig.json lo può cambiare (i lottatori in piedi)
+        dx, dy = sk.rig.get("portrait", (-4, 6))
+        cx, cy = hx + piedi[0] + dx, hy + piedi[1] + dy
         salva(img.crop((int(cx - lato / 2), int(cy - lato / 2), int(cx + lato / 2), int(cy + lato / 2))), os.path.join(uscita, "portrait.png"))
         print("ritratto: portrait.png")
 
