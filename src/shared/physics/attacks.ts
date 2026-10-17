@@ -6,7 +6,7 @@ import type { AttackKind, SpecialKind } from "../types";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
 import { clearStun, hitShield } from "./shield";
 import { counterHit, isCountering, tryStartSpecial } from "./specials";
-import { chargeFromHit, hitOrigin, spinRehit, tryStartSupreme } from "./supreme";
+import { chargeFromHit, hitOrigin, snatch, spinRehit, tryStartSupreme } from "./supreme";
 
 export function tryStartAttack(f: Fighter, ctx: PhysicsContext): void {
   if (f.hitstun || f.attack || f.helpless || f.dodgeTimer > 0) return;
@@ -215,7 +215,7 @@ export function launch(target: Fighter, attacker: Fighter, kind: AttackKind, x: 
   // Colpo ad area (#102): si vola via dal centro di chi colpisce
   const dir = spec.outward ? ((Math.sign(target.x - hitOrigin(attacker).x) || attacker.facing) as 1 | -1) : attacker.facing;
   const knockback = (spec.baseKnockback + spec.knockbackGrowth * target.percent) / characterStats(target.characterId).weight; // E11
-  const angle = (spec.angleDeg * Math.PI) / 180;
+  const angle = (snatch(attacker, target, spec.angleDeg) * Math.PI) / 180; // snaack di Lampione (#358) tira e schiaccia
   target.vx = dir * Math.cos(angle) * knockback;
   target.vy = -Math.sin(angle) * knockback;
   target.onGround = false;

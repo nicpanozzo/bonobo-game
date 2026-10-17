@@ -3663,6 +3663,19 @@
         "weight": 1.1,
         "gravity": 1
       },
+      "supreme": {
+        "type": "grab",
+        "name": "snaack",
+        "windupMs": 260,
+        "reachMs": 240,
+        "endLagMs": 450,
+        "reach": 280,
+        "height": 50,
+        "damage": 16,
+        "baseKnockback": 520,
+        "knockbackGrowth": 9,
+        "angleDeg": -70
+      },
       "specials": {
         "neutral": {
           "type": "projectile",
@@ -3748,7 +3761,17 @@
           "cooldownMs": 900
         }
       },
-      "supremeAttack": null
+      "supremeAttack": {
+        "damage": 16,
+        "baseKnockback": 520,
+        "knockbackGrowth": 9,
+        "angleDeg": -70,
+        "startupMs": 260,
+        "activeMs": 240,
+        "cooldownMs": 950,
+        "range": 280,
+        "height": 50
+      }
     },
     "bradipo": {
       "id": "bradipo",
