@@ -522,6 +522,8 @@ export const COMPANION = {
   airAccel: 900, // pixel/s² in aria
   jumpIfAbovePx: 40, // pixel: se il padrone è a terra più in alto di così, salta
   teleportPx: 520, // pixel: più lontano di così torna di colpo accanto al padrone
+  lungeSpeed: 800, // pixel/s: lo scatto in avanti del morso, che poi frena
+  lungeFriction: 1800, // pixel/s² di frenata dopo lo scatto del morso
 };
 
 // Le pozze dell'IRA di Lendmar (#13): la merda che cade su un blocco fa scivolare chi ci passa

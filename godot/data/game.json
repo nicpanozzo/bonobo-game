@@ -3677,7 +3677,11 @@
         "width": 44,
         "height": 30,
         "speed": 1.2,
-        "jump": 900
+        "jump": 900,
+        "bites": [
+          "light",
+          "heavy"
+        ]
       },
       "supreme": {
         "type": "grab",

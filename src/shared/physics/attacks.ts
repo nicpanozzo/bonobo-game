@@ -3,6 +3,7 @@
 import { characterStats, getCharacter, SPECIAL_KINDS, specialAttackSpec, specialsFor, supremeAttackSpec, type SpecialSlot } from "../characters";
 import { ATTACKS, BIRRA, FIGHTER, HITSTOP, HITSTUN_PER_KNOCKBACK, JAB, MICELIO, POWERUP, SMASH_CHARGE, type AttackSpec } from "../constants";
 import type { AttackKind, SpecialKind } from "../types";
+import { biteBox, biting } from "./companion";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
 import { clearStun, hitShield } from "./shield";
 import { counterHit, isCountering, tryStartSpecial } from "./specials";
@@ -142,6 +143,7 @@ type Box = { x: number; y: number; w: number; h: number };
 // Rettangolo del colpo, dalla parte in cui si guarda (boxX/boxY lo spostano per le varianti)
 export function attackBox(f: Fighter): Box {
   const spec = attackSpecFor(f);
+  if (biting(f)) return biteBox(f, spec.range, spec.height); // morde il beagle di Lampione (#369)
   const o = hitOrigin(f); // la suprema di Bonobot colpisce sulla liana, non dove sta lui (#102)
   const front = spec.boxX ?? FIGHTER.width / 2;
   const x = f.facing === 1 ? o.x + front : o.x - front - spec.range;

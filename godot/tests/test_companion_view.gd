@@ -17,3 +17,12 @@ func test_segue_lo_snapshot_e_sparisce_senza_compagno() -> void:
 	view.on_snapshot([{"id": "a"}])
 	view.advance()
 	runner.check(view.position_of("a") == null, "senza compagno nello snapshot non si disegna")
+
+
+func test_morde_solo_negli_attacchi_del_compagno() -> void:
+	var View := preload("res://scripts/companion_view.gd")
+	var characters := {"lampione": {"companion": {"bites": ["light", "heavy"]}}, "default": {}}
+	runner.check(View.biting({"characterId": "lampione", "attack": "light"}, characters), "il leggero lo fa il beagle")
+	runner.check(not View.biting({"characterId": "lampione", "attack": "lightAir"}, characters), "in aria no")
+	runner.check(not View.biting({"characterId": "lampione", "attack": null}, characters), "senza attacco no")
+	runner.check(not View.biting({"characterId": "default", "attack": "light"}, characters), "senza compagno no")

@@ -11,20 +11,37 @@ const EAR := Color("8a4f22")
 var _target := {} # id del padrone -> {x, y, facing, onGround} dell'ultimo snapshot
 var _pos := {} # id -> Vector2 disegnato: va verso il bersaglio, così tra due snapshot non scatta
 var _moving := {} # id -> pixel/frame dell'ultimo spostamento, per far muovere le zampe
+var _biting := {} # id -> true se il compagno sta mordendo (un attacco del padrone in companion.bites, #369 passo 2)
 
 
-func on_snapshot(players: Array) -> void:
+# characters: game.characters, per sapere quali attacchi fa il compagno
+func on_snapshot(players: Array, characters: Dictionary = {}) -> void:
 	_target = {}
+	_biting = {}
 	for p in players:
 		var c: Variant = p.get("companion")
 		if c is Dictionary:
 			_target[p.id] = c
+			_biting[p.id] = biting(p, characters)
+
+
+# Il compagno di p sta facendo il suo attacco in corso? Come biting() in src/shared/physics/companion.ts
+static func biting(p: Dictionary, characters: Dictionary) -> bool:
+	if p.get("attack") == null:
+		return false
+	var spec: Variant = characters.get(p.get("characterId", ""), {}).get("companion")
+	return spec is Dictionary and str(p.attack) in spec.get("bites", [])
+
+
+func is_biting(id: String) -> bool:
+	return _biting.get(id, false)
 
 
 func clear() -> void:
 	_target = {}
 	_pos = {}
 	_moving = {}
+	_biting = {}
 
 
 # Dov'è disegnato il compagno di id (per i test e per gli effetti), o null
@@ -36,7 +53,7 @@ func draw(canvas: CanvasItem, now: int) -> void:
 	advance()
 	for id in _pos:
 		var c: Dictionary = _target[id]
-		draw_beagle(canvas, _pos[id], int(c.facing), now, float(_moving[id]) > 0.6, bool(c.get("onGround", true)))
+		draw_beagle(canvas, _pos[id], int(c.facing), now, float(_moving[id]) > 0.6, bool(c.get("onGround", true)), is_biting(id))
 
 
 # Un frame: ognuno va verso il posto dell'ultimo snapshot
@@ -55,7 +72,8 @@ func advance() -> void:
 
 
 # Il beagle di profilo, piedi in base: bianco sotto, sella nera e testa marrone con l'orecchio lungo
-static func draw_beagle(canvas: CanvasItem, base: Vector2, facing: int, now: int, moving: bool, on_ground: bool) -> void:
+# bite: a bocca aperta, allungato in avanti
+static func draw_beagle(canvas: CanvasItem, base: Vector2, facing: int, now: int, moving: bool, on_ground: bool, bite := false) -> void:
 	var s := float(facing)
 	var t := now / 90.0
 	var step := sin(t) * 5.0 if moving and on_ground else 0.0
@@ -92,6 +110,13 @@ static func draw_beagle(canvas: CanvasItem, base: Vector2, facing: int, now: int
 	canvas.draw_circle(head, 10.5, INK)
 	canvas.draw_circle(head, 9.0, TAN)
 	var muzzle := head + Vector2(9 * s, 4)
+	if bite:
+		# Il morso: mascella giù e denti bianchi
+		var jaw := PackedVector2Array([head + Vector2(3 * s, 6), head + Vector2(17 * s, 13), head + Vector2(15 * s, 16), head + Vector2(2 * s, 10)])
+		canvas.draw_colored_polygon(jaw, TAN)
+		canvas.draw_polyline(PackedVector2Array([jaw[0], jaw[1], jaw[2], jaw[3]]), INK, 1.5)
+		for k in 3:
+			canvas.draw_line(muzzle + Vector2((1 + 3 * k) * s, 3), muzzle + Vector2((1 + 3 * k) * s, 6), Color.WHITE, 1.5)
 	canvas.draw_circle(muzzle, 6.0, INK)
 	canvas.draw_circle(muzzle, 4.8, WHITE)
 	canvas.draw_circle(muzzle + Vector2(4 * s, -1), 2.2, BLACK)

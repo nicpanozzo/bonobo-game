@@ -512,7 +512,7 @@ func on_snapshot(snap: Dictionary) -> void:
 	buffer.push(snap.t, Time.get_ticks_msec(), snap.players, float(snap.get("stageMs", 0)))
 	predictor.items_present = not snap.get("items", []).is_empty()
 	_puddles = snap.get("puddles", [])
-	_companions.on_snapshot(snap.players)
+	_companions.on_snapshot(snap.players, game.characters)
 	predictor.puddles = _puddles
 	for p in snap.players:
 		_load_character(_look(p))
@@ -1721,8 +1721,14 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 		var vine: Variant = _supreme_view.origin(p.id) if p.attack == "supreme" else null
 		if vine != null:
 			o = vine # la suprema di Bonobot colpisce sulla liana (#102), come hitOrigin() in supreme.ts
-		var x: float = o.x + front if p.facing == 1 else o.x - front - spec.range
+		var dog: Variant = _companions.position_of(p.id) if _companions.is_biting(p.id) else null
 		var y: float = o.y + spec.get("boxY", -fh * 0.7)
+		if dog != null:
+			# morde il beagle (#369): davanti a lui e alto quanto il colpo, come biteBox() in companion.ts
+			o = dog
+			front = float(game.characters[p.characterId].companion.width) / 2.0
+			y = o.y - float(spec.height)
+		var x: float = o.x + front if p.facing == 1 else o.x - front - spec.range
 		var c := Color("ff9f43") if str(p.attack).begins_with("heavy") else Color.WHITE
 		c.a = 0.85 if p.attackActive else 0.25
 		draw_rect(Rect2(x, y, spec.range, spec.height), c)
