@@ -8,6 +8,7 @@ export interface JoinData {
   room: string;
   name: string;
   characterId?: string;
+  skinId?: string; // skin del lottatore (#339), la controlla skinFor
   stageId?: string;
   rules?: Partial<MatchRules>;
   bot?: string;
@@ -42,6 +43,7 @@ export function parseJoin(raw: unknown): JoinData | null {
     room: parseRoomCode(raw.room),
     name: shortString(raw.name) ?? "",
     characterId: shortString(raw.characterId),
+    skinId: shortString(raw.skinId),
     stageId: shortString(raw.stageId),
     rules,
     bot: shortString(raw.bot),

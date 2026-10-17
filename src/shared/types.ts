@@ -46,6 +46,7 @@ export interface PlayerState {
   id: string;
   name: string;
   characterId: string; // vedi src/shared/characters.ts
+  skinId?: string; // skin scelta (#339): cambia solo il disegno; manca = aspetto base
   color: number;
   team: number; // 0 = nessuna squadra (tutti contro tutti), 1 e 2 = squadre (#17)
   x: number; // centro orizzontale
@@ -221,7 +222,7 @@ export interface ClientToServer {
   // bot: chi crea la stanza può aggiungere un avversario del server, es. "manichino" (#20)
   // token: quello del welcome, dopo una caduta di rete; se il posto è ancora tenuto si rientra nello stesso lottatore (#107)
   // version e protocol: versione del gioco (package.json) e PROTOCOL_VERSION del client; mancano nei client di prima (E2)
-  join: (data: { room: string; name: string; characterId?: string; stageId?: string; rules?: Partial<MatchRules>; bot?: string; token?: string; version?: string; protocol?: number }) => void;
+  join: (data: { room: string; name: string; characterId?: string; skinId?: string; stageId?: string; rules?: Partial<MatchRules>; bot?: string; token?: string; version?: string; protocol?: number }) => void;
   input: (input: InputState) => void;
   rematch: () => void; // a fine partita, ricomincia subito (#17)
   // Allenamento (#113): percentuale degli avversari, velocità dell'orologio (TRAINING.speeds), si ricomincia da capo.

@@ -14,6 +14,7 @@
 | `characters/elvedeo/*.png` | Mauro Grecchi (@MauroGrecchi), ritaglio e pulizia di Claude per Riccardo (GiovannifRana) | foglio in #168, strumento da chiedere a Mauro | da chiedere a Mauro |
 | `characters/_modello/` (modello con hitbox e zone dei colpi per chi disegna, E7 passo 5) | Claude per Riccardo (GiovannifRana), generato con `tools/sprite/modello_sprite.py` | fatto da noi | CC0 |
 | `characters/lampione/` (sprite, ritratti e pezzi `rig/`, #13) | Claude Code per Nicola, provvisori disegnati col codice con `tools/rig/genera_pezzi_lottatore.py`, dalle schede della community | fatto da noi | CC0 |
+| `characters/lampione/skins/jax/` (skin "Jax", #339) | Claude Code per Nicola, disegnata col codice con `tools/rig/rendi_tratto.py` nello stile di Egiainuso; fan art ispirata a Jax di League of Legends, nessun file del gioco | fatto da noi | CC0 |
 | `characters/bradipo/` (sprite, ritratti e pezzi `rig/`, #13) | Claude Code per Nicola, provvisori disegnati col codice con `tools/rig/genera_pezzi_lottatore.py`, dalle schede della community | fatto da noi | CC0 |
 | `characters/giovannifrana/` (sprite, ritratti e pezzi `rig/`, #13) | Claude Code per Nicola, provvisori disegnati col codice con `tools/rig/genera_pezzi_lottatore.py`, dalle schede della community | fatto da noi | CC0 |
 | `characters/marcomunista/` (sprite, ritratti e pezzi `rig/`, #13) | Claude Code per Nicola, provvisori disegnati col codice con `tools/rig/genera_pezzi_lottatore.py`, dalle schede della community | fatto da noi | CC0 |

@@ -4,6 +4,7 @@ extends RefCounted
 var runner
 
 const Lobby := preload("res://scripts/lobby.gd")
+const FighterPose := preload("res://scripts/fighter_pose.gd")
 
 
 func _lobby(start_join: bool, params := {}, start_kind := "") -> Control:
@@ -95,6 +96,21 @@ func test_scheda_del_lottatore() -> void:
 	runner.check(lobby._big_name.text == "Capt. OrsoBlu" and lobby._character == "orsoblu", "cambia con il riquadro")
 	runner.check(lobby._big_moves.text.begins_with("Speciali: Schizzo"), lobby._big_moves.text)
 	runner.check(lobby._summary.text.ends_with("Capt. OrsoBlu"), "e nel riassunto: %s" % lobby._summary.text)
+	lobby.free()
+
+
+func test_skin_del_lottatore() -> void:
+	var lobby := _lobby(false, {"char": "lampione", "skin": "jax"})
+	runner.check(lobby._skin == "jax", "la skin ricordata resta: %s" % lobby._skin)
+	var shown: int = lobby._big_skins.get_children().filter(func(n): return not n.is_queued_for_deletion()).size()
+	runner.check(shown == 3, "la scritta, Base e Jax: %d" % shown)
+	var c := _last_choice(lobby, lobby._submit)
+	runner.check(c.skin == "jax", "e va nella scelta: %s" % [c])
+	lobby._card(lobby._chars, "bonobot").pressed.emit()
+	runner.check(lobby._skin == "", "un altro lottatore torna all'aspetto base")
+	var look := FighterPose.look(lobby.game, "lampione", "jax")
+	runner.check(look.id == "lampione/jax" and str(look.sprite.dir).ends_with("skins/jax"), "il disegno della skin: %s" % look.id)
+	runner.check(FighterPose.look(lobby.game, "bonobot", "jax").id == "bonobot", "chi non ha la skin resta com'è")
 	lobby.free()
 
 

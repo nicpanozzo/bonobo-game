@@ -8,6 +8,26 @@ const VARIANT_HUES := [0.5, 0.25, 0.75, 0.125, 0.625, 0.375, 0.875] # spostament
 const SLOT_OF_KIND := {"specialNeutral": "neutral", "specialSide": "side", "specialDown": "down"}
 
 
+# La skin di un giocatore dallo snapshot (#339), "" per l'aspetto base
+static func skin_of(p: Dictionary) -> String:
+	var skin: Variant = p.get("skinId")
+	return str(skin) if skin != null else ""
+
+
+# Il disegno di un lottatore (#339): il suo, o quello della skin se ce l'ha. Con la skin l'id diventa
+# "<lottatore>/<skin>", così le texture delle due versioni non si mescolano; il resto (mosse, suprema) è il suo
+static func look(game_data: Dictionary, character_id: String, skin_id: String) -> Dictionary:
+	var c: Dictionary = game_data.characters.get(character_id, game_data.characters.get(game_data.get("defaultCharacterId", ""), {}))
+	var skins: Dictionary = c.get("skins", {})
+	if skin_id == "" or not skins.has(skin_id):
+		return c
+	var out := c.duplicate()
+	out.id = "%s/%s" % [c.id, skin_id]
+	out.sprite = skins[skin_id].sprite
+	out.portrait = skins[skin_id].get("portrait")
+	return out
+
+
 # Chi ha lo stesso personaggio di un altro giocatore prende una variante di colore: il primo in ordine
 # di colore resta originale, gli altri 1, 2, ... Il colore lo dà il server, così ogni client vede lo stesso.
 # Anche gli eliminati contano: chi resta non cambia colore a metà partita

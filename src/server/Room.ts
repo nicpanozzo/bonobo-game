@@ -84,8 +84,8 @@ export class Room {
     return this.humans.size;
   }
 
-  addPlayer(id: string, name: string, characterId?: string) {
-    this.match.addPlayer(id, name, characterId);
+  addPlayer(id: string, name: string, characterId?: string, skinId?: string) {
+    this.match.addPlayer(id, name, characterId, skinId);
     this.humans.add(id);
     this.lastHumanInput = Date.now();
   }

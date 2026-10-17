@@ -25,6 +25,15 @@ function knockOut(match: Match, id: string): GameEvent[] {
 }
 
 describe("partita", () => {
+  it("la skin passa nello snapshot solo se il lottatore ce l'ha (#339)", () => {
+    const m = new Match({});
+    m.addPlayer("a", "A", "lampione", "jax");
+    m.addPlayer("b", "B", "bonobot", "jax");
+    const [a, b] = m.snapshot([], 0).players;
+    assert.equal(a.skinId, "jax");
+    assert.equal(b.skinId, undefined);
+  });
+
   it("vince l'ultimo rimasto, poi la rivincita rimette tutti in gioco", () => {
     const m = new Match({ rules: { stocks: 2 } });
     m.addPlayer("a", "A");

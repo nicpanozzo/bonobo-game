@@ -13,6 +13,7 @@ import {
   isSpriteFolder,
   resolveAnimation,
   resolvedAnimations,
+  skinFor,
   spriteStatePath,
   type SpriteFolderSpec,
   type SpriteSheetSpec,
@@ -166,5 +167,23 @@ describe("mosse speciali (E10 passo 1)", () => {
   it("il recupero di un personaggio non tocca gli altri attacchi", () => {
     // Solo i ritocchi dichiarati in characters.ts: nessuno per ora, quindi attackSpecFor = ATTACKS
     for (const c of Object.values(CHARACTERS)) for (const k of Object.keys(c.recovery ?? {})) assert.ok(k in ATTACKS.recovery || k === "speed" || k === "drift", `${c.id}: ${k}`);
+  });
+});
+
+describe("skin (#339)", () => {
+  it("si tiene solo una skin che quel lottatore ha", () => {
+    assert.equal(skinFor("lampione", "jax"), "jax");
+    assert.equal(skinFor("bonobot", "jax"), undefined); // la skin di un altro
+    assert.equal(skinFor("lampione", "toString"), undefined); // niente prototipi dalla rete
+    assert.equal(skinFor("lampione", undefined), undefined);
+  });
+
+  it("ogni skin ha uno sprite a cartella con gli stati validi", () => {
+    for (const c of Object.values(CHARACTERS)) {
+      for (const [id, skin] of Object.entries(c.skins ?? {})) {
+        assert.ok(skin.name, `${c.id}/${id}: manca il nome`);
+        for (const state of Object.keys(skin.sprite.animations)) assert.ok((SPRITE_STATES as readonly string[]).includes(state), `${c.id}/${id}: stato sconosciuto ${state}`);
+      }
+    }
   });
 });

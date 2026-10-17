@@ -18,7 +18,7 @@ var _font: Font = UI.font()
 var _last_percent := {} # id -> percentuale dell'ultimo snapshot, per accorgersi dei colpi presi
 var _jolts := {} # id -> { ms, amp }: la percentuale trema per un attimo dopo un colpo
 var _supreme_full := false # qualcuno ha la barra della suprema piena (#101): la barra pulsa, si ridisegna sempre
-var _portraits := {} # id personaggio -> [Texture2D, Rect2] del ritratto, o [] se non ha disegni (E11)
+var _portraits := {} # id personaggio (con la skin, #339) -> [Texture2D, Rect2] del ritratto, o [] se non ha disegni (E11)
 var _variants := {} # id giocatore -> variante di colore, come in world_view.gd
 
 const WorldView := preload("res://scripts/world_view.gd")
@@ -280,7 +280,7 @@ func _draw_results(w: float, _h: float) -> void:
 
 # Il ritratto di un giocatore dentro r, con i suoi colori; niente per i personaggi senza disegni
 func _draw_portrait(p: Dictionary, r: Rect2) -> void:
-	var src := _portrait(str(p.get("characterId", "")))
+	var src := _portrait(FighterPose.look(game, str(p.get("characterId", "")), FighterPose.skin_of(p)))
 	if src.is_empty():
 		return
 	var tex: Texture2D = src[0]
@@ -292,10 +292,10 @@ func _draw_portrait(p: Dictionary, r: Rect2) -> void:
 
 # Da dove prendere il ritratto: portrait.png se c'è, altrimenti il primo fotogramma di idle,
 # ritagliato sulla parte disegnata (i fotogrammi hanno molto vuoto intorno)
-func _portrait(character_id: String) -> Array:
+func _portrait(c: Dictionary) -> Array:
+	var character_id: String = c.get("id", "")
 	if _portraits.has(character_id):
 		return _portraits[character_id]
-	var c: Dictionary = game.characters.get(character_id, game.characters.get(game.get("defaultCharacterId", ""), {}))
 	var out := []
 	if c.get("portrait") != null:
 		var tex: Texture2D = load("res://data/" + str(c.portrait))
