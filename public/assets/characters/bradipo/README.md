@@ -29,7 +29,7 @@ Gli altri stati usano il ripiego di `ANIMATION_FALLBACK` (la speciale laterale, 
 ## Rifarlo
 
 ```bash
-python3 tools/sprite/bradipo_dal_foglio.py <foglio.png> public/assets/characters/bradipo
+python3 tools/sprite/foglio_a_colori.py <foglio.png> public/assets/characters/bradipo
 npm run export:godot
 ```
 

@@ -1,6 +1,6 @@
-# Uso: python3 tools/sprite/bradipo_dal_foglio.py <foglio.png> [cartella di uscita]
-# Bradipo Giallo dal foglio delle pose a colori di @Marcomunista (#335): 24 pose in una griglia 6×4 col nome sotto,
-# come quello di Egiainuso (egiainuso_dal_foglio.py), ma colorato. Qui non basta prendere il tratto scuro: si
+# Uso: python3 tools/sprite/foglio_a_colori.py <foglio.png> <cartella di uscita>
+# I lottatori dai fogli delle pose a colori di @Marcomunista: Bradipo Giallo (#335) e Marcomunista (#352). 24 pose in
+# una griglia 6×4 col nome sotto, come quello di Egiainuso (egiainuso_dal_foglio.py), ma colorato. Qui non basta prendere il tratto scuro: si
 # toglie il fondo bianco riempiendolo dai bordi, così la faccia bianca (chiusa dal tratto) resta. Poi un
 # contorno chiaro per i fondali scuri e un PNG per stato nel formato a cartella (E7), con i piedi allineati.
 # Il foglio non va nella repo: si passa da fuori. Servono Pillow, numpy e scipy.
@@ -10,9 +10,9 @@ from PIL import Image
 from scipy import ndimage
 
 SRC = sys.argv[1]
-OUT = sys.argv[2] if len(sys.argv) > 2 else "public/assets/characters/bradipo"
+OUT = sys.argv[2]
 COLS, ROWS = 6, 4
-LABEL_Y = [266, 517, 754, 974]  # dove stanno i nomi delle pose, riga per riga
+LABEL_Y = [266, 517, 754, 980]  # dove stanno i nomi delle pose, riga per riga
 NAMES = [
     ["Idle", "Walk", "Run", "Dash", "Jump", "Fall"],
     ["Crouch", "Shield", "Grab", "Pummel", "Throw (forward)", "Throw (back)"],
@@ -40,11 +40,11 @@ STATES = {
     "shield": ["Shield"],
     "grab": ["Grab"],
     "throw": ["Throw (forward)"],
-    "specialNeutral": ["Pummel"],  # le Ciacole: le mani alla bocca
+    "specialNeutral": ["Pummel"],  # le mani alla bocca
     "specialDown": ["Shield"],  # il contrattacco
     "supreme": ["Final Smash"],
 }
-HEIGHT = 176  # altezza del fermo nel PNG: con scale 0.5 il bradipo è alto come la hitbox (88 a 1x)
+HEIGHT = 176  # altezza del fermo nel PNG: con scale 0.5 il lottatore è alto come la hitbox (88 a 1x)
 RIM = (214, 222, 232)  # contorno chiaro, per i fondali scuri
 RIM_PX = 3
 PAD = 8
@@ -58,6 +58,9 @@ def pose_images(sheet):
     lab_p, _ = ndimage.label(paper)
     edge = np.unique(np.concatenate([lab_p[0], lab_p[-1], lab_p[:, 0], lab_p[:, -1]]))
     fg = ~np.isin(lab_p, edge[edge > 0])
+    # via la riga dei nomi: nella Final Smash di Marcomunista il bagliore tocca le lettere e le tirerebbe dentro
+    for y in LABEL_Y:
+        fg[y - 12 : y + 20] = False
     lab, _ = ndimage.label(fg, structure=np.ones((3, 3)))
     objs = ndimage.find_objects(lab)
     H, W = fg.shape
@@ -69,14 +72,14 @@ def pose_images(sheet):
         cy, cx = (y0 + y1) / 2, (x0 + x1) / 2
         row = next((r for r in range(ROWS) if cy < LABEL_Y[r] + 16), ROWS - 1)
         col = min(COLS - 1, int(cx / (W / COLS)))
-        if abs(cy - LABEL_Y[row]) < 16 and y1 - y0 < 30:
-            continue  # il nome della posa
+        if y0 >= LABEL_Y[row] - 22 and y1 <= LABEL_Y[row] + 26 and y1 - y0 < 30:
+            continue  # il nome della posa (quello della Final Smash di Marcomunista sta un po' più in basso)
         cells.setdefault((row, col), []).append(i + 1)
     out = {}
     for (row, col), ids in cells.items():
         sizes = {k: int((lab == k).sum()) for k in ids}
         ids = [k for k in ids if sizes[k] > 12]  # puntini sparsi
-        person = max(sizes, key=sizes.get)  # il componente più grande è il bradipo, gli altri sono effetti
+        person = max(sizes, key=sizes.get)  # il componente più grande è il lottatore, gli altri sono effetti
         mask = np.isin(lab, ids)
         ys, xs = np.nonzero(mask)
         y0, y1, x0, x1 = ys.min() - PAD, ys.max() + PAD + 1, xs.min() - PAD, xs.max() + PAD + 1
@@ -132,7 +135,7 @@ def main():
             im = im.resize((round(im.width * scale), round(im.height * scale)), Image.LANCZOS)
             strip.alpha_composite(im, (i * fw + round(half - fx * scale), round(foot - fy * scale)))
         strip.save(os.path.join(OUT, f"{state}.png"), optimize=True)
-    # il ritratto: la testa con la cresta, dal fermo
+    # il ritratto: la testa, dal fermo
     im, (fx, fy), _ = poses["Idle"]
     bb = im.getchannel("A").getbbox()
     side = int((bb[2] - bb[0]) * 1.15)
