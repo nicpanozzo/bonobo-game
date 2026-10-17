@@ -27,18 +27,18 @@ const worldOf = (ctx: PhysicsContext) => (ctx.projectiles ??= createProjectileWo
 // Quanti proiettili di f sono in volo: oltre maxAlive la speciale non parte
 export const aliveOf = (f: Fighter, ctx: PhysicsContext) => worldOf(ctx).list.filter((p) => p.ownerId === f.id).length;
 
-// Il proiettile esce dalle mani di f, nella direzione in cui guarda
-export function fire(f: Fighter, kind: SpecialKind, sp: ProjectileSpecial, ctx: PhysicsContext): void {
+// Il proiettile esce dalle mani di f, nella direzione in cui guarda. v: un'altra velocità (la suprema "burst", #358)
+export function fire(f: Fighter, kind: SpecialKind, sp: ProjectileSpecial, ctx: PhysicsContext, v?: { vx: number; vy: number }): void {
   const world = worldOf(ctx);
   const p: Projectile = {
     id: world.nextId++,
     ownerId: f.id,
     kind,
     characterId: f.characterId,
-    x: f.x + f.facing * (FIGHTER.width / 2 + sp.range / 2),
+    x: v ? f.x : f.x + f.facing * (FIGHTER.width / 2 + sp.range / 2),
     y: f.y - SPECIAL_MOVES.projectileY,
-    vx: f.facing * sp.speed,
-    vy: -(sp.lift ?? 0),
+    vx: v ? v.vx : f.facing * sp.speed,
+    vy: v ? v.vy : -(sp.lift ?? 0),
     ageMs: 0,
   };
   world.list.push(p);

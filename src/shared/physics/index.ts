@@ -27,7 +27,7 @@ import { cancelSpecial, specialing } from "./specials";
 import { endDash } from "./dash";
 import { collideWithStage, loseStock, outOfBlastZone, respawn } from "./stage";
 export { platformSurfaceY } from "./stage";
-import { supreming, tickSupreme } from "./supreme";
+import { burstFire, supreming, tickSupreme } from "./supreme";
 import { landTech, tickTech } from "./tech";
 
 export * from "./fighter";
@@ -99,6 +99,7 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
   }
 
   updateAttack(f, dtMs);
+  burstFire(f, dtMs, ctx); // le raffiche di IRA di Lendmar (#358)
   // Suprema propria (#102): appesi alla liana, fermi dove si è
   if (supreming(f, dtMs)) {
     endDash(f); // la suprema ferma lo scatto (#199)

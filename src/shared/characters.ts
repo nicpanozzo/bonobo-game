@@ -271,7 +271,21 @@ export interface GrabSupreme {
   knockbackGrowth: number;
   angleDeg: number; // negativo: verso il basso
 }
-export type SupremeSpec = DropSupreme | SpinSupreme | GrabSupreme;
+// Suprema "burst" (#358), IRA di Lendmar: dopo windupMs (si arrabbia) tira waves raffiche, una ogni waveEveryMs,
+// di count proiettili della sua speciale neutra, a ventaglio da tutte e due le parti e verso l'alto: in orizzontale
+// fino a speed pixel/s, in alto lift pixel/s al centro (meno ai lati). Il danno è quello della speciale neutra
+export interface BurstSupreme {
+  type: "burst";
+  name: string; // come si chiama nei menu
+  windupMs: number;
+  waves: number;
+  waveEveryMs: number;
+  count: number; // proiettili per raffica
+  speed: number;
+  lift: number;
+  endLagMs: number; // dopo l'ultima raffica, fermi
+}
+export type SupremeSpec = DropSupreme | SpinSupreme | GrabSupreme | BurstSupreme;
 
 export type SpecialSpec = ProjectileSpecial | DashSpecial | ChargeSpecial | CounterSpecial;
 export type SpecialSet = Record<SpecialSlot, SpecialSpec>;
@@ -772,6 +786,8 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     sprite: communitySprite("lendmar"),
     // TODO community: la scheda non ha statistiche; magro, quindi leggero e scattante
     stats: { weight: 0.95, speed: 1.05 },
+    // dalla scheda: "IRA", si arrabbia e tira merda da tutte le parti (#358): tre raffiche della sua speciale neutra
+    supreme: { type: "burst", name: "IRA", windupMs: 350, waves: 3, waveEveryMs: 260, count: 6, speed: 560, lift: 820, endLagMs: 400 },
     specials: {
       // lancia merda ad arco
       neutral: { type: "projectile", name: "Fai schifo", startupMs: 230, cooldownMs: 600, speed: 540, gravity: 1800, lift: 540, lifeMs: 1400, maxAlive: 1, range: 24, height: 18, damage: 7, baseKnockback: 230, knockbackGrowth: 3.5, angleDeg: 50, color: 0x6b4a2b },
@@ -874,6 +890,11 @@ export function supremeAttackSpec(id: string | undefined): AttackSpec | null {
 }
 function toSupremeAttack(sp: SupremeSpec | undefined): AttackSpec | null {
   if (!sp) return null;
+  if (sp.type === "burst") {
+    // niente colpo corpo a corpo: colpiscono i proiettili (supremeMelee in physics/supreme.ts)
+    const activeMs = sp.waves * sp.waveEveryMs;
+    return { damage: 0, baseKnockback: 0, knockbackGrowth: 0, angleDeg: 0, startupMs: sp.windupMs, activeMs, cooldownMs: sp.windupMs + activeMs + sp.endLagMs, range: 0, height: 0 };
+  }
   if (sp.type === "grab") {
     return {
       damage: sp.damage,
