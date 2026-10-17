@@ -559,12 +559,44 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     },
   },
 
-  // Giovanni: bradipo giallo piccoletto, casinista e chiacchierone, suona il basso (anche #335: saltatore, #f5c211)
+  // Giovanni: bradipo giallo piccoletto, casinista e chiacchierone, suona il basso (anche #335: saltatore, #f5c211).
+  // Il disegno è il foglio delle pose di @Marcomunista in #335, una posa per stato (due per la corsa), ritagliate da
+  // tools/sprite/bradipo_dal_foglio.py come per Egiainuso
   bradipo: {
     id: "bradipo",
     name: "Bradipo Giallo",
     crews: ["lolhardcore"],
-    sprite: communitySprite("bradipo"),
+    sprite: {
+      dir: "assets/characters/bradipo",
+      frameWidth: 298,
+      frameHeight: 200,
+      footY: 185,
+      scale: 0.5, // il foglio è disegnato grande come un disegno a 2x
+      animations: {
+        idle: { fps: 1, loop: true },
+        walk: { fps: 6, loop: true }, // passo e corsa del foglio, alternati
+        jump: { fps: 1, loop: false },
+        fall: { fps: 1, loop: false },
+        light: { fps: 1, loop: false }, // "Side Tilt"
+        heavy: { fps: 1, loop: false }, // "Side Smash"
+        hit: { fps: 1, loop: false }, // nel foglio non c'è: il fermo piegato all'indietro
+        land: { fps: 1, loop: false }, // "Crouch"
+        dash: { fps: 1, loop: false },
+        lightUp: { fps: 1, loop: false },
+        lightDown: { fps: 1, loop: false },
+        lightAir: { fps: 1, loop: false }, // "Neutral Air"
+        heavyUp: { fps: 1, loop: false },
+        heavyDown: { fps: 1, loop: false },
+        heavyAir: { fps: 1, loop: false }, // "Forward Air"
+        recovery: { fps: 1, loop: false }, // "Up Air"
+        shield: { fps: 1, loop: false },
+        grab: { fps: 1, loop: false },
+        throw: { fps: 1, loop: false }, // "Throw (forward)"
+        specialNeutral: { fps: 1, loop: false }, // "Pummel": le mani alla bocca, per le Ciacole
+        specialDown: { fps: 1, loop: false }, // "Shield", per il contrattacco
+        supreme: { fps: 1, loop: false }, // "Final Smash"
+      },
+    },
     // piccolo e leggero, veloce a terra e in aria, salta tanto
     stats: { weight: 0.95, speed: 1.1, airSpeed: 1.1, jump: 1.1 },
     specials: {
