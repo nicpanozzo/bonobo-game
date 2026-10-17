@@ -63,6 +63,7 @@ export interface TraceState {
   dodgeBuffer: number;
   attack: string | null;
   attackTimer: number;
+  smashCharge: number; // ms di carica del pesante tenuto, -1 se non si carica
   cooldown: number;
   recoveryUsed: boolean;
   helpless: boolean;
@@ -107,6 +108,7 @@ function stateOf(f: Fighter): TraceState {
     dodgeBuffer: round(f.buffer.dodge),
     attack: f.attack,
     attackTimer: round(f.attackTimer),
+    smashCharge: round(f.smashChargeMs),
     cooldown: round(f.cooldownTimer),
     recoveryUsed: f.recoveryUsed,
     helpless: f.helpless,

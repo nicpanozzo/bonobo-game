@@ -1678,6 +1678,8 @@ func _draw_sprite(p: Dictionary, character: Dictionary, now: float, react := Tra
 	if prev_name != name or new_attack:
 		state = {"name": name, "since": since, "kind": kind}
 		_anims[p.id] = state
+	if FighterPose.smash_charging(p):
+		state["since"] = now # il colpo caricato resta fermo sul primo fotogramma finché non si lascia il tasto
 	state["attacking"] = p.attack != null
 	var a: Dictionary = anims[name]
 	var attack := FighterPose.attack_spec(game, p.characterId, str(state.get("kind", "")))
@@ -1693,7 +1695,7 @@ func _draw_sprite(p: Dictionary, character: Dictionary, now: float, react := Tra
 	var scale: float = sheet.get("scale", 1.0) # 0.5 per i disegni fatti a 2x
 	draw_set_transform_matrix(react * Transform2D(0.0, Vector2(p.facing * scale, scale), 0.0, Vector2(p.x, p.y)))
 	var foot_y: float = sheet.get("footY", fh) # dove stanno i piedi nel fotogramma: sotto c'è chi è appeso al bordo
-	draw_texture_rect_region(texture, Rect2(-fw / 2, -foot_y, fw, fh), src, FighterPose.sprite_modulate(int(_variants.get(p.id, 0)), FighterPose.away_alpha(p)))
+	draw_texture_rect_region(texture, Rect2(-fw / 2, -foot_y, fw, fh), src, FighterPose.sprite_modulate(int(_variants.get(p.id, 0)), FighterPose.away_alpha(p), FighterPose.charge_flash(p, now, Access.calm)))
 	draw_set_transform(Vector2.ZERO)
 
 

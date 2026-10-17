@@ -155,6 +155,22 @@ func test_stesso_personaggio_colori_diversi() -> void:
 	runner.check(FighterPose.sprite_modulate(1 + FighterPose.VARIANT_HUES.size(), 1.0) == m, "oltre l'ultima si ricomincia")
 
 
+# Colpo caricato (SMASH_CHARGE): solo con un attacco in corso e la carica sopra zero, lampo che cresce
+func test_colpo_caricato_lampeggia() -> void:
+	var charging := {"attack": "heavy", "charge": 0.9}
+	runner.check(FighterPose.smash_charging(charging), "pesante tenuto: carica")
+	runner.check(not FighterPose.smash_charging({"attack": null, "charge": 0.5}), "la carica della speciale non è un colpo caricato")
+	runner.check(not FighterPose.smash_charging({"attack": "heavy", "charge": 0.0}), "pesante lasciato: niente lampo")
+	var peak := 0.0
+	for t in 200:
+		peak = maxf(peak, FighterPose.charge_flash(charging, t * 5.0, false))
+	runner.check(peak > 0.6 and peak <= 1.0, "a carica quasi piena il lampo è forte: %s" % peak)
+	runner.check(FighterPose.charge_flash(charging, 0.0, true) > 0.0, "con meno lampi resta un bagliore")
+	var m := FighterPose.sprite_modulate(1, 1.0, 0.5)
+	runner.check(m.r > 1.5 and is_equal_approx(m.g, 2.5), "variante e lampo insieme: rosso e verde oltre 1")
+	runner.check(FighterPose.sprite_modulate(0, 1.0, 0.0).g == 1.0, "senza lampo il verde resta 1")
+
+
 # Acqua alta (#228): stessi numeri di hazardRect() e floodPhase() in physics/elements.test.ts
 func test_acqua_alta_come_il_server() -> void:
 	var water := {"kind": "acqua", "x": 300, "y": 620, "width": 400, "height": 30,

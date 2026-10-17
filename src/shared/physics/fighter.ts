@@ -46,6 +46,7 @@ export interface Fighter extends PlayerState {
   projectileTimer: number; // ms all'uscita del proiettile della speciale in corso (E10), 0 se nessuno
   chargeMs: number; // ms di carica della speciale tenuta premuta (E10), -1 se non si carica
   chargeMultiplier: number; // moltiplicatore del colpo caricato in corso (1 per tutti gli altri)
+  smashChargeMs: number; // ms di carica del pesante a terra tenuto premuto (colpo caricato), -1 se non si carica
   pendingSpecial: SpecialKind | null; // la speciale che aspetta: proiettile in uscita o carica tenuta
   supremeTimer: number; // ms di movimento ancora guidati dalla suprema propria (#102): salto, liana, capriola
   supremeX0: number; // da dove è partita la suprema propria (piedi)
@@ -185,6 +186,7 @@ export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
     projectileTimer: 0,
     chargeMs: -1,
     chargeMultiplier: 1,
+    smashChargeMs: -1,
     pendingSpecial: null,
     supremeTimer: 0,
     supremeX0: 0,

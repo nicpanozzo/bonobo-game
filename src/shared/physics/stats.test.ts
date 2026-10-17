@@ -44,6 +44,8 @@ function launch(characterId: string): number {
   run(fighters, ctx, 5);
   a.input = { ...emptyInput(), heavy: true };
   const start = b.x;
+  run(fighters, ctx, 1);
+  a.input = emptyInput(); // lasciato subito: il pesante senza carica
   for (let i = 0; i < 60 && ctx.events.every((e) => e.type !== "hit"); i++) run(fighters, ctx, 1);
   assert.ok(ctx.events.some((e) => e.type === "hit"), "il colpo è entrato");
   run(fighters, ctx, 20);

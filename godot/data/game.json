@@ -239,6 +239,15 @@
       "boxY": -130
     }
   },
+  "smashCharge": {
+    "maxMs": 1000,
+    "maxMultiplier": 1.4,
+    "kinds": [
+      "heavy",
+      "heavyUp",
+      "heavyDown"
+    ]
+  },
   "recovery": {
     "speed": 1050,
     "drift": 300
