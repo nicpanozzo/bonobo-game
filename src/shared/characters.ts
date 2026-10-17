@@ -285,6 +285,7 @@ export interface BurstSupreme {
   speed: number;
   lift: number;
   endLagMs: number; // dopo l'ultima raffica, fermi
+  slick?: boolean; // i proiettili che cadono su un blocco lasciano una pozza scivolosa (SLICK, #13)
 }
 // Suprema "infect" (#358), il filo di Kirschner di Dr. Micelium: dopo windupMs un filo sottile parte davanti fino a
 // reach pixel per activeMs. Chi tocca prende le spore (powerup "spore": più lento per SPORE.ms) e chi la fa diventa
@@ -816,8 +817,8 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     sprite: communitySprite("lendmar"),
     // TODO community: la scheda non ha statistiche; magro, quindi leggero e scattante
     stats: { weight: 0.95, speed: 1.05 },
-    // dalla scheda: "IRA", si arrabbia e tira merda da tutte le parti (#358): tre raffiche della sua speciale neutra
-    supreme: { type: "burst", name: "IRA", windupMs: 350, waves: 3, waveEveryMs: 260, count: 6, speed: 560, lift: 820, endLagMs: 400 },
+    // dalla scheda: "IRA", si arrabbia e tira merda scivolosa da tutte le parti (#358): tre raffiche della sua speciale neutra, e dove cade restano pozze
+    supreme: { type: "burst", name: "IRA", windupMs: 350, waves: 3, waveEveryMs: 260, count: 6, speed: 560, lift: 820, endLagMs: 400, slick: true },
     specials: {
       // lancia merda ad arco
       neutral: { type: "projectile", name: "Fai schifo", startupMs: 230, cooldownMs: 600, speed: 540, gravity: 1800, lift: 540, lifeMs: 1400, maxAlive: 1, range: 24, height: 18, damage: 7, baseKnockback: 230, knockbackGrowth: 3.5, angleDeg: 50, color: 0x6b4a2b },

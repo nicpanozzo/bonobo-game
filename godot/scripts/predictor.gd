@@ -18,6 +18,7 @@ var smooth_ms := 100.0
 var max_replay_ticks := 30
 var teleport_distance := 300.0
 var items_present := false # oggetti nell'arena: leggero e pesante li lascia decidere al server
+var puddles: Array = [] # pozze scivolose dell'ultimo snapshot (#13): sopra si scivola, il port non lo sa
 
 var _game: Dictionary
 var _tick_rate := 60.0
@@ -94,7 +95,7 @@ func on_server(p: Dictionary, now_ms: float, shown := Vector2(NAN, NAN)) -> void
 		_advance(now_ms)
 		before = _position(now_ms) + _decayed_error(now_ms)
 	_server = p
-	_active = enabled and predictable(p, _stage) and not _pressed_action_since(int(p.predict.seq) if p.get("predict") is Dictionary else 0)
+	_active = enabled and predictable(p, _stage) and not near_puddle(p, puddles) and not _pressed_action_since(int(p.predict.seq) if p.get("predict") is Dictionary else 0)
 	if not _active:
 		return
 	var key := "%s/%s" % [_stage.get("id", ""), p.characterId]
@@ -193,6 +194,14 @@ static func predictable(p: Dictionary, stage: Dictionary) -> bool:
 		if p.get(flag, false):
 			return false
 	return float(p.get("charge", 0)) == 0.0
+
+
+# Vicino a una pozza dell'IRA (#13) non sua si torna allo stato del server: lì si scivola
+static func near_puddle(p: Dictionary, list: Array) -> bool:
+	for q in list:
+		if q.ownerId != p.id and absf(float(p.y) - float(q.y)) < 40.0 and absf(float(p.x) - float(q.x)) < float(q.width) / 2.0 + 60.0:
+			return true
+	return false
 
 
 func _pressed_action_since(seq: int) -> bool:

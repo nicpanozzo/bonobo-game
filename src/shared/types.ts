@@ -119,6 +119,15 @@ export interface ProjectileState {
   vy: number;
 }
 
+// Una pozza di merda dell'IRA di Lendmar (#13): a terra, chi ci sta sopra scivola (non chi l'ha tirata)
+export interface PuddleState {
+  id: number;
+  ownerId: string;
+  x: number; // centro
+  y: number; // la superficie su cui è
+  width: number;
+}
+
 // Un oggetto nell'arena (#17): a terra, in volo o in mano a qualcuno
 export interface ItemState {
   id: number;
@@ -196,6 +205,7 @@ export interface GameSnapshot {
   teamScores: Record<1 | 2, number> | null; // punti delle squadre in Bandiera, null nelle altre modalità
   items: ItemState[]; // oggetti nell'arena (#17)
   projectiles: ProjectileState[]; // proiettili in volo (E10)
+  puddles: PuddleState[]; // pozze scivolose a terra (#13)
   events: GameEvent[]; // tutto quello che è successo dallo snapshot precedente
   stageMs: number; // tempo dell'arena: da qui il client calcola dove sono ascensori e trappole (#14)
 }

@@ -95,6 +95,7 @@ export function burstFire(f: Fighter, dtMs: number, ctx: PhysicsContext): void {
   for (let i = 0; i < sp.count; i++) {
     const k = Math.min(1, ((i + 0.5 + (w % 2) * 0.5) / sp.count) * 2 - 1); // da -1 (sinistra) a 1 (destra)
     fire(f, "specialNeutral", neutral, ctx, { vx: k * sp.speed, vy: -sp.lift * (1 - 0.35 * Math.abs(k)) });
+    if (sp.slick) ctx.projectiles!.list[ctx.projectiles!.list.length - 1].slick = true; // l'IRA lascia pozze (#13)
   }
 }
 

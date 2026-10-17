@@ -5026,7 +5026,8 @@
         "count": 6,
         "speed": 560,
         "lift": 820,
-        "endLagMs": 400
+        "endLagMs": 400,
+        "slick": true
       },
       "specials": {
         "neutral": {

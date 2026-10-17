@@ -3,8 +3,8 @@
 // pieni, i lottatori, lo scudo e i proiettili degli altri (si annullano a vicenda).
 
 import { SPECIAL_KINDS, specialsFor, type ProjectileSpecial, type SpecialSlot } from "../characters";
-import { FIGHTER, HITSTOP, SPECIAL_MOVES } from "../constants";
-import type { ProjectileState, SpecialKind } from "../types";
+import { FIGHTER, HITSTOP, SLICK, SPECIAL_MOVES } from "../constants";
+import type { ProjectileState, PuddleState, SpecialKind } from "../types";
 import { bodyBox, canBeHit, launch, overlap } from "./attacks";
 import type { Fighter, PhysicsContext } from "./fighter";
 import { hitShield } from "./shield";
@@ -12,15 +12,21 @@ import { counterAbsorbs } from "./specials";
 
 export interface Projectile extends ProjectileState {
   ageMs: number;
+  slick?: boolean; // dell'IRA di Lendmar (#13): dove sbatte per terra lascia una pozza che fa scivolare
+}
+
+export interface Puddle extends PuddleState {
+  lifeMs: number; // quanto resta ancora
 }
 
 // Tutti i proiettili della partita: li crea match.ts (o il primo tiro, nei test)
 export interface ProjectileWorld {
   list: Projectile[];
   nextId: number;
+  puddles: Puddle[]; // pozze scivolose a terra (#13), con gli id dei proiettili da cui sono nate
 }
 
-export const createProjectileWorld = (): ProjectileWorld => ({ list: [], nextId: 1 });
+export const createProjectileWorld = (): ProjectileWorld => ({ list: [], nextId: 1, puddles: [] });
 
 const worldOf = (ctx: PhysicsContext) => (ctx.projectiles ??= createProjectileWorld());
 
@@ -50,7 +56,9 @@ export function fire(f: Fighter, kind: SpecialKind, sp: ProjectileSpecial, ctx: 
 // Un tick: volo, poi muri, lottatori e altri proiettili
 export function stepProjectiles(fighters: Fighter[], dtMs: number, ctx: PhysicsContext): void {
   const world = ctx.projectiles;
-  if (!world || world.list.length === 0) return;
+  if (!world) return;
+  stepPuddles(world, dtMs);
+  if (world.list.length === 0) return;
   const dt = dtMs / 1000;
   const byId = new Map(fighters.map((f) => [f.id, f]));
   const ended = new Set<Projectile>();
@@ -68,7 +76,10 @@ export function stepProjectiles(fighters: Fighter[], dtMs: number, ctx: PhysicsC
     const box = boxOf(p, sp);
     const z = ctx.stage.blastZone;
     if (p.ageMs >= sp.lifeMs || p.x < z.left || p.x > z.right || p.y < z.top || p.y > z.bottom) end(p, "expired");
-    else if (ctx.stage.solids.some((s) => overlap(box, { x: s.x, y: s.y, w: s.width, h: s.height }))) end(p, "wall");
+    else if (ctx.stage.solids.some((s) => overlap(box, { x: s.x, y: s.y, w: s.width, h: s.height }))) {
+      if (p.slick) dropPuddle(world, p, ctx);
+      end(p, "wall");
+    }
     else hitFighter(p, sp, box, fighters, byId, ctx, end);
   }
 
@@ -139,3 +150,24 @@ const boxOf = (p: Projectile, sp: ProjectileSpecial) => ({ x: p.x - sp.range / 2
 export const projectileStates = (world: ProjectileWorld): ProjectileState[] =>
   world.list.map((p) => ({ id: p.id, ownerId: p.ownerId, kind: p.kind, characterId: p.characterId, x: Math.round(p.x), y: Math.round(p.y), vx: Math.round(p.vx), vy: Math.round(p.vy) }));
 
+// Le pozze dell'IRA (#13): la merda che cade sopra un blocco resta lì per un po', le più vecchie spariscono per prime
+function dropPuddle(world: ProjectileWorld, p: Projectile, ctx: PhysicsContext): void {
+  const half = SLICK.width / 2;
+  const s = ctx.stage.solids.find((s) => p.x >= s.x && p.x <= s.x + s.width && p.y <= s.y + SLICK.landSlackPx && p.vy > 0);
+  if (!s || s.width < SLICK.width) return; // presa di lato o da sotto: niente pozza
+  const x = Math.round(Math.min(s.x + s.width - half, Math.max(s.x + half, p.x)));
+  world.puddles.push({ id: p.id, ownerId: p.ownerId, x, y: s.y, width: SLICK.width, lifeMs: SLICK.lifeMs });
+  if (world.puddles.length > SLICK.max) world.puddles.shift();
+}
+
+function stepPuddles(world: ProjectileWorld, dtMs: number): void {
+  if (world.puddles.length === 0) return;
+  for (const q of world.puddles) q.lifeMs -= dtMs;
+  world.puddles = world.puddles.filter((q) => q.lifeMs > 0);
+}
+
+// f ha i piedi su una pozza non sua? Allora a terra scivola (movement.ts)
+export const onPuddle = (f: Fighter, ctx: PhysicsContext): boolean =>
+  f.onGround && (ctx.projectiles?.puddles ?? []).some((q) => q.ownerId !== f.id && Math.abs(f.y - q.y) < 2 && Math.abs(f.x - q.x) < q.width / 2 + FIGHTER.width / 4);
+
+export const puddleStates = (world: ProjectileWorld): PuddleState[] => world.puddles.map(({ id, ownerId, x, y, width }) => ({ id, ownerId, x, y, width }));

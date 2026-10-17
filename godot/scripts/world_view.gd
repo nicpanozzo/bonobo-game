@@ -29,6 +29,7 @@ var _reactions := {} # id giocatore -> reazione procedurale all'ultimo colpo pre
 var _items: Array = [] # oggetti dell'ultimo snapshot (#17)
 var _projectiles: Array = [] # proiettili delle speciali dell'ultimo snapshot (E10)
 var _projectiles_ms := 0 # quando è arrivato: tra uno snapshot e l'altro volano con la loro velocità
+var _puddles: Array = [] # pozze di merda dell'IRA di Lendmar a terra (#13)
 var _item_pos := {} # id oggetto -> Vector2 disegnata, che insegue quella dello snapshot
 var _facings := {} # id giocatore -> verso, per mettere in mano gli oggetti
 var _font: Font = ThemeDB.fallback_font
@@ -200,6 +201,7 @@ func reset() -> void:
 	_reactions = {}
 	_items = []
 	_projectiles = []
+	_puddles = []
 	_item_pos = {}
 	_dust = []
 	_trails = {}
@@ -507,6 +509,8 @@ func on_snapshot(snap: Dictionary) -> void:
 	buffer.own_id = my_id # il proprio lottatore senza ritardo d'interpolazione (E17)
 	buffer.push(snap.t, Time.get_ticks_msec(), snap.players, float(snap.get("stageMs", 0)))
 	predictor.items_present = not snap.get("items", []).is_empty()
+	_puddles = snap.get("puddles", [])
+	predictor.puddles = _puddles
 	for p in snap.players:
 		_load_character(_look(p))
 		if p.id == my_id:
@@ -804,6 +808,7 @@ func _draw() -> void:
 
 	_supreme_view.view_rect = view_rect
 	_speech.view_rect = view_rect
+	_draw_puddles(now)
 	_draw_items(now)
 	_draw_projectiles()
 	if not _life.is_empty():
@@ -924,6 +929,22 @@ func _draw_items(now: int) -> void:
 	for id in _item_pos.keys():
 		if not seen.has(id):
 			_item_pos.erase(id)
+
+
+# Le pozze dell'IRA (#13): una macchia marrone schiacciata a terra, lucida, con due grumi
+func _draw_puddles(now: int) -> void:
+	for q in _puddles:
+		var w: float = q.width
+		var c := Vector2(float(q.x), float(q.y) - 2.0)
+		var pts := PackedVector2Array()
+		for k in 20:
+			var a := TAU * k / 20.0
+			pts.append(c + Vector2(cos(a) * w / 2.0 * (1.0 + 0.08 * sin(a * 3.0)), sin(a) * 5.0))
+		draw_colored_polygon(pts, Color("5a3a1e"))
+		draw_circle(c + Vector2(-w * 0.18, -4), 6.0, Color("6b4a2b"))
+		draw_circle(c + Vector2(w * 0.12, -3), 4.5, Color("6b4a2b"))
+		var shine := 0.25 + 0.15 * sin(now / 300.0 + float(q.id))
+		draw_line(c + Vector2(-w * 0.3, -1), c + Vector2(w * 0.05, -1), Color(1, 0.9, 0.7, shine), 2.0)
 
 
 # La banana è una mezzaluna gialla con le punte scure; gli altri oggetti, finché non hanno

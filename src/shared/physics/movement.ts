@@ -1,10 +1,11 @@
 // Corsa, controllo in aria, salti, caduta veloce e gravità.
 
 import { characterStats } from "../characters";
-import { ATTACKS, BIRRA, BONG, DASH, DODGE, FIGHTER, FLAG, HITSTUN_AIR_DRAG, POWERUP, RECOVERY, SPORE } from "../constants";
+import { ATTACKS, BIRRA, BONG, DASH, DODGE, FIGHTER, FLAG, HITSTUN_AIR_DRAG, POWERUP, RECOVERY, SLICK, SPORE } from "../constants";
 import { startAttack } from "./attacks";
 import { endDash, stepDash } from "./dash";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
+import { onPuddle } from "./projectiles";
 import { attackMoveFactor } from "./supreme";
 
 // Cosa fa il lottatore con i tasti premuti (solo se non è stordito)
@@ -59,9 +60,12 @@ export function applyControls(f: Fighter, dt: number, ctx: PhysicsContext): void
     f.vx = dashSpeed * speed;
   } else if (f.onGround) {
     // fermi durante gli attacchi, tranne la scivolata dell'attacco in corsa e la suprema che gira (#358)
-    f.vx = f.attack
+    const want = f.attack
       ? (attackSlide(f) + dir * FIGHTER.groundSpeed * stats.speed * attackMoveFactor(f)) * speed
       : dir * FIGHTER.groundSpeed * stats.speed * speed;
+    // sopra una pozza dell'IRA (#13) non si frena né si parte di colpo: si scivola
+    const slip = SLICK.accel * dt;
+    f.vx = onPuddle(f, ctx) ? f.vx + Math.max(-slip, Math.min(slip, want - f.vx)) : want;
     // Ubriachi (#302): a terra si barcolla avanti e indietro, anche da fermi
     if (f.powerup === "birra" && !f.attack) f.vx += BIRRA.swayPxS * Math.sin((2 * Math.PI * f.powerupMs) / BIRRA.swayPeriodMs);
   } else if (dir !== 0) {

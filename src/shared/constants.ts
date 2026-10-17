@@ -514,6 +514,15 @@ export const MICELIO = {
   attackSpeedMult: 1.25, // velocità degli attacchi normali (la scheda: "più forte e più veloce")
 };
 
+// Le pozze dell'IRA di Lendmar (#13): la merda che cade su un blocco fa scivolare chi ci passa
+export const SLICK = {
+  lifeMs: 5000, // ms prima che una pozza sparisca
+  width: 70, // pixel
+  max: 10, // pozze insieme in tutta l'arena: oltre, sparisce la più vecchia
+  landSlackPx: 30, // pixel sotto il bordo del blocco entro cui il proiettile conta come caduto sopra
+  accel: 450, // pixel/s²: quanto in fretta si cambia velocità sopra una pozza (a terra di solito è subito)
+};
+
 export const BIRRA = {
   ms: 8000, // ms di effetto dalla raccolta
   damageMult: 1.4, // danno dei colpi dati da ubriachi
