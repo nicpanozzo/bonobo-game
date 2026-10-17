@@ -469,6 +469,113 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       },
     },
   },
+  // Lottatori dalle schede della community (#13), compilate a ottobre 2026 nella cartella Drive del gruppo.
+  // Ancora senza disegni: si vedono come il rettangolo colorato del giocatore finché non arriva lo sprite.
+  // Le supreme chieste (presa, rotazione, ritorno indietro, pioggia di merda...) richiedono codice nuovo:
+  // per ora usano quella di base. TODO community: statistiche e numeri provvisori, da provare al playtest (#22)
+
+  // Baldo: pazzo scatenato, ipercompetitivo, grosso, con i guanti da portiere e la racchetta da ping pong
+  lampione: {
+    id: "lampione",
+    name: "Lampione",
+    // pesante, salto esplosivo, bravo negli scatti brevi ma poco agile in aria
+    stats: { weight: 1.1, jump: 1.15, speed: 1.05, airSpeed: 0.9 },
+    specials: {
+      // la battuta di ping pong: pallina dritta e velocissima, colpo piccolo
+      neutral: { type: "projectile", name: "3° campione regionale", startupMs: 180, cooldownMs: 480, speed: 1050, gravity: 0, lifeMs: 700, maxAlive: 1, range: 14, height: 14, damage: 5, baseKnockback: 200, knockbackGrowth: 3.5, angleDeg: 25, color: 0xf4f1e8 },
+      // il tuffo del portiere, lungo e basso
+      side: { type: "dash", name: "Tuffo", startupMs: 140, durationMs: 300, speed: 880, endLagMs: 380, range: 50, height: 40, damage: 10, baseKnockback: 380, knockbackGrowth: 8, angleDeg: 30, boxY: -50 },
+      // si scola una Monster mentre para, e risponde carico
+      down: { type: "counter", name: "Monster", startupMs: 60, windowMs: 380, endLagMs: 460, minDamage: 9, multiplier: 1.4, range: 60, height: 60, baseKnockback: 460, knockbackGrowth: 9, angleDeg: 40 },
+    },
+  },
+
+  // Giovanni: bradipo giallo piccoletto, casinista e chiacchierone, suona il basso (anche #335: saltatore, #f5c211)
+  bradipo: {
+    id: "bradipo",
+    name: "Bradipo Giallo",
+    // piccolo e leggero, veloce a terra e in aria, salta tanto
+    stats: { weight: 0.95, speed: 1.1, airSpeed: 1.1, jump: 1.1 },
+    specials: {
+      // spara parole: tante, piccole e deboli (la direzione a caso non c'è, la fisica è deterministica)
+      neutral: { type: "projectile", name: "Ciacole", startupMs: 150, cooldownMs: 320, speed: 820, gravity: 0, lifeMs: 600, maxAlive: 3, range: 16, height: 12, damage: 3, baseKnockback: 150, knockbackGrowth: 2.5, angleDeg: 25, color: 0xf5c211 },
+      // l'onda del basso: lenta, alta e larga, spinge poco
+      side: { type: "projectile", name: "Bassline", startupMs: 240, cooldownMs: 700, speed: 420, gravity: 0, lifeMs: 1000, maxAlive: 1, range: 26, height: 70, damage: 5, baseKnockback: 260, knockbackGrowth: 3, angleDeg: 20, color: 0xb48cff },
+      down: { type: "counter", name: "Cambio pannolino", startupMs: 50, windowMs: 400, endLagMs: 450, minDamage: 8, multiplier: 1.3, range: 60, height: 60, baseKnockback: 450, knockbackGrowth: 9, angleDeg: 40 },
+    },
+  },
+
+  // Riccardo: spilungone calciatore, bonaccione e svampito, occhiali e capelli a tendina
+  giovannifrana: {
+    id: "giovannifrana",
+    name: "Giovanni fRana",
+    // pesante e veloce a terra, ma salta poco e cade presto. Peso da 1,1 a 1 e corsa da 1,1 a 1,05: vinceva il 62-68% in npm run balance
+    stats: { weight: 1, speed: 1.05, airSpeed: 0.9, jump: 0.9, gravity: 1.05 },
+    specials: {
+      // il pallone calciato, con un po' di parabola
+      neutral: { type: "projectile", name: "Rigore", startupMs: 240, cooldownMs: 620, speed: 780, gravity: 700, lift: 180, lifeMs: 1200, maxAlive: 1, range: 22, height: 22, damage: 8, baseKnockback: 280, knockbackGrowth: 4, angleDeg: 40, color: 0xffffff },
+      // TODO community: la scheda non la dice, una scivolata da calciatore
+      side: { type: "dash", name: "Scivolata", startupMs: 120, durationMs: 320, speed: 820, endLagMs: 400, range: 56, height: 28, damage: 9, baseKnockback: 340, knockbackGrowth: 8, angleDeg: 60, boxY: -30 },
+      down: { type: "counter", name: "RitTURD", startupMs: 60, windowMs: 400, endLagMs: 480, minDamage: 8, multiplier: 1.3, range: 60, height: 60, baseKnockback: 450, knockbackGrowth: 9, angleDeg: 40 },
+    },
+  },
+
+  // Marco: "Viva il comunismo", felpa, occhiali, barba e pelato (Egiainuso viene dal suo foglio delle pose, #178)
+  marcomunista: {
+    id: "marcomunista",
+    name: "Marcomunista",
+    // leggero e fluttuante: lento a terra, agile in aria
+    stats: { weight: 0.95, speed: 0.95, airSpeed: 1.05, jump: 1.05, gravity: 0.95 },
+    specials: {
+      // gira una canna mentre para; tiro e scatto restano quelli di base finché la scheda non li dice
+      down: { type: "counter", name: "Rolling", startupMs: 60, windowMs: 420, endLagMs: 460, minDamage: 8, multiplier: 1.3, range: 60, height: 60, baseKnockback: 440, knockbackGrowth: 9, angleDeg: 40 },
+    },
+  },
+
+  // Michele: magro, un po' emo, iroso e indisposto
+  lendmar: {
+    id: "lendmar",
+    name: "Lendmar",
+    // TODO community: la scheda non ha statistiche; magro, quindi leggero e scattante
+    stats: { weight: 0.95, speed: 1.05 },
+    specials: {
+      // lancia merda ad arco
+      neutral: { type: "projectile", name: "Fai schifo", startupMs: 230, cooldownMs: 600, speed: 540, gravity: 1800, lift: 540, lifeMs: 1400, maxAlive: 1, range: 24, height: 18, damage: 7, baseKnockback: 230, knockbackGrowth: 3.5, angleDeg: 50, color: 0x6b4a2b },
+      // si arrabbia e si getta in avanti: forte ma lascia scoperti
+      side: { type: "dash", name: "Burnout", startupMs: 180, durationMs: 300, speed: 950, endLagMs: 460, range: 46, height: 50, damage: 12, baseKnockback: 420, knockbackGrowth: 9, angleDeg: 35 },
+    },
+  },
+
+  // Gio (@elvedeo): chirurgo traumatologo rasta infettato dai funghi, "vi insegnerò la via del fungo"
+  drmicelium: {
+    id: "drmicelium",
+    name: "Dr. Micelium",
+    // tutto nella media: le statistiche restano quelle di Bonobot
+    specials: {
+      // un tiro di canna e il fumo infetto: lento, corto, poco danno
+      neutral: { type: "projectile", name: "Fumo infetto", startupMs: 260, cooldownMs: 600, speed: 300, gravity: 0, lifeMs: 800, maxAlive: 1, range: 40, height: 36, damage: 4, baseKnockback: 140, knockbackGrowth: 2.5, angleDeg: 25, color: 0xc9a27a },
+      // il bisturi sporco di sangue: dritto e veloce
+      side: { type: "projectile", name: "Bisturi", startupMs: 200, cooldownMs: 560, speed: 1000, gravity: 0, lifeMs: 650, maxAlive: 1, range: 20, height: 8, damage: 7, baseKnockback: 240, knockbackGrowth: 4, angleDeg: 25, color: 0xd23b3b },
+      // la scoreggia di spore: la nube colpisce tutto intorno, davanti e dietro (rettangolo centrato su di lui)
+      down: { type: "charge", name: "Nube di spore", minMs: 200, maxMs: 1000, maxMultiplier: 1.6, activeMs: 160, endLagMs: 420, range: 130, height: 80, boxX: -65, boxY: -80, damage: 8, baseKnockback: 360, knockbackGrowth: 8, angleDeg: 70 },
+    },
+  },
+
+  // Griga (KittySeanKula): l'allenatore con la lavagnetta, le collane d'oro e la tuta verde e gialla
+  coachcartier: {
+    id: "coachcartier",
+    name: "Coach Cartier",
+    // dalla scheda: velocissimo a terra, lento in aria
+    stats: { speed: 1.2, airSpeed: 0.8, jump: 0.95, gravity: 0.95 },
+    specials: {
+      // fa ruotare la collana d'oro e colpisce tutto intorno al rilascio
+      neutral: { type: "charge", name: "Cashback", minMs: 200, maxMs: 1100, maxMultiplier: 1.8, activeMs: 300, endLagMs: 400, range: 120, height: 70, boxX: -60, boxY: -76, damage: 9, baseKnockback: 380, knockbackGrowth: 9, angleDeg: 45 },
+      // lancia la lavagnetta
+      side: { type: "projectile", name: "Corri!", startupMs: 200, cooldownMs: 560, speed: 820, gravity: 0, lifeMs: 800, maxAlive: 1, range: 26, height: 20, damage: 7, baseKnockback: 260, knockbackGrowth: 4, angleDeg: 30, color: 0x2f6b3a },
+      // urla e allontana: risposta debole ma che spinge lontano
+      down: { type: "counter", name: "Mahmmoney", startupMs: 60, windowMs: 400, endLagMs: 460, minDamage: 6, multiplier: 1.1, range: 80, height: 70, baseKnockback: 560, knockbackGrowth: 10, angleDeg: 35 },
+    },
+  },
 };
 
 // Un id sconosciuto (o mancante) diventa il personaggio base
