@@ -21,6 +21,7 @@ describe("tracce della predizione (E17)", () => {
     assert.ok(ticks.some((s) => s.vy > 1000), "caduta veloce");
     assert.ok(ticks.some((s) => s.rising) && ticks.some((s) => !s.onGround && !s.rising && s.vy < 0), "salto corto");
     assert.ok(!DASH.byTap || ticks.some((s) => s.dashing && s.dash > 0) && ticks.some((s) => s.dashing && s.dash === 0), "scatto e corsa");
+    assert.ok(ticks.some((s) => s.dashing && s.dash === 0) && ticks.some((s) => s.attack === "dashAttack"), "corsa col tasto e attacco in corsa");
     assert.ok(ticks.some((s) => s.dodge > 0 && s.onGround) && ticks.some((s) => s.dodge > 0 && s.airDodge), "schivata a terra e in aria");
     assert.ok(ticks.some((s) => s.attack === "light" && s.onGround) && ticks.some((s) => s.attack === "heavyDown"), "attacchi da terra");
     assert.ok(ticks.some((s) => s.attack?.endsWith("Air")) && ticks.some((s) => s.attack?.endsWith("Up")), "attacchi in aria e in su");

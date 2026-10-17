@@ -30,6 +30,15 @@ func test_speciali_col_nome_del_personaggio() -> void:
 	runner.check(up[1] == "W + K", "tasti combinati: %s" % [up])
 
 
+func test_corsa_e_attacco_in_corsa() -> void:
+	var rows := _all(MoveList.rows(_game(), "bonobot", {"run": "Maiusc", "heavy": "K", "left": "A", "right": "D"}))
+	var dash: Array = rows.filter(func(r): return r[0] == "Attacco in corsa")[0]
+	runner.check(dash[1] == "Maiusc + K", "attacco in corsa: %s" % [dash])
+	var run: Array = rows.filter(func(r): return r[0] == "Corsa")[0]
+	runner.check(run[1] == "Maiusc + A/D", "corsa: %s" % [run])
+	runner.check(Settings.DEFAULT_BINDINGS.run == [KEY_SHIFT], "la corsa sta su Maiusc")
+
+
 func test_ogni_personaggio_ha_la_sua_lista() -> void:
 	var game := _game()
 	for id in game.characters:

@@ -11,7 +11,7 @@ extends RefCounted
 const ACTION_KEYS := ["shield", "special", "supreme"] # mosse che il port non fa
 const ITEM_KEYS := ["light", "heavy"] # con un oggetto vicino raccolgono o lanciano invece di attaccare (#17)
 # Gli attacchi che il port sa fare (E17 passo 5): leggeri, pesanti e recupero
-const PREDICTED_ATTACKS := ["light", "heavy", "lightUp", "lightDown", "lightAir", "heavyUp", "heavyDown", "heavyAir", "recovery"]
+const PREDICTED_ATTACKS := ["light", "heavy", "lightUp", "lightDown", "lightAir", "heavyUp", "heavyDown", "heavyAir", "recovery", "dashAttack"]
 
 var enabled := true # opzione "Predizione" (video.predict) e velocità normale nell'allenamento
 var smooth_ms := 100.0

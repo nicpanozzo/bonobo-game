@@ -93,6 +93,7 @@ export const emptyInput = (): InputState => ({
   shield: false,
   special: false,
   supreme: false,
+  run: false,
 });
 
 export interface FighterSetup {

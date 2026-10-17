@@ -32,7 +32,8 @@
     "speed": 900,
     "durationMs": 300,
     "runSpeed": 560,
-    "byTap": false
+    "byTap": false,
+    "attackSlide": 640
   },
   "dodge": {
     "durationMs": 260,
@@ -139,6 +140,17 @@
       "angleDeg": 32,
       "boxX": 12,
       "boxY": -82
+    },
+    "dashAttack": {
+      "damage": 10,
+      "baseKnockback": 400,
+      "knockbackGrowth": 9,
+      "startupMs": 100,
+      "activeMs": 160,
+      "cooldownMs": 620,
+      "range": 58,
+      "height": 44,
+      "angleDeg": 45
     },
     "recovery": {
       "damage": 4,
@@ -2201,6 +2213,13 @@
             "fps": 8,
             "loop": false,
             "src": "heavy"
+          },
+          "dashAttack": {
+            "row": 5,
+            "frames": 4,
+            "fps": 8,
+            "loop": false,
+            "src": "heavy"
           }
         }
       },
@@ -2525,6 +2544,13 @@
             "hitFrame": 1,
             "frames": 17,
             "src": "specialDown"
+          },
+          "dashAttack": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 8,
+            "frames": 18,
+            "src": "heavy"
           }
         }
       },
@@ -2848,6 +2874,13 @@
             "hitFrame": 6,
             "frames": 8,
             "src": "heavy"
+          },
+          "dashAttack": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 6,
+            "frames": 8,
+            "src": "heavy"
           }
         }
       },
@@ -3077,6 +3110,12 @@
             "src": "heavy"
           },
           "specialDown": {
+            "fps": 1,
+            "loop": false,
+            "frames": 1,
+            "src": "heavy"
+          },
+          "dashAttack": {
             "fps": 1,
             "loop": false,
             "frames": 1,
@@ -3389,6 +3428,13 @@
             "hitFrame": 1,
             "frames": 17,
             "src": "specialDown"
+          },
+          "dashAttack": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 8,
+            "frames": 18,
+            "src": "heavy"
           }
         }
       },
@@ -3597,6 +3643,13 @@
                 "hitFrame": 1,
                 "frames": 17,
                 "src": "specialDown"
+              },
+              "dashAttack": {
+                "fps": 24,
+                "loop": false,
+                "hitFrame": 8,
+                "frames": 18,
+                "src": "heavy"
               }
             }
           },
@@ -3889,6 +3942,12 @@
             "loop": false,
             "frames": 1,
             "src": "specialDown"
+          },
+          "dashAttack": {
+            "fps": 1,
+            "loop": false,
+            "frames": 1,
+            "src": "heavy"
           }
         }
       },
@@ -4197,6 +4256,13 @@
             "hitFrame": 1,
             "frames": 17,
             "src": "specialDown"
+          },
+          "dashAttack": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 8,
+            "frames": 18,
+            "src": "heavy"
           }
         }
       },
@@ -4537,6 +4603,12 @@
             "loop": false,
             "frames": 1,
             "src": "specialDown"
+          },
+          "dashAttack": {
+            "fps": 1,
+            "loop": false,
+            "frames": 1,
+            "src": "heavy"
           }
         }
       },
@@ -4841,6 +4913,13 @@
             "hitFrame": 1,
             "frames": 17,
             "src": "specialDown"
+          },
+          "dashAttack": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 8,
+            "frames": 18,
+            "src": "heavy"
           }
         }
       },
@@ -5149,6 +5228,13 @@
             "hitFrame": 1,
             "frames": 17,
             "src": "specialDown"
+          },
+          "dashAttack": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 8,
+            "frames": 18,
+            "src": "heavy"
           }
         }
       },
@@ -5465,6 +5551,13 @@
             "hitFrame": 1,
             "frames": 17,
             "src": "specialDown"
+          },
+          "dashAttack": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 8,
+            "frames": 18,
+            "src": "heavy"
           }
         }
       },
