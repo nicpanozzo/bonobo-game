@@ -4599,10 +4599,9 @@
             "src": "specialDown"
           },
           "dashAttack": {
-            "fps": 24,
+            "fps": 1,
             "loop": false,
-            "hitFrame": 8,
-            "frames": 18,
+            "frames": 1,
             "src": "heavy"
           }
         }
