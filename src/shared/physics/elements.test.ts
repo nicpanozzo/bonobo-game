@@ -273,8 +273,8 @@ describe("canale di Padova (#253)", () => {
 });
 
 describe("Padova, isola sospesa con la fontana (#288)", () => {
-  it("lo zampillo della fontana lancia in alto chi sta sulla vasca, verso lastre e balcone", () => {
-    const stage = getStage("padova");
+  it("lo zampillo della fontana lancia in alto chi sta sulla vasca, verso lastre e balcone (Padova · il palazzo, #378)", () => {
+    const stage = getStage("padova-palazzo");
     const jet = stage.jets![0];
     assert.equal(jetPhase(jet, 1000), "calm");
     assert.equal(jetPhase(jet, 3000), "active");

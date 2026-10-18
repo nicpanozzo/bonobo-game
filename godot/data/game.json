@@ -1838,6 +1838,605 @@
           }
         }
       }
+    },
+    "padova-palazzo": {
+      "id": "padova-palazzo",
+      "name": "Padova · il palazzo",
+      "width": 1920,
+      "camera": {
+        "minZoom": 0.6
+      },
+      "solids": [
+        {
+          "x": 100,
+          "y": 520,
+          "width": 1720,
+          "height": 70
+        }
+      ],
+      "platforms": [
+        {
+          "x": 600,
+          "y": 410,
+          "width": 180
+        },
+        {
+          "x": 1140,
+          "y": 410,
+          "width": 180
+        },
+        {
+          "x": 470,
+          "y": 330,
+          "width": 140
+        },
+        {
+          "x": 1310,
+          "y": 330,
+          "width": 140
+        },
+        {
+          "x": 220,
+          "y": 380,
+          "width": 180
+        },
+        {
+          "x": 1520,
+          "y": 380,
+          "width": 180
+        },
+        {
+          "x": 800,
+          "y": 300,
+          "width": 320
+        },
+        {
+          "x": 900,
+          "y": 180,
+          "width": 120
+        }
+      ],
+      "hazards": [
+        {
+          "kind": "ciclista",
+          "x": 0,
+          "y": 0,
+          "width": 80,
+          "height": 95,
+          "damage": 13,
+          "knockback": 620,
+          "knockbackGrowth": 5,
+          "angleDeg": 35,
+          "travel": {
+            "path": [
+              {
+                "x": -160,
+                "y": 425
+              },
+              {
+                "x": 2080,
+                "y": 425
+              }
+            ],
+            "periodMs": 20000,
+            "warnMs": 1200,
+            "crossMs": 4200,
+            "alternate": true,
+            "offsetMs": 7000
+          }
+        }
+      ],
+      "jets": [
+        {
+          "x": 915,
+          "y": 520,
+          "width": 90,
+          "height": 320,
+          "speed": 1350,
+          "periodMs": 7000,
+          "warnMs": 1200,
+          "activeMs": 1600,
+          "offsetMs": 3000,
+          "idle": 70
+        }
+      ],
+      "itemSpots": [
+        {
+          "x": 840,
+          "y": 520,
+          "width": 240,
+          "weight": 3
+        },
+        {
+          "x": 600,
+          "y": 410,
+          "width": 180,
+          "weight": 2
+        },
+        {
+          "x": 1140,
+          "y": 410,
+          "width": 180,
+          "weight": 2
+        },
+        {
+          "x": 470,
+          "y": 330,
+          "width": 140,
+          "weight": 2
+        },
+        {
+          "x": 1310,
+          "y": 330,
+          "width": 140,
+          "weight": 2
+        },
+        {
+          "x": 220,
+          "y": 380,
+          "width": 180,
+          "weight": 2
+        },
+        {
+          "x": 1520,
+          "y": 380,
+          "width": 180,
+          "weight": 2
+        },
+        {
+          "x": 800,
+          "y": 300,
+          "width": 320,
+          "weight": 3
+        }
+      ],
+      "blastZone": {
+        "left": -300,
+        "right": 2220,
+        "top": -420,
+        "bottom": 1000
+      },
+      "spawns": [
+        {
+          "x": 300,
+          "y": 520
+        },
+        {
+          "x": 1620,
+          "y": 520
+        },
+        {
+          "x": 450,
+          "y": 520
+        },
+        {
+          "x": 1470,
+          "y": 520
+        },
+        {
+          "x": 200,
+          "y": 520
+        },
+        {
+          "x": 1720,
+          "y": 520
+        },
+        {
+          "x": 600,
+          "y": 520
+        },
+        {
+          "x": 1320,
+          "y": 520
+        }
+      ],
+      "respawn": {
+        "x": 960,
+        "y": 100
+      },
+      "colors": {
+        "sky": 8036548,
+        "solid": 7301728,
+        "solidEdge": 15262418,
+        "platform": 14275783
+      },
+      "music": {
+        "bpm": 116,
+        "chords": [
+          "F",
+          "Am",
+          "Bb",
+          "C"
+        ],
+        "lead": "triangle"
+      },
+      "art": {
+        "dir": "padova-palazzo",
+        "scale": 0.5,
+        "layers": [
+          {
+            "file": "sfondo-0.png",
+            "parallax": 0.15
+          },
+          {
+            "file": "sfondo-1.png",
+            "parallax": 0.45
+          },
+          {
+            "file": "sfondo-2.png",
+            "parallax": 0.75
+          }
+        ],
+        "preview": "anteprima.png",
+        "previewFull": true,
+        "skins": {
+          "pietra": {
+            "file": "pietra.png",
+            "edge": "bordo.png"
+          },
+          "riva": {
+            "file": "riva.png",
+            "edge": "bordo.png"
+          },
+          "lastra": {
+            "file": "lastra.png",
+            "depth": 12
+          },
+          "balcone": {
+            "file": "balcone.png",
+            "depth": 14,
+            "rails": [
+              {
+                "file": "balaustra-balcone.png",
+                "height": 30,
+                "offsetY": 2
+              }
+            ]
+          }
+        },
+        "solidSkin": "pietra",
+        "platformSkin": "lastra",
+        "pieces": {
+          "solids": [
+            "riva"
+          ],
+          "platforms": [
+            "lastra",
+            "lastra",
+            "lastra",
+            "lastra",
+            "lastra",
+            "lastra",
+            "balcone",
+            "balcone"
+          ]
+        },
+        "hazardSprites": [
+          {
+            "hazard": 0,
+            "file": "ciclista.png",
+            "frames": 8,
+            "fps": 16,
+            "scale": 0.58,
+            "footX": 150,
+            "footY": 312,
+            "shout": {
+              "text": "CANCAROOOO!",
+              "x": 200,
+              "y": 110
+            }
+          }
+        ],
+        "props": [
+          {
+            "file": "palazzo.png",
+            "x": 960,
+            "y": 522,
+            "scale": 0.5
+          },
+          {
+            "file": "piano.png",
+            "x": 960,
+            "y": 524,
+            "scale": 0.5
+          },
+          {
+            "file": "platano.png",
+            "x": 410,
+            "y": 522,
+            "scale": 0.5
+          },
+          {
+            "file": "platano.png",
+            "x": 1510,
+            "y": 522,
+            "scale": 0.5,
+            "flip": true
+          },
+          {
+            "file": "fondamenta.png",
+            "x": 960,
+            "y": 760
+          },
+          {
+            "file": "fontana.png",
+            "x": 960,
+            "y": 524
+          },
+          {
+            "file": "fontana-davanti.png",
+            "x": 960,
+            "y": 530,
+            "front": true,
+            "opacity": 0.7
+          },
+          {
+            "file": "statua-ponte.png",
+            "x": 690,
+            "y": 522,
+            "scale": 0.5
+          },
+          {
+            "file": "statua-ponte.png",
+            "x": 1230,
+            "y": 522,
+            "scale": 0.5,
+            "flip": true
+          },
+          {
+            "file": "statua-alta.png",
+            "x": 540,
+            "y": 522,
+            "scale": 0.5
+          },
+          {
+            "file": "statua-alta.png",
+            "x": 1380,
+            "y": 522,
+            "scale": 0.5,
+            "flip": true
+          },
+          {
+            "file": "statua-piazza.png",
+            "x": 310,
+            "y": 522,
+            "scale": 0.5
+          },
+          {
+            "file": "statua-piazza.png",
+            "x": 1610,
+            "y": 522,
+            "scale": 0.5,
+            "flip": true
+          }
+        ],
+        "life": {
+          "rain": {
+            "periodMs": 40000,
+            "rainMs": 12000,
+            "offsetMs": 26000
+          },
+          "sheets": {
+            "nuvole": {
+              "file": "nuvole.png",
+              "frames": 8
+            },
+            "gabbiano": {
+              "file": "gabbiano.png",
+              "frames": 8
+            },
+            "rondine": {
+              "file": "rondine.png",
+              "frames": 4
+            },
+            "pipistrello": {
+              "file": "pipistrello.png",
+              "frames": 4
+            },
+            "piccione": {
+              "file": "piccione.png",
+              "frames": 6
+            },
+            "passanti": {
+              "file": "passanti.png",
+              "frames": 8,
+              "rows": 9
+            },
+            "ombrelli": {
+              "file": "ombrelli.png",
+              "frames": 4
+            },
+            "bar-tavolo": {
+              "file": "bar-tavolo.png",
+              "frames": 1
+            },
+            "bar-seduti": {
+              "file": "bar-seduti.png",
+              "frames": 4,
+              "rows": 3
+            },
+            "cameriere": {
+              "file": "cameriere.png",
+              "frames": 8
+            },
+            "auto": {
+              "file": "auto.png",
+              "frames": 6
+            },
+            "furgone": {
+              "file": "furgone.png",
+              "frames": 2
+            },
+            "vespa": {
+              "file": "vespa.png",
+              "frames": 2
+            },
+            "bici": {
+              "file": "bici.png",
+              "frames": 4
+            },
+            "bus": {
+              "file": "bus.png",
+              "frames": 1
+            },
+            "tram": {
+              "file": "tram.png",
+              "frames": 1
+            },
+            "zampillo": {
+              "file": "zampillo.png",
+              "frames": 6
+            },
+            "getto": {
+              "file": "getto.png",
+              "frames": 4
+            }
+          },
+          "birds": {
+            "y": 40,
+            "parallax": 0.2,
+            "everyMs": 14000
+          },
+          "pigeons": [
+            {
+              "x": 485,
+              "y": 330
+            },
+            {
+              "x": 1435,
+              "y": 330
+            },
+            {
+              "x": 235,
+              "y": 380
+            },
+            {
+              "x": 1685,
+              "y": 380
+            },
+            {
+              "x": 790,
+              "y": 100
+            },
+            {
+              "x": 1130,
+              "y": 100
+            }
+          ],
+          "walkers": {
+            "y": 480,
+            "parallax": 0.75,
+            "count": 14,
+            "umbrellas": true
+          },
+          "vehicles": {
+            "y": 464,
+            "parallax": 0.5,
+            "everyMs": 23000,
+            "kind": "tram"
+          },
+          "traffic": {
+            "y": 464,
+            "parallax": 0.5,
+            "everyMs": 2600,
+            "kinds": [
+              "auto",
+              "auto",
+              "auto",
+              "vespa",
+              "vespa",
+              "furgone",
+              "bici",
+              "bus"
+            ]
+          },
+          "flyers": {
+            "y": 90,
+            "parallax": 0.6,
+            "count": 7
+          },
+          "planes": {
+            "y": -60,
+            "everyMs": 75000
+          },
+          "bar": {
+            "x": 120,
+            "y": 474,
+            "parallax": 0.8,
+            "tables": 3,
+            "spacing": 72
+          },
+          "daycycle": {
+            "cycleMs": 240000,
+            "startAt": 0.8,
+            "sky": true,
+            "lamps": [
+              {
+                "x": -170,
+                "y": 379,
+                "parallax": 0.75
+              },
+              {
+                "x": 130,
+                "y": 379,
+                "parallax": 0.75
+              },
+              {
+                "x": 430,
+                "y": 379,
+                "parallax": 0.75
+              },
+              {
+                "x": 730,
+                "y": 379,
+                "parallax": 0.75
+              },
+              {
+                "x": 1030,
+                "y": 379,
+                "parallax": 0.75
+              },
+              {
+                "x": 1330,
+                "y": 379,
+                "parallax": 0.75
+              },
+              {
+                "x": 1630,
+                "y": 379,
+                "parallax": 0.75
+              },
+              {
+                "x": 1930,
+                "y": 379,
+                "parallax": 0.75
+              }
+            ],
+            "lightLayers": [
+              {
+                "file": "sfondo-0-luci.png",
+                "parallax": 0.15
+              },
+              {
+                "file": "sfondo-1-luci.png",
+                "parallax": 0.45
+              },
+              {
+                "file": "sfondo-2-luci.png",
+                "parallax": 0.75
+              }
+            ],
+            "lightProps": [
+              {
+                "file": "palazzo-luci.png",
+                "x": 960,
+                "y": 522,
+                "scale": 0.5
+              }
+            ]
+          }
+        }
+      }
     }
   },
   "defaultCharacterId": "default",
