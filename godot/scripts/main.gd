@@ -14,6 +14,7 @@ const RECONNECT_MS := 1500 # attesa prima di riprovare a collegarsi
 const WAKE_HINT_MS := 5000 # dopo quanti ms senza risposta si avvisa che il server forse si sta svegliando
 const REMATCH_PAD_BUTTON := JOY_BUTTON_Y # rivincita dal pad: Y è libero finché non arriva la speciale (E10)
 const RESULTS_BAR_BOTTOM := 150 # distanza dal fondo dei pulsanti di fine partita, sopra le schede dei giocatori, pixel
+const RESULTS_BAR_BOTTOM_PHONE := 24 # sul telefono le schede spariscono a fine partita: i pulsanti vanno in fondo, sotto i pollici
 const P2_NAME_CHARS := 13 # caratteri del nome tenuti per il secondo giocatore, che ci aggiunge " 2" (il server ne tiene 16)
 const PAGES_URL := "https://nicpanozzo.github.io/bonobo-game/godot/" # dove sta la versione web (pages.yml)
 
@@ -54,6 +55,9 @@ var _last_players: Array = [] # giocatori dell'ultimo snapshot, per il tasto Seg
 var p2: SecondPlayer # il secondo giocatore sullo stesso schermo, col suo pad; null se non c'è
 var _p1_pad := -1 # l'ultimo pad usato dal primo giocatore: Start da un altro pad fa entrare il secondo
 var _p2_hint: Label
+var _view := Vector2(1280, 720) # quanto mondo si vede alla telecamera 1: più largo sui telefoni lunghi (Phone)
+var _view_k := 1.0 # pixel dello schermo del gioco per pixel della vista: sul telefono si disegna più piccolo (Phone)
+var _cam_zoom := 1.0 # lo zoom della telecamera come se lo schermo fosse alto 720; camera.zoom ci aggiunge _view_k
 
 
 func _ready() -> void:
@@ -83,6 +87,7 @@ func _ready() -> void:
 	add_child(audio)
 	audio.setup(game)
 	rumble = Rumble.new(game.rumble)
+	Phone.apply(get_window(), int(settings.touch.screen))
 	settings.changed.connect(_apply_volumes)
 	_apply_volumes()
 
@@ -133,7 +138,8 @@ func _ready() -> void:
 	_rotate_hint = UI.label("Gira il telefono\nin orizzontale")
 	_rotate_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_rotate_hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_rotate_hint.add_theme_font_size_override("font_size", 110) # in verticale lo schermo da 1280 diventa largo un terzo
+	# In verticale lo schermo da 1280 diventa largo un terzo; in modalità telefono è già largo 854
+	_rotate_hint.add_theme_font_size_override("font_size", 110 if not Phone.active else 72)
 	var dark := StyleBoxFlat.new()
 	dark.bg_color = Color(0.05, 0.05, 0.08, 0.94)
 	_rotate_hint.add_theme_stylebox_override("normal", dark)
@@ -308,7 +314,7 @@ func _leave(page := "match") -> void:
 	hud.reset()
 	gym.close_all()
 	camera.position = Vector2.ZERO
-	camera.zoom = Vector2.ONE
+	_cam_zoom = 1.0
 	_hide_connecting()
 	_hide_results()
 	_show_lobby(str(params.get("kind", "")), true)
@@ -336,6 +342,7 @@ func _apply_volumes() -> void:
 	_apply_prediction()
 	Video.apply(settings)
 	Access.apply(game, settings.access)
+	Phone.apply(get_window(), int(settings.touch.screen))
 	if hud != null:
 		hud.queue_redraw()
 
@@ -521,7 +528,7 @@ func _on_event(name: String, data: Variant) -> void:
 			gym.on_welcome(data)
 			_check_server_version(str(data.get("serverVersion", "")))
 			camera.position = Vector2.ZERO
-			camera.zoom = Vector2.ONE
+			_cam_zoom = 1.0
 		"snapshot":
 			_last_snapshot = Time.get_ticks_msec()
 			_last_players = data.get("players", [])
@@ -569,6 +576,7 @@ func _process(_delta: float) -> void:
 	if p2 != null:
 		p2.poll()
 	_p2_hint.visible = _p2_allowed() and p2 == null and _free_pads().size() > 0
+	_fit_view()
 	if playing:
 		_send_input()
 		# Solo i percorsi della Corsa (con il traguardo) seguono il proprio lottatore; le arene,
@@ -577,15 +585,27 @@ func _process(_delta: float) -> void:
 			_follow(_delta)
 		else:
 			_frame_fighters(_delta)
-		var view := Rect2(camera.position, Vector2(game.world.width, game.world.height) / camera.zoom.x)
+		camera.zoom = Vector2.ONE * _cam_zoom * _view_k
+		var view := Rect2(camera.position, _view / _cam_zoom)
 		world.view_rect = view
 		audio.view_left = view.position.x
 
 
 # Nei percorsi della Corsa, più larghi dello schermo, la telecamera segue il proprio lottatore:
 # un po' a sinistra del centro, per vedere la strada davanti
+# Lo schermo del gioco in unità della partita (alta 720): sul computer 1280x720, sul telefono
+# più largo se il telefono è più lungo di 16:9. HUD e comandi touch si dispongono di conseguenza
+func _fit_view() -> void:
+	var visible := get_viewport().get_visible_rect().size
+	_view_k = Phone.view_scale(visible, float(game.world.height))
+	_view = visible / _view_k
+	touch.fit(visible, _view_k)
+	hud.compact = Phone.active
+	hud.cards_band = touch.clear_band() if touch.visible else Vector2.ZERO
+
+
 func _follow(delta: float) -> void:
-	var w: float = game.world.width
+	var w: float = _view.x
 	if not world.positions.has(world.my_id):
 		return
 	var target: float = world.positions[world.my_id].x - w * 0.4
@@ -599,29 +619,31 @@ func _follow(delta: float) -> void:
 # più delle zone di espulsione. La posizione è l'angolo in alto a sinistra della vista.
 func _frame_fighters(delta: float) -> void:
 	var cam: Dictionary = game.camera
-	var screen := Vector2(game.world.width, game.world.height)
-	var aim := framing(world.stage, cam, game, world.alive_positions())
+	var screen := _view
+	var aim := framing(world.stage, cam, game, world.alive_positions(), screen)
 	var limits: Rect2 = aim.limits
 	var target_zoom: float = aim.zoom
 	var center: Vector2 = aim.center
 
 	var k := 1.0 - exp(-delta * 1000.0 / float(cam.smoothingMs))
-	var zoom := lerpf(camera.zoom.x, target_zoom, k)
+	var zoom := lerpf(_cam_zoom, target_zoom, k)
 	var size := screen / zoom
-	var old_center := camera.position + screen / camera.zoom.x / 2
+	var old_center := camera.position + screen / _cam_zoom / 2
 	var c := old_center.lerp(center, k)
 	# La vista resta dentro le zone di espulsione
 	c.x = clampf(c.x, limits.position.x + size.x / 2, limits.end.x - size.x / 2)
 	c.y = clampf(c.y, limits.position.y + size.y / 2, limits.end.y - size.y / 2)
-	camera.zoom = Vector2(zoom, zoom)
+	_cam_zoom = zoom
 	camera.position = c - size / 2
 
 
 # Dove punta la telecamera di un'arena: zoom e centro per inquadrare i lottatori vivi (posizioni ai piedi),
 # e il rettangolo delle zone di espulsione da cui la vista non esce. L'arena può chiedere il suo
 # zoom (camera.minZoom e maxZoom, #240): le arene più larghe dello schermo si allontanano di più.
-static func framing(stage: Dictionary, cam: Dictionary, game: Dictionary, positions: Array) -> Dictionary:
-	var screen := Vector2(game.world.width, game.world.height)
+# screen: quanto mondo si vede alla telecamera 1 (più largo di 1280 sui telefoni lunghi)
+static func framing(stage: Dictionary, cam: Dictionary, game: Dictionary, positions: Array, screen := Vector2.ZERO) -> Dictionary:
+	if screen == Vector2.ZERO:
+		screen = Vector2(game.world.width, game.world.height)
 	var width := float(stage.get("width", screen.x))
 	var bz: Dictionary = stage.get("blastZone", {"left": 0, "right": width, "top": 0, "bottom": screen.y})
 	var limits := Rect2(bz.left, bz.top, bz.right - bz.left, bz.bottom - bz.top)
@@ -708,7 +730,7 @@ func _show_results() -> void:
 	results_bar.theme = UI.theme()
 	ui_layer.add_child(results_bar)
 	results_bar.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM, Control.PRESET_MODE_MINSIZE)
-	results_bar.position.y -= RESULTS_BAR_BOTTOM * Access.text_scale
+	results_bar.position.y -= (RESULTS_BAR_BOTTOM_PHONE if Phone.active else RESULTS_BAR_BOTTOM) * Access.text_scale
 	UI.fade_in(results_bar)
 	# Col pad il fuoco sta su Rivincita; con la tastiera R resta la scorciatoia
 	if not Input.get_connected_joypads().is_empty():

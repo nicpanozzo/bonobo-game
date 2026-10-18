@@ -20,6 +20,8 @@ var _jolts := {} # id -> { ms, amp }: la percentuale trema per un attimo dopo un
 var _supreme_full := false # qualcuno ha la barra della suprema piena (#101): la barra pulsa, si ridisegna sempre
 var _portraits := {} # id personaggio (con la skin, #339) -> [Texture2D, Rect2] del ritratto, o [] se non ha disegni (E11)
 var _variants := {} # id giocatore -> variante di colore, come in world_view.gd
+var compact := false # modalità telefono (Phone): la classifica sta più in alto e lascia il fondo ai pulsanti
+var cards_band := Vector2.ZERO # da x a x dove stanno le schede (tra levetta e tasti touch); zero = tutta la larghezza
 
 const WorldView := preload("res://scripts/world_view.gd")
 const SpeechBubbles := preload("res://scripts/speech_bubbles.gd")
@@ -113,8 +115,8 @@ func _stat(id: String) -> Dictionary:
 
 
 func _draw() -> void:
-	var w: float = game.world.width
-	var h: float = game.world.height
+	var w: float = size.x if size.x > 0 else game.world.width
+	var h: float = size.y if size.y > 0 else game.world.height
 	var top_line := status if status != "" else _info
 	if top_line != "":
 		_outlined(top_line, Vector2(12, 26), 16, Color.WHITE)
@@ -137,17 +139,19 @@ func _draw() -> void:
 	# Con il testo più grande le schede crescono tutte insieme, a partire dal fondo dello schermo
 	var k := Access.text_scale
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2(k, k))
-	_draw_cards(w / k, h / k, scores != null)
+	if not (compact and _snap.winnerId != null): # sul telefono a fine partita il fondo è dei pulsanti
+		var band := cards_band if cards_band != Vector2.ZERO else Vector2(0, w)
+		_draw_cards(band / k, h / k, scores != null)
 	draw_set_transform(Vector2.ZERO)
 	if _snap.winnerId != null:
 		_draw_results(w, h)
 
 
-# Una scheda per giocatore in basso
-func _draw_cards(w: float, h: float, flag: bool) -> void:
+# Una scheda per giocatore in basso, tra band.x e band.y
+func _draw_cards(band: Vector2, h: float, flag: bool) -> void:
 	var players: Array = _snap.players
-	var card_w := minf(170.0, (w - 20) / maxi(1, players.size())) # fino a 8 giocatori in una riga
-	var x0 := w / 2 - card_w * players.size() / 2
+	var card_w := minf(170.0, (band.y - band.x - 20) / maxi(1, players.size())) # fino a 8 giocatori in una riga
+	var x0 := (band.x + band.y) / 2 - card_w * players.size() / 2
 	for i in players.size():
 		var p: Dictionary = players[i]
 		var x := x0 + i * card_w
@@ -251,7 +255,8 @@ func _draw_results(w: float, _h: float) -> void:
 	if not winner.is_empty():
 		var team: bool = rules.get("mode", "ffa") != "ffa"
 		title = ("Squadra %s vince!" % game.teamNames[str(int(winner.team))]) if team else "%s vince!" % winner.name
-	_centered(title, Vector2(w / 2, 200), 48, UI.ACCENT)
+	var lift := 110.0 if compact else 0.0 # sul telefono tutto più in alto: sotto ci sono Rivincita e Cambia lottatore
+	_centered(title, Vector2(w / 2, 200 - lift), 48, UI.ACCENT)
 	# La frase di vittoria del suo personaggio (#13), o la provocazione se la scheda ha solo quella
 	if not winner.is_empty() and rules.get("mode", "ffa") == "ffa":
 		var c: Dictionary = game.characters.get(winner.get("characterId", ""), {})
@@ -259,7 +264,7 @@ func _draw_results(w: float, _h: float) -> void:
 		if line == "":
 			line = SpeechBubbles.quote(c, "taunt")
 		if line != "":
-			_centered("«%s»" % line, Vector2(w / 2, 236), 20, Color.WHITE)
+			_centered("«%s»" % line, Vector2(w / 2, 236 - lift), 20, Color.WHITE)
 
 	players.sort_custom(func(a, b):
 		var sa := _stat(a.id)
@@ -282,7 +287,7 @@ func _draw_results(w: float, _h: float) -> void:
 	rows.append("%s: rivincita subito" % rematch_key)
 	var line_h := 30.0 * Access.text_scale
 	var panel_w := 620.0 * Access.text_scale
-	var top := 250.0
+	var top := 250.0 - lift
 	draw_rect(Rect2(w / 2 - panel_w / 2, top, panel_w, rows.size() * line_h + 28), Color(0, 0, 0, 0.67))
 	for i in rows.size():
 		_centered(rows[i], Vector2(w / 2, top + 36 + i * line_h), 20, Color.WHITE)

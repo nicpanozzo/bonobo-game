@@ -43,6 +43,10 @@ const PAGE_W := 1010.0 # larghezza del contenuto delle pagine, pixel
 const PAGE_TOP := 16 # spazio sopra il titolo della pagina, pixel
 const BIG_STAGE := Vector2(560, 315) # anteprima grande dell'arena (16:9), pixel
 const BIG_FACE := Vector2(300, 224) # anteprima grande del lottatore, pixel
+const PHONE_MARGIN := 20.0 # sul telefono (Phone) le pagine arrivano fino a qui dai bordi, pixel
+const PHONE_FACE := Vector2(250, 150) # sul telefono l'anteprima del lottatore è più bassa: la griglia resta in vista
+const PHONE_CARD_W := 270.0 # sul telefono la scheda del lottatore scelto, più stretta
+const FIGHTER_CARD := Vector2(98, 134) # riquadro di un lottatore nella griglia, pixel
 # Il colore del badge di ogni compagnia del lore (#13); i nomi arrivano da game.json (CREWS in characters.ts)
 const CREW_COLORS := {"cuamm": Color("c0392b"), "cologna": Color("d35400"), "schio": Color("27ae60"), "lolhardcore": Color("8e44ad")}
 
@@ -101,6 +105,7 @@ var _big_stats: VBoxContainer
 var _big_moves: Label
 var _big_crews: HFlowContainer
 var _big_skins: HBoxContainer # sotto l'anteprima: il nome della skin e i pallini del carosello (#339)
+var _page_w := PAGE_W # larghezza delle pagine: sul telefono quella dello schermo
 
 
 # start_kind: da dove si parte nella prima pagina. "join" se si arriva da un link con la stanza,
@@ -109,6 +114,8 @@ func setup(game_data: Dictionary, params: Dictionary, link: Callable, start_kind
 	game = game_data
 	room_link = link
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	if Phone.active:
+		_page_w = minf(PAGE_W, get_viewport_rect().size.x - PHONE_MARGIN * 2)
 	var bg := ColorRect.new()
 	bg.color = UI.BG
 	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -145,7 +152,7 @@ func setup(game_data: Dictionary, params: Dictionary, link: Callable, start_kind
 	body.add_theme_constant_override("margin_bottom", UI.GAP_L)
 	scroll.add_child(body)
 	var pages := VBoxContainer.new()
-	pages.custom_minimum_size = Vector2(PAGE_W, 0)
+	pages.custom_minimum_size = Vector2(_page_w, 0)
 	pages.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	body.add_child(pages)
 	_pages.match = _match_page(params)
@@ -223,7 +230,7 @@ func _match_page(params: Dictionary) -> Control:
 	for k in KINDS:
 		var id: String = k[0]
 		var b := UI.choice_card(k[1], k[2], func(): _set_kind(id))
-		b.custom_minimum_size = Vector2(0, 92)
+		b.custom_minimum_size = Vector2(0, 64 if Phone.active else 92)
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		_kind_cards[id] = b
 		cards.add_child(b)
@@ -304,7 +311,8 @@ func _match_page(params: Dictionary) -> Control:
 	_mode_cards.add_theme_constant_override("separation", UI.GAP_M)
 	for m in MODES:
 		var id: String = m[0]
-		var b := UI.choice_card(m[1], m[2], func(): _set_mode(id), UI.SIZE_BODY)
+		# Su un telefono stretto (16:9) la spiegazione non ci sta nella scheda: resta il nome
+		var b := UI.choice_card(m[1], m[2] if _page_w >= 950.0 else "", func(): _set_mode(id), UI.SIZE_BODY)
 		b.custom_minimum_size = Vector2(0, 66)
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		b.set_meta("id", id)
@@ -423,7 +431,9 @@ func _stage_page(params: Dictionary) -> Control:
 	left.add_theme_constant_override("separation", UI.GAP_M)
 	row.add_child(left)
 	_big_stage = preload("res://scripts/stage_preview.gd").new()
-	_big_stage.custom_minimum_size = BIG_STAGE
+	# Sul telefono l'anteprima lascia posto alle due colonne di arene
+	var big_w := minf(BIG_STAGE.x, _page_w - 24 - 2 * 170 - UI.GAP_M)
+	_big_stage.custom_minimum_size = BIG_STAGE * big_w / BIG_STAGE.x
 	left.add_child(_big_stage)
 	_big_stage_name = UI.header("")
 	left.add_child(_big_stage_name)
@@ -498,14 +508,15 @@ func _fighter_page(params: Dictionary) -> Control:
 	page.add_child(row)
 	# A sinistra il lottatore scelto, in grande
 	var card := PanelContainer.new()
-	card.custom_minimum_size = Vector2(340, 0)
+	var card_w := PHONE_CARD_W if Phone.active else 340.0
+	card.custom_minimum_size = Vector2(card_w, 0)
 	row.add_child(card)
 	var left := VBoxContainer.new()
 	left.add_theme_constant_override("separation", UI.GAP_S)
 	card.add_child(left)
 	# L'anteprima: il lottatore intero sotto un faro, con le frecce del carosello delle skin ai lati
 	var stage := Control.new()
-	stage.custom_minimum_size = BIG_FACE
+	stage.custom_minimum_size = PHONE_FACE if Phone.active else BIG_FACE
 	left.add_child(stage)
 	_big_face = FighterPreview.new()
 	_big_face.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -535,14 +546,15 @@ func _fighter_page(params: Dictionary) -> Control:
 	left.add_child(_big_stats)
 	_big_moves = UI.note("")
 	_big_moves.autowrap_mode = TextServer.AUTOWRAP_WORD
-	_big_moves.custom_minimum_size = Vector2(300, 0)
+	_big_moves.custom_minimum_size = Vector2(card_w - 40, 0)
 	left.add_child(_big_moves)
 	# A destra la griglia e il tuo nome
 	var right := VBoxContainer.new()
 	right.add_theme_constant_override("separation", UI.GAP_S)
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(right)
-	_chars.columns = 6
+	# Sei colonne sul computer; sul telefono quante ne stanno accanto alla scheda
+	_chars.columns = mini(6, int((_page_w - card_w - 24 - 80 + UI.GAP_M) / (FIGHTER_CARD.x + UI.GAP_M))) # 80: i margini della scheda
 	_chars.add_theme_constant_override("h_separation", UI.GAP_M)
 	_chars.add_theme_constant_override("v_separation", UI.GAP_M)
 	right.add_child(_chars)
@@ -575,7 +587,7 @@ func _draw_chars() -> void:
 	for id in game.characters:
 		var c: Dictionary = game.characters[id]
 		var b := Button.new()
-		b.custom_minimum_size = Vector2(98, 134)
+		b.custom_minimum_size = FIGHTER_CARD
 		b.tooltip_text = stats_text(c)
 		UI.set_selected(b, id == _character)
 		var v := VBoxContainer.new()
@@ -764,6 +776,8 @@ func _bar_track(value: float, width: float, height: float) -> Control:
 func _page_box(text: String) -> VBoxContainer:
 	var page := VBoxContainer.new()
 	page.add_theme_constant_override("separation", UI.GAP_M)
+	if Phone.active:
+		return page # sul telefono il titolo lo dicono già le briciole in alto: lo spazio serve alle scelte
 	var t := UI.title(text)
 	page.add_child(t)
 	var gap := Control.new()
