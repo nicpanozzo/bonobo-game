@@ -1907,6 +1907,10 @@
             "file": "riva.png",
             "edge": "bordo.png"
           },
+          "fianco": {
+            "file": "vuoto.png",
+            "edge": "bordo.png"
+          },
           "lastra": {
             "file": "lastra.png",
             "depth": 12
@@ -1916,7 +1920,7 @@
         "platformSkin": "lastra",
         "pieces": {
           "solids": [
-            "riva"
+            "fianco"
           ],
           "platforms": [
             "lastra",
@@ -1939,11 +1943,11 @@
             "stem": {
               "sheet": "getto",
               "crown": "corona",
-              "baseY": 506,
+              "baseY": 494,
               "width": 52,
               "hub": {
                 "x": 960,
-                "y": 506
+                "y": 492
               }
             }
           },
@@ -1958,11 +1962,11 @@
             "stem": {
               "sheet": "getto",
               "crown": "corona",
-              "baseY": 506,
+              "baseY": 494,
               "width": 52,
               "hub": {
                 "x": 960,
-                "y": 506
+                "y": 492
               }
             }
           },
@@ -1977,11 +1981,11 @@
             "stem": {
               "sheet": "getto",
               "crown": "corona",
-              "baseY": 506,
+              "baseY": 494,
               "width": 60,
               "hub": {
                 "x": 960,
-                "y": 506
+                "y": 492
               }
             }
           }
@@ -2004,6 +2008,34 @@
         ],
         "props": [
           {
+            "file": "canale-dietro.png",
+            "x": 960,
+            "y": 644
+          },
+          {
+            "file": "ansa.png",
+            "x": 960,
+            "y": 604
+          },
+          {
+            "file": "ponticelli.png",
+            "x": 960,
+            "y": 560
+          },
+          {
+            "file": "platano.png",
+            "x": -330,
+            "y": 566,
+            "scale": 0.3
+          },
+          {
+            "file": "platano.png",
+            "x": 2250,
+            "y": 566,
+            "scale": 0.3,
+            "flip": true
+          },
+          {
             "file": "piano.png",
             "x": 960,
             "y": 524,
@@ -2023,9 +2055,9 @@
             "flip": true
           },
           {
-            "file": "fondamenta.png",
+            "file": "fianco.png",
             "x": 960,
-            "y": 760
+            "y": 700
           },
           {
             "file": "fontana.png",
@@ -2045,6 +2077,14 @@
             "y": 1100,
             "scale": 1,
             "front": true
+          },
+          {
+            "file": "statue-primo-piano.png",
+            "x": 960,
+            "y": 1100,
+            "scale": 1,
+            "front": true,
+            "opacity": 0.45
           },
           {
             "file": "statua-ponte.png",
@@ -2171,6 +2211,15 @@
               "file": "corona.png",
               "frames": 6
             },
+            "passanti-sfocati": {
+              "file": "passanti-sfocati.png",
+              "frames": 8,
+              "rows": 9
+            },
+            "bici-sfocata": {
+              "file": "bici-sfocata.png",
+              "frames": 4
+            },
             "bici-rotta": {
               "file": "bici-rotta.png",
               "frames": 2
@@ -2180,10 +2229,58 @@
               "frames": 4
             }
           },
+          "near": {
+            "from": -560,
+            "to": 2480,
+            "figures": [
+              {
+                "sheet": "passanti-sfocati",
+                "row": 0,
+                "y": 742,
+                "k": 2.2,
+                "everyMs": 26000,
+                "crossMs": 19000
+              },
+              {
+                "sheet": "bici-sfocata",
+                "y": 940,
+                "k": 2.6,
+                "everyMs": 33000,
+                "crossMs": 8000,
+                "offsetMs": 9000
+              },
+              {
+                "sheet": "passanti-sfocati",
+                "row": 4,
+                "y": 760,
+                "k": 2.3,
+                "everyMs": 41000,
+                "crossMs": 24000,
+                "offsetMs": 21000
+              },
+              {
+                "sheet": "passanti-sfocati",
+                "row": 3,
+                "y": 980,
+                "k": 2.8,
+                "everyMs": 47000,
+                "crossMs": 10000,
+                "offsetMs": 30000
+              },
+              {
+                "sheet": "bici-sfocata",
+                "y": 744,
+                "k": 2.2,
+                "everyMs": 52000,
+                "crossMs": 11000,
+                "offsetMs": 40000
+              }
+            ]
+          },
           "outerWater": {
             "y": 622,
             "file": "canale.png",
-            "deep": "2a3528",
+            "deep": "26382f",
             "floaters": {
               "everyMs": 45000,
               "crossMs": 26000,
@@ -2219,19 +2316,19 @@
             }
           ],
           "walkers": {
-            "y": 480,
+            "y": 414,
             "parallax": 0.75,
             "count": 14,
             "umbrellas": true
           },
           "vehicles": {
-            "y": 464,
+            "y": 406,
             "parallax": 0.5,
             "everyMs": 23000,
             "kind": "tram"
           },
           "traffic": {
-            "y": 464,
+            "y": 406,
             "parallax": 0.5,
             "everyMs": 2600,
             "kinds": [
@@ -2256,7 +2353,7 @@
           },
           "bar": {
             "x": 120,
-            "y": 474,
+            "y": 408,
             "parallax": 0.8,
             "tables": 3,
             "spacing": 72
@@ -2268,42 +2365,42 @@
             "lamps": [
               {
                 "x": -170,
-                "y": 379,
+                "y": 313,
                 "parallax": 0.75
               },
               {
                 "x": 130,
-                "y": 379,
+                "y": 313,
                 "parallax": 0.75
               },
               {
                 "x": 430,
-                "y": 379,
+                "y": 313,
                 "parallax": 0.75
               },
               {
                 "x": 730,
-                "y": 379,
+                "y": 313,
                 "parallax": 0.75
               },
               {
                 "x": 1030,
-                "y": 379,
+                "y": 313,
                 "parallax": 0.75
               },
               {
                 "x": 1330,
-                "y": 379,
+                "y": 313,
                 "parallax": 0.75
               },
               {
                 "x": 1630,
-                "y": 379,
+                "y": 313,
                 "parallax": 0.75
               },
               {
                 "x": 1930,
-                "y": 379,
+                "y": 313,
                 "parallax": 0.75
               }
             ],

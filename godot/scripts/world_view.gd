@@ -823,6 +823,8 @@ func _draw() -> void:
 	if not _life.is_empty():
 		_life.draw_outer_water(self, t_stage, now, _flood_up(t_stage), view_rect, positions) # davanti a chi cade (#264)
 	_draw_props(_props_front)
+	if not _life.is_empty():
+		_life.draw_near(self, t_stage, _ambient) # chi passa sfocato in primissimo piano (#378)
 	_draw_rails(true) # ringhiere davanti, di solito trasparenti
 	if not _foreground.is_empty():
 		_draw_layer(_foreground)

@@ -891,7 +891,7 @@ def canal_tile():
     grad = Image.new("RGBA", (1, q.size[1]))
     for py in range(q.size[1]):
         u = py / max(1, q.size[1] - 1)
-        col = tuple(int(a + (b - a) * u) for a, b in zip((96, 112, 78), (42, 54, 42)))
+        col = tuple(int(a + (b - a) * u) for a, b in zip((88, 118, 104), (38, 56, 50)))
         grad.putpixel((0, py), col + (int(196 + 50 * u),))
     q.img.alpha_composite(grad.resize(q.size, Image.NEAREST))
 
@@ -1151,6 +1151,16 @@ def floater_sheets():
     sheet([_drunk_frame(i / 4) for i in range(4)], OUT, "ubriaco.png")
 
 
+def near_sheets():
+    """I passanti e i ciclisti in primissimo piano (#378, idea di Riccardo): gli stessi fogli dello sfondo vivo, sfocati
+    come se fossero fuori fuoco davanti alla scena. Si rifanno da passanti.png e bici.png."""
+    from PIL import ImageFilter
+    for src, dst in (("passanti.png", "passanti-sfocati.png"), ("bici.png", "bici-sfocata.png")):
+        im = Image.open(os.path.join(OUT, src)).convert("RGBA")
+        im.filter(ImageFilter.GaussianBlur(2.4)).save(os.path.join(OUT, dst), optimize=True)
+        print("scritto", dst, im.size)
+
+
 if __name__ == "__main__":
     sheet([cloud(s) for s in range(1, 9)], OUT, "nuvole.png")
     sheet(gull_frames(), OUT, "gabbiano.png")
@@ -1166,3 +1176,4 @@ if __name__ == "__main__":
     canal_tile()
     floater_sheets()
     crown_sheet()
+    near_sheets()

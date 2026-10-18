@@ -850,3 +850,24 @@ func floater_at(f: Dictionary, t: float) -> Dictionary:
 	var to: float = f.to
 	var x := lerpf(from, to, k) if dir > 0 else lerpf(to, from, k)
 	return {"kind": kinds[posmod(n, kinds.size())], "x": x, "dir": dir}
+
+
+# Chi passa in primissimo piano (#378): figure sfocate e grandi che attraversano la strada davanti a tutto, sotto il
+# canale. Leggermente in ombra: stanno fuori fuoco e non devono rubare l'occhio al gioco
+func draw_near(ci: CanvasItem, t: float, amb: Color) -> void:
+	var n: Variant = life.get("near")
+	if not n is Dictionary:
+		return
+	var from: float = n.from
+	var to: float = n.to
+	for f in n.figures:
+		var every: float = f.everyMs
+		var cross: float = f.crossMs
+		var tt := t + float(f.get("offsetMs", 0))
+		var k := fposmod(tt, every) / cross
+		if k >= 1.0:
+			continue
+		var dir := 1 if posmod(int(floor(tt / every)), 2) == 0 else -1
+		var x := lerpf(from, to, k) if dir > 0 else lerpf(to, from, k)
+		var mod := Color(amb.r * 0.82, amb.g * 0.82, amb.b * 0.85, 0.95)
+		draw_frame(ci, str(f.sheet), int(tt / 110.0), Vector2(x, float(f.y)), float(f.k), dir < 0, mod, true, int(f.get("row", 0)))
