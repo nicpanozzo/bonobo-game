@@ -8,6 +8,7 @@ signal closed
 
 const MEDALS := ["", "Bronzo", "Argento", "Oro"]
 const MEDAL_COLORS := [Color(1, 1, 1, 0.4), Color("cd7f32"), Color("c0c8d0"), Color("ffcf4a")]
+const PHONE_W := 900.0 # larghezza del pannello sul telefono, pixel
 
 
 # Come medalFor() in src/shared/challenges.ts: 0 nessuna, 1 bronzo, 2 argento, 3 oro
@@ -49,17 +50,23 @@ static func thresholds_text(c: Dictionary) -> String:
 
 func setup(game: Dictionary, settings: Settings) -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	var parts := UI.overlay(560)
+	# Sul telefono (Phone) lo schermo è basso: le sfide stanno su due colonne, in un pannello più largo
+	var parts := UI.overlay(minf(PHONE_W, get_viewport_rect().size.x - 40) if Phone.active else 560.0)
 	add_child(parts[0])
 	var box: VBoxContainer = parts[1]
 	box.add_child(UI.header("Sfide"))
 	box.add_child(UI.note("Una palestra tutta tua: prendi le medaglie, restano salvate."))
+	var list := GridContainer.new()
+	list.columns = 2 if Phone.active else 1
+	list.add_theme_constant_override("h_separation", UI.GAP_L * 2)
+	list.add_theme_constant_override("v_separation", UI.GAP_M)
+	box.add_child(list)
 	var first: Control = null
 	for c in game.get("challenges", []):
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", UI.GAP_L)
 		var b := UI.button(c.title, func(): chosen.emit(c))
-		b.custom_minimum_size = Vector2(220, 0)
+		b.custom_minimum_size = Vector2(150 if Phone.active else 220, 0)
 		row.add_child(b)
 		var info := VBoxContainer.new()
 		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -71,7 +78,8 @@ func setup(game: Dictionary, settings: Settings) -> void:
 		text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		info.add_child(text)
 		row.add_child(info)
-		box.add_child(row)
+		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		list.add_child(row)
 		if first == null:
 			first = b
 	var close_button := UI.button("Chiudi", close)

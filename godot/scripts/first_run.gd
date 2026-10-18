@@ -24,7 +24,7 @@ var _next: Button
 func setup(s: Settings) -> void:
 	settings = s
 	_pad = not Input.get_connected_joypads().is_empty()
-	_touch = not _pad and DisplayServer.is_touchscreen_available()
+	_touch = not _pad and (DisplayServer.is_touchscreen_available() or Phone.active)
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var bg := ColorRect.new()
 	bg.color = UI.BG
