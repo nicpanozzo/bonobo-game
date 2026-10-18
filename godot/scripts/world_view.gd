@@ -483,13 +483,17 @@ static func _stage_layer(dir: String, layer: Dictionary, world_scale := 0.0) -> 
 	if not ResourceLoader.exists(path):
 		push_warning("Sfondo mancante: " + path)
 		return []
-	return [_sprite_texture(path, "linear", world_scale), clampf(layer.parallax, 0.0, 1.0)]
+	# La grandezza vera del PNG: sugli schermi piccoli _sprite_texture lo rimpicciolisce (#320), ma lo strato
+	# deve coprire lo stesso pezzo di mondo, se no ai lati resta il cielo vuoto
+	var full := (load(path) as Texture2D).get_size()
+	return [_sprite_texture(path, "linear", world_scale), clampf(layer.parallax, 0.0, 1.0), full]
 
 
 func _draw_layer(layer: Array, mod := Color(-1, 0, 0)) -> void:
 	var tex: Texture2D = layer[0]
+	var size: Vector2 = layer[2] if layer.size() > 2 else tex.get_size()
 	var center := Vector2(stage_width() / 2.0, game.world.height / 2.0)
-	draw_texture_rect(tex, StageMotion.layer_rect(tex.get_size() * _layer_scale, layer[1], center, view_rect.get_center()), false, _ambient if mod.r < 0.0 else mod)
+	draw_texture_rect(tex, StageMotion.layer_rect(size * _layer_scale, layer[1], center, view_rect.get_center()), false, _ambient if mod.r < 0.0 else mod)
 
 
 # Piedi dei lottatori in gioco (non eliminati), per la telecamera

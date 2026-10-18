@@ -75,3 +75,16 @@ func test_luci_della_notte_ritagliate() -> void:
 		runner.check(part.size.x * part.size.y < 0.5, "strato %s ritagliato: %s" % [k, part])
 		runner.check(Rect2(0, 0, 1, 1).encloses(part), "dentro allo strato: %s" % part)
 	w.free()
+
+
+# Sugli schermi piccoli gli strati si rimpiccioliscono al caricamento (#320), ma coprono sempre lo stesso pezzo di
+# mondo: prima ai lati restava il cielo vuoto e la strada sembrava sospesa (segnalato da Riccardo su Padova)
+func test_strati_rimpiccioliti_restano_grandi_uguali() -> void:
+	var before: float = WorldView._screen_px_per_world
+	WorldView._screen_px_per_world = 0.6 # uno schermo da portatile
+	var layer: Array = WorldView._stage_layer("padova", {"file": "sfondo-1.png", "parallax": 0.45}, 0.5)
+	WorldView._screen_px_per_world = before
+	runner.check(layer.size() == 3, "con la grandezza vera")
+	var tex: Texture2D = layer[0]
+	runner.check(tex.get_size().x < (layer[2] as Vector2).x, "l'immagine è stata rimpicciolita: %s" % tex.get_size())
+	runner.check(layer[2] == Vector2(4880, 2960), "ma lo strato resta 4880×2960: %s" % layer[2])
