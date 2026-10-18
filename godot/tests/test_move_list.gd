@@ -60,3 +60,13 @@ func test_personaggio_di_chi_apre_il_menu() -> void:
 	var r := {"me": "p2", "players": [{"id": "p1", "characterId": "bonobot"}, {"id": "p2", "characterId": "elvedeo"}]}
 	runner.check(PauseMenu.my_character(r) == "elvedeo", "il mio lottatore")
 	runner.check(PauseMenu.my_character({}) == "", "senza partita niente")
+
+
+# Sul telefono la lista dice i tasti a schermo, non quelli della tastiera
+func test_tasti_touch() -> void:
+	var keys := MoveList.touch_keys()
+	var attacks: Array = MoveList.rows(_game(), "default", keys)[0][1]
+	runner.check(attacks[0][1] == "Leggero", attacks[0][1])
+	runner.check(attacks[2][1] == "su + Leggero", attacks[2][1])
+	for action in Settings.LABELS:
+		runner.check(keys.has(action), "manca %s" % action)

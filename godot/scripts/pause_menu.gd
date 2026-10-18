@@ -110,6 +110,8 @@ func _open_moves() -> void:
 	_dim.hide()
 	var pad := not Input.get_connected_joypads().is_empty()
 	var keys := MoveList.keys_for(settings, pad, Settings.pad_kind(Input.get_joy_name(0)) if pad else "xbox")
+	if not pad and (Phone.active or DisplayServer.is_touchscreen_available()):
+		keys = MoveList.touch_keys() # sul telefono si gioca coi tasti a schermo
 	var moves := MoveList.new()
 	add_child(moves)
 	moves.setup(game, my_character(_report), keys)

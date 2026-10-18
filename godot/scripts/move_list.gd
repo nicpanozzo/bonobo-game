@@ -68,6 +68,14 @@ static func keys_for(s: Settings, pad: bool, kind := "xbox") -> Dictionary:
 	return out
 
 
+# Con i comandi touch: la levetta per le direzioni, i tasti a schermo col loro nome
+static func touch_keys() -> Dictionary:
+	var out := {"left": "sinistra", "right": "destra", "up": "su", "down": "giù", "run": "levetta in fondo", "taunt": "solo da tastiera o pad"}
+	for action in TouchControls.BUTTONS:
+		out[action] = TouchControls.BUTTONS[action].label
+	return out
+
+
 func setup(game: Dictionary, character_id: String, keys: Dictionary) -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var parts := UI.overlay(640)
@@ -76,7 +84,8 @@ func setup(game: Dictionary, character_id: String, keys: Dictionary) -> void:
 	var c: Dictionary = game.characters.get(character_id, {})
 	box.add_child(UI.header("Mosse di %s" % str(c.get("name", "lottatore"))))
 	var scroll := ScrollContainer.new()
-	scroll.custom_minimum_size = Vector2(0, 420)
+	# Sul telefono (Phone) lo schermo è alto 480: la lista scorre in quello che resta sotto il titolo
+	scroll.custom_minimum_size = Vector2(0, get_viewport_rect().size.y - 190 if Phone.active else 420)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	box.add_child(scroll)
 	var list := VBoxContainer.new()
