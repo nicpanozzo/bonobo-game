@@ -83,6 +83,7 @@ const TOUCH_DEFAULTS := {
 	"size": 1, # indice in TouchControls.SIZES
 	"opacity": 1, # indice in TouchControls.OPACITIES
 	"left_handed": false, # levetta a destra e tasti a sinistra
+	"screen": 0, # Phone.AUTO, PHONE o COMPUTER: la modalità telefono, con menu e scritte più grandi
 }
 
 var master := 0.8

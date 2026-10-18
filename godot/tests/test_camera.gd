@@ -31,3 +31,11 @@ func test_arena_larga_con_il_suo_zoom() -> void:
 	var empty := Main.framing(wide, CAM, GAME, [])
 	runner.check(empty.center.x == 960.0 and empty.zoom < 0.7, "senza lottatori: il centro dell'arena larga, tutta in vista")
 	runner.check(empty.limits == Rect2(-300, -420, 2520, 1420), "la vista resta nelle zone di espulsione")
+
+
+# Telefono lungo (Phone): si vede più mondo in larghezza, quindi la telecamera può stare più vicina
+func test_schermo_piu_largo_sul_telefono() -> void:
+	var spread := [Vector2(250, 560), Vector2(1030, 560)]
+	var normal := Main.framing({"blastZone": BLAST}, CAM, GAME, spread)
+	var wide := Main.framing({"blastZone": BLAST}, CAM, GAME, spread, Vector2(1560, 720))
+	runner.check(wide.zoom >= normal.zoom, "zoom %f contro %f" % [wide.zoom, normal.zoom])

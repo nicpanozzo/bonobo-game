@@ -142,8 +142,9 @@ func _touch_page() -> VBoxContainer:
 		settings.save()
 	page.add_child(_choice_row("Tasti", TouchControls.SIZE_NAMES, settings.touch.size, func(i): save.call("size", i)))
 	page.add_child(_choice_row("Trasparenza", TouchControls.OPACITY_NAMES, settings.touch.opacity, func(i): save.call("opacity", i)))
+	page.add_child(_choice_row("Schermo", Phone.SCREEN_NAMES, settings.touch.screen, func(i): save.call("screen", i)))
 	page.add_child(UI.toggle("Mancino: levetta a destra, tasti a sinistra", settings.touch.left_handed, func(on): save.call("left_handed", on)))
-	page.add_child(UI.note("Levetta e tasti compaiono in partita quando tocchi lo schermo e spariscono se usi tastiera o pad."))
+	page.add_child(UI.note("Levetta e tasti compaiono in partita quando tocchi lo schermo e spariscono se usi tastiera o pad. Schermo \"Telefono\" fa tutto più grande, come sul cellulare."))
 	return page
 
 

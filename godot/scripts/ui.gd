@@ -222,6 +222,7 @@ static func choice_card(text: String, detail: String, on_press: Callable, size :
 	var d := note(detail)
 	d.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	d.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	d.visible = detail != "" # senza spiegazione il nome sta al centro
 	v.add_child(d)
 	return b
 

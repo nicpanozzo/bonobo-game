@@ -42,6 +42,7 @@ scripts/lobby.gd       nome, stanza, lottatore, arena (stage_preview.gd), regole
 scripts/audio.gd       quale suono per quale evento, musica; synth.gd li calcola, niente file audio
 scripts/options.gd     volumi e tasti; settings.gd li salva in user://bonobo.cfg
 scripts/pause_menu.gd  menu con Esc; ui.gd colori e tema dei menu
+scripts/phone.gd       modalità telefono: tutto 1,5 volte più grande e schermo fino ai bordi
 data/game.json         arene, personaggi e numeri, GENERATO da npm run export:godot
 data/assets/           sprite copiati da public/assets, GENERATI anche loro
 ```

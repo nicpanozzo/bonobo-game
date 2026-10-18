@@ -14,6 +14,7 @@ signal challenges_requested # sfide con medaglie (E15)
 
 const BLINK_S := 0.6 # mezzo giro del lampeggio di "Premi un tasto"
 const CARD_SIZE := Vector2(460, 76) # schede del menu, pixel
+const PHONE_CARD_SIZE := Vector2(460, 64) # sul telefono un po' più basse: il sottomenu "Da solo" ne ha quattro
 
 var game: Dictionary
 var _press := UI.label("Premi un tasto", UI.SIZE_BIG, UI.TEXT)
@@ -39,16 +40,19 @@ func setup(game_data: Dictionary, skip_press := false) -> void:
 	box.add_theme_constant_override("separation", UI.GAP_L)
 	center.add_child(box)
 	var logo := UI.title("BONOBO GAME")
-	logo.add_theme_font_size_override("font_size", Access.px(UI.SIZE_TITLE * 2))
+	# Sul telefono (Phone) il logo è più piccolo: sotto devono stare le quattro schede di "Da solo"
+	logo.add_theme_font_size_override("font_size", Access.px(roundi(UI.SIZE_TITLE * (1.4 if Phone.active else 2.0))))
 	logo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(logo)
 	var subtitle := UI.label("Il picchiaduro del nostro Discord", UI.SIZE_SUBTITLE, Color(UI.TEXT, 0.7))
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(subtitle)
 	var spacer := Control.new()
-	spacer.custom_minimum_size = Vector2(0, 40)
+	spacer.custom_minimum_size = Vector2(0, 8 if Phone.active else 40)
 	box.add_child(spacer)
 	_press.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	if Phone.active:
+		_press.text = "Tocca lo schermo"
 	box.add_child(_press)
 	for m in [_menu, _solo]:
 		m.add_theme_constant_override("separation", UI.GAP_M)
@@ -84,7 +88,7 @@ func setup(game_data: Dictionary, skip_press := false) -> void:
 # Scheda del menu con la sua spiegazione; quella principale è rossa come i pulsanti per giocare
 func _card(menu: Control, text: String, detail: String, on_press: Callable, primary := false) -> Button:
 	var b := UI.choice_card(text, detail, on_press)
-	b.custom_minimum_size = CARD_SIZE
+	b.custom_minimum_size = PHONE_CARD_SIZE if Phone.active else CARD_SIZE
 	if primary:
 		UI.set_primary(b)
 	menu.add_child(b)

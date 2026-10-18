@@ -128,3 +128,29 @@ func test_guide_col_touch() -> void:
 	runner.check(TouchControls.hint("jump") == "tasto Salto", TouchControls.hint("jump"))
 	runner.check(TouchControls.hint("up") == "levetta in su", TouchControls.hint("up"))
 	runner.check(TouchControls.hint("taunt") != "", "la provocazione dice che non c'è")
+
+
+# Telefono lungo (Phone): lo schermo è più largo di 1280 e i tasti di destra restano sul bordo destro
+func test_su_uno_schermo_piu_largo_i_tasti_stanno_a_destra() -> void:
+	var t := TouchControls.new()
+	t.fit(Vector2(1560, 720), 1.0)
+	var jump: Vector2 = TouchControls.BUTTONS.jump.pos
+	runner.check(t.button_pos("jump") == jump + Vector2(280, 0), "il salto si sposta col bordo destro: %s" % t.button_pos("jump"))
+	runner.check(t.handle(_touch(0, jump + Vector2(280, 0))) and t.pressed("jump"), "e si preme lì")
+	var paused := [false]
+	t.pause_pressed.connect(func(): paused[0] = true)
+	t.handle(_touch(1, TouchControls.PAUSE.pos + Vector2(280, 0)))
+	runner.check(paused[0], "anche la pausa è nell'angolo in alto a destra")
+	t.free()
+
+
+func test_le_schede_stanno_tra_levetta_e_tasti() -> void:
+	var t := TouchControls.new()
+	var band := t.clear_band()
+	runner.check(band.x >= TouchControls.STICK_HOME.x + TouchControls.STICK_RADIUS - 1, "dopo la levetta: %s" % band)
+	runner.check(band.y <= TouchControls.BUTTONS.shield.pos.x - TouchControls.BUTTONS.shield.r + 1, "prima dei tasti: %s" % band)
+	runner.check(band.y - band.x > 500, "c'è posto per le schede: %s" % band)
+	t.configure({"left_handed": true})
+	var mirrored := t.clear_band()
+	runner.check(is_equal_approx(mirrored.x, TouchControls.SCREEN.x - band.y) and is_equal_approx(mirrored.y, TouchControls.SCREEN.x - band.x), "da mancini la striscia è a specchio: %s" % mirrored)
+	t.free()

@@ -48,6 +48,8 @@ var _stick_home := STICK_HOME
 var _stick_radius := STICK_RADIUS
 var _alpha := 1.0
 var _left_handed := false
+var _screen := SCREEN # lo schermo in coordinate dei tasti: più largo di SCREEN sui telefoni lunghi (fit)
+var _prefs := {}
 var _stick_vec := Vector2.ZERO # spostamento del pollice dall'origine, al massimo STICK_RADIUS
 var _fingers: Dictionary = {} # dito -> nome del tasto che tiene
 var extras: Dictionary = {}: # tasti in più, nome -> scritta (main.gd li mette e li toglie)
@@ -79,13 +81,14 @@ func _input(event: InputEvent) -> void:
 
 # Le preferenze di Settings.touch: grandezza (tasti e levetta crescono dal loro angolo), trasparenza e lato
 func configure(prefs: Dictionary) -> void:
+	_prefs = prefs
 	var k: float = SIZES[clampi(int(prefs.get("size", 1)), 0, SIZES.size() - 1)]
 	_alpha = OPACITIES[clampi(int(prefs.get("opacity", 1)), 0, OPACITIES.size() - 1)]
 	_left_handed = bool(prefs.get("left_handed", false))
 	_buttons = {}
 	for action in BUTTONS:
 		var b: Dictionary = BUTTONS[action]
-		_buttons[action] = {"pos": _place(SCREEN + (b.pos - SCREEN) * k), "r": b.r * k, "label": b.label}
+		_buttons[action] = {"pos": _place(_screen + (b.pos - SCREEN) * k), "r": b.r * k, "label": b.label}
 	_stick_home = _place(Vector2(0, SCREEN.y) + (STICK_HOME - Vector2(0, SCREEN.y)) * k)
 	_stick_radius = STICK_RADIUS * k
 	release_all()
@@ -93,7 +96,45 @@ func configure(prefs: Dictionary) -> void:
 
 # Per i mancini tutto a specchio, tranne pausa e tasti in più che restano in alto a destra
 func _place(pos: Vector2) -> Vector2:
-	return Vector2(SCREEN.x - pos.x, pos.y) if _left_handed else pos
+	return Vector2(_screen.x - pos.x, pos.y) if _left_handed else pos
+
+
+# Lo schermo del gioco (visible, in pixel) e quanti pixel per un pixel dei tasti (k, Phone):
+# i tasti tengono la loro grandezza in proporzione all'altezza, e quelli a destra stanno sul bordo destro
+func fit(visible: Vector2, k: float) -> void:
+	var screen := Vector2(maxf(SCREEN.x, visible.x / k), SCREEN.y)
+	if screen == _screen and scale == Vector2(k, k):
+		return
+	_screen = screen
+	set_anchors_preset(Control.PRESET_TOP_LEFT)
+	position = Vector2.ZERO
+	scale = Vector2(k, k)
+	size = visible / k
+	configure(_prefs)
+
+
+# Da x a x, nei pixel del genitore, la striscia in basso libera da levetta e tasti: lì stanno le schede dell'HUD
+func clear_band() -> Vector2:
+	var buttons_left := _screen.x
+	var buttons_right := 0.0
+	for action in _buttons:
+		buttons_left = minf(buttons_left, _buttons[action].pos.x - _buttons[action].r)
+		buttons_right = maxf(buttons_right, _buttons[action].pos.x + _buttons[action].r)
+	var left := _stick_home.x + _stick_radius
+	var right := buttons_left
+	if _left_handed:
+		left = buttons_right
+		right = _stick_home.x - _stick_radius
+	return Vector2(left, right) * scale.x + Vector2(position.x, position.x)
+
+
+# Pausa e tasti in più, in alto a destra anche quando lo schermo è più largo
+func _pause_pos() -> Vector2:
+	return PAUSE.pos + Vector2(_screen.x - SCREEN.x, 0)
+
+
+func _extra_rect(i: int) -> Rect2:
+	return Rect2(extra_rect(i).position + Vector2(_screen.x - SCREEN.x, 0), EXTRA_RECT.size)
 
 
 func button_pos(action: String) -> Vector2:
@@ -181,12 +222,12 @@ func button_at(pos: Vector2) -> String:
 
 
 func _press(finger: int, pos: Vector2) -> bool:
-	if pos.distance_to(PAUSE.pos) <= PAUSE.r * 1.3:
+	if pos.distance_to(_pause_pos()) <= PAUSE.r * 1.3:
 		pause_pressed.emit()
 		return true
 	var i := 0
 	for extra in extras:
-		if extra_rect(i).grow(6).has_point(pos):
+		if _extra_rect(i).grow(6).has_point(pos):
 			extra_pressed.emit(extra)
 			return true
 		i += 1
@@ -195,7 +236,7 @@ func _press(finger: int, pos: Vector2) -> bool:
 		_fingers[finger] = action
 		queue_redraw()
 		return true
-	var stick_side := pos.x > SCREEN.x - STICK_AREA_X if _left_handed else pos.x < STICK_AREA_X
+	var stick_side := pos.x > _screen.x - STICK_AREA_X if _left_handed else pos.x < STICK_AREA_X
 	if stick_side and _stick_finger < 0:
 		_stick_finger = finger
 		_stick_origin = pos
@@ -256,13 +297,13 @@ func _draw() -> void:
 		draw_string(font, b.pos + Vector2(-w / 2.0, size * 0.35), b.label, HORIZONTAL_ALIGNMENT_CENTER, -1, size, _white(0.85))
 	var i := 0
 	for extra in extras:
-		var r := extra_rect(i)
+		var r := _extra_rect(i)
 		draw_rect(r, Color(1, 1, 1, 0.14))
 		draw_rect(r, Color(1, 1, 1, 0.5), false, 2.0)
 		var w := font.get_string_size(extras[extra], HORIZONTAL_ALIGNMENT_CENTER, -1, 17).x
 		draw_string(font, r.get_center() + Vector2(-w / 2.0, 6), extras[extra], HORIZONTAL_ALIGNMENT_CENTER, -1, 17, Color(1, 1, 1, 0.85))
 		i += 1
 	# Pausa: due sbarrette
-	draw_circle(PAUSE.pos, PAUSE.r, Color(1, 1, 1, 0.14))
+	draw_circle(_pause_pos(), PAUSE.r, Color(1, 1, 1, 0.14))
 	for dx in [-7.0, 7.0]:
-		draw_rect(Rect2(PAUSE.pos + Vector2(dx - 3.0, -10.0), Vector2(6, 20)), Color(1, 1, 1, 0.8))
+		draw_rect(Rect2(_pause_pos() + Vector2(dx - 3.0, -10.0), Vector2(6, 20)), Color(1, 1, 1, 0.8))
