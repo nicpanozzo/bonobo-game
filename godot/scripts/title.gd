@@ -68,6 +68,21 @@ func setup(game_data: Dictionary, skip_press := false) -> void:
 	if not OS.has_feature("web"): # nel browser si chiude la scheda
 		row.add_child(_small("Esci", func(): get_tree().quit()))
 	_menu.add_child(row)
+	# Dal browser del telefono il gioco si installa come app (PWA): icona sulla schermata Home e schermo intero
+	var install := Phone.install_state() if Phone.active else ""
+	if install != "" and install != "installed":
+		var hint := UI.note(Phone.install_hint(install))
+		hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		if install == "ios":
+			_menu.add_child(hint)
+		else:
+			var b := _small("Installa il gioco", func():
+				if not Phone.install():
+					hint.visible = true)
+			b.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+			_menu.add_child(b)
+			hint.visible = false
+			_menu.add_child(hint)
 	_solo_first = _card(_solo, "Contro un bot", "Una partita veloce contro il computer", func(): bot_requested.emit(), true)
 	_card(_solo, "Allenamento", "Prova le mosse sul manichino, con i numeri dei colpi", func(): training_requested.emit())
 	_card(_solo, "Tutorial", "Impara i comandi un passo alla volta", func(): tutorial_requested.emit())

@@ -26,3 +26,10 @@ func test_la_partita_si_vede_uguale() -> void:
 	var k := Phone.view_scale(Vector2(1040, 480), 720)
 	runner.check(is_equal_approx(k, 480.0 / 720.0), "sul telefono il mondo si disegna più piccolo: %f" % k)
 	runner.check(is_equal_approx(480 / k, 720.0), "e si vede alto 720 come sempre")
+
+
+func test_installare_come_app() -> void:
+	runner.check(Phone.install_state() == "", "fuori dal browser non c'è niente da installare")
+	runner.check(not Phone.install(), "e nessuna finestra si apre")
+	runner.check(Phone.install_hint("ios").contains("Condividi"), "su iPhone si passa da Condividi")
+	runner.check(Phone.install_hint("menu").contains("menu del browser"), "altrove dal menu del browser")
