@@ -47,3 +47,35 @@ static func apply(window: Window, choice: int) -> void:
 # (1 sul computer, 480/720 sul telefono), e quanto mondo si vede alla telecamera 1
 static func view_scale(visible: Vector2, world_height: float) -> float:
 	return visible.y / world_height if visible.y > 0.0 else 1.0
+
+
+# Il gioco nel browser del telefono si può installare come app (PWA, export_presets.cfg):
+# "installed" se è già aperto come app, "prompt" se Chrome ha pronta la sua finestra d'installazione
+# (beforeinstallprompt, salvato in window.bonoboInstall dall'head_include), "ios" su iPhone e iPad
+# (si installa solo da Condividi), "menu" negli altri browser, "" fuori dal browser
+static func install_state() -> String:
+	if not OS.has_feature("web"):
+		return ""
+	return str(JavaScriptBridge.eval("""
+		(function () {
+			if (window.matchMedia('(display-mode: fullscreen)').matches || window.matchMedia('(display-mode: standalone)').matches || navigator.standalone) return 'installed';
+			if (window.bonoboInstall) return 'prompt';
+			if (/iPhone|iPad|iPod/.test(navigator.userAgent)) return 'ios';
+			return 'menu';
+		})()
+	""", true))
+
+
+# Apre la finestra d'installazione del browser; false se il browser non ce l'ha pronta
+static func install() -> bool:
+	if install_state() != "prompt":
+		return false
+	JavaScriptBridge.eval("window.bonoboInstall.prompt(); window.bonoboInstall = null;", true)
+	return true
+
+
+# Come installarlo a mano, se il browser non apre la sua finestra
+static func install_hint(state: String) -> String:
+	if state == "ios":
+		return "Per averlo come app: Condividi › Aggiungi alla schermata Home"
+	return "Per averlo come app: menu del browser › Installa app (o Aggiungi a schermata Home)"
