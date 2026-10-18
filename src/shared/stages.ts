@@ -131,7 +131,7 @@ export interface StageLife {
   // l'acqua alta) sale fino a highY insieme a lei
   // Con file (#378) l'acqua è dipinta: una striscia che si ripete in orizzontale, col pelo dell'acqua in cima (scale come
   // le altre immagini, 0,5 se manca; deep è la tinta del fondo sotto la striscia). floaters: ogni everyMs una cosa
-  // attraversa lenta il canale in crossMs da from a to (x del mondo), alternando il verso e i fogli di life.sheets in kinds
+  // gira lenta attorno al canale ad anello (fogli di life.sheets in kinds)
   outerWater?: {
     y: number;
     highY?: number;
@@ -139,7 +139,8 @@ export interface StageLife {
     file?: string;
     scale?: number;
     deep?: string;
-    floaters?: { everyMs: number; crossMs: number; from: number; to: number; kinds: string[] };
+    // chi galleggia gira attorno al canale (#378): un giro in lapMs sull'ovale cx, cy, rx, ry; dietro è grande backK
+    floaters?: { lapMs: number; cx: number; cy: number; rx: number; ry: number; backK?: number; kinds: string[] };
   };
   // Chi passa in primissimo piano (#378): figure sfocate (fogli di sheets, row per i fogli a righe) che attraversano la
   // strada davanti a tutto, alla y dei piedi, grandi k volte. Ognuna ogni everyMs, in crossMs, da from a to e ritorno
@@ -147,6 +148,8 @@ export interface StageLife {
     from: number;
     to: number;
     figures: { sheet: string; row?: number; y: number; k: number; everyMs: number; crossMs: number; offsetMs?: number }[];
+    // chi sta fermo (#378): i ragazzi alla ringhiera, animati sul posto a fps fotogrammi al secondo
+    still?: { sheet: string; row?: number; x: number; y: number; k: number; fps: number; flip?: boolean }[];
   };
   // Fogli di fotogrammi dipinti (#288) per lo sfondo vivo, per nome: nuvole, gabbiano, rondine, pipistrello, piccione.
   // Fotogrammi in fila da sinistra, a 2x (scale 0.5 se manca). Senza, si disegnano le forme semplici di prima
@@ -193,6 +196,7 @@ export interface StageProp {
   flip?: boolean; // specchiata in orizzontale
   front?: boolean; // davanti ai lottatori (altrimenti dietro, subito dopo il palco)
   opacity?: number;
+  floatersAfter?: boolean; // dopo questa decorazione il gioco disegna chi galleggia nella parte lontana del canale (#378)
 }
 
 // Animazione di una trappola (#270): un foglio di fotogrammi uno accanto all'altro, rivolti a destra (il gioco li
@@ -533,9 +537,9 @@ export const STAGES: Record<string, StageSpec> = {
       props: [
         // Le anse del canale ai lati (#378): il canale è un anello ovale e si chiude attorno alle punte dell'isola
         // Il canale dietro e attorno all'isola (#378), le anse ai lati, la fila di statue sulla sponda di là e i ponticelli
-        { file: "canale-dietro.png", x: 960, y: 644 },
+        { file: "canale-dietro.png", x: 960, y: 644, floatersAfter: true },
         { file: "ansa.png", x: 960, y: 604 },
-        { file: "ponticelli.png", x: 960, y: 560 },
+        { file: "ponticelli.png", x: 960, y: 600 },
         // il parco oltre il vialetto, ai lati: i platani più lontani, più piccoli
         { file: "platano.png", x: -330, y: 566, scale: 0.3 },
         { file: "platano.png", x: 2250, y: 566, scale: 0.3, flip: true },
@@ -589,18 +593,27 @@ export const STAGES: Record<string, StageSpec> = {
           // Chi galleggia nel canale (#378, idea di Riccardo): la bici tutta rovinata e il tizio ubriaco a pancia in su
           corona: { file: "corona.png", frames: 6 }, // la corona dei getti sotto le tazze (#378)
           // chi passa sfocato in primissimo piano (#378)
+          ragazzi: { file: "ragazzi.png", frames: 6, rows: 4 }, // i ragazzi alla ringhiera (#378)
           "passanti-sfocati": { file: "passanti-sfocati.png", frames: 8, rows: 9 },
           "bici-sfocata": { file: "bici-sfocata.png", frames: 4 },
           "bici-rotta": { file: "bici-rotta.png", frames: 2 },
           ubriaco: { file: "ubriaco.png", frames: 4 },
         },
         // Il canale dell'Isola Memmia (#378, idea di Riccardo): acqua stagnante attorno all'isola, a filo degli archi di
-        // mattoni sotto la piazza. Chi ci cade fa uno spruzzo e affonda come nel vuoto di prima (blastZone.bottom). Ogni
-        // 45 s ci passa lenta, in 26 s, una bici rovinata o un ubriaco che dorme a galla
+        // mattoni sotto la piazza. Chi ci cade fa uno spruzzo e affonda come nel vuoto di prima (blastZone.bottom). Una bici
+        // rovinata e un ubriaco che dorme a galla fanno piano il giro dell'anello, in due minuti e mezzo
         // In primissimo piano, sul vialetto e sulla strada davanti al canale, passa gente sfocata (#378, idea di Riccardo):
         // sotto il canale, dove il gioco non c'è, così non copre niente
         near: {
           from: -560, to: 2480,
+          // i ragazzi alla ringhiera vicino alle bici, di spalle mentre guardano la rissa (idea di Riccardo): uno seduto
+          // sulla ringhiera, uno che indica, uno che esulta e uno che filma col telefono
+          still: [
+            { sheet: "ragazzi", row: 0, x: 404, y: 693, k: 1.0, fps: 3 },
+            { sheet: "ragazzi", row: 1, x: 442, y: 708, k: 1.02, fps: 4 },
+            { sheet: "ragazzi", row: 2, x: 486, y: 710, k: 1.04, fps: 5 },
+            { sheet: "ragazzi", row: 3, x: 526, y: 709, k: 1.0, fps: 2 },
+          ],
           figures: [
             { sheet: "passanti-sfocati", row: 0, y: 742, k: 2.2, everyMs: 26000, crossMs: 19000 },
             { sheet: "bici-sfocata", y: 940, k: 2.6, everyMs: 33000, crossMs: 8000, offsetMs: 9000 },
@@ -611,7 +624,7 @@ export const STAGES: Record<string, StageSpec> = {
         },
         outerWater: {
           y: 622, file: "canale.png", deep: "26382f",
-          floaters: { everyMs: 45000, crossMs: 26000, from: -380, to: 2300, kinds: ["bici-rotta", "ubriaco"] },
+          floaters: { lapMs: 150000, cx: 960, cy: 554, rx: 1080, ry: 94, backK: 0.45, kinds: ["bici-rotta", "ubriaco"] },
         },
         birds: { y: 40, parallax: 0.2, everyMs: 14000 },
         // Sulle punte delle lastre delle statue

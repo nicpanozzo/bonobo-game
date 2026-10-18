@@ -2010,7 +2010,8 @@
           {
             "file": "canale-dietro.png",
             "x": 960,
-            "y": 644
+            "y": 644,
+            "floatersAfter": true
           },
           {
             "file": "ansa.png",
@@ -2020,7 +2021,7 @@
           {
             "file": "ponticelli.png",
             "x": 960,
-            "y": 560
+            "y": 600
           },
           {
             "file": "platano.png",
@@ -2211,6 +2212,11 @@
               "file": "corona.png",
               "frames": 6
             },
+            "ragazzi": {
+              "file": "ragazzi.png",
+              "frames": 6,
+              "rows": 4
+            },
             "passanti-sfocati": {
               "file": "passanti-sfocati.png",
               "frames": 8,
@@ -2232,6 +2238,40 @@
           "near": {
             "from": -560,
             "to": 2480,
+            "still": [
+              {
+                "sheet": "ragazzi",
+                "row": 0,
+                "x": 404,
+                "y": 693,
+                "k": 1,
+                "fps": 3
+              },
+              {
+                "sheet": "ragazzi",
+                "row": 1,
+                "x": 442,
+                "y": 708,
+                "k": 1.02,
+                "fps": 4
+              },
+              {
+                "sheet": "ragazzi",
+                "row": 2,
+                "x": 486,
+                "y": 710,
+                "k": 1.04,
+                "fps": 5
+              },
+              {
+                "sheet": "ragazzi",
+                "row": 3,
+                "x": 526,
+                "y": 709,
+                "k": 1,
+                "fps": 2
+              }
+            ],
             "figures": [
               {
                 "sheet": "passanti-sfocati",
@@ -2282,10 +2322,12 @@
             "file": "canale.png",
             "deep": "26382f",
             "floaters": {
-              "everyMs": 45000,
-              "crossMs": 26000,
-              "from": -380,
-              "to": 2300,
+              "lapMs": 150000,
+              "cx": 960,
+              "cy": 554,
+              "rx": 1080,
+              "ry": 94,
+              "backK": 0.45,
               "kinds": [
                 "bici-rotta",
                 "ubriaco"

@@ -770,7 +770,6 @@ func draw_outer_water(ci: CanvasItem, t: float, now: float, up: float, view: Rec
 	var right := view.end.x + 40.0
 	var bottom := maxf(view.end.y, level) + 40.0
 	var amb := sky.ambient(t) # l'acqua prende la luce del momento: dorata al tramonto, scura di notte
-	_draw_floaters(ci, t, level, amb) # prima chi galleggia: l'acqua ci passa davanti e ne copre la parte sotto
 	if _water_tex != null:
 		_draw_painted_water(ci, t, level, left, right, bottom, amb)
 	else:
@@ -781,6 +780,7 @@ func draw_outer_water(ci: CanvasItem, t: float, now: float, up: float, view: Rec
 		wave.append(Vector2(x, level + 3.0 * sin(t / 300.0 + x / 41.0)))
 		x += 18.0
 	ci.draw_polyline(wave, Color("a9c2bf") * Color(amb, 0.5) if _water_tex != null else Color("a9c2bf"), 1.5 if _water_tex != null else 2.5)
+	_draw_floaters(ci, t, level, amb) # sopra il pelo dell'acqua: del foglio si disegna solo la parte che emerge
 	for i in (0 if _water_tex != null else 4): # riflessi che scorrono (nell'acqua dipinta ci sono già)
 		var ry := level + 18.0 + i * 22.0
 		var rx := left + fposmod(t / 30.0 + i * 140.0, 260.0)
@@ -818,38 +818,92 @@ func _draw_painted_water(ci: CanvasItem, t: float, level: float, left: float, ri
 		ci.draw_rect(Rect2(left, level - 4.0 + th, right - left, bottom - (level - 4.0 + th)), deep * mod)
 
 
-# Chi galleggia nel canale (#378): ogni everyMs una cosa entra da un lato e attraversa lenta in crossMs, una volta da
-# sinistra e una da destra, alternando i fogli di kinds (la bici rovinata, il tizio ubriaco che dorme a pancia in su).
-# Dondola appena sul pelo dell'acqua; nel foglio la linea di galleggiamento sta al 60% dell'altezza.
+# Chi galleggia nel canale (#378, idea di Riccardo): la bici rovinata e il tizio ubriaco girano piano attorno a tutto
+# il canale, sempre nello stesso verso, come se fosse un anello: un giro in lapMs sull'ovale cx, cy, rx, ry. Davanti
+# (la metà bassa dell'ovale) sono grandi e passano davanti all'isola, dietro sono più piccoli (backK) e li copre la
+# piazza. Li disegnano due passate: _draw_floaters (davanti, sopra l'acqua dipinta) e
+# draw_floaters_back (dietro, dopo la decorazione con floatersAfter, l'acqua del canale dietro l'isola).
 func _draw_floaters(ci: CanvasItem, t: float, level: float, amb: Color) -> void:
 	var f: Variant = life.outerWater.get("floaters")
 	if not f is Dictionary:
 		return
-	var p := floater_at(f, t)
-	if p.is_empty():
+	for p in floaters_at(f, t):
+		if p.front:
+			_draw_floater(ci, p, t, amb)
+
+
+func draw_floaters_back(ci: CanvasItem, t: float, amb: Color) -> void:
+	var ow: Variant = life.get("outerWater")
+	if not ow is Dictionary or not ow.get("floaters") is Dictionary:
 		return
+	for p in floaters_at(ow.floaters, t):
+		if not p.front:
+			_draw_floater(ci, p, t, amb)
+
+
+# Dove stanno quelli che galleggiano all'istante t: per ognuno {kind, x, y, dir, k, front}. Sono sparsi in parti
+# uguali sull'anello e vanno in senso antiorario visto dall'alto (davanti verso destra)
+func floaters_at(f: Dictionary, t: float) -> Array:
+	var kinds: Array = f.kinds
+	var out := []
+	for i in kinds.size():
+		var th := -TAU * t / float(f.lapMs) + TAU * i / kinds.size()
+		var sn := sin(th)
+		var depth := (sn + 1.0) / 2.0 # 1 davanti, 0 dietro
+		out.append({"kind": kinds[i], "x": float(f.cx) + float(f.rx) * cos(th), "y": float(f.cy) + float(f.ry) * sn,
+			"dir": 1 if sn >= 0.0 else -1, "k": lerpf(float(f.get("backK", 0.45)), 1.0, depth), "front": sn > 0.0})
+	return out
+
+
+# Uno che galleggia: si vede solo la parte sopra il pelo dell'acqua (nel foglio la linea di galleggiamento sta al 60%
+# dell'altezza), dondola appena, e attorno l'acqua si muove: cerchi che si allargano e una scia dietro
+func _draw_floater(ci: CanvasItem, p: Dictionary, t: float, amb: Color) -> void:
 	var sh: Dictionary = sheet(str(p.kind))
 	if sh.is_empty():
 		return
-	var bob := sin(t / 650.0) * 1.5
-	var sunk := float(sh.fh) * float(sh.scale) * 0.4 # i fogli hanno la linea di galleggiamento al 60% dell'altezza
-	draw_frame(ci, str(p.kind), int(t / 500.0), Vector2(float(p.x), level + sunk + bob), 1.0, p.dir < 0, Color(amb.r, amb.g, amb.b, 1.0), true)
+	var k: float = p.k
+	var fw: float = sh.fw
+	var fh: float = sh.fh
+	var sc: float = float(sh.scale) * k
+	var x: float = p.x
+	var y: float = float(p.y) + sin(t / 650.0 + x * 0.01) * 1.2 * k
+	var dir: int = p.dir
+	var wide := fw * sc
+	var foam := Color(0.86, 0.94, 0.93, 1.0) * Color(amb.r, amb.g, amb.b, 1.0)
+	# i cerchi d'onda: la metà dietro prima dell'oggetto, quella davanti dopo
+	var rings := []
+	for i in 3:
+		var u := fposmod(t / 1700.0 + i / 3.0, 1.0)
+		rings.append([wide * 0.42 + 34.0 * k * u, 1.0 - u])
+	for r in rings:
+		_wave_arc(ci, Vector2(x, y), r[0], PI, TAU, Color(foam, 0.45 * r[1]), k)
+	# la scia dietro, nel verso opposto a dove va
+	for side in [-1.0, 1.0]:
+		var a := Vector2(x - dir * wide * 0.45, y + side * 1.5 * k)
+		var b := Vector2(x - dir * (wide * 0.45 + 70.0 * k), y + side * 7.0 * k)
+		ci.draw_line(a, b, Color(foam, 0.35), 1.2 * k)
+	var frame := posmod(int(t / 500.0), int(sh.frames))
+	var src := Rect2(fw * frame, 0, fw, fh * 0.62)
+	var size := Vector2(fw, fh * 0.62) * sc
+	var dest := Rect2(x - size.x / 2.0, y - size.y + fh * 0.02 * sc, size.x, size.y)
+	if dir < 0:
+		dest.size.x = -size.x
+	ci.draw_texture_rect_region(sh.tex, dest, src, Color(amb.r, amb.g, amb.b, 1.0))
+	# la schiuma lungo la linea di galleggiamento e la metà davanti dei cerchi
+	for j in 5:
+		var fx := x + (j - 2) * wide * 0.2 + sin(t / 300.0 + j) * 2.0 * k
+		ci.draw_circle(Vector2(fx, y + 1.0 * k), 1.8 * k, Color(foam, 0.7))
+	for r in rings:
+		_wave_arc(ci, Vector2(x, y), r[0], 0.0, PI, Color(foam, 0.55 * r[1]), k)
 
 
-# Dove sta chi galleggia all'istante t: {kind, x, dir}, o {} se in quel momento il canale è vuoto
-func floater_at(f: Dictionary, t: float) -> Dictionary:
-	var every: float = f.everyMs
-	var cross: float = f.crossMs
-	var n := int(floor(t / every))
-	var k := (t - n * every) / cross
-	if k < 0.0 or k >= 1.0:
-		return {}
-	var kinds: Array = f.kinds
-	var dir := 1 if n % 2 == 0 else -1
-	var from: float = f.from
-	var to: float = f.to
-	var x := lerpf(from, to, k) if dir > 0 else lerpf(to, from, k)
-	return {"kind": kinds[posmod(n, kinds.size())], "x": x, "dir": dir}
+# Un cerchio d'onda sull'acqua, schiacciato dalla prospettiva, da a0 ad a1 (0..PI la metà davanti)
+func _wave_arc(ci: CanvasItem, c: Vector2, r: float, a0: float, a1: float, col: Color, k: float) -> void:
+	var pts := PackedVector2Array()
+	for i in 17:
+		var a := lerpf(a0, a1, i / 16.0)
+		pts.append(c + Vector2(cos(a) * r, sin(a) * r * 0.22))
+	ci.draw_polyline(pts, col, 1.2 * k, true)
 
 
 # Chi passa in primissimo piano (#378): figure sfocate e grandi che attraversano la strada davanti a tutto, sotto il
@@ -860,6 +914,10 @@ func draw_near(ci: CanvasItem, t: float, amb: Color) -> void:
 		return
 	var from: float = n.from
 	var to: float = n.to
+	var dim := Color(amb.r * 0.82, amb.g * 0.82, amb.b * 0.85, 1.0)
+	for s in n.get("still", []): # chi sta fermo alla ringhiera, animato sul posto
+		var fr := int(t / 1000.0 * float(s.fps) + float(s.x))
+		draw_frame(ci, str(s.sheet), fr, Vector2(float(s.x), float(s.y)), float(s.k), s.get("flip", false), dim, true, int(s.get("row", 0)))
 	for f in n.figures:
 		var every: float = f.everyMs
 		var cross: float = f.crossMs

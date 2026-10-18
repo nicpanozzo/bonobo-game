@@ -1569,18 +1569,35 @@ def near_bank(name):
     for k in range(5):  # le ombre degli alberi del parco sul prato
         x, y = rng.uniform(x0, x0 + w), rng.uniform(740, 860)
         q.fill(q.intersect(q.soften(q.ellipse(q.mask(), x - 160, y - 22, x + 160, y + 22), 14), lawn), GRASS_D, 0.55)
-    # la strada che gira attorno al Prato: il marciapiede, l'asfalto con le rotaie del tram, l'altro marciapiede
+    # la strada che gira attorno al Prato: il marciapiede, l'asfalto vecchio e l'altro marciapiede
     walk2 = q.poly(q.mask(), [(x0, road_top), (x0 + w, road_top), (x0 + w, road_top + 14), (x0, road_top + 14)])
     q.fill(walk2, (188, 180, 164))
     q.fill(q.inner_shadow(walk2, 0, -4, 2), (150, 142, 128), 0.8)
     asphalt = q.poly(q.mask(), [(x0, road_top + 14), (x0 + w, road_top + 14), (x0 + w, road_top + 120), (x0, road_top + 120)])
-    q.fill(asphalt, (82, 82, 84))
-    q.fill(q.grain(asphalt, 0.4, 33, 1.2), (60, 60, 62))
-    for ry_ in (road_top + 40, road_top + 52, road_top + 78, road_top + 92):  # le rotaie del tram
-        q.line([(x0, ry_), (x0 + w, ry_)], 1.6, (150, 150, 152), 0.9)
-        q.line([(x0, ry_ + 1.6), (x0 + w, ry_ + 1.6)], 0.8, (40, 40, 42), 0.9)
-    for xx in range(x0, x0 + w, 70):  # la riga bianca tratteggiata in mezzo
-        q.line([(xx, road_top + 66), (xx + 34, road_top + 66)], 2.2, (220, 220, 214), 0.85)
+    # l'asfalto vecchio e chiaro (#378, chiesto da Riccardo): sbiadito, con le toppe più scure, le crepe e un tombino
+    q.fill(asphalt, (128, 126, 120))
+    q.fill(q.grain(asphalt, 0.45, 33, 1.0), (104, 102, 98))
+    q.fill(q.grain(asphalt, 0.35, 34, 2.4), (150, 148, 142))
+    patches = q.mask()
+    for k in range(14):
+        px, py = rng.uniform(x0, x0 + w), rng.uniform(road_top + 20, road_top + 110)
+        pw, ph = rng.uniform(40, 160), rng.uniform(10, 34)
+        q.poly(patches, [(px, py), (px + pw, py + rng.uniform(-3, 3)), (px + pw + rng.uniform(-6, 6), py + ph), (px + rng.uniform(-6, 6), py + ph)])
+    q.fill(q.intersect(patches, asphalt), (106, 104, 100), 0.7)
+    cracks = q.mask()
+    for k in range(40):
+        cx_, cy_ = rng.uniform(x0, x0 + w), rng.uniform(road_top + 18, road_top + 116)
+        pts = [(cx_, cy_)]
+        for j in range(6):
+            cx_ += rng.uniform(4, 14) * rng.choice((-1, 1))
+            cy_ += rng.uniform(-4, 4)
+            pts.append((cx_, cy_))
+        q.stroke(cracks, pts, 0.7)
+    q.fill(q.intersect(cracks, asphalt), (70, 68, 66), 0.85)
+    for mx in (520, 1480):  # i tombini
+        man = q.ellipse(q.mask(), mx - 16, road_top + 60, mx + 16, road_top + 72)
+        q.fill(man, (84, 82, 80))
+        q.outline(man, 0.8, (50, 48, 46))
     side2 = q.poly(q.mask(), [(x0, road_top + 120), (x0 + w, road_top + 120), (x0 + w, y0 + h), (x0, y0 + h)])
     q.fill(side2, (176, 168, 152))
     # l'ombra del primo piano: più scuro in basso
@@ -1708,60 +1725,81 @@ def _obelisk(t, x, base, s, ink):
     t.poly([(x - 1.2 * s, base - 52 * s), (x + 1.2 * s, base - 52 * s), (x, base - 56 * s)], fill=stone, ink=True, width=0.4 * s, ink_col=ink)
 
 
-def _side_bridge(t, x_in, x_out, ground, water, rng):
-    """Un ponte del Prato visto di fianco (#378, come quelli veri): la gobba di pietra d'Istria con un arco solo
-    sull'acqua, i conci e la chiave, le spalle che poggiano sulle due sponde, il parapetto a balaustrini che segue la
-    gobba e, ai due capi, i piedistalli con gli obelischi (come i ponti est e ovest del Prato). Dal vialetto dell'isola
-    (x_in) alla sponda di fuori (x_out), tutti e due alla quota ground."""
-    stone, stone_sh, stone_l, ink = (210, 204, 190, 255), (164, 156, 142, 255), (232, 228, 216, 255), (70, 64, 58, 255)
-    a, b = min(x_in, x_out), max(x_in, x_out)
-    mid, half = (a + b) / 2, (b - a) / 2
-    rise = 10
+def _side_bridge(t, p_in, p_out, rng):
+    """Un ponte del Prato visto di tre quarti (#378, come quelli veri, in prospettiva): va dalla punta dell'isola (p_in)
+    alla sponda di fuori (p_out), che sta più in basso perché è più vicina. Si vede il piano del ponte dall'alto tra i due
+    parapetti, quello di là più in alto e quello di qua davanti; sotto il parapetto di qua, la faccia del ponte con
+    l'arco sull'acqua, i conci e la chiave; ai quattro capi i piedistalli con gli obelischi, come i ponti est e ovest."""
+    stone, stone_sh, stone_l, ink = (230, 226, 216, 255), (176, 170, 158, 255), (246, 244, 236, 255), (84, 78, 72, 255)  # bianchi
+    back = (14 if p_out[0] < p_in[0] else -14, -12)  # dove sta il bordo di là: indietro, verso il centro dell'isola
+    hump = 9
+    n = 30
 
-    def deck(x):  # la gobba: piatta alle spalle, più alta in mezzo
-        u = (x - mid) / half
-        return ground - rise * (1 - u * u) ** 1.2 if abs(u) < 1 else ground
+    def along(u, far=False, lift=0.0):  # un punto del ponte: u da 0 (isola) a 1 (sponda), sul bordo di qua o di là
+        x = p_in[0] + (p_out[0] - p_in[0]) * u
+        y = p_in[1] + (p_out[1] - p_in[1]) * u - hump * math.sin(math.pi * u) ** 0.8 - lift
+        if far:
+            x, y = x + back[0], y + back[1]
+        return (x, y)
 
-    xs = [a + (b - a) * i / 40 for i in range(41)]
-    top = [(x, deck(x)) for x in xs]
-    span = half * 1.1
-    arch = [(mid - span / 2 + span * i / 30, water - math.sin(math.pi * i / 30) * (water - deck(mid) - 4)) for i in range(31)]
-    body = [(a - 6, ground + 3), (a - 6, ground)] + top + [(b + 6, ground), (b + 6, ground + 3)] + [(b - 4, water + 1), (a + 4, water + 1)]
-    t.poly(body, fill=stone)
-    t.poly([(x, y + 3) for x, y in top] + [(b + 6, ground + 6), (a - 6, ground + 6)], fill=stone_sh)  # la cornice sotto il parapetto
-    hole = [(mid - span / 2, water + 1)] + arch + [(mid + span / 2, water + 1)]
-    t.poly(hole, fill=(48, 64, 60, 255))  # sotto l'arco, l'ombra sull'acqua
-    for i in range(1, 14):  # i conci attorno all'arco
-        u = i / 14
-        px, py = arch[int(u * 30)]
-        nx, ny = -math.cos(math.pi * u), -math.sin(math.pi * u)
-        t.line([(px, py), (px + nx * 4, py + ny * 4)], fill=stone_sh, width=0.7)
+    near = [along(i / n) for i in range(n + 1)]
+    far_ = [along(i / n, True) for i in range(n + 1)]
+    # il parapetto di là, dietro al piano: la stessa lastra traforata, vista da dietro e in ombra
+    t.poly([(x, y) for x, y in far_] + [(x, y - 8) for x, y in reversed(far_)], fill=stone_sh)
+    for i in range(1, n, 1):
+        x, y = far_[i]
+        t.poly([(x, y - 6.4), (x + 1.2, y - 4), (x, y - 1.6), (x - 1.2, y - 4)], fill=(96, 112, 106, 255))
+    t.line([(x, y - 9) for x, y in far_], fill=stone, width=2.2)
+    t.line([(x, y - 9.6) for x, y in far_], fill=stone_l, width=0.6)
+    # il piano del ponte, visto dall'alto: lastre di pietra
+    t.poly(near + list(reversed(far_)), fill=(184, 176, 160, 255))
+    for i in range(1, n, 3):
+        t.line([near[i], far_[i]], fill=(160, 152, 138, 255), width=0.5)
+    # la faccia di qua: dal bordo giù fino all'acqua, con l'arco in mezzo
+    water = [(x, y + hump * math.sin(math.pi * i / n) ** 0.8 + 16) for i, (x, y) in enumerate(near)]
+    face = near + list(reversed(water))
+    t.poly(face, fill=stone)
+    arch = []
+    for i in range(n + 1):
+        u = 0.2 + 0.6 * i / n
+        x, y = along(u)
+        wy = water[int(u * n)][1]
+        arch.append((x, wy - (wy - y - 5) * math.sin(math.pi * (u - 0.2) / 0.6)))
+    t.poly([water[int(0.2 * n)]] + arch + [water[int(0.8 * n)]], fill=(48, 64, 60, 255))
+    for i in range(2, n - 1, 3):
+        x, y = arch[i]
+        t.line([(x, y), (x, y - 4)], fill=stone_sh, width=0.7)
     t.line(arch, fill=ink, width=0.8)
-    t.poly(body, ink=True, width=0.9, ink_col=ink)
-    for i in range(10):  # il riflesso del ponte e dell'arco nell'acqua, spezzato
-        y = water + 2 + i * 1.6
-        t.line([(a + 4 + rng.uniform(0, 10), y), (b - 4 - rng.uniform(0, 10), y)], fill=(166, 186, 178, 255) if i % 2 else (60, 78, 72, 255), width=0.6)
-    # il parapetto: lo zoccolo, i balaustrini e il corrimano che seguono la gobba
-    rail = [(x, y - 10) for x, y in top]
-    t.line([(x, y - 1) for x, y in top], fill=stone_sh, width=2.0)
-    for x in xs[1:-1:2]:
-        y = deck(x)
-        t.poly([(x - 1.2, y - 1.5), (x + 1.2, y - 1.5), (x + 0.6, y - 5), (x + 1.3, y - 7.5), (x - 1.3, y - 7.5), (x - 0.6, y - 5)], fill=stone, ink=True, width=0.35, ink_col=ink)
-    t.line(rail, fill=stone, width=2.6)
-    t.line([(x, y - 0.8) for x, y in rail], fill=stone_l, width=0.8)
-    t.line([(x, y + 1.2) for x, y in rail], fill=ink, width=0.5)
-    # ai capi i piedistalli con gli obelischi: quello del parapetto di là un po' più su e più piccolo
-    for px in (a - 2, b + 2):
-        _obelisk(t, px + 2, ground - 3, 0.62, ink)
-        _obelisk(t, px, ground + 1, 0.7, ink)
+    t.line([(x, y + 2.5) for x, y in near], fill=stone_sh, width=2.2)  # la cornice sotto il parapetto
+    t.poly(face, ink=True, width=0.8, ink_col=ink)
+    for i in range(9):  # il riflesso del ponte nell'acqua
+        wx, wy = water[int(n * (0.1 + 0.8 * rng.random()))]
+        t.line([(wx - 10, wy + 2 + i), (wx + 10, wy + 2 + i)], fill=(166, 186, 178, 255) if i % 2 else (60, 78, 72, 255), width=0.6)
+    # il parapetto di qua, davanti: una lastra bianca traforata a quadrifogli (come i ponti veri), che segue la gobba
+    panel = [(x, y - 1) for x, y in near] + [(x, y - 9) for x, y in reversed(near)]
+    t.poly(panel, fill=stone)
+    for i in range(1, n, 1):
+        x, y = near[i]
+        yc = y - 5
+        t.poly([(x, yc - 2.6), (x + 1.4, yc), (x, yc + 2.6), (x - 1.4, yc)], fill=(70, 86, 82, 255))  # il traforo
+    t.poly(panel, ink=True, width=0.5, ink_col=ink)
+    t.line([(x, y - 9) for x, y in near], fill=stone, width=2.6)
+    t.line([(x, y - 9.8) for x, y in near], fill=stone_l, width=0.8)
+    t.line([(x, y - 7.6) for x, y in near], fill=ink, width=0.5)
+    # gli obelischi ai capi: quelli di là più piccoli e più in alto
+    for u in (0.0, 1.0):  # gli obelischi alti e bianchi ai capi, come sui ponti est e ovest del Prato
+        fx, fy = along(u, True)
+        _obelisk(t, fx, fy, 0.85, ink)
+        nx, ny = along(u)
+        _obelisk(t, nx, ny + 2, 1.0, ink)
 
 
 def bridges_and_statues(name):
     """Le statue sulla sponda di là del canale e i ponticelli (#378, chiesto da Riccardo): la fila di statue del Prato
     lungo tutto l'ovale, più piccole lontano; il ponticello dietro la fontana visto di fronte, e i due alle punte
     dell'isola visti di fianco, che portano alla sponda di fuori. Sono dietro la piazza: non ci si cammina sopra.
-    Prop dietro in x 960, y 560, a 2x: x -420..2340, y 340..560."""
-    x0, y0, w, h = -420, 340, 2760, 220
+    Prop dietro in x 960, y 600, a 2x: x -420..2340, y 340..600."""
+    x0, y0, w, h = -420, 340, 2760, 260
     t = Tela(w, h, origin=(x0, y0), ss=1)
     cx, cy, rx, ry = CANAL_OVAL
     rng = rand(3786)
@@ -1792,12 +1830,12 @@ def bridges_and_statues(name):
             t.rect(px - 6 * sc, py - 14 * sc, px + 6 * sc, py, fill=stone, ink=True, width=0.5, ink_col=ink)
             ring_statue(t, px, py - 14 * sc, sc, rng, hz)
     t.poly(deck, ink=True, width=0.8, ink_col=ink)
-    # i ponti est e ovest alle punte dell'isola, visti di fianco: dal vialetto dell'isola alla sponda di fuori
+    # i ponti est e ovest alle punte dell'isola, di tre quarti: dalla punta della piazza alla sponda di fuori, più in basso
     for side in (-1, 1):
-        ground = 508
-        x_out = oval_edge_x(ground, side) - side * 4
-        x_in = 960 + side * 850
-        _side_bridge(t, x_in, x_out, ground, 514, rng)
+        y_out = 560
+        p_out = (oval_edge_x(y_out, side) + side * 14, y_out)
+        p_in = (960 + side * 868, 514)
+        _side_bridge(t, p_in, p_out, rng)
     t.save(OUT, name, colors=256)
 
 
@@ -1866,7 +1904,7 @@ def piano(name):
     centro arriva al ciglio di y 470 e ai lati scende a toccare gli angoli. Le lastre corrono ad anelli attorno al
     centro, più strette dove sono più lontane, con i giunti che vanno verso il centro. Sotto statue e platani
     un'ombra morbida di contatto li appoggia a terra. Prop in x 960, y 524, dietro alle statue."""
-    x0, x1, y0, y1 = 70, 1850, 462, 524
+    x0, x1, y0, y1 = 70, 1850, 404, 524
     t = Tela(x1 - x0, y1 - y0, origin=(x0, y0))
     cx, cy, rx, ry = PLAN
 
@@ -1903,6 +1941,83 @@ def piano(name):
         t.line(pts, fill=col, width=w)
     # il ciglio dell'ovale: lo spigolo della pietra e un filo d'ombra, poi c'è il canale
     t.line([pt(1.0, math.pi * u / 120) for u in range(121)], fill=shade(far_col, 0.7), width=1.0)
+    # l'isola è soprattutto prato (#378, dalle foto di Riccardo): i prati tagliati a strisce dietro la fascia lastricata
+    # dove si combatte, lasciando il viale bianco verso la fontana e l'anello lastricato attorno alla vasca
+    def in_plan(x, y, inset=0.0):
+        dx = (x - cx) / (rx - inset * 8)
+        return y < cy - 1 and (y - cy) ** 2 / (ry - inset) ** 2 + dx * dx < 1
+
+    lawn_pts_l, lawn_pts_r = [], []
+    for side, pts_ in ((-1, lawn_pts_l), (1, lawn_pts_r)):
+        # dal viale (x 960 ± 34) verso la punta, tra la fascia davanti (y 506) e il ciglio (meno il cordolo)
+        for i in range(41):
+            a = math.pi / 2 - side * (math.pi / 2) * i / 40
+            pts_.append((cx + (rx - 26) * math.cos(a), cy - (ry - 3) * math.sin(a)))
+        pts_[:] = [(x, y) for x, y in pts_ if abs(x - cx) > 34 and y < 506]
+        pts_.append((cx + side * (rx - 60), 506))
+        pts_.append((cx + side * 34, 506))
+    lawn_q = Tela(x1 - x0, y1 - y0, origin=(x0, y0))
+    for pts_ in (lawn_pts_l, lawn_pts_r):
+        if len(pts_) > 3:
+            lawn_q.poly(pts_, fill=(88, 112, 66, 255))
+    for k in range(-40, 40):  # le strisce del taglio dell'erba, in diagonale
+        xa = cx + k * 46
+        lawn_q.glaze([(xa, 520), (xa + 23, 520), (xa + 23 + 40, 460), (xa + 40, 460)], (130, 156, 96, 46) if k % 2 else (40, 60, 30, 30))
+    for k in range(2400):
+        gx, gy = rng.uniform(x0, x1), rng.uniform(462, 506)
+        lawn_q.line([(gx, gy), (gx + rng.uniform(-0.6, 0.6), gy - rng.uniform(1.0, 2.6))], fill=rng.choice([(64, 84, 48, 255), (112, 138, 82, 255)]), width=0.5)
+    mask = Image.new("L", t.img.size, 0)
+    md = ImageDraw.Draw(mask)
+    for pts_ in (lawn_pts_l, lawn_pts_r):
+        if len(pts_) > 3:
+            md.polygon(t._pts(pts_, 0, 0), fill=255)
+    rx_f, ry_f = 238, 25  # l'anello lastricato attorno alla vasca resta pietra
+    md.ellipse(t._box((cx - rx_f, 492 - ry_f, cx + rx_f, 492 + ry_f), 0, 0), fill=0)
+    t.img.paste(lawn_q.img, (0, 0), mask)
+    for pts_ in (lawn_pts_l, lawn_pts_r):
+        if len(pts_) > 3:
+            t.line(pts_ + [pts_[0]], fill=(150, 144, 130, 255), width=0.9)  # il bordo di pietra delle aiuole
+    # il cordolo bianco sul ciglio dell'isola, con la fila di statue sui piedistalli (l'anello di dentro del Prato)
+    t.line([pt(1.0, math.pi * u / 120) for u in range(121)], fill=(220, 214, 200, 255), width=2.4)
+    t.line([(x, y + 1.2) for x, y in [pt(1.0, math.pi * u / 120) for u in range(121)]], fill=(150, 144, 130, 255), width=0.7)
+    srng = rand(3787)
+    for i in range(22):
+        a = math.pi * (i + 0.5) / 22
+        x, y = pt(1.0, a)
+        if abs(x - cx) < 60 or abs(x - cx) > rx - 40:
+            continue  # il viale e le punte dove arrivano i ponti
+        depth = (cy - y) / ry  # 1 in fondo
+        ring_statue(t, x, y + 1, 0.56 - 0.12 * depth, srng, 0.12 + 0.08 * depth)
+    # i filari di alberelli sui prati, come lungo i viali dell'isola: più piccoli dove sono più lontani
+    from pittura import Quadro
+    q = Quadro(x1 - x0, y1 - y0, origin=(x0, y0))
+    trees = []
+    for side in (-1, 1):
+        for j in range(6):
+            x = cx + side * (230 + j * 92)
+            y = 486 - j * 1.2 + (j % 2) * 2
+            trees.append((x, y))
+    trees.sort(key=lambda p: p[1])
+    for tx_, ty_ in trees:
+        hgt = 34 - (500 - ty_) * 0.3
+        crown = q.mask()
+        trng = random.Random(int(tx_))
+        for b in range(9):
+            bx = tx_ + trng.uniform(-0.32, 0.32) * hgt * 0.7
+            by = ty_ - hgt * (0.45 + trng.uniform(0, 0.5))
+            br = hgt * trng.uniform(0.18, 0.28)
+            q.ellipse(crown, bx - br, by - br, bx + br, by + br)
+        crown = q.smooth(crown, 1.4)
+        trunk = q.mask()
+        q.stroke(trunk, [(tx_, ty_), (tx_, ty_ - hgt * 0.42)], 2.2)
+        q.fill(trunk, (98, 84, 68))
+        q.fill(q.soften(q.ellipse(q.mask(), tx_ - hgt * 0.4, ty_ - 2, tx_ + hgt * 0.5, ty_ + 2.5), 1.5), (30, 40, 24), 0.5)
+        q.fill(crown, (56, 80, 50))
+        q.fill(q.grain(crown, 0.4, int(tx_), 1.0), (40, 60, 38))
+        q.fill(q.inner_shadow(crown, -hgt * 0.15, -hgt * 0.1, hgt * 0.1), (34, 50, 32), 0.8)
+        q.fill(q.rim(crown, -1.2, -1.4, 1.0), (104, 132, 80), 0.75)
+        q.outline(crown, 0.6, (30, 40, 28))
+    t.img.alpha_composite(q.img)
     # l'erba sulla piazza (#378, chiesto da Riccardo): le aiuole sotto i platani, con il cordolo, e ciuffi tra le lastre
     for tx, rxa in ((410, 92), (1510, 92)):
         bed = [(tx + rxa * math.cos(u), 508 + 10 * math.sin(u)) for u in [j * math.tau / 48 for j in range(48)]]

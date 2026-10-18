@@ -44,6 +44,7 @@ var _props_back: Array = [] # decorazioni dietro ai lottatori (#237): [texture, 
 var _props_front: Array = [] # e davanti
 var _hazard_sprites := {} # indice della trappola -> {tex, frames, fps, scale, footX, footY}: animazioni disegnate (#270)
 var _mover_sprites := {} # indice della piattaforma mobile -> come sopra (#273)
+var _t_draw := 0.0 # il tempo dell'arena del frame che si sta disegnando (#378, per i ganci dentro le decorazioni)
 var _light_layers := {} # parallasse -> [Texture2D, Rect2]: i vetri accesi di quello strato (#288), ritagliati; Rect2 in frazioni dello strato
 var _light_props: Array = [] # [texture, decorazione] con i vetri accesi, sopra le decorazioni (#288)
 var _life: RefCounted = preload("res://scripts/stage_life.gd").new() # sfondo vivo (#260)
@@ -476,6 +477,8 @@ func _draw_props(list: Array) -> void:
 		if pr.get("flip", false):
 			rect.size.x = -size.x # con la larghezza negativa Godot la specchia restando nello stesso posto
 		draw_texture_rect(tex, rect, false, Color(_ambient.r, _ambient.g, _ambient.b, float(pr.get("opacity", 1.0))))
+		if pr.get("floatersAfter", false) and not _life.is_empty(): # chi galleggia dietro l'isola (#378)
+			_life.draw_floaters_back(self, _t_draw, _ambient)
 
 
 # Uno strato dello sfondo (E12): [texture, parallasse], o [] se il file non c'è (si vede il colore del cielo)
@@ -739,6 +742,7 @@ func _draw() -> void:
 	if bz is Dictionary:
 		draw_rect(Rect2(bz.left - 200, bz.top - 200, bz.right - bz.left + 400, bz.bottom - bz.top + 400), _palette.sky)
 	var t_stage := buffer.sample_stage_ms(Time.get_ticks_msec())
+	_t_draw = t_stage
 	var view_center := view_rect.get_center()
 	var rain := _rain_now(t_stage)
 	_ambient = _life.sky.ambient(t_stage) # la luce del momento del giorno (#267), bianca senza ciclo

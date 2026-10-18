@@ -14,6 +14,7 @@ import sys
 sys.path.insert(0, os.path.dirname(__file__))
 from PIL import Image  # noqa: E402
 from pittura import Quadro, bezier, sheet, wobble  # noqa: E402
+from disegno import light, shade  # noqa: E402
 
 OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(__file__), "..", "..", "public", "assets", "stages", "padova")
 os.makedirs(OUT, exist_ok=True)
@@ -1161,6 +1162,132 @@ def near_sheets():
         print("scritto", dst, im.size)
 
 
+def _kid(row, phase):
+    """Un ragazzo alla ringhiera in primissimo piano (#378, idea di Riccardo), visto di spalle mentre guarda la rissa:
+    0 seduto sulla ringhiera che ride, 1 in piedi che indica, 2 che esulta con le braccia, 3 che filma col telefono.
+    Felpe, giubbotti, cappellini girati: un gruppetto un po' spaccone. Piedi a (0, 4 dal fondo), fotogramma 70×144."""
+    q = Quadro(70, 144, origin=(-35, -140))
+    rng = random.Random(400 + row)
+    ink = (34, 30, 30)
+    skin = rng.choice([(196, 152, 122), (168, 122, 92), (210, 170, 140)])
+    hair = rng.choice([(36, 30, 28), (58, 44, 34)])
+    top_col = [(112, 112, 116), (70, 80, 60), (40, 40, 46), (52, 62, 94)][row]
+    pants = [(70, 76, 96), (50, 50, 54), (40, 40, 44), (84, 86, 90)][row]
+    cap = [(150, 52, 44), None, (230, 226, 216), (40, 40, 44)][row]
+    bob = math.sin(phase * math.tau) * (1.6 if row in (0, 2) else 0.8)
+    sit = row == 0
+    hip_y = -30 if sit else -50
+    sh_y = hip_y - 40 + bob
+    # le gambe (da seduto sono davanti, nascoste dalla schiena: si vedono solo un po')
+    legs = q.mask()
+    if sit:
+        q.stroke(legs, [(-7, hip_y + 2), (-9, hip_y + 18)], 7)
+        q.stroke(legs, [(7, hip_y + 2), (9, hip_y + 18)], 7)
+    else:
+        q.stroke(legs, [(-6, hip_y), (-8, -24), (-9, -3)], 8)
+        q.stroke(legs, [(6, hip_y), (8, -24), (9, -3)], 8)
+    q.fill(legs, pants)
+    q.fill(q.inner_shadow(legs, -3, 0, 2), shade(pants + (255,), 0.75)[:3], 0.8)
+    q.outline(legs, 0.6, ink)
+    if not sit:
+        shoes = q.mask()
+        for sx in (-10, 10):
+            q.ellipse(shoes, sx - 6, -5, sx + 6, 1)
+        q.fill(shoes, (226, 224, 218))
+        q.fill(q.inner_shadow(shoes, 0, -2, 1), (170, 168, 160), 0.8)
+        q.outline(shoes, 0.5, ink)
+    # le braccia secondo la posa
+    arms = q.mask()
+    l_sh, r_sh = (-13, sh_y + 5), (13, sh_y + 5)
+    if row == 0:  # seduto: le mani appoggiate sulla ringhiera ai fianchi
+        q.stroke(arms, [l_sh, (-18, hip_y - 8), (-17, hip_y + 2)], 6)
+        q.stroke(arms, [r_sh, (18, hip_y - 8), (17, hip_y + 2)], 6)
+    elif row == 1:  # indica la rissa, il braccio teso in avanti e in su
+        a = 0.15 * math.sin(phase * math.tau * 2)
+        q.stroke(arms, [l_sh, (-16, sh_y + 22), (-12, sh_y + 34)], 6)
+        q.stroke(arms, [r_sh, (24 + 4 * a, sh_y - 12), (30, sh_y - 26 + 6 * a)], 6)
+    elif row == 2:  # esulta: le braccia su a turno
+        up = math.sin(phase * math.tau)
+        q.stroke(arms, [l_sh, (-20, sh_y - 14 - 6 * up), (-18, sh_y - 32 - 8 * up)], 6)
+        q.stroke(arms, [r_sh, (20, sh_y - 14 + 6 * up), (18, sh_y - 32 + 8 * up)], 6)
+    else:  # filma: il telefono alto con due mani
+        q.stroke(arms, [l_sh, (-10, sh_y - 12), (-4, sh_y - 24)], 6)
+        q.stroke(arms, [r_sh, (10, sh_y - 12), (4, sh_y - 24)], 6)
+    q.fill(arms, top_col)
+    q.fill(q.inner_shadow(arms, -2, 0, 1.5), shade(top_col + (255,), 0.72)[:3], 0.8)
+    q.outline(arms, 0.6, ink)
+    # la schiena: felpa o giubbotto, con il cappuccio o il colletto
+    body = q.mask()
+    q.poly(body, [(-15, sh_y), (15, sh_y), (13, hip_y + 4), (-13, hip_y + 4)])
+    q.ellipse(body, -16, sh_y - 3, 16, sh_y + 9)
+    body = q.smooth(body, 1.2)
+    q.fill(body, top_col)
+    q.fill(q.inner_shadow(body, -5, -2, 3), shade(top_col + (255,), 0.72)[:3], 0.85)
+    q.fill(q.rim(body, -1, -1, 1), light(top_col + (255,), 1.2)[:3], 0.6)
+    if row == 0:  # il cappuccio abbassato sulla schiena
+        hood = q.ellipse(q.mask(), -9, sh_y - 1, 9, sh_y + 10)
+        q.fill(hood, shade(top_col + (255,), 0.85)[:3])
+        q.outline(hood, 0.5, ink)
+    if row == 2:  # le due righe della tuta lungo le braccia e i fianchi
+        q.line([(-13, sh_y + 4), (-12, hip_y)], 1.0, (220, 220, 214), 0.9)
+        q.line([(13, sh_y + 4), (12, hip_y)], 1.0, (220, 220, 214), 0.9)
+    q.outline(body, 0.7, ink)
+    # le mani
+    hands = q.mask()
+    if row == 1:
+        q.ellipse(hands, 28, sh_y - 30, 33, sh_y - 24)
+    elif row == 2:
+        up = math.sin(phase * math.tau)
+        q.ellipse(hands, -21, sh_y - 37 - 8 * up, -15, sh_y - 31 - 8 * up)
+        q.ellipse(hands, 15, sh_y - 37 + 8 * up, 21, sh_y - 31 + 8 * up)
+    q.fill(hands, skin)
+    # la testa da dietro: nuca, orecchie, capelli corti, il cappellino girato
+    head = q.mask()
+    q.ellipse(head, -8, sh_y - 20, 8, sh_y - 2)
+    q.fill(head, skin)
+    q.fill(q.ellipse(q.mask(), -8, sh_y - 21, 8, sh_y - 7), hair)
+    for ex in (-8.5, 8.5):
+        q.fill(q.ellipse(q.mask(), ex - 1.6, sh_y - 12, ex + 1.6, sh_y - 7), skin)
+    if cap:
+        c = q.mask()
+        q.ellipse(c, -8.5, sh_y - 23, 8.5, sh_y - 11)
+        q.poly(c, [(-5, sh_y - 13), (5, sh_y - 13), (6, sh_y - 8), (-6, sh_y - 8)])  # la visiera girata dietro
+        q.fill(c, cap)
+        q.fill(q.inner_shadow(c, -2, -1, 1), shade(cap + (255,), 0.75)[:3], 0.8)
+        q.outline(c, 0.5, ink)
+    q.outline(head, 0.6, ink)
+    if row == 3:  # il telefono: da dietro si vede lo schermo acceso con la rissa dentro
+        ph = q.mask()
+        q.poly(ph, [(-7, sh_y - 40), (7, sh_y - 40), (7, sh_y - 24), (-7, sh_y - 24)])
+        q.fill(ph, (30, 30, 34))
+        scr = q.poly(q.mask(), [(-6, sh_y - 39), (6, sh_y - 39), (6, sh_y - 25), (-6, sh_y - 25)])
+        q.fill(scr, (150, 190, 214))
+        q.fill(q.ellipse(q.mask(), -3 + phase * 3, sh_y - 34, 0 + phase * 3, sh_y - 29), (60, 50, 50))
+        q.fill(q.ellipse(q.mask(), 1, sh_y - 33, 4, sh_y - 28), (90, 60, 40))
+        q.fill(q.ellipse(q.mask(), -4, sh_y - 27, 4, sh_y - 25.5), (200, 60, 50), 0.9)  # il pallino rosso: sta registrando
+        q.fill(q.ellipse(q.mask(), -9, sh_y - 30, -4, sh_y - 24), skin)
+        q.fill(q.ellipse(q.mask(), 4, sh_y - 30, 9, sh_y - 24), skin)
+    return q.result()
+
+
+def kids_sheet():
+    """Il foglio dei ragazzi alla ringhiera (#378): 4 righe (seduto, indica, esulta, filma) × 6 fotogrammi, sfocati
+    come il resto del primissimo piano."""
+    from PIL import ImageFilter
+    rows = []
+    for row in range(4):
+        frames = [_kid(row, i / 6) for i in range(6)]
+        rows.append(frames)
+    fw, fh = rows[0][0].size
+    out = Image.new("RGBA", (fw * 6, fh * 4), (0, 0, 0, 0))
+    for r, frames in enumerate(rows):
+        for i, f in enumerate(frames):
+            out.alpha_composite(f, (i * fw, r * fh))
+    out = out.filter(ImageFilter.GaussianBlur(1.3))
+    out.save(os.path.join(OUT, "ragazzi.png"), optimize=True)
+    print("scritto ragazzi.png", out.size)
+
+
 if __name__ == "__main__":
     sheet([cloud(s) for s in range(1, 9)], OUT, "nuvole.png")
     sheet(gull_frames(), OUT, "gabbiano.png")
@@ -1177,3 +1304,4 @@ if __name__ == "__main__":
     floater_sheets()
     crown_sheet()
     near_sheets()
+    kids_sheet()

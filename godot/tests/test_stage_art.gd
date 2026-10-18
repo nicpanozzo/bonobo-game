@@ -115,3 +115,27 @@ func test_spruzzo_sotto_le_tazze() -> void:
 	var down: Array = StageMotion.spoke(Vector2(960, 330), Vector2(960, 460))
 	runner.check(is_equal_approx(down[0], PI), "quello verso il basso si capovolge: %s" % [down])
 	w.free()
+
+
+# Chi galleggia nel canale di Padova (#378) gira attorno all'anello: davanti grande, dietro piccolo e coperto
+func test_galleggianti_girano_attorno_al_canale() -> void:
+	var game := _game()
+	var life: RefCounted = load("res://scripts/stage_life.gd").new()
+	life.setup(game.stages.padova, 1920.0, 720.0)
+	var f: Dictionary = game.stages.padova.art.life.outerWater.floaters
+	var a: Array = life.floaters_at(f, 0.0)
+	runner.check(a.size() == 2, "la bici e l'ubriaco: %d" % a.size())
+	var seen_front := false
+	var seen_back := false
+	for i in 40:
+		for p in life.floaters_at(f, i * float(f.lapMs) / 40.0):
+			var dx := (float(p.x) - float(f.cx)) / float(f.rx)
+			var dy := (float(p.y) - float(f.cy)) / float(f.ry)
+			runner.check(absf(dx * dx + dy * dy - 1.0) < 0.01, "sempre sull'anello")
+			if p.front:
+				seen_front = true
+				runner.check(is_equal_approx(float(p.k), 1.0) or float(p.k) > 0.7, "davanti è grande")
+			else:
+				seen_back = true
+				runner.check(float(p.k) < 0.75, "dietro è più piccolo")
+	runner.check(seen_front and seen_back, "passa davanti e dietro l'isola")
