@@ -538,6 +538,149 @@ export const STAGES: Record<string, StageSpec> = {
       },
     },
   },
+
+  // Padova · il palazzo (#378): la Padova di prima dell'idea di Nicola, conservata com'era il 18 ottobre 2026, con il
+  // palazzo signorile e i suoi balconi al centro e lo zampillo che lancia in alto. I disegni sono una copia ferma.
+  "padova-palazzo": {
+    id: "padova-palazzo",
+    name: "Padova · il palazzo",
+    width: 1920,
+    camera: { minZoom: 0.6 },
+    solids: [
+      { x: 100, y: 520, width: 1720, height: 70 }, // la piazza: sotto pendono le fondamenta disegnate, poi il vuoto
+    ],
+    platforms: [
+      { x: 600, y: 410, width: 180 }, // lastre rette dalle statue, larghe per starci in due: ai lati della fontana...
+      { x: 1140, y: 410, width: 180 },
+      { x: 470, y: 330, width: 140 }, // ...più in alto...
+      { x: 1310, y: 330, width: 140 },
+      { x: 220, y: 380, width: 180 }, // ...e verso i bordi
+      { x: 1520, y: 380, width: 180 },
+      // I balconi del palazzo signorile dietro la fontana (idea di Riccardo): la casa è sfondo, i balconi si calpestano
+      { x: 800, y: 300, width: 320 }, // il balcone largo del piano nobile
+      { x: 900, y: 180, width: 120 }, // il balconcino dell'ultimo piano: la cima dell'arena
+    ],
+    hazards: [
+      // Il ciclista arrabbiato (#229): entra da fuori, attraversa la piazza ed esce. Più lento e più cattivo dal #288
+      // TODO community: il grido "CANCAROOOO!" da registrare (chi lo fa?)
+      { kind: "ciclista", x: 0, y: 0, width: 80, height: 95, damage: 13, knockback: 620, knockbackGrowth: 5, angleDeg: 35,
+        travel: { path: [{ x: -160, y: 425 }, { x: 2080, y: 425 }], periodMs: 20000, warnMs: 1200, crossMs: 4200, alternate: true, offsetMs: 7000 } },
+    ],
+    // Lo zampillo della fontana (#288): ogni 7 s gorgoglia e poi lancia in alto chi sta sulla vasca, verso lastre e balcone
+    jets: [{ x: 915, y: 520, width: 90, height: 320, speed: 1350, periodMs: 7000, warnMs: 1200, activeMs: 1600, offsetMs: 3000, idle: 70 }],
+    // Gli oggetti cadono spesso sulla fontana e sulle lastre delle statue: rischio e premio, e un motivo per salire
+    itemSpots: [
+      { x: 840, y: 520, width: 240, weight: 3 },
+      { x: 600, y: 410, width: 180, weight: 2 },
+      { x: 1140, y: 410, width: 180, weight: 2 },
+      { x: 470, y: 330, width: 140, weight: 2 },
+      { x: 1310, y: 330, width: 140, weight: 2 },
+      { x: 220, y: 380, width: 180, weight: 2 },
+      { x: 1520, y: 380, width: 180, weight: 2 },
+      { x: 800, y: 300, width: 320, weight: 3 }, // il balcone del palazzo
+    ],
+    blastZone: { left: -300, right: 2220, top: -420, bottom: 1000 },
+    spawns: [300, 450, 200, 600, 380, 520, 250, 660].flatMap((x) => [{ x, y: 520 }, { x: 1920 - x, y: 520 }]).slice(0, 8),
+    respawn: { x: 960, y: 100 },
+    colors: { sky: 0x7aa0c4, solid: 0x6f6a60, solidEdge: 0xe8e2d2, platform: 0xd9d4c7 },
+    // Rilassata, da pomeriggio in piazza. TODO community: un pezzo del canale da rifare per Padova?
+    music: { bpm: 116, chords: ["F", "Am", "Bb", "C"], lead: "triangle" },
+    // Disegnati col codice da tools/arene/padova.py (#280), a 2x: chi disegna in Krita può sostituirli, stessi nomi e misure
+    art: {
+      dir: "padova-palazzo", // i disegni di questa versione, fermi: tools/arene/padova.py ora disegna la nuova
+      scale: 0.5, // strati, materiali e decorazioni senza scala propria sono a 2x (stile grafico, sezione 5)
+      layers: [
+        { file: "sfondo-0.png", parallax: 0.15 }, // cielo e Santa Giustina
+        { file: "sfondo-1.png", parallax: 0.45 }, // portici, Loggia Amulea, mercato
+        { file: "sfondo-2.png", parallax: 0.75 }, // il prato dell'Isola Memmia, alberi e la seconda fila di statue
+      ],
+      preview: "anteprima.png",
+      previewFull: true, // fotografata dal gioco, con il palco e lo sfondo
+      skins: {
+        pietra: { file: "pietra.png", edge: "bordo.png" },
+        riva: { file: "riva.png", edge: "bordo.png" }, // il fianco della piazza, a grandi blocchi
+        lastra: { file: "lastra.png", depth: 12 },
+        balcone: { file: "balcone.png", depth: 14, rails: [{ file: "balaustra-balcone.png", height: 30, offsetY: 2 }] },
+      },
+      solidSkin: "pietra",
+      platformSkin: "lastra",
+      pieces: {
+        solids: ["riva"],
+        platforms: ["lastra", "lastra", "lastra", "lastra", "lastra", "lastra", "balcone", "balcone"],
+      },
+      // Cancaro Man (#270, dal disegno di Riccardo): la pedalata in 8 fotogrammi da tools/arene/ciclista.py
+      // TODO community: la voce del "CANCAROOOO!" da registrare; intanto c'è il fumetto
+      hazardSprites: [
+        { hazard: 0, file: "ciclista.png", frames: 8, fps: 16, scale: 0.58, footX: 150, footY: 312, shout: { text: "CANCAROOOO!", x: 200, y: 110 } },
+      ],
+      props: [
+        { file: "palazzo.png", x: 960, y: 522, scale: 0.5 }, // il palazzo signorile: la facciata, dietro a tutto il palco
+        // Il piano dell'isola in profondità (#300): il lastricato dietro il bordo, su cui poggiano palazzo, statue e platani
+        { file: "piano.png", x: 960, y: 524, scale: 0.5 },
+        // Due platani sulla piazza (#288), dietro alle statue: la chioma sta sopra le teste e lascia vedere il palco
+        { file: "platano.png", x: 410, y: 522, scale: 0.5 },
+        { file: "platano.png", x: 1510, y: 522, scale: 0.5, flip: true },
+        { file: "fondamenta.png", x: 960, y: 760 }, // sotto la piazza: le fondamenta di mattoni e pietra, con l'edera
+        { file: "fontana.png", x: 960, y: 524 }, // la fontana dell'Isola Memmia: la vasca, i paracarri e la ringhiera
+        { file: "fontana-davanti.png", x: 960, y: 530, front: true, opacity: 0.7 }, // il bordo della vasca davanti ai piedi
+        // Le statue che reggono le lastre: il giovane con l'alloro, il filosofo con la barba, la dama col velo
+        { file: "statua-ponte.png", x: 690, y: 522, scale: 0.5 },
+        { file: "statua-ponte.png", x: 1230, y: 522, scale: 0.5, flip: true },
+        { file: "statua-alta.png", x: 540, y: 522, scale: 0.5 },
+        { file: "statua-alta.png", x: 1380, y: 522, scale: 0.5, flip: true },
+        { file: "statua-piazza.png", x: 310, y: 522, scale: 0.5 },
+        { file: "statua-piazza.png", x: 1610, y: 522, scale: 0.5, flip: true },
+      ],
+      // Sfondo vivo (#260): stormi, piccioni sulle teste delle statue, passanti sul vialetto del prato con l'ombrello
+      // quando piove, il tram davanti ai portici e il giorno che passa: tramonto, notte con le stelle e i lampioni, alba
+      life: {
+        rain: { periodMs: 40000, rainMs: 12000, offsetMs: 26000 }, // ogni tanto piove: i passanti aprono l'ombrello
+        // Nuvole e uccelli dipinti (#288), da tools/arene/vita.py
+        sheets: {
+          nuvole: { file: "nuvole.png", frames: 8 },
+          gabbiano: { file: "gabbiano.png", frames: 8 },
+          rondine: { file: "rondine.png", frames: 4 },
+          pipistrello: { file: "pipistrello.png", frames: 4 },
+          piccione: { file: "piccione.png", frames: 6 },
+          passanti: { file: "passanti.png", frames: 8, rows: 9 }, // signore, signora, cane, corsa, passeggino, bastone, laurea, borsa, giornale
+          ombrelli: { file: "ombrelli.png", frames: 4 },
+          "bar-tavolo": { file: "bar-tavolo.png", frames: 1 },
+          "bar-seduti": { file: "bar-seduti.png", frames: 4, rows: 3 }, // sul tavolo, a metà, alla bocca, brindisi
+          cameriere: { file: "cameriere.png", frames: 8 },
+          // Il traffico e il tram (#288 passo 3c): le macchine sono una per fotogramma, gli altri si animano
+          auto: { file: "auto.png", frames: 6 },
+          furgone: { file: "furgone.png", frames: 2 },
+          vespa: { file: "vespa.png", frames: 2 },
+          bici: { file: "bici.png", frames: 4 },
+          bus: { file: "bus.png", frames: 1 },
+          tram: { file: "tram.png", frames: 1 },
+          // L'acqua della fontana (#288 passo 3d): lo zampillo a riposo e il getto acceso
+          zampillo: { file: "zampillo.png", frames: 6 },
+          getto: { file: "getto.png", frames: 4 },
+        },
+        birds: { y: 40, parallax: 0.2, everyMs: 14000 },
+        // Sulle punte delle lastre delle statue e sul cornicione del palazzo
+        pigeons: [{ x: 485, y: 330 }, { x: 1435, y: 330 }, { x: 235, y: 380 }, { x: 1685, y: 380 }, { x: 790, y: 100 }, { x: 1130, y: 100 }],
+        // Lo sfondo è salito per stare dietro il piano dell'isola (#300, LIFT in padova.py): prato e bar 30 px, strada 24
+        walkers: { y: 480, parallax: 0.75, count: 14, umbrellas: true },
+        // Il tram e il traffico passano sulla strada davanti ai portici (#278): più giù le piazze li coprirebbero
+        vehicles: { y: 464, parallax: 0.5, everyMs: 23000, kind: "tram" },
+        traffic: { y: 464, parallax: 0.5, everyMs: 2600, kinds: ["auto", "auto", "auto", "vespa", "vespa", "furgone", "bici", "bus"] },
+        flyers: { y: 90, parallax: 0.6, count: 7 }, // rondini sul Prato, di notte i pipistrelli
+        planes: { y: -60, everyMs: 75000 },
+        bar: { x: 120, y: 474, parallax: 0.8, tables: 3, spacing: 72 }, // il chiosco dello spritz sul prato
+        daycycle: {
+          cycleMs: 240000, // un giorno intero in 4 minuti: alba, giorno, tramonto e notte
+          startAt: 0.8, // si parte poco dopo l'alba
+          sky: true, // il cielo vivo dietro alle sagome di Santa Giustina e del Santo (#267)
+          lamps: [90, 390, 690, 990, 1290, 1590, 1890, 2190].map((x) => ({ x: x - 260, y: 379, parallax: 0.75 })), // i lampioni del prato
+          // Di notte i vetri accesi del palazzo, delle case e della città lontana, e le lanterne dei lampioni (#288)
+          lightLayers: [0, 1, 2].map((i) => ({ file: `sfondo-${i}-luci.png`, parallax: [0.15, 0.45, 0.75][i] })),
+          lightProps: [{ file: "palazzo-luci.png", x: 960, y: 522, scale: 0.5 }],
+        },
+      },
+    },
+  },
 };
 
 // Le arene generate si ricreano dal seme; si tengono le ultime per non rigenerarle a ogni chiamata
