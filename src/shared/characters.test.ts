@@ -159,6 +159,12 @@ describe("mosse speciali (E10 passo 1)", () => {
     assert.deepEqual(specialsFor("default").side, DEFAULT_SPECIALS.side, "le speciali che mancano sono quelle di base");
   });
 
+  it("l'insieme delle speciali si compone una volta per personaggio e non si cambia", () => {
+    assert.equal(specialsFor("default"), specialsFor("default"));
+    assert.equal(specialsFor("nessuno"), specialsFor("default"));
+    assert.ok(Object.isFrozen(specialsFor("default")));
+  });
+
   it("il controllo trova i numeri sbagliati", () => {
     const bad = { ...DEFAULT_SPECIALS.side, durationMs: 0, damage: 45 } as SpecialSpec;
     assert.equal(specialProblems(bad).length, 2);

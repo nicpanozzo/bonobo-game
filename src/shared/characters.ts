@@ -1005,7 +1005,15 @@ function toSupremeAttack(sp: SupremeSpec | undefined): AttackSpec | null {
   };
 }
 
-// Le tre speciali di un personaggio: le sue, e per quelle che mancano DEFAULT_SPECIALS
+// Le tre speciali di un personaggio: le sue, e per quelle che mancano DEFAULT_SPECIALS.
+// La fisica la chiede più volte per lottatore a ogni tick: l'insieme si compone una volta per personaggio
+const specialSets = new WeakMap<CharacterSpec, SpecialSet>();
 export function specialsFor(id: string | undefined): SpecialSet {
-  return { ...DEFAULT_SPECIALS, ...getCharacter(id).specials };
+  const c = getCharacter(id);
+  let set = specialSets.get(c);
+  if (!set) {
+    set = Object.freeze({ ...DEFAULT_SPECIALS, ...c.specials });
+    specialSets.set(c, set);
+  }
+  return set;
 }

@@ -86,8 +86,9 @@ export const supremeMelee = (characterId: string) => !burstOf(characterId) && !r
 // all'altra; le raffiche dispari sono spostate di mezzo passo, così non passano dagli stessi punti
 export function burstFire(f: Fighter, dtMs: number, ctx: PhysicsContext): void {
   const sp = f.attack === "supreme" ? burstOf(f.characterId) : null;
+  if (!sp || f.attackTimer < sp.windupMs) return;
   const neutral = specialsFor(f.characterId).neutral;
-  if (!sp || neutral.type !== "projectile" || f.attackTimer < sp.windupMs) return;
+  if (neutral.type !== "projectile") return;
   const wave = (ms: number) => Math.floor((ms - sp.windupMs) / sp.waveEveryMs);
   const w = wave(f.attackTimer);
   const prev = f.attackTimer - dtMs;
