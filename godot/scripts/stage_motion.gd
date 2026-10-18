@@ -83,6 +83,54 @@ static func hazard_sprite_rect(spr: Dictionary, fw: float, fh: float, r: Rect2, 
 	return Rect2(left, top, fw * k, fh * k) if dir > 0 else Rect2(left, top, -fw * k, fh * k)
 
 
+# Dove sta il gambo d'acqua sotto una piattaforma mobile (#378): centrato su cx, dal fondo della piattaforma (top)
+# giù fino alla base; vuoto se la piattaforma è scesa sotto la base
+static func stem_rect(cx: float, top: float, base: float, width: float) -> Rect2:
+	if base <= top:
+		return Rect2()
+	return Rect2(cx - width / 2.0, top, width, base - top)
+
+
+# In che ordine disegnare le piattaforme mobili (#378): per la giostra d'acqua prima quelle che passano dietro, cioè
+# più in alto rispetto al centro del loro giro, così le altre ci passano davanti. Indici di movers
+static func movers_back_to_front(movers: Array, t: float) -> Array:
+	var keyed := []
+	for i in movers.size():
+		var m: Dictionary = movers[i]
+		var path: Array = m.path
+		var mid := 0.0
+		for p in path:
+			mid += float(p.y)
+		mid /= maxf(1.0, path.size())
+		keyed.append([mover_position(m, t).y - mid, i])
+	keyed.sort_custom(func(a, b): return a[0] < b[0])
+	return keyed.map(func(k): return k[1])
+
+
+# La curva di un getto della fontana (#378): esce dritto in su dall'ugello, si piega verso la tazza e ci arriva di
+# nuovo dritto da sotto, come i getti veri che il vento e la spinta curvano. steps + 1 punti, dall'ugello alla tazza
+static func jet_curve(from: Vector2, to: Vector2, steps: int) -> PackedVector2Array:
+	var h := maxf(10.0, from.y - to.y)
+	var p1 := from + Vector2(0, -h * 0.4)
+	var p2 := to + Vector2(0, h * 0.35)
+	var out := PackedVector2Array()
+	for i in steps + 1:
+		var u := i / float(steps)
+		var a := (1.0 - u) * (1.0 - u) * (1.0 - u)
+		var b := 3.0 * (1.0 - u) * (1.0 - u) * u
+		var c := 3.0 * (1.0 - u) * u * u
+		var d := u * u * u
+		out.append(from * a + p1 * b + p2 * c + to * d)
+	return out
+
+
+# Un raggio d'acqua della ruota (#378), dal mozzo alla piattaforma: [angolo, lunghezza]. L'angolo gira il foglio dipinto
+# (che sale verso l'alto) perché la sua cima punti alla piattaforma
+static func spoke(hub: Vector2, target: Vector2) -> Array:
+	var d := target - hub
+	return [atan2(d.y, d.x) + PI / 2.0, d.length()]
+
+
 # Come hazardActive() in physics/elements.ts
 static func hazard_active(h: Dictionary, t: float) -> bool:
 	var period: float = h.get("periodMs", 0)

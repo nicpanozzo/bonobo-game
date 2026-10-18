@@ -40,6 +40,13 @@ func setup(spec: Dictionary, stage_width: float, world_height: float) -> void:
 			var frames := maxi(1, int(sh.frames))
 			var rows := maxi(1, int(sh.get("rows", 1)))
 			_sheets[name] = {"tex": tex, "frames": frames, "fw": tex.get_width() / frames, "fh": tex.get_height() / rows, "scale": float(sh.get("scale", 0.5))}
+	# L'acqua dipinta attorno all'arena (#378): una striscia che si ripete in orizzontale, col pelo dell'acqua in cima
+	_water_tex = null
+	var ow: Variant = life.get("outerWater")
+	if ow is Dictionary and ow.get("file") != null:
+		var wpath := "res://data/assets/stages/%s/%s" % [dir, ow.file]
+		if ResourceLoader.exists(wpath):
+			_water_tex = load(wpath)
 
 
 # Un fotogramma di un foglio dipinto, centrato in pos (o con i piedi in pos se feet), grande k volte la sua misura
@@ -60,6 +67,11 @@ func draw_frame(ci: CanvasItem, name: String, frame: int, pos: Vector2, k: float
 
 func has_sheet(name: String) -> bool:
 	return _sheets.has(name)
+
+
+# Il foglio dipinto con quel nome (#378): tex, frames, fw, fh, scale; vuoto se l'arena non ce l'ha
+func sheet(name: String) -> Dictionary:
+	return _sheets.get(name, {})
 
 
 func is_empty() -> bool:
@@ -735,6 +747,7 @@ static func _draw_pigeon(ci: CanvasItem, pos: Vector2, t: float, flying: bool) -
 
 # --- acqua intorno all'arena (#264): davanti a chi cade, con lo splash quando qualcuno ci finisce dentro ---
 var _last_y := {} # id del lottatore -> y del frame prima
+var _water_tex: Texture2D = null # l'acqua dipinta (#378), o null: allora la tinta unita di prima
 var _splashes: Array = [] # [x, y, ms dell'orologio del client]
 const SPLASH_MS := 700.0
 
@@ -757,14 +770,18 @@ func draw_outer_water(ci: CanvasItem, t: float, now: float, up: float, view: Rec
 	var right := view.end.x + 40.0
 	var bottom := maxf(view.end.y, level) + 40.0
 	var amb := sky.ambient(t) # l'acqua prende la luce del momento: dorata al tramonto, scura di notte
-	ci.draw_rect(Rect2(left, level, right - left, bottom - level), Color(0.27 * amb.r, 0.38 * amb.g, 0.4 * amb.b, 0.9))
+	_draw_floaters(ci, t, level, amb) # prima chi galleggia: l'acqua ci passa davanti e ne copre la parte sotto
+	if _water_tex != null:
+		_draw_painted_water(ci, t, level, left, right, bottom, amb)
+	else:
+		ci.draw_rect(Rect2(left, level, right - left, bottom - level), Color(0.27 * amb.r, 0.38 * amb.g, 0.4 * amb.b, 0.9))
 	var wave := PackedVector2Array()
 	var x := left
 	while x <= right:
 		wave.append(Vector2(x, level + 3.0 * sin(t / 300.0 + x / 41.0)))
 		x += 18.0
-	ci.draw_polyline(wave, Color("a9c2bf"), 2.5)
-	for i in 4: # riflessi che scorrono
+	ci.draw_polyline(wave, Color("a9c2bf") * Color(amb, 0.5) if _water_tex != null else Color("a9c2bf"), 1.5 if _water_tex != null else 2.5)
+	for i in (0 if _water_tex != null else 4): # riflessi che scorrono (nell'acqua dipinta ci sono già)
 		var ry := level + 18.0 + i * 22.0
 		var rx := left + fposmod(t / 30.0 + i * 140.0, 260.0)
 		while rx < right:
@@ -783,3 +800,53 @@ func draw_outer_water(ci: CanvasItem, t: float, now: float, up: float, view: Rec
 			ci.draw_circle(p, 4.0 * (1.0 - k) + 1.0, Color(0.85, 0.93, 0.92, 1.0 - k))
 		ci.draw_arc(Vector2(sp[0], sp[1]), 20.0 + 50.0 * k, PI, TAU, 16, Color(0.85, 0.93, 0.92, 0.8 * (1.0 - k)), 3.0)
 	_splashes = keep
+
+
+# L'acqua dipinta (#378): la striscia si ripete in orizzontale e scorre piano piano (l'acqua del canale è quasi
+# ferma); sotto la striscia, il fondo torbido della stessa tinta dell'ultima riga
+func _draw_painted_water(ci: CanvasItem, t: float, level: float, left: float, right: float, bottom: float, amb: Color) -> void:
+	var k: float = float(life.outerWater.get("scale", 0.5))
+	var tw := _water_tex.get_width() * k
+	var th := _water_tex.get_height() * k
+	var mod := Color(amb.r, amb.g, amb.b, 1.0)
+	var x := left - fposmod(left - t / 400.0, tw)
+	while x < right:
+		ci.draw_texture_rect(_water_tex, Rect2(x, level - 4.0, tw, th), false, mod)
+		x += tw
+	if bottom > level - 4.0 + th:
+		var deep := Color(str(life.outerWater.get("deep", "2c3a2e")))
+		ci.draw_rect(Rect2(left, level - 4.0 + th, right - left, bottom - (level - 4.0 + th)), deep * mod)
+
+
+# Chi galleggia nel canale (#378): ogni everyMs una cosa entra da un lato e attraversa lenta in crossMs, una volta da
+# sinistra e una da destra, alternando i fogli di kinds (la bici rovinata, il tizio ubriaco che dorme a pancia in su).
+# Dondola appena sul pelo dell'acqua; nel foglio la linea di galleggiamento sta al 60% dell'altezza.
+func _draw_floaters(ci: CanvasItem, t: float, level: float, amb: Color) -> void:
+	var f: Variant = life.outerWater.get("floaters")
+	if not f is Dictionary:
+		return
+	var p := floater_at(f, t)
+	if p.is_empty():
+		return
+	var sh: Dictionary = sheet(str(p.kind))
+	if sh.is_empty():
+		return
+	var bob := sin(t / 650.0) * 1.5
+	var sunk := float(sh.fh) * float(sh.scale) * 0.4 # i fogli hanno la linea di galleggiamento al 60% dell'altezza
+	draw_frame(ci, str(p.kind), int(t / 500.0), Vector2(float(p.x), level + sunk + bob), 1.0, p.dir < 0, Color(amb.r, amb.g, amb.b, 1.0), true)
+
+
+# Dove sta chi galleggia all'istante t: {kind, x, dir}, o {} se in quel momento il canale è vuoto
+func floater_at(f: Dictionary, t: float) -> Dictionary:
+	var every: float = f.everyMs
+	var cross: float = f.crossMs
+	var n := int(floor(t / every))
+	var k := (t - n * every) / cross
+	if k < 0.0 or k >= 1.0:
+		return {}
+	var kinds: Array = f.kinds
+	var dir := 1 if n % 2 == 0 else -1
+	var from: float = f.from
+	var to: float = f.to
+	var x := lerpf(from, to, k) if dir > 0 else lerpf(to, from, k)
+	return {"kind": kinds[posmod(n, kinds.size())], "x": x, "dir": dir}

@@ -316,7 +316,8 @@ func _load_stage_dressing(dir: String, art: Dictionary) -> void:
 		var tex := _stage_texture(dir, ms.file)
 		if tex != null:
 			_mover_sprites[int(ms.mover)] = {"tex": tex, "frames": int(ms.frames), "fps": float(ms.fps), "scale": float(ms.get("scale", 1.0)),
-				"footX": float(ms.get("footX", tex.get_width() / float(ms.frames) / 2.0)), "footY": float(ms.get("footY", tex.get_height()))}
+				"footX": float(ms.get("footX", tex.get_width() / float(ms.frames) / 2.0)), "footY": float(ms.get("footY", tex.get_height())),
+				"stem": ms.get("stem") if ms.get("stem") is Dictionary else {}, "phase": float(ms.mover) * 1.7}
 	# Luci della notte precise (#288): strati e decorazioni con solo i vetri accesi
 	_light_layers = {}
 	_light_props = []
@@ -1190,7 +1191,13 @@ func _draw_trail(id: String, p: Dictionary) -> void:
 # Ascensori e trappole (#14), dove sono all'istante t dell'arena: stessi calcoli di physics/elements.ts
 func _draw_elements(t: float) -> void:
 	var movers: Array = stage.get("movers") if stage.get("movers") != null else []
-	for mi in movers.size():
+	var hubs := {} # i mozzi dei getti della fontana (#378), uno per fontana
+	for spr in _mover_sprites.values():
+		var st: Dictionary = spr.get("stem", {})
+		if st.get("hub") is Dictionary and not hubs.has(str(st.hub)):
+			hubs[str(st.hub)] = st
+			_draw_wheel_trunk(st, t)
+	for mi in StageMotion.movers_back_to_front(movers, t): # la giostra d'acqua: prima quelle che passano dietro
 		var m: Dictionary = movers[mi]
 		var pos := StageMotion.mover_position(m, t)
 		if _mover_sprites.has(mi):
@@ -1203,6 +1210,8 @@ func _draw_elements(t: float) -> void:
 		# Strisce gialle e nere sotto: si capisce che si muove
 		for x in range(0, int(m.width), 20):
 			draw_rect(Rect2(pos.x + x, pos.y + 10, minf(10, m.width - x), 5), Color("f1c40f"))
+	for st in hubs.values(): # la schiuma all'ugello, sopra i piedi dei getti
+		_draw_hub_foam(st, t)
 	var hazards: Array = stage.get("hazards") if stage.get("hazards") != null else []
 	for i in hazards.size():
 		var h: Dictionary = hazards[i]
@@ -1454,7 +1463,125 @@ func _draw_mover_sprite(spr: Dictionary, m: Dictionary, pos: Vector2, t: float) 
 	var bob := sin(t / 500.0) * 1.2 if m.get("kind", "") == "barca" else 0.0
 	var surface := Rect2(pos.x, pos.y - 1.0 + bob, w, 1.0)
 	var frame := StageMotion.hazard_frame(t, spr.fps, spr.frames)
+	var stem: Dictionary = spr.get("stem", {})
+	if not stem.is_empty(): # lo spruzzo che regge la piattaforma (#378), sotto di lei
+		# il getto arriva al bottone sotto la tazza (26 pixel sotto il piano): si vede che è l'acqua a reggerla
+		_draw_mover_stem(stem, pos.x + w / 2.0, pos.y + (26.0 if stem.get("hub") is Dictionary else 4.0), t, float(spr.get("phase", 0.0)), w)
 	draw_texture_rect_region(tex, StageMotion.hazard_sprite_rect(spr, fw, tex.get_height(), surface, dir), Rect2(frame * fw, 0, fw, tex.get_height()), _stage_light())
+
+
+# Lo spruzzo d'acqua che regge una piattaforma (#378): il foglio dipinto (il getto della fontana) stirato dalla vasca
+# fino al fondo della piattaforma, largo sempre uguale; ogni spruzzo è sfasato per non pulsare insieme agli altri
+func _draw_mover_stem(stem: Dictionary, cx: float, top: float, t: float, phase: float, plat_w := 0.0) -> void:
+	var sh: Dictionary = _life.sheet(str(stem.sheet))
+	if sh.is_empty():
+		return
+	var fw: float = sh.fw
+	var fh: float = sh.fh
+	var frame := int(t / 90.0 + phase) % int(sh.frames)
+	if stem.get("hub") is Dictionary: # un getto curvo dall'ugello alla piattaforma (#378, dallo schizzo di Riccardo)
+		var hub := Vector2(float(stem.hub.x), float(stem.hub.y))
+		var curve := StageMotion.jet_curve(hub, Vector2(cx, top), 14)
+		_draw_curved_jet(sh, frame, curve, float(stem.width))
+		# il cuore del getto, pieno e bianco, e il nodo di schiuma dove spinge contro la tazza
+		var white := Color(0.96, 0.99, 1.0, 1.0) * Color(_stage_light(), 1.0)
+		draw_polyline(curve, Color(white, 0.55), float(stem.width) * 0.32, true)
+		draw_polyline(curve, Color(white, 0.85), float(stem.width) * 0.12, true)
+		for i in 6:
+			var a := t / 160.0 + i * TAU / 6.0 + phase
+			draw_circle(Vector2(cx, top + 2.0) + Vector2(cos(a) * 7.0, sin(a) * 3.0), 4.5, Color(white, 0.85))
+		if stem.get("crown") != null: # dove batte sotto la tazza si apre a ombrello e ricade a rami
+			_draw_jet_crown(str(stem.crown), Vector2(cx, top), plat_w, t, phase)
+		# le gocce che cadono dal bordo della tazza giù nella vasca, ognuna lungo la sua parabola
+		var drop := Color(0.93, 0.97, 0.98, 1.0) * Color(_stage_light(), 1.0)
+		var fall := float(stem.baseY) - top
+		for i in 12:
+			var k := fposmod(t / 1100.0 + i * 0.283 + phase * 0.31, 1.0)
+			var side := -1.0 if i % 2 == 0 else 1.0
+			var edge := plat_w / 2.0 * (0.55 + 0.45 * fposmod(i * 0.61, 1.0))
+			var p := Vector2(cx + side * (edge + 10.0 * k), top + 2.0 + fall * k * k)
+			draw_circle(p, 2.4 * (1.0 - 0.45 * k), Color(drop, 0.85 - 0.6 * k))
+		return
+	var r := StageMotion.stem_rect(cx, top, float(stem.baseY), float(stem.width))
+	if r.size.y < 2.0:
+		return
+	draw_texture_rect_region(sh.tex, r, Rect2(frame * fw, 0, fw, fh), _stage_light())
+
+
+# Il getto curvo (#378): la colonna d'acqua dipinta (la parte sotto la corona del foglio "getto") piegata lungo la
+# curva, a pezzi di quattro punti con le coordinate della texture, un po' più sottile in cima
+func _draw_curved_jet(sh: Dictionary, frame: int, pts: PackedVector2Array, width: float) -> void:
+	var tex: Texture2D = sh.tex
+	var tw := float(tex.get_width())
+	var fw: float = sh.fw
+	var u0 := (frame * fw + fw * 0.2) / tw # la colonna sta nel mezzo del fotogramma
+	var u1 := (frame * fw + fw * 0.8) / tw
+	var col := _stage_light()
+	var n := pts.size() - 1
+	var sides: Array = []
+	for i in pts.size():
+		var d := (pts[mini(i + 1, n)] - pts[maxi(i - 1, 0)]).normalized()
+		var normal := Vector2(-d.y, d.x)
+		var half := width * (1.0 - 0.25 * i / float(n)) / 2.0
+		sides.append([pts[i] - normal * half, pts[i] + normal * half, lerpf(1.0, 0.27, i / float(n))])
+	for i in n:
+		var a: Array = sides[i]
+		var b: Array = sides[i + 1]
+		draw_primitive(PackedVector2Array([a[0], b[0], b[1], a[1]]), PackedColorArray([col, col, col, col]),
+			PackedVector2Array([Vector2(u0, a[2]), Vector2(u0, b[2]), Vector2(u1, b[2]), Vector2(u1, a[2])]), tex)
+
+
+# La corona sotto la tazza (#378): il foglio dipinto, con il punto dove arriva il getto in (fw/2, 28) del fotogramma,
+# largo poco più della tazza
+func _draw_jet_crown(name: String, at: Vector2, plat_w: float, t: float, phase: float) -> void:
+	var sh: Dictionary = _life.sheet(name)
+	if sh.is_empty():
+		return
+	var fw: float = sh.fw
+	var fh: float = sh.fh
+	var k := plat_w * 1.15 / (fw * float(sh.scale))
+	var size := Vector2(fw, fh) * float(sh.scale) * k
+	var anchor := Vector2(fw / 2.0, 28.0) * float(sh.scale) * k
+	var frame := posmod(int(t / 110.0 + phase * 2.0), int(sh.frames))
+	draw_texture_rect_region(sh.tex, Rect2(at - anchor, size), Rect2(frame * fw, 0, fw, fh), _stage_light())
+
+
+# Il getto unico che sale dal centro della vasca fino al mozzo della ruota (#378), dove si apre in tre raggi:
+# lì l'acqua fa una corona di schiuma che pulsa appena
+func _draw_wheel_trunk(stem: Dictionary, t: float) -> void:
+	var sh: Dictionary = _life.sheet(str(stem.sheet))
+	if sh.is_empty():
+		return
+	var hub := Vector2(float(stem.hub.x), float(stem.hub.y))
+	if float(stem.baseY) - hub.y < 10.0:
+		return # i getti partono già dalla vasca: niente tronco
+	var w: float = float(stem.width) * 1.5
+	var r := StageMotion.stem_rect(hub.x, hub.y - 6.0, float(stem.baseY), w)
+	var fw: float = sh.fw
+	var frame := int(t / 90.0) % int(sh.frames)
+	draw_texture_rect_region(sh.tex, r, Rect2(frame * fw, 0, fw, sh.fh), _stage_light())
+
+
+# La schiuma dove partono i getti (#378): all'ugello nella vasca un ribollire largo e basso, come nelle foto della
+# fontana vera; su un mozzo in alto una corona più piccola
+func _draw_hub_foam(stem: Dictionary, t: float) -> void:
+	var hub := Vector2(float(stem.hub.x), float(stem.hub.y))
+	var low := float(stem.baseY) - hub.y < 10.0
+	var foam := Color(0.95, 0.98, 0.97, 1.0) * Color(_stage_light(), 1.0)
+	var n := 16 if low else 7
+	for i in n:
+		var a := t / 900.0 + i * TAU / n
+		var rr := (26.0 if low else 7.0) * (0.6 + 0.4 * fposmod(i * 0.37, 1.0)) + 2.0 * sin(t / 180.0 + i)
+		var p := hub + Vector2(cos(a) * rr, sin(a) * rr * (0.3 if low else 1.0) - (4.0 if low else 0.0))
+		draw_circle(p, (5.5 if low else 4.5) - 0.3 * (i % 3), Color(foam, 0.8))
+	if low: # gli schizzi che saltano su attorno ai piedi dei getti
+		for i in 10:
+			var k := fposmod(t / 700.0 + i * 0.173, 1.0)
+			var side := -1.0 if i % 2 == 0 else 1.0
+			var p := hub + Vector2(side * (8.0 + 30.0 * k), -22.0 * sin(k * PI) - 3.0)
+			draw_circle(p, 2.6 * (1.0 - 0.5 * k), Color(foam, 0.9 - 0.6 * k))
+	else:
+		draw_circle(hub, 7.0, Color(foam, 0.95))
 
 
 # Il fumetto di una trappola che urla, come il "CANCAROOOO!" di Cancaro Man (#270): una nuvola a punte che compare

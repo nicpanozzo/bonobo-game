@@ -805,6 +805,352 @@ def fountain_water_sheets():
     sheet(jet, OUT, "getto.png")
 
 
+# --- la ruota d'acqua (#378, idea di Nicola): le tazze di marmo portate in giro dagli spruzzi ---
+MARBLE_TOP = (234, 228, 214)  # il piano della tazza, dove si sta: il più chiaro (stile, sezione 7)
+MARBLE = (206, 200, 186)
+MARBLE_DARK = (150, 144, 132)
+
+
+def _tazza(phase):
+    """Una tazza di marmo vista un po' dall'alto, come quelle delle fontane: il piano largo con un velo d'acqua, il
+    labbro con la modanatura, il fondo che si stringe verso il bottone dove batte lo spruzzo, e l'acqua che trabocca
+    dal bordo in filetti e gocce. Il piano su cui si sta è a y 0, largo 120 (la piattaforma); fotogramma 150×48."""
+    q = Quadro(150, 48, origin=(-75, -12))
+    ink = (70, 66, 60)
+    # il fondo: una coppa che si stringe, con due anelli scolpiti
+    bowl = q.mask()
+    left = bezier((-60, 3), (-52, 14), (-24, 20), (-11, 26), 16)
+    q.poly(bowl, left + [(-x, y) for x, y in reversed(left)])
+    q.ellipse(bowl, -12, 22, 12, 30)  # il bottone sotto
+    bowl = q.smooth(bowl, 0.8)
+    q.fill(bowl, MARBLE)
+    q.fill(q.inner_shadow(bowl, -14, -6, 6), MARBLE_DARK, 0.85)
+    q.fill(q.rim(bowl, -2, -1, 1.5), MARBLE_TOP, 0.6)
+    rings = q.mask()
+    for y, w in ((9, 52), (17, 30)):
+        q.stroke(rings, bezier((-w, y - 1), (-w * 0.5, y + 2.2), (w * 0.5, y + 2.2), (w, y - 1), 12), 0.7)
+    q.fill(q.intersect(rings, bowl), MARBLE_DARK, 0.9)
+    q.outline(bowl, 0.7, ink)
+    # il labbro: lo spessore davanti, poi il piano ovale visto dall'alto
+    lip = q.mask()
+    q.ellipse(lip, -63, -4.5, 63, 7)
+    q.fill(lip, MARBLE)
+    q.fill(q.inner_shadow(lip, 0, -3, 1.5), MARBLE_DARK, 0.7)
+    top = q.mask()
+    q.ellipse(top, -63, -5, 63, 3.5)
+    q.fill(top, MARBLE_TOP)
+    q.fill(q.inner_shadow(top, -8, 0, 4), MARBLE, 0.6)
+    q.outline(q.union(lip, top), 0.75, ink)
+    # il velo d'acqua sul piano, con i riflessi che scorrono
+    film = q.ellipse(q.mask(), -55, -3.6, 55, 2.2)
+    q.fill(film, AQUA, 0.45)
+    shine = q.mask()
+    for k in range(5):
+        x = -48 + ((phase * 40 + k * 23) % 96)
+        q.stroke(shine, [(x - 5, -1.2 + (k % 2)), (x + 5, -1.6 + (k % 2))], 0.6)
+    q.fill(q.intersect(q.soften(shine, 0.3), film), FOAM, 0.9)
+    # l'acqua che trabocca: filetti ai lati e davanti, e gocce che cadono
+    rng = random.Random(378)
+    falls = q.mask()
+    for side in (-1, 1):
+        for k in range(3):
+            x0 = side * (60 - k * 2.2)
+            drop = 10 + 8 * ((phase + k * 0.33 + (side > 0) * 0.5) % 1.0)
+            q.stroke(falls, bezier((x0, 1.5), (x0 + side * 2.5, 4), (x0 + side * 3, 8), (x0 + side * 2.6, 1.5 + drop), 8), 0.9 - 0.2 * k)
+    for x0 in (-34, -8, 21, 44):
+        drop = 4 + 7 * ((phase * 1.3 + x0 * 0.07) % 1.0)
+        q.stroke(falls, [(x0, 6.5), (x0 + 0.4, 6.5 + drop)], 0.6)
+    q.fill(q.soften(falls, 0.35), FOAM, 0.75)
+    for k in range(10):
+        u = (phase + k * 0.173) % 1.0
+        side = -1 if k % 2 else 1
+        x = side * rng.uniform(40, 66)
+        y = 6 + 26 * u * u
+        r = 0.9 * (1 - 0.4 * u)
+        q.fill(q.soften(q.ellipse(q.mask(), x - r, y - r * 1.5, x + r, y + r), 0.25), FOAM, 0.85 - 0.5 * u)
+    return q.result()
+
+
+def tazza_sheet():
+    frames = [_tazza(i / 4) for i in range(4)]
+    sheet(frames, OUT, "tazza.png")
+    # la tazza in cima alla giostra (#378), larga 180: la stessa tazza allargata, il piano resta alla stessa altezza
+    big = [f.resize((420, f.height), Image.LANCZOS) for f in frames]
+    sheet(big, OUT, "tazza-grande.png")
+
+
+# --- il canale dell'Isola Memmia (#378, idea di Riccardo): acqua stagnante e chi ci galleggia ---
+def canal_tile():
+    """Una striscia d'acqua stagnante larga 960 e alta 300 (pixel di mondo) che si ripete in orizzontale: il pelo
+    dell'acqua in cima con la patina d'alghe, le lenti d'acqua e qualche foglia, i riflessi chiari del cielo appena
+    sotto, poi il verde torbido che si scurisce andando giù. Semitrasparente in cima: chi ci cade si vede sparire."""
+    W, H = 960, 300
+    q = Quadro(W, H)
+    rng = random.Random(3780)
+    # la tinta: dal verde oliva del pelo al verde bottiglia del fondo, sempre più coprente (una sfumatura continua)
+    grad = Image.new("RGBA", (1, q.size[1]))
+    for py in range(q.size[1]):
+        u = py / max(1, q.size[1] - 1)
+        col = tuple(int(a + (b - a) * u) for a, b in zip((96, 112, 78), (42, 54, 42)))
+        grad.putpixel((0, py), col + (int(196 + 50 * u),))
+    q.img.alpha_composite(grad.resize(q.size, Image.NEAREST))
+
+    def twice(draw):  # ogni cosa vicino al bordo si disegna anche dall'altra parte: la striscia si ripete senza giunta
+        for dx in (-W, 0, W):
+            draw(dx)
+
+    # i riflessi del cielo: pennellate orizzontali chiare, più fitte sotto il pelo
+    refl = q.mask()
+    for k in range(70):
+        x = rng.uniform(0, W)
+        y = 6 + rng.uniform(0, 1) ** 2 * 120
+        ln = rng.uniform(14, 60) * (1 - y / 200)
+        wdt = rng.uniform(0.6, 1.6)
+        twice(lambda dx, x=x, y=y, ln=ln, wdt=wdt: q.stroke(refl, [(x + dx, y), (x + dx + ln * 0.5, y + 0.4), (x + dx + ln, y)], wdt))
+    q.fill(q.soften(refl, 0.6), (176, 194, 178), 0.38)
+    # mulinelli scuri sotto, appena accennati
+    swirl = q.mask()
+    for k in range(18):
+        x, y = rng.uniform(0, W), rng.uniform(40, H)
+        rx, ry = rng.uniform(30, 90), rng.uniform(4, 10)
+        twice(lambda dx, x=x, y=y, rx=rx, ry=ry: q.ellipse(swirl, x + dx - rx, y - ry, x + dx + rx, y + ry))
+    q.fill(q.soften(swirl, 6), (24, 34, 26), 0.35)
+    # il pelo dell'acqua: una riga chiara che ondeggia, e la patina d'alghe a chiazze
+    line = q.mask()
+    pts = [(x, 4 + 0.9 * math.sin(x / 37 * math.tau / 26 * 2) + 0.5 * math.sin(x / 11)) for x in range(-10, W + 11, 6)]
+    q.stroke(line, pts, 1.3)
+    q.fill(q.soften(line, 0.4), (206, 218, 190), 0.85)
+    scum = q.mask()
+    for k in range(26):
+        x = rng.uniform(0, W)
+        w = rng.uniform(12, 70)
+        y = rng.uniform(4, 13)
+        for j in range(int(w / 6) + 1):
+            px, r = x + rng.uniform(-w / 2, w / 2), rng.uniform(2, 5)
+            twice(lambda dx, px=px, y=y, r=r: q.ellipse(scum, px + dx - r * 1.8, y - r * 0.5, px + dx + r * 1.8, y + r * 0.5))
+    scum = q.smooth(scum, 0.8)
+    q.fill(scum, (128, 138, 70), 0.75)
+    q.fill(q.inner_shadow(scum, 0, -1, 0.8), (92, 104, 52), 0.7)
+    q.fill(q.rim(scum, 0, -1, 0.6), (176, 184, 110), 0.6)
+    dots = q.mask()  # lenti d'acqua
+    for k in range(160):
+        x, y = rng.uniform(0, W), 4 + rng.uniform(0, 1) ** 2 * 14
+        r = rng.uniform(0.6, 1.3)
+        twice(lambda dx, x=x, y=y, r=r: q.ellipse(dots, x + dx - r * 1.4, y - r * 0.6, x + dx + r * 1.4, y + r * 0.6))
+    q.fill(dots, (150, 164, 82), 0.85)
+    for k in range(9):  # foglie dei platani cadute nel canale
+        x, y = rng.uniform(0, W), rng.uniform(5, 12)
+        a = rng.uniform(-0.5, 0.5)
+        leaf = q.mask()
+        r = rng.uniform(3, 5)
+        shape = [(x + math.cos(a) * r * 1.6 * math.cos(u) - math.sin(a) * r * 0.5 * math.sin(u), y + math.sin(a) * r * 1.6 * math.cos(u) * 0.4 + r * 0.45 * math.sin(u)) for u in [j * math.tau / 14 for j in range(14)]]
+        twice(lambda dx, shape=shape: q.poly(leaf, [(px + dx, py) for px, py in shape]))
+        q.fill(leaf, rng.choice([(150, 112, 62), (126, 98, 56), (168, 134, 74)]), 0.95)
+        q.outline(leaf, 0.35, (70, 56, 40))
+    return q.save(OUT, "canale.png")
+
+
+def _bike_frame(phase):
+    """La bici tutta rovinata che galleggia a malapena: coricata e storta, una ruota piegata a otto che spunta
+    dall'acqua con i raggi rotti, il telaio arrugginito, il manubrio che punta in alto con una manopola strappata,
+    la sella sfondata, la catena che penzola e un ciuffo d'alghe. Linea di galleggiamento al 60% del fotogramma."""
+    q = Quadro(130, 60, origin=(-65, -36))  # y 0 = pelo dell'acqua
+    rust, rust_d, rust_l = (150, 82, 50), (98, 56, 40), (196, 120, 70)
+    ink = (40, 34, 30)
+    tilt = 0.06 * math.sin(phase * math.tau)
+
+    def rot(x, y):
+        return (x * math.cos(tilt) - y * math.sin(tilt), x * math.sin(tilt) + y * math.cos(tilt))
+
+    def wheel(cx, cy, rx, ry, bend, seed):
+        rng = random.Random(seed)
+        rim = q.mask()
+        pts = [rot(cx + rx * math.cos(u) * (1 + bend * math.sin(2 * u)), cy + ry * math.sin(u)) for u in [j * math.tau / 40 for j in range(41)]]
+        q.stroke(rim, pts, 2.0)
+        q.fill(rim, (70, 70, 72))
+        q.fill(q.rim(rim, -0.6, -0.6, 0.4), (150, 150, 150), 0.7)
+        spokes = q.mask()
+        for k in range(14):
+            if rng.random() < 0.35:
+                continue  # raggi rotti
+            u = k * math.tau / 14
+            ln = rng.uniform(0.5, 1.0)
+            q.stroke(spokes, [rot(cx, cy), rot(cx + rx * ln * math.cos(u), cy + ry * ln * math.sin(u))], 0.4)
+        q.fill(spokes, (120, 118, 112), 0.9)
+        hub = q.ellipse(q.mask(), *rot(cx - 2.5, cy - 2.5), *rot(cx + 2.5, cy + 2.5))
+        q.fill(hub, rust)
+
+    wheel(-30, -4, 22, 15, 0.12, 1)  # la ruota davanti, storta, spunta quasi tutta
+    wheel(32, 6, 22, 9, 0.04, 2)  # quella dietro, quasi sott'acqua
+    frame = q.mask()
+    for a, b in (((-30, -4), (-8, -20)), ((-8, -20), (22, -16)), ((22, -16), (32, 6)), ((-8, -20), (8, 4)), ((8, 4), (32, 6)), ((8, 4), (22, -16))):
+        q.stroke(frame, [rot(*a), rot(*b)], 2.6)
+    q.stroke(frame, [rot(-8, -20), rot(-12, -30), rot(-6, -33)], 2.0)  # lo sterzo che punta in alto
+    q.stroke(frame, [rot(-14, -34), rot(2, -31)], 1.8)  # il manubrio storto
+    q.stroke(frame, [rot(22, -16), rot(24, -24)], 2.0)  # il reggisella
+    q.fill(frame, rust)
+    q.fill(q.grain(frame, 0.6, 5, 0.8), rust_d)
+    q.fill(q.rim(frame, -0.6, -0.8, 0.5), rust_l, 0.7)
+    q.outline(frame, 0.5, ink)
+    seat = q.mask()
+    q.poly(seat, [rot(17, -26), rot(31, -27), rot(30, -23), rot(19, -22)])
+    q.fill(seat, (52, 44, 40))
+    q.line([rot(21, -25), rot(26, -23.5)], 0.6, (170, 150, 120))  # l'imbottitura che esce
+    q.outline(seat, 0.4, ink)
+    grip = q.mask()
+    q.stroke(grip, [rot(-14, -34), rot(-18, -35)], 2.2)
+    q.fill(grip, (60, 60, 64))
+    q.line([rot(2, -31), rot(5, -29), rot(4, -26)], 0.5, (60, 60, 64))  # la manopola strappata che penzola
+    chain = q.mask()
+    q.stroke(chain, [rot(8, 4), rot(10, 10), rot(14, 12), rot(20, 10)], 0.7)
+    q.fill(chain, (60, 54, 50))
+    algae = q.mask()  # un ciuffo d'alghe appeso alla ruota
+    for k in range(5):
+        x0 = -40 + k * 2.2
+        q.stroke(algae, [rot(x0, -10), rot(x0 - 1, -4), rot(x0 + 0.5, 1)], 0.8)
+    q.fill(algae, (96, 120, 62), 0.9)
+    return q.result()
+
+
+def _drunk_frame(phase):
+    """Il tizio ubriaco che dorme a galla a pancia in su: berretto di lana, barba sfatta e naso rosso, la bocca aperta
+    che russa, la canottiera macchiata sulla pancia che spunta dall'acqua, una mano che tiene ancora la bottiglia
+    fuori dall'acqua, l'altra che galleggia, i piedi con una scarpa sola. Linea di galleggiamento al 60%."""
+    q = Quadro(140, 60, origin=(-62, -36))  # y 0 = pelo dell'acqua; testa a sinistra
+    ink = (40, 34, 30)
+    skin, skin_d = (204, 158, 128), (164, 118, 96)
+    lift = math.sin(phase * math.tau)  # il braccio con la bottiglia sale e scende piano
+    # le gambe in jeans, quasi tutte sotto
+    legs = q.mask()
+    q.stroke(legs, [(20, -2), (44, 0), (62, 2)], 7)
+    q.stroke(legs, [(20, 2), (42, 5), (60, 7)], 7)
+    q.fill(legs, (62, 78, 104))
+    q.fill(q.inner_shadow(legs, 0, -2, 1.5), (40, 52, 74), 0.8)
+    q.outline(legs, 0.5, ink)
+    shoe = q.ellipse(q.mask(), 59, -5, 70, 3)  # una scarpa sola
+    q.fill(shoe, (58, 48, 42))
+    q.outline(shoe, 0.45, ink)
+    foot = q.ellipse(q.mask(), 58, 3, 67, 9)  # l'altro piede col calzino bucato
+    q.fill(foot, (150, 146, 136))
+    q.fill(q.ellipse(q.mask(), 63, 4.5, 65, 6.5), skin)
+    # la pancia con la canottiera
+    belly = q.mask()
+    q.poly(belly, bezier((-16, 2), (-12, -14), (14, -16), (24, 2), 16))
+    q.ellipse(belly, -18, -6, 26, 6)
+    belly = q.smooth(belly, 1.2)
+    q.fill(belly, (214, 208, 190))
+    q.fill(q.inner_shadow(belly, -4, -5, 3), (170, 162, 144), 0.8)
+    stains = q.mask()
+    for x, y, r in ((-2, -8, 3), (8, -10, 2.2), (14, -5, 2.6)):
+        q.ellipse(stains, x - r, y - r * 0.7, x + r, y + r * 0.7)
+    q.fill(q.soften(stains, 0.6), (170, 140, 90), 0.55)
+    q.fill(q.ellipse(q.mask(), 4, -14.5, 9, -11.5), skin)  # l'ombelico che spunta
+    q.outline(belly, 0.55, ink)
+    # il braccio che galleggia, aperto
+    arm = q.mask()
+    q.stroke(arm, [(-10, -2), (-4, 6), (6, 9)], 5)
+    q.fill(arm, skin)
+    q.fill(q.inner_shadow(arm, 0, -2, 1.2), skin_d, 0.8)
+    q.outline(arm, 0.45, ink)
+    # la testa col berretto, la barba e il naso rosso, la bocca aperta
+    head = q.mask()
+    q.ellipse(head, -40, -14, -18, 4)
+    q.fill(head, skin)
+    q.fill(q.inner_shadow(head, -3, -3, 2), skin_d, 0.8)
+    beard = q.mask()
+    q.ellipse(beard, -30, -6, -17, 4)
+    q.fill(q.intersect(beard, head), (96, 82, 70), 0.75)
+    q.fill(q.grain(q.intersect(beard, head), 0.9, 9, 0.6), (60, 50, 44))
+    cap = q.mask()
+    q.poly(cap, bezier((-44, 2), (-50, -10), (-42, -18), (-32, -14), 12) + [(-36, 0)])
+    q.fill(cap, (150, 64, 52))
+    q.fill(q.inner_shadow(cap, -2, -2, 1.2), (110, 44, 38), 0.8)
+    q.outline(q.union(head, cap), 0.55, ink)
+    q.fill(q.ellipse(q.mask(), -28, -15, -23, -10), (206, 104, 92))  # il naso rosso
+    q.fill(q.ellipse(q.mask(), -22, -8, -19, -4), (70, 40, 40))  # la bocca aperta
+    q.line([(-31, -10), (-28, -10.6)], 0.6, ink)  # l'occhio chiuso
+    # l'altro braccio alzato con la bottiglia di vetro verde
+    bx, by = -6, -18 - 4 * lift
+    arm2 = q.mask()
+    q.stroke(arm2, [(-12, -6), (-12, -14 - 2 * lift), (bx, by)], 4.4)
+    q.fill(arm2, skin)
+    q.fill(q.inner_shadow(arm2, -1.5, 0, 1), skin_d, 0.8)
+    q.outline(arm2, 0.45, ink)
+    bottle = q.mask()
+    q.poly(bottle, [(bx - 2, by - 1), (bx + 2.5, by - 2), (bx + 9, by - 13), (bx + 7, by - 15), (bx + 1, by - 5)])
+    q.fill(bottle, (64, 120, 70))
+    q.fill(q.rim(bottle, -0.6, -0.6, 0.4), (150, 200, 150), 0.7)
+    q.outline(bottle, 0.45, ink)
+    # russa: le zeta che salgono e svaniscono
+    for k in range(2):
+        u = (phase + k * 0.5) % 1.0
+        zx, zy, zs = -20 + 10 * u, -20 - 16 * u, 2.4 + 1.6 * u
+        zz = q.mask()
+        q.stroke(zz, [(zx, zy), (zx + zs, zy), (zx, zy + zs), (zx + zs, zy + zs)], 0.7)
+        q.fill(zz, (240, 240, 236), 0.9 * (1 - u))
+    return q.result()
+
+
+def _crown(phase, seed=11):
+    """La corona dove il getto batte sotto la tazza (#378, dallo schizzo di Riccardo): l'acqua si apre a ombrello e
+    ricade ai due lati in pochi rami grossi che si piegano verso il basso come le foglie di una palma, pieni alla
+    radice e sempre più sottili, finché si rompono in gocce, dentro una nebbiolina. Il punto da cui parte (dove arriva
+    il getto) è in x 0, y 0."""
+    q = Quadro(180, 110, origin=(-90, -14))
+    rng = random.Random(seed)
+    mist = q.mask()
+    q.ellipse(mist, -70, -12, 70, 40)
+    q.fill(q.soften(mist, 12), (255, 255, 255), 0.2)
+    fronds = []
+    for side in (-1, 1):
+        for k in range(4):  # quattro rami per parte, dal più corto e ripido al più lungo e aperto
+            reach = 34 + k * 14 + rng.uniform(-4, 4)
+            drop = 26 + k * 10 + rng.uniform(-4, 6)
+            lift = 9 - k * 1.5 + rng.uniform(-1, 1)
+            fronds.append((side, reach, drop, lift, k))
+    for side, reach, drop, lift, k in fronds:
+        p0 = (side * 2, 0)
+        pts = bezier(p0, (side * reach * 0.3, -lift), (side * reach * 0.85, -lift * 0.5), (side * reach, drop), 22)
+        grow = 0.7 + 0.3 * ((phase + k * 0.29 + (side > 0) * 0.5) % 1.0)  # ogni ramo si allunga e si rompe a tempo suo
+        upto = max(4, int(len(pts) * grow))
+        body = q.mask()
+        for j in range(upto - 1):
+            q.stroke(body, [pts[j], pts[j + 1]], 15.0 * (1 - j / len(pts)) ** 1.1 + 2.2)
+        body = q.smooth(body, 0.5)
+        q.fill(body, AQUA, 0.85)
+        q.fill(q.inner_shadow(body, 0, -2.5, 1.5), (150, 196, 208), 0.6)  # sotto, in ombra
+        core = q.mask()
+        for j in range(upto - 1):
+            q.stroke(core, [(pts[j][0], pts[j][1] - 1.2), (pts[j + 1][0], pts[j + 1][1] - 1.2)], 5.0 * (1 - j / len(pts)) + 0.8)
+        q.fill(q.soften(core, 0.5), FOAM, 0.95)
+        q.outline(body, 0.35, (120, 170, 186))
+        # dove il ramo si rompe: grosse gocce che continuano a cadere
+        ex, ey = pts[upto - 1]
+        for d in range(4):
+            u = (phase * 2 + k * 0.17 + d * 0.25) % 1.0
+            x, y = ex + side * 4 * u, ey + 5 + 34 * u * u
+            r = 3.2 * (1 - 0.4 * u)
+            dm = q.soften(q.ellipse(q.mask(), x - r, y - r * 1.6, x + r, y + r), 0.3)
+            q.fill(dm, FOAM, 0.95 - 0.5 * u)
+    foam = q.mask()  # il ribollire dove l'acqua batte
+    for k in range(12):
+        x, r = rng.uniform(-14, 14), rng.uniform(3, 6)
+        q.ellipse(foam, x - r, -r - rng.uniform(0, 3), x + r, r * 0.7)
+    foam = q.smooth(foam, 0.8)
+    q.fill(foam, FOAM, 0.95)
+    q.fill(q.inner_shadow(foam, 0, 1.5, 1), AQUA, 0.6)
+    return q.result()
+
+
+def crown_sheet():
+    sheet([_crown(i / 6) for i in range(6)], OUT, "corona.png")
+
+
+def floater_sheets():
+    sheet([_bike_frame(i / 2) for i in range(2)], OUT, "bici-rotta.png")
+    sheet([_drunk_frame(i / 4) for i in range(4)], OUT, "ubriaco.png")
+
+
 if __name__ == "__main__":
     sheet([cloud(s) for s in range(1, 9)], OUT, "nuvole.png")
     sheet(gull_frames(), OUT, "gabbiano.png")
@@ -816,3 +1162,7 @@ if __name__ == "__main__":
     bar_sheets()
     traffic_sheets()
     fountain_water_sheets()
+    tazza_sheet()
+    canal_tile()
+    floater_sheets()
+    crown_sheet()

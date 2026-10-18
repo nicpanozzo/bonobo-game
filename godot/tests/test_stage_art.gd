@@ -88,3 +88,30 @@ func test_strati_rimpiccioliti_restano_grandi_uguali() -> void:
 	var tex: Texture2D = layer[0]
 	runner.check(tex.get_size().x < (layer[2] as Vector2).x, "l'immagine è stata rimpicciolita: %s" % tex.get_size())
 	runner.check(layer[2] == Vector2(4880, 2960), "ma lo strato resta 4880×2960: %s" % layer[2])
+
+
+# La ruota d'acqua di Padova (#378): lo spruzzo va dalla vasca al fondo della tazza, sempre largo uguale
+func test_spruzzo_sotto_le_tazze() -> void:
+	var r := StageMotion.stem_rect(960.0, 300.0, 506.0, 70.0)
+	runner.check(r == Rect2(925, 300, 70, 206), "dalla tazza alla vasca: %s" % r)
+	runner.check(StageMotion.stem_rect(960.0, 510.0, 506.0, 70.0).size == Vector2.ZERO, "sotto la vasca niente spruzzo")
+	var game := _game()
+	var w: Node2D = WorldView.new()
+	w.setup(game)
+	w.set_stage_spec(game.stages.padova)
+	runner.check(w._mover_sprites.size() == 3, "tre tazze disegnate: %d" % w._mover_sprites.size())
+	runner.check(str(w._mover_sprites[0].stem.sheet) == "getto", "ognuna con il suo spruzzo")
+	runner.check(w._mover_sprites[0].stem.hub is Dictionary, "i getti partono dall'ugello al centro")
+	var order: Array = StageMotion.movers_back_to_front(game.stages.padova.movers, 0.0)
+	runner.check(order.size() == 3, "tutte e tre le tazze si disegnano: %s" % [order])
+	var dietro: Dictionary = {"width": 10, "periodMs": 1000, "loop": true, "path": [{"x": 0, "y": 100}, {"x": 0, "y": 90}]}
+	var davanti: Dictionary = {"width": 10, "periodMs": 1000, "loop": true, "path": [{"x": 0, "y": 100}, {"x": 0, "y": 110}]}
+	runner.check(StageMotion.movers_back_to_front([davanti, dietro], 500.0) == [1, 0], "prima quella che passa dietro")
+	var jet := StageMotion.jet_curve(Vector2(960, 506), Vector2(1100, 300), 14)
+	runner.check(jet.size() == 15 and jet[0] == Vector2(960, 506) and jet[14].is_equal_approx(Vector2(1100, 300)), "il getto va dall'ugello alla tazza")
+	runner.check(absf(jet[1].x - 960.0) < absf(jet[1].y - 506.0), "esce dritto in su e poi si piega")
+	var up: Array = StageMotion.spoke(Vector2(960, 330), Vector2(960, 200))
+	runner.check(is_zero_approx(up[0]) and is_equal_approx(up[1], 130.0), "il raggio verso l'alto non si gira: %s" % [up])
+	var down: Array = StageMotion.spoke(Vector2(960, 330), Vector2(960, 460))
+	runner.check(is_equal_approx(down[0], PI), "quello verso il basso si capovolge: %s" % [down])
+	w.free()
