@@ -22,9 +22,11 @@ permissions:
   pages: write
   id-token: write
 
+# In coda, senza annullare: un run annullato su main lascia un controllo rosso sul commit e Render
+# (autoDeployTrigger: checksPass) non pubblica più il server
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 env:
   GODOT_VERSION: 4.5.1
