@@ -52,6 +52,7 @@ var _life: RefCounted = preload("res://scripts/stage_life.gd").new() # sfondo vi
 var _ambient := Color.WHITE # luce del momento del giorno (#267): moltiplica strati e decorazioni, un po' il palco
 var _textures := {} # id personaggio -> Texture2D dello spritesheet (nel formato cartella, quella di idle)
 var _state_textures := {} # id personaggio -> { stato: Texture2D }, solo per il formato cartella (E7 passo 2)
+var _sprite_keep := {} # id personaggio -> quanto è stato rimpicciolito il suo foglio al caricamento (#320), 1 = intero
 var _anims := {} # id giocatore -> { name, since }: animazione in corso e da quando
 var show_hitboxes := false # allenamento (E15): corpo dei lottatori visibile anche sopra gli sprite
 var attack_boxes := true # rettangolo del colpo in corso (opzioni → Video), main.gd lo legge dalle preferenze
@@ -150,8 +151,25 @@ func _load_character(c: Dictionary) -> void:
 				states[src] = _sprite_texture("res://data/%s/%s.png" % [c.sprite.dir, src], filter, k)
 		_state_textures[id] = states
 		_textures[id] = states.idle
+		_sprite_keep[id] = _kept(states.idle, "res://data/%s/idle.png" % c.sprite.dir)
 	else:
 		_textures[id] = _sprite_texture("res://data/" + c.sprite.path, filter, k)
+		_sprite_keep[id] = _kept(_textures[id], "res://data/" + c.sprite.path)
+
+
+# Quanto del PNG originale resta nella texture caricata (#320 la rimpicciolisce sugli schermi piccoli)
+static func _kept(tex: Texture2D, path: String) -> float:
+	var raw: Texture2D = load(path)
+	if tex == null or raw == null or raw.get_height() <= 0:
+		return 1.0
+	return tex.get_size().y / float(raw.get_height())
+
+
+# Il riquadro di un fotogramma nella texture caricata: i fotogrammi sono in pixel del PNG originale, la texture può
+# essere rimpicciolita (keep). Senza questo sugli schermi piccoli si vedeva un pezzo del fotogramma accanto, come un
+# secondo lottatore tagliato di fianco a ognuno
+static func frame_region(frame: float, row: float, fw: float, fh: float, keep: float) -> Rect2:
+	return Rect2(frame * fw * keep, row * fh * keep, fw * keep, fh * keep)
 
 
 # Il disegno di un giocatore, con la sua skin (#339): si tiene da parte, perché si chiede a ogni frame
@@ -1890,7 +1908,7 @@ func _draw_sprite(p: Dictionary, character: Dictionary, now: float, react := Tra
 	var row: float = a.get("row", 0)
 	if _state_textures.has(character.id):
 		texture = _state_textures[character.id][a.src]
-	var src := Rect2(frame * fw, row * fh, fw, fh)
+	var src := frame_region(frame, row, fw, fh, float(_sprite_keep.get(character.id, 1.0)))
 	var scale: float = sheet.get("scale", 1.0) # 0.5 per i disegni fatti a 2x
 	draw_set_transform_matrix(react * Transform2D(0.0, Vector2(p.facing * scale, scale), 0.0, Vector2(p.x, p.y)))
 	var foot_y: float = sheet.get("footY", fh) # dove stanno i piedi nel fotogramma: sotto c'è chi è appeso al bordo

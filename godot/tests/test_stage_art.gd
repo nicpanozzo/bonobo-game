@@ -88,3 +88,17 @@ func test_strati_rimpiccioliti_restano_grandi_uguali() -> void:
 	var tex: Texture2D = layer[0]
 	runner.check(tex.get_size().x < (layer[2] as Vector2).x, "l'immagine è stata rimpicciolita: %s" % tex.get_size())
 	runner.check(layer[2] == Vector2(4880, 2960), "ma lo strato resta 4880×2960: %s" % layer[2])
+
+
+# Sugli schermi piccoli anche i fogli dei lottatori si rimpiccioliscono al caricamento (#320): il fotogramma va preso
+# in proporzione, se no si vedeva un pezzo di quello accanto, come un secondo lottatore tagliato di fianco
+func test_fotogrammi_dei_fogli_rimpiccioliti() -> void:
+	runner.check(WorldView.frame_region(2.0, 1.0, 100.0, 50.0, 0.5) == Rect2(100, 25, 50, 25), "il riquadro in proporzione")
+	runner.check(WorldView.frame_region(3.0, 0.0, 336.0, 368.0, 1.0) == Rect2(1008, 0, 336, 368), "intero com'era")
+	var before: float = WorldView._screen_px_per_world
+	WorldView._screen_px_per_world = 0.6 # uno schermo da portatile
+	var path := "res://data/assets/stages/padova/ubriaco.png"
+	var keep: float = WorldView._kept(WorldView._sprite_texture(path, "linear", 0.5), path)
+	WorldView._screen_px_per_world = before
+	runner.check(absf(keep - 0.3) < 0.02, "rimpicciolito a 0,3: %s" % keep)
+	runner.check(is_equal_approx(WorldView._kept(WorldView._sprite_texture(path, "linear", 0.0), path), 1.0), "senza scala resta intero")
