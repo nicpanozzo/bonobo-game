@@ -181,86 +181,78 @@ def quay_wall():
     q.save(OUT, "riva.png")
 
 
+FRONT_D = 56  # quanto l'isola sporge davanti alla linea dove si gioca, al centro (#378): la metà vicina dell'ovale
+
+
+def front_edge_y(x):
+    """Il bordo davanti dell'isola ovale (#378, chiesto da Riccardo): al centro sta FRONT_D pixel più giù della linea
+    dove si gioca (y 520), e verso le punte risale fino a toccarla, come la metà vicina di un ovale visto dall'alto."""
+    d = (x - 960) / 862
+    return 520 + FRONT_D * math.sqrt(max(0.0, 1 - d * d))
+
+
 def fianco(name):
-    """Il fianco dell'isola ovale (#378, chiesto da Riccardo: la piattaforma deve sembrare ovale). Il bordo dove si
-    cammina resta dritto a y 520, ma il muro sotto è un cilindro visto un po' dall'alto: il piede segue una curva, alto
-    70 al centro e sempre più basso verso le punte, i blocchi si stringono dove il muro gira (la stessa pietra di
-    riva.png, piegata), e l'ombra cresce ai lati; alle punte il muro gira dietro. Sotto, lo zoccolo di mattoni con gli
-    archi che scende nell'acqua del canale. Il gioco ci disegna sopra solo la copertina (bordo.png).
-    Prop dietro in x 960, y 700, a 2x: x 60..1860, y 516..700."""
+    """La metà vicina dell'isola ovale (#378, chiesto da Riccardo: i giocatori combattono su una linea, ma l'isola deve
+    sembrare ovale anche davanti). Davanti alla linea dove si gioca (y 520, la copertina la disegna il gioco) l'isola
+    continua: una fascia di prato rasato a strisce, vista dall'alto, che si allarga al centro e si chiude verso le punte;
+    sul bordo dell'ovale il cordolo bianco con i paracarri bassi; poi il muro a bugne che gira (i blocchi si stringono
+    dove il muro curva e vanno in ombra verso le punte) e scende nell'acqua del canale, scuro d'umido e con le alghe.
+    Prop dietro in x 960, y 660, a 2x: x 60..1860, y 516..660."""
     import numpy as np
-    x0, y0, w, h = 60, 516, 1800, 184
+    x0, y0, w, h = 60, 516, 1800, 144
     k = 2
     W, H = w * k, h * k
-    cx, rx = 960, 880
-    tile = np.asarray(Image.open(os.path.join(OUT, "riva.png")).convert("RGBA")).astype(np.float32)
-    th, tw = tile.shape[0], tile.shape[1]  # 140×480: 70×240 di mondo
+    cx, rx = 960, 862
     xs = x0 + (np.arange(W) + 0.5) / k
     d = np.clip((xs - cx) / rx, -1, 1)
     sfac = np.sqrt(1 - d * d)
-    wall_bot = 520 + 56 + 14 * sfac ** 0.6  # il muro resta alto anche verso le punte: l'isola sta sull'acqua (#378)
-    arc = rx * np.arcsin(d)  # la distanza lungo il muro: i blocchi si stringono verso le punte
-    out = np.zeros((H, W, 4), np.float32)
+    top = 520 + FRONT_D * sfac  # il bordo davanti, dove comincia il muro
+    bottom = 660.0
+    tile = np.asarray(Image.open(os.path.join(OUT, "riva.png")).convert("RGBA")).astype(np.float32)
+    th, tw = tile.shape[0], tile.shape[1]
+    arc = rx * np.arcsin(d)
     ys = y0 + (np.arange(H) + 0.5) / k
-    Y, _ = np.meshgrid(ys, np.arange(W), indexing="ij")
-    inside = (Y >= 520) & (Y <= wall_bot[None, :]) & (np.abs(xs - cx)[None, :] <= 860)
-    v = (Y - 520) / np.maximum(1e-3, (wall_bot[None, :] - 520)) * (th - 1)
+    Y = ys[:, None]
+    inside = (Y >= top[None, :]) & (Y <= bottom) & (np.abs(xs - cx)[None, :] <= rx)
+    v = np.mod((Y - top[None, :]) * k + 18, th)  # i blocchi a bugne, dalla cornice in giù
     u = np.mod((arc[None, :] - arc.min()) * k, tw)
     vi = np.clip(v.astype(int), 0, th - 1)
     ui = np.clip(np.broadcast_to(u, vi.shape).astype(int), 0, tw - 1)
     sample = tile[vi, ui]
-    shadeK = (0.55 + 0.45 * sfac ** 0.5)[None, :, None]  # il muro gira: verso le punte va in ombra
-    sample[..., :3] *= shadeK
+    shade_k = (0.5 + 0.5 * sfac ** 0.6)[None, :, None]  # il muro gira: verso le punte va in ombra
+    damp = np.clip((Y - 600) / 30, 0, 1)[..., None] * 0.45  # l'umido scuro che sale dall'acqua
+    sample[..., :3] = sample[..., :3] * shade_k * (1 - damp) + np.array([40, 52, 40]) * damp
+    out = np.zeros((H, W, 4), np.float32)
     out[inside] = sample[inside]
-    img = Image.fromarray(np.clip(out, 0, 255).astype(np.uint8), "RGBA")
+    wall = Image.fromarray(np.clip(out, 0, 255).astype(np.uint8), "RGBA")
+    # la fascia di prato davanti, vista dall'alto, e il cordolo sul bordo dell'ovale
     t = Tela(w, h, origin=(x0, y0), ss=1)
-    # lo zoccolo di mattoni sotto il muro, che segue la stessa curva e scende nell'acqua
-    brick, brick_s, mortar = (122, 84, 68, 255), (100, 68, 56, 255), (80, 60, 52, 255)
-    xs_w = [100 + i * 1720 / 120 for i in range(121)]
-
-    def bot(x, amp):
-        dd = max(-1.0, min(1.0, (x - cx) / rx))
-        return 520 + amp * (0.8 + 0.2 * (1 - dd * dd) ** 0.3)
-
-    top_pts = [(x, bot(x, 70)) for x in xs_w]
-    base_pts = [(x, bot(x, 150)) for x in xs_w]
-    plinth = top_pts + list(reversed(base_pts))
-    bricks = Tela(w, h, origin=(x0, y0), ss=1, bg=brick)
-    for row in range(40):
-        y = 520 + row * 5
-        bricks.line([(x0, y), (x0 + w, y)], fill=mortar, width=0.5)
-        off = 0 if row % 2 else 5
-        for x in range(x0 + off, x0 + w, 10):
-            bricks.line([(x, y), (x, y + 5)], fill=mortar, width=0.4)
-    t.paste_inside(bricks, plinth)
-    for ax in (380, 700, 1220, 1540):  # gli archi di scarico, a filo dell'acqua
-        aw, top = 120, bot(ax, 70) + 8
-        t.pieslice(ax - aw / 2, top, ax + aw / 2, top + aw * 0.55, 180, 360, fill=brick_s)
-        t.rect(ax - aw / 2, top + aw * 0.27, ax + aw / 2, bot(ax, 150), fill=brick_s)
-        for kk in range(11):
-            a0, a1 = math.pi * kk / 11, math.pi * (kk + 1) / 11
-            rr, r2, cyy = aw / 2, aw / 2 + 8, top + aw * 0.275
-            pts = [(ax - rr * math.cos(a0), cyy - rr * 0.5 * math.sin(a0)), (ax - r2 * math.cos(a0), cyy - r2 * 0.5 * math.sin(a0)),
-                   (ax - r2 * math.cos(a1), cyy - r2 * 0.5 * math.sin(a1)), (ax - rr * math.cos(a1), cyy - rr * 0.5 * math.sin(a1))]
-            t.poly(pts, fill=(150, 142, 128, 255) if kk % 2 else (122, 116, 104, 255), ink=True, width=0.6)
-    t.glaze(plinth, (30, 26, 24, 60))  # lo zoccolo sta nell'ombra del muro
-    for x in range(110, 1820, 6):  # verso le punte anche lo zoccolo gira in ombra
-        dd = abs((x - cx) / rx)
-        if dd > 0.75:
-            t.glaze([(x, bot(x, 70)), (x + 6, bot(x + 6, 70)), (x + 6, bot(x + 6, 150)), (x, bot(x, 150))], (20, 18, 16, int(110 * (dd - 0.75) / 0.25)))
-    t.line(top_pts, fill=(60, 50, 44, 255), width=0.9)
-    t.line(base_pts, fill=(60, 50, 44, 255), width=0.9)
-    base_img = t.result()
-    base_img.alpha_composite(img)
-    # le punte: il muro che gira dietro, un quarto d'ovale in ombra tra il bordo e il piede
-    tt = Tela(w, h, origin=(x0, y0), ss=1)
-    for side in (-1, 1):
-        xe = cx + side * 860
-        cap = [(xe, 520), (xe + side * 16, 512), (xe + side * 20, 520 + 6), (xe + side * 12, bot(xe, 150) - 4), (xe, bot(xe, 150))]
-        tt.poly(cap, fill=(70, 66, 60, 255), ink=True, width=0.8, ink_col=(40, 36, 32, 255))
-    tt.img.alpha_composite(base_img)
-    tt.img.quantize(colors=256, method=Image.Quantize.FASTOCTREE, dither=Image.Dither.NONE).save(os.path.join(OUT, name), optimize=True)
-    print("scritto", name, tt.img.size)
+    pts = [(cx - rx + 2 * rx * i / 120, front_edge_y(cx - rx + 2 * rx * i / 120)) for i in range(121)]
+    lawn = [(cx - rx, 521)] + [(x, y) for x, y in pts] + [(cx + rx, 521)]
+    t.poly(lawn, fill=(86, 110, 64, 255))
+    for kk in range(-30, 30):  # le strisce del taglio dell'erba
+        xa = cx + kk * 46
+        t.glaze([(xa, 521), (xa + 23, 521), (xa + 23 - 18, 580), (xa - 18, 580)], (130, 156, 96, 40) if kk % 2 else (40, 60, 30, 26))
+    rng = rand(3791)
+    for kk in range(1800):
+        gx = rng.uniform(cx - rx, cx + rx)
+        gy = rng.uniform(523, front_edge_y(gx) - 2)
+        if gy > 523:
+            t.line([(gx, gy), (gx + rng.uniform(-0.6, 0.6), gy - rng.uniform(1.0, 2.4))], fill=rng.choice([(64, 84, 48, 255), (112, 138, 82, 255)]), width=0.5)
+    t.glaze([(cx - rx, 521), (cx + rx, 521), (cx + rx, 527), (cx - rx, 527)], (30, 28, 24, 60))  # l'ombra della copertina sul prato
+    base = t.img
+    base.alpha_composite(wall)
+    t.img = base
+    t.d = ImageDraw.Draw(t.img)
+    t.line([(x, y + 1.5) for x, y in pts], fill=(222, 216, 202, 255), width=3.4)  # il cordolo bianco
+    t.line([(x, y + 3.4) for x, y in pts], fill=(150, 144, 132, 255), width=0.8)
+    t.line([(x, y - 0.2) for x, y in pts], fill=(90, 84, 76, 255), width=0.6)
+    for i in range(1, 16):  # i paracarri bassi lungo il cordolo, più piccoli verso le punte
+        x = cx - rx + 2 * rx * i / 16
+        y = front_edge_y(x)
+        sc = 0.5 + 0.5 * math.sqrt(max(0.0, 1 - ((x - cx) / rx) ** 2))
+        bollard(t, x, y + 1, 16 * sc, stone=(214, 208, 194, 255), sh=(170, 164, 150, 255))
+    t.save(OUT, name, colors=256)
 
 
 def coping(name, w=96, h=10):
@@ -2500,7 +2492,7 @@ def front_bridges(name):
     q = Quadro(w, h, origin=(x0, y0))
     S, S_SH, S_HI = (228, 224, 212), (174, 168, 156), (246, 244, 236)
     ink = (78, 72, 66)
-    yf, yn, half_f = 527, 702, 54
+    yf, yn, half_f = 520 + FRONT_D + 2, 704, 50  # dal bordo davanti dell'isola ovale (#378)
     n = 40
     us = [i / n for i in range(n + 1)]
 
@@ -2529,7 +2521,7 @@ def front_bridges(name):
     q.fill(q.intersect(q.soften(q.poly(q.mask(), [L[0], R[0], R[4], L[4]]), 3), deck), (40, 38, 34), 0.25)  # sotto il bordo della piazza
     # i due parapetti traforati a cerchi intrecciati, visti da dentro: cominciano poco dopo la piazza, così non coprono
     # i piedi di chi combatte; quello a destra è in ombra; gli obelischi alti sul capo di qua
-    start = 5
+    start = 1
     _openwork(q, L[start:], 18, ink, face=S, shadow=(170, 164, 152), through=(92, 120, 112), seed=92)
     _openwork(q, R[start:], 18, ink, face=S_SH, shadow=(140, 134, 124), through=(80, 108, 100), seed=93)
     for x, y in (L[-1], R[-1]):

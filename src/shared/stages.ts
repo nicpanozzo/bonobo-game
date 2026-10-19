@@ -548,8 +548,8 @@ export const STAGES: Record<string, StageSpec> = {
         // Due platani sulla piazza (#288), dietro alle statue: la chioma sta sopra le teste e lascia vedere il palco
         { file: "platano.png", x: 410, y: 522, scale: 0.5 },
         { file: "platano.png", x: 1510, y: 522, scale: 0.5, flip: true },
-        // il fianco dell'isola ovale (#378): il muro che gira verso le punte e lo zoccolo di mattoni che scende nel canale
-        { file: "fianco.png", x: 960, y: 700 },
+        // la metà vicina dell'isola ovale (#378): il prato davanti alla linea dove si gioca, il cordolo e il muro nel canale
+        { file: "fianco.png", x: 960, y: 660 },
         { file: "fontana.png", x: 960, y: 524 }, // la fontana dell'Isola Memmia: la vasca, i paracarri e la ringhiera
         { file: "fontana-davanti.png", x: 960, y: 530, front: true, opacity: 0.7 }, // il bordo della vasca davanti ai piedi
         // La sponda di qua del canale (#378), sfocata davanti a tutto: il canale resta una striscia stretta come quello vero
