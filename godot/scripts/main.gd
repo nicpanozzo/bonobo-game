@@ -668,6 +668,8 @@ static func framing(stage: Dictionary, cam: Dictionary, game: Dictionary, positi
 		# Nessuno in campo: l'arena intera, al centro della sua larghezza
 		return {"zoom": clampf(minf(1.0, screen.x / width), far, max_zoom), "center": Vector2(width / 2.0, screen.y / 2.0), "limits": limits}
 	box = box.grow(cam.margin)
+	if own.has("floorY"): # il pavimento sempre in vista (#400): chi sale in cima non stacca lo sfondo dal palco
+		box = box.expand(Vector2(box.get_center().x, float(own.floorY)))
 	var zoom := clampf(minf(screen.x / box.size.x, screen.y / box.size.y), far, max_zoom)
 	return {"zoom": zoom, "center": box.get_center(), "limits": limits}
 

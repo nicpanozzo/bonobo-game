@@ -98,6 +98,9 @@ export interface StageArt {
   previewFull?: boolean; // l'anteprima mostra già il palco (#284): la lobby non ci disegna sopra i pezzi
   scale?: number; // pixel di mondo per pixel dell'immagine (1 se manca)
   dir?: string; // cartella in public/assets/stages/ se diversa dall'id dell'arena (sfondi condivisi)
+  // Quanto vale in verticale la parallasse degli strati e dello sfondo vivo (#400), da 0 a 1 (1 se manca): con 0 in
+  // verticale lo sfondo resta attaccato al palco, così quando la telecamera sale non si staccano strade e prati
+  verticalParallax?: number;
   // Materiali e decorazioni del palco (#237): solo grafica, la fisica non li vede
   skins?: Record<string, StageSkin>; // materiali per nome
   solidSkin?: string; // materiale di base dei blocchi pieni
@@ -254,6 +257,7 @@ export function stageArtFiles(art: StageArt): string[] {
 export interface StageCamera {
   minZoom?: number; // più piccolo = più lontano (CAMERA.minZoom se manca)
   maxZoom?: number; // quanto si avvicina quando i lottatori sono vicini (CAMERA.maxZoom se manca)
+  floorY?: number; // y del mondo sempre inquadrata (#400), come Smash: chi sale in cima non perde di vista la piazza
 }
 
 // Getto d'acqua (#253): una colonna larga width che dalla base (y) sale per height pixel. A ogni giro, dopo
@@ -459,7 +463,8 @@ export const STAGES: Record<string, StageSpec> = {
     id: "padova",
     name: "Padova",
     width: 1920,
-    camera: { minZoom: 0.6 },
+    // floorY (#400): chi sale sulla tazza più alta vede ancora la piazza e il bordo del canale sotto di sé
+    camera: { minZoom: 0.6, floorY: 600 },
     solids: [
       { x: 100, y: 520, width: 1720, height: 70 }, // la piazza: sotto pendono le fondamenta disegnate, poi il vuoto
     ],
@@ -504,6 +509,7 @@ export const STAGES: Record<string, StageSpec> = {
     music: { bpm: 116, chords: ["F", "Am", "Bb", "C"], lead: "triangle" },
     // Disegnati col codice da tools/arene/padova.py (#280), a 2x: chi disegna in Krita può sostituirli, stessi nomi e misure
     art: {
+      verticalParallax: 0, // in verticale lo sfondo resta attaccato all'isola (#400): la strada non si stacca più
       scale: 0.5, // strati, materiali e decorazioni senza scala propria sono a 2x (stile grafico, sezione 5)
       layers: [
         { file: "sfondo-0.png", parallax: 0.15 }, // cielo e Santa Giustina

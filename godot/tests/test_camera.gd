@@ -39,3 +39,18 @@ func test_schermo_piu_largo_sul_telefono() -> void:
 	var normal := Main.framing({"blastZone": BLAST}, CAM, GAME, spread)
 	var wide := Main.framing({"blastZone": BLAST}, CAM, GAME, spread, Vector2(1560, 720))
 	runner.check(wide.zoom >= normal.zoom, "zoom %f contro %f" % [wide.zoom, normal.zoom])
+
+
+# Il pavimento sempre in vista (#400): chi sale in cima da solo non porta la telecamera lontano dalla piazza
+func test_pavimento_sempre_in_vista() -> void:
+	var stage := {"width": 1920, "camera": {"minZoom": 0.6, "floorY": 600}, "blastZone": WIDE_BLAST}
+	var top := [Vector2(960, 125)]
+	var a := Main.framing(stage, CAM, GAME, top)
+	var bottom: float = a.center.y + 720.0 / a.zoom / 2.0
+	runner.check(bottom >= 600.0, "il pavimento a 600 resta inquadrato: fondo a %s" % bottom)
+	runner.check(a.center.y - 720.0 / a.zoom / 2.0 <= 125.0 - 88.0, "e chi sta in cima pure")
+	var plain := Main.framing({"width": 1920, "camera": {"minZoom": 0.6}, "blastZone": WIDE_BLAST}, CAM, GAME, top)
+	runner.check(plain.center.y < a.center.y, "senza floorY la telecamera sale di più")
+	var ground := [Vector2(700, 520), Vector2(1100, 520)]
+	runner.check(Main.framing(stage, CAM, GAME, ground) == Main.framing({"width": 1920, "camera": {"minZoom": 0.6}, "blastZone": WIDE_BLAST}, CAM, GAME, ground), "chi sta in piazza non cambia niente")
+

@@ -50,6 +50,7 @@ fabbrica: {
 Un'arena può essere più larga dello schermo con `width`, per esempio 1920 per un'arena da 1,5 schermi. Tutti i pezzi devono stare tra 0 e `width`. La telecamera inquadra tutti i lottatori vivi: si avvicina quando sono vicini e si allontana quando si sparpagliano, senza mai mostrare più delle zone di espulsione.
 
 Quanto può allontanarsi lo decide `camera.minZoom`; senza, vale `CAMERA.minZoom` (0,7), che basta per le arene larghe uno schermo. Con `camera.maxZoom` si cambia quanto si avvicina.
+Con `camera.floorY` (#400) la telecamera tiene sempre inquadrata quella y del mondo, come Smash che non perde di vista il palco: chi sale sulla piattaforma più alta vede ancora il pavimento sotto di sé, e lo sfondo non si stacca.
 
 Un'arena larga 1920 ha bisogno di circa 0,6 per mostrarsi intera, con i lottatori ai due capi. Sotto `CAMERA.stageMinZoomFloor` (0,45) i lottatori diventano troppo piccoli, e `npm test` lo segnala. Allarga anche le zone di espulsione, così la telecamera ha spazio.
 
@@ -224,6 +225,7 @@ Facoltativo: senza, l'arena si disegna con i colori di `colors`. I PNG vanno in 
 |---|---|
 | `layers` | gli strati dietro al palco, dal più lontano: `{ file, parallax }` |
 | `parallax` | da 0 (fermo con la telecamera, lontanissimo) a 1 (si muove con il palco) |
+| `verticalParallax` | quanto vale la parallasse in verticale, per strati e sfondo vivo (#400): 1 se manca, 0 = in verticale tutto resta attaccato al palco. Con gli strati che hanno il terreno disegnato (strade, prati) conviene 0: altrimenti quando la telecamera sale si aprono vuoti tra uno strato e l'altro |
 | `foreground` | facoltativo, uno strato davanti ai lottatori: quasi tutto trasparente |
 | `preview` | immagine 16:9 dell'arena per la lobby; la lobby ci disegna sopra i pezzi del palco |
 | `previewFull` | `true` se l'anteprima mostra già il palco (per esempio fotografata dal gioco): la lobby non ci disegna sopra i pezzi (#284) |

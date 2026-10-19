@@ -1257,7 +1257,8 @@
       "name": "Padova",
       "width": 1920,
       "camera": {
-        "minZoom": 0.6
+        "minZoom": 0.6,
+        "floorY": 600
       },
       "solids": [
         {
@@ -1892,6 +1893,7 @@
         "lead": "triangle"
       },
       "art": {
+        "verticalParallax": 0,
         "scale": 0.5,
         "layers": [
           {
