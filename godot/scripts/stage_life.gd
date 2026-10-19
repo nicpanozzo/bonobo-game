@@ -204,6 +204,30 @@ static func walker_kind(i: int) -> String:
 	return WALKER_KINDS[(i * 5 + 3) % WALKER_KINDS.size()]
 
 
+# Di notte passa meno gente (#378, Riccardo): a mezzanotte ne resta uno su cinque. Chi c'è o non c'è si
+# decide quando il passante parte da fuori dall'inquadratura, così nessuno sparisce sotto gli occhi
+const NIGHT_FEWER := 0.8
+
+
+# Quanto è buio all'istante t (0 di giorno, 1 a mezzanotte); 0 nelle arene senza giorno e notte
+func dark_at(t: float) -> float:
+	return StageSky.darkness(sky.day_phase(t)) if life.get("daycycle") is Dictionary else 0.0
+
+
+# rank (0-1) dice chi resta a casa per primo quando fa buio
+static func night_hidden(rank: float, dark: float) -> bool:
+	return rank < NIGHT_FEWER * dark
+
+
+# Quando è partito il giro attuale del passante i: allora era fuori dall'inquadratura
+static func walker_lap_start(i: int, t: float, span: float) -> float:
+	var speed := (26.0 + float((i * 37) % 30)) * float(WALKER_PACE.get(walker_kind(i), 1.0))
+	var dir := 1.0 if i % 2 == 0 else -1.0
+	var pos := float(i) * 397.0 + dir * speed * t / 1000.0
+	var edge := floorf(pos / span) * span + (span if dir < 0.0 else 0.0)
+	return (edge - float(i) * 397.0) * 1000.0 / (dir * speed)
+
+
 static func walker_x(i: int, t: float, span: float) -> float:
 	var speed := (26.0 + float((i * 37) % 30)) * float(WALKER_PACE.get(walker_kind(i), 1.0)) # pixel/s
 	var dir := 1.0 if i % 2 == 0 else -1.0
@@ -219,6 +243,8 @@ func _draw_walkers(ci: CanvasItem, w: Dictionary, t: float, off: Vector2, rain: 
 		var x := walker_x(i, t, span) - 300.0
 		if not _seen(off.x + x - 40.0, 80.0):
 			continue
+		if night_hidden(fposmod(i * 0.618, 1.0), dark_at(walker_lap_start(i, t, span))):
+			continue # di notte è rimasto a casa
 		var dir := 1.0 if i % 2 == 0 else -1.0
 		var running := kind == "corsa"
 		if has_sheet("passanti"):
@@ -653,11 +679,12 @@ func _draw_bar_sprites(ci: CanvasItem, b: Dictionary, t: float, base: Vector2, n
 		var c := base + Vector2(i * sp, 0)
 		if not _seen(c.x - 40.0, 80.0):
 			continue
+		# prima il tavolino con le sedie, poi chi ci sta seduto sopra (#378: prima sembravano sospesi davanti alle sedie)
+		draw_frame(ci, "bar-tavolo", 0, c + Vector2(0, 1.0), 0.95, false, mod, true)
 		for seat in 2:
 			var pose := 3 if bar_toast(i, t) else (0 if bar_sip(i, seat, t) < 0.3 else (1 if bar_sip(i, seat, t) < 0.75 else 2))
 			var side := -1.0 if seat == 0 else 1.0
 			draw_frame(ci, "bar-seduti", pose, c + Vector2(side * 11.0, 1.0), 0.95, seat == 1, mod, true, (i * 2 + seat) % 3)
-		draw_frame(ci, "bar-tavolo", 0, c + Vector2(0, 1.0), 0.95, false, mod, true)
 
 
 # Le lucine tra gli ombrelloni dipinti, di sera (#288)
@@ -939,7 +966,10 @@ func draw_near(ci: CanvasItem, t: float, amb: Color) -> void:
 		var k := fposmod(tt, every) / cross
 		if k >= 1.0:
 			continue
-		var dir := 1 if posmod(int(floor(tt / every)), 2) == 0 else -1
+		var pass_n := int(floor(tt / every))
+		if night_hidden(fposmod(pass_n * 0.618 + float(f.y) * 0.01, 1.0), dark_at(t - fposmod(tt, every))):
+			continue # di notte passa meno gente anche davanti
+		var dir := 1 if posmod(pass_n, 2) == 0 else -1
 		var x := lerpf(from, to, k) if dir > 0 else lerpf(to, from, k)
 		var mod := Color(amb.r * 0.82, amb.g * 0.82, amb.b * 0.85, 0.95)
 		draw_frame(ci, str(f.sheet), int(tt / 110.0), Vector2(x, float(f.y)), float(f.k), dir < 0, mod, true, int(f.get("row", 0)))

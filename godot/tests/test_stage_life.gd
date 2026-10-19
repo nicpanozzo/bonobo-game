@@ -155,3 +155,23 @@ func test_fogli_dipinti_dello_sfondo_vivo() -> void:
 	var empty := StageLife.new()
 	empty.setup({"art": {"life": {"birds": {"y": 40, "parallax": 0.2, "everyMs": 14000}}}}, 1280, 720)
 	runner.check(not empty.has_sheet("gabbiano"), "senza fogli, le forme di prima")
+
+
+# Di notte passa meno gente (#378): chi resta a casa si decide a inizio giro, quando il passante è fuori dall'inquadratura
+func test_di_notte_meno_passanti() -> void:
+	var day := 0
+	var night := 0
+	for i in 20:
+		var rank := fposmod(i * 0.618, 1.0)
+		if not StageLife.night_hidden(rank, 0.0):
+			day += 1
+		if not StageLife.night_hidden(rank, 1.0):
+			night += 1
+	runner.check(day == 20, "di giorno ci sono tutti: %d" % day)
+	runner.check(night >= 2 and night <= 6, "a mezzanotte pochi: %d su 20" % night)
+	for i in 6:
+		var t := 98765.0
+		var t0 := StageLife.walker_lap_start(i, t, 2500.0)
+		runner.check(t0 <= t, "il giro è partito prima di adesso")
+		var x0 := StageLife.walker_x(i, t0 + 1.0, 2500.0)
+		runner.check(x0 < 5.0 or x0 > 2495.0, "e il passante allora era al bordo del tratto, fuori vista: %s" % x0)

@@ -843,7 +843,10 @@ func _draw() -> void:
 		_draw_layer(l)
 		var lights: Variant = _light_layers.get(snappedf(float(l[1]), 0.001))
 		if lights != null and night > 0.0: # i vetri accesi, senza la luce ambiente, solo dove ce ne sono
-			var whole := StageMotion.layer_rect((l[0] as Texture2D).get_size() * _layer_scale, l[1], Vector2(stage_width() / 2.0, h / 2.0), view_center, _vertical_parallax())
+			# la grandezza vera dello strato (#382): sugli schermi piccoli la texture è rimpicciolita e i vetri accesi
+			# finivano spostati sulle facciate sbagliate (le luci sulla Loggia Amulea che vedeva Riccardo)
+			var full: Vector2 = l[2] if l.size() > 2 else (l[0] as Texture2D).get_size()
+			var whole := StageMotion.layer_rect(full * _layer_scale, l[1], Vector2(stage_width() / 2.0, h / 2.0), view_center, _vertical_parallax())
 			var part: Rect2 = lights[1]
 			draw_texture_rect(lights[0], Rect2(whole.position + part.position * whole.size, part.size * whole.size), false, Color(1, 1, 1, night))
 		if night > 0.0:
