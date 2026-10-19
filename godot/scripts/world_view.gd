@@ -61,6 +61,8 @@ var _anims := {} # id giocatore -> { name, since }: animazione in corso e da qua
 const RigView := preload("res://scripts/rig_view.gd") # prova del lottatore a pezzi in tempo reale (#403)
 var _rigs := {} # id personaggio -> RigView, solo per chi ha il rig e l'ha caricato
 var use_rigs := not OS.get_cmdline_user_args().has("--no-rig") # con --no-rig si vedono le strisce di prima
+const RigMotion := preload("res://scripts/rig_motion.gd") # movimento secondario del rig (#404)
+var _rig_motion := {} # id giocatore -> RigMotion
 var show_hitboxes := false # allenamento (E15): corpo dei lottatori visibile anche sopra gli sprite
 var attack_boxes := true # rettangolo del colpo in corso (opzioni → Video), main.gd lo legge dalle preferenze
 var _air_jumps := {} # id giocatore -> quando ha fatto il doppio salto (ms), per l'animazione doubleJump (#103)
@@ -233,6 +235,7 @@ func reset() -> void:
 	_shield_hits = {}
 	_reactions = {}
 	_bounces = {}
+	_rig_motion = {}
 	_items = []
 	_projectiles = []
 	_puddles = []
@@ -2069,7 +2072,7 @@ func _draw_sprite(p: Dictionary, character: Dictionary, now: float, react := Tra
 		since = air_jump # la capriola parte dal momento del doppio salto, non da quando la si disegna
 	var new_attack: bool = p.attack != null and not bool(state.get("attacking", false))
 	if prev_name != name or new_attack:
-		state = {"name": name, "since": since, "kind": kind}
+		state = {"name": name, "since": since, "kind": kind, "start": since}
 		_anims[p.id] = state
 	if FighterPose.smash_charging(p):
 		state["since"] = now # il colpo caricato resta fermo sul primo fotogramma finché non si lascia il tasto
@@ -2081,7 +2084,13 @@ func _draw_sprite(p: Dictionary, character: Dictionary, now: float, react := Tra
 	if rig != null and rig.has_state(str(a.src)):
 		# a pezzi (#403): stessi stati e stessi tempi, ma la posa si interpola invece di saltare di fotogramma in fotogramma
 		var feet := react * Transform2D(0.0, Vector2(p.facing, 1.0), 0.0, Vector2(p.x, p.y))
-		rig.draw(self, feet, str(a.src), FighterPose.rig_frame(a, now - float(state.since), attack), bool(a.loop), tint)
+		# pose chiave e movimento secondario (#404): passaggi tra stati, respiro, sguardo, crocchia, smear del mattarello
+		if not _rig_motion.has(p.id):
+			_rig_motion[p.id] = RigMotion.new()
+		var motion: RefCounted = _rig_motion[p.id]
+		var pose: PackedFloat32Array = rig.pose_at(str(a.src), now - float(state.since), attack, a)
+		pose = motion.apply(rig, pose, now, _rig_context(p, name, state, attack))
+		rig.draw(self, feet, pose, tint, motion.smear)
 		return
 	var frame := FighterPose.sprite_frame(a, now - float(state.since), attack)
 	var fw: float = sheet.frameWidth
@@ -2097,6 +2106,31 @@ func _draw_sprite(p: Dictionary, character: Dictionary, now: float, react := Tra
 	var foot_y: float = sheet.get("footY", fh) # dove stanno i piedi nel fotogramma: sotto c'è chi è appeso al bordo
 	draw_texture_rect_region(texture, Rect2(-fw / 2, -foot_y, fw, fh), src, tint)
 	draw_set_transform(Vector2.ZERO)
+
+
+# Quello che il movimento secondario del rig (rig_motion.gd) sa del giocatore: lo stato, quanto corre, chi ha vicino
+func _rig_context(p: Dictionary, name: String, state: Dictionary, attack: Dictionary) -> Dictionary:
+	var facing := float(p.facing)
+	var near: Variant = null
+	var best := 700.0 # oltre non si guarda nessuno
+	for id in player_ids:
+		var o: Variant = _sampled.get(id)
+		if id == p.id or o == null or o.eliminated or o.respawning:
+			continue
+		var d := Vector2(float(o.x) - float(p.x), float(o.y) - float(p.y))
+		if d.length() < best:
+			best = d.length()
+			near = Vector2(d.x * facing, d.y)
+	var startup := float(attack.get("startupMs", -1.0))
+	var calm: bool = name in ["idle", "walk", "dash", "shield", "jump", "fall", "land"]
+	return {
+		"token": "%s|%s|%s" % [name, state.get("kind", ""), state.get("start", 0)],
+		# nei colpi il passaggio è più corto: l'impatto deve cadere quando si accende la hitbox
+		"blend_ms": RigMotion.BLEND_MS if startup < 0.0 else minf(RigMotion.BLEND_MS, startup * 0.5),
+		"vx": float(p.vx) * facing, "vy": float(p.vy), "look": near, "idle": name == "idle",
+		"run": clampf(absf(float(p.vx)) / float(game.dash.runSpeed), 0.0, 1.0) if name in ["walk", "dash"] else 0.0,
+		"head_free": 1.0 if calm else 0.25,
+	}
 
 
 # Stellina a quattro punte

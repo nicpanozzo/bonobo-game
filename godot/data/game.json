@@ -1930,7 +1930,7 @@
             "edge": "bordo.png"
           },
           "lastra": {
-            "file": "lastra.png",
+            "file": "vuoto.png",
             "depth": 12
           }
         },
@@ -2149,6 +2149,51 @@
             "x": 1610,
             "y": 522,
             "scale": 0.5,
+            "flip": true
+          },
+          {
+            "file": "lastra-180.png",
+            "x": 690,
+            "y": 428,
+            "scale": 0.5,
+            "shadow": false
+          },
+          {
+            "file": "lastra-180.png",
+            "x": 1230,
+            "y": 428,
+            "scale": 0.5,
+            "shadow": false,
+            "flip": true
+          },
+          {
+            "file": "lastra-140.png",
+            "x": 540,
+            "y": 348,
+            "scale": 0.5,
+            "shadow": false
+          },
+          {
+            "file": "lastra-140.png",
+            "x": 1380,
+            "y": 348,
+            "scale": 0.5,
+            "shadow": false,
+            "flip": true
+          },
+          {
+            "file": "lastra-180.png",
+            "x": 310,
+            "y": 398,
+            "scale": 0.5,
+            "shadow": false
+          },
+          {
+            "file": "lastra-180.png",
+            "x": 1610,
+            "y": 398,
+            "scale": 0.5,
+            "shadow": false,
             "flip": true
           }
         ],

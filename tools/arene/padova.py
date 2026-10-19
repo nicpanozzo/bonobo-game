@@ -347,18 +347,60 @@ def coping(name, w=96, h=8):
     t.save(OUT, name)
 
 
-def slab():
-    """La lastra retta dalle statue: piano chiaro, listello modanato, fascia di marmo e l'ombra sotto."""
-    W, H = 64, 12
-    t = Tela(W, H, bg=MARBLE, wrap=True)
-    t.rect(0, 0, W, 3, fill=EDGE)
-    t.rect(0, 0, W, 0.7, fill=(248, 245, 236, 255))
-    t.rect(0, 3, W, 5, fill=(226, 220, 206, 255))
-    t.line([(0, 3), (W, 3)], fill=INK, width=0.9)
-    t.line([(0, 5), (W, 5)], fill=(150, 142, 128, 255), width=0.8)
-    t.rect(0, 8.5, W, H, fill=MARBLE_SHADE)
-    t.line([(0, H - 0.6), (W, H - 0.6)], fill=INK, width=1.2)
-    t.save(OUT, "lastra.png")
+def slab_prop(name, width):
+    """Una lastra di marmo retta dalle statue (#378, Riccardo: piattaforme più belle), dipinta intera con i capi:
+    il piano chiaro dove si cammina con il filo di luce, la cornice modanata sul davanti (listello, gola in ombra,
+    toro tondo con la luce), il sotto scuro, i capi arrotondati dove la cornice gira, le venature grigie del marmo,
+    qualche scheggia, le colature sotto il toro e l'ombra morbida sotto. Prop in x centro, y = piano + 18, a 2x:
+    il piano calpestabile sta a 4 pixel di mondo dall'alto dell'immagine."""
+    from pittura import Quadro, wobble
+    W, H = width + 4, 22
+    q = Quadro(W, H, origin=(0, 0))
+    x0, x1 = 2, 2 + width
+    y0 = 4  # il piano dove si cammina
+    rng = random.Random(width * 7 + 1)
+    body = q.mask()
+    r = 3.2  # i capi arrotondati
+    q.poly(body, [(x0 + r, y0), (x1 - r, y0), (x1, y0 + r), (x1, y0 + 12), (x0, y0 + 12), (x0, y0 + r)])
+    q.ellipse(body, x0, y0, x0 + 2 * r, y0 + 2 * r)
+    q.ellipse(body, x1 - 2 * r, y0, x1, y0 + 2 * r)
+    body = q.smooth(body, 0.5)
+    # l'ombra morbida sotto la lastra
+    q.fill(q.soften(q.poly(q.mask(), [(x0 + 4, y0 + 12), (x1 - 4, y0 + 12), (x1 - 8, y0 + 16), (x0 + 8, y0 + 16)]), 1.6), (30, 26, 24), 0.35)
+    def band(ya, yb):
+        return q.intersect(q.poly(q.mask(), [(0, ya), (W, ya), (W, yb), (0, yb)]), body)
+    top, listello, gola, toro, sotto = band(y0, y0 + 2.4), band(y0 + 2.4, y0 + 4.2), band(y0 + 4.2, y0 + 6.8), band(y0 + 6.8, y0 + 10.2), band(y0 + 10.2, y0 + 12.2)
+    q.fill(body, (206, 200, 186))
+    q.fill(top, (236, 232, 220))
+    q.fill(listello, (214, 208, 194))
+    q.fill(gola, (150, 142, 128))
+    q.fill(q.intersect(q.soften(band(y0 + 5.6, y0 + 7.2), 0.6), gola), (196, 190, 176), 0.7)  # la gola si schiarisce in basso
+    q.fill(toro, (210, 204, 190))
+    q.fill(q.intersect(band(y0 + 7.2, y0 + 8.2), toro), (240, 236, 226), 0.9)  # la luce sul toro
+    q.fill(q.intersect(q.soften(band(y0 + 9.2, y0 + 10.4), 0.5), toro), (160, 152, 138), 0.8)
+    q.fill(sotto, (122, 116, 104))
+    # i capi: la cornice che gira è un po' più in ombra a destra (la luce viene da sinistra)
+    q.fill(q.intersect(q.soften(q.poly(q.mask(), [(x1 - 5, 0), (W, 0), (W, H), (x1 - 5, H)]), 1.5), body), (120, 112, 104), 0.35)
+    q.fill(q.intersect(q.soften(q.poly(q.mask(), [(0, 0), (x0 + 4, 0), (x0 + 4, H), (0, H)]), 1.5), body), (250, 248, 240), 0.35)
+    # le venature e la grana del marmo, qualche scheggia
+    for k in range(int(width / 26)):
+        vx = rng.uniform(x0 + 6, x1 - 20)
+        pts = wobble([(vx + j * 3.2, y0 + 1 + j * 1.5 + rng.uniform(-0.4, 0.4)) for j in range(7)], 0.5, k, closed=False)
+        q.fill(q.intersect(q.soften(q.stroke(q.mask(), pts, 0.35), 0.25), body), (150, 146, 140), 0.45)
+    q.fill(q.intersect(q.grain(body, 0.5, width, 0.8), body), (178, 172, 160), 0.3)
+    chips = q.mask()
+    for _ in range(int(width / 20)):
+        cxp, cyp = rng.uniform(x0 + 4, x1 - 4), rng.choice((y0 + 0.4, y0 + 10.6, y0 + 7))
+        q.ellipse(chips, cxp - 0.6, cyp - 0.4, cxp + 0.6, cyp + 0.4)
+    q.fill(q.intersect(chips, body), (110, 104, 96), 0.8)
+    drips = q.mask()
+    for _ in range(int(width / 16)):
+        dx = rng.uniform(x0 + 6, x1 - 6)
+        q.stroke(drips, [(dx, y0 + 9.5), (dx + rng.uniform(-0.3, 0.3), y0 + rng.uniform(11, 12.2))], rng.uniform(0.6, 1.4))
+    q.fill(q.intersect(q.soften(drips, 0.4), body), (96, 92, 84), 0.4)
+    q.fill(q.stroke(q.mask(), [(x0 + r, y0 + 0.3), (x1 - r, y0 + 0.3)], 0.6), (250, 250, 244), 0.9)  # il filo di luce sul bordo
+    q.outline(body, 0.5, (86, 80, 72))
+    q.save(OUT, name)
 
 
 def statue_painted(name, total_h, slab_w, kind):
@@ -1656,35 +1698,177 @@ def portico_house(t, x, w, base, rng):
             t.line([(ax - 8 + k * 2, top - 54 + k * 6), (ax + 8 - k * 2, top - 54 + k * 6)], fill=ink, width=0.7)
 
 
+def _ogive(x0, x1, y_spring, y_bot, n=14):
+    """Il vano di un arco a sesto acuto (equilatero): dai piedi (y_bot) sale dritto fino all'imposta (y_spring), poi
+    i due archi di cerchio, ognuno centrato sull'imposta opposta, si incontrano in punta."""
+    w = x1 - x0
+    pts = [(x0, y_bot)]
+    for i in range(n + 1):  # quello di sinistra, centrato sull'imposta di destra: da 180° a 120°
+        a = math.pi - (math.pi / 3) * i / n
+        pts.append((x1 + w * math.cos(a), y_spring - w * math.sin(a)))
+    for i in range(1, n + 1):  # quello di destra, centrato sull'imposta di sinistra: da 60° a 0°
+        a = (math.pi / 3) * (1 - i / n)
+        pts.append((x0 + w * math.cos(a), y_spring - w * math.sin(a)))
+    pts.append((x1, y_bot))
+    return pts
+
+
 def loggia_amulea(t, lx, base):
-    """La Loggia Amulea: mattone rosso spento, due ordini di archi gotici con le colonnine bianche,
-    la balaustra del primo piano e la merlatura a coda di rondine."""
-    ink = (52, 38, 34, 255)
-    brick, brick_s, white = far((128, 82, 68, 255), 0.15), far((108, 68, 58, 255), 0.15), far((196, 188, 172, 255), 0.15)
-    top = base - 270
-    t.rect(lx, top, lx + 340, base, fill=brick)
-    t.rect(lx + 250, top, lx + 340, base, fill=brick_s)
-    for row in range(int(270 / 6)):  # corsi di mattoni appena accennati
-        t.line([(lx, top + row * 6), (lx + 340, top + row * 6)], fill=shade(brick, 0.93), width=0.5)
-    for (y0, y1) in ((top + 34, top + 128), (base - 112, base)):
-        for i in range(7):
-            ax = lx + 12 + i * 46
-            t.rect(ax - 6, y0 - 6, ax - 1, y1, fill=white)  # pilastrini a strisce bianche e rosse
-            for k in range(int((y1 - y0) / 12)):
-                t.rect(ax - 6, y0 + k * 12, ax - 1, y0 + k * 12 + 5, fill=brick_s)
-            t.rect(ax, y0 + 22, ax + 34, y1, fill=(62, 42, 38, 255))
-            t.poly([(ax, y0 + 22), (ax + 17, y0), (ax + 34, y0 + 22)], fill=(62, 42, 38, 255))
-            t.arc(ax - 3, y0 - 3, ax + 37, y0 + 42, 200, 340, fill=white, width=2.0)
-            t.rect(ax + 15.5, y0 + 18, ax + 18.5, y1, fill=white)  # colonnina in mezzo
-        t.rect(lx + 2, y1 - 2, lx + 338, y1, fill=brick_s)
-    t.rect(lx, top + 128, lx + 340, top + 140, fill=white)  # balaustra del primo piano
-    for i in range(34):
-        t.rect(lx + 4 + i * 10, top + 130, lx + 7 + i * 10, top + 138, fill=brick_s)
-    t.rect(lx - 6, top - 14, lx + 346, top, fill=white, ink=True, width=1.0, ink_col=ink)
-    for i in range(22):  # merli a coda di rondine
-        mx = lx - 4 + i * 16
-        t.poly([(mx, top - 14), (mx, top - 30), (mx + 4, top - 26), (mx + 8, top - 30), (mx + 8, top - 14)], fill=white, ink=True, width=0.8, ink_col=ink)
-    t.rect(lx, top, lx + 340, base, ink=True, width=1.2, ink_col=ink)
+    """La Loggia Amulea (#378, Riccardo: più bella e senza le luci sbagliate di notte), dipinta: il mattone rosso a
+    corsi con le chiazze e la luce da sinistra, due ordini di archi a sesto acuto con le ghiere a conci bianchi e
+    rossi, sopra le bifore con la colonnina e l'occhio, sotto il portico profondo con il muro di fondo e le porte;
+    i pilastri e le cornici di pietra d'Istria con la luce e l'ombra, la balaustra a colonnine, la merlatura a coda di
+    rondine e le colature scure sotto le cornici. Di notte resta spenta: i vetri accesi delle case dietro si tolgono."""
+    from pittura import Quadro
+    W, H = 340, 270
+    top = base - H
+    q = Quadro(W + 12, H + 44, origin=(lx - 6, top - 42), scale=t.k, ss=1)
+    rng = random.Random(1309)
+    brick, mortar = (150, 90, 74), (186, 150, 132)
+    stone, stone_l, stone_s = (214, 206, 190), (236, 232, 220), (168, 160, 146)
+    dark, ink = (38, 28, 28), (56, 40, 36)
+    wall = q.poly(q.mask(), [(lx, top), (lx + W, top), (lx + W, base), (lx, base)])
+    # i due ordini di archi: (imposta, piedi) per il primo piano e per il portico
+    up = (top + 62, top + 128)
+    lo = (base - 82, base)
+    bays = [lx + 12 + i * 46 for i in range(7)]
+    holes = q.mask()
+    for ax in bays:
+        q.poly(holes, _ogive(ax + 1, ax + 33, up[0], up[1]))
+        q.poly(holes, _ogive(ax + 1, ax + 33, lo[0], lo[1]))
+    brickm = q.minus(wall, holes)
+    # il mattone: il fondo, i corsi con i giunti sfalsati, le chiazze, la luce da sinistra
+    q.fill(brickm, brick)
+    courses = q.mask()
+    y = top + 1.4
+    row = 0
+    while y < base:
+        q.stroke(courses, [(lx, y), (lx + W, y)], 0.45)
+        off = 0 if row % 2 else 2.6
+        xj = lx + off
+        while xj < lx + W:
+            q.stroke(courses, [(xj, y), (xj, y + 2.6)], 0.4)
+            xj += 5.2
+        y += 2.6
+        row += 1
+    q.fill(q.intersect(courses, brickm), mortar, 0.45)
+    q.fill(q.grain(brickm, 0.55, 1310, 9), (120, 70, 58), 0.4)
+    q.fill(q.grain(brickm, 0.5, 1311, 3), (172, 112, 92), 0.3)
+    q.fill(q.grain(brickm, 0.6, 1312, 0.7), (110, 66, 54), 0.35)
+    ramp = Image.linear_gradient("L").rotate(90, expand=True).transpose(Image.FLIP_LEFT_RIGHT).resize(q.size)
+    q.fill(q.intersect(ramp, brickm), (40, 24, 30), 0.32)
+    # i vani: bui in alto sotto la volta, il fondo un po' più chiaro; sotto il portico il muro di fondo con le porte
+    vgrad = Image.linear_gradient("L").resize(q.size)  # da nero in alto a bianco in basso
+    q.fill(holes, dark)
+    lo_holes = q.intersect(holes, q.poly(q.mask(), [(lx, lo[0] - 40), (lx + W, lo[0] - 40), (lx + W, base), (lx, base)]))
+    q.fill(q.intersect(vgrad, lo_holes), (92, 72, 62), 0.75)
+    for ax in bays:
+        door = q.poly(q.mask(), _ogive(ax + 11, ax + 23, base - 24, base))
+        q.fill(door, (30, 22, 22))
+        q.fill(q.stroke(q.mask(), [(ax + 4, base - 1), (ax + 30, base - 1)], 1.6), (70, 60, 54), 0.9)  # il pavimento del portico
+    up_holes = q.minus(holes, lo_holes)
+    q.fill(q.intersect(vgrad, up_holes), (70, 52, 48), 0.6)
+    q.fill(q.rim(holes, 2.5, 0, 1.2), (120, 92, 80), 0.6)  # lo sguancio a sinistra prende luce
+    q.fill(q.inner_shadow(holes, 2.5, 2.5, 2.5), (14, 10, 12), 0.7)  # e l'arco fa ombra dentro
+    # le bifore del primo piano: la colonnina, i due archetti e l'occhio
+    sm = q.mask()
+    for ax in bays:
+        cx = ax + 17
+        q.poly(sm, [(cx - 1.3, up[0] - 4), (cx + 1.3, up[0] - 4), (cx + 1.3, up[1]), (cx - 1.3, up[1])])
+        for x0_, x1_ in ((ax + 2, cx), (cx, ax + 32)):
+            arc = _ogive(x0_, x1_, up[0] - 2, up[0] - 2, 8)[1:-1]
+            q.stroke(sm, arc, 1.2)
+        q.ellipse(sm, cx - 4.2, up[0] - 22, cx + 4.2, up[0] - 13)
+    oculi = q.mask()
+    for ax in bays:
+        cx = ax + 17
+        q.ellipse(oculi, cx - 2.6, up[0] - 20.4, cx + 2.6, up[0] - 14.6)
+    sm = q.minus(sm, oculi)
+    # la pietra d'Istria: pilastri, cornici, la balaustra, la ghiera degli archi a conci alterni
+    piers = q.mask()
+    for ax in bays + [lx + 12 + 7 * 46]:
+        for y0_, y1_ in ((up[0] - 6, up[1]), (lo[0] - 6, lo[1])):
+            q.poly(piers, [(ax - 6.5, y0_), (ax + 0.5, y0_), (ax + 0.5, y1_), (ax - 6.5, y1_)])
+            q.poly(piers, [(ax - 8, y0_ - 2), (ax + 2, y0_ - 2), (ax + 1, y0_ + 2), (ax - 7, y0_ + 2)])  # il capitello
+    bands = q.mask()
+    for y0_, y1_ in ((top, top + 5), (up[1], up[1] + 4), (base - 140, base - 128), (base - 4, base)):
+        q.poly(bands, [(lx - 2, y0_), (lx + W + 2, y0_), (lx + W + 2, y1_), (lx - 2, y1_)])
+    stone_m = q.union(q.union(piers, bands), sm)
+    q.fill(stone_m, stone)
+    q.fill(q.grain(stone_m, 0.5, 1313, 1.2), stone_s, 0.35)
+    q.fill(q.inner_shadow(stone_m, -1.2, -1.0, 0.8), stone_s, 0.85)
+    q.fill(q.rim(stone_m, -0.8, -0.6, 0.5), stone_l, 0.8)
+    # la balaustra: le colonnine scure in mezzo alla fascia di pietra
+    gaps = q.mask()
+    for i in range(48):
+        gx = lx + 4 + i * 7
+        q.ellipse(gaps, gx, base - 137, gx + 3.6, base - 131)
+    q.fill(q.intersect(gaps, stone_m), (60, 46, 42))
+    # le ghiere: conci bianchi e rossi alterni lungo l'arco
+    for ax in bays:
+        for ys, yb in (up, lo):
+            arc = _ogive(ax - 1.5, ax + 35.5, ys, ys, 16)[1:-1]
+            for k in range(len(arc) - 1):
+                seg = q.stroke(q.mask(), [arc[k], arc[k + 1]], 3.2)
+                q.fill(seg, stone if k % 2 == 0 else (170, 104, 86))
+            q.fill(q.stroke(q.mask(), arc, 0.6), ink, 0.7)
+    # le colature scure sotto le cornici e i capitelli, e lo sporco in basso
+    streak = q.mask()
+    for y0_ in (top + 5, up[1] + 4, base - 128):
+        for _ in range(26):
+            sx = rng.uniform(lx + 2, lx + W - 2)
+            q.stroke(streak, [(sx, y0_), (sx + rng.uniform(-0.5, 0.5), y0_ + rng.uniform(4, 16))], rng.uniform(1.2, 3.0))
+    q.fill(q.intersect(q.soften(streak, 1.4), brickm), (50, 30, 28), 0.3)
+    q.fill(q.intersect(q.soften(q.poly(q.mask(), [(lx, top + 5), (lx + W, top + 5), (lx + W, top + 12), (lx, top + 12)]), 2), brickm), (20, 12, 14), 0.45)  # l'ombra della cornice
+    q.fill(q.intersect(q.soften(q.poly(q.mask(), [(lx, base - 10), (lx + W, base - 10), (lx + W, base), (lx, base)]), 3), brickm), (60, 50, 40), 0.35)
+    # la merlatura a coda di rondine sopra la cornice (Riccardo: guglie più belle): ogni merlo ha il suo spessore,
+    # la faccia in luce, il fianco destro in ombra, il cappello di pietra e l'ombra che getta sul successivo
+    merl, side, caps = q.mask(), q.mask(), q.mask()
+    for i in range(21):
+        mx = lx + 2 + i * 16
+        q.poly(merl, [(mx, top), (mx, top - 17), (mx + 4.5, top - 12), (mx + 9, top - 17), (mx + 9, top)])
+        q.poly(side, [(mx + 9, top), (mx + 9, top - 17), (mx + 11, top - 16), (mx + 11, top)])
+        q.poly(caps, [(mx - 0.6, top - 17), (mx + 1.6, top - 18.2), (mx + 4.5, top - 13.4), (mx + 7.4, top - 18.2), (mx + 9.6, top - 17), (mx + 4.5, top - 11.6)])
+    q.poly(merl, [(lx - 6, top - 3), (lx + W + 6, top - 3), (lx + W + 6, top + 3), (lx - 6, top + 3)])
+    q.fill(q.soften(q.shift(merl, 2.5, 1.5), 0.8), (40, 30, 30), 0.25)  # l'ombra dei merli sul fondo
+    q.fill(side, stone_s)
+    q.fill(merl, stone)
+    q.fill(q.grain(merl, 0.5, 1314, 1.0), stone_s, 0.35)
+    q.fill(q.inner_shadow(merl, -1.2, 0, 0.6), stone_s, 0.6)
+    q.fill(caps, stone_l)
+    streaks = q.mask()
+    for i in range(21):
+        mx = lx + 2 + i * 16
+        for _ in range(2):
+            sx = mx + rng.uniform(1, 8)
+            q.stroke(streaks, [(sx, top - 12), (sx, top - rng.uniform(3, 8))], 0.8)
+    q.fill(q.intersect(q.soften(streaks, 0.5), merl), (130, 120, 108), 0.4)
+    q.outline(q.union(merl, side), 0.5, ink)
+    # le due guglie sugli spigoli: il dado di pietra, la cuspide a quattro facce con la luce a sinistra e la palla
+    for gx in (lx - 2, lx + W + 2):
+        die = q.poly(q.mask(), [(gx - 5, top - 2), (gx + 5, top - 2), (gx + 5, top - 12), (gx - 5, top - 12)])
+        q.fill(die, stone)
+        q.fill(q.poly(q.mask(), [(gx + 1.5, top - 2), (gx + 5, top - 2), (gx + 5, top - 12), (gx + 1.5, top - 12)]), stone_s)
+        q.fill(q.poly(q.mask(), [(gx - 6, top - 12), (gx + 6, top - 12), (gx + 6, top - 14), (gx - 6, top - 14)]), stone_l)
+        spire_l = q.poly(q.mask(), [(gx - 4.5, top - 14), (gx, top - 14), (gx, top - 37)])
+        spire_r = q.poly(q.mask(), [(gx, top - 14), (gx + 4.5, top - 14), (gx, top - 37)])
+        q.fill(spire_l, stone_l)
+        q.fill(spire_r, stone_s)
+        for k in range(1, 4):  # i fogliami rampanti sugli spigoli della cuspide
+            yy = top - 14 - k * 5.5
+            u = 1 - k * 5.5 / 23
+            for sgn in (-1, 1):
+                q.fill(q.ellipse(q.mask(), gx + sgn * 4.5 * u - 1, yy - 1, gx + sgn * 4.5 * u + 1, yy + 1), stone if sgn < 0 else stone_s)
+        ball = q.ellipse(q.mask(), gx - 2, top - 40.6, gx + 2, top - 36.6)
+        q.fill(ball, stone)
+        q.fill(q.rim(ball, -0.6, -0.6, 0.4), stone_l, 0.9)
+        q.outline(q.union(q.union(die, q.union(spire_l, spire_r)), ball), 0.5, ink)
+    q.outline(wall, 0.9, ink)
+    q.outline(holes, 0.5, ink)
+    dx, dy = int(round((lx - 6 - t.ox) * t.k)), int(round((top - 42 - t.oy) * t.k))
+    t.img.alpha_composite(q.img, dest=(dx, dy))
+    if t.lights is not None:  # niente vetri accesi: quelli delle case dietro la loggia si vedevano sulla facciata
+        t.lights.rect(lx - 2, top - 32, lx + W + 2, base, fill=(0, 0, 0, 0))
 
 
 def market(t, x0, base, rng):
@@ -1779,69 +1963,141 @@ def plane_tree(t, x, base, r, rng):
 
 
 def lamp(t, x, base, h):
-    """Il lampione del Prato: palo di ghisa con lo zoccolo e la lanterna a quattro vetri col cappello."""
-    ink = (36, 36, 38, 255)
-    iron = (58, 58, 60, 255)
-    t.rect(x - 6, base - 10, x + 6, base, fill=iron, ink=True, width=0.8, ink_col=ink)
-    t.poly([(x - 2.4, base - 10), (x + 2.4, base - 10), (x + 1.6, base - h), (x - 1.6, base - h)], fill=iron)
+    """Il lampione del Prato (#378, dipinto): lo zoccolo a campana, il palo di ghisa scanalato con gli anelli, la
+    mensola a ricciolo e la lanterna a quattro vetri che si allarga in alto, con il telaio, il cappello a cupola e il
+    pinnacolo; la ghisa ha il riflesso a sinistra. Di notte si accendono i vetri (lit_window)."""
+    q = _qt(t, x - 16, base - h - 40, x + 16, base + 2)
+    iron, iron_l, ink = (52, 54, 58), (104, 108, 114), (24, 24, 28)
+    pole = q.mask()
+    q.poly(pole, [(x - 7, base), (x + 7, base), (x + 5.5, base - 4), (x + 3, base - 9), (x + 2.2, base - 14), (x - 2.2, base - 14), (x - 3, base - 9), (x - 5.5, base - 4)])
+    q.poly(pole, [(x - 2, base - 14), (x + 2, base - 14), (x + 1.4, base - h), (x - 1.4, base - h)])
     for k in range(3):
-        t.rect(x - 3.4, base - 24 - k * 26, x + 3.4, base - 21 - k * 26, fill=iron)
-    t.poly([(x - 8, base - h), (x + 8, base - h), (x + 10, base - h - 18), (x - 10, base - h - 18)], fill=(176, 166, 128, 255), ink=True, width=0.9, ink_col=ink)
-    lit_window(getattr(t, "lights", None), [(x - 7, base - h - 1), (x + 7, base - h - 1), (x + 9, base - h - 17), (x - 9, base - h - 17)])
-    t.line([(x, base - h), (x, base - h - 18)], fill=ink, width=0.7)
-    t.poly([(x - 12, base - h - 18), (x + 12, base - h - 18), (x, base - h - 30)], fill=iron, ink=True, width=0.8, ink_col=ink)
-    t.circle(x, base - h - 31, 2, fill=iron)
+        yy = base - 26 - k * 24
+        q.ellipse(pole, x - 3.2, yy - 1.4, x + 3.2, yy + 1.4)
+    q.ellipse(pole, x - 4.5, base - h - 1.5, x + 4.5, base - h + 1.5)
+    q.fill(pole, iron)
+    q.fill(q.intersect(q.poly(q.mask(), [(x - 7, base), (x - 0.8, base), (x - 0.8, base - h), (x - 3, base - h)]), pole), iron_l, 0.55)
+    # la lanterna: quattro vetri che si allargano in alto, il telaio e il cappello
+    gl = q.poly(q.mask(), [(x - 5, base - h - 2), (x + 5, base - h - 2), (x + 7.5, base - h - 17), (x - 7.5, base - h - 17)])
+    q.fill(gl, (190, 178, 136))
+    q.fill(q.intersect(q.poly(q.mask(), [(x - 5, base - h - 2), (x - 1, base - h - 2), (x - 3, base - h - 17), (x - 7.5, base - h - 17)]), gl), (226, 218, 184), 0.7)
+    lit_window(getattr(t, "lights", None), [(x - 5, base - h - 2), (x + 5, base - h - 2), (x + 7.5, base - h - 17), (x - 7.5, base - h - 17)])
+    frame = q.mask()
+    q.stroke(frame, [(x - 5, base - h - 2), (x - 7.5, base - h - 17)], 0.9)
+    q.stroke(frame, [(x + 5, base - h - 2), (x + 7.5, base - h - 17)], 0.9)
+    q.stroke(frame, [(x, base - h - 2), (x, base - h - 17)], 0.7)
+    q.stroke(frame, [(x - 5.5, base - h - 2), (x + 5.5, base - h - 2)], 1.1)
+    cap = q.poly(q.mask(), [(x - 9.5, base - h - 17), (x + 9.5, base - h - 17), (x + 8, base - h - 19.5), (x + 4, base - h - 25), (x - 4, base - h - 25), (x - 8, base - h - 19.5)])
+    q.ellipse(cap, x - 1.6, base - h - 30, x + 1.6, base - h - 25)
+    q.stroke(cap, [(x, base - h - 30), (x, base - h - 33)], 0.8)
+    q.fill(frame, iron)
+    q.fill(cap, iron)
+    q.fill(q.rim(cap, -0.6, -0.8, 0.5), iron_l, 0.8)
+    q.outline(q.union(q.union(pole, cap), gl), 0.5, ink)
+    _qt_paste(t, q)
+
+
+def _qt(t, x0, y0, x1, y1):
+    """Un pittura.Quadro allineato a un pezzo della tela t (stessa scala, disegnato al doppio e poi ridotto): ci si
+    dipinge con luci, ombre e grana, poi _qt_paste lo incolla sulla tela."""
+    from pittura import Quadro
+    x0, y0 = math.floor(x0), math.floor(y0)
+    return Quadro(math.ceil(x1) - x0, math.ceil(y1) - y0, origin=(x0, y0), scale=t.k, ss=2)
+
+
+def _qt_paste(t, q):
+    img = q.result()
+    dx, dy = int(round((q.ox - t.ox) * t.k)), int(round((q.oy - t.oy) * t.k))
+    if dx < 0 or dy < 0:
+        img = img.crop((max(0, -dx), max(0, -dy), img.size[0], img.size[1]))
+        dx, dy = max(0, dx), max(0, dy)
+    if dx < t.img.size[0] and dy < t.img.size[1]:
+        t.img.alpha_composite(img, dest=(dx, dy))
+
+
+def _statue_fig(q, x, base, s, seed, haze, flip=1):
+    """Una statua del Prato dipinta (#378, Riccardo: non pedoni degli scacchi): il piedistallo con lo zoccolo, il dado
+    con la specchiatura e la cornice; sopra la figura in toga, con le spalle, la testa piccola, le pieghe che scendono e
+    una posa tra quattro (il braccio alzato, il libro, il mantello, l'oratore). Luce da sinistra, velata da haze."""
+    rng = random.Random(seed)
+    m = far((214, 208, 194, 255), haze)[:3]
+    sh = far((150, 144, 132, 255), haze)[:3]
+    hi = far((240, 236, 226, 255), haze)[:3]
+    ink = far((84, 78, 72, 255), haze)[:3]
+    X = lambda u: x + flip * u * s
+
+    def ell(m, xa, ya, xb, yb):  # con flip le x arrivano al contrario
+        return q.ellipse(m, min(xa, xb), min(ya, yb), max(xa, xb), max(ya, yb))
+
+    Y = lambda v: base - v * s
+    # il piedistallo
+    ped = q.mask()
+    q.poly(ped, [(X(-12), Y(0)), (X(12), Y(0)), (X(12), Y(5)), (X(-12), Y(5))])
+    q.poly(ped, [(X(-9), Y(5)), (X(9), Y(5)), (X(9), Y(30)), (X(-9), Y(30))])
+    q.poly(ped, [(X(-12.5), Y(30)), (X(12.5), Y(30)), (X(11.5), Y(35)), (X(-11.5), Y(35))])
+    q.fill(q.soften(ell(q.mask(), X(-14), Y(1.5), X(16), Y(-1.5)), 1.2 * s), (30, 28, 26), 0.3)
+    q.fill(ped, m)
+    panel = q.poly(q.mask(), [(X(-6), Y(9)), (X(6), Y(9)), (X(6), Y(26)), (X(-6), Y(26))])
+    q.fill(q.inner_shadow(panel, -1.0 * s * flip, -1.0 * s, 0.6 * s), sh, 0.8)
+    q.fill(q.intersect(q.poly(q.mask(), [(X(-9), Y(28)), (X(9), Y(28)), (X(9), Y(30)), (X(-9), Y(30))]), ped), sh, 0.5)
+    # la figura
+    fb = 35
+    fig = q.mask()
+    lean = rng.uniform(-0.8, 0.8)
+    robe = [(X(-7.5), Y(fb + 1)), (X(7.5), Y(fb + 1)), (X(6.2 + lean), Y(fb + 13)), (X(4.8), Y(fb + 24)), (X(6.4), Y(fb + 35)),
+            (X(4.8), Y(fb + 37.5)), (X(1.6), Y(fb + 38)), (X(-1.6), Y(fb + 38)), (X(-4.8), Y(fb + 37.5)), (X(-6.4), Y(fb + 35)),
+            (X(-4.6), Y(fb + 24)), (X(-6 + lean), Y(fb + 13))]
+    q.poly(fig, robe)
+    ell(fig, X(-2.9), Y(fb + 46.5), X(2.9), Y(fb + 39))  # la testa
+    q.poly(fig, [(X(-1.4), Y(fb + 39.5)), (X(1.4), Y(fb + 39.5)), (X(1.4), Y(fb + 37)), (X(-1.4), Y(fb + 37))])  # il collo
+    pose = rng.randrange(4)
+    extra = q.mask()
+    if pose == 0:  # il braccio alzato con la torcia o la corona
+        q.stroke(fig, [(X(5), Y(fb + 35)), (X(9), Y(fb + 42)), (X(10.5), Y(fb + 50))], 2.3 * s)
+        ell(fig, X(9), Y(fb + 53), X(12), Y(fb + 49.5))
+        q.stroke(fig, [(X(-5), Y(fb + 35)), (X(-6.6), Y(fb + 28)), (X(-6.2), Y(fb + 21))], 2.1 * s)
+    elif pose == 1:  # il libro aperto sul petto
+        q.stroke(fig, [(X(-5), Y(fb + 35)), (X(-6.4), Y(fb + 29)), (X(-1), Y(fb + 27.5))], 2.1 * s)
+        q.stroke(fig, [(X(5), Y(fb + 35)), (X(6.8), Y(fb + 28)), (X(6.4), Y(fb + 21))], 2.1 * s)
+        q.poly(extra, [(X(-3.5), Y(fb + 31.5)), (X(4), Y(fb + 30.5)), (X(4.3), Y(fb + 26)), (X(-3.2), Y(fb + 27))])
+    elif pose == 2:  # il mantello che cade dalla spalla, la mano sul fianco
+        q.poly(extra, [(X(-5.5), Y(fb + 36)), (X(-3), Y(fb + 36)), (X(-5), Y(fb + 14)), (X(-10), Y(fb + 2)), (X(-11), Y(fb + 8)), (X(-7.5), Y(fb + 24))])
+        q.stroke(fig, [(X(5), Y(fb + 35)), (X(9.2), Y(fb + 29)), (X(5.2), Y(fb + 25))], 2.1 * s)
+    else:  # l'oratore con il braccio teso
+        q.stroke(fig, [(X(5), Y(fb + 35)), (X(10.5), Y(fb + 35.5)), (X(15), Y(fb + 38))], 2.1 * s)
+        q.stroke(fig, [(X(-5), Y(fb + 35)), (X(-7), Y(fb + 27)), (X(-4), Y(fb + 22))], 2.1 * s)
+        q.poly(extra, [(X(-4.5), Y(fb + 23)), (X(-1), Y(fb + 24)), (X(-2.5), Y(fb + 8)), (X(-6), Y(fb + 9))])
+    fig = q.smooth(q.union(fig, extra), 0.35 * s)
+    q.fill(fig, m)
+    q.fill(q.intersect(extra, fig), sh, 0.45)
+    folds = q.mask()
+    for k in range(4):
+        fx = -4.5 + k * 3 + rng.uniform(-0.6, 0.6)
+        q.stroke(folds, [(X(fx * 0.7), Y(fb + 23)), (X(fx * 0.9 + 0.5), Y(fb + 12)), (X(fx), Y(fb + 2))], 0.45 * s)
+    q.stroke(folds, [(X(-4.6), Y(fb + 24.5)), (X(4.8), Y(fb + 24))], 0.5 * s)  # la cintura
+    q.fill(q.intersect(folds, fig), sh, 0.75)
+    both = q.union(fig, ped)
+    q.fill(q.inner_shadow(both, -1.8 * s * flip, -0.6 * s, 1.0 * s), sh, 0.85)
+    q.fill(q.rim(both, -0.7 * s * flip, -0.7 * s, 0.4 * s), hi, 0.8)
+    q.fill(q.intersect(q.grain(both, 0.5, seed, 0.6), both), sh, 0.25)
+    q.outline(both, max(0.35, 0.45 * s), ink)
 
 
 def small_statue(t, x, base, rng):
-    """Una statua della seconda fila, più lontana: piedistallo con la cornice e una figura in posa."""
-    m, sh, ink = (164, 160, 148, 255), (138, 134, 124, 255), (76, 74, 70, 255)
-    t.rect(x - 11, base - 34, x + 11, base, fill=m, ink=True, width=0.8, ink_col=ink)
-    t.rect(x + 3, base - 34, x + 11, base, fill=sh)
-    t.rect(x - 14, base - 40, x + 14, base - 34, fill=m, ink=True, width=0.8, ink_col=ink)
-    t.rect(x - 14, base - 4, x + 14, base, fill=m, ink=True, width=0.8, ink_col=ink)
-    pose = rng.random()
-    body = [(x - 8, base - 40), (x + 8, base - 40), (x + 5, base - 72), (x + 6, base - 82), (x - 6, base - 82), (x - 5, base - 72)]
-    t.poly(body, fill=m)
-    t.poly([(x + 1, base - 40), (x + 8, base - 40), (x + 5, base - 72), (x + 6, base - 82), (x + 1, base - 82)], fill=sh)
-    t.poly(body, ink=True, width=0.8, ink_col=ink)
-    t.circle(x, base - 88, 5.5, fill=m, ink=True, width=0.8, ink_col=ink)
-    if pose < 0.35:  # braccio alzato
-        t.line([(x - 5, base - 78), (x - 13, base - 96)], fill=ink, width=3.4)
-        t.line([(x - 5, base - 78), (x - 13, base - 96)], fill=m, width=2.0)
-    elif pose < 0.7:  # mano sul fianco e libro
-        t.line([(x + 5, base - 78), (x + 11, base - 64)], fill=ink, width=3.4)
-        t.line([(x + 5, base - 78), (x + 11, base - 64)], fill=m, width=2.0)
-        t.rect(x - 11, base - 72, x - 4, base - 64, fill=sh, ink=True, width=0.7, ink_col=ink)
-    else:  # mantello che scende di lato
-        t.poly([(x - 6, base - 80), (x - 13, base - 46), (x - 7, base - 42)], fill=sh, ink=True, width=0.7, ink_col=ink)
+    """Una statua della seconda fila, più lontana: dipinta come quelle dell'anello, un po' velata."""
+    q = _qt(t, x - 18, base - 76, x + 18, base + 3)
+    _statue_fig(q, x, base, 0.82, rng.randrange(1 << 20), 0.32, rng.choice((-1, 1)))
+    _qt_paste(t, q)
 
 
 VISTA = (610, 1310)  # dove gli alberi del prato si aprono dietro la fontana (#378), in x dello strato
 
 
 def ring_statue(t, x, base, s, rng, haze):
-    """Una statua dell'anello del Prato, piccola e lontana (s è la scala): piedistallo con la cornice, la figura
-    in posa con il braccio, il libro o il mantello, velata dalla lontananza."""
-    m, sh, ink = far((206, 200, 186, 255), haze), far((162, 156, 144, 255), haze), far((88, 84, 78, 255), haze)
-    w = 0.7 * s
-    t.rect(x - 11 * s, base - 30 * s, x + 11 * s, base, fill=m, ink=True, width=w, ink_col=ink)
-    t.rect(x + 3 * s, base - 30 * s, x + 11 * s, base, fill=sh)
-    t.rect(x - 14 * s, base - 35 * s, x + 14 * s, base - 30 * s, fill=m, ink=True, width=w, ink_col=ink)
-    body = [(x - 7 * s, base - 35 * s), (x + 7 * s, base - 35 * s), (x + 4.5 * s, base - 64 * s), (x + 5.5 * s, base - 73 * s), (x - 5.5 * s, base - 73 * s), (x - 4.5 * s, base - 64 * s)]
-    t.poly(body, fill=m)
-    t.poly([(x + 1 * s, base - 35 * s), (x + 7 * s, base - 35 * s), (x + 4.5 * s, base - 64 * s), (x + 5.5 * s, base - 73 * s), (x + 1 * s, base - 73 * s)], fill=sh)
-    t.poly(body, ink=True, width=w, ink_col=ink)
-    t.circle(x, base - 78 * s, 5 * s, fill=m, ink=True, width=w, ink_col=ink)
-    pose = rng.random()
-    if pose < 0.4:
-        side = rng.choice((-1, 1))
-        t.line([(x + side * 4.5 * s, base - 69 * s), (x + side * 12 * s, base - 86 * s)], fill=ink, width=3.2 * s)
-        t.line([(x + side * 4.5 * s, base - 69 * s), (x + side * 12 * s, base - 86 * s)], fill=m, width=1.8 * s)
-    elif pose < 0.7:
-        t.rect(x - 10 * s, base - 62 * s, x - 3 * s, base - 55 * s, fill=sh, ink=True, width=w, ink_col=ink)
-    else:
-        t.poly([(x - 5 * s, base - 70 * s), (x - 12 * s, base - 40 * s), (x - 6 * s, base - 37 * s)], fill=sh, ink=True, width=w, ink_col=ink)
+    """Una statua dell'anello del Prato, piccola e lontana (s è la scala), dipinta (#378): vedi _statue_fig."""
+    q = _qt(t, x - 20 * s, base - 92 * s, x + 20 * s, base + 3)
+    _statue_fig(q, x, base, s, rng.randrange(1 << 20), haze, rng.choice((-1, 1)))
+    _qt_paste(t, q)
 
 
 # Il bordo di fuori del canale attorno all'isola (#378): un ovale come quello vero, largo abbastanza che chi cade dai
@@ -1866,76 +2122,68 @@ def oval_edge_x(y, side, grow=0.0):
 
 
 def ansa(name):
-    """Le anse del canale ai lati dell'isola (#378, chiesto da Riccardo): il canale è un anello ovale, quindi ai lati
-    la sponda di fuori gira verso di noi e lo chiude attorno alle punte dell'isola. Qui la parte alta delle anse, dietro
-    ai lottatori: il lastricato dell'anello di fuori, il cordolo che segue l'ovale con la ringhiera e una statua del
-    Prato per parte; in cima sfuma nel prato dello sfondo. La parte bassa la disegna near_bank, davanti.
-    Prop dietro in x 960, y 604, a 2x: x -420..2340, y 410..604. Dietro l'isola è il vialetto della sponda di là."""
-    x0, y0, w, h = -420, 410, 2760, 194
+    """La sponda di fuori del canale, dietro ai lottatori (#378, chiesto da Riccardo): il canale è un anello ovale e
+    attorno corre il vialetto di ghiaia, stretto dietro l'isola (è lontano) e largo ai lati, dove la sponda gira verso
+    di noi; oltre il vialetto una striscia di prato che sfuma nel prato dello sfondo, dove stanno gli alberi, le
+    panchine e i lampioni. Ai lati il cordolo con la ringhiera e una statua del Prato per parte. La parte bassa delle
+    anse la disegna near_bank. Prop dietro in x 960, y 604, a 2x: x -420..2340, y 400..604."""
+    from pittura import Quadro
+    x0, y0, w, h = -420, 400, 2760, 204
     t = Tela(w, h, origin=(x0, y0), ss=1)
+    q = Quadro(w, h, origin=(x0, y0), scale=2, ss=1)
     rng = rand(3783)
     split = 600
-    ys = [y0 + i * (split - y0) / 40 for i in range(41)]
+    cx, cy, rx, ry = CANAL_OVAL
+    area = q.poly(q.mask(), [(x0, y0 + 10), (x0 + w, y0 + 10), (x0 + w, split), (x0, split)])
+    water = q.ellipse(q.mask(), cx - rx, cy - ry, cx + rx, cy + ry)
+    # il vialetto: l'ovale allargato poco in alto (lontano) e tanto ai lati (vicino), come in prospettiva
+    walk_m = q.minus(q.ellipse(q.mask(), cx - rx - WALK, cy - ry - 6, cx + rx + WALK, cy + ry + 6), water)
+    walk_m = q.intersect(walk_m, area)
+    lawn_m = q.minus(q.minus(area, water), walk_m)
+    near_m = q.intersect(lawn_m, q.poly(q.mask(), [(x0, 470), (x0 + w, 470), (x0 + w, split), (x0, split)]))
+    far_m = q.minus(lawn_m, near_m)
+    paint_grass(q, near_m, 3787, 470, split, density=0.15)
+    # il prato lontano dietro il canale: velato, a chiazze larghe, senza i fili d'erba che da lì non si vedono
+    q.fill(far_m, far((84, 106, 62, 255), 0.22)[:3])
+    q.fill(q.grain(far_m, 0.5, 3789, 6), far((64, 86, 50, 255), 0.22)[:3], 0.4)
+    q.fill(q.grain(far_m, 0.45, 3791, 2.2), far((104, 128, 74, 255), 0.22)[:3], 0.3)
+    paint_gravel(q, walk_m, 3788, cy - ry - 6, split, density=0.3)
+    q.fill(q.intersect(q.soften(q.ellipse(q.mask(), cx - rx - 2, cy - ry - 3, cx + rx + 2, cy + ry + 3), 1.5), walk_m), (120, 112, 96), 0.35)  # il cordolo in ombra
+    t.img.alpha_composite(q.img)
     for side in (-1, 1):
-        far = x0 if side < 0 else x0 + w
-        edge = []
-        for y in ys:
+        # il cordolo di pietra che segue l'ovale ai lati, e la ringhiera con i pilastrini sopra
+        curb = []
+        for i in range(41):
+            y = 470 + i * (split - 470) / 40
             ex = oval_edge_x(y, side)
-            edge.append((ex if ex is not None else 960, y))
-        ground = [(far, y0), (far, split)] + [(x, y) for x, y in reversed(edge)]
-        t.poly(ground, fill=GRAVEL + (255,))  # il vialetto di ghiaia lungo il canale
-        walk = []
-        for y in ys:
-            ex = oval_edge_x(y, side, WALK)
-            walk.append((ex if ex is not None else 960, y))
-        lawn_pts = [(far, y0), (far, split)] + [(x, y) for x, y in reversed(walk)]
-        t.poly(lawn_pts, fill=GRASS + (255,))  # e oltre il prato, con l'erba a ciuffi e le ombre degli alberi
-        for k in range(500):
-            y = rng.uniform(y0 + 4, split)
-            ex = oval_edge_x(y, side, WALK) or 960
-            x = rng.uniform(min(far, ex), max(far, ex))
-            if (x - ex) * side < 2:
-                continue
-            t.line([(x, y), (x + rng.uniform(-1, 1), y - rng.uniform(2, 4))], fill=rng.choice([GRASS_D, GRASS_L]) + (255,), width=0.8)
-        for k in range(30):  # sassolini del vialetto
-            y = rng.uniform(y0 + 10, split)
-            ex, ex2 = oval_edge_x(y, side), oval_edge_x(y, side, WALK)
-            if ex is None or ex2 is None:
-                continue
-            x = rng.uniform(min(ex, ex2), max(ex, ex2))
-            t.circle(x, y, 0.8, fill=(150, 142, 124, 255))
-        # il cordolo di pietra che segue l'ovale, e la ringhiera con i pilastrini sopra
-        curb = [(x - side * 0 + side * 0, y) for x, y in edge if y > y0 + 20]
+            if ex is not None:
+                curb.append((ex, y))
         t.line([(x + side * 4, y) for x, y in curb], fill=(206, 200, 186, 255), width=5.0)
-        t.line([(x, y) for x, y in curb], fill=(110, 104, 94, 255), width=0.9)
-        for y in range(int(y0 + 34), split, 18):
+        t.line(curb, fill=(110, 104, 94, 255), width=0.9)
+        for y in range(470, split, 18):
             ex = oval_edge_x(y, side)
             if ex is None:
                 continue
             px = ex + side * 7
-            hh = 14 + (y - y0) * 0.12
+            hh = 14 + (y - 410) * 0.12
             t.rect(px - 2.5, y - hh, px + 2.5, y, fill=(206, 200, 186, 255), ink=True, width=0.6, ink_col=(70, 64, 58, 255))
             t.circle(px, y - hh - 2.6, 2.8, fill=(214, 208, 194, 255), ink=True, width=0.6, ink_col=(70, 64, 58, 255))
             y2 = y + 18
             ex2 = oval_edge_x(y2, side)
             if ex2 is not None and y2 < split:
                 px2 = ex2 + side * 7
-                hh2 = 14 + (y2 - y0) * 0.12
+                hh2 = 14 + (y2 - 410) * 0.12
                 t.line([(px, y - hh * 0.75), (px2, y2 - hh2 * 0.75)], fill=IRON, width=1.1)
                 t.line([(px, y - hh * 0.2), (px2, y2 - hh2 * 0.2)], fill=IRON, width=0.9)
         # una statua dell'anello per parte, sul piedistallo lungo l'ansa
-        sx = 960 + side * 1265
-        ring_statue(t, sx, 590, 1.15, rng, 0.08)
+        ring_statue(t, 960 + side * 1265, 590, 1.15, rng, 0.08)
     # in cima sfuma nel prato dello sfondo, che sta un po' più lontano
     img = t.img
     fade = Image.new("L", img.size, 255)
-    px_fade = int(18 * t.k)
+    px_fade = int(32 * t.k)  # da y 414 a 432 il prato sfuma in quello dello sfondo, con i suoi alberi e le panchine
     for py in range(px_fade):
-        for_line = int(255 * py / px_fade)
-        fade.paste(for_line, (0, py, img.size[0], py + 1))
-    alpha = img.getchannel("A")
-    from PIL import ImageChops
-    img.putalpha(ImageChops.multiply(alpha, fade))
+        fade.paste(int(255 * min(1.0, max(0.0, (py - 14 * t.k) / (18 * t.k)))), (0, py, img.size[0], py + 1))
+    img.putalpha(ImageChops.multiply(img.getchannel("A"), fade))
     t.save(OUT, name, colors=256)
 
 
@@ -2559,8 +2807,7 @@ def lawn(t):
         y = base - 6 + rng_w.uniform(0, 1) ** 1.3 * 120
         t.line([(x, y), (x + rng_w.uniform(8, 30), y)], fill=(156, 182, 176, 255), width=0.6 + rng_w.random() * 0.6)
     # memmia_vista() non serve più: il canale dietro l'isola con le statue e i ponticelli ora sta davanti a questo strato
-    # la canaletta lontana con la balaustra e la seconda fila di statue
-    t.rect(-300, base - 40, 2200, base - 30, fill=(146, 142, 132, 255))
+    # la seconda fila di statue sul prato (la fascia chiara della canaletta non c'è più: Riccardo, #378)
     for sx in range(-240, 2200, 120):
         if abs(sx - 960) < 50:
             rng.random()  # davanti al ponticello niente statua, ma la serie del caso resta la stessa
@@ -2651,35 +2898,22 @@ def piano(name):
             continue  # il viale e le punte dove arrivano i ponti
         depth = (cy - y) / ry  # 1 in fondo
         ring_statue(t, x, y + 1, 0.56 - 0.12 * depth, srng, 0.12 + 0.08 * depth)
-    # i filari di alberelli sui prati, come lungo i viali dell'isola: più piccoli dove sono più lontani
+    # gli alberelli sui prati (#378, Riccardo: più belli e al posto giusto): piccoli platani dipinti come quelli grandi,
+    # sempre dentro il prato, lontani dal ciglio e dal canale, con l'ombra morbida che li appoggia sull'erba
     from pittura import Quadro
     q = Quadro(x1 - x0, y1 - y0, origin=(x0, y0))
     trees = []
     for side in (-1, 1):
-        for j in range(6):
-            x = cx + side * (230 + j * 92)
-            y = 486 - j * 1.2 + (j % 2) * 2
+        for j, off in enumerate((345, 485, 760)):  # tra le statue che reggono le lastre e i platani, mai dietro
+            x = cx + side * off
+            edge = cy - ry * math.sqrt(max(0.0, 1 - ((x - cx) / rx) ** 2))  # il ciglio dietro, a questa x
+            y = min(501.0, max(edge + 14, 490.0)) + (j % 2) * 2
             trees.append((x, y))
     trees.sort(key=lambda p: p[1])
-    for tx_, ty_ in trees:
-        hgt = 34 - (500 - ty_) * 0.3
-        crown = q.mask()
-        trng = random.Random(int(tx_))
-        for b in range(9):
-            bx = tx_ + trng.uniform(-0.32, 0.32) * hgt * 0.7
-            by = ty_ - hgt * (0.45 + trng.uniform(0, 0.5))
-            br = hgt * trng.uniform(0.18, 0.28)
-            q.ellipse(crown, bx - br, by - br, bx + br, by + br)
-        crown = q.smooth(crown, 1.4)
-        trunk = q.mask()
-        q.stroke(trunk, [(tx_, ty_), (tx_, ty_ - hgt * 0.42)], 2.2)
-        q.fill(trunk, (98, 84, 68))
-        q.fill(q.soften(q.ellipse(q.mask(), tx_ - hgt * 0.4, ty_ - 2, tx_ + hgt * 0.5, ty_ + 2.5), 1.5), (30, 40, 24), 0.5)
-        q.fill(crown, (56, 80, 50))
-        q.fill(q.grain(crown, 0.4, int(tx_), 1.0), (40, 60, 38))
-        q.fill(q.inner_shadow(crown, -hgt * 0.15, -hgt * 0.1, hgt * 0.1), (34, 50, 32), 0.8)
-        q.fill(q.rim(crown, -1.2, -1.4, 1.0), (104, 132, 80), 0.75)
-        q.outline(crown, 0.6, (30, 40, 28))
+    for k, (tx_, ty_) in enumerate(trees):
+        r = 15 + (ty_ - 488) * 0.2  # chioma piena e tronco corto: un alberello del giardino, non un lecca-lecca
+        q.fill(q.soften(q.ellipse(q.mask(), tx_ - r * 1.2, ty_ - r * 0.18, tx_ + r * 1.6, ty_ + r * 0.22), r * 0.15), (24, 36, 20), 0.45)
+        paint_tree(q, tx_, ty_, r, 3800 + k, haze=0.06, th=r * 0.8)
     t.img.alpha_composite(q.img)
     # l'erba sulla piazza (#378, chiesto da Riccardo): sotto i platani l'erba cresce nelle fughe e sfuma nel lastricato,
     # senza cordolo; e ciuffi tra le lastre
@@ -2724,20 +2958,35 @@ IRON = (44, 42, 44, 255)
 
 
 def bollard(t, x, base, h, stone=MARBLE, sh=MARBLE_SHADE):
-    """Il paracarro della fontana: dado di pietra con lo zoccolo, il collarino e la palla in cima."""
-    w = h * 0.36
-    t.rect(x - w * 0.62, base - h * 0.14, x + w * 0.62, base, fill=stone, ink=True, width=0.9)  # zoccolo
-    t.rect(x + w * 0.1, base - h * 0.14, x + w * 0.62, base, fill=sh)
-    t.rect(x - w / 2, base - h * 0.72, x + w / 2, base - h * 0.14, fill=stone, ink=True, width=0.9)  # dado
-    t.rect(x + w * 0.12, base - h * 0.72, x + w / 2, base - h * 0.14, fill=sh)
-    t.rect(x - w * 0.58, base - h * 0.78, x + w * 0.58, base - h * 0.72, fill=stone, ink=True, width=0.8)  # cornice
-    t.rect(x - w * 0.22, base - h * 0.84, x + w * 0.22, base - h * 0.78, fill=sh, ink=True, width=0.7)  # collarino
-    r = w * 0.48
-    cy = base - h * 0.84 - r
-    t.circle(x, cy, r, fill=stone)
-    t.chord(x - r, cy - r, x + r, cy + r, -60, 110, fill=sh)
-    t.circle(x - r * 0.35, cy - r * 0.35, r * 0.22, fill=light(stone, 1.06))
-    t.circle(x, cy, r, ink=True, width=0.9)
+    """Il paracarro (#378, dipinto): lo zoccolo smussato, il dado appena rastremato con lo spigolo in luce a sinistra e
+    l'ombra a destra, la cornice, il collarino e la palla tonda con la luce in alto a sinistra; la grana della pietra,
+    lo sporco al piede e l'ombra morbida a terra."""
+    w = h * 0.34
+    q = _qt(t, x - w * 1.2, base - h * 1.12, x + w * 1.5, base + 2)
+    stone, sh = stone[:3], sh[:3]
+    hi = light(stone + (255,), 1.08)[:3]
+    ink = (70, 64, 58)
+    q.fill(q.soften(q.ellipse(q.mask(), x - w * 0.8, base - h * 0.04, x + w * 1.2, base + h * 0.05), 0.08 * h), (30, 28, 26), 0.35)
+    body = q.mask()
+    q.poly(body, [(x - w * 0.62, base), (x + w * 0.62, base), (x + w * 0.62, base - h * 0.1), (x + w * 0.5, base - h * 0.15), (x - w * 0.5, base - h * 0.15), (x - w * 0.62, base - h * 0.1)])
+    q.poly(body, [(x - w * 0.5, base - h * 0.15), (x + w * 0.5, base - h * 0.15), (x + w * 0.44, base - h * 0.7), (x - w * 0.44, base - h * 0.7)])
+    q.poly(body, [(x - w * 0.58, base - h * 0.7), (x + w * 0.58, base - h * 0.7), (x + w * 0.52, base - h * 0.77), (x - w * 0.52, base - h * 0.77)])
+    q.poly(body, [(x - w * 0.22, base - h * 0.77), (x + w * 0.22, base - h * 0.77), (x + w * 0.2, base - h * 0.83), (x - w * 0.2, base - h * 0.83)])
+    q.fill(body, stone)
+    q.fill(q.intersect(q.poly(q.mask(), [(x + w * 0.12, base), (x + w * 0.7, base), (x + w * 0.7, base - h * 0.8), (x + w * 0.1, base - h * 0.8)]), body), sh, 0.85)
+    q.fill(q.intersect(q.poly(q.mask(), [(x - w * 0.5, base - h * 0.15), (x - w * 0.32, base - h * 0.15), (x - w * 0.3, base - h * 0.7), (x - w * 0.44, base - h * 0.7)]), body), hi, 0.8)
+    q.fill(q.intersect(q.poly(q.mask(), [(x - w, base - h * 0.725), (x + w, base - h * 0.725), (x + w, base - h * 0.705), (x - w, base - h * 0.705)]), body), sh, 0.6)
+    r = w * 0.5
+    cy = base - h * 0.83 - r * 0.95
+    ball = q.ellipse(q.mask(), x - r, cy - r, x + r, cy + r)
+    q.fill(ball, stone)
+    q.fill(q.inner_shadow(ball, -r * 0.55, -r * 0.55, r * 0.35), sh, 0.95)
+    q.fill(q.soften(q.ellipse(q.mask(), x - r * 0.55, cy - r * 0.6, x - r * 0.05, cy - r * 0.15), r * 0.12), hi, 0.9)
+    allm = q.union(body, ball)
+    q.fill(q.intersect(q.grain(allm, 0.5, int(x * 10) & 0xffff, 0.5), allm), sh, 0.3)
+    q.fill(q.intersect(q.soften(q.poly(q.mask(), [(x - w, base - h * 0.12), (x + w, base - h * 0.12), (x + w, base), (x - w, base)]), 0.05 * h), body), (110, 112, 90), 0.35)  # lo sporco e il muschio al piede
+    q.outline(allm, max(0.4, h * 0.02), ink)
+    _qt_paste(t, q)
 
 
 def railing(t, x0, x1, y_top, y_bot, curls=True):
@@ -2882,7 +3131,8 @@ if __name__ == "__main__":
     paving()
     quay_wall()
     coping("bordo.png")
-    slab()
+    slab_prop("lastra-180.png", 180)  # le lastre rette dalle statue, intere con i capi (#378)
+    slab_prop("lastra-140.png", 140)
     statue_painted("statua-ponte.png", 112, 180, "giovane")  # regge la lastra a y 410 dalla piazza a y 520 (+2 di appoggio)
     statue_painted("statua-alta.png", 192, 140, "filosofo")  # regge la lastra a y 330
     statue_painted("statua-piazza.png", 142, 180, "dama")  # regge la lastra a y 380

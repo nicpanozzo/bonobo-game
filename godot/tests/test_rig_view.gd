@@ -70,3 +70,65 @@ func test_tempi_del_colpo() -> void:
 	runner.check(is_equal_approx(FighterPose.rig_frame(a, 400.0, attack), 8.0), "e finisce con cooldownMs")
 	var loop := {"frames": 10, "fps": 20, "loop": true}
 	runner.check(is_equal_approx(FighterPose.rig_frame(loop, 525.0), 0.5), "i cicli ricominciano (%s)" % FighterPose.rig_frame(loop, 525.0))
+
+
+# Le pose chiave (#404): tempi in fasi agganciati all'attacco, curve d'arrivo, cicli
+func test_chiavi_agganciate_all_attacco() -> void:
+	var rig := _nonna()
+	if rig == null:
+		return
+	runner.check(rig.keys.has("heavy") and rig.keys.heavy.phase, "il pesante ha le chiavi in fasi")
+	var heavy: Dictionary = rig.keys.heavy
+	var impact := -1
+	for i in heavy.t.size():
+		if is_equal_approx(heavy.t[i], 1.0):
+			impact = i
+	runner.check(impact > 0, "c'è una chiave d'impatto a fase 1")
+	var spec := {"startupMs": 320.0, "activeMs": 120.0, "cooldownMs": 860.0}
+	var a: Dictionary = _game().characters.nonnagina.sprite.animations.heavy
+	runner.check(rig.pose_at("heavy", 320.0, spec, a) == heavy.p[impact], "all'accensione della hitbox la posa è quella d'impatto")
+	var slow := {"startupMs": 640.0, "activeMs": 240.0, "cooldownMs": 1720.0}
+	runner.check(rig.pose_at("heavy", 640.0, slow, a) == heavy.p[impact], "con un avvio più lungo l'impatto cade comunque sulla hitbox")
+	var held: PackedFloat32Array = rig.pose_at("heavy", 430.0, spec, a)
+	var k: int = 2 + int(rig.names.hand_R)
+	runner.check(absf(held[k] - heavy.p[impact][k]) < 25.0, "mentre la hitbox è accesa il mattarello resta sul colpo")
+	var still: PackedFloat32Array = rig.pose_at("heavy", 860.0, spec, a)
+	runner.check(still == heavy.p[heavy.p.size() - 1], "a cooldownMs è tornata a riposo")
+
+
+func test_curve() -> void:
+	runner.check(RigView.curve(0, 0.5) == 0.5 and RigView.curve(3, 0.5) == 0.5, "lineare e io a metà")
+	runner.check(RigView.curve(4, 0.5) < 0.1, "snap tiene la carica fino quasi alla fine")
+	var back := 0.0
+	for i in 20:
+		back = maxf(back, RigView.curve(5, i / 20.0))
+	runner.check(back > 1.05 and is_equal_approx(RigView.curve(5, 1.0), 1.0), "back supera la posa e ci torna (%s)" % back)
+	runner.check(RigView.curve(6, 0.99) == 0.0 and RigView.curve(6, 1.0) == 1.0, "hold resta ferma fino alla chiave")
+	var spec := {"startupMs": 100.0, "activeMs": 50.0, "cooldownMs": 400.0}
+	runner.check(is_equal_approx(RigView.phase(50.0, spec), 0.5) and is_equal_approx(RigView.phase(125.0, spec), 1.5), "le fasi di avvio e hitbox")
+	runner.check(is_equal_approx(RigView.phase(275.0, spec), 2.5) and RigView.phase(999.0, spec) == 3.0, "il recupero finisce a cooldownMs")
+	runner.check(is_equal_approx(RigView.phase(100.0, {"startupMs": 100.0, "activeMs": 0.0, "cooldownMs": 300.0}), 2.0), "senza hitbox (i proiettili) si salta al recupero")
+
+
+func test_ciclo_delle_chiavi() -> void:
+	var rig := _nonna()
+	if rig == null:
+		return
+	var idle: Dictionary = rig.keys.idle
+	runner.check(not idle.phase and idle.loop, "il fermo è un ciclo in ms")
+	var a: Dictionary = _game().characters.nonnagina.sprite.animations.idle
+	runner.check(rig.pose_at("idle", float(idle.ms), {}, a) == rig.pose_at("idle", 0.0, {}, a), "dopo un giro si torna alla prima chiave")
+	var end: PackedFloat32Array = rig.pose_at("idle", float(idle.ms) - 1.0, {}, a)
+	runner.check(absf(end[1] - idle.p[0][1]) < 0.1, "l'ultimo tratto porta alla prima chiave, senza salti")
+
+
+func test_smear_allunga_il_mattarello() -> void:
+	var rig := _nonna()
+	if rig == null:
+		return
+	var pins: Array = rig.layers.filter(func(l): return l.pin)
+	runner.check(pins.size() == 2, "il mattarello e il suo inchiostro sono segnati (%d)" % pins.size())
+	var m: Transform2D = rig.pin_stretch(0.5)
+	runner.check((m * rig.pin_grip).is_equal_approx(rig.pin_grip), "la presa resta in mano")
+	var tip: Vector2 = rig.pin_grip + rig.pin_axis * 60.0
+	runner.check(is_equal_approx((m * tip).distance_to(rig.pin_grip), 90.0), "la punta si allunga del 50%")
