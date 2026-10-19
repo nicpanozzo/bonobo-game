@@ -523,7 +523,7 @@ export const STAGES: Record<string, StageSpec> = {
         riva: { file: "riva.png", edge: "bordo.png" }, // il fianco della piazza, a grandi blocchi
         // il fianco ovale (#378) lo disegna la decorazione fianco.png: il materiale mette solo la copertina chiara
         fianco: { file: "vuoto.png", edge: "bordo.png" },
-        lastra: { file: "lastra.png", depth: 12 },
+        lastra: { file: "vuoto.png", depth: 12 }, // le lastre si disegnano intere, con i capi, come decorazioni (#378)
       },
       solidSkin: "pietra",
       platformSkin: "lastra",
@@ -575,6 +575,13 @@ export const STAGES: Record<string, StageSpec> = {
         { file: "statua-alta.png", x: 1380, y: 522, scale: 0.5, flip: true },
         { file: "statua-piazza.png", x: 310, y: 522, scale: 0.5 },
         { file: "statua-piazza.png", x: 1610, y: 522, scale: 0.5, flip: true },
+        // le lastre rette dalle statue (#378): intere, con la cornice e i capi, sopra le mani delle statue
+        { file: "lastra-180.png", x: 690, y: 428, scale: 0.5, shadow: false },
+        { file: "lastra-180.png", x: 1230, y: 428, scale: 0.5, shadow: false, flip: true },
+        { file: "lastra-140.png", x: 540, y: 348, scale: 0.5, shadow: false },
+        { file: "lastra-140.png", x: 1380, y: 348, scale: 0.5, shadow: false, flip: true },
+        { file: "lastra-180.png", x: 310, y: 398, scale: 0.5, shadow: false },
+        { file: "lastra-180.png", x: 1610, y: 398, scale: 0.5, shadow: false, flip: true },
       ],
       // Sfondo vivo (#260): stormi, piccioni sulle teste delle statue, passanti sul vialetto del prato con l'ombrello
       // quando piove, il tram davanti ai portici e il giorno che passa: tramonto, notte con le stelle e i lampioni, alba
