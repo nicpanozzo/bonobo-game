@@ -103,8 +103,10 @@ function folderSprite(id: string, sprite: SpriteFolderSpec): SpriteFolderSpec {
 // e per ogni stato i fotogrammi come [radice x, radice y, gradi di ogni osso]. Ritorna il percorso in godot/data
 const rigFiles: Record<string, string> = {};
 interface RigBone { name: string; parent: string | null; head: [number, number]; deform: boolean }
-interface RigPiece { bone: string; z: number; image: string; x: number; y: number; ink?: string; inkZ?: number }
+interface RigPiece { name: string; bone: string; z: number; image: string; x: number; y: number; ink?: string; inkZ?: number }
 interface RigFrame { bones: Record<string, number>; root: [number, number] }
+// Le pose chiave (#404, tools/rig/animazioni_nonnagina.py): t in fasi dell'attacco (0-3) o in ms, e = curva d'arrivo
+interface RigKeys { time: "phase" | "ms"; ms?: number; loop?: boolean; spec?: Record<string, number>; keys: (RigFrame & { t: number; e: string })[] }
 function rigFor(id: string, dir: string, animations: Record<string, object>): string | undefined {
   const rigPath = `${publicDir}${dir}/rig.json`;
   const animPath = `${publicDir}${dir}/animazioni.json`;
@@ -117,15 +119,15 @@ function rigFor(id: string, dir: string, animations: Record<string, object>): st
   const bones = rig.bones.filter((b) => b.deform);
   const index = new Map(bones.map((b, i) => [b.name, i]));
   // stesso ordine di Pittore in rendi_sprite.py: pezzo, poi il suo inchiostro, e un ordinamento stabile per z
-  const layers: { z: number; bone: number; image: string; x: number; y: number }[] = [];
+  const layers: { z: number; bone: number; name: string; image: string; x: number; y: number }[] = [];
   for (const p of rig.pieces) {
     const bone = index.get(p.bone);
     if (bone === undefined) {
       spriteErrors.push(`${id}: il pezzo ${p.image} sta sull'osso ${p.bone}, che non si muove`);
       continue;
     }
-    layers.push({ z: p.z, bone, image: `${dir}/${p.image}`, x: p.x, y: p.y });
-    if (p.ink) layers.push({ z: p.inkZ ?? p.z - 0.5, bone, image: `${dir}/${p.ink}`, x: p.x, y: p.y });
+    layers.push({ z: p.z, bone, name: p.name, image: `${dir}/${p.image}`, x: p.x, y: p.y });
+    if (p.ink) layers.push({ z: p.inkZ ?? p.z - 0.5, bone, name: p.name, image: `${dir}/${p.ink}`, x: p.x, y: p.y });
   }
   layers.sort((a, b) => a.z - b.z);
   const r = (v: number) => Math.round(v * 100) / 100;
@@ -138,13 +140,22 @@ function rigFor(id: string, dir: string, animations: Record<string, object>): st
     }
     states[state] = frames.map((f) => [r(f.root[0]), r(f.root[1]), ...bones.map((b) => r(f.bones[b.name] ?? 0))]);
   }
+  // le chiavi, se ci sono: Godot le preferisce alle pose cotte (stessa forma: [radice x, radice y, gradi di ogni osso])
+  const keysPath = `${publicDir}${dir}/chiavi.json`;
+  const pose = (f: RigFrame) => [r(f.root[0]), r(f.root[1]), ...bones.map((b) => r(f.bones[b.name] ?? 0))];
+  const keys = existsSync(keysPath) ? (JSON.parse(readFileSync(keysPath, "utf8")) as { states: Record<string, RigKeys> }).states : {};
+  const keyed = Object.fromEntries(Object.entries(keys).map(([state, k]) => [state, {
+    time: k.time, ms: k.ms ?? 0, loop: k.loop ?? false, spec: k.spec ?? {},
+    t: k.keys.map((x) => x.t), e: k.keys.map((x) => x.e), p: k.keys.map(pose),
+  }]));
   for (const l of layers) spriteFiles.push(l.image);
   const out = `${dir}/godot.json`;
   rigFiles[out] = JSON.stringify({
     scale: rig.scale,
     bones: bones.map((b) => ({ name: b.name, parent: b.parent === null ? -1 : (index.get(b.parent) ?? -1), head: b.head })),
-    pieces: layers.map(({ bone, image, x, y }) => ({ bone, image, x, y })),
+    pieces: layers.map(({ bone, name, image, x, y }) => ({ bone, name, image, x, y })),
     animations: states,
+    keys: keyed,
   }) + "\n";
   return out;
 }
