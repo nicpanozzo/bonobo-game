@@ -2212,19 +2212,22 @@ def _walk_bridge_painted(t, x_in, x_out, rng):
     a, b = min(x_in, x_out), max(x_in, x_out)
     left_side = x_out < x_in  # il ponte di sinistra: verso il centro c'è l'isola a destra
     x0, y0 = a - 30, 446
-    w, h = b - a + 60, 220
+    w, h = b - a + 60, 236
     q = Quadro(w, h, origin=(x0, y0), scale=t.k)
     ink = (78, 72, 66)
     S, S_SH, S_DK, S_HI = (226, 222, 210), (176, 170, 158), (128, 124, 116), (246, 244, 236)
     WATER, WATER_D = (92, 122, 114), (54, 74, 68)
-    far_y, near_y, water, hump = 480, 522, 604, 7
+    # più vicino alla telecamera della striscia dove si gioca (#378, chiesto da Riccardo): il bordo lontano della
+    # passerella è all'altezza della striscia, quello vicino più giù, e l'acqua al livello del canale davanti (622)
+    far_y, near_y, water, hump = 504, 552, 630, 8
+    K = 1.25  # più vicino = più grande: parapetti, cornice, conci
     n = 48
 
     def gob(u):
         return hump * math.sin(math.pi * u) ** 0.9
 
     def conv(x):  # il bordo lontano scappa appena verso il centro dell'arena (il punto di fuga)
-        return x + (960 - x) * 0.025
+        return x + (960 - x) * 0.04
 
     xs = [a + (b - a) * i / n for i in range(n + 1)]
     near = [(x, near_y - gob(i / n)) for i, x in enumerate(xs)]
@@ -2251,6 +2254,7 @@ def _walk_bridge_painted(t, x_in, x_out, rng):
         q.poly(holes, [(x, y - 7), (x + 1.1, y - 4.5), (x, y - 2), (x - 1.1, y - 4.5)])
     q.fill(q.intersect(holes, fp), (118, 132, 120))
     q.line([(x, y - 9.5) for x, y in far], 1.8, S)
+    reveal = None
     q.outline(fp, 0.4, ink)
     # la passerella vista dall'alto, lastricata, con l'ombra del parapetto lontano
     deck = q.poly(q.mask(), far + list(reversed(near)))
@@ -2268,6 +2272,15 @@ def _walk_bridge_painted(t, x_in, x_out, rng):
     q.fill(opening, WATER)
     vault = q.poly(q.mask(), [(x + (mid - x) * 0.06, y + (water - y) * 0.0) for x, y in arch] + [(x + 10, y + 12) for x, y in reversed(arch)])
     q.fill(q.intersect(q.soften(vault, 3), opening), WATER_D, 0.95)
+    # in prospettiva, dentro l'arco si vede lo sguancio dalla parte lontana dal centro (la volta che va indietro verso
+    # il punto di fuga) e, in fondo, l'arco della faccia di là, più piccolo e spostato verso il centro
+    sg = 1 if mid < 960 else -1
+    depth = 16
+    back_arch = [(x + sg * depth * 0.9, y - depth * 0.35) for x, y in arch]
+    side_wall = q.poly(q.mask(), (arch[: n // 2 + 1] if sg > 0 else arch[n // 2:]) + list(reversed(back_arch[: n // 2 + 1] if sg > 0 else back_arch[n // 2:])) + ([(mid - span / 2 + sg * depth * 0.9, water + 0.5), (mid - span / 2, water + 0.5)] if sg > 0 else [(mid + span / 2 + sg * depth * 0.9, water + 0.5), (mid + span / 2, water + 0.5)]))
+    q.fill(q.intersect(side_wall, opening), (150, 146, 134), 0.95)
+    q.fill(q.intersect(q.soften(side_wall, 2), opening), (110, 106, 96), 0.4)
+    q.line(back_arch, 0.8, (70, 80, 74))
     under = q.poly(q.mask(), [(mid - span / 2, water - 6), (mid + span / 2, water - 6), (mid + span / 2, water + 1), (mid - span / 2, water + 1)])
     q.fill(q.intersect(q.soften(under, 2), opening), (130, 158, 148), 0.6)  # la luce che passa sotto, sul pelo dell'acqua
     rip = q.mask()
@@ -2314,22 +2327,22 @@ def _walk_bridge_painted(t, x_in, x_out, rng):
     q.fill(q.inner_shadow(key, -2, -1, 1), S_SH, 0.9)
     q.outline(key, 0.5, ink)
     q.fill(q.inner_shadow(face, -10, -4, 7), S_SH, 0.55)  # il volume: la faccia gira in ombra verso destra
-    corn = q.poly(q.mask(), [(x, y) for x, y in near] + [(x, y + 4) for x, y in reversed(near)])
+    corn = q.poly(q.mask(), [(x, y) for x, y in near] + [(x, y + 5 * K) for x, y in reversed(near)])
     q.fill(corn, S_HI)
     q.fill(q.soften(q.poly(q.mask(), [(x, y + 4) for x, y in near] + [(x, y + 10) for x, y in reversed(near)]), 2), (40, 38, 34), 0.35)  # l'ombra sotto la cornice
     q.outline(face, 0.6, ink)
     # il parapetto vicino, traforato: dai buchi si vede la passerella
-    np_ = q.poly(q.mask(), near + [(x, y - 11) for x, y in reversed(near)])
+    np_ = q.poly(q.mask(), near + [(x, y - 11 * K) for x, y in reversed(near)])
     holes = q.mask()
     for i in range(1, n):
         x, y = near[i]
-        q.poly(holes, [(x, y - 9), (x + 1.6, y - 5.5), (x, y - 2), (x - 1.6, y - 5.5)])
+        q.poly(holes, [(x, y - 9 * K), (x + 1.6 * K, y - 5.5 * K), (x, y - 2 * K), (x - 1.6 * K, y - 5.5 * K)])
     panel = q.minus(np_, holes)
     q.fill(panel, S)
     q.fill(q.inner_shadow(panel, 0, -2, 1.2), S_SH, 0.8)
     q.fill(q.intersect(holes, np_), (150, 146, 134))
-    q.line([(x, y - 12) for x, y in near], 3.0, S)
-    q.line([(x, y - 12.8) for x, y in near], 0.9, S_HI)
+    q.line([(x, y - 12 * K) for x, y in near], 3.0 * K, S)
+    q.line([(x, y - 12.8 * K) for x, y in near], 0.9 * K, S_HI)
     q.outline(np_, 0.45, ink)
     # la spalla sulla sponda di fuori, con il gradino che scende sul vialetto, e l'ombra a terra
     ox = a if left_side else b
@@ -2349,15 +2362,15 @@ def _walk_bridge_painted(t, x_in, x_out, rng):
     for x, y in (far[0], far[-1]):
         _obelisk(t, x + (3 if x < mid else -3), y, 0.7, (84, 78, 72, 255))
     for x, y in (near[0], near[-1]):
-        _obelisk(t, x + (3 if x < mid else -3), y + 1, 0.9, (84, 78, 72, 255))
+        _obelisk(t, x + (3 if x < mid else -3), y + 1, 0.9 * K, (84, 78, 72, 255))
 
 
 def bridges_and_statues(name):
     """Le statue sulla sponda di là del canale e i ponticelli (#378, chiesto da Riccardo): la fila di statue del Prato
     lungo tutto l'ovale, più piccole lontano; il ponticello dietro la fontana visto di fronte, e i due alle punte
     dell'isola visti di fianco, che portano alla sponda di fuori. Sono dietro la piazza: non ci si cammina sopra.
-    Prop dietro in x 960, y 640, a 2x: x -420..2340, y 340..640."""
-    x0, y0, w, h = -420, 340, 2760, 300
+    Prop dietro in x 960, y 690, a 2x: x -420..2340, y 340..690."""
+    x0, y0, w, h = -420, 340, 2760, 350
     t = Tela(w, h, origin=(x0, y0), ss=1)
     cx, cy, rx, ry = CANAL_OVAL
     rng = rand(3786)
