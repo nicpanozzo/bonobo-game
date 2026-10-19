@@ -76,6 +76,10 @@ func test_fotogramma_d_impatto_con_la_hitbox() -> void:
 	runner.check(FighterPose.sprite_frame(heavy, 0, {"startupMs": 0, "activeMs": 250, "cooldownMs": 0}) == 6, "avvio zero")
 	# Senza hitFrame si va a fps anche negli attacchi
 	runner.check(FighterPose.sprite_frame({"frames": 3, "fps": 20, "loop": false}, 100, spec) == 2, "senza hitFrame: fps")
+	var rest := heavy.duplicate()
+	rest.startFrame = 1
+	runner.check(FighterPose.sprite_frame(rest, 0, spec) == 1, "startFrame: si salta la posa di riposo")
+	runner.check(FighterPose.sprite_frame(rest, 260, spec) == 6, "e l'impatto resta all'accendersi della hitbox")
 
 
 func test_disconnesso_semitrasparente() -> void:
