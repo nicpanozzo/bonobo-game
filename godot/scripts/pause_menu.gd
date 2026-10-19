@@ -4,6 +4,7 @@ extends Control
 
 signal resumed
 signal left
+signal team_chosen(team: int) # cambio di squadra (#409): main.gd lo manda al server
 
 var settings: Settings
 var link := ""
@@ -15,6 +16,8 @@ var _moves_button: Button
 var _report := {} # dati della partita per il tasto Segnala (#214)
 
 const MoveList := preload("res://scripts/move_list.gd")
+const TeamPicker := preload("res://scripts/team_picker.gd")
+const TEAM_CHIP_W := 80.0 # i pulsanti delle squadre nel menu, più stretti che in lobby: ne stanno quattro
 const ISSUES_URL := "https://github.com/nicpanozzo/bonobo-game/issues/new"
 
 
@@ -34,6 +37,7 @@ func setup(s: Settings, room_link: String, report := {}) -> void:
 	box.add_child(_options_button)
 	_moves_button = UI.button("Mosse del lottatore", _open_moves)
 	box.add_child(_moves_button)
+	_add_team_picker(box)
 	box.add_child(UI.button("Copia link della stanza", func():
 		UI.copy(link)
 		_note.text = "Link copiato: incollalo sul Discord"))
@@ -47,6 +51,29 @@ func setup(s: Settings, room_link: String, report := {}) -> void:
 	var game = JSON.parse_string(FileAccess.get_file_as_string("res://data/game.json"))
 	box.add_child(UI.note(UI.version_text(game if game is Dictionary else {}), 0.5))
 	UI.keep_focus(self, resume_button)
+
+
+# A squadre (#409): la tua squadra, da cambiare con un clic. Il server la cambia subito se la partita
+# è ferma, altrimenti dalla prossima (la scheda nell'HUD lo dice con la freccia)
+func _add_team_picker(box: VBoxContainer) -> void:
+	var rules: Dictionary = _report.get("rules", {})
+	var mode := str(rules.get("mode", "ffa"))
+	if mode != "teams" and mode != "flag":
+		return
+	var game = JSON.parse_string(FileAccess.get_file_as_string("res://data/game.json"))
+	if not game is Dictionary:
+		return
+	var me := my_player(_report)
+	var mine := int(me.get("nextTeam", me.get("team", 1)))
+	box.add_child(UI.heading("La tua squadra"))
+	var picker := TeamPicker.new()
+	picker.setup(game, int(rules.get("teamCount", 2)) if mode == "teams" else 2, maxi(1, mine), false, TEAM_CHIP_W)
+	picker.alignment = BoxContainer.ALIGNMENT_CENTER
+	picker.chosen.connect(func(team: int):
+		team_chosen.emit(team)
+		var now := team == int(me.get("team", 0))
+		_note.text = "Resti nella squadra %s." % game.teamNames[str(team)] if now else "Passi alla squadra %s: subito se la partita è ferma, se no dalla prossima." % game.teamNames[str(team)])
+	box.add_child(picker)
 
 
 # Apre una issue nuova già compilata e copia lo stesso testo, per chi preferisce il Discord
@@ -123,10 +150,15 @@ func _open_moves() -> void:
 
 # Il personaggio di chi apre il menu, dai giocatori dell'ultimo snapshot
 static func my_character(report: Dictionary) -> String:
+	return str(my_player(report).get("characterId", ""))
+
+
+# Il mio giocatore nell'ultimo snapshot, {} se non c'è
+static func my_player(report: Dictionary) -> Dictionary:
 	for p in report.get("players", []):
 		if p is Dictionary and p.get("id") == report.get("me"):
-			return str(p.get("characterId", ""))
-	return ""
+			return p
+	return {}
 
 
 # Esc, B o Start riprendono la partita
