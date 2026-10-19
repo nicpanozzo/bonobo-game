@@ -95,10 +95,9 @@ func test_strati_rimpiccioliti_restano_grandi_uguali() -> void:
 func test_fotogrammi_dei_fogli_rimpiccioliti() -> void:
 	runner.check(WorldView.frame_region(2.0, 1.0, 100.0, 50.0, 0.5) == Rect2(100, 25, 50, 25), "il riquadro in proporzione")
 	runner.check(WorldView.frame_region(3.0, 0.0, 336.0, 368.0, 1.0) == Rect2(1008, 0, 336, 368), "intero com'era")
-	var before: float = WorldView._screen_px_per_world
-	WorldView._screen_px_per_world = 0.6 # uno schermo da portatile
-	var path := "res://data/assets/stages/padova/ubriaco.png"
-	var keep: float = WorldView._kept(WorldView._sprite_texture(path, "linear", 0.5), path)
-	WorldView._screen_px_per_world = before
-	runner.check(absf(keep - 0.3) < 0.02, "rimpicciolito a 0,3: %s" % keep)
-	runner.check(is_equal_approx(WorldView._kept(WorldView._sprite_texture(path, "linear", 0.0), path), 1.0), "senza scala resta intero")
+	# una texture grande la metà del PNG (in CI senza schermo il gioco non rimpicciolisce: la si fa a mano)
+	var path := "res://data/assets/stages/padova/auto.png"
+	var raw: Texture2D = load(path)
+	var half := ImageTexture.create_from_image(Image.create(raw.get_width() / 2, raw.get_height() / 2, false, Image.FORMAT_RGBA8))
+	runner.check(is_equal_approx(WorldView._kept(half, path), 0.5), "rimpicciolito a metà: %s" % WorldView._kept(half, path))
+	runner.check(is_equal_approx(WorldView._kept(raw, path), 1.0), "intero resta 1")
