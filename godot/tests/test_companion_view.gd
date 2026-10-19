@@ -19,13 +19,13 @@ func test_segue_lo_snapshot_e_sparisce_senza_compagno() -> void:
 	runner.check(view.position_of("a") == null, "senza compagno nello snapshot non si disegna")
 
 
-func test_morde_solo_negli_attacchi_del_compagno() -> void:
+func test_morde_solo_quando_lo_dice_il_server() -> void:
 	var View := preload("res://scripts/companion_view.gd")
-	var characters := {"lampione": {"companion": {"bites": ["light", "heavy"]}}, "default": {}}
-	runner.check(View.biting({"characterId": "lampione", "attack": "light"}, characters), "il leggero lo fa il beagle")
-	runner.check(not View.biting({"characterId": "lampione", "attack": "lightAir"}, characters), "in aria no")
-	runner.check(not View.biting({"characterId": "lampione", "attack": null}, characters), "senza attacco no")
-	runner.check(not View.biting({"characterId": "default", "attack": "light"}, characters), "senza compagno no")
+	var dog := {"x": 100, "y": 500, "facing": 1, "onGround": true}
+	runner.check(View.biting({"attack": "light", "companion": dog.merged({"bite": true})}), "il leggero lo fa il beagle")
+	runner.check(not View.biting({"attack": "light", "companion": dog}), "rimasto lontano: lo fa Lampione")
+	runner.check(not View.biting({"attack": null, "companion": dog.merged({"bite": true})}), "senza attacco no")
+	runner.check(not View.biting({"attack": "light"}), "senza compagno no")
 
 
 func test_lampeggia_se_colpito_e_fa_la_nuvoletta_al_ko() -> void:

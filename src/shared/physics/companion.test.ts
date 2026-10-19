@@ -111,6 +111,36 @@ describe("i morsi del beagle negli attacchi base (#369 passo 2)", () => {
     assert.ok(a.pet!.x - x0 > 20, "lasciato il tasto scatta");
   });
 
+  it("nello snapshot il beagle dice che sta mordendo", () => {
+    const { a } = duel("lampione", 400);
+    assert.equal(companionState(a)!.bite, true);
+  });
+
+  it("se il beagle è rimasto lontano il leggero lo fa Lampione", () => {
+    const ctx: PhysicsContext = { stage, events: [] };
+    const a = createFighter({ id: "p0", name: "P0", characterId: "lampione", color: 0, team: 0, index: 0, stocks: 3 }, stage);
+    a.x = 500;
+    a.facing = 1;
+    run([a], ctx, 30);
+    a.pet!.x = a.x - 250; // è rimasto indietro, per esempio mentre Lampione correva
+    a.input = { ...emptyInput(), light: true };
+    run([a], ctx, 1);
+    assert.equal(a.attack, "light");
+    assert.equal(biting(a), false);
+    assert.ok(Math.abs(attackBox(a).x - (a.x + 20)) < 30, "il colpo parte davanti a Lampione");
+    assert.equal(companionState(a)!.bite, undefined);
+  });
+
+  it("se il beagle sta volando via colpito il leggero lo fa Lampione", () => {
+    const { ctx, a } = duel("lampione", 400);
+    run([a], ctx, 20);
+    a.pet!.hurtMs = COMPANION.hurtMs;
+    a.input = { ...emptyInput(), light: true };
+    run([a], ctx, 1);
+    assert.equal(a.attack, "light");
+    assert.equal(biting(a), false);
+  });
+
   it("gli altri attacchi restano di Lampione", () => {
     const { a } = duel("lampione", 400);
     a.attack = "lightAir";
@@ -156,7 +186,7 @@ describe("il beagle si può colpire (#369 passo 3)", () => {
     a.pet!.percent = COMPANION.koPercent - 1;
     jab(b, a, ctx);
     assert.ok(a.pet!.koMs > 0, "KO");
-    assert.equal(companionState(a.pet!), null, "non va nello snapshot");
+    assert.equal(companionState(a), null, "non va nello snapshot");
     assert.equal(biting({ ...a, attack: "light" } as Fighter), false, "senza beagle niente morsi");
     run([a, b], ctx, Math.ceil(COMPANION.koMs / DT) + 1);
     assert.equal(a.pet!.koMs <= 0, true, "è tornato");

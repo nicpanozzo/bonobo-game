@@ -21,12 +21,21 @@ export interface Companion {
   hurtMs: number; // ms in cui vola via dopo un colpo, senza seguire il padrone
   koMs: number; // ms prima che torni dopo il KO; 0 = in gioco
   bounced: boolean; // il padrone ci è già rimbalzato sopra in questo salto
+  bites: boolean; // l'attacco base in corso lo fa lui: deciso quando parte, se è lì vicino a Lampione
 }
 
 export const companionOf = (characterId: string): CompanionSpec | null => getCharacter(characterId).companion ?? null;
 
 // Il compagno sta facendo l'attacco in corso di f? (il beagle morde negli attacchi base, #369 passo 2)
-export const biting = (f: Fighter): boolean => !!f.pet && f.pet.koMs <= 0 && !!f.attack && !!companionOf(f.characterId)?.bites.includes(f.attack);
+export const biting = (f: Fighter): boolean => !!f.pet && f.pet.koMs <= 0 && f.pet.bites && !!f.attack && !!companionOf(f.characterId)?.bites.includes(f.attack);
+
+// All'inizio di un attacco: il beagle morde solo se è lì, accanto al padrone e pronto. Se è rimasto indietro,
+// sta volando via colpito o è su un altro piano, l'attacco lo fa il padrone: sennò il colpo partirebbe lontano da lui
+export function chooseBiter(f: Fighter): void {
+  const c = f.pet;
+  if (!c) return;
+  c.bites = c.koMs <= 0 && c.hurtMs <= 0 && c.onGround && Math.abs(c.x - f.x) <= COMPANION.biteReachPx && Math.abs(c.y - f.y) <= COMPANION.biteReachYPx;
+}
 
 // Il rettangolo del morso: davanti al compagno, alto quanto lui
 export function biteBox(f: Fighter, range: number, height: number): { x: number; y: number; w: number; h: number } {
@@ -39,7 +48,7 @@ export function biteBox(f: Fighter, range: number, height: number): { x: number;
 const homeX = (f: Fighter) => f.x - f.facing * COMPANION.gapPx;
 
 function placeBeside(f: Fighter): Companion {
-  return { x: homeX(f), y: f.y, vx: 0, vy: 0, facing: f.facing, onGround: f.onGround, lunged: false, percent: 0, hurtMs: 0, koMs: 0, bounced: false };
+  return { x: homeX(f), y: f.y, vx: 0, vy: 0, facing: f.facing, onGround: f.onGround, lunged: false, percent: 0, hurtMs: 0, koMs: 0, bounced: false, bites: false };
 }
 
 // Torna accanto al padrone tenendosi i danni
@@ -168,6 +177,9 @@ export function hitPets(attacker: Fighter, box: { x: number; y: number; w: numbe
   }
 }
 
-// Quello che va nello snapshot: niente mentre è KO
-export const companionState = (c: Companion): CompanionState | null =>
-  c.koMs > 0 ? null : { x: Math.round(c.x), y: Math.round(c.y), facing: c.facing, onGround: c.onGround, percent: Math.round(c.percent) };
+// Quello che va nello snapshot: niente mentre è KO; bite se morde lui nell'attacco in corso
+export const companionState = (f: Fighter): CompanionState | null => {
+  const c = f.pet;
+  if (!c || c.koMs > 0) return null;
+  return { x: Math.round(c.x), y: Math.round(c.y), facing: c.facing, onGround: c.onGround, percent: Math.round(c.percent), ...(biting(f) && { bite: true }) };
+};

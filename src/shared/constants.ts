@@ -550,6 +550,8 @@ export const COMPANION = {
   bounceVy: 1050, // pixel/s verso l'alto quando il padrone gli rimbalza sopra (il salto è 860)
   waitAirPx: 140, // pixel: se il padrone salta più vicino di così, il compagno aspetta fermo dov'è
   bounceSlackPx: 24, // pixel sotto la sua schiena entro cui chi scende conta come atterrato sopra
+  biteReachPx: 110, // pixel: morde solo se all'inizio dell'attacco è più vicino di così al padrone, sennò attacca il padrone
+  biteReachYPx: 30, // pixel di dislivello massimo col padrone per mordere al suo posto
 };
 
 // Le pozze dell'IRA di Lendmar (#13): la merda che cade su un blocco fa scivolare chi ci passa

@@ -22,9 +22,9 @@ const HURT_MS := 220.0
 const POOF_MS := 600.0
 
 
-# characters: game.characters, per sapere quali attacchi fa il compagno
+# characters: non serve più, chi morde lo dice lo snapshot (resta per chi lo passa)
 # now: l'orologio in ms (i test lo passano, sennò quello vero)
-func on_snapshot(players: Array, characters: Dictionary = {}, now := -1) -> void:
+func on_snapshot(players: Array, _characters: Dictionary = {}, now := -1) -> void:
 	if now < 0:
 		now = Time.get_ticks_msec()
 	var before := _target
@@ -34,7 +34,7 @@ func on_snapshot(players: Array, characters: Dictionary = {}, now := -1) -> void
 		var c: Variant = p.get("companion")
 		if c is Dictionary:
 			_target[p.id] = c
-			_biting[p.id] = biting(p, characters)
+			_biting[p.id] = biting(p)
 			if before.has(p.id) and float(c.get("percent", 0)) > float(before[p.id].get("percent", 0)):
 				_hurt_at[p.id] = now
 			if bounced_on(p, c) and now - int(_bounce_at.get(p.id, -100000)) > BOUNCE_MS:
@@ -44,12 +44,11 @@ func on_snapshot(players: Array, characters: Dictionary = {}, now := -1) -> void
 			_poofs.append({"pos": _pos[p.id], "t": now})
 
 
-# Il compagno di p sta facendo il suo attacco in corso? Come biting() in src/shared/physics/companion.ts
-static func biting(p: Dictionary, characters: Dictionary) -> bool:
-	if p.get("attack") == null:
-		return false
-	var spec: Variant = characters.get(p.get("characterId", ""), {}).get("companion")
-	return spec is Dictionary and str(p.attack) in spec.get("bites", [])
+# Il compagno di p sta facendo il suo attacco in corso? Lo dice il server (bite, biting() in src/shared/physics/companion.ts):
+# morde solo se all'inizio dell'attacco era vicino al padrone, sennò l'attacco lo fa il padrone
+static func biting(p: Dictionary) -> bool:
+	var c: Variant = p.get("companion")
+	return p.get("attack") != null and c is Dictionary and bool(c.get("bite", false))
 
 
 # Il padrone sta schizzando in alto appena sopra il compagno: ci è appena rimbalzato (trampolino in companion.ts)
