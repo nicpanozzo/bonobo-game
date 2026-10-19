@@ -2643,10 +2643,60 @@ def _profile_bridge(t, x_in, x_out, rng):
     span, mid = (b - a) * 0.74, (a + b) / 2
     arch = [(mid - span / 2 + span * i / n, water - (water - deck - 18 + hump) * math.sin(math.pi * i / n) ** 0.55) for i in range(n + 1)]
     opening = q.poly(q.mask(), [(mid - span / 2, water + 1)] + arch + [(mid + span / 2, water + 1)])
-    # sotto l'arco: l'acqua del canale che continua dietro, la volta in ombra
-    q.fill(opening, (88, 118, 110))
-    q.fill(q.intersect(q.soften(q.poly(q.mask(), arch + [(x, y + 16) for x, y in reversed(arch)]), 3), opening), (40, 56, 52), 0.9)
-    q.fill(q.intersect(q.soften(q.poly(q.mask(), [(mid - span / 2, water - 5), (mid + span / 2, water - 5), (mid + span / 2, water + 1), (mid - span / 2, water + 1)]), 2), opening), (140, 168, 156), 0.6)
+    # sotto l'arco si vede il canale che continua (#378, chiesto da Riccardo): l'acqua va via da noi e, siccome il canale
+    # è un anello ovale, piega verso il centro dietro l'isola. Le due sponde convergono verso un punto di fuga spostato
+    # dalla parte dell'isola; lontano l'acqua è più chiara e riflette il cielo, in fondo si vedono il prato e gli alberi
+    # della sponda che gira. In alto la volta del ponte in ombra.
+    sg = 1 if mid < 960 else -1  # da che parte sta l'isola (il centro dell'ovale)
+    H = water - arch[n // 2][1]
+    hz = water - H * 0.5  # l'orizzonte del canale dentro l'arco
+    vx = mid + sg * span * 0.28  # il punto di fuga: il canale piega verso l'isola
+    left_x, right_x = mid - span / 2, mid + span / 2
+    inner_x, outer_x = (right_x, left_x) if sg > 0 else (left_x, right_x)
+
+    def vgrad(y_top, y_bot):  # una maschera che va da pieno in alto (y_top) a vuoto in basso (y_bot)
+        g = Image.new("L", q.size, 0)
+        dg = ImageDraw.Draw(g)
+        ya, yb = q._p(0, y_top)[1], q._p(0, y_bot)[1]
+        for py in range(int(ya), int(yb) + 1):
+            u = (py - ya) / max(1, yb - ya)
+            dg.line([(0, py), (q.size[0], py)], fill=int(255 * (1 - u) ** 1.3))
+        return g
+
+    q.fill(opening, (128, 150, 136))  # lontano, sopra l'orizzonte: la sponda che gira, verde di prato e alberi
+    trees = q.mask()
+    for k in range(7):
+        tx = vx + sg * rng.uniform(-span * 0.1, span * 0.3)
+        q.ellipse(trees, tx - 9, hz - 15 - rng.uniform(0, 6), tx + 9, hz + 2)
+    q.fill(q.intersect(q.soften(trees, 1.5), opening), (96, 120, 92), 0.9)
+    farbank = q.poly(q.mask(), [(left_x, hz), (right_x, hz), (right_x, hz - 3), (left_x, hz - 3)])
+    q.fill(q.intersect(farbank, opening), (214, 208, 194))  # il cordolo bianco della sponda in fondo
+    wat = q.poly(q.mask(), [(left_x, water + 1), (right_x, water + 1), (right_x, hz), (left_x, hz)])
+    q.fill(q.intersect(wat, opening), (72, 100, 94))
+    q.fill(q.intersect(q.intersect(vgrad(hz, water), wat), opening), (170, 194, 188), 0.9)  # lontano più chiaro
+    # le due sponde che convergono verso il punto di fuga: quella di fuori (pietra chiara, in luce) e il muro
+    # dell'isola (mattoni in ombra), alte vicino e basse lontano
+    for bx, col, hgt in ((outer_x, (206, 200, 186), H * 0.42), (inner_x, (128, 100, 86), H * 0.5)):
+        wall = q.poly(q.mask(), [(bx, water + 1), (bx, water - hgt), (vx, hz - 2), (vx, hz)])
+        q.fill(q.intersect(wall, opening), col)
+        q.fill(q.intersect(q.intersect(vgrad(hz - hgt * 0.2, water), wall), opening), (150, 168, 160), 0.5)  # la foschia lontano
+        edge = q.mask()
+        q.stroke(edge, [(bx, water - hgt), (vx, hz - 2)], 1.0)
+        q.fill(q.intersect(edge, opening), (236, 232, 222) if bx == outer_x else (96, 76, 66))
+        refl = q.poly(q.mask(), [(bx, water + 1), (bx + (vx - bx) * 0.05, water + 1), (vx, hz), (vx, hz + 1)])
+    # i riflessi del cielo sull'acqua, a pennellate orizzontali più corte e fitte lontano
+    rip = q.mask()
+    for k in range(26):
+        u = rng.random() ** 1.6  # 0 vicino, 1 lontano
+        y = water - 2 - u * (water - hz - 3)
+        half = (1 - u) * span * 0.18 + 2
+        x = rng.uniform(left_x + span * 0.15, right_x - span * 0.15) * (1 - u) + vx * u
+        q.stroke(rip, [(x - half, y), (x + half, y)], 0.7 - 0.3 * u)
+    q.fill(q.intersect(q.intersect(rip, wat), opening), (200, 220, 214), 0.7)
+    # la volta del ponte vista da sotto: una fascia in ombra lungo l'intradosso, più larga dalla parte dell'isola
+    vault = q.poly(q.mask(), arch + [(x + sg * 10 * math.sin(math.pi * i / n), y + 12 * math.sin(math.pi * i / n) ** 0.5) for i, (x, y) in reversed(list(enumerate(arch)))])
+    q.fill(q.intersect(q.soften(vault, 2.5), opening), (54, 66, 62), 0.85)
+    q.fill(q.intersect(q.soften(q.poly(q.mask(), [(left_x, water - 3), (right_x, water - 3), (right_x, water + 1), (left_x, water + 1)]), 1.5), opening), (40, 56, 52), 0.5)  # l'ombra del ponte sull'acqua vicina
     # la faccia del ponte
     face = q.minus(q.poly(q.mask(), top + [(b, water), (a, water)]), opening)
     q.fill(face, S)
