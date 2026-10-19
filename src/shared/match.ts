@@ -212,7 +212,7 @@ export class Match {
         powerup: f.powerup,
         powerupMs: Math.ceil(f.powerupMs),
         ...(f.inputSeq >= 0 && { predict: predictionState(f) }),
-        ...(f.pet && f.pet.koMs <= 0 && { companion: companionState(f.pet)! }),
+        ...(f.pet && f.pet.koMs <= 0 && { companion: companionState(f)! }),
       });
     }
     const teamScores = this.rules.mode === "flag" ? { ...this.scores } : null;

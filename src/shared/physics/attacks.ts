@@ -3,7 +3,7 @@
 import { characterStats, getCharacter, SPECIAL_KINDS, specialAttackSpec, specialsFor, supremeAttackSpec, type SpecialSlot, type TweakableAttack } from "../characters";
 import { ATTACKS, BIRRA, FIGHTER, HITSTOP, HITSTUN_PER_KNOCKBACK, JAB, MICELIO, POWERUP, SMASH_CHARGE, type AttackSpec } from "../constants";
 import type { AttackKind, SpecialKind } from "../types";
-import { biteBox, biting, hitPets } from "./companion";
+import { biteBox, biting, chooseBiter, hitPets } from "./companion";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
 import { clearStun, hitShield } from "./shield";
 import { counterHit, isCountering, tryStartSpecial } from "./specials";
@@ -97,6 +97,7 @@ export function startAttack(f: Fighter, kind: AttackKind, ctx: PhysicsContext) {
   f.jabTimer = 0;
   f.cooldownTimer = attackSpecFor(f, kind).cooldownMs;
   f.alreadyHit.clear();
+  chooseBiter(f); // il beagle di Lampione morde solo se è lì (#369)
   consume(f, "light", "heavy", "special"); // anche il recupero, l'attacco dal bordo e le speciali passano da qui
   ctx.events.push({ type: "attack", id: f.id, kind });
 }

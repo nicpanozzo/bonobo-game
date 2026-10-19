@@ -88,6 +88,7 @@ export interface CompanionState {
   facing: 1 | -1;
   onGround: boolean;
   percent: number; // danni presi (#369 passo 3); manca mentre è KO, perché manca tutto il compagno
+  bite?: boolean; // l'attacco in corso del padrone è un suo morso: solo se era lì vicino quando è partito
 }
 
 // Quello che serve al client per rigiocare il proprio movimento da questo snapshot (E17):
