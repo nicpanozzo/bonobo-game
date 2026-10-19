@@ -40,7 +40,7 @@ function juggler(me: Fighter, target: Fighter, tick: number) {
     input.up = input.jump = Math.abs(dx) < 70;
     input.heavy = tick % 2 === 0 && !me.attack && Math.abs(dx) < 70; // premuto e lasciato: niente colpo caricato
   } else {
-    input.up = input.jump = dy < -90 && tick % 6 === 0;
+    input.up = input.jump = dy < -60 && tick % 4 === 0; // col fermo al colpo di #384 si risale prima
     input.light = tick % 2 === 0 && Math.abs(dy) < 120;
   }
   return input;

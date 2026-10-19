@@ -59,3 +59,14 @@ func test_trema_nel_fermo() -> void:
 		swing = maxf(swing, absf(HitReaction.sample(r, fx, t).offset - HitReaction.sample(plain, FX, t).offset))
 	runner.check(swing > 2.0, "nel fermo trema: %s" % swing)
 	runner.check(HitReaction.sample(r, fx, 200).offset == HitReaction.sample(plain, FX, 200).offset, "dopo il fermo solo il rinculo")
+
+
+# Chi è colpito diventa bianco all'impatto e si spegne lungo il fermo (#384); con meno lampi niente
+func test_lampo_bianco_nel_fermo() -> void:
+	var fx := FX.duplicate()
+	fx.hitFlash = 0.8
+	var r := HitReaction.start(fx, 0.5, 1, 1200, 1000, 150)
+	runner.check(is_equal_approx(HitReaction.flash(r, fx, 1000, false), 0.8), "pieno all'impatto")
+	runner.check(HitReaction.flash(r, fx, 1075, false) < 0.8 and HitReaction.flash(r, fx, 1075, false) > 0.0, "si spegne")
+	runner.check(HitReaction.flash(r, fx, 1150, false) == 0.0, "finito il fermo")
+	runner.check(HitReaction.flash(r, fx, 1000, true) == 0.0, "meno lampi: niente")

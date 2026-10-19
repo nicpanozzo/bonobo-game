@@ -261,10 +261,11 @@ export const HITSTUN_AIR_DRAG = 0.985; // rallentamento per tick mentre si vola 
 
 // Hitstop (#15): quando un colpo entra attaccante e bersaglio si fermano per un istante,
 // più a lungo se il colpo è forte. Il bersaglio parte in volo solo dopo.
+// Al 70% di Smash Ultimate (100 ms + 11 ms per punto, massimo 500), perché i colpi pesino (#384 A2)
 export const HITSTOP = {
-  baseMs: 30, // anche il colpo più debole si sente
-  perDamageMs: 6, // ms in più per ogni punto di danno: leggero (5) = 60 ms, pesante (13) = 108 ms
-  maxMs: 200,
+  baseMs: 70, // anche il colpo più debole si sente
+  perDamageMs: 8, // ms in più per ogni punto di danno: leggero (5) = 110 ms, pesante (13) = 174 ms
+  maxMs: 350,
 };
 
 export const STOCKS = 3; // vite per partita
@@ -407,7 +408,11 @@ export const EFFECTS = {
   hitReactTilt: 0.35, // radianti: inclinazione massima (testa all'indietro o gambe portate via)
   hitReactSquash: 0.22, // frazione: schiacciamento massimo per un colpo alla pancia
   hitReactRecoil: 10, // pixel: rinculo massimo lontano da chi colpisce
-  hitShakePx: 7, // pixel: quanto trema chi è colpito durante il fermo (HITSTOP), come in Smash
+  hitShakePx: 10, // pixel: quanto trema chi è colpito durante il fermo (HITSTOP), come in Smash
+  hitFlash: 0.8, // da 0 a 1: quanto diventa bianco chi è colpito all'inizio del fermo, poi si spegne (#384)
+  koZoomKnockback: 1100, // px/s: da qui in su il colpo fa anche un breve zoom della telecamera sul punto d'impatto
+  koZoom: 0.08, // frazione: quanto si avvicina la telecamera al massimo dello zoom
+  koZoomMs: 320, // durata dello zoom, andata e ritorno
   hitShakeHz: 30, // tremolii al secondo nel fermo
   impactLines: 8, // linee a raggiera attorno ai colpi forti
   impactLinesKnockback: 700, // px/s: da qui in su il colpo ha le linee a raggiera

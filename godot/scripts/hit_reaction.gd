@@ -30,6 +30,16 @@ static func stop_ms(hitstop: Dictionary, damage: float) -> float:
 	return minf(float(hitstop.maxMs), float(hitstop.baseMs) + float(hitstop.perDamageMs) * damage)
 
 
+# Quanto è bianco chi è colpito all'istante now_ms (#384): pieno all'impatto, si spegne lungo il fermo.
+# Con meno lampi (accessibilità) niente
+static func flash(r: Dictionary, fx: Dictionary, now_ms: float, calm: bool) -> float:
+	var t := now_ms - float(r.at)
+	var stop := float(r.get("stop", 0.0))
+	if calm or t < 0.0 or t >= stop:
+		return 0.0
+	return float(fx.get("hitFlash", 0.0)) * (1.0 - t / stop)
+
+
 # Quanto vale la reazione all'istante now_ms: angolo (radianti, positivo = orario),
 # schiacciamento (frazione dell'altezza) e spostamento orizzontale (pixel)
 static func sample(r: Dictionary, fx: Dictionary, now_ms: float) -> Dictionary:

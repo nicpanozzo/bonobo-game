@@ -17,6 +17,7 @@ var _reached := 0 # checkpoint della Corsa presi da me
 var _sparks: Array = [] # [{ x, y, age, size, color }]
 var _shake := 0.0
 var _flash := 0.0 # ms di lampo bianco rimasti
+var _punch := {} # lo zoom sui colpi da KO (#384): quando è partito e dove, vuoto se non c'è
 var _dust: Array = [] # [{ x, y, dx, age }] sbuffi di polvere
 var _trails := {} # id -> Array[Vector2] delle ultime posizioni, per la scia di chi vola
 var _clouds: Array = [] # [{ x, y, dir, age, damage }] nuvole soffiate col bong (#302)
@@ -208,6 +209,7 @@ func reset() -> void:
 	_dust = []
 	_trails = {}
 	_flash = 0.0
+	_punch = {}
 	_supreme_view.clear()
 	_speech.clear()
 	_spin_view.clear()
@@ -554,6 +556,8 @@ func on_event(e: Dictionary) -> void:
 				_shake = maxf(_shake, minf(fx.shakeMax, (kb - fx.shakeFromKnockback) * fx.shakePerKnockback))
 			if kb >= fx.flashKnockback:
 				_flash = fx.flashMs
+			if kb >= float(fx.get("koZoomKnockback", INF)):
+				_punch = {"at": Time.get_ticks_msec(), "x": float(e.x), "y": float(e.y)}
 			_react(e)
 		"hazard":
 			# Trappola (#14): scintilla arancione e scossa come un colpo forte
@@ -670,6 +674,27 @@ func _react(e: Dictionary) -> void:
 	var height := (target.y - float(e.y)) / float(game.fighter.height)
 	var stop := HitReaction.stop_ms(game.get("hitstop", {}), float(e.get("damage", 0)))
 	_reactions[e.targetId] = HitReaction.start(game.effects, height, dir, float(e.get("knockback", 0)), Time.get_ticks_msec(), stop)
+
+
+# Il lampo bianco di chi è appena stato colpito (#384), 0 quando non reagisce
+func _hit_flash(id: String, now: float) -> float:
+	return HitReaction.flash(_reactions[id], game.effects, now, Access.calm) if _reactions.has(id) else 0.0
+
+
+# Lo zoom breve della telecamera sui colpi da KO (#384): 1 quando non c'è, poco più di 1 al culmine.
+# point è dove avvicinarsi. main.gd lo applica sopra l'inquadratura, senza cambiarla
+func punch_zoom(now: float) -> float:
+	if _punch.is_empty() or not effects or Access.calm:
+		return 1.0
+	var t := (now - float(_punch.at)) / float(game.effects.koZoomMs)
+	if t < 0.0 or t >= 1.0:
+		_punch = {}
+		return 1.0
+	return 1.0 + float(game.effects.koZoom) * sin(PI * t)
+
+
+func punch_point() -> Vector2:
+	return Vector2(float(_punch.x), float(_punch.y)) if not _punch.is_empty() else Vector2.ZERO
 
 
 # La deformazione di chi sta reagendo a un colpo, con il perno sui piedi; identità quando è finita
@@ -1816,7 +1841,7 @@ func _draw_sprite(p: Dictionary, character: Dictionary, now: float, react := Tra
 	var scale: float = sheet.get("scale", 1.0) # 0.5 per i disegni fatti a 2x
 	draw_set_transform_matrix(react * Transform2D(0.0, Vector2(p.facing * scale, scale), 0.0, Vector2(p.x, p.y)))
 	var foot_y: float = sheet.get("footY", fh) # dove stanno i piedi nel fotogramma: sotto c'è chi è appeso al bordo
-	draw_texture_rect_region(texture, Rect2(-fw / 2, -foot_y, fw, fh), src, FighterPose.sprite_modulate(int(_variants.get(p.id, 0)), FighterPose.away_alpha(p), FighterPose.charge_flash(p, now, Access.calm)))
+	draw_texture_rect_region(texture, Rect2(-fw / 2, -foot_y, fw, fh), src, FighterPose.sprite_modulate(int(_variants.get(p.id, 0)), FighterPose.away_alpha(p), maxf(FighterPose.charge_flash(p, now, Access.calm), _hit_flash(p.id, now))))
 	draw_set_transform(Vector2.ZERO)
 
 

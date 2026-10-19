@@ -246,7 +246,8 @@ describe("suprema che gira, DEMACIAAA di Bradipo Giallo (#358)", () => {
     press(bradipo, {});
     assert.equal(bradipo.attack, "supreme");
     // b resta vicino: lo si rimette accanto a ogni passo, come se tornasse dentro
-    for (let i = 0; i < ticks(spin.windupMs + spin.durationMs); i++) {
+    // fino alla fine della suprema: il fermo di ogni colpo (HITSTOP) la allunga
+    for (let i = 0; i < ticks(spin.windupMs + spin.durationMs) * 3 && bradipo.attack === "supreme"; i++) {
       b.x = bradipo.x + FIGHTER.width;
       b.y = bradipo.y;
       b.vx = b.vy = 0;

@@ -2,7 +2,7 @@
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { ATTACKS, FIGHTER, SHIELD, TICK_RATE } from "../constants";
+import { ATTACKS, FIGHTER, HITSTOP, SHIELD, TICK_RATE } from "../constants";
 import { getStage } from "../stages";
 import type { GameEvent, InputState } from "../types";
 import { createFighter, emptyInput, stepWorld, type Fighter, type PhysicsContext } from "./index";
@@ -39,7 +39,8 @@ function lightAttack(fighters: Fighter[], ctx: PhysicsContext, a: Fighter) {
   press(a, { light: true });
   run(fighters, ctx, 1);
   press(a, {});
-  run(fighters, ctx, Math.ceil((ATTACKS.light.cooldownMs + 50) / DT));
+  // anche il colpo parato ferma chi attacca per il fermo al colpo (HITSTOP), in cui l'attesa non scorre
+  run(fighters, ctx, Math.ceil((ATTACKS.light.cooldownMs + 50 + HITSTOP.baseMs + HITSTOP.perDamageMs * ATTACKS.light.damage) / DT));
 }
 
 describe("scudo", () => {
