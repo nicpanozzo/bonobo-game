@@ -120,6 +120,9 @@ export interface SpriteFolderSpec {
   // Serve se qualche stato scende sotto i piedi, come chi è appeso al bordo con il corpo sotto lo spigolo
   footY?: number;
   filter?: SpriteFilter;
+  // Prova del rig a pezzi in tempo reale (#403): cartella con rig.json, animazioni.json e pezzi/ (tools/rig/).
+  // Godot monta i pezzi e interpola le pose; senza, o se il rig non si carica, si usano i PNG degli stati
+  rig?: string;
   animations: Record<AnimationName, SpriteStateSpec> & Partial<Record<OptionalAnimationName, SpriteStateSpec>>;
 }
 
@@ -912,6 +915,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     sprite: {
       ...communitySprite("nonnagina"),
       frameWidth: 400, // più largo: il mattarello arriva lontano
+      rig: "assets/characters/nonnagina/rig", // la prova del rig in tempo reale (#403)
       animations: fromRest({
         ...communitySprite("nonnagina").animations,
         walk: { fps: 24, loop: true }, // passi corti e curvi

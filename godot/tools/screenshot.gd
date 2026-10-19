@@ -86,12 +86,12 @@ func _partita() -> void:
 	root.add_child(layer)
 	layer.add_child(_hud)
 	_hud.on_welcome({"id": "p0", "room": "ci", "stageId": _game.defaultStageId, "rules": {"mode": "ffa", "stocks": 3}}, world.stage)
-	world.player_ids = ["p0", "p1", "p2", "p3"]
+	world.player_ids = ["p0", "p1", "p2", "p3", "p4"]
 	_world = world
 
 
 func _snapshot(frame: int) -> Dictionary:
-	var spots := [[420, "default", 0xe74c3c, 0.0], [560, "orsoblu", 0x3498db, 0.7], [760, "bonobot", 0x2ecc71, 0.0], [880, "bonobot", 0xf1c40f, 0.0]]
+	var spots := [[420, "default", 0xe74c3c, 0.0], [560, "orsoblu", 0x3498db, 0.7], [760, "bonobot", 0x2ecc71, 0.0], [880, "bonobot", 0xf1c40f, 0.0], [300, "nonnagina", 0x9b59b6, 0.0]] # Nonna Gina a pezzi (#403)
 	var players := []
 	for i in spots.size():
 		players.append({
