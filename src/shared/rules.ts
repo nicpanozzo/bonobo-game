@@ -1,6 +1,6 @@
 // Regole della partita: valori di default e controllo di quelle che arrivano dai client.
 
-import { STOCKS } from "./constants";
+import { MAX_TEAMS, STOCKS } from "./constants";
 import type { MatchRules } from "./types";
 
 export const DEFAULT_RULES: MatchRules = {
@@ -8,6 +8,7 @@ export const DEFAULT_RULES: MatchRules = {
   stocks: STOCKS,
   timeLimitSec: 0,
   friendlyFire: false,
+  teamCount: 2,
 };
 
 export const RULE_LIMITS = {
@@ -27,10 +28,12 @@ export function sanitizeRules(raw: Partial<MatchRules> | undefined): MatchRules 
     // In allenamento non c'è tempo: si resta in palestra finché si vuole
     timeLimitSec: mode === "training" ? 0 : int(r.timeLimitSec, 0, RULE_LIMITS.maxTimeLimitSec, DEFAULT_RULES.timeLimitSec),
     friendlyFire: typeof r.friendlyFire === "boolean" ? r.friendlyFire : DEFAULT_RULES.friendlyFire,
+    // In Bandiera le squadre sono due: una bandiera a testa e i punti di una contro l'altra
+    teamCount: mode === "teams" ? int(r.teamCount, 2, MAX_TEAMS, DEFAULT_RULES.teamCount) : DEFAULT_RULES.teamCount,
   };
 }
 
-// Modalità in cui si gioca divisi in due squadre
+// Modalità in cui si gioca divisi in squadre
 export const isTeamMode = (rules: MatchRules) => rules.mode === "teams" || rules.mode === "flag";
 
 // Chi può colpire chi: tra compagni di squadra solo con il fuoco amico
@@ -54,6 +57,11 @@ export interface Standing {
   eliminated: boolean;
 }
 
+// La squadra che un giocatore chiede (#409), se esiste in queste regole; altrimenti 0 = scegli tu
+export function requestedTeam(rules: MatchRules, team: unknown): number {
+  return isTeamMode(rules) && Number.isInteger(team) && (team as number) >= 1 && (team as number) <= rules.teamCount ? (team as number) : 0;
+}
+
 // Chi vince allo scadere del tempo: più vite, poi meno percentuale.
 // A squadre contano le vite sommate dei compagni.
 export function leaderOnTime(rules: MatchRules, players: Standing[]): Standing | undefined {
@@ -61,10 +69,11 @@ export function leaderOnTime(rules: MatchRules, players: Standing[]): Standing |
   if (rules.mode === "teams") {
     const score = (team: number) => {
       const members = players.filter((p) => p.team === team);
-      return { stocks: members.reduce((s, p) => s + Math.max(0, p.stocks), 0), percent: members.reduce((s, p) => s + p.percent, 0) };
+      return { team, stocks: members.reduce((s, p) => s + Math.max(0, p.stocks), 0), percent: members.reduce((s, p) => s + p.percent, 0) };
     };
-    const [a, b] = [score(1), score(2)];
-    const winnerTeam = a.stocks !== b.stocks ? (a.stocks > b.stocks ? 1 : 2) : a.percent <= b.percent ? 1 : 2;
+    // A pari vite e percentuale vince la squadra col numero più basso, come prima la Rossa
+    const teams = [...new Set(players.map((p) => p.team))].sort((a, b) => a - b).map(score);
+    const winnerTeam = teams.sort((a, b) => b.stocks - a.stocks || a.percent - b.percent)[0].team;
     return players.find((p) => p.team === winnerTeam && !p.eliminated) ?? players.find((p) => p.team === winnerTeam);
   }
   return [...players].sort((x, y) => y.stocks - x.stocks || x.percent - y.percent)[0];

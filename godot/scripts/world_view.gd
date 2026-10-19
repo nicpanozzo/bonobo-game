@@ -48,6 +48,10 @@ var _props_front: Array = [] # e davanti
 var _hazard_sprites := {} # indice della trappola -> {tex, frames, fps, scale, footX, footY}: animazioni disegnate (#270)
 var _mover_sprites := {} # indice della piattaforma mobile -> come sopra (#273)
 var _t_draw := 0.0 # il tempo dell'arena del frame che si sta disegnando (#378, per i ganci dentro le decorazioni)
+const TEAM_RING_WIDTH := 0.8 # raggio dell'anello della squadra sotto i piedi, rispetto alla larghezza del lottatore (#409)
+const TEAM_RING_SQUASH := 0.28 # l'anello è un ovale schiacciato: sta per terra
+const TEAM_NAME_LIGHTEN := 0.35 # il nome sopra la testa ha il colore della squadra, un po' più chiaro
+const TEAM_NAME_OUTLINE := 4 # bordo scuro del nome a squadre, pixel
 const SHADOW_STEPS := 6 # ovali sovrapposti di un'ombra a terra (#378): più sono, più è sfumata
 const SHADOW_STEP_ALPHA := 0.17 # quanto scurisce ognuno: al centro si arriva a circa 2/3 della forza dell'ombra
 var _light_layers := {} # parallasse -> [Texture2D, Rect2]: i vetri accesi di quello strato (#288), ritagliati; Rect2 in frazioni dello strato
@@ -1868,6 +1872,8 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 	var charge := float(p.get("charge", 0.0))
 	if charge > 0.0:
 		_draw_charge(Vector2(p.x, p.y - fh / 2), charge, now)
+	if int(p.team) > 0:
+		_draw_team_ring(p, fw)
 	var react := _reaction_transform(p, now) * _motion_transform(p, now)
 	if _textures.has(character.id):
 		_draw_sprite(p, character, now, react)
@@ -1958,7 +1964,13 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 
 	var label := "%s  %d%%" % [p.name, roundi(p.percent)]
 	var size := _font.get_string_size(label, HORIZONTAL_ALIGNMENT_CENTER, -1, Access.px(16))
-	draw_string(_font, Vector2(p.x - size.x / 2, p.y - head - 10), label, HORIZONTAL_ALIGNMENT_LEFT, -1, Access.px(16), Color.WHITE)
+	var label_pos := Vector2(p.x - size.x / 2, p.y - head - 10)
+	if int(p.team) > 0:
+		# A squadre il nome ha il colore della squadra, bordato di scuro perché si legga su ogni sfondo (#409)
+		draw_string_outline(_font, label_pos, label, HORIZONTAL_ALIGNMENT_LEFT, -1, Access.px(16), TEAM_NAME_OUTLINE, Color(0, 0, 0, 0.85))
+		draw_string(_font, label_pos, label, HORIZONTAL_ALIGNMENT_LEFT, -1, Access.px(16), Access.team_color(game, int(p.team)).lightened(TEAM_NAME_LIGHTEN))
+	else:
+		draw_string(_font, label_pos, label, HORIZONTAL_ALIGNMENT_LEFT, -1, Access.px(16), Color.WHITE)
 	if away:
 		var note := "disconnesso"
 		var note_size := _font.get_string_size(note, HORIZONTAL_ALIGNMENT_CENTER, -1, Access.px(13))
@@ -1974,6 +1986,18 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 		draw_rect(Rect2(p.x - 1, top - 30, 3, 30), Color.WHITE)
 		var team_color := Access.team_color(game, int(p.team))
 		draw_colored_polygon(PackedVector2Array([Vector2(p.x + 2, top - 30), Vector2(p.x + 26, top - 22), Vector2(p.x + 2, top - 14)]), team_color)
+
+
+# Squadre (#409): un anello del colore della squadra sotto i piedi, come nei picchiaduro a squadre:
+# si capisce chi è con chi anche quando i lottatori hanno colori simili o si mescolano
+func _draw_team_ring(p: Dictionary, fw: float) -> void:
+	var c := Access.team_color(game, int(p.team))
+	var rx := fw * TEAM_RING_WIDTH
+	draw_set_transform(Vector2(p.x, p.y), 0.0, Vector2(1.0, TEAM_RING_SQUASH))
+	draw_circle(Vector2.ZERO, rx, Color(c, 0.28))
+	draw_arc(Vector2.ZERO, rx, 0.0, TAU, 32, Color(0, 0, 0, 0.6), 7.0)
+	draw_arc(Vector2.ZERO, rx, 0.0, TAU, 32, c, 4.0)
+	draw_set_transform(Vector2.ZERO)
 
 
 # La zona del colpo in corso: la stessa hitbox di attackBox() in src/shared/physics/attacks.ts,

@@ -50,7 +50,7 @@ export interface PlayerState {
   characterId: string; // vedi src/shared/characters.ts
   skinId?: string; // skin scelta (#339): cambia solo il disegno; manca = aspetto base
   color: number;
-  team: number; // 0 = nessuna squadra (tutti contro tutti), 1 e 2 = squadre (#17)
+  team: number; // 0 = nessuna squadra (tutti contro tutti), da 1 a MAX_TEAMS = squadre (#17, #409)
   x: number; // centro orizzontale
   y: number; // piedi
   vx: number;
@@ -66,6 +66,7 @@ export interface PlayerState {
   invulnerable: boolean;
   eliminated: boolean; // vite finite
   carrier: boolean; // porta la bandiera della sua squadra (modalità "flag", #56)
+  nextTeam?: number; // la squadra in cui passerà alla prossima partita (#409); assente se resta dov'è
   ledge: "hang" | "climb" | "roll" | null; // appeso al bordo del palco o in risalita (#110), null altrimenti
   away: boolean; // disconnesso, posto tenuto per la riconnessione: fermo e intoccabile (#107)
   shielding: boolean; // scudo alzato (#109)
@@ -159,6 +160,7 @@ export interface MatchRules {
   stocks: number; // vite a testa; in Bandiera i punti per vincere; in Corsa non conta (vite infinite)
   timeLimitSec: number; // 0 = senza limite di tempo
   friendlyFire: boolean; // nelle squadre, se ci si può colpire tra compagni
+  teamCount: number; // quante squadre in modalità Squadre, da 2 a MAX_TEAMS (#409); in Bandiera sempre 2
 }
 
 // Cose successe tra uno snapshot e l'altro. La fisica le produce, e chi disegna,
@@ -245,9 +247,12 @@ export interface ClientToServer {
   // bot: chi crea la stanza può aggiungere un avversario del server, es. "manichino" (#20)
   // token: quello del welcome, dopo una caduta di rete; se il posto è ancora tenuto si rientra nello stesso lottatore (#107)
   // version e protocol: versione del gioco (package.json) e PROTOCOL_VERSION del client; mancano nei client di prima (E2)
-  join: (data: { room: string; name: string; characterId?: string; skinId?: string; stageId?: string; rules?: Partial<MatchRules>; bot?: string; token?: string; version?: string; protocol?: number }) => void;
+  // team: la squadra che si vorrebbe (#409), da 1 a teamCount; manca o 0 = quella con meno giocatori
+  join: (data: { room: string; name: string; characterId?: string; skinId?: string; team?: number; stageId?: string; rules?: Partial<MatchRules>; bot?: string; token?: string; version?: string; protocol?: number }) => void;
   input: (input: InputState) => void;
   rematch: () => void; // a fine partita, ricomincia subito (#17)
+  // Cambio di squadra (#409), solo a squadre: subito se la partita non è in corso, altrimenti dalla prossima
+  team: (data: { team: number }) => void;
   // Allenamento (#113): percentuale degli avversari, velocità dell'orologio (TRAINING.speeds), si ricomincia da capo.
   // Il server li accetta solo in una stanza "training" con un solo umano
   training: (data: { percent?: number; speed?: number; reset?: boolean }) => void;

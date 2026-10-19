@@ -24,7 +24,7 @@ export function formatResult(result: MatchEndEvent, players: readonly Player[], 
   const time = `${minutes}:${String(seconds).padStart(2, "0")}`;
   let head: string;
   if (rules.mode === "race") head = `🏁 **${winner?.name ?? "Qualcuno"}** arriva primo al traguardo`;
-  else if (result.winnerTeam === 1 || result.winnerTeam === 2) head = `🦍 Vince la squadra **${TEAM_NAMES[result.winnerTeam]}**`;
+  else if (result.winnerTeam > 0 && TEAM_NAMES[result.winnerTeam]) head = `🦍 Vince la squadra **${TEAM_NAMES[result.winnerTeam]}**`;
   else {
     const losers = players.filter((p) => p !== winner).map((p) => p.name);
     head = `🦍 **${winner?.name ?? "Qualcuno"}** vince${losers.length ? ` su ${losers.join(", ")}` : ""}`;
@@ -88,7 +88,7 @@ export function discordHooks(webhookUrl: string | undefined, isBot: (id: string)
         t: Date.now(),
         players: humans.map((f) => {
           const s = stats.get(f.id);
-          const won = result.winnerTeam === 1 || result.winnerTeam === 2 ? f.team === result.winnerTeam : f.id === result.winnerId;
+          const won = result.winnerTeam > 0 ? f.team === result.winnerTeam : f.id === result.winnerId;
           return { name: f.name, won, kos: s.kos, falls: s.falls, damageDealt: s.damageDealt };
         }),
       });

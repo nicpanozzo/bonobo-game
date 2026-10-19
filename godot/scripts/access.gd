@@ -23,7 +23,7 @@ static func apply(game: Dictionary, access: Dictionary) -> void:
 static func palette_map(game: Dictionary) -> Dictionary:
 	var map := {}
 	var pairs := [[game.colors, game.colorsColorblind]]
-	for t in ["1", "2"]:
+	for t in game.teamColors:
 		pairs.append([game.teamColors[t], game.teamColorsColorblind[t]])
 	for pair in pairs:
 		for i in pair[0].size():

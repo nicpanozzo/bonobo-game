@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { FIGHTER, MAX_PLAYERS_PER_ROOM, RECONNECT_RESUME_INVULNERABLE_MS, RESPAWN_MS, TICK_RATE, TRAINING } from "./constants";
+import { FIGHTER, MAX_PLAYERS_PER_ROOM, RECONNECT_RESUME_INVULNERABLE_MS, RESPAWN_MS, TEAM_COLORS, TICK_RATE, TRAINING } from "./constants";
 import { emptyInput, type Fighter } from "./physics";
 import { Match } from "./match";
 import type { GameEvent } from "./types";
@@ -59,6 +59,32 @@ describe("partita", () => {
     const events = run(m, TICK_RATE + 2);
     const end = events.find((e) => e.type === "matchEnd");
     assert.ok(end && end.type === "matchEnd" && end.winnerId === "b");
+  });
+
+  it("a tre squadre ci si divide in tre e si entra nella squadra chiesta (#409)", () => {
+    const m = new Match({ rules: { mode: "teams", teamCount: 3 } });
+    for (const id of ["a", "b", "c"]) m.addPlayer(id, id.toUpperCase());
+    m.addPlayer("d", "D", undefined, undefined, 3);
+    m.addPlayer("e", "E", undefined, undefined, 7); // non esiste: si va dove c'è meno gente
+    assert.deepEqual(m.players.map((p) => p.team), [1, 2, 3, 3, 1]);
+    assert.equal(m.players.find((p) => p.id === "d")?.color, TEAM_COLORS[3][1], "seconda tonalità della Verde");
+  });
+
+  it("si cambia squadra subito a partita ferma, dalla prossima a partita in corso (#409)", () => {
+    const m = new Match({ rules: { mode: "teams" } });
+    m.addPlayer("a", "A");
+    m.setTeam("a", 2); // da solo il tempo non corre: subito
+    assert.equal(m.players[0].team, 2);
+    assert.equal(m.players[0].color, TEAM_COLORS[2][0]);
+    m.addPlayer("b", "B");
+    m.addPlayer("c", "C");
+    m.step(16); // ora la partita è in corso
+    m.setTeam("c", 2);
+    assert.equal(m.players.find((p) => p.id === "c")?.team, 1, "resta dov'è fino alla prossima");
+    assert.equal(m.snapshot([], 0).players.find((p) => p.id === "c")?.nextTeam, 2);
+    m.reset();
+    assert.equal(m.players.find((p) => p.id === "c")?.team, 2);
+    assert.equal(m.snapshot([], 0).players.find((p) => p.id === "c")?.nextTeam, undefined);
   });
 
   it("a squadre i giocatori si dividono e i compagni non si colpiscono", () => {

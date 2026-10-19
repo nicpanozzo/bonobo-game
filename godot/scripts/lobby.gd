@@ -13,11 +13,12 @@ signal back_requested # Indietro, Esc o B dal primo passo: torna al titolo (E14)
 
 const FighterPose := preload("res://scripts/fighter_pose.gd")
 const FighterPreview := preload("res://scripts/fighter_preview.gd")
+const TeamPicker := preload("res://scripts/team_picker.gd")
 const MAX_SEED := 999999 # come stageGenerator.ts: "casuale-<seme>" e "corsa-<seme>"
 # Modalità: id, nome, spiegazione sulla scheda
 const MODES := [
 	["ffa", "Tutti contro tutti", "Vince chi resta con le vite"],
-	["teams", "Squadre", "Rossi contro blu"],
+	["teams", "Squadre", "Da 2 a 4 squadre"],
 	["flag", "Bandiera", "Butta fuori il portabandiera"],
 	["race", "Corsa", "Primo al traguardo"],
 	["training", "Allenamento", "Col manichino, senza vite"],
@@ -66,6 +67,11 @@ var _mode_i := 0 # modalità scelta, indice in MODES
 var _mode_cards := HBoxContainer.new()
 var _stocks := Stepper.new()
 var _time := Stepper.new()
+var _team_count := Stepper.new() # quante squadre in modalità Squadre (#409)
+var _team_count_box: Control
+var _team_picker: TeamPicker # la tua squadra (#409), nella pagina del lottatore
+var _team_box: Control # titoletto, fila dei colori e nota: si nascondono insieme
+var _team_note: Label
 var _ff := CheckButton.new()
 var _host: CheckButton # Crea: ospita dal proprio computer (#308), solo nell'app per computer
 var _host_status: Label # a che punto è il server mentre si accende
@@ -339,6 +345,13 @@ func _match_page(params: Dictionary) -> Control:
 	rules.add_child(_stocks_box)
 	_time_box = _labeled(UI.heading("Tempo"), _time)
 	rules.add_child(_time_box)
+	# Squadre (#409): da 2 a maxTeams; in Bandiera sono sempre due e il selettore non c'è
+	for n in range(2, int(game.get("maxTeams", 2)) + 1):
+		_team_count.add_item("%d squadre" % n)
+	_team_count.select(clampi(int(saved.get("teamCount", 2)) - 2, 0, _team_count.item_count() - 1))
+	_team_count_box = _labeled(UI.heading("Squadre"), _team_count)
+	rules.add_child(_team_count_box)
+	_team_count.item_selected.connect(func(_i): _sync_rules())
 	_bot_label = UI.heading("Bot")
 	rules.add_child(_labeled(_bot_label, _bot))
 	_ff.text = "Fuoco amico"
@@ -403,6 +416,8 @@ func _sync_rules() -> void:
 	var mode := _mode_id()
 	_select_cards(_mode_cards, mode)
 	_ff.visible = mode == "teams" or mode == "flag"
+	_team_count_box.visible = mode == "teams"
+	_sync_team_picker()
 	var race := mode == "race"
 	var training := mode == "training"
 	_stocks_box.visible = not race and not training
@@ -577,8 +592,43 @@ func _fighter_page(params: Dictionary) -> Control:
 	name_row.add_child(UI.button("Nome a caso", func():
 		_name.text = "%s%d" % [RANDOM_NAMES[randi() % RANDOM_NAMES.size()], randi() % 100]))
 	right.add_child(name_row)
+	# La tua squadra (#409): si vede solo se la partita è a squadre, o se entri in una stanza degli amici
+	# In cima alla colonna, sopra la griglia: è la prima cosa che si vede, senza scorrere
+	var team_box := VBoxContainer.new()
+	team_box.add_theme_constant_override("separation", UI.GAP_S)
+	team_box.add_child(UI.heading("La tua squadra"))
+	_team_picker = TeamPicker.new()
+	_team_picker.setup(game, int(game.get("maxTeams", 2)), clampi(int(params.get("team", 0)), 0, int(game.get("maxTeams", 2)))) # _sync_team_picker la riduce alle squadre delle regole
+	_team_picker.chosen.connect(func(_t): _update_summary())
+	team_box.add_child(_team_picker)
+	_team_note = UI.note("")
+	_team_note.autowrap_mode = TextServer.AUTOWRAP_WORD
+	team_box.add_child(_team_note)
+	var team_gap := Control.new()
+	team_gap.custom_minimum_size = Vector2(0, UI.GAP_M)
+	team_box.add_child(team_gap)
+	_team_box = team_box
+	right.add_child(team_box)
+	right.move_child(team_box, 0)
 	_show_big_fighter()
 	return page
+
+
+# Quante squadre mostra la fila dei colori, e se si vede: chi crea vede le squadre delle sue regole,
+# chi entra le vede tutte (la stanza la conosce il server: una squadra che lì non c'è vale "Automatica")
+func _sync_team_picker() -> void:
+	if _team_picker == null:
+		return
+	var mode := _mode_id()
+	var joining := _kind == "join"
+	_team_box.visible = joining or mode == "teams" or mode == "flag"
+	var count := 2
+	if joining:
+		count = int(game.get("maxTeams", 2))
+	elif mode == "teams":
+		count = _team_count.selected + 2
+	_team_picker.set_count(count)
+	_team_note.text = "Vale se la stanza è a squadre. Automatica: entri dove c'è meno gente." if joining else "Automatica: entri nella squadra con meno giocatori. In partita la cambi dal menu (Esc o Start)."
 
 
 func _draw_chars() -> void:
@@ -917,6 +967,8 @@ func _update_summary() -> void:
 	if _kind != "join":
 		var mode := _mode_id()
 		var rules := str(MODES[_mode_i][1])
+		if _team_count_box.visible:
+			rules += ", " + _team_count.get_item_text(_team_count.selected)
 		if _stocks_box.visible:
 			rules += ", " + _stocks.get_item_text(_stocks.selected)
 		parts.append(rules)
@@ -925,6 +977,8 @@ func _update_summary() -> void:
 	if _character != "":
 		var skins: Dictionary = game.characters[_character].get("skins", {})
 		parts.append(str(game.characters[_character].name) + (" (%s)" % skins[_skin].name if skins.has(_skin) else ""))
+	if _team_box != null and _team_box.visible and _team_picker.selected > 0:
+		parts.append("Squadra " + str(game.teamNames[str(_team_picker.selected)]))
 	_summary.text = " · ".join(parts)
 
 
@@ -1040,7 +1094,8 @@ func _choice(bot: String) -> Dictionary:
 		"skin": _skin,
 		# Chi entra in una stanza che non c'è ancora la crea con le regole di questa pagina
 		"stage": _new_id("corsa-") if mode == "race" else _stage,
-		"rules": {"mode": mode, "stocks": _stocks.selected + 1, "timeLimitSec": TIMES[_time.selected][0], "friendlyFire": _ff.button_pressed},
+		"rules": {"mode": mode, "stocks": _stocks.selected + 1, "timeLimitSec": TIMES[_time.selected][0], "friendlyFire": _ff.button_pressed, "teamCount": _team_count.selected + 2},
+		"team": _team_picker.selected if _team_box.visible else 0, # la squadra chiesta (#409), 0 = automatica
 		"server": _server.text.strip_edges(),
 		"bot": "manichino" if mode == "training" and bot == "" else bot, # conta solo se la stanza è nuova
 		"kind": _kind, # per tornare alla stessa scheda dopo la partita
