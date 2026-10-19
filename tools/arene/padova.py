@@ -239,31 +239,33 @@ def fianco(name):
         gy = rng.uniform(523, front_edge_y(gx) - 2)
         if gy > 523:
             t.line([(gx, gy), (gx + rng.uniform(-0.6, 0.6), gy - rng.uniform(1.0, 2.4))], fill=rng.choice([(64, 84, 48, 255), (112, 138, 82, 255)]), width=0.5)
-    # il vialetto lastricato dal ponte sud alla striscia dove si gioca, verso la fontana (#378, chiesto da Riccardo):
-    # si allarga venendo verso di noi, lastre a file con i giunti che scappano verso il punto di fuga
+    # il vialetto in terriccio bianco dal ponte sud alla striscia dove si gioca, verso la fontana (#378, come i viali
+    # del Prato): si allarga venendo verso di noi, ghiaino chiaro battuto, più consumato e liscio nel mezzo dove si
+    # cammina, sassolini sparsi, e i bordi irregolari dove l'erba lo invade
     ye = front_edge_y(cx) + 1
     pw_far, pw_near = 40, 48
-    path = [(cx - pw_far, 521), (cx + pw_far, 521), (cx + pw_near, ye), (cx - pw_near, ye)]
-    t.poly(path, fill=(204, 198, 184, 255))
     prng = rand(3793)
-    yy, row = 521.0, 0
-    while yy < ye - 1:
-        hgt = 5 + row * 1.2
-        f0, f1 = (yy - 521) / (ye - 521), (min(ye, yy + hgt) - 521) / (ye - 521)
-        hw0, hw1 = pw_far + (pw_near - pw_far) * f0, pw_far + (pw_near - pw_far) * f1
-        t.line([(cx - hw0, yy), (cx + hw0, yy)], fill=(170, 164, 150, 255), width=0.5)
-        for j in range(-3, 4):
-            off = (j + (0.5 if row % 2 else 0)) / 3.5
-            if abs(off) < 1:
-                t.line([(cx + off * hw0, yy), (cx + off * hw1, min(ye, yy + hgt))], fill=(176, 170, 156, 255), width=0.45)
-        if prng.random() < 0.5:
-            px = cx + prng.uniform(-0.7, 0.7) * hw0
-            t.glaze([(px - 6, yy + 1), (px + 6, yy + 1), (px + 6, yy + hgt - 1), (px - 6, yy + hgt - 1)], (255, 250, 236, 30))
-        yy += hgt
-        row += 1
-    for sg in (-1, 1):  # i cordoli bianchi ai lati del vialetto
-        t.line([(cx + sg * pw_far, 521), (cx + sg * pw_near, ye)], fill=(226, 220, 206, 255), width=2.2)
-        t.line([(cx + sg * (pw_far + 1.4), 521), (cx + sg * (pw_near + 1.4), ye)], fill=(140, 134, 122, 255), width=0.6)
+    edge_l = [(cx - (pw_far + (pw_near - pw_far) * (y - 521) / (ye - 521)) + prng.uniform(-1.2, 1.2), y) for y in [521 + (ye - 521) * i / 12 for i in range(13)]]
+    edge_r = [(cx + (pw_far + (pw_near - pw_far) * (y - 521) / (ye - 521)) + prng.uniform(-1.2, 1.2), y) for y in [521 + (ye - 521) * i / 12 for i in range(13)]]
+    t.poly(edge_l + list(reversed(edge_r)), fill=(222, 214, 194, 255))
+    t.poly([(cx - 22, 521), (cx + 22, 521), (cx + 26, ye), (cx - 26, ye)], fill=(230, 224, 206, 255))  # il mezzo battuto
+    for kk in range(900):  # il ghiaino: granelli chiari e scuri, più grandi vicino
+        y = prng.uniform(521, ye)
+        f = (y - 521) / (ye - 521)
+        hw = pw_far + (pw_near - pw_far) * f - 1.5
+        x = prng.uniform(cx - hw, cx + hw)
+        r = 0.25 + 0.35 * f * prng.random()
+        t.circle(x, y, r, fill=prng.choice([(196, 186, 164, 255), (240, 236, 222, 255), (178, 168, 148, 255)]))
+    for kk in range(10):  # qualche sasso più grosso
+        y = prng.uniform(524, ye - 2)
+        x = prng.uniform(cx - pw_far, cx + pw_far)
+        t.ellipse(x - 1.1, y - 0.6, x + 1.1, y + 0.6, fill=(184, 176, 158, 255))
+    for side_pts in (edge_l, edge_r):  # l'erba che invade i bordi
+        for (x, y) in side_pts:
+            for j in range(4):
+                gx = x + prng.uniform(-2, 2)
+                gy = y + prng.uniform(-2, 2)
+                t.line([(gx, gy), (gx + prng.uniform(-0.6, 0.6), gy - prng.uniform(1.0, 2.2))], fill=(96, 118, 70, 255), width=0.5)
     t.glaze([(cx - rx, 521), (cx + rx, 521), (cx + rx, 527), (cx - rx, 527)], (30, 28, 24, 60))  # l'ombra della copertina sul prato
     base = t.img
     base.alpha_composite(wall)
@@ -282,18 +284,24 @@ def fianco(name):
     t.save(OUT, name, colors=256)
 
 
-def coping(name, w=96, h=10):
-    """La copertina chiara sopra le rive: il piano su cui si cammina (il più chiaro), lo spigolo e la faccia
-    in ombra, i giunti tra una lastra e l'altra. Bordo calpestabile sempre chiaro (stile, sezione 7)."""
+def coping(name, w=96, h=8):
+    """Il bordo dove si cammina (#378, chiesto da Riccardo: senza il gradino): una fascia di lastre di trachite chiara
+    a filo della piazza e del prato, vista dall'alto come loro, con i giunti e un filo di luce sul davanti; niente faccia
+    in ombra né riga scura sotto, così il vialetto e la piazza continuano oltre senza scalini. Resta la parte più chiara
+    del palco (stile, sezione 7)."""
     t = Tela(w, h, wrap=True)
-    t.rect(0, 0, w, h * 0.55, fill=EDGE)
-    t.rect(0, 0, w, 0.8, fill=(248, 245, 236, 255))
-    t.rect(0, h * 0.55, w, h, fill=(196, 189, 174, 255))
-    t.rect(0, h * 0.85, w, h, fill=(170, 163, 149, 255))
-    t.line([(0, h * 0.55), (w, h * 0.55)], fill=(150, 144, 132, 255), width=0.8)
+    rng = rand(7)
+    t.rect(0, 0, w, h, fill=EDGE)
+    for x0 in (0, w / 2):
+        tone = mix(EDGE, (214, 208, 192, 255), rng.random() * 0.6)
+        t.rect(x0 + 0.5, 0.4, x0 + w / 2 - 0.5, h - 0.4, fill=tone)
+    for k in range(40):  # la grana della pietra
+        x, y = rng.uniform(0, w), rng.uniform(0.5, h - 0.5)
+        t.circle(x, y, 0.35, fill=(196, 190, 176, 255))
     for x in (0, w / 2):
-        t.line([(x, 0.6), (x, h)], fill=INK, width=1.0)
-    t.line([(0, h - 0.6), (w, h - 0.6)], fill=INK, width=1.2)
+        t.line([(x, 0), (x, h)], fill=(176, 170, 156, 255), width=0.6)
+    t.line([(0, 0.3), (w, 0.3)], fill=(198, 192, 178, 255), width=0.5)  # il giunto con la piazza, appena segnato
+    t.line([(0, h - 0.5), (w, h - 0.5)], fill=(246, 244, 236, 255), width=0.6)  # il filo di luce sul davanti
     t.save(OUT, name)
 
 
@@ -1390,6 +1398,52 @@ FACADES = [(178, 146, 104, 255), (182, 136, 118, 255), (192, 178, 150, 255), (16
 SHUTTERS = [(88, 104, 84, 255), (110, 84, 64, 255), (96, 100, 96, 255)]
 
 
+def chimney(t, x, base, kind, rng, ink):
+    """Un camino padovano (#378, chiesto da Riccardo: più realistico), dal tetto in su: la canna di mattoni a corsi
+    con il lato destro in ombra e la conversa di piombo dove esce dalle tegole; in cima la cornice di mattoni che sporge
+    e il cappello: due falde di coppi ("coppi"), una lastra di pietra su quattro mattoni con le bocche nere ("lastra")
+    o un vaso di terracotta ("vaso"). Sopra la bocca la fuliggine scura."""
+    brick, brick_sh = far((150, 96, 76, 255), 0.18), far((112, 70, 58, 255), 0.18)
+    mortar = far((176, 156, 140, 255), 0.18)
+    hgt = rng.uniform(20, 28)
+    w = rng.uniform(4.2, 5.4)
+    top = base - hgt
+    t.poly([(x - w - 2.5, base + 1), (x + w + 2.5, base + 1), (x + w + 1.5, base - 2), (x - w - 1.5, base - 2)], fill=far((120, 124, 126, 255), 0.18))  # la conversa
+    t.rect(x - w, top, x + w, base, fill=brick)
+    t.rect(x + w * 0.25, top, x + w, base, fill=brick_sh)
+    for k in range(int(hgt / 2.2)):
+        yy = base - 2.2 * (k + 1)
+        t.line([(x - w, yy), (x + w, yy)], fill=mortar, width=0.35)
+        off = 0 if k % 2 else w * 0.5
+        for bx in (x - w + off, x + off):
+            if x - w < bx < x + w:
+                t.line([(bx, yy), (bx, yy + 2.2)], fill=mortar, width=0.3)
+    t.rect(x - w, top, x + w, base, ink=True, width=0.7, ink_col=ink)
+    t.rect(x - w - 1.4, top - 2.4, x + w + 1.4, top, fill=brick, ink=True, width=0.6, ink_col=ink)  # la cornice
+    t.rect(x + w * 0.3, top - 2.4, x + w + 1.4, top, fill=brick_sh)
+    if kind == "coppi":  # due falde di coppi su quattro pilastrini, con le bocche nere sotto
+        t.rect(x - w + 0.6, top - 6, x + w - 0.6, top - 2.4, fill=far((40, 34, 32, 255), 0.18))
+        for px in (x - w + 0.6, x + w - 2):
+            t.rect(px, top - 6, px + 1.4, top - 2.4, fill=brick)
+        roof = far((156, 92, 70, 255), 0.18)
+        t.poly([(x - w - 2.4, top - 5.4), (x, top - 10.5), (x + w + 2.4, top - 5.4)], fill=roof, ink=True, width=0.6, ink_col=ink)
+        t.poly([(x, top - 10.5), (x + w + 2.4, top - 5.4), (x + 0.6, top - 5.4)], fill=shade(roof, 0.78))
+        for k in range(1, 4):
+            u = k / 4
+            t.line([(x - (w + 2.4) * u, top - 10.5 + 5.1 * u), (x - (w + 2.4) * u, top - 5.4)], fill=shade(roof, 0.8), width=0.35)
+    elif kind == "lastra":
+        t.rect(x - w + 0.6, top - 5, x + w - 0.6, top - 2.4, fill=far((36, 30, 30, 255), 0.18))
+        for px in (x - w + 0.6, x - 0.7, x + w - 2):
+            t.rect(px, top - 5, px + 1.4, top - 2.4, fill=brick)
+        t.rect(x - w - 2, top - 6.4, x + w + 2, top - 5, fill=far((200, 194, 180, 255), 0.18), ink=True, width=0.5, ink_col=ink)
+    else:  # il vaso di terracotta che si stringe in cima
+        pot = far((176, 108, 80, 255), 0.18)
+        t.poly([(x - 2.6, top - 2.4), (x + 2.6, top - 2.4), (x + 1.6, top - 8), (x - 1.6, top - 8)], fill=pot, ink=True, width=0.5, ink_col=ink)
+        t.poly([(x + 0.6, top - 2.4), (x + 2.6, top - 2.4), (x + 1.6, top - 8), (x + 0.4, top - 8)], fill=shade(pot, 0.8))
+        t.rect(x - 2, top - 9, x + 2, top - 8, fill=pot, ink=True, width=0.4, ink_col=ink)
+    t.glaze([(x - w, top - 1), (x + w, top - 1), (x + w * 0.6, top + 4), (x - w * 0.4, top + 3)], (30, 26, 24, 70))  # la fuliggine
+
+
 def portico_house(t, x, w, base, rng):
     """Un palazzo sopra i portici: archi con le colonne, piani con le finestre e le persiane, qualche balconcino
     in ferro, marcapiani, cornicione con le mensole, tetto di coppi, camini a imbuto e qualche antenna."""
@@ -1492,8 +1546,7 @@ def portico_house(t, x, w, base, rng):
     t.glaze([(x - 5, top - 2), (x + w + 5, top - 2), (x + w + 5, top), (x - 5, top)], (20, 18, 16, 90))  # il sottogronda
     for cxm in (x + w * 0.22, x + w * 0.72):
         if rng.random() < 0.8:
-            t.rect(cxm - 4, top - 44, cxm + 4, top - 20, fill=far((134, 98, 80, 255), 0.18), ink=True, width=0.8, ink_col=ink)
-            t.poly([(cxm - 11, top - 56), (cxm + 11, top - 56), (cxm + 5, top - 42), (cxm - 5, top - 42)], fill=far((134, 98, 80, 255), 0.18), ink=True, width=0.8, ink_col=ink)
+            chimney(t, cxm, top - 18, rng.choice(("coppi", "coppi", "lastra", "vaso")), rng, ink)
     if rng.random() < 0.4:  # un'antenna
         ax = x + w * rng.uniform(0.3, 0.6)
         t.line([(ax, top - 22), (ax, top - 60)], fill=ink, width=0.8)
@@ -2534,15 +2587,31 @@ def front_bridges(name):
     # l'ombra del ponte sull'acqua, a destra (la luce viene da sinistra in alto)
     q.fill(q.soften(q.poly(q.mask(), [(x + 4, y + 6) for x, y in R] + [(x + 22, y + 10) for x, y in reversed(R)]), 4), (30, 44, 40), 0.35)
     deck = q.poly(q.mask(), L + list(reversed(R)))
-    q.fill(deck, (208, 202, 188))
-    q.fill(q.grain(deck, 0.3, 91, 0.9), (182, 176, 162), 0.6)
-    joints = q.mask()
-    for i in range(1, n):
-        if i % 3 == 0:
-            q.stroke(joints, [L[i], R[i]], 0.4 + 0.5 * us[i])
-    for f in (0.25, 0.5, 0.75):
-        q.stroke(joints, [(lx + (rx - lx) * f, ly) for (lx, ly), (rx, ry) in zip(L, R)], 0.5)
-    q.fill(q.intersect(joints, deck), (166, 160, 146), 0.85)
+    # la passerella in ciottoli (#378, come i ponti del Prato): sassi tondi e ovali messi a file trasversali, più piccoli
+    # lontano, ognuno con la luce in alto a sinistra e l'ombra sotto, nella malta scura
+    q.fill(deck, (138, 130, 118))
+    crng = rand(3794)
+    stones, shades, lights = q.mask(), q.mask(), q.mask()
+    for i in range(n * 2):
+        u = i / (n * 2)
+        y = yf + (yn - yf) * u
+        k = scale(u)
+        lx, ly = edge(-1, u)
+        rx_, ry_ = edge(1, u)
+        rr = 2.6 * k  # i ciottoli, grandi quanto una mano a quella distanza
+        x = lx + rr * 1.2 + (crng.random() * rr if i % 2 else 0)
+        while x < rx_ - rr:
+            r = rr * crng.uniform(0.75, 1.15)
+            yy = ly + (ry_ - ly) * (x - lx) / max(1e-6, rx_ - lx)
+            q.ellipse(stones, x - r * 1.15, yy - r * 0.7, x + r * 1.15, yy + r * 0.7)
+            q.ellipse(lights, x - r * 0.9, yy - r * 0.62, x + r * 0.3, yy - r * 0.05)
+            q.ellipse(shades, x - r * 0.8, yy + r * 0.1, x + r * 1.15, yy + r * 0.7)
+            x += r * 2.3
+    stones = q.intersect(stones, deck)
+    q.fill(stones, (190, 182, 166))
+    q.fill(q.intersect(q.soften(shades, 0.4), stones), (150, 142, 128), 0.8)
+    q.fill(q.intersect(q.soften(lights, 0.4), stones), (226, 220, 206), 0.85)
+    q.fill(q.grain(stones, 0.3, 95, 0.5), (164, 156, 140), 0.5)
     q.fill(q.intersect(q.soften(q.poly(q.mask(), [L[0], R[0], R[4], L[4]]), 3), deck), (40, 38, 34), 0.25)  # sotto il bordo della piazza
     # i due parapetti traforati a cerchi intrecciati, visti da dentro: cominciano poco dopo la piazza, così non coprono
     # i piedi di chi combatte; quello a destra è in ombra; gli obelischi alti sul capo di qua
