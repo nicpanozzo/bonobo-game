@@ -221,11 +221,17 @@ def main():
         leans = spec.get("lean", [0] * len(spec["frames"]))
         strip = []
         for i, lean in zip(spec["frames"], leans):
-            rgba = frame(i)
+            rgba, body = frame(i), M[i]
             if spec.get("plain"):
+                # l'energia che rembg ha preso per mano: il verde chiaro della GIF originale, sfocata
+                pb = ndi.gaussian_filter(F[i], (1.5, 1.5, 0))
+                green = ndi.binary_dilation((pb[..., 1] - np.maximum(pb[..., 0], pb[..., 2]) > 12) & (pb.mean(-1) > 110), iterations=3)
+                lab, n = ndi.label((body > 0.5) & ~green)
+                sizes = ndi.sum(np.ones_like(lab), lab, range(1, n + 1))
+                body = body * (lab == np.argmax(sizes) + 1)  # solo Marco, senza ritagli staccati
                 rgba = rgba.copy()
-                rgba[..., 3] = np.minimum(rgba[..., 3], ndi.binary_dilation(M[i] > 0.5, iterations=1) * 255)
-            strip.append(place(rgba, M[i], spec["mode"], lean))
+                rgba[..., 3] = np.minimum(rgba[..., 3], ndi.binary_dilation(body > 0.5, iterations=1) * 255)
+            strip.append(place(rgba, body, spec["mode"], lean))
         save(np.concatenate(strip, 1), f"{OUT}/{state}.png")
         print(state, len(strip))
     for state in ("walk", "dash"):
