@@ -88,6 +88,8 @@ In Smash ogni mossa si capisce al primo sguardo e colpisce dove si vede. Le rego
 | Colpo attivo (`activeMs` 100-160) | 2-4 fotogrammi | 2-4 | impatto e smear di ritorno |
 | Recupero (`cooldownMs` 280-800) | 7-19 fotogrammi | 4-8 | follow-through e ritorno alla guardia (si può andare a 12 fps) |
 
+Cosa fa ogni personaggio in ogni stato si scrive nella [scheda mosse](scheda-mosse.md).
+
 **Checklist per stato:**
 
 - [ ] Il primo fotogramma è diverso da `idle`.
