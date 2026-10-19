@@ -239,6 +239,31 @@ def fianco(name):
         gy = rng.uniform(523, front_edge_y(gx) - 2)
         if gy > 523:
             t.line([(gx, gy), (gx + rng.uniform(-0.6, 0.6), gy - rng.uniform(1.0, 2.4))], fill=rng.choice([(64, 84, 48, 255), (112, 138, 82, 255)]), width=0.5)
+    # il vialetto lastricato dal ponte sud alla striscia dove si gioca, verso la fontana (#378, chiesto da Riccardo):
+    # si allarga venendo verso di noi, lastre a file con i giunti che scappano verso il punto di fuga
+    ye = front_edge_y(cx) + 1
+    pw_far, pw_near = 40, 48
+    path = [(cx - pw_far, 521), (cx + pw_far, 521), (cx + pw_near, ye), (cx - pw_near, ye)]
+    t.poly(path, fill=(204, 198, 184, 255))
+    prng = rand(3793)
+    yy, row = 521.0, 0
+    while yy < ye - 1:
+        hgt = 5 + row * 1.2
+        f0, f1 = (yy - 521) / (ye - 521), (min(ye, yy + hgt) - 521) / (ye - 521)
+        hw0, hw1 = pw_far + (pw_near - pw_far) * f0, pw_far + (pw_near - pw_far) * f1
+        t.line([(cx - hw0, yy), (cx + hw0, yy)], fill=(170, 164, 150, 255), width=0.5)
+        for j in range(-3, 4):
+            off = (j + (0.5 if row % 2 else 0)) / 3.5
+            if abs(off) < 1:
+                t.line([(cx + off * hw0, yy), (cx + off * hw1, min(ye, yy + hgt))], fill=(176, 170, 156, 255), width=0.45)
+        if prng.random() < 0.5:
+            px = cx + prng.uniform(-0.7, 0.7) * hw0
+            t.glaze([(px - 6, yy + 1), (px + 6, yy + 1), (px + 6, yy + hgt - 1), (px - 6, yy + hgt - 1)], (255, 250, 236, 30))
+        yy += hgt
+        row += 1
+    for sg in (-1, 1):  # i cordoli bianchi ai lati del vialetto
+        t.line([(cx + sg * pw_far, 521), (cx + sg * pw_near, ye)], fill=(226, 220, 206, 255), width=2.2)
+        t.line([(cx + sg * (pw_far + 1.4), 521), (cx + sg * (pw_near + 1.4), ye)], fill=(140, 134, 122, 255), width=0.6)
     t.glaze([(cx - rx, 521), (cx + rx, 521), (cx + rx, 527), (cx - rx, 527)], (30, 28, 24, 60))  # l'ombra della copertina sul prato
     base = t.img
     base.alpha_composite(wall)
@@ -247,8 +272,10 @@ def fianco(name):
     t.line([(x, y + 1.5) for x, y in pts], fill=(222, 216, 202, 255), width=3.4)  # il cordolo bianco
     t.line([(x, y + 3.4) for x, y in pts], fill=(150, 144, 132, 255), width=0.8)
     t.line([(x, y - 0.2) for x, y in pts], fill=(90, 84, 76, 255), width=0.6)
-    for i in range(1, 16):  # i paracarri bassi lungo il cordolo, più piccoli verso le punte
+    for i in range(1, 16):  # i paracarri bassi lungo il cordolo, più piccoli verso le punte (non davanti al vialetto)
         x = cx - rx + 2 * rx * i / 16
+        if abs(x - cx) < 60:
+            continue
         y = front_edge_y(x)
         sc = 0.5 + 0.5 * math.sqrt(max(0.0, 1 - ((x - cx) / rx) ** 2))
         bollard(t, x, y + 1, 16 * sc, stone=(214, 208, 194, 255), sh=(170, 164, 150, 255))
@@ -1583,8 +1610,6 @@ def paint_tree(q, x, base, r, seed, haze=0.0, th=None):
         q.stroke(twigs, [(x, base - th), (sx, sy)], max(0.6, r * 0.022))
     q.fill(q.intersect(twigs, crown), c((70, 64, 52)), 0.85)
     q.outline(crown, max(0.5, r * 0.014), ink)
-    # l'ombra della chioma a terra
-    q.fill(q.soften(q.ellipse(q.mask(), x - r * 0.6, base - r * 0.05, x + r * 0.8, base + r * 0.07), r * 0.06), (30, 34, 26), 0.35)
 
 
 def plane_tree(t, x, base, r, rng):
@@ -2953,29 +2978,37 @@ def piano(name):
         q.fill(q.rim(crown, -1.2, -1.4, 1.0), (104, 132, 80), 0.75)
         q.outline(crown, 0.6, (30, 40, 28))
     t.img.alpha_composite(q.img)
-    # l'erba sulla piazza (#378, chiesto da Riccardo): le aiuole sotto i platani, con il cordolo, e ciuffi tra le lastre
-    for tx, rxa in ((410, 92), (1510, 92)):
-        bed = [(tx + rxa * math.cos(u), 508 + 10 * math.sin(u)) for u in [j * math.tau / 48 for j in range(48)]]
-        t.poly(bed, fill=(150, 144, 130, 255))
-        inner = [(tx + (rxa - 4) * math.cos(u), 508 + 8.4 * math.sin(u)) for u in [j * math.tau / 48 for j in range(48)]]
-        t.poly(inner, fill=(84, 104, 64, 255))
-        for k in range(420):
+    # l'erba sulla piazza (#378, chiesto da Riccardo): sotto i platani l'erba cresce nelle fughe e sfuma nel lastricato,
+    # senza cordolo; e ciuffi tra le lastre
+    from pittura import Quadro
+    qa = Quadro(x1 - x0, y1 - y0, origin=(x0, y0))
+    for tx, rxa in ((410, 96), (1510, 96)):
+        bed = qa.soften(qa.ellipse(qa.mask(), tx - rxa, 499, tx + rxa, 517), 5)
+        qa.fill(bed, (84, 106, 62), 0.9)
+        qa.fill(qa.grain(bed, 0.7, tx, 0.7), (110, 134, 78), 0.8)
+    t.img.alpha_composite(qa.img)
+    for tx, rxa in ((410, 96), (1510, 96)):
+        for k in range(520):
             u, rr = rng.uniform(0, math.tau), math.sqrt(rng.random())
-            gx, gy = tx + (rxa - 6) * rr * math.cos(u), 508 + 7.4 * rr * math.sin(u)
+            gx, gy = tx + (rxa - 4) * rr * math.cos(u), 508 + 8 * rr * math.sin(u)
             t.line([(gx, gy), (gx + rng.uniform(-0.8, 0.8), gy - rng.uniform(1.5, 3.5))], fill=rng.choice([(64, 82, 50, 255), (112, 134, 80, 255), (96, 118, 70, 255)]), width=0.6)
-        t.glaze([(tx + 30 + (rxa - 20) * math.cos(u), 509 + 6 * math.sin(u)) for u in [j * math.tau / 32 for j in range(32)]], (30, 36, 24, 50))  # l'ombra della chioma
-        t.poly(bed, ink=True, width=0.8, ink_col=(100, 96, 86, 255))
-    for k in range(260):  # ciuffi d'erba tra le lastre, più fitti verso i bordi
-        a, f = rng.uniform(0, math.pi), rng.uniform(0.3, 1.0) ** 0.5
-        gx, gy = pt(f, a)
-        if gy > 517:
-            continue
-        for j in range(3):
-            t.line([(gx + j * 0.8, gy), (gx + j * 0.8 + rng.uniform(-0.6, 0.6), gy - rng.uniform(1.2, 2.6))], fill=(92, 114, 66, 255), width=0.5)
-    # ombre di contatto: le basi delle statue e i platani poggiano sul lastricato
-    for sx, w in ((310, 36), (540, 40), (690, 36), (1230, 36), (1380, 40), (1610, 36), (410, 22), (1510, 22)):
-        for i, (ww, al) in enumerate(((w * 1.4, 14), (w * 1.1, 20), (w * 0.8, 26))):
-            t.glaze([(sx + math.cos(u) * ww, 515 + math.sin(u) * (3 + i)) for u in [j * math.tau / 24 for j in range(24)]], (40, 36, 32, al))
+    # le ombre (#378, chiesto da Riccardo: niente cerchi): quelle lunghe che seguono il sole le disegna il gioco; qui solo
+    # il contatto morbido sotto le basi delle statue e, sotto le chiome, la penombra a chiazze delle foglie
+    qs = Quadro(x1 - x0, y1 - y0, origin=(x0, y0))
+    srng = rand(3792)
+    for sx, w in ((310, 36), (540, 40), (690, 36), (1230, 36), (1380, 40), (1610, 36)):
+        qs.fill(qs.soften(qs.ellipse(qs.mask(), sx - w * 0.6, 514.5, sx + w * 0.6, 519.5), 1.6), (30, 28, 26), 0.3)
+    for tx in (410, 1510):
+        dapple = qs.mask()
+        for k in range(16):
+            bx, by, r = tx + srng.uniform(-90, 90), srng.uniform(500, 515), srng.uniform(10, 22)
+            qs.ellipse(dapple, bx - r * 1.6, by - r * 0.3, bx + r * 1.6, by + r * 0.3)
+        holes = qs.mask()
+        for k in range(22):  # la luce che passa tra le foglie
+            bx, by, r = tx + srng.uniform(-80, 80), srng.uniform(501, 514), srng.uniform(2, 5)
+            qs.ellipse(holes, bx - r * 1.6, by - r * 0.3, bx + r * 1.6, by + r * 0.3)
+        qs.fill(qs.minus(qs.soften(dapple, 3), qs.soften(holes, 1)), (28, 34, 24), 0.22)
+    t.img.alpha_composite(qs.img)
     t.save(OUT, name, colors=256)
 
 

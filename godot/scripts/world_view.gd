@@ -45,6 +45,8 @@ var _props_front: Array = [] # e davanti
 var _hazard_sprites := {} # indice della trappola -> {tex, frames, fps, scale, footX, footY}: animazioni disegnate (#270)
 var _mover_sprites := {} # indice della piattaforma mobile -> come sopra (#273)
 var _t_draw := 0.0 # il tempo dell'arena del frame che si sta disegnando (#378, per i ganci dentro le decorazioni)
+const SHADOW_STEPS := 6 # ovali sovrapposti di un'ombra a terra (#378): più sono, più è sfumata
+const SHADOW_STEP_ALPHA := 0.17 # quanto scurisce ognuno: al centro si arriva a circa 2/3 della forza dell'ombra
 var _light_layers := {} # parallasse -> [Texture2D, Rect2]: i vetri accesi di quello strato (#288), ritagliati; Rect2 in frazioni dello strato
 var _light_props: Array = [] # [texture, decorazione] con i vetri accesi, sopra le decorazioni (#288)
 var _life: RefCounted = preload("res://scripts/stage_life.gd").new() # sfondo vivo (#260)
@@ -1332,15 +1334,16 @@ func _draw_shadow(s: Array) -> void:
 	if float(s[1]) <= 0.0:
 		return
 	var pts: PackedVector2Array = s[0]
-	_draw_convex(pts, Color(0.05, 0.05, 0.1, float(s[1]) * 0.6))
-	# il nucleo più scuro, vicino a chi la fa: un'ombra morbida ai bordi
 	var c := Vector2.ZERO
 	for q in pts:
 		c += q
 	c /= pts.size()
-	# q -> c + (q - c) * 0.6, fatto dal motore su tutto il poligono invece che punto per punto in GDScript
-	var core := Transform2D(0.0, Vector2(0.6, 0.6), 0.0, c * 0.4) * pts
-	_draw_convex(core, Color(0.05, 0.05, 0.1, float(s[1]) * 0.5))
+	# Un'ombra sfumata (#378, Riccardo: non due cerchi uno dentro l'altro): tanti ovali sempre più piccoli e leggeri
+	# uno sopra l'altro, così dal centro scuro si arriva al bordo trasparente senza scalini.
+	# q -> c + (q - c) * k, fatto dal motore su tutto il poligono invece che punto per punto in GDScript
+	for i in SHADOW_STEPS:
+		var k := 1.0 - 0.75 * i / float(SHADOW_STEPS)
+		_draw_convex(Transform2D(0.0, Vector2(k, k), 0.0, c * (1.0 - k)) * pts, Color(0.05, 0.05, 0.1, float(s[1]) * SHADOW_STEP_ALPHA))
 
 
 # Un poligono convesso a ventaglio dal primo punto, senza la triangolazione generica di draw_colored_polygon:
