@@ -422,6 +422,12 @@ export const EFFECTS = {
   // Effetti dei colpi guidati dalla fisica (#384 B2), solo nel client
   strikeWidth: 14, // pixel: spessore della scia del colpo leggero (il pesante una volta e mezza)
   sparkPerKnockback: 0.02, // pixel di scintilla in più per ogni px/s di knockback del colpo
+  // Squash & stretch del movimento (godot/scripts/motion_feel.gd), solo nel client
+  jumpStretch: 0.14, // frazione: quanto si allunga chi salta
+  landSquash: 0.16, // frazione: quanto si schiaccia chi atterra
+  bounceMs: 220, // durata del rimbalzo, poi lo sprite torna dritto
+  bounceHz: 4, // oscillazioni al secondo del rimbalzo
+  runLean: 0.12, // radianti: quanto si piega in avanti chi corre alla velocità piena
   speedLinesSpeed: 1000, // px/s: chi è lanciato più veloce di così ha le linee di velocità dietro
   speedLines: 5, // linee di velocità
   speedLinesLength: 70, // pixel: lunghezza massima di una linea di velocità

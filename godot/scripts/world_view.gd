@@ -28,6 +28,7 @@ var _beams: Array = [] # [{ x, y, age, color }] raggi dei KO, dal punto di uscit
 var _shards: Array = [] # [{ x, y, vx, vy, age, color }] schegge di uno scudo rotto (#109)
 var _shield_hits := {} # id giocatore -> ms da quando lo scudo ha parato un colpo
 var _reactions := {} # id giocatore -> reazione procedurale all'ultimo colpo preso (#305)
+var _bounces := {} # id giocatore -> squash & stretch dell'ultimo salto o atterraggio (motion_feel.gd)
 var _items: Array = [] # oggetti dell'ultimo snapshot (#17)
 var _projectiles: Array = [] # proiettili delle speciali dell'ultimo snapshot (E10)
 var _projectiles_ms := 0 # quando è arrivato: tra uno snapshot e l'altro volano con la loro velocità
@@ -68,6 +69,7 @@ var _variants := {} # id giocatore -> variante di colore (0 = originale), ricalc
 const StageMotion := preload("res://scripts/stage_motion.gd")
 const FighterPose := preload("res://scripts/fighter_pose.gd")
 const HitReaction := preload("res://scripts/hit_reaction.gd") # il corpo si piega dove è colpito (#305)
+const MotionFeel := preload("res://scripts/motion_feel.gd") # squash & stretch di salto, atterraggio e corsa
 const StrikeFx := preload("res://scripts/strike_fx.gd") # scia dei colpi e linee di velocità (#384)
 const SunLight := preload("res://scripts/sun_light.gd") # luce e ombre del sole e della luna (#288)
 static var _screen_px_per_world := 0.0 # pixel dello schermo per pixel di mondo alla telecamera più vicina; 0 = non si sa (headless)
@@ -224,6 +226,7 @@ func reset() -> void:
 	_shards = []
 	_shield_hits = {}
 	_reactions = {}
+	_bounces = {}
 	_items = []
 	_projectiles = []
 	_puddles = []
@@ -600,6 +603,7 @@ func on_event(e: Dictionary) -> void:
 			_shake = maxf(_shake, minf(game.effects.shakeMax, float(e.knockback) * game.effects.shakePerKnockback))
 		"land":
 			_puff(e.x, e.y)
+			_bounces[e.id] = MotionFeel.start(game.effects, "land", Time.get_ticks_msec())
 		"shield":
 			# Colpo parato (#109): scintilla piccola del colore di chi para e bolla che si illumina
 			var p: Variant = buffer.sample(e.id, Time.get_ticks_msec())
@@ -675,6 +679,7 @@ func on_event(e: Dictionary) -> void:
 			if p != null:
 				_puff(float(e.x) - float(p.facing) * 26.0, float(e.y))
 		"jump":
+			_bounces[e.id] = MotionFeel.start(game.effects, "jump", Time.get_ticks_msec())
 			if not e.get("air", false):
 				_puff(e.x, e.y)
 			else:
@@ -741,6 +746,21 @@ func _reaction_transform(p: Dictionary, now: float) -> Transform2D:
 		_reactions.erase(p.id)
 		return Transform2D.IDENTITY
 	return HitReaction.transform(Vector2(p.x, p.y), s)
+
+
+# Squash & stretch del movimento (motion_feel.gd), con il perno sui piedi; identità senza effetti
+func _motion_transform(p: Dictionary, now: float) -> Transform2D:
+	if not effects:
+		return Transform2D.IDENTITY
+	var sq := 0.0
+	if _bounces.has(p.id):
+		sq = MotionFeel.squash(_bounces[p.id], game.effects, now)
+		if now - float(_bounces[p.id].at) >= float(game.effects.bounceMs):
+			_bounces.erase(p.id)
+	var angle := MotionFeel.lean(p, game.effects, float(game.fighter.groundSpeed), float(game.dash.runSpeed))
+	if sq == 0.0 and angle == 0.0:
+		return Transform2D.IDENTITY
+	return MotionFeel.transform(Vector2(p.x, p.y), sq, angle)
 
 
 func _puff(x: float, y: float) -> void:
@@ -1836,7 +1856,7 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 	var charge := float(p.get("charge", 0.0))
 	if charge > 0.0:
 		_draw_charge(Vector2(p.x, p.y - fh / 2), charge, now)
-	var react := _reaction_transform(p, now)
+	var react := _reaction_transform(p, now) * _motion_transform(p, now)
 	if _textures.has(character.id):
 		_draw_sprite(p, character, now, react)
 	else:
