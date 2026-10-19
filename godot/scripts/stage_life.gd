@@ -12,6 +12,7 @@ const UMBRELLAS := [Color("4c4f5a"), Color("6a4f4a"), Color("4f5f58"), Color("5e
 var life: Dictionary = {}
 var width := 1280.0 # larghezza dell'arena
 var center := Vector2(640, 360) # centro dell'arena, dove sono centrati gli strati
+var vertical := 1.0 # quanto vale la parallasse in verticale (art.verticalParallax, #400)
 var match_start := NAN # stageMs di inizio della partita, per il tramonto
 var view := Rect2() # la parte di mondo inquadrata in questo frame (world_view.gd): quello che sta fuori non si disegna
 var _sheets := {} # nome -> {tex, frames, fw, fh, scale}: i fogli dipinti dello sfondo vivo (#288)
@@ -24,6 +25,7 @@ func setup(spec: Dictionary, stage_width: float, world_height: float) -> void:
 	life = art.get("life", {}) if art.get("life") is Dictionary else {}
 	width = stage_width
 	center = Vector2(stage_width / 2.0, world_height / 2.0)
+	vertical = clampf(float(art.get("verticalParallax", 1.0)), 0.0, 1.0)
 	match_start = NAN
 	_pigeons = []
 	for p in life.get("pigeons", []):
@@ -80,7 +82,7 @@ func is_empty() -> bool:
 
 # Dove appare un punto che sta su uno strato con parallasse p: come gli strati, trascinato verso la vista
 func offset(p: float, view_center: Vector2) -> Vector2:
-	return (view_center - center) * (1.0 - p)
+	return (view_center - center) * (1.0 - p) * Vector2(1.0, vertical)
 
 
 # Gli elementi con parallasse in [from, to): aerei, stormi, uccelli vicini, traffico, veicoli, passanti e bar,

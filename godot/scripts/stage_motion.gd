@@ -259,7 +259,8 @@ static func life_rain(r: Dictionary, t: float) -> float:
 
 
 # Dove sta uno strato: centrato sull'arena, poi trascinato verso il centro della vista tanto più quanto è lontano.
-# parallax 1 = fermo con il palco, 0 = fermo con la telecamera
-static func layer_rect(size: Vector2, parallax: float, world_center: Vector2, view_center: Vector2) -> Rect2:
-	var center := world_center + (view_center - world_center) * (1.0 - parallax)
+# parallax 1 = fermo con il palco, 0 = fermo con la telecamera. vertical (#400): quanto vale la parallasse in
+# verticale, 0 = in verticale lo strato resta attaccato al palco
+static func layer_rect(size: Vector2, parallax: float, world_center: Vector2, view_center: Vector2, vertical := 1.0) -> Rect2:
+	var center := world_center + (view_center - world_center) * (1.0 - parallax) * Vector2(1.0, vertical)
 	return Rect2(center - size / 2.0, size)

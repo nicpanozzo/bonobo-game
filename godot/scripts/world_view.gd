@@ -518,11 +518,17 @@ static func _stage_layer(dir: String, layer: Dictionary, world_scale := 0.0) -> 
 	return [_sprite_texture(path, "linear", world_scale), clampf(layer.parallax, 0.0, 1.0), full]
 
 
+# Quanto vale in verticale la parallasse degli strati (#400): 1 se l'arena non lo dice
+func _vertical_parallax() -> float:
+	var art: Variant = stage.get("art")
+	return clampf(float(art.get("verticalParallax", 1.0)), 0.0, 1.0) if art is Dictionary else 1.0
+
+
 func _draw_layer(layer: Array, mod := Color(-1, 0, 0)) -> void:
 	var tex: Texture2D = layer[0]
 	var size: Vector2 = layer[2] if layer.size() > 2 else tex.get_size()
 	var center := Vector2(stage_width() / 2.0, game.world.height / 2.0)
-	draw_texture_rect(tex, StageMotion.layer_rect(size * _layer_scale, layer[1], center, view_rect.get_center()), false, _ambient if mod.r < 0.0 else mod)
+	draw_texture_rect(tex, StageMotion.layer_rect(size * _layer_scale, layer[1], center, view_rect.get_center(), _vertical_parallax()), false, _ambient if mod.r < 0.0 else mod)
 
 
 # Piedi dei lottatori in gioco (non eliminati), per la telecamera
@@ -808,7 +814,7 @@ func _draw() -> void:
 		_draw_layer(l)
 		var lights: Variant = _light_layers.get(snappedf(float(l[1]), 0.001))
 		if lights != null and night > 0.0: # i vetri accesi, senza la luce ambiente, solo dove ce ne sono
-			var whole := StageMotion.layer_rect((l[0] as Texture2D).get_size() * _layer_scale, l[1], Vector2(stage_width() / 2.0, h / 2.0), view_center)
+			var whole := StageMotion.layer_rect((l[0] as Texture2D).get_size() * _layer_scale, l[1], Vector2(stage_width() / 2.0, h / 2.0), view_center, _vertical_parallax())
 			var part: Rect2 = lights[1]
 			draw_texture_rect(lights[0], Rect2(whole.position + part.position * whole.size, part.size * whole.size), false, Color(1, 1, 1, night))
 		if night > 0.0:

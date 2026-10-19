@@ -23,6 +23,9 @@ func test_parallasse() -> void:
 	var mezzo := StageMotion.layer_rect(size, 0.5, world, view)
 	runner.check(mezzo.get_center() == Vector2(740, 330), "a metà strada: %s" % mezzo.get_center())
 	runner.check(mezzo.size == size, "la grandezza non cambia")
+	# #400: con la parallasse verticale a 0 in verticale lo strato resta attaccato al palco, in orizzontale no
+	var piatto := StageMotion.layer_rect(size, 0.5, world, view, 0.0)
+	runner.check(piatto.get_center() == Vector2(740, 360), "in verticale fermo col palco: %s" % piatto.get_center())
 
 
 func test_il_palco_ha_tre_strati_le_altre_arene_no() -> void:
@@ -168,3 +171,13 @@ func test_fotogrammi_dei_fogli_rimpiccioliti() -> void:
 	var half := ImageTexture.create_from_image(Image.create(raw.get_width() / 2, raw.get_height() / 2, false, Image.FORMAT_RGBA8))
 	runner.check(is_equal_approx(WorldView._kept(half, path), 0.5), "rimpicciolito a metà: %s" % WorldView._kept(half, path))
 	runner.check(is_equal_approx(WorldView._kept(raw, path), 1.0), "intero resta 1")
+
+
+# Lo sfondo vivo segue la stessa parallasse verticale degli strati (#400): se no passanti e traffico si staccherebbero
+func test_sfondo_vivo_con_la_parallasse_verticale() -> void:
+	var life: RefCounted = load("res://scripts/stage_life.gd").new()
+	life.setup({"art": {"verticalParallax": 0.0}}, 1920.0, 720.0)
+	runner.check(life.offset(0.5, Vector2(1160, 160)) == Vector2(100, 0), "in verticale niente: %s" % life.offset(0.5, Vector2(1160, 160)))
+	life.setup({"art": {}}, 1920.0, 720.0)
+	runner.check(life.offset(0.5, Vector2(1160, 160)) == Vector2(100, -100), "senza il campo come prima")
+

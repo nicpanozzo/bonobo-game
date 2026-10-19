@@ -133,6 +133,8 @@ describe("arene", () => {
       assert.ok(art.layers.length >= 1, `${stage.id}: almeno uno strato`);
       const layers = [...art.layers, ...(art.foreground ? [art.foreground] : [])];
       for (const l of layers) assert.ok(l.parallax >= 0 && l.parallax <= 1, `${stage.id}: parallasse di ${l.file} tra 0 e 1`);
+      const v = art.verticalParallax ?? 1; // #400
+      assert.ok(v >= 0 && v <= 1, `${stage.id}: parallasse verticale tra 0 e 1`);
       let bytes = 0;
       for (const file of stageArtFiles(art)) { // con materiali e decorazioni (#237)
         const dir = art.dir ?? stage.id;
