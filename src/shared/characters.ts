@@ -356,6 +356,7 @@ export interface CharacterSpec {
   companion?: CompanionSpec; // un compagno che lo segue da solo (#369)
   recovery?: Partial<AttackSpec & typeof RECOVERY>; // numeri propri del recupero (#11): quelli che mancano restano i soliti
   quotes?: CharacterQuotes; // le battute della scheda, scritte in un fumetto (solo disegno, Godot)
+  strikeColor?: string; // colore della scia dei suoi colpi, "#rrggbb" (#384 B2); senza, bianca o arancio per i pesanti
 }
 
 // Le battute dalla scheda del personaggio (#13). Solo testo: le voci registrate restano a parte (E13)
@@ -713,6 +714,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
   // Baldo: pazzo scatenato, ipercompetitivo, grosso, con i guanti da portiere e la racchetta da ping pong
   lampione: {
     id: "lampione",
+    strikeColor: "#ffe9a8", // scia dei colpi: la luce del lampione (#384)
     name: "Lampione",
     quotes: { ko: "Grazie per essere passato nel nostro canale" }, // dalla scheda: l'urlo del KO
     crews: ["cuamm", "schio"],
@@ -754,6 +756,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
   // tools/sprite/foglio_a_colori.py come per Egiainuso (sheetSprite)
   bradipo: {
     id: "bradipo",
+    strikeColor: "#ffd84a", // scia dei colpi: giallo come il bradipo (#384)
     name: "Bradipo Giallo",
     crews: ["lolhardcore"],
     // la Bassline col basso a tracolla: tools/sprite/bradipo_bassline.py
@@ -807,6 +810,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
   // Marco: "Viva il comunismo", felpa, occhiali, barba e pelato (Egiainuso viene dal suo foglio delle pose, #178)
   marcomunista: {
     id: "marcomunista",
+    strikeColor: "#c9a7f0", // scia dei colpi: lilla come lui (#384)
     name: "Marcomunista",
     quotes: { taunt: "Viva il comunismo!" }, // il suo tormentone; la scheda e la #352 non dicono altro
     crews: ["cuamm", "cologna"],
@@ -843,6 +847,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
   // Gio (@elvedeo): chirurgo traumatologo rasta infettato dai funghi, "vi insegnerò la via del fungo"
   drmicelium: {
     id: "drmicelium",
+    strikeColor: "#a8c46b", // scia dei colpi: verde spora (#384)
     name: "Dr. Micelium",
     quotes: { taunt: "Vi insegnerò la via del fungo" },
     crews: ["cuamm"],
