@@ -17,6 +17,7 @@ var _reached := 0 # checkpoint della Corsa presi da me
 var _sparks: Array = [] # [{ x, y, age, size, color }]
 var _shake := 0.0
 var _flash := 0.0 # ms di lampo bianco rimasti
+var _strikes := {} # id -> il colpo di cui si disegna la scia e da quando è attivo (#384 B2)
 var _punch := {} # lo zoom sui colpi da KO (#384): quando è partito e dove, vuoto se non c'è
 var _dust: Array = [] # [{ x, y, dx, age }] sbuffi di polvere
 var _trails := {} # id -> Array[Vector2] delle ultime posizioni, per la scia di chi vola
@@ -63,6 +64,7 @@ var _variants := {} # id giocatore -> variante di colore (0 = originale), ricalc
 const StageMotion := preload("res://scripts/stage_motion.gd")
 const FighterPose := preload("res://scripts/fighter_pose.gd")
 const HitReaction := preload("res://scripts/hit_reaction.gd") # il corpo si piega dove è colpito (#305)
+const StrikeFx := preload("res://scripts/strike_fx.gd") # scia dei colpi e linee di velocità (#384)
 const SunLight := preload("res://scripts/sun_light.gd") # luce e ombre del sole e della luna (#288)
 static var _screen_px_per_world := 0.0 # pixel dello schermo per pixel di mondo alla telecamera più vicina; 0 = non si sa (headless)
 var _character_sprites := {} # id personaggio -> true quando i suoi sprite sono caricati
@@ -208,6 +210,7 @@ func reset() -> void:
 	_item_pos = {}
 	_dust = []
 	_trails = {}
+	_strikes = {}
 	_flash = 0.0
 	_punch = {}
 	_supreme_view.clear()
@@ -550,7 +553,9 @@ func on_event(e: Dictionary) -> void:
 			var kb := float(e.get("knockback", 0))
 			# I colpi forti hanno anche le linee a raggiera, come i fumetti e Smash
 			var lines: int = int(fx.get("impactLines", 0)) if kb >= float(fx.get("impactLinesKnockback", INF)) else 0
-			_sparks.append({"x": e.x, "y": e.y, "age": 0.0, "size": (34.0 if big else 20.0) + float(e.get("damage", 0)), "color": Color(1, 0.85, 0.3) if big else Color.WHITE, "lines": lines})
+			# più grande coi colpi che lanciano più lontano (#384 B2)
+			var size := (34.0 if big else 20.0) + float(e.get("damage", 0)) + kb * float(fx.get("sparkPerKnockback", 0.0))
+			_sparks.append({"x": e.x, "y": e.y, "age": 0.0, "size": size, "color": Color(1, 0.85, 0.3) if big else Color.WHITE, "lines": lines})
 			# Più il colpo lancia lontano, più lo schermo trema; i colpi enormi fanno anche un lampo
 			if kb > fx.shakeFromKnockback:
 				_shake = maxf(_shake, minf(fx.shakeMax, (kb - fx.shakeFromKnockback) * fx.shakePerKnockback))
@@ -837,7 +842,9 @@ func _draw() -> void:
 			if not p.eliminated:
 				_alive.append(id)
 				_draw_trail(id, p)
+				_draw_speed_lines(p)
 				_draw_fighter(p, now)
+				_draw_strike(p, now)
 
 	_supreme_view.view_rect = view_rect
 	_speech.view_rect = view_rect
@@ -1745,22 +1752,9 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 	# Si può nascondere dalle opzioni; in allenamento "Mostra hitbox" lo fa vedere comunque
 	var spec := FighterPose.attack_spec(game, p.characterId, str(p.attack)) if p.attack != null and (attack_boxes or show_hitboxes) else {}
 	if not spec.is_empty(): # un attacco che questa versione non conosce non ha rettangolo
-		var front: float = spec.get("boxX", fw / 2)
-		var o := Vector2(p.x, p.y)
-		var vine: Variant = _supreme_view.origin(p.id) if p.attack == "supreme" else null
-		if vine != null:
-			o = vine # la suprema di Bonobot colpisce sulla liana (#102), come hitOrigin() in supreme.ts
-		var dog: Variant = _companions.position_of(p.id) if _companions.is_biting(p.id) else null
-		var y: float = o.y + spec.get("boxY", -fh * 0.7)
-		if dog != null:
-			# morde il beagle (#369): davanti a lui e alto quanto il colpo, come biteBox() in companion.ts
-			o = dog
-			front = float(game.characters[p.characterId].companion.width) / 2.0
-			y = o.y - float(spec.height)
-		var x: float = o.x + front if p.facing == 1 else o.x - front - spec.range
 		var c := Color("ff9f43") if str(p.attack).begins_with("heavy") else Color.WHITE
 		c.a = 0.85 if p.attackActive else 0.25
-		draw_rect(Rect2(x, y, spec.range, spec.height), c)
+		draw_rect(_attack_rect(p, spec), c)
 
 	var label := "%s  %d%%" % [p.name, roundi(p.percent)]
 	var size := _font.get_string_size(label, HORIZONTAL_ALIGNMENT_CENTER, -1, Access.px(16))
@@ -1780,6 +1774,65 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 		draw_rect(Rect2(p.x - 1, top - 30, 3, 30), Color.WHITE)
 		var team_color := Access.team_color(game, int(p.team))
 		draw_colored_polygon(PackedVector2Array([Vector2(p.x + 2, top - 30), Vector2(p.x + 26, top - 22), Vector2(p.x + 2, top - 14)]), team_color)
+
+
+# La zona del colpo in corso: la stessa hitbox di attackBox() in src/shared/physics/attacks.ts,
+# spostata da boxX/boxY per le varianti direzionali (#2)
+func _attack_rect(p: Dictionary, spec: Dictionary) -> Rect2:
+	var fw: float = game.fighter.width
+	var fh: float = game.fighter.height
+	var front: float = spec.get("boxX", fw / 2)
+	var o := Vector2(p.x, p.y)
+	var vine: Variant = _supreme_view.origin(p.id) if p.attack == "supreme" else null
+	if vine != null:
+		o = vine # la suprema di Bonobot colpisce sulla liana (#102), come hitOrigin() in supreme.ts
+	var dog: Variant = _companions.position_of(p.id) if _companions.is_biting(p.id) else null
+	var y: float = o.y + spec.get("boxY", -fh * 0.7)
+	if dog != null:
+		# morde il beagle (#369): davanti a lui e alto quanto il colpo, come biteBox() in companion.ts
+		o = dog
+		front = float(game.characters[p.characterId].companion.width) / 2.0
+		y = o.y - float(spec.height)
+	var x: float = o.x + front if p.facing == 1 else o.x - front - spec.range
+	return Rect2(x, y, spec.range, spec.height)
+
+
+# La scia del colpo (#384 B2): una mezzaluna che spazza la zona d'attacco mentre il colpo è attivo.
+# Il colore è quello del personaggio (strikeColor in characters.ts), altrimenti bianco o arancio per i pesanti
+func _draw_strike(p: Dictionary, now: float) -> void:
+	var kind := str(p.attack) if p.attack != null else ""
+	# Solo leggeri, pesanti e attacco in corsa: prese, speciali e supreme hanno già i loro disegni
+	if not effects or not p.attackActive or not (kind.begins_with("light") or kind.begins_with("heavy") or kind == "dashAttack"):
+		_strikes.erase(p.id)
+		return
+	var spec := FighterPose.attack_spec(game, p.characterId, str(p.attack))
+	if spec.is_empty() or spec.get("range") == null:
+		return
+	if not _strikes.has(p.id) or _strikes[p.id].kind != str(p.attack):
+		_strikes[p.id] = {"kind": str(p.attack), "at": now}
+	var box := _attack_rect(p, spec)
+	var chest := Vector2(p.x, p.y - float(game.fighter.height) * 0.6)
+	var arc := StrikeFx.arc_for(chest, int(p.facing), box)
+	var progress := (now - float(_strikes[p.id].at)) / maxf(1.0, float(spec.get("activeMs", 100)) * 0.6)
+	var heavy: bool = kind.begins_with("heavy") or kind == "dashAttack"
+	var own: Variant = game.characters.get(p.characterId, {}).get("strikeColor")
+	var col: Color = Color(own) if own is String else (Color(1, 0.75, 0.35) if heavy else Color.WHITE)
+	var poly := StrikeFx.crescent(arc, progress, float(game.effects.strikeWidth) * (1.5 if heavy else 1.0))
+	if poly.size() >= 3:
+		col.a = 0.55
+		draw_colored_polygon(poly, col)
+
+
+# Chi vola via forte (lanciato, non chi salta) ha delle linee di velocità dietro, come nei fumetti (#384 B2)
+func _draw_speed_lines(p: Dictionary) -> void:
+	var vel := Vector2(p.vx, p.vy)
+	if not effects or not p.hitstun or vel.length() < float(game.effects.speedLinesSpeed) or p.respawning:
+		return
+	var fx: Dictionary = game.effects
+	var mid := Vector2(p.x, p.y - float(game.fighter.height) * 0.5)
+	var col := Color(1, 1, 1, 0.6)
+	for l in StrikeFx.speed_lines(mid, vel, int(fx.speedLines), float(fx.speedLinesLength), float(game.fighter.width) * 0.7, hash(p.id)):
+		draw_line(l[0], l[1], col, 2.0)
 
 
 # Un fotogramma dello spritesheet, con i piedi dello sprite su quelli del giocatore

@@ -413,6 +413,12 @@ export const EFFECTS = {
   koZoomKnockback: 1100, // px/s: da qui in su il colpo fa anche un breve zoom della telecamera sul punto d'impatto
   koZoom: 0.08, // frazione: quanto si avvicina la telecamera al massimo dello zoom
   koZoomMs: 320, // durata dello zoom, andata e ritorno
+  // Effetti dei colpi guidati dalla fisica (#384 B2), solo nel client
+  strikeWidth: 14, // pixel: spessore della scia del colpo leggero (il pesante una volta e mezza)
+  sparkPerKnockback: 0.02, // pixel di scintilla in più per ogni px/s di knockback del colpo
+  speedLinesSpeed: 1000, // px/s: chi è lanciato più veloce di così ha le linee di velocità dietro
+  speedLines: 5, // linee di velocità
+  speedLinesLength: 70, // pixel: lunghezza massima di una linea di velocità
   hitShakeHz: 30, // tremolii al secondo nel fermo
   impactLines: 8, // linee a raggiera attorno ai colpi forti
   impactLinesKnockback: 700, // px/s: da qui in su il colpo ha le linee a raggiera

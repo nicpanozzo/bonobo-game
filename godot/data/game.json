@@ -636,6 +636,11 @@
     "koZoomKnockback": 1100,
     "koZoom": 0.08,
     "koZoomMs": 320,
+    "strikeWidth": 14,
+    "sparkPerKnockback": 0.02,
+    "speedLinesSpeed": 1000,
+    "speedLines": 5,
+    "speedLinesLength": 70,
     "hitShakeHz": 30,
     "impactLines": 8,
     "impactLinesKnockback": 700
@@ -3832,6 +3837,7 @@
     },
     "lampione": {
       "id": "lampione",
+      "strikeColor": "#ffe9a8",
       "name": "Lampione",
       "quotes": {
         "ko": "Grazie per essere passato nel nostro canale"
@@ -4400,6 +4406,7 @@
     },
     "bradipo": {
       "id": "bradipo",
+      "strikeColor": "#ffd84a",
       "name": "Bradipo Giallo",
       "crews": [
         "lolhardcore"
@@ -5093,6 +5100,7 @@
     },
     "marcomunista": {
       "id": "marcomunista",
+      "strikeColor": "#c9a7f0",
       "name": "Marcomunista",
       "quotes": {
         "taunt": "Viva il comunismo!"
@@ -5744,6 +5752,7 @@
     },
     "drmicelium": {
       "id": "drmicelium",
+      "strikeColor": "#a8c46b",
       "name": "Dr. Micelium",
       "quotes": {
         "taunt": "Vi insegnerò la via del fungo"
