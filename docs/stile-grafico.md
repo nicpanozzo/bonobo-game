@@ -62,7 +62,42 @@ Usati poco, come piccoli accenti (una brace, un bottone), vanno bene.
 - **Colpi a tempo:** negli attacchi si segna `hitFrame`, il fotogramma dell'impatto; il gioco lo fa cadere quando la hitbox si accende.
 - **Animazioni obbligatorie** (`AnimationName`): `idle`, `walk`, `jump`, `fall`, `light`, `heavy`, `hit`.
 - **Facoltative** (`OptionalAnimationName`; senza si usa quella di ripiego): `doubleJump` (→ `jump`), `tumble` (→ `hit`), `ledge` e `climb` (→ `jump`), `land` e `taunt` (→ `idle`), le varianti degli attacchi (→ `light` o `heavy`)... L'elenco completo è nel [README dei personaggi](../public/assets/characters/README.md).
+- **Animare come Smash:** checklist per ogni stato nella sezione qui sotto.
 - **Formato:** una cartella per personaggio con **un PNG per stato** (`idle.png`, `walk.png`...), fotogrammi in fila da sinistra; nel blocco del personaggio in `characters.ts` si scrivono solo `fps` e ciclo di ogni stato. Il vecchio formato a foglio unico (una riga per animazione, come Bonobot oggi) funziona ancora. Istruzioni: `public/assets/characters/README.md`.
+
+### Animare come Smash (#384)
+
+In Smash ogni mossa si capisce al primo sguardo e colpisce dove si vede. Le regole che lo rendono possibile:
+
+1. **Parte subito.** Il primo fotogramma cambia già la sagoma rispetto al fermo: chi preme il tasto vede la risposta nello stesso istante. Mai un fotogramma uguale a `idle` all'inizio.
+2. **Anticipazione:** prima del colpo il corpo si carica all'indietro (spalla indietro, peso sul piede dietro). Più il colpo è forte, più è ampia.
+3. **Fotogramma d'impatto:** è la posa più forte e più leggibile, perché resta ferma per tutto il fermo al colpo (`HITSTOP`). Arto tutto disteso, mano o arma dentro la zona del colpo. Si segna in `hitFrame`.
+4. **Smear e archi:** tra anticipazione e impatto un fotogramma con il braccio allungato e sfumato lungo l'arco del movimento; le mani seguono archi, mai linee rette.
+5. **Follow-through:** dopo l'impatto il corpo continua il movimento (il braccio passa oltre, il busto ruota) e poi torna alla guardia durante il `cooldownMs`.
+6. **Squash & stretch:** schiacciato in preparazione (salto, pesante), allungato nello slancio. Il volume resta lo stesso.
+7. **Silhouette diversa per ogni stato:** a sagoma nera, `light`, `heavy`, le varianti in alto, in basso e in aria si distinguono tra loro.
+8. **Personalità:** la stessa mossa la fa ogni personaggio a modo suo (un allenatore con il fischietto, uno scienziato con l'ampolla): stessa zona del colpo, posa diversa.
+9. **24-30 fotogrammi al secondo**, nessun fotogramma morto: se due fotogrammi di fila sono uguali, uno diventa un passaggio intermedio o si toglie.
+
+**Quanti fotogrammi per fase**, a 24 fps (un fotogramma ≈ 42 ms), con i tempi di `ATTACKS` in `constants.ts`:
+
+| Fase | Tempo | Fotogrammi | Cosa si vede |
+|---|---|---|---|
+| Avvio colpo leggero (`startupMs` 40-60) | 1 fotogramma | 1-2 | anticipazione corta, poi subito l'impatto |
+| Avvio colpo pesante (`startupMs` 200-280) | 5-7 fotogrammi | 5-7 | carica ampia, smear nell'ultimo |
+| Colpo attivo (`activeMs` 100-160) | 2-4 fotogrammi | 2-4 | impatto e smear di ritorno |
+| Recupero (`cooldownMs` 280-800) | 7-19 fotogrammi | 4-8 | follow-through e ritorno alla guardia (si può andare a 12 fps) |
+
+**Checklist per stato:**
+
+- [ ] Il primo fotogramma è diverso da `idle`.
+- [ ] C'è un'anticipazione, proporzionata alla forza del colpo.
+- [ ] Il fotogramma d'impatto è la posa più ampia e cade su `hitFrame`; la mano o l'arma è dentro la zona del colpo (prova con "Mostra hitbox" in allenamento).
+- [ ] Almeno un fotogramma di smear o un arco evidente nei colpi.
+- [ ] Follow-through prima del ritorno alla guardia.
+- [ ] Squash & stretch dove c'è uno slancio (salto, atterraggio, pesante).
+- [ ] La sagoma nera si distingue dagli altri stati e dagli altri personaggi.
+- [ ] Nessun fotogramma morto; 24 fps (12 solo per i cicli lenti).
 
 ## 7. Arene
 
