@@ -585,8 +585,13 @@ func _process(_delta: float) -> void:
 			_follow(_delta)
 		else:
 			_frame_fighters(_delta)
-		camera.zoom = Vector2.ONE * _cam_zoom * _view_k
-		var view := Rect2(camera.position, _view / _cam_zoom)
+		# Lo zoom breve sui colpi da KO (#384) si avvicina al punto d'impatto con l'offset,
+		# così l'inquadratura del frame dopo non lo eredita
+		var punch: float = world.punch_zoom(Time.get_ticks_msec())
+		var at: Vector2 = world.punch_point() if punch > 1.0 else camera.position
+		camera.offset = (at - camera.position) * (1.0 - 1.0 / punch)
+		camera.zoom = Vector2.ONE * _cam_zoom * punch * _view_k
+		var view := Rect2(camera.position + camera.offset, _view / (_cam_zoom * punch))
 		world.view_rect = view
 		audio.view_left = view.position.x
 

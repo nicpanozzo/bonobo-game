@@ -74,6 +74,7 @@ export interface SpriteAnimation {
   fps: number;
   loop: boolean;
   hitFrame?: number; // solo negli attacchi, vedi SpriteStateSpec
+  startFrame?: number; // solo negli attacchi, vedi SpriteStateSpec
 }
 
 // Formato a foglio unico: un PNG con una riga per animazione (Capt. OrsoBlu, Bonobot)
@@ -101,6 +102,14 @@ export interface SpriteStateSpec {
   // accende (startupMs di ATTACKS) e fa finire l'animazione con cooldownMs, anche nelle varianti che la usano
   // come ripiego. Senza hitFrame l'animazione va a fps.
   hitFrame?: number;
+  // Negli attacchi: il primo fotogramma mostrato (manca = 0). Serve quando il fotogramma 0 è la posa di riposo,
+  // uguale a idle: così la sagoma cambia nell'istante in cui si preme il tasto (#384 C1)
+  startFrame?: number;
+}
+
+// I lottatori a scheletro (tools/rig) partono dalla posa di riposo: negli attacchi si mostra dal fotogramma 1 (#384 C1)
+function fromRest<T extends Record<string, SpriteStateSpec>>(animations: T): T {
+  return Object.fromEntries(Object.entries(animations).map(([state, a]) => [state, a.hitFrame ? { ...a, startFrame: 1 } : a])) as T;
 }
 export interface SpriteFolderSpec {
   dir: string; // cartella relativa alla radice del sito, es. "assets/characters/<id>"
@@ -356,6 +365,7 @@ export interface CharacterSpec {
   companion?: CompanionSpec; // un compagno che lo segue da solo (#369)
   recovery?: Partial<AttackSpec & typeof RECOVERY>; // numeri propri del recupero (#11): quelli che mancano restano i soliti
   quotes?: CharacterQuotes; // le battute della scheda, scritte in un fumetto (solo disegno, Godot)
+  strikeColor?: string; // colore della scia dei suoi colpi, "#rrggbb" (#384 B2); senza, bianca o arancio per i pesanti
 }
 
 // Le battute dalla scheda del personaggio (#13). Solo testo: le voci registrate restano a parte (E13)
@@ -377,7 +387,7 @@ function communitySprite(id: string): SpriteFolderSpec {
     frameHeight: 368,
     footY: 286,
     scale: 0.5,
-    animations: {
+    animations: fromRest({
       idle: { fps: 12, loop: true },
       walk: { fps: 24, loop: true }, // corsa in piedi alla velocità di groundSpeed
       jump: { fps: 24, loop: false },
@@ -406,7 +416,7 @@ function communitySprite(id: string): SpriteFolderSpec {
       specialNeutral: { fps: 24, loop: false, hitFrame: 5 },
       specialSide: { fps: 24, loop: false, hitFrame: 3 }, // in piedi: carica, due giri di corsa, frena
       specialDown: { fps: 24, loop: false, hitFrame: 1 },
-    },
+    }),
   };
 }
 
@@ -591,7 +601,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       frameHeight: 368,
       footY: 286, // sotto i piedi restano 82 pixel per il corpo di chi è appeso al bordo
       scale: 0.5,
-      animations: {
+      animations: fromRest({
         idle: { fps: 12, loop: true }, // respiro, peso che passa da un piede all'altro, battito di ciglia, 2 s
         walk: { fps: 24, loop: true }, // galoppo sulle nocche: mani e piedi a terra scorrono alla velocità di groundSpeed
         jump: { fps: 24, loop: false },
@@ -625,7 +635,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         specialDown: { fps: 24, loop: false, hitFrame: 1 }, // Battuta del petto: pugni alterni sul petto, poi braccia aperte
         // Omar: salto alla liana, appeso a tirarla, capriola all'indietro, accucciato all'impatto (hitFrame), si rialza
         supreme: { fps: 24, loop: false, hitFrame: 24 },
-      },
+      }),
     },
   },
 
@@ -713,6 +723,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
   // Baldo: pazzo scatenato, ipercompetitivo, grosso, con i guanti da portiere e la racchetta da ping pong
   lampione: {
     id: "lampione",
+    strikeColor: "#ffe9a8", // scia dei colpi: la luce del lampione (#384)
     name: "Lampione",
     quotes: { ko: "Grazie per essere passato nel nostro canale" }, // dalla scheda: l'urlo del KO
     crews: ["cuamm", "schio"],
@@ -754,6 +765,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
   // tools/sprite/foglio_a_colori.py come per Egiainuso (sheetSprite)
   bradipo: {
     id: "bradipo",
+    strikeColor: "#ffd84a", // scia dei colpi: giallo come il bradipo (#384)
     name: "Bradipo Giallo",
     crews: ["lolhardcore"],
     // la Bassline col basso a tracolla: tools/sprite/bradipo_bassline.py
@@ -807,6 +819,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
   // Marco: "Viva il comunismo", felpa, occhiali, barba e pelato (Egiainuso viene dal suo foglio delle pose, #178)
   marcomunista: {
     id: "marcomunista",
+    strikeColor: "#c9a7f0", // scia dei colpi: lilla come lui (#384)
     name: "Marcomunista",
     quotes: { taunt: "Viva il comunismo!" }, // il suo tormentone; la scheda e la #352 non dicono altro
     crews: ["cuamm", "cologna"],
@@ -843,6 +856,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
   // Gio (@elvedeo): chirurgo traumatologo rasta infettato dai funghi, "vi insegnerò la via del fungo"
   drmicelium: {
     id: "drmicelium",
+    strikeColor: "#a8c46b", // scia dei colpi: verde spora (#384)
     name: "Dr. Micelium",
     quotes: { taunt: "Vi insegnerò la via del fungo" },
     crews: ["cuamm"],

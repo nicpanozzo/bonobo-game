@@ -252,9 +252,9 @@
     }
   },
   "hitstop": {
-    "baseMs": 30,
-    "perDamageMs": 6,
-    "maxMs": 200
+    "baseMs": 70,
+    "perDamageMs": 8,
+    "maxMs": 350
   },
   "smashCharge": {
     "maxMs": 1000,
@@ -353,6 +353,8 @@
   "training": {
     "speeds": [
       1,
+      0.9,
+      0.8,
       0.5,
       0.25
     ],
@@ -629,7 +631,16 @@
     "hitReactTilt": 0.35,
     "hitReactSquash": 0.22,
     "hitReactRecoil": 10,
-    "hitShakePx": 7,
+    "hitShakePx": 10,
+    "hitFlash": 0.8,
+    "koZoomKnockback": 1100,
+    "koZoom": 0.08,
+    "koZoomMs": 320,
+    "strikeWidth": 14,
+    "sparkPerKnockback": 0.02,
+    "speedLinesSpeed": 1000,
+    "speedLines": 5,
+    "speedLinesLength": 70,
     "hitShakeHz": 30,
     "impactLines": 8,
     "impactLinesKnockback": 700
@@ -3614,6 +3625,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 2,
+            "startFrame": 1,
             "frames": 10,
             "src": "light"
           },
@@ -3621,6 +3633,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 8,
+            "startFrame": 1,
             "frames": 18,
             "src": "heavy"
           },
@@ -3664,6 +3677,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 2,
+            "startFrame": 1,
             "frames": 8,
             "src": "lightUp"
           },
@@ -3671,6 +3685,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 2,
+            "startFrame": 1,
             "frames": 8,
             "src": "lightDown"
           },
@@ -3678,6 +3693,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 2,
+            "startFrame": 1,
             "frames": 8,
             "src": "lightAir"
           },
@@ -3685,6 +3701,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 7,
+            "startFrame": 1,
             "frames": 19,
             "src": "heavyUp"
           },
@@ -3692,6 +3709,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 6,
+            "startFrame": 1,
             "frames": 18,
             "src": "heavyDown"
           },
@@ -3699,6 +3717,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 5,
+            "startFrame": 1,
             "frames": 17,
             "src": "heavyAir"
           },
@@ -3725,6 +3744,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 2,
+            "startFrame": 1,
             "frames": 15,
             "src": "grab"
           },
@@ -3745,6 +3765,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 8,
+            "startFrame": 1,
             "frames": 18,
             "src": "heavy"
           },
@@ -3758,6 +3779,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 24,
+            "startFrame": 1,
             "frames": 30,
             "src": "supreme"
           },
@@ -3765,6 +3787,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 5,
+            "startFrame": 1,
             "frames": 15,
             "src": "specialNeutral"
           },
@@ -3772,6 +3795,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 3,
+            "startFrame": 1,
             "frames": 18,
             "src": "specialSide"
           },
@@ -3779,6 +3803,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 1,
+            "startFrame": 1,
             "frames": 17,
             "src": "specialDown"
           },
@@ -3786,6 +3811,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 8,
+            "startFrame": 1,
             "frames": 18,
             "src": "heavy"
           }
@@ -4455,6 +4481,7 @@
     },
     "lampione": {
       "id": "lampione",
+      "strikeColor": "#ffe9a8",
       "name": "Lampione",
       "quotes": {
         "ko": "Grazie per essere passato nel nostro canale"
@@ -4498,6 +4525,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 2,
+            "startFrame": 1,
             "frames": 10,
             "src": "light"
           },
@@ -4505,6 +4533,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 8,
+            "startFrame": 1,
             "frames": 18,
             "src": "heavy"
           },
@@ -4548,6 +4577,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 2,
+            "startFrame": 1,
             "frames": 8,
             "src": "lightUp"
           },
@@ -4555,6 +4585,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 2,
+            "startFrame": 1,
             "frames": 8,
             "src": "lightDown"
           },
@@ -4562,6 +4593,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 2,
+            "startFrame": 1,
             "frames": 8,
             "src": "lightAir"
           },
@@ -4569,6 +4601,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 7,
+            "startFrame": 1,
             "frames": 19,
             "src": "heavyUp"
           },
@@ -4576,6 +4609,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 6,
+            "startFrame": 1,
             "frames": 18,
             "src": "heavyDown"
           },
@@ -4583,6 +4617,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 5,
+            "startFrame": 1,
             "frames": 17,
             "src": "heavyAir"
           },
@@ -4609,6 +4644,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 2,
+            "startFrame": 1,
             "frames": 15,
             "src": "grab"
           },
@@ -4629,6 +4665,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 8,
+            "startFrame": 1,
             "frames": 18,
             "src": "heavy"
           },
@@ -4642,6 +4679,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 8,
+            "startFrame": 1,
             "frames": 18,
             "src": "heavy"
           },
@@ -4649,6 +4687,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 5,
+            "startFrame": 1,
             "frames": 15,
             "src": "specialNeutral"
           },
@@ -4656,6 +4695,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 3,
+            "startFrame": 1,
             "frames": 18,
             "src": "specialSide"
           },
@@ -4663,6 +4703,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 1,
+            "startFrame": 1,
             "frames": 17,
             "src": "specialDown"
           },
@@ -4670,6 +4711,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 8,
+            "startFrame": 1,
             "frames": 18,
             "src": "heavy"
           }
@@ -4713,6 +4755,7 @@
                 "fps": 24,
                 "loop": false,
                 "hitFrame": 2,
+                "startFrame": 1,
                 "frames": 10,
                 "src": "light"
               },
@@ -4720,6 +4763,7 @@
                 "fps": 24,
                 "loop": false,
                 "hitFrame": 8,
+                "startFrame": 1,
                 "frames": 18,
                 "src": "heavy"
               },
@@ -4763,6 +4807,7 @@
                 "fps": 24,
                 "loop": false,
                 "hitFrame": 2,
+                "startFrame": 1,
                 "frames": 8,
                 "src": "lightUp"
               },
@@ -4770,6 +4815,7 @@
                 "fps": 24,
                 "loop": false,
                 "hitFrame": 2,
+                "startFrame": 1,
                 "frames": 8,
                 "src": "lightDown"
               },
@@ -4777,6 +4823,7 @@
                 "fps": 24,
                 "loop": false,
                 "hitFrame": 2,
+                "startFrame": 1,
                 "frames": 8,
                 "src": "lightAir"
               },
@@ -4784,6 +4831,7 @@
                 "fps": 24,
                 "loop": false,
                 "hitFrame": 7,
+                "startFrame": 1,
                 "frames": 19,
                 "src": "heavyUp"
               },
@@ -4791,6 +4839,7 @@
                 "fps": 24,
                 "loop": false,
                 "hitFrame": 6,
+                "startFrame": 1,
                 "frames": 18,
                 "src": "heavyDown"
               },
@@ -4798,6 +4847,7 @@
                 "fps": 24,
                 "loop": false,
                 "hitFrame": 5,
+                "startFrame": 1,
                 "frames": 17,
                 "src": "heavyAir"
               },
@@ -4824,6 +4874,7 @@
                 "fps": 24,
                 "loop": false,
                 "hitFrame": 2,
+                "startFrame": 1,
                 "frames": 15,
                 "src": "grab"
               },
@@ -4844,6 +4895,7 @@
                 "fps": 24,
                 "loop": false,
                 "hitFrame": 8,
+                "startFrame": 1,
                 "frames": 18,
                 "src": "heavy"
               },
@@ -4857,6 +4909,7 @@
                 "fps": 24,
                 "loop": false,
                 "hitFrame": 8,
+                "startFrame": 1,
                 "frames": 18,
                 "src": "heavy"
               },
@@ -4864,6 +4917,7 @@
                 "fps": 24,
                 "loop": false,
                 "hitFrame": 5,
+                "startFrame": 1,
                 "frames": 15,
                 "src": "specialNeutral"
               },
@@ -4871,6 +4925,7 @@
                 "fps": 24,
                 "loop": false,
                 "hitFrame": 3,
+                "startFrame": 1,
                 "frames": 18,
                 "src": "specialSide"
               },
@@ -4878,6 +4933,7 @@
                 "fps": 24,
                 "loop": false,
                 "hitFrame": 1,
+                "startFrame": 1,
                 "frames": 17,
                 "src": "specialDown"
               },
@@ -4885,6 +4941,7 @@
                 "fps": 24,
                 "loop": false,
                 "hitFrame": 8,
+                "startFrame": 1,
                 "frames": 18,
                 "src": "heavy"
               }
@@ -5023,6 +5080,7 @@
     },
     "bradipo": {
       "id": "bradipo",
+      "strikeColor": "#ffd84a",
       "name": "Bradipo Giallo",
       "crews": [
         "lolhardcore"
@@ -5396,6 +5454,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 2,
+            "startFrame": 1,
             "frames": 10,
             "src": "light"
           },
@@ -5403,6 +5462,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 8,
+            "startFrame": 1,
             "frames": 18,
             "src": "heavy"
           },
@@ -5446,6 +5506,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 2,
+            "startFrame": 1,
             "frames": 8,
             "src": "lightUp"
           },
@@ -5453,6 +5514,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 2,
+            "startFrame": 1,
             "frames": 8,
             "src": "lightDown"
           },
@@ -5460,6 +5522,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 2,
+            "startFrame": 1,
             "frames": 8,
             "src": "lightAir"
           },
@@ -5467,6 +5530,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 7,
+            "startFrame": 1,
             "frames": 19,
             "src": "heavyUp"
           },
@@ -5474,6 +5538,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 6,
+            "startFrame": 1,
             "frames": 18,
             "src": "heavyDown"
           },
@@ -5481,6 +5546,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 5,
+            "startFrame": 1,
             "frames": 17,
             "src": "heavyAir"
           },
@@ -5507,6 +5573,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 2,
+            "startFrame": 1,
             "frames": 15,
             "src": "grab"
           },
@@ -5527,6 +5594,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 8,
+            "startFrame": 1,
             "frames": 18,
             "src": "heavy"
           },
@@ -5540,6 +5608,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 8,
+            "startFrame": 1,
             "frames": 18,
             "src": "heavy"
           },
@@ -5547,6 +5616,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 5,
+            "startFrame": 1,
             "frames": 15,
             "src": "specialNeutral"
           },
@@ -5554,6 +5624,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 3,
+            "startFrame": 1,
             "frames": 18,
             "src": "specialSide"
           },
@@ -5561,6 +5632,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 1,
+            "startFrame": 1,
             "frames": 17,
             "src": "specialDown"
           },
@@ -5568,6 +5640,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 8,
+            "startFrame": 1,
             "frames": 18,
             "src": "heavy"
           }
@@ -5716,6 +5789,7 @@
     },
     "marcomunista": {
       "id": "marcomunista",
+      "strikeColor": "#c9a7f0",
       "name": "Marcomunista",
       "quotes": {
         "taunt": "Viva il comunismo!"
@@ -6072,6 +6146,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 2,
+            "startFrame": 1,
             "frames": 10,
             "src": "light"
           },
@@ -6079,6 +6154,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 8,
+            "startFrame": 1,
             "frames": 18,
             "src": "heavy"
           },
@@ -6122,6 +6198,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 2,
+            "startFrame": 1,
             "frames": 8,
             "src": "lightUp"
           },
@@ -6129,6 +6206,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 2,
+            "startFrame": 1,
             "frames": 8,
             "src": "lightDown"
           },
@@ -6136,6 +6214,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 2,
+            "startFrame": 1,
             "frames": 8,
             "src": "lightAir"
           },
@@ -6143,6 +6222,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 7,
+            "startFrame": 1,
             "frames": 19,
             "src": "heavyUp"
           },
@@ -6150,6 +6230,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 6,
+            "startFrame": 1,
             "frames": 18,
             "src": "heavyDown"
           },
@@ -6157,6 +6238,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 5,
+            "startFrame": 1,
             "frames": 17,
             "src": "heavyAir"
           },
@@ -6183,6 +6265,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 2,
+            "startFrame": 1,
             "frames": 15,
             "src": "grab"
           },
@@ -6203,6 +6286,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 8,
+            "startFrame": 1,
             "frames": 18,
             "src": "heavy"
           },
@@ -6216,6 +6300,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 8,
+            "startFrame": 1,
             "frames": 18,
             "src": "heavy"
           },
@@ -6223,6 +6308,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 5,
+            "startFrame": 1,
             "frames": 15,
             "src": "specialNeutral"
           },
@@ -6230,6 +6316,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 3,
+            "startFrame": 1,
             "frames": 18,
             "src": "specialSide"
           },
@@ -6237,6 +6324,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 1,
+            "startFrame": 1,
             "frames": 17,
             "src": "specialDown"
           },
@@ -6244,6 +6332,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 8,
+            "startFrame": 1,
             "frames": 18,
             "src": "heavy"
           }
@@ -6367,6 +6456,7 @@
     },
     "drmicelium": {
       "id": "drmicelium",
+      "strikeColor": "#a8c46b",
       "name": "Dr. Micelium",
       "quotes": {
         "taunt": "Vi insegnerò la via del fungo"
@@ -6409,6 +6499,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 2,
+            "startFrame": 1,
             "frames": 10,
             "src": "light"
           },
@@ -6416,6 +6507,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 8,
+            "startFrame": 1,
             "frames": 18,
             "src": "heavy"
           },
@@ -6459,6 +6551,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 2,
+            "startFrame": 1,
             "frames": 8,
             "src": "lightUp"
           },
@@ -6466,6 +6559,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 2,
+            "startFrame": 1,
             "frames": 8,
             "src": "lightDown"
           },
@@ -6473,6 +6567,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 2,
+            "startFrame": 1,
             "frames": 8,
             "src": "lightAir"
           },
@@ -6480,6 +6575,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 7,
+            "startFrame": 1,
             "frames": 19,
             "src": "heavyUp"
           },
@@ -6487,6 +6583,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 6,
+            "startFrame": 1,
             "frames": 18,
             "src": "heavyDown"
           },
@@ -6494,6 +6591,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 5,
+            "startFrame": 1,
             "frames": 17,
             "src": "heavyAir"
           },
@@ -6520,6 +6618,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 2,
+            "startFrame": 1,
             "frames": 15,
             "src": "grab"
           },
@@ -6540,6 +6639,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 8,
+            "startFrame": 1,
             "frames": 18,
             "src": "heavy"
           },
@@ -6553,6 +6653,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 8,
+            "startFrame": 1,
             "frames": 18,
             "src": "heavy"
           },
@@ -6560,6 +6661,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 5,
+            "startFrame": 1,
             "frames": 15,
             "src": "specialNeutral"
           },
@@ -6567,6 +6669,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 3,
+            "startFrame": 1,
             "frames": 18,
             "src": "specialSide"
           },
@@ -6574,6 +6677,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 1,
+            "startFrame": 1,
             "frames": 17,
             "src": "specialDown"
           },
@@ -6581,6 +6685,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 8,
+            "startFrame": 1,
             "frames": 18,
             "src": "heavy"
           }
@@ -6756,6 +6861,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 2,
+            "startFrame": 1,
             "frames": 10,
             "src": "light"
           },
@@ -6763,6 +6869,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 8,
+            "startFrame": 1,
             "frames": 18,
             "src": "heavy"
           },
@@ -6806,6 +6913,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 2,
+            "startFrame": 1,
             "frames": 8,
             "src": "lightUp"
           },
@@ -6813,6 +6921,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 2,
+            "startFrame": 1,
             "frames": 8,
             "src": "lightDown"
           },
@@ -6820,6 +6929,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 2,
+            "startFrame": 1,
             "frames": 8,
             "src": "lightAir"
           },
@@ -6827,6 +6937,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 7,
+            "startFrame": 1,
             "frames": 19,
             "src": "heavyUp"
           },
@@ -6834,6 +6945,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 6,
+            "startFrame": 1,
             "frames": 18,
             "src": "heavyDown"
           },
@@ -6841,6 +6953,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 5,
+            "startFrame": 1,
             "frames": 17,
             "src": "heavyAir"
           },
@@ -6867,6 +6980,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 2,
+            "startFrame": 1,
             "frames": 15,
             "src": "grab"
           },
@@ -6887,6 +7001,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 8,
+            "startFrame": 1,
             "frames": 18,
             "src": "heavy"
           },
@@ -6900,6 +7015,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 8,
+            "startFrame": 1,
             "frames": 18,
             "src": "heavy"
           },
@@ -6907,6 +7023,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 5,
+            "startFrame": 1,
             "frames": 15,
             "src": "specialNeutral"
           },
@@ -6914,6 +7031,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 3,
+            "startFrame": 1,
             "frames": 18,
             "src": "specialSide"
           },
@@ -6921,6 +7039,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 1,
+            "startFrame": 1,
             "frames": 17,
             "src": "specialDown"
           },
@@ -6928,6 +7047,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 8,
+            "startFrame": 1,
             "frames": 18,
             "src": "heavy"
           }

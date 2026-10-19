@@ -134,8 +134,9 @@ describe("bot", () => {
       a.facing = 1;
       bot.x = 600 + FIGHTER.width + 30;
       let hits = 0;
-      // Il giocatore tira un pesante ogni secondo per 6 secondi
-      for (let i = 0; i < 60 * 6; i++) {
+      // Il giocatore tira un pesante ogni secondo per 20 secondi: in pochi secondi gli scambi
+      // casuali (il bot attacca anche lui) pesano più delle schivate
+      for (let i = 0; i < 60 * 20; i++) {
         const heavy = i % 60 === 0;
         match.setInput("a", { left: false, right: false, up: false, jump: false, down: false, light: false, heavy, taunt: false, dodge: false, shield: false, special: false, supreme: false });
         bots.tick(match);
@@ -149,7 +150,7 @@ describe("bot", () => {
       return hits;
     };
     const [hard, easy] = [hitsBy("difficile"), hitsBy("facile")];
-    assert.ok(hard < easy, "il difficile ne prende meno");
+    assert.ok(hard < easy, `il difficile ne prende meno: ${hard} contro ${easy}`);
   });
 
   it("il bot semplice lanciato fuori da 80% torna sul palco almeno 15 volte su 20 (#110)", () => {
