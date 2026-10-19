@@ -259,7 +259,7 @@ def fianco(name):
         cap = [(xe, 520), (xe + side * 16, 512), (xe + side * 20, 520 + 6), (xe + side * 12, bot(xe, 150) - 4), (xe, bot(xe, 150))]
         tt.poly(cap, fill=(70, 66, 60, 255), ink=True, width=0.8, ink_col=(40, 36, 32, 255))
     tt.img.alpha_composite(base_img)
-    tt.img.save(os.path.join(OUT, name), optimize=True)
+    tt.img.quantize(colors=256, method=Image.Quantize.FASTOCTREE, dither=Image.Dither.NONE).save(os.path.join(OUT, name), optimize=True)
     print("scritto", name, tt.img.size)
 
 
@@ -1659,6 +1659,7 @@ def near_bank(name):
     shade_layer = Image.new("RGBA", out.size, (34, 30, 28, 0))
     shade_layer.putalpha(out.getchannel("A").point(lambda a: int(a * 0.22)))
     out.alpha_composite(shade_layer)
+    out = out.quantize(colors=256, method=Image.Quantize.FASTOCTREE, dither=Image.Dither.NONE)  # leggero (E12: 4 MB per arena)
     out.save(os.path.join(OUT, name), optimize=True)
     print("scritto", name, out.size)
 
@@ -1726,20 +1727,19 @@ def _obelisk(t, x, base, s, ink):
 
 
 def _side_bridge(t, p_in, p_out, rng):
-    """Un ponte del Prato visto di tre quarti (#378, come quelli veri, in prospettiva): va dalla punta dell'isola (p_in)
-    alla sponda di fuori (p_out), che sta più in basso perché è più vicina. Si vede il piano del ponte dall'alto tra i due
+    """Un ponte del Prato in prospettiva (#378, come quelli veri): va dalla punta dell'isola (p_in) alla sponda di fuori
+    (p_out), sull'asse lungo dell'ovale. Si vede il piano del ponte dall'alto tra i due
     parapetti, quello di là più in alto e quello di qua davanti; sotto il parapetto di qua, la faccia del ponte con
     l'arco sull'acqua, i conci e la chiave; ai quattro capi i piedistalli con gli obelischi, come i ponti est e ovest."""
     stone, stone_sh, stone_l, ink = (230, 226, 216, 255), (176, 170, 158, 255), (246, 244, 236, 255), (84, 78, 72, 255)  # bianchi
-    back = (14 if p_out[0] < p_in[0] else -14, -12)  # dove sta il bordo di là: indietro, verso il centro dell'isola
-    hump = 9
+    hump = 7
     n = 30
 
     def along(u, far=False, lift=0.0):  # un punto del ponte: u da 0 (isola) a 1 (sponda), sul bordo di qua o di là
         x = p_in[0] + (p_out[0] - p_in[0]) * u
         y = p_in[1] + (p_out[1] - p_in[1]) * u - hump * math.sin(math.pi * u) ** 0.8 - lift
-        if far:
-            x, y = x + back[0], y + back[1]
+        if far:  # il bordo di là: più in alto e un po' verso il punto di fuga, al centro dell'arena
+            x, y = x + (960 - x) * 0.015, y - 11
         return (x, y)
 
     near = [along(i / n) for i in range(n + 1)]
@@ -1830,11 +1830,13 @@ def bridges_and_statues(name):
             t.rect(px - 6 * sc, py - 14 * sc, px + 6 * sc, py, fill=stone, ink=True, width=0.5, ink_col=ink)
             ring_statue(t, px, py - 14 * sc, sc, rng, hz)
     t.poly(deck, ink=True, width=0.8, ink_col=ink)
-    # i ponti est e ovest alle punte dell'isola, di tre quarti: dalla punta della piazza alla sponda di fuori, più in basso
+    # i ponti est e ovest sull'asse lungo dell'ovale, come quelli veri: dalla punta dell'isola dritti verso fuori, sopra
+    # l'acqua del canale, fino al vialetto della sponda di fuori. Visti dal lato lungo: il fianco con l'arco di qua, il
+    # piano un po' dall'alto e il parapetto di là più su
     for side in (-1, 1):
-        y_out = 560
-        p_out = (oval_edge_x(y_out, side) + side * 14, y_out)
-        p_in = (960 + side * 868, 514)
+        y = 517
+        p_in = (960 + side * 872, y)
+        p_out = (oval_edge_x(y, side) + side * 22, y)
         _side_bridge(t, p_in, p_out, rng)
     t.save(OUT, name, colors=256)
 
@@ -2041,7 +2043,7 @@ def piano(name):
     for sx, w in ((310, 36), (540, 40), (690, 36), (1230, 36), (1380, 40), (1610, 36), (410, 22), (1510, 22)):
         for i, (ww, al) in enumerate(((w * 1.4, 14), (w * 1.1, 20), (w * 0.8, 26))):
             t.glaze([(sx + math.cos(u) * ww, 515 + math.sin(u) * (3 + i)) for u in [j * math.tau / 24 for j in range(24)]], (40, 36, 32, al))
-    t.save(OUT, name)
+    t.save(OUT, name, colors=256)
 
 
 GROUND = 522  # il pavimento dell'isola, dove poggiano palazzo, statue e platani

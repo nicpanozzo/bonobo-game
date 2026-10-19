@@ -588,7 +588,6 @@ export const STAGES: Record<string, StageSpec> = {
           bus: { file: "bus.png", frames: 1 },
           tram: { file: "tram.png", frames: 1 },
           // L'acqua della fontana (#288 passo 3d): lo zampillo a riposo e il getto acceso
-          zampillo: { file: "zampillo.png", frames: 6 },
           getto: { file: "getto.png", frames: 4 },
           // Chi galleggia nel canale (#378, idea di Riccardo): la bici tutta rovinata e il tizio ubriaco a pancia in su
           corona: { file: "corona.png", frames: 6 }, // la corona dei getti sotto le tazze (#378)

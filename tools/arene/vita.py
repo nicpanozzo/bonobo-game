@@ -948,7 +948,10 @@ def canal_tile():
         twice(lambda dx, shape=shape: q.poly(leaf, [(px + dx, py) for px, py in shape]))
         q.fill(leaf, rng.choice([(150, 112, 62), (126, 98, 56), (168, 134, 74)]), 0.95)
         q.outline(leaf, 0.35, (70, 56, 40))
-    return q.save(OUT, "canale.png")
+    out = q.result().quantize(colors=256, method=Image.Quantize.FASTOCTREE, dither=Image.Dither.NONE)
+    out.save(os.path.join(OUT, "canale.png"), optimize=True)
+    print("scritto canale.png", out.size)
+    return out
 
 
 def _bike_frame(phase):
@@ -1144,7 +1147,7 @@ def _crown(phase, seed=11):
 
 
 def crown_sheet():
-    sheet([_crown(i / 6) for i in range(6)], OUT, "corona.png")
+    sheet([_crown(i / 6) for i in range(6)], OUT, "corona.png", colors=256)
 
 
 def floater_sheets():
@@ -1158,7 +1161,8 @@ def near_sheets():
     from PIL import ImageFilter
     for src, dst in (("passanti.png", "passanti-sfocati.png"), ("bici.png", "bici-sfocata.png")):
         im = Image.open(os.path.join(OUT, src)).convert("RGBA")
-        im.filter(ImageFilter.GaussianBlur(2.4)).save(os.path.join(OUT, dst), optimize=True)
+        blur = im.filter(ImageFilter.GaussianBlur(2.4))
+        blur.quantize(colors=256, method=Image.Quantize.FASTOCTREE, dither=Image.Dither.NONE).save(os.path.join(OUT, dst), optimize=True)
         print("scritto", dst, im.size)
 
 
@@ -1284,6 +1288,7 @@ def kids_sheet():
         for i, f in enumerate(frames):
             out.alpha_composite(f, (i * fw, r * fh))
     out = out.filter(ImageFilter.GaussianBlur(1.3))
+    out = out.quantize(colors=256, method=Image.Quantize.FASTOCTREE, dither=Image.Dither.NONE)
     out.save(os.path.join(OUT, "ragazzi.png"), optimize=True)
     print("scritto ragazzi.png", out.size)
 
