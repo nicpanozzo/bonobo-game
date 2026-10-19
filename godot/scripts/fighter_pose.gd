@@ -77,7 +77,7 @@ static func charge_flash(p: Dictionary, now: float, calm: bool) -> float:
 
 
 # I numeri di un attacco per un personaggio, come attackSpecFor() in src/shared/physics/attacks.ts:
-# quelli di ATTACKS con i ritocchi del personaggio (il recupero). {} se l'attacco non esiste
+# quelli di ATTACKS con i ritocchi del personaggio (il recupero e i colpi normali). {} se l'attacco non esiste
 static func attack_spec(game_data: Dictionary, character_id: String, kind: String) -> Dictionary:
 	if kind == "supreme": # la suprema (#101, #102): quella del personaggio, o quella di base
 		var c: Dictionary = game_data.characters.get(character_id, {})
@@ -87,10 +87,11 @@ static func attack_spec(game_data: Dictionary, character_id: String, kind: Strin
 		var c: Dictionary = game_data.characters.get(character_id, game_data.characters.get(game_data.get("defaultCharacterId", ""), {}))
 		return c.get("specialAttacks", {}).get(kind, {})
 	var spec: Dictionary = game_data.attacks.get(kind, {})
-	if kind != "recovery" or spec.is_empty():
+	if spec.is_empty():
 		return spec
 	var character: Dictionary = game_data.characters.get(character_id, {})
-	var own: Variant = character.get("recovery")
+	# il recupero ha i suoi numeri, gli altri colpi i ritocchi del personaggio (#384 D2)
+	var own: Variant = character.get("recovery") if kind == "recovery" else character.get("attacks", {}).get(kind)
 	return spec.merged(own, true) if own is Dictionary else spec
 
 

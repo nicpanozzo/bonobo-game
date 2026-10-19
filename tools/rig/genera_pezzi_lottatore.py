@@ -45,7 +45,14 @@ LOOKS = {
     "coachcartier": dict(skin=("#6b4630", "#4e3322"), hair=("#1c1512", "#0e0a08"), top=("#1f8a4c", "#156337"),
                          bottom=("#1f8a4c", "#156337"), shoes=("#f4f4f4", "#cfcfcf"), stripe="#f2d02e",
                          sleeves="long", hairstyle="afro", chains=True, bulk=1.08),
+    # Nonna Gina (inventata da Claude per Nicola, #384): nonna di Cologna Veneta, chignon grigio, occhiali, golfino
+    # viola, gonna, grembiule, calze color carne, ciabatte e il mattarello in mano
+    "nonnagina": dict(skin=("#f2cfb3", "#d6a98c"), hair=("#dcd9d3", "#aeaaa2"), top=("#7b4f8e", "#5b3a6a"),
+                      bottom=("#3f4a5c", "#2c3442"), shoes=("#9c3b2e", "#72291f"), stockings=("#d8b597", "#b8957a"),
+                      sleeves="long", hairstyle="bun", glasses=True, apron="#f3efe6", skirt=True, pin=True, bulk=1.05),
 }
+
+PIN = 64  # lunghezza del mattarello oltre il polso, pixel a 2x (lo usa anche animazioni_nonnagina.py)
 
 
 # Trasformazione dei disegni: testa e decorazioni del busto si disegnano nelle coordinate di Bonobot e si portano
@@ -257,6 +264,16 @@ def genera(cid):
         d.piece(f"forearm_{side}", f"forearm_{side}", z0 + 1, s, own)
         d.piece(f"thumb_{side}", f"thumb_{side}", z0 + 2, d.shaded(capsule(H[f"thumb_{side}"], T[f"thumb_{side}"], 3.6, 3.0), *hd, light=(1, -1)), own)
         d.piece(f"hand_{side}", f"hand_{side}", z0 + 3, d.shaded(capsule(H[f"hand_{side}"], T[f"hand_{side}"], 7.0, 7.5), *hd, light=(1.5, -2)), own)
+        if L.get("pin") and not f:  # il mattarello nel pugno, lungo la mano: manici sottili e rullo di legno
+            (ax, ay), (bx, by) = H[f"hand_{side}"], T[f"hand_{side}"]
+            ln = math.hypot(bx - ax, by - ay)
+            ux, uy = (bx - ax) / ln, (by - ay) / ln
+            at = lambda k: (ax + ux * k, ay + uy * k)
+            s = d.shaded(capsule(at(4), at(22), 3.2, 3.2, n=8), "#c98f55", "#9c6a3a", light=(0.6, -0.8))
+            s += d.shaded(capsule(at(PIN - 12), at(PIN), 3.2, 3.6, n=8), "#c98f55", "#9c6a3a", light=(0.6, -0.8))
+            s += d.shaded(capsule(at(20), at(PIN - 10), 7.2, 7.2, n=10), "#e0ae74", "#b9844c", light=(1.2, -1.2))
+            s += line(at(26), at(PIN - 16), "#f2cfa0", 1.6)
+            d.piece("pin", f"hand_{side}", z0 + 3.5, s, own)
         fx, fy = H[f"fingers_{side}"]
         tx, ty = T[f"fingers_{side}"]
         s = d.shaded(capsule((fx, fy), (tx, ty), 7.0, 5.5), *hd, light=(1.5, -1.5))
@@ -270,6 +287,8 @@ def genera(cid):
         pants = far(bot, f), far(bot_sh, f)
         furry = 6 if fur else 0
         shin_c = (far(skin, f), far(skin_sh, f)) if L.get("shorts") else pants
+        if L.get("stockings"):  # sotto la gonna: le calze
+            shin_c = far(L["stockings"][0], f), far(L["stockings"][1], f)
         s = d.shaded(capsule(H[f"thigh_{side}"], T[f"thigh_{side}"], 11.5 * k, 9 * k), *pants, furry=furry)
         if L.get("stripe"):
             a, b = H[f"thigh_{side}"], T[f"thigh_{side}"]
@@ -296,8 +315,19 @@ def genera(cid):
     leg("L", 6)
     # corpo: bacino coi pantaloni, pancia e petto con la maglia; ombra solo sul dorso
     furry = 8 if fur else 0
-    d.piece("pelvis", "hips", 20, d.shaded(ellipse_pts(-2, -96, 18.5 * k, 15, -5), bot, bot_sh, light=(5, 0), furry=furry))
-    d.piece("belly", "spine_1", 21, d.shaded(ellipse_pts(1, -113, 18.5 * k, 14, -8), top, top_sh, light=(5, 0), furry=furry))
+    if L.get("skirt"):  # gonna a campana fin sotto il ginocchio, col grembiule davanti
+        s = d.shaded([(-16, -110), (14, -110), (24, -46), (-26, -46)], bot, bot_sh, light=(5, 0))
+        s += path(f"M{P(-6, -100)} L{P(-12, -48)} M{P(6, -100)} L{P(8, -48)}", bot_sh, 1.6)
+        if L.get("apron"):
+            s += f'<polygon points="{poly([(6, -108), (22, -108), (28, -54), (10, -54)])}" fill="{L["apron"]}" stroke="{INK}" stroke-width="1.6"/>'
+            s += path(f"M{P(14, -82)} L{P(24, -82)} L{P(25, -72)} L{P(15, -72)} Z", INK, 1.3)
+        d.piece("pelvis", "hips", 20, s)
+    else:
+        d.piece("pelvis", "hips", 20, d.shaded(ellipse_pts(-2, -96, 18.5 * k, 15, -5), bot, bot_sh, light=(5, 0), furry=furry))
+    s = d.shaded(ellipse_pts(1, -113, 18.5 * k, 14, -8), top, top_sh, light=(5, 0), furry=furry)
+    if L.get("apron"):
+        s += f'<polygon points="{poly([(8, -124), (21, -124), (22, -104), (8, -104)])}" fill="{L["apron"]}" stroke="{INK}" stroke-width="1.6"/>'
+    d.piece("belly", "spine_1", 21, s)
     s = d.shaded(ellipse_pts(5, -132, 22 * k, 17, -12), top, top_sh, light=(5, 0), furry=furry)
     XF[0] = CHEST
     if L.get("coat"):  # bavero del camice e taschino
@@ -317,6 +347,9 @@ def genera(cid):
     if L.get("number"):
         tx, ty = tf(14, -118)
         s += f'<text x="{tx + OX:.1f}" y="{ty + OY:.1f}" font-family="DejaVu Sans" font-weight="bold" font-size="{sc(20):.1f}" fill="#ffffff" stroke="{INK}" stroke-width="1">{L["number"]}</text>'
+    if L.get("apron"):  # pettorina del grembiule e laccio al collo
+        s += f'<polygon points="{poly([(24, -140), (36, -140), (37, -112), (24, -112)])}" fill="{L["apron"]}" stroke="{INK}" stroke-width="1.6"/>'
+        s += path(f"M{P(25, -140)} L{P(20, -150)} M{P(35, -140)} L{P(38, -150)}", L["apron"], 2)
     if L.get("tie"):
         s += f'<polygon points="{poly([(30, -144), (35, -144), (36, -122), (32, -116), (28, -122)])}" fill="{L["tie"]}" stroke="{INK}" stroke-width="1.5"/>'
     if L.get("stripe"):
@@ -365,6 +398,10 @@ def genera(cid):
             s += path(f"M{P(36, -186)} L{P(38, -183)} M{P(44, -188)} L{P(45, -185)} M{P(52, -187)} L{P(52, -184)}", hair_sh, 1.4)
         if style == "bald":
             s += path(f"M{P(46, -188)} Q{P(54, -188)} {P(57, -183)}", "#ffffff", 2.4)  # luce sulla pelata
+        if style == "bun":  # capelli grigi raccolti, una riga di onde sulla fronte
+            s += f'<path d="M{P(27, -166)} Q{P(25, -193)} {P(46, -193)} Q{P(62, -192)} {P(61, -181)} Q{P(54, -185)} {P(47, -182)} Q{P(40, -185)} {P(34, -178)} Q{P(30, -172)} {P(27, -166)} Z" fill="{hair}" stroke="{INK}" stroke-width="2"/>'
+            s += path(f"M{P(36, -188)} Q{P(42, -190)} {P(46, -186)} M{P(48, -189)} Q{P(54, -190)} {P(57, -185)}", hair_sh, 1.4)
+            s += path(f"M{P(50, -165)} Q{P(56, -163)} {P(61, -166)}", skin_sh, 1.2)  # una ruga sulla guancia
         if style in ("curtain", "emo", "dreads", "afro"):
             s += f'<path d="M{P(27, -168)} Q{P(26, -192)} {P(46, -192)} Q{P(62, -191)} {P(62, -180)} L{P(50, -182)} Q{P(38, -182)} {P(33, -172)} Z" fill="{hair}" stroke="{INK}" stroke-width="2"/>'
     d.piece("head", "head", 40, s)
@@ -417,6 +454,9 @@ def genera(cid):
     elif style == "afro":
         tuft("tuft_back", 38, ellipse_pts(36, -186, 20, 18))
         tuft("tuft_front", 44, ellipse_pts(50, -194, 17, 13))
+    elif style == "bun":  # lo chignon dietro e un ricciolo davanti
+        tuft("tuft_back", 38, ellipse_pts(26, -186, 11, 10))
+        tuft("tuft_front", 44, ellipse_pts(57, -189, 5, 4, 20))
     elif style == "sloth":  # ciuffi di pelo in testa
         tuft("tuft_back", 38, [(30, -184), (38, -192), (36, -180), (26, -176)], skin, skin_sh)
         tuft("tuft_front", 44, [(44, -190), (54, -194), (50, -184)], skin, skin_sh)

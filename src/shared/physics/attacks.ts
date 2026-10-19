@@ -1,6 +1,6 @@
 // Attacchi: inizio, finestra attiva, hitbox e cosa succede a chi viene colpito.
 
-import { characterStats, getCharacter, SPECIAL_KINDS, specialAttackSpec, specialsFor, supremeAttackSpec, type SpecialSlot } from "../characters";
+import { characterStats, getCharacter, SPECIAL_KINDS, specialAttackSpec, specialsFor, supremeAttackSpec, type SpecialSlot, type TweakableAttack } from "../characters";
 import { ATTACKS, BIRRA, FIGHTER, HITSTOP, HITSTUN_PER_KNOCKBACK, JAB, MICELIO, POWERUP, SMASH_CHARGE, type AttackSpec } from "../constants";
 import type { AttackKind, SpecialKind } from "../types";
 import { biteBox, biting, hitPets } from "./companion";
@@ -53,7 +53,7 @@ export function variant(f: Fighter, base: "light" | "heavy"): AttackKind {
 }
 
 // I numeri di un attacco per questo lottatore (E10): quelli di ATTACKS, con i ritocchi del suo personaggio
-// (per ora il recupero, characters.ts). Tutta la fisica degli attacchi li legge da qui
+// (il recupero e i colpi normali, characters.ts). Tutta la fisica degli attacchi li legge da qui
 export function attackSpecFor(f: Fighter, kind: AttackKind | null = f.attack): AttackSpec {
   if (kind && isSpecialKind(kind)) {
     const spec = specialSpecFor(f.characterId, kind);
@@ -61,8 +61,10 @@ export function attackSpecFor(f: Fighter, kind: AttackKind | null = f.attack): A
   }
   if (kind === "supreme") return supremeAttackSpec(f.characterId) ?? ATTACKS.supreme; // #102: la sua, se ce l'ha
   const base = kind === "light" && kind === f.attack && f.jabStep > 0 ? JAB.steps[f.jabStep - 1] : ATTACKS[kind ?? "light"];
-  const recovery = kind === "recovery" ? getCharacter(f.characterId).recovery : undefined;
-  const spec = recovery ? { ...base, ...recovery } : base;
+  const character = getCharacter(f.characterId);
+  // il recupero ha i suoi numeri; gli altri colpi i ritocchi del personaggio (#384 D2), non nei colpi della combo
+  const own = kind === "recovery" ? character.recovery : base === ATTACKS[kind ?? "light"] ? character.attacks?.[kind as TweakableAttack] : undefined;
+  const spec = own ? { ...base, ...own } : base;
   return kind === f.attack && f.chargeMultiplier !== 1 ? charged(spec, f.chargeMultiplier) : spec; // colpo caricato
 }
 

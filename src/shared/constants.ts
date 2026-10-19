@@ -211,6 +211,12 @@ export const CHARACTER_STATS = {
   max: 1.2,
 };
 
+// Colpi normali propri di un personaggio (#384 D2): tempi (avvio, attivo, recupero) e zona (range, height)
+// restano entro questa frazione da quelli di ATTACKS, così nessuno diventa un'altra cosa
+export const ATTACK_TWEAK = {
+  maxChange: 0.3, // ±30%
+};
+
 // Schivata (#3): con L si è invulnerabili per un attimo e ci si sposta di poco nella direzione tenuta.
 // 260 ms a 520 pixel/s = circa 135 pixel, poco più di tre volte la larghezza del lottatore.
 export const DODGE = {

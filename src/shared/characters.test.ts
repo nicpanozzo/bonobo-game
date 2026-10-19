@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { ATTACKS, DEFAULT_SPECIALS } from "./constants";
+import { ATTACK_TWEAK, ATTACKS, DEFAULT_SPECIALS } from "./constants";
 import {
   ANIMATION_FALLBACK,
   ANIMATION_NAMES,
@@ -202,5 +202,30 @@ describe("battute (#13)", () => {
         assert.ok(text.length <= 80, `${c.id}.${line}: più di 80 caratteri`);
       }
     }
+  });
+});
+
+describe("colpi normali propri (#384 D2)", () => {
+  it("tempi e zone restano entro ATTACK_TWEAK da quelli di ATTACKS", () => {
+    const limited = ["startupMs", "activeMs", "cooldownMs", "range", "height"] as const;
+    for (const c of Object.values(CHARACTERS)) {
+      for (const [kind, own] of Object.entries(c.attacks ?? {})) {
+        const base = ATTACKS[kind as keyof typeof ATTACKS];
+        assert.ok(base, `${c.id}: "${kind}" non è un attacco di ATTACKS`);
+        for (const key of limited) {
+          if (own[key] === undefined) continue;
+          const change = Math.abs(own[key] / base[key] - 1);
+          assert.ok(change <= ATTACK_TWEAK.maxChange + 1e-9, `${c.id}.${kind}.${key}: ${own[key]} è a ${Math.round(change * 100)}% da ${base[key]}, il massimo è ${ATTACK_TWEAK.maxChange * 100}%`);
+        }
+      }
+    }
+  });
+
+  it("la fisica usa i ritocchi del personaggio e lascia gli altri come sono", async () => {
+    const { attackSpecFor } = await import("./physics/attacks");
+    const gina = { characterId: "nonnagina", attack: "heavy", chargeMultiplier: 1, jabStep: 0 } as Parameters<typeof attackSpecFor>[0];
+    assert.equal(attackSpecFor(gina, "heavy").startupMs, CHARACTERS.nonnagina.attacks!.heavy!.startupMs);
+    assert.equal(attackSpecFor(gina, "heavy").activeMs, ATTACKS.heavy.activeMs);
+    assert.deepEqual(attackSpecFor({ ...gina, characterId: "bonobot" }, "heavy"), ATTACKS.heavy);
   });
 });

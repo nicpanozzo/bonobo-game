@@ -16,13 +16,14 @@ var attacks: Dictionary # ATTACKS: durata di ogni attacco
 var smash_charge: Dictionary # SMASH_CHARGE: il pesante a terra tenuto si carica
 var recovery: Dictionary # RECOVERY: spinta del recupero
 var own_recovery: Dictionary # i numeri propri del recupero del personaggio (characters.ts), se ne ha
+var own_attacks: Dictionary # i ritocchi dei colpi normali del personaggio (#384 D2), se ne ha
 var buffer_ms: float # INPUT.bufferMs: per quanto una pressione del salto vale ancora
 var stats: Dictionary # statistiche del personaggio: speed, airSpeed, jump, gravity
 var solids: Array
 var platforms: Array
 
 
-func _init(game: Dictionary, character_stats: Dictionary, stage_solids: Array, stage_platforms: Array, character_recovery := {}) -> void:
+func _init(game: Dictionary, character_stats: Dictionary, stage_solids: Array, stage_platforms: Array, character_recovery := {}, character_attacks := {}) -> void:
 	fighter = game.fighter
 	dash = game.dash
 	dodge = game.dodge
@@ -30,6 +31,7 @@ func _init(game: Dictionary, character_stats: Dictionary, stage_solids: Array, s
 	smash_charge = game.smashCharge
 	recovery = game.recovery
 	own_recovery = character_recovery
+	own_attacks = character_attacks
 	buffer_ms = float(game.input.bufferMs)
 	stats = character_stats
 	solids = stage_solids
@@ -239,6 +241,8 @@ func attack_spec(kind: String) -> Dictionary:
 	var spec: Dictionary = attacks[kind]
 	if kind == "recovery" and not own_recovery.is_empty():
 		spec = spec.merged(own_recovery, true)
+	elif own_attacks.get(kind) is Dictionary:
+		spec = spec.merged(own_attacks[kind], true)
 	return spec
 
 
