@@ -366,7 +366,12 @@ export interface CharacterSpec {
   recovery?: Partial<AttackSpec & typeof RECOVERY>; // numeri propri del recupero (#11): quelli che mancano restano i soliti
   quotes?: CharacterQuotes; // le battute della scheda, scritte in un fumetto (solo disegno, Godot)
   strikeColor?: string; // colore della scia dei suoi colpi, "#rrggbb" (#384 B2); senza, bianca o arancio per i pesanti
+  // I suoi colpi normali (#384 D2): ritocchi di ATTACKS, tempi e zone entro ATTACK_TWEAK (lo controlla characters.test.ts)
+  attacks?: Partial<Record<TweakableAttack, Partial<AttackSpec>>>;
 }
+
+// Gli attacchi normali che un personaggio può ritoccare: non le speciali, la suprema, il recupero, presa e lanci
+export type TweakableAttack = "light" | "heavy" | "lightUp" | "lightDown" | "lightAir" | "heavyUp" | "heavyDown" | "heavyAir" | "dashAttack";
 
 // Le battute dalla scheda del personaggio (#13). Solo testo: le voci registrate restano a parte (E13)
 export interface CharacterQuotes {
@@ -892,6 +897,45 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       side: { type: "projectile", name: "Corri!", startupMs: 200, cooldownMs: 560, speed: 820, gravity: 0, lifeMs: 800, maxAlive: 1, range: 26, height: 20, damage: 7, baseKnockback: 260, knockbackGrowth: 4, angleDeg: 30, color: 0x2f6b3a },
       // urla e allontana: risposta debole ma che spinge lontano
       down: { type: "counter", name: "Mahmmoney", startupMs: 60, windowMs: 400, endLagMs: 460, minDamage: 6, multiplier: 1.1, range: 80, height: 70, baseKnockback: 560, knockbackGrowth: 10, angleDeg: 35 },
+    },
+  },
+
+  // Inventata da Claude per Nicola (#384): la nonna di Cologna Veneta che alla domenica dà da mangiare a tutto il
+  // Cuamm. Primo personaggio fatto per intero col flusso di #384: scheda in docs/mosse/nonnagina.md, colpi normali
+  // propri (attacks) e animazioni sue col mattarello (tools/rig/animazioni_nonnagina.py)
+  nonnagina: {
+    id: "nonnagina",
+    name: "Nonna Gina",
+    strikeColor: "#e0ae74", // scia dei colpi: il legno del mattarello
+    quotes: { taunt: "Mangia che ti fa bene!", ko: "Ostrega!", victory: "Ti go fato el brodo" },
+    crews: ["cologna"],
+    sprite: {
+      ...communitySprite("nonnagina"),
+      frameWidth: 400, // più largo: il mattarello arriva lontano
+      animations: fromRest({
+        ...communitySprite("nonnagina").animations,
+        walk: { fps: 24, loop: true }, // passi corti e curvi
+        specialSide: { fps: 24, loop: false, hitFrame: 4 }, // la ciabatta parte dalla mano
+        supreme: { fps: 24, loop: false }, // tre bracciate di polpette
+      }),
+    },
+    // pesante e lenta a terra, salta poco ma cade piano: non la sposti facilmente
+    stats: { weight: 1.15, speed: 0.85, airSpeed: 0.95, jump: 0.9, gravity: 0.95 },
+    // i colpi normali col mattarello (#384 D2): più lunghi e un po' più lenti di quelli di tutti
+    attacks: {
+      light: { damage: 6, startupMs: 50, range: 64 }, // botta di punta
+      heavy: { damage: 15, baseKnockback: 450, startupMs: 320, cooldownMs: 860, range: 84, height: 54 }, // mattarellata a due mani
+      heavyDown: { damage: 13, startupMs: 280, range: 104 }, // il mattarello rotolato radente
+    },
+    // dalla scheda: "Pranzo della domenica", tre bracciate di polpette da tutte e due le parti
+    supreme: { type: "burst", name: "Pranzo della domenica", windupMs: 300, waves: 3, waveEveryMs: 260, count: 5, speed: 520, lift: 760, endLagMs: 420 },
+    specials: {
+      // la polpetta, lanciata ad arco dal basso
+      neutral: { type: "projectile", name: "Polpetta", startupMs: 220, cooldownMs: 560, speed: 620, gravity: 1500, lift: 420, lifeMs: 1300, maxAlive: 2, range: 20, height: 20, damage: 7, baseKnockback: 240, knockbackGrowth: 4, angleDeg: 45, color: 0x8a4b2a },
+      // la ciabatta: dritta, veloce e precisa, come quella delle nonne vere
+      side: { type: "projectile", name: "Ciabatta", startupMs: 180, cooldownMs: 600, speed: 980, gravity: 0, lifeMs: 700, maxAlive: 1, range: 30, height: 14, damage: 9, baseKnockback: 300, knockbackGrowth: 5, angleDeg: 30, color: 0x9c3b2e },
+      // "Mangia!": para col mattarello di traverso e risponde con una botta che allontana
+      down: { type: "counter", name: "Mangia!", startupMs: 60, windowMs: 400, endLagMs: 480, minDamage: 8, multiplier: 1.3, range: 70, height: 60, baseKnockback: 480, knockbackGrowth: 9, angleDeg: 38 },
     },
   },
 };

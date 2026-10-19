@@ -101,7 +101,7 @@ func on_server(p: Dictionary, now_ms: float, shown := Vector2(NAN, NAN)) -> void
 	var key := "%s/%s" % [_stage.get("id", ""), p.characterId]
 	if key != _movement_key:
 		var character: Dictionary = _game.characters.get(p.characterId, _game.characters[_game.defaultCharacterId])
-		_movement = PredictMovement.new(_game, character.stats, _stage.get("solids", []), _stage.get("platforms", []), character.get("recovery", {}))
+		_movement = PredictMovement.new(_game, character.stats, _stage.get("solids", []), _stage.get("platforms", []), character.get("recovery", {}), character.get("attacks", {}))
 		_movement_key = key
 	var pr: Dictionary = p.predict
 	# Lo stato del server è quello dopo il tick locale seq + ticks - 1
