@@ -1726,37 +1726,38 @@ def _obelisk(t, x, base, s, ink):
     t.poly([(x - 1.2 * s, base - 52 * s), (x + 1.2 * s, base - 52 * s), (x, base - 56 * s)], fill=stone, ink=True, width=0.4 * s, ink_col=ink)
 
 
-def _side_bridge(t, p_in, p_out, rng):
+def _side_bridge(t, p_in, p_out, rng, k=1.0):
     """Un ponte del Prato in prospettiva (#378, come quelli veri): va dalla punta dell'isola (p_in) alla sponda di fuori
     (p_out), sull'asse lungo dell'ovale. Si vede il piano del ponte dall'alto tra i due
     parapetti, quello di là più in alto e quello di qua davanti; sotto il parapetto di qua, la faccia del ponte con
-    l'arco sull'acqua, i conci e la chiave; ai quattro capi i piedistalli con gli obelischi, come i ponti est e ovest."""
+    l'arco sull'acqua, i conci e la chiave; ai quattro capi i piedistalli con gli obelischi, come i ponti est e ovest. k ingrandisce
+    tutto il ponte: quelli vicini alla telecamera sono più grandi."""
     stone, stone_sh, stone_l, ink = (230, 226, 216, 255), (176, 170, 158, 255), (246, 244, 236, 255), (84, 78, 72, 255)  # bianchi
-    hump = 7
+    hump = 9 * k
     n = 30
 
     def along(u, far=False, lift=0.0):  # un punto del ponte: u da 0 (isola) a 1 (sponda), sul bordo di qua o di là
         x = p_in[0] + (p_out[0] - p_in[0]) * u
         y = p_in[1] + (p_out[1] - p_in[1]) * u - hump * math.sin(math.pi * u) ** 0.8 - lift
         if far:  # il bordo di là: più in alto e un po' verso il punto di fuga, al centro dell'arena
-            x, y = x + (960 - x) * 0.015, y - 11
+            x, y = x + (960 - x) * 0.015, y - 11 * k
         return (x, y)
 
     near = [along(i / n) for i in range(n + 1)]
     far_ = [along(i / n, True) for i in range(n + 1)]
     # il parapetto di là, dietro al piano: la stessa lastra traforata, vista da dietro e in ombra
-    t.poly([(x, y) for x, y in far_] + [(x, y - 8) for x, y in reversed(far_)], fill=stone_sh)
+    t.poly([(x, y) for x, y in far_] + [(x, y - 8 * k) for x, y in reversed(far_)], fill=stone_sh)
     for i in range(1, n, 1):
         x, y = far_[i]
-        t.poly([(x, y - 6.4), (x + 1.2, y - 4), (x, y - 1.6), (x - 1.2, y - 4)], fill=(96, 112, 106, 255))
-    t.line([(x, y - 9) for x, y in far_], fill=stone, width=2.2)
-    t.line([(x, y - 9.6) for x, y in far_], fill=stone_l, width=0.6)
+        t.poly([(x, y - 6.4 * k), (x + 1.2 * k, y - 4 * k), (x, y - 1.6 * k), (x - 1.2 * k, y - 4 * k)], fill=(96, 112, 106, 255))
+    t.line([(x, y - 9 * k) for x, y in far_], fill=stone, width=2.2 * k)
+    t.line([(x, y - 9.6 * k) for x, y in far_], fill=stone_l, width=0.6 * k)
     # il piano del ponte, visto dall'alto: lastre di pietra
     t.poly(near + list(reversed(far_)), fill=(184, 176, 160, 255))
     for i in range(1, n, 3):
-        t.line([near[i], far_[i]], fill=(160, 152, 138, 255), width=0.5)
+        t.line([near[i], far_[i]], fill=(160, 152, 138, 255), width=0.5 * k)
     # la faccia di qua: dal bordo giù fino all'acqua, con l'arco in mezzo
-    water = [(x, y + hump * math.sin(math.pi * i / n) ** 0.8 + 16) for i, (x, y) in enumerate(near)]
+    water = [(x, y + hump * math.sin(math.pi * i / n) ** 0.8 + 16 * k) for i, (x, y) in enumerate(near)]
     face = near + list(reversed(water))
     t.poly(face, fill=stone)
     arch = []
@@ -1764,42 +1765,42 @@ def _side_bridge(t, p_in, p_out, rng):
         u = 0.2 + 0.6 * i / n
         x, y = along(u)
         wy = water[int(u * n)][1]
-        arch.append((x, wy - (wy - y - 5) * math.sin(math.pi * (u - 0.2) / 0.6)))
+        arch.append((x, wy - (wy - y - 5 * k) * math.sin(math.pi * (u - 0.2) / 0.6)))
     t.poly([water[int(0.2 * n)]] + arch + [water[int(0.8 * n)]], fill=(48, 64, 60, 255))
     for i in range(2, n - 1, 3):
         x, y = arch[i]
-        t.line([(x, y), (x, y - 4)], fill=stone_sh, width=0.7)
-    t.line(arch, fill=ink, width=0.8)
-    t.line([(x, y + 2.5) for x, y in near], fill=stone_sh, width=2.2)  # la cornice sotto il parapetto
-    t.poly(face, ink=True, width=0.8, ink_col=ink)
+        t.line([(x, y), (x, y - 4 * k)], fill=stone_sh, width=0.7 * k)
+    t.line(arch, fill=ink, width=0.8 * k)
+    t.line([(x, y + 2.5 * k) for x, y in near], fill=stone_sh, width=2.2 * k)  # la cornice sotto il parapetto
+    t.poly(face, ink=True, width=0.8 * k, ink_col=ink)
     for i in range(9):  # il riflesso del ponte nell'acqua
         wx, wy = water[int(n * (0.1 + 0.8 * rng.random()))]
-        t.line([(wx - 10, wy + 2 + i), (wx + 10, wy + 2 + i)], fill=(166, 186, 178, 255) if i % 2 else (60, 78, 72, 255), width=0.6)
+        t.line([(wx - 10 * k, wy + 2 * k + i), (wx + 10 * k, wy + 2 * k + i)], fill=(166, 186, 178, 255) if i % 2 else (60, 78, 72, 255), width=0.6 * k)
     # il parapetto di qua, davanti: una lastra bianca traforata a quadrifogli (come i ponti veri), che segue la gobba
-    panel = [(x, y - 1) for x, y in near] + [(x, y - 9) for x, y in reversed(near)]
+    panel = [(x, y - 1 * k) for x, y in near] + [(x, y - 9 * k) for x, y in reversed(near)]
     t.poly(panel, fill=stone)
     for i in range(1, n, 1):
         x, y = near[i]
-        yc = y - 5
-        t.poly([(x, yc - 2.6), (x + 1.4, yc), (x, yc + 2.6), (x - 1.4, yc)], fill=(70, 86, 82, 255))  # il traforo
-    t.poly(panel, ink=True, width=0.5, ink_col=ink)
-    t.line([(x, y - 9) for x, y in near], fill=stone, width=2.6)
-    t.line([(x, y - 9.8) for x, y in near], fill=stone_l, width=0.8)
-    t.line([(x, y - 7.6) for x, y in near], fill=ink, width=0.5)
+        yc = y - 5 * k
+        t.poly([(x, yc - 2.6 * k), (x + 1.4 * k, yc), (x, yc + 2.6 * k), (x - 1.4 * k, yc)], fill=(70, 86, 82, 255))  # il traforo
+    t.poly(panel, ink=True, width=0.5 * k, ink_col=ink)
+    t.line([(x, y - 9 * k) for x, y in near], fill=stone, width=2.6 * k)
+    t.line([(x, y - 9.8 * k) for x, y in near], fill=stone_l, width=0.8 * k)
+    t.line([(x, y - 7.6 * k) for x, y in near], fill=ink, width=0.5 * k)
     # gli obelischi ai capi: quelli di là più piccoli e più in alto
     for u in (0.0, 1.0):  # gli obelischi alti e bianchi ai capi, come sui ponti est e ovest del Prato
         fx, fy = along(u, True)
-        _obelisk(t, fx, fy, 0.85, ink)
+        _obelisk(t, fx, fy, 0.85 * k, ink)
         nx, ny = along(u)
-        _obelisk(t, nx, ny + 2, 1.0, ink)
+        _obelisk(t, nx, ny + 2 * k, 1.0 * k, ink)
 
 
 def bridges_and_statues(name):
     """Le statue sulla sponda di là del canale e i ponticelli (#378, chiesto da Riccardo): la fila di statue del Prato
     lungo tutto l'ovale, più piccole lontano; il ponticello dietro la fontana visto di fronte, e i due alle punte
     dell'isola visti di fianco, che portano alla sponda di fuori. Sono dietro la piazza: non ci si cammina sopra.
-    Prop dietro in x 960, y 600, a 2x: x -420..2340, y 340..600."""
-    x0, y0, w, h = -420, 340, 2760, 260
+    Prop dietro in x 960, y 640, a 2x: x -420..2340, y 340..640."""
+    x0, y0, w, h = -420, 340, 2760, 300
     t = Tela(w, h, origin=(x0, y0), ss=1)
     cx, cy, rx, ry = CANAL_OVAL
     rng = rand(3786)
@@ -1830,14 +1831,14 @@ def bridges_and_statues(name):
             t.rect(px - 6 * sc, py - 14 * sc, px + 6 * sc, py, fill=stone, ink=True, width=0.5, ink_col=ink)
             ring_statue(t, px, py - 14 * sc, sc, rng, hz)
     t.poly(deck, ink=True, width=0.8, ink_col=ink)
-    # i ponti est e ovest sull'asse lungo dell'ovale, come quelli veri: dalla punta dell'isola dritti verso fuori, sopra
-    # l'acqua del canale, fino al vialetto della sponda di fuori. Visti dal lato lungo: il fianco con l'arco di qua, il
-    # piano un po' dall'alto e il parapetto di là più su
+    # i ponti est e ovest (#378, chiesto da Riccardo): vicini alla telecamera e allineati con la striscia dove si
+    # combatte, dalla punta della piazza (y 520) dritti verso fuori fino al vialetto della sponda; più grandi perché vicini
+    # (dallo schizzo di Riccardo): partono dall'angolo della piazza e scendono verso la sponda di fuori, che lì gira
+    # verso di noi, con la gobba alta
     for side in (-1, 1):
-        y = 517
-        p_in = (960 + side * 872, y)
-        p_out = (oval_edge_x(y, side) + side * 22, y)
-        _side_bridge(t, p_in, p_out, rng)
+        p_in = (960 + side * 866, 521)
+        p_out = (oval_edge_x(566, side) + side * 30, 566)
+        _side_bridge(t, p_in, p_out, rng, 1.7)
     t.save(OUT, name, colors=256)
 
 

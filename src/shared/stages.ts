@@ -539,7 +539,7 @@ export const STAGES: Record<string, StageSpec> = {
         // Il canale dietro e attorno all'isola (#378), le anse ai lati, la fila di statue sulla sponda di là e i ponticelli
         { file: "canale-dietro.png", x: 960, y: 644, floatersAfter: true },
         { file: "ansa.png", x: 960, y: 604 },
-        { file: "ponticelli.png", x: 960, y: 600 },
+        { file: "ponticelli.png", x: 960, y: 640 },
         // il parco oltre il vialetto, ai lati: i platani più lontani, più piccoli
         { file: "platano.png", x: -330, y: 566, scale: 0.3 },
         { file: "platano.png", x: 2250, y: 566, scale: 0.3, flip: true },
