@@ -2199,6 +2199,159 @@ def _walk_bridge(t, x_in, x_out, rng):
         _obelisk(t, x + (3 if x == a else -3), y + 1, 0.9, ink)
 
 
+def _walk_bridge_painted(t, x_in, x_out, rng):
+    """Il ponte del Prato dallo schizzo di Riccardo (#378), dipinto perché stia dentro la scena e non sembri incollato:
+    - la passerella continua il piano dove si gioca e si vede un po' dall'alto, con il bordo lontano che scappa verso
+      il centro come le lastre della piazza;
+    - dentro l'arco si vede l'acqua del canale che passa sotto e la volta in ombra, non un buco nero;
+    - la pietra ha la grana, le macchie, l'umido scuro e le alghe dove tocca l'acqua, e l'ombra sotto la cornice;
+    - il ponte getta la sua ombra sull'acqua (la luce viene da sinistra in alto) e si specchia, spezzato dalle onde;
+    - il capo verso l'isola entra sotto il bordo della piazza (il gioco ci disegna sopra la copertina), l'altro poggia
+      su una spalla di pietra con il gradino sul vialetto della sponda."""
+    from pittura import Quadro, bezier
+    a, b = min(x_in, x_out), max(x_in, x_out)
+    left_side = x_out < x_in  # il ponte di sinistra: verso il centro c'è l'isola a destra
+    x0, y0 = a - 30, 446
+    w, h = b - a + 60, 220
+    q = Quadro(w, h, origin=(x0, y0), scale=t.k)
+    ink = (78, 72, 66)
+    S, S_SH, S_DK, S_HI = (226, 222, 210), (176, 170, 158), (128, 124, 116), (246, 244, 236)
+    WATER, WATER_D = (92, 122, 114), (54, 74, 68)
+    far_y, near_y, water, hump = 480, 522, 604, 7
+    n = 48
+
+    def gob(u):
+        return hump * math.sin(math.pi * u) ** 0.9
+
+    def conv(x):  # il bordo lontano scappa appena verso il centro dell'arena (il punto di fuga)
+        return x + (960 - x) * 0.025
+
+    xs = [a + (b - a) * i / n for i in range(n + 1)]
+    near = [(x, near_y - gob(i / n)) for i, x in enumerate(xs)]
+    far = [(conv(x), far_y - gob(i / n)) for i, x in enumerate(xs)]
+    span, mid = (b - a) * 0.6, (a + b) / 2
+    arch = [(mid - span / 2 + span * i / n, water - (water - near_y - 14 + gob(0.5)) * math.sin(math.pi * i / n) ** 0.7) for i in range(n + 1)]
+    # l'ombra del ponte sull'acqua: la luce viene da sinistra in alto, l'ombra cade a destra e in giù
+    sh = q.poly(q.mask(), [(a + 18, water), (b + 26, water), (b + 40, water + 16), (a + 30, water + 16)])
+    q.fill(q.soften(sh, 5), (30, 44, 40), 0.35)
+    # il riflesso: la faccia capovolta sotto il pelo dell'acqua, spezzata dalle onde
+    refl = q.mask()
+    for i in range(0, 12):
+        y = water + 2 + i * 2.2
+        x_a = a + rng.uniform(0, 10) + (span * 0.2 if i < 6 else 0)
+        q.stroke(refl, [(x_a, y), (b - rng.uniform(0, 10), y)], 1.2)
+    hole = q.poly(q.mask(), [(mid - span / 2, water)] + [(x, 2 * water - y) for x, y in arch] + [(mid + span / 2, water)])
+    q.fill(q.minus(q.soften(refl, 0.6), hole), (196, 200, 190), 0.45)
+    # il parapetto lontano, piccolo, in ombra, traforato
+    fp = q.poly(q.mask(), far + [(x, y - 9) for x, y in reversed(far)])
+    q.fill(fp, S_SH)
+    holes = q.mask()
+    for i in range(1, n):
+        x, y = far[i]
+        q.poly(holes, [(x, y - 7), (x + 1.1, y - 4.5), (x, y - 2), (x - 1.1, y - 4.5)])
+    q.fill(q.intersect(holes, fp), (118, 132, 120))
+    q.line([(x, y - 9.5) for x, y in far], 1.8, S)
+    q.outline(fp, 0.4, ink)
+    # la passerella vista dall'alto, lastricata, con l'ombra del parapetto lontano
+    deck = q.poly(q.mask(), far + list(reversed(near)))
+    q.fill(deck, (206, 200, 186))
+    q.fill(q.grain(deck, 0.3, 61, 0.9), (180, 174, 160), 0.6)
+    joints = q.mask()
+    for f in (0.15, 0.33, 0.55, 0.8):
+        q.stroke(joints, [(fx + (nx - fx) * f, fy + (ny - fy) * f) for (fx, fy), (nx, ny) in zip(far, near)], 0.45 + 0.3 * f)
+    for i in range(1, n, 3):
+        q.stroke(joints, [far[i], near[i]], 0.45)
+    q.fill(q.intersect(joints, deck), (160, 154, 140), 0.85)
+    q.fill(q.intersect(q.soften(q.poly(q.mask(), far + [(x, y + 8) for x, y in reversed(far)]), 2), deck), (60, 56, 50), 0.35)
+    # dentro l'arco: l'acqua che passa sotto il ponte e la volta in ombra, che va in profondità
+    opening = q.poly(q.mask(), [(mid - span / 2, water + 0.5)] + arch + [(mid + span / 2, water + 0.5)])
+    q.fill(opening, WATER)
+    vault = q.poly(q.mask(), [(x + (mid - x) * 0.06, y + (water - y) * 0.0) for x, y in arch] + [(x + 10, y + 12) for x, y in reversed(arch)])
+    q.fill(q.intersect(q.soften(vault, 3), opening), WATER_D, 0.95)
+    under = q.poly(q.mask(), [(mid - span / 2, water - 6), (mid + span / 2, water - 6), (mid + span / 2, water + 1), (mid - span / 2, water + 1)])
+    q.fill(q.intersect(q.soften(under, 2), opening), (130, 158, 148), 0.6)  # la luce che passa sotto, sul pelo dell'acqua
+    rip = q.mask()
+    for k in range(8):
+        y = water - 2 - k * 2.2
+        x = mid + rng.uniform(-span * 0.35, span * 0.3)
+        q.stroke(rip, [(x, y), (x + rng.uniform(8, 20), y)], 0.6)
+    q.fill(q.intersect(rip, opening), (160, 186, 176), 0.6)
+    # la faccia di pietra, dal bordo vicino giù fino all'acqua, meno l'arco
+    face = q.minus(q.poly(q.mask(), near + [(b, water), (a, water)]), opening)
+    q.fill(face, S)
+    q.fill(q.grain(face, 0.35, 62, 0.8), (150, 148, 138), 0.45)  # le macchie del tempo
+    damp = Image.new("L", face.size, 0)  # l'umido che sale dall'acqua: più scuro in basso
+    bb = face.getbbox()
+    if bb:
+        gy = Image.new("L", (1, bb[3] - bb[1]))
+        for j in range(gy.height):
+            u = j / max(1, gy.height - 1)
+            gy.putpixel((0, j), int(255 * max(0.0, (u - 0.45) / 0.55) ** 1.5))
+        damp.paste(gy.resize((bb[2] - bb[0], bb[3] - bb[1])), (bb[0], bb[1]))
+    q.fill(q.intersect(damp, face), (96, 100, 86), 0.7)
+    algae = q.poly(q.mask(), [(a, water - 5), (b, water - 5), (b, water), (a, water)])
+    q.fill(q.intersect(q.soften(algae, 1), face), (88, 104, 64), 0.8)
+    corsi = q.mask()  # i corsi di pietra ai lati dell'arco
+    for y in range(int(near_y + 12), int(water - 6), 11):
+        q.stroke(corsi, [(a, y), (b, y)], 0.45)
+    for i in range(0, n, 4):
+        x = xs[i] + (6 if (i // 4) % 2 else 0)
+        for y in range(int(near_y + 12), int(water - 6), 22):
+            q.stroke(corsi, [(x, y), (x, y + 11)], 0.4)
+    q.fill(q.intersect(q.minus(corsi, q.soften(opening, 6)), face), (178, 172, 160), 0.7)
+    ring = q.minus(q.poly(q.mask(), [(mid - span / 2 - 9, water)] + [(x + (x - mid) * 0.12, y - 9 * math.sin(math.pi * i / n)) for i, (x, y) in enumerate(arch)] + [(mid + span / 2 + 9, water)]), opening)
+    q.fill(ring, (234, 230, 220))
+    vj = q.mask()
+    for i in range(1, 20):
+        u = i / 20
+        px, py = arch[int(u * n)]
+        nx, ny = -math.cos(math.pi * u) * 1.1, -math.sin(math.pi * u)
+        q.stroke(vj, [(px, py), (px + nx * 10, py + ny * 10)], 0.55)
+    q.fill(q.intersect(vj, ring), S_DK, 0.8)
+    kx, ky = arch[n // 2]
+    key = q.poly(q.mask(), [(kx - 4.5, ky - 11), (kx + 4.5, ky - 11), (kx + 3.5, ky + 1), (kx - 3.5, ky + 1)])
+    q.fill(key, S_HI)
+    q.fill(q.inner_shadow(key, -2, -1, 1), S_SH, 0.9)
+    q.outline(key, 0.5, ink)
+    q.fill(q.inner_shadow(face, -10, -4, 7), S_SH, 0.55)  # il volume: la faccia gira in ombra verso destra
+    corn = q.poly(q.mask(), [(x, y) for x, y in near] + [(x, y + 4) for x, y in reversed(near)])
+    q.fill(corn, S_HI)
+    q.fill(q.soften(q.poly(q.mask(), [(x, y + 4) for x, y in near] + [(x, y + 10) for x, y in reversed(near)]), 2), (40, 38, 34), 0.35)  # l'ombra sotto la cornice
+    q.outline(face, 0.6, ink)
+    # il parapetto vicino, traforato: dai buchi si vede la passerella
+    np_ = q.poly(q.mask(), near + [(x, y - 11) for x, y in reversed(near)])
+    holes = q.mask()
+    for i in range(1, n):
+        x, y = near[i]
+        q.poly(holes, [(x, y - 9), (x + 1.6, y - 5.5), (x, y - 2), (x - 1.6, y - 5.5)])
+    panel = q.minus(np_, holes)
+    q.fill(panel, S)
+    q.fill(q.inner_shadow(panel, 0, -2, 1.2), S_SH, 0.8)
+    q.fill(q.intersect(holes, np_), (150, 146, 134))
+    q.line([(x, y - 12) for x, y in near], 3.0, S)
+    q.line([(x, y - 12.8) for x, y in near], 0.9, S_HI)
+    q.outline(np_, 0.45, ink)
+    # la spalla sulla sponda di fuori, con il gradino che scende sul vialetto, e l'ombra a terra
+    ox = a if left_side else b
+    sgn = -1 if left_side else 1
+    pier = q.poly(q.mask(), [(ox, near_y - 2), (ox + sgn * 16, near_y - 2), (ox + sgn * 16, water), (ox, water)])
+    q.fill(pier, S)
+    q.fill(q.grain(pier, 0.35, 63, 0.8), (150, 148, 138), 0.45)
+    q.fill(q.inner_shadow(pier, -sgn * 4, -2, 3), S_SH, 0.8)
+    q.outline(pier, 0.5, ink)
+    step = q.poly(q.mask(), [(ox + sgn * 16, near_y - 2), (ox + sgn * 28, near_y + 2), (ox + sgn * 28, near_y + 6), (ox + sgn * 16, near_y + 6)])
+    q.fill(step, S_SH)
+    q.outline(step, 0.4, ink)
+    ea, eb = sorted((ox + sgn * 4, ox + sgn * 40))
+    q.fill(q.soften(q.ellipse(q.mask(), ea, near_y + 2, eb, near_y + 10), 3), (40, 38, 30), 0.3)
+    t.img.alpha_composite(q.result(), (int(round((x0 - t.ox) * t.k)), int(round((y0 - t.oy) * t.k))))
+    # gli obelischi ai capi, sopra il parapetto: quelli lontani più piccoli
+    for x, y in (far[0], far[-1]):
+        _obelisk(t, x + (3 if x < mid else -3), y, 0.7, (84, 78, 72, 255))
+    for x, y in (near[0], near[-1]):
+        _obelisk(t, x + (3 if x < mid else -3), y + 1, 0.9, (84, 78, 72, 255))
+
+
 def bridges_and_statues(name):
     """Le statue sulla sponda di là del canale e i ponticelli (#378, chiesto da Riccardo): la fila di statue del Prato
     lungo tutto l'ovale, più piccole lontano; il ponticello dietro la fontana visto di fronte, e i due alle punte
@@ -2238,7 +2391,7 @@ def bridges_and_statues(name):
     # i ponti est e ovest dallo schizzo di Riccardo (#378): dalla punta dell'isola alla sponda di fuori, con l'asse della
     # passerella sulla linea del piano dove si gioca
     for side in (-1, 1):
-        _walk_bridge(t, 960 + side * 862, 960 + side * 1250, rng)
+        _walk_bridge_painted(t, 960 + side * 856, 960 + side * 1250, rng)
     t.save(OUT, name, colors=256)
 
 
