@@ -1116,8 +1116,16 @@ def portico_house(t, x, w, base, rng):
         ax = x + k * aw
         t.rect(ax + 4, base - 44, ax + aw - 4, base, fill=(46, 42, 40, 255))
         t.pieslice(ax + 4, base - 58, ax + aw - 4, base - 30, 180, 360, fill=(46, 42, 40, 255))
+        # la profondità del portico (#378): in fondo il muro con la porta, un po' più chiaro, e la volta in ombra
+        t.rect(ax + 9, base - 34, ax + aw - 9, base, fill=(70, 64, 58, 255))
+        t.rect(ax + aw / 2 - 4, base - 22, ax + aw / 2 + 4, base, fill=(40, 36, 34, 255))
+        t.glaze([(ax + 4, base), (ax + 9, base - 2), (ax + 9, base - 34), (ax + 4, base - 44)], (90, 84, 76, 120))  # lo sguancio in luce
+        t.rect(ax + 4, base - 3, ax + aw - 4, base, fill=(84, 78, 70, 255))  # il pavimento del portico
         t.rect(ax - 2, base - 50, ax + 4, base, fill=stone)  # colonna
+        t.rect(ax - 2, base - 50, ax - 0.5, base, fill=light(stone, 1.1))  # la colonna è tonda: luce a sinistra
+        t.rect(ax + 2, base - 50, ax + 4, base, fill=shade(stone, 0.8))  # e ombra a destra
         t.rect(ax - 4, base - 52, ax + 6, base - 48, fill=stone)  # capitello
+        t.rect(ax - 4, base - 49, ax + 6, base - 48, fill=shade(stone, 0.8))
         if rng.random() < 0.25:  # tenda a strisce sopra l'arco
             tc = far(rng.choice([(150, 120, 92, 255), (120, 124, 112, 255), (160, 150, 130, 255)]), 0.15)
             t.poly([(ax + 4, base - 50), (ax + aw - 4, base - 50), (ax + aw, base - 40), (ax, base - 40)], fill=tc)
@@ -1150,6 +1158,10 @@ def portico_house(t, x, w, base, rng):
                 t.line([(wx - 3, fy + fh - 14), (wx + 15, fy + fh - 14)], fill=ink, width=0.8)
             else:
                 t.rect(wx, fy + 10, wx + 12, fy + fh - 8, fill=(56, 56, 58, 255))
+                # la finestra è incassata nel muro (#378): l'ombra dello sguancio a sinistra e in alto, la luce a destra
+                t.rect(wx, fy + 10, wx + 2.2, fy + fh - 8, fill=(36, 36, 38, 255))
+                t.rect(wx, fy + 10, wx + 12, fy + 12.4, fill=(36, 36, 38, 255))
+                t.rect(wx + 10.6, fy + 12, wx + 12, fy + fh - 8, fill=(84, 84, 86, 255))
                 if rng.random() < 0.35:
                     lit_rect(t.lights, wx + 1, fy + 11, wx + 11, fy + fh - 9)
                 if rng.random() < 0.7:  # persiane aperte, a volte una chiusa
@@ -1160,7 +1172,18 @@ def portico_house(t, x, w, base, rng):
                         t.rect(wx + 12, fy + 10, wx + 17, fy + fh - 8, fill=far(shade(win, 0.85), 0.15))
                 t.rect(wx - 2, fy + 8, wx + 14, fy + 10, fill=stone)
                 t.rect(wx - 2, fy + fh - 8, wx + 14, fy + fh - 6, fill=stone)
-        t.line([(x, fy), (x + w, fy)], fill=sh, width=1.4)  # marcapiano
+                t.glaze([(wx - 1, fy + fh - 6), (wx + 15, fy + fh - 6), (wx + 16, fy + fh - 3.5), (wx, fy + fh - 3.5)], (30, 26, 24, 70))  # l'ombra del davanzale
+        t.line([(x, fy), (x + w, fy)], fill=light(col, 1.08), width=1.0)  # marcapiano: il filo in luce...
+        t.glaze([(x, fy + 0.6), (x + w, fy + 0.6), (x + w, fy + 3.6), (x, fy + 3.6)], (30, 26, 24, 55))  # ...e l'ombra sotto
+    # il volume (#378): la luce viene da sinistra, quindi la facciata scurisce piano verso destra; il cornicione getta
+    # un'ombra larga sotto di sé, e al piede il portico è più scuro (la luce non ci arriva)
+    for i in range(8):
+        u = i / 8
+        t.glaze([(x + w * u, top), (x + w * (u + 1 / 8), top), (x + w * (u + 1 / 8), base - 62), (x + w * u, base - 62)], (30, 26, 34, int(6 + 34 * u)))
+    t.glaze([(x, top), (x + w, top), (x + w, top + 12), (x, top + 12)], (30, 26, 24, 80))
+    t.glaze([(x, top), (x + w, top), (x + w, top + 5), (x, top + 5)], (30, 26, 24, 60))
+    t.glaze([(x, base - 62), (x + w, base - 62), (x + w, base - 56), (x, base - 56)], (20, 18, 16, 70))
+    t.glaze([(x, base - 8), (x + w, base - 8), (x + w, base), (x, base)], (20, 18, 16, 60))
     # l'ombra a destra e il contorno
     t.rect(x + w - 6, top, x + w, base - 62, fill=sh)
     t.rect(x, top, x + w, base, ink=True, width=1.0, ink_col=ink)
@@ -1170,8 +1193,10 @@ def portico_house(t, x, w, base, rng):
         t.rect(mx, top, mx + 3, top + 3, fill=shade(stone, 0.85))
     roof = far((122, 84, 68, 255), 0.18)
     t.poly([(x - 6, top - 8), (x + w + 6, top - 8), (x + w - 10, top - 22), (x + 10, top - 22)], fill=roof, ink=True, width=0.9, ink_col=ink)
+    t.poly([(x + w + 6, top - 8), (x + w - 10, top - 22), (x + w - 30, top - 22), (x + w - 14, top - 8)], fill=shade(roof, 0.8))  # la falda di lato in ombra
     for k in range(int(w / 6)):
         t.arc(x + 4 + k * 6, top - 20, x + 10 + k * 6, top - 12, 180, 360, fill=shade(roof, 0.82), width=0.7)
+    t.glaze([(x - 5, top - 2), (x + w + 5, top - 2), (x + w + 5, top), (x - 5, top)], (20, 18, 16, 90))  # il sottogronda
     for cxm in (x + w * 0.22, x + w * 0.72):
         if rng.random() < 0.8:
             t.rect(cxm - 4, top - 44, cxm + 4, top - 20, fill=far((134, 98, 80, 255), 0.18), ink=True, width=0.8, ink_col=ink)
@@ -1243,34 +1268,68 @@ def buildings(t):
 
 
 # --- strato del prato: platani, lampioni, panchine, la seconda fila di statue, la riva lontana ---
+def paint_tree(q, x, base, r, seed, haze=0.0, th=None):
+    """Un platano dipinto (#378: niente dischi piatti), in un pittura.Quadro: il tronco chiaro a chiazze che si apre in
+    rami, la chioma fatta di ciuffi che si fondono in una sagoma sola, ogni ciuffo con la sua luce in alto a sinistra e
+    l'ombra in basso a destra, l'ombra grande della chioma su sé stessa, qualche buco dove passa il cielo e la grana
+    delle foglie. r è il raggio della chioma, base il piede del tronco; haze vela tutto verso la foschia."""
+    rng = random.Random(seed)
+    th = th if th is not None else r * 1.3
+    def c(col):
+        return far(col + (255,), haze)[:3]
+    ink = c((34, 42, 32))
+    bark, bark_s, bark_l = c((168, 162, 138)), c((124, 120, 102)), c((204, 200, 176))
+    # tronco e rami
+    trunk = q.mask()
+    q.poly(trunk, [(x - r * 0.13, base), (x - r * 0.08, base - th * 0.5), (x - r * 0.07, base - th), (x + r * 0.07, base - th), (x + r * 0.08, base - th * 0.5), (x + r * 0.14, base)])
+    for sx, ex, ey, wdt in ((-0.02, -0.55, -0.35, 0.07), (0.02, 0.6, -0.4, 0.07), (0.0, -0.1, -0.75, 0.06), (0.0, 0.25, -0.65, 0.05)):
+        q.stroke(trunk, [(x + r * sx, base - th * 0.9), (x + r * ex * 0.5, base - th - r * 0.2), (x + r * ex, base - th + r * ey)], r * wdt)
+    q.fill(trunk, bark)
+    q.fill(q.inner_shadow(trunk, -r * 0.08, 0, r * 0.04), bark_s, 0.9)
+    q.fill(q.grain(trunk, 0.6, seed, max(1.2, r * 0.05)), bark_l, 0.7)  # la corteccia che si stacca a chiazze
+    q.outline(trunk, max(0.5, r * 0.012), ink)
+    # la chioma: tanti ciuffi su un'ellisse, che si fondono in una sagoma sola dal bordo mosso
+    cy = base - th - r * 0.5
+    tufts = []
+    for k in range(18):
+        a = rng.uniform(0, math.tau)
+        d = rng.random() ** 0.5
+        tufts.append((x + math.cos(a) * r * 0.8 * d, cy + math.sin(a) * r * 0.55 * d, r * rng.uniform(0.28, 0.4)))
+    crown = q.mask()
+    for tx, ty, tr in tufts:
+        q.ellipse(crown, tx - tr, ty - tr * 0.85, tx + tr, ty + tr * 0.85)
+    q.ellipse(crown, x - r * 0.55, cy - r * 0.35, x + r * 0.55, cy + r * 0.35)  # il cuore pieno: niente buchi in mezzo
+    crown = q.smooth(crown, r * 0.03)
+    q.fill(crown, c((36, 54, 36)))
+    # ogni ciuffo è un volume: la parte in alto a sinistra presa dal sole, sfumata, quella sotto resta in ombra
+    for tx, ty, tr in sorted(tufts, key=lambda tt: tt[1]):
+        lit = q.ellipse(q.mask(), tx - tr * 0.95, ty - tr * 0.8, tx + tr * 0.55, ty + tr * 0.35)
+        q.fill(q.intersect(q.soften(lit, tr * 0.14), crown), c((84, 114, 64)), 0.92)
+        hi = q.ellipse(q.mask(), tx - tr * 0.7, ty - tr * 0.65, tx + tr * 0.05, ty - tr * 0.05)
+        q.fill(q.intersect(q.soften(hi, tr * 0.12), crown), c((132, 160, 92)), 0.7)
+    q.fill(q.inner_shadow(crown, -r * 0.5, -r * 0.4, r * 0.32), c((28, 42, 28)), 0.7)  # l'ombra grande della chioma
+    q.fill(q.grain(crown, 0.55, seed + 1, max(1.0, r * 0.035)), c((40, 60, 38)), 0.7)  # la grana delle foglie
+    # i rami che si intravedono nella parte bassa della chioma, in ombra
+    twigs = q.mask()
+    for k in range(6):
+        sx = x + rng.uniform(-0.5, 0.5) * r
+        sy = cy + r * rng.uniform(0.1, 0.45)
+        q.stroke(twigs, [(x, base - th), (sx, sy)], max(0.6, r * 0.022))
+    q.fill(q.intersect(twigs, crown), c((70, 64, 52)), 0.85)
+    q.outline(crown, max(0.5, r * 0.014), ink)
+    # l'ombra della chioma a terra
+    q.fill(q.soften(q.ellipse(q.mask(), x - r * 0.6, base - r * 0.05, x + r * 0.8, base + r * 0.07), r * 0.06), (30, 34, 26), 0.35)
+
+
 def plane_tree(t, x, base, r, rng):
-    """Un platano: tronco chiaro a chiazze (la corteccia che si stacca), rami e chioma a ciuffi in due toni
-    con il contorno a inchiostro attorno alla sagoma."""
-    ink = (36, 44, 36, 255)
-    bark, bark_s = (150, 146, 124, 255), (112, 110, 94, 255)
+    """Un platano lontano dello strato del prato, dipinto con paint_tree e incollato nella tela."""
+    from pittura import Quadro
     th = r * 1.3
-    trunk = [(x - 7, base), (x + 7, base), (x + 4, base - th), (x - 4, base - th)]
-    t.poly(trunk, fill=bark)
-    t.poly([(x + 1, base), (x + 7, base), (x + 4, base - th), (x + 1, base - th)], fill=bark_s)
-    for k in range(6):  # chiazze della corteccia
-        py = base - rng.uniform(4, th - 6)
-        px = x + rng.uniform(-4, 3)
-        t.ellipse(px - 2.5, py - 3.5, px + 2.5, py + 3.5, fill=rng.choice([(176, 172, 146, 255), (96, 100, 84, 255)]))
-    t.poly(trunk, ink=True, width=1.0, ink_col=ink)
-    for side in (-1, 1):  # rami
-        t.line([(x, base - th * 0.8), (x + side * r * 0.5, base - th - r * 0.4)], fill=bark_s, width=3)
-    blobs = []
-    for i in range(9):
-        a = i / 8 * math.pi
-        cx, cy = x + math.cos(a) * r * 0.7, base - th - r * 0.45 - math.sin(a) * r * 0.55
-        blobs.append((cx, cy, r * rng.uniform(0.38, 0.55)))
-    blobs.append((x, base - th - r * 0.5, r * 0.6))
-    for cx, cy, rr in blobs:  # prima il contorno, un po' più grande
-        t.circle(cx, cy, rr + 1.6, fill=ink)
-    for cx, cy, rr in blobs:
-        t.circle(cx, cy, rr, fill=(52, 70, 50, 255))
-    for cx, cy, rr in blobs:  # la luce in alto a sinistra di ogni ciuffo
-        t.circle(cx - rr * 0.22, cy - rr * 0.25, rr * 0.62, fill=(66, 86, 60, 255))
+    x0, y0 = x - r * 1.15, base - th - r * 1.3
+    w, h = r * 2.3, th + r * 1.42
+    q = Quadro(w, h, origin=(x0, y0), scale=t.k)
+    paint_tree(q, x, base, r, rng.randint(0, 99999), 0.12)
+    t.img.alpha_composite(q.result(), (int(round((x0 - t.ox) * t.k)), int(round((y0 - t.oy) * t.k))))
 
 
 def lamp(t, x, base, h):
@@ -1836,8 +1895,8 @@ def bridges_and_statues(name):
     # (dallo schizzo di Riccardo): partono dall'angolo della piazza e scendono verso la sponda di fuori, che lì gira
     # verso di noi, con la gobba alta
     for side in (-1, 1):
-        p_in = (960 + side * 866, 521)
-        p_out = (oval_edge_x(566, side) + side * 30, 566)
+        p_in = (960 + side * 868, 527)  # il capo con l'obelisco sull'angolo davanti della piazza
+        p_out = (oval_edge_x(546, side) + side * 30, 546)  # quasi in piano: la sponda di fuori è appena più avanti
         _side_bridge(t, p_in, p_out, rng, 1.7)
     t.save(OUT, name, colors=256)
 
@@ -2487,57 +2546,12 @@ def foundations():
 
 
 def plane_tree_prop(name):
-    """Un platano sulla piazza (#288), disegnato con cura: tronco chiaro a chiazze di corteccia, i rami che si
-    aprono, la chioma a nuvole di foglie in due toni con il contorno a inchiostro e qualche foglia a mano
-    sul bordo. Piedi a (410, 522), la chioma da y 110 a 360: sta sopra le teste e lascia vedere il palco."""
-    t = Tela(300, 420, origin=(260, 102))
-    rng = rand(51)
-    x, base = 410, 522
-    bark, bark_s, bark_l, bark_d = (176, 170, 146, 255), (138, 134, 114, 255), (206, 202, 178, 255), (112, 112, 96, 255)
-    ink = (36, 40, 32, 255)
-    # tronco che si allarga al piede, un po' storto
-    trunk = [(x - 13, base), (x - 9, base - 40), (x - 8, base - 120), (x - 12, base - 170), (x + 2, base - 178), (x + 12, base - 168), (x + 8, base - 120), (x + 9, base - 40), (x + 15, base)]
-    t.poly(trunk, fill=bark)
-    t.poly([(x + 2, base), (x + 2, base - 176), (x + 12, base - 168), (x + 8, base - 120), (x + 9, base - 40), (x + 15, base)], fill=bark_s)
-    for k in range(18):  # la corteccia che si stacca a chiazze
-        py = base - rng.uniform(6, 165)
-        px = x + rng.uniform(-8, 7)
-        r = rng.uniform(2.2, 4.5)
-        t.poly([(px - r, py), (px - r * 0.3, py - r * 1.3), (px + r, py - r * 0.2), (px + r * 0.2, py + r)], fill=rng.choice([bark_l, bark_d, (156, 160, 132, 255)]))
-    t.poly(trunk, ink=True, width=1.2, ink_col=ink)
-    # rami principali verso la chioma
-    for (dx, dy, ex, ey, w) in ((0, -170, -70, -250, 6), (2, -172, 60, -262, 6), (-6, -140, -100, -200, 4), (6, -150, 96, -214, 4), (0, -175, 6, -290, 5)):
-        t.line([(x + dx, base + dy), (x + ex, base + ey)], fill=ink, width=w + 2)
-        t.line([(x + dx, base + dy), (x + ex, base + ey)], fill=bark_s, width=w)
-    # chioma: nuvole di foglie, prima il contorno, poi l'ombra, poi la luce in alto a sinistra
-    blobs = []
-    for k in range(16):
-        a = math.pi * (0.95 + 1.1 * k / 15)
-        cx = x + math.cos(a) * 92 * rng.uniform(0.75, 1.05)
-        cy = base - 270 + math.sin(a) * 120 * rng.uniform(0.7, 1.0) * -1 * -1
-        blobs.append((cx, min(cy, base - 190), rng.uniform(30, 46)))
-    for k in range(7):
-        blobs.append((x + rng.uniform(-70, 70), base - 300 + rng.uniform(-40, 40), rng.uniform(34, 48)))
-    for cx, cy, r in blobs:
-        t.circle(cx, cy, r + 1.8, fill=ink)
-    for cx, cy, r in blobs:
-        t.circle(cx, cy, r, fill=(56, 76, 52, 255))
-    for cx, cy, r in blobs:
-        t.circle(cx - r * 0.2, cy - r * 0.24, r * 0.66, fill=(72, 96, 64, 255))
-    for cx, cy, r in blobs[::2]:
-        t.circle(cx - r * 0.34, cy - r * 0.4, r * 0.3, fill=(90, 116, 76, 255))
-    # foglie palmate sul bordo della chioma
-    for cx, cy, r in blobs[:16]:
-        for j in range(2):
-            a = rng.uniform(0, math.tau)
-            lx, ly = cx + math.cos(a) * r, cy + math.sin(a) * r
-            leaf = [(lx + 4.5 * math.cos(b) * (1 if i % 2 == 0 else 0.45), ly + 4.5 * math.sin(b) * (1 if i % 2 == 0 else 0.45)) for i, b in enumerate([a + i * math.pi / 5 for i in range(10)])]
-            t.poly(leaf, fill=(64, 88, 58, 255), ink=True, width=0.6, ink_col=ink)
-    # i rametti che si vedono tra le foglie
-    for k in range(5):
-        sx, sy = x + rng.uniform(-60, 60), base - rng.uniform(230, 320)
-        t.line([(sx, sy), (sx + rng.uniform(-14, 14), sy - rng.uniform(10, 20))], fill=bark_d, width=1.6)
-    t.save(OUT, name)
+    """Un platano sulla piazza (#288; dipinto con paint_tree dal #378): piedi a (410, 522), la chioma da y 110 a 360,
+    sopra le teste, così lascia vedere il palco."""
+    from pittura import Quadro
+    q = Quadro(300, 420, origin=(260, 102))
+    paint_tree(q, 410, 522, 132, 51, 0.0, th=196)
+    q.save(OUT, name)
 
 
 if __name__ == "__main__":
