@@ -654,7 +654,7 @@ export const STAGES: Record<string, StageSpec> = {
         traffic: { y: 406, parallax: 0.5, everyMs: 2600, kinds: ["auto", "auto", "auto", "vespa", "vespa", "furgone", "bici", "bus"] },
         flyers: { y: 90, parallax: 0.6, count: 7 }, // rondini sul Prato, di notte i pipistrelli
         planes: { y: -60, everyMs: 75000 },
-        bar: { x: 120, y: 408, parallax: 0.8, tables: 3, spacing: 72 }, // il chiosco dello spritz sul prato
+        bar: { x: 120, y: 414, parallax: 0.8, tables: 3, spacing: 72 }, // il chiosco dello spritz sul prato: a terra come panchine e passanti (#378)
         daycycle: {
           cycleMs: 240000, // un giorno intero in 4 minuti: alba, giorno, tramonto e notte
           startAt: 0.8, // si parte poco dopo l'alba

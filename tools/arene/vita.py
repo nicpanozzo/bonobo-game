@@ -448,10 +448,10 @@ def seated(outfit, pose, hair):
     q = Quadro(34, 42)
     jacket, pants, shoes, skin, hair_col = outfit
     base, x = 40, 13
-    seat = (x, base - 13)
-    sh = (x + 1, base - 26)
-    _part(q, [seat, (x + 9, base - 13), (x + 9, base - 1)], pants, width=3.2)  # coscia e gamba davanti
-    _part(q, q.ellipse(q.mask(), x + 8, base - 2.2, x + 13, base + 0.4), shoes)
+    seat = (x - 2, base - 11)  # appoggiato sulla sedia del tavolino (seduta a base - 10, #378)
+    sh = (x - 1, base - 24)
+    _part(q, [seat, (x + 8, base - 11), (x + 8.5, base - 1)], pants, width=3.2)  # coscia e gamba davanti
+    _part(q, q.ellipse(q.mask(), x + 7.5, base - 2.2, x + 12.5, base + 0.4), shoes)
     _part(q, [(sh[0] - 3, sh[1]), (sh[0] + 3, sh[1] + 0.5), (seat[0] + 3.5, seat[1] + 1), (seat[0] - 3.5, seat[1] + 1)], jacket)
     head = (sh[0] + 1.5, sh[1] - 5)
     q.fill(q.smooth(q.stroke(q.mask(), [sh, head], 2.2), 0.3), skin)
@@ -463,8 +463,8 @@ def seated(outfit, pose, hair):
         _part(q, [(head[0] - 4, head[1] + 5.6), (head[0] - 3.7, head[1] - 3.2), (head[0] - 0.5, head[1] - 4.6), (head[0] + 2.7, head[1] - 3.9), (head[0] + 3.2, head[1] - 1.8), (head[0] + 0.2, head[1] - 2.6), (head[0] - 1.4, head[1] + 1), (head[0] - 1.6, head[1] + 6)], hair_col, ink=0.4)
     else:
         _part(q, [(head[0] - 3.6, head[1] + 1.4), (head[0] - 3.5, head[1] - 3), (head[0] - 0.9, head[1] - 4.5), (head[0] + 2.5, head[1] - 3.9), (head[0] + 3.2, head[1] - 2.1), (head[0] + 0.4, head[1] - 2.4), (head[0] - 1.1, head[1] + 0.2)], hair_col, ink=0.4)
-    hands = [(x + 9, base - 15), (x + 8, base - 21), (head[0] + 3.5, head[1] + 3), (x + 15, base - 27)]
-    elbows = [(x + 4, base - 16), (x + 5, base - 20), (x + 6, base - 21), (x + 8, base - 25)]
+    hands = [(x + 9, base - 15), (x + 8, base - 20), (head[0] + 3.5, head[1] + 3), (x + 15, base - 25)]
+    elbows = [(x + 3, base - 15), (x + 4, base - 19), (x + 5, base - 19), (x + 7, base - 23)]
     hand, elbow = hands[pose], elbows[pose]
     _part(q, [sh, elbow, hand], jacket, width=2.6)
     _part(q, q.ellipse(q.mask(), hand[0] - 1.2, hand[1] - 1.2, hand[0] + 1.2, hand[1] + 1.2), skin, ink=0.3)
