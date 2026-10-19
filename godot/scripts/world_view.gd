@@ -1318,6 +1318,8 @@ func _draw_sun_light(t: float) -> void:
 		var ground: float = entry[2]
 		if absf(ground - float(pr.y)) > 8.0:
 			continue # non poggia sul palco (il palazzo, le fondamenta)
+		if not prop_casts_shadow(pr):
+			continue
 		var w := tex.get_width() * float(pr.get("scale", _layer_scale)) * 0.55
 		_draw_shadow(SunLight.shadow(Vector2(pr.x, ground), w, l))
 	for id in player_ids:
@@ -1328,6 +1330,12 @@ func _draw_sun_light(t: float) -> void:
 		if ground == INF:
 			continue
 		_draw_shadow(SunLight.shadow(Vector2(p.x, ground), float(game.fighter.width), l, ground - float(p.y)))
+
+
+# Un pavimento o una vasca con l'ombra già dipinta (shadow: false, #378) non fa ombra a terra: larga quanto il piano
+# dell'isola diventava una striscia grigia sul bordo dove si cammina
+static func prop_casts_shadow(pr: Dictionary) -> bool:
+	return bool(pr.get("shadow", true))
 
 
 func _draw_shadow(s: Array) -> void:

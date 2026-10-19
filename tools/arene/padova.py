@@ -191,6 +191,84 @@ def front_edge_y(x):
     return 520 + FRONT_D * math.sqrt(max(0.0, 1 - d * d))
 
 
+def paint_gravel(q, m, seed, y_far, y_near, density=1.0):
+    """Il terriccio bianco con il ghiaino dei viali del Prato (#378, chiesto da Riccardo), dipinto dentro la maschera m:
+    il fondo chiaro battuto con le chiazze più scure e più chiare, i granelli fini e, sopra, i sassolini (più grandi
+    vicino, y_near, e più piccoli lontano, y_far), ognuno con la luce in alto e l'ombrina sotto."""
+    rng = random.Random(seed)
+    q.fill(m, (216, 208, 188))
+    q.fill(q.grain(m, 0.55, seed, 3.5), (194, 184, 162), 0.55)  # le chiazze dove la terra è più umida
+    q.fill(q.grain(m, 0.8, seed + 1, 0.7), (236, 231, 216), 0.5)
+    q.fill(q.grain(m, 0.8, seed + 2, 0.5), (172, 162, 142), 0.35)
+    bb = m.getbbox()
+    if not bb:
+        return
+    wx0, wy0 = bb[0] / q.k + q.ox, bb[1] / q.k + q.oy
+    wx1, wy1 = bb[2] / q.k + q.ox, bb[3] / q.k + q.oy
+    peb, sh, hi = q.mask(), q.mask(), q.mask()
+    count = int((wx1 - wx0) * (wy1 - wy0) * 0.35 * density)
+    for _ in range(count):
+        x, y = rng.uniform(wx0, wx1), rng.uniform(wy0, wy1)
+        px, py = q._p(x, y)
+        if not (0 <= px < m.size[0] and 0 <= py < m.size[1]) or m.getpixel((int(px), int(py))) < 128:
+            continue
+        f = max(0.0, min(1.0, (y - y_far) / max(1e-6, y_near - y_far)))
+        r = (0.3 + 0.55 * f) * rng.uniform(0.6, 1.3)
+        q.ellipse(sh, x - r * 1.1, y - r * 0.2, x + r * 1.3, y + r * 0.8)
+        q.ellipse(peb, x - r * 1.2, y - r * 0.7, x + r * 1.2, y + r * 0.6)
+        q.ellipse(hi, x - r * 0.8, y - r * 0.6, x + r * 0.2, y - r * 0.1)
+    q.fill(q.intersect(sh, m), (150, 140, 120), 0.6)
+    peb = q.intersect(peb, m)
+    q.fill(peb, (204, 196, 178))
+    q.fill(q.intersect(q.grain(peb, 0.9, seed + 3, 0.4), peb), (178, 170, 152), 0.6)
+    q.fill(q.intersect(hi, peb), (244, 240, 228), 0.85)
+
+
+def paint_grass(q, m, seed, y_far, y_near, density=1.0):
+    """Il prato rasato del Prato (#378, chiesto da Riccardo: un'erba più bella), dipinto dentro la maschera m: il verde
+    di fondo, le strisce larghe del taglio, le chiazze più scure e più chiare a due scale, e sopra tanti fili d'erba con
+    il piede scuro e la punta chiara (più lunghi vicino, y_near), qualche trifoglio e margheritina, e un filo d'ombra
+    lungo i bordi; i fili sul bordo sbordano un poco sul viale, come l'erba vera."""
+    rng = random.Random(seed)
+    q.fill(m, (74, 100, 56))
+    bb = m.getbbox()
+    if not bb:
+        return
+    wx0, wy0 = bb[0] / q.k + q.ox, bb[1] / q.k + q.oy
+    wx1, wy1 = bb[2] / q.k + q.ox, bb[3] / q.k + q.oy
+    stripes = q.mask()
+    k = int((wx0 - 960) // 52) - 2
+    while 960 + k * 52 < wx1 + 60:
+        if k % 2 == 0:
+            xa = 960 + k * 52
+            q.poly(stripes, [(xa, wy1 + 4), (xa + 26, wy1 + 4), (xa + 26 + (wy1 - wy0) * 0.35, wy0 - 4), (xa + (wy1 - wy0) * 0.35, wy0 - 4)])
+        k += 1
+    q.fill(q.intersect(q.soften(stripes, 2.5), m), (100, 128, 70), 0.6)
+    q.fill(q.grain(m, 0.6, seed, 5.0), (56, 80, 42), 0.45)
+    q.fill(q.grain(m, 0.65, seed + 1, 1.4), (116, 144, 80), 0.45)
+    q.fill(q.grain(m, 0.7, seed + 2, 0.6), (60, 86, 44), 0.35)
+    grow = m.filter(ImageFilter.MaxFilter(5))
+    dark, light, flowers = q.mask(), q.mask(), q.mask()
+    count = int((wx1 - wx0) * (wy1 - wy0) * 0.8 * density)
+    for _ in range(count):
+        x, y = rng.uniform(wx0, wx1), rng.uniform(wy0, wy1 + 2)
+        px, py = q._p(x, y)
+        if not (0 <= px < m.size[0] and 0 <= py < m.size[1]) or grow.getpixel((int(px), int(py))) < 128:
+            continue
+        f = max(0.0, min(1.0, (y - y_far) / max(1e-6, y_near - y_far)))
+        hgt = (1.0 + 2.4 * f) * rng.uniform(0.7, 1.3)
+        lean = rng.uniform(-0.5, 0.5) * hgt
+        q.stroke(dark, [(x, y), (x + lean * 0.5, y - hgt * 0.55)], 0.32 + 0.25 * f)
+        q.stroke(light, [(x + lean * 0.5, y - hgt * 0.55), (x + lean, y - hgt)], 0.26 + 0.2 * f)
+        if rng.random() < 0.006:  # una margheritina o un trifoglio
+            r = 0.5 + 0.6 * f
+            q.ellipse(flowers, x - r, y - hgt - r * 0.7, x + r, y - hgt + r * 0.7)
+    q.fill(q.intersect(dark, grow), (48, 70, 38), 0.8)
+    q.fill(q.intersect(light, grow), (134, 164, 90), 0.8)
+    q.fill(q.intersect(flowers, grow), (236, 234, 220), 0.85)
+    q.fill(q.inner_shadow(m, 0, -2.5, 1.8), (40, 58, 32), 0.4)  # un filo d'ombra dove il prato è un po' più basso
+
+
 def fianco(name):
     """La metà vicina dell'isola ovale (#378, chiesto da Riccardo: i giocatori combattono su una linea, ma l'isola deve
     sembrare ovale anche davanti). Davanti alla linea dove si gioca (y 520, la copertina la disegna il gioco) l'isola
@@ -228,44 +306,15 @@ def fianco(name):
     # la fascia di prato davanti, vista dall'alto, e il cordolo sul bordo dell'ovale
     t = Tela(w, h, origin=(x0, y0), ss=1)
     pts = [(cx - rx + 2 * rx * i / 120, front_edge_y(cx - rx + 2 * rx * i / 120)) for i in range(121)]
-    lawn = [(cx - rx, 521)] + [(x, y) for x, y in pts] + [(cx + rx, 521)]
-    t.poly(lawn, fill=(86, 110, 64, 255))
-    for kk in range(-30, 30):  # le strisce del taglio dell'erba
-        xa = cx + kk * 46
-        t.glaze([(xa, 521), (xa + 23, 521), (xa + 23 - 18, 580), (xa - 18, 580)], (130, 156, 96, 40) if kk % 2 else (40, 60, 30, 26))
-    rng = rand(3791)
-    for kk in range(1800):
-        gx = rng.uniform(cx - rx, cx + rx)
-        gy = rng.uniform(523, front_edge_y(gx) - 2)
-        if gy > 523:
-            t.line([(gx, gy), (gx + rng.uniform(-0.6, 0.6), gy - rng.uniform(1.0, 2.4))], fill=rng.choice([(64, 84, 48, 255), (112, 138, 82, 255)]), width=0.5)
-    # il vialetto in terriccio bianco dal ponte sud alla striscia dove si gioca, verso la fontana (#378, come i viali
-    # del Prato): si allarga venendo verso di noi, ghiaino chiaro battuto, più consumato e liscio nel mezzo dove si
-    # cammina, sassolini sparsi, e i bordi irregolari dove l'erba lo invade
+    # il prato davanti e il vialetto in terriccio bianco dal ponte sud alla striscia dove si gioca (#378)
+    from pittura import Quadro
+    q = Quadro(w, h, origin=(x0, y0), scale=2, ss=1)
+    top_m = q.poly(q.mask(), [(cx - rx, 521)] + pts + [(cx + rx, 521)])
     ye = front_edge_y(cx) + 1
-    pw_far, pw_near = 40, 48
-    prng = rand(3793)
-    edge_l = [(cx - (pw_far + (pw_near - pw_far) * (y - 521) / (ye - 521)) + prng.uniform(-1.2, 1.2), y) for y in [521 + (ye - 521) * i / 12 for i in range(13)]]
-    edge_r = [(cx + (pw_far + (pw_near - pw_far) * (y - 521) / (ye - 521)) + prng.uniform(-1.2, 1.2), y) for y in [521 + (ye - 521) * i / 12 for i in range(13)]]
-    t.poly(edge_l + list(reversed(edge_r)), fill=(222, 214, 194, 255))
-    t.poly([(cx - 22, 521), (cx + 22, 521), (cx + 26, ye), (cx - 26, ye)], fill=(230, 224, 206, 255))  # il mezzo battuto
-    for kk in range(900):  # il ghiaino: granelli chiari e scuri, più grandi vicino
-        y = prng.uniform(521, ye)
-        f = (y - 521) / (ye - 521)
-        hw = pw_far + (pw_near - pw_far) * f - 1.5
-        x = prng.uniform(cx - hw, cx + hw)
-        r = 0.25 + 0.35 * f * prng.random()
-        t.circle(x, y, r, fill=prng.choice([(196, 186, 164, 255), (240, 236, 222, 255), (178, 168, 148, 255)]))
-    for kk in range(10):  # qualche sasso più grosso
-        y = prng.uniform(524, ye - 2)
-        x = prng.uniform(cx - pw_far, cx + pw_far)
-        t.ellipse(x - 1.1, y - 0.6, x + 1.1, y + 0.6, fill=(184, 176, 158, 255))
-    for side_pts in (edge_l, edge_r):  # l'erba che invade i bordi
-        for (x, y) in side_pts:
-            for j in range(4):
-                gx = x + prng.uniform(-2, 2)
-                gy = y + prng.uniform(-2, 2)
-                t.line([(gx, gy), (gx + prng.uniform(-0.6, 0.6), gy - prng.uniform(1.0, 2.2))], fill=(96, 118, 70, 255), width=0.5)
+    path_m = q.intersect(q.poly(q.mask(), [(cx - 40, 519), (cx + 40, 519), (cx + 48, ye + 1), (cx - 48, ye + 1)]), top_m)
+    paint_gravel(q, path_m, 3003, 521, ye)
+    paint_grass(q, q.minus(top_m, path_m), 3004, 521, 520 + FRONT_D)
+    t.img.alpha_composite(q.img)
     t.glaze([(cx - rx, 521), (cx + rx, 521), (cx + rx, 527), (cx - rx, 527)], (30, 28, 24, 60))  # l'ombra della copertina sul prato
     base = t.img
     base.alpha_composite(wall)
@@ -285,23 +334,16 @@ def fianco(name):
 
 
 def coping(name, w=96, h=8):
-    """Il bordo dove si cammina (#378, chiesto da Riccardo: senza il gradino): una fascia di lastre di trachite chiara
-    a filo della piazza e del prato, vista dall'alto come loro, con i giunti e un filo di luce sul davanti; niente faccia
-    in ombra né riga scura sotto, così il vialetto e la piazza continuano oltre senza scalini. Resta la parte più chiara
-    del palco (stile, sezione 7)."""
+    """Il bordo dove si cammina (#378): la stessa ghiaia chiara battuta del piano, a filo, appena più chiara (stile,
+    sezione 7: il bordo calpestabile è la parte più chiara), senza gradino; un filo di luce sul davanti."""
     t = Tela(w, h, wrap=True)
     rng = rand(7)
-    t.rect(0, 0, w, h, fill=EDGE)
-    for x0 in (0, w / 2):
-        tone = mix(EDGE, (214, 208, 192, 255), rng.random() * 0.6)
-        t.rect(x0 + 0.5, 0.4, x0 + w / 2 - 0.5, h - 0.4, fill=tone)
-    for k in range(40):  # la grana della pietra
-        x, y = rng.uniform(0, w), rng.uniform(0.5, h - 0.5)
-        t.circle(x, y, 0.35, fill=(196, 190, 176, 255))
-    for x in (0, w / 2):
-        t.line([(x, 0), (x, h)], fill=(176, 170, 156, 255), width=0.6)
-    t.line([(0, 0.3), (w, 0.3)], fill=(198, 192, 178, 255), width=0.5)  # il giunto con la piazza, appena segnato
-    t.line([(0, h - 0.5), (w, h - 0.5)], fill=(246, 244, 236, 255), width=0.6)  # il filo di luce sul davanti
+    t.rect(0, 0, w, h, fill=(230, 224, 208, 255))
+    for k in range(220):
+        x, y = rng.uniform(0, w), rng.uniform(0.3, h - 0.3)
+        r = rng.uniform(0.18, 0.5)
+        t.ellipse(x - r * 1.2, y - r * 0.7, x + r * 1.2, y + r * 0.7, fill=rng.choice([(206, 198, 178, 255), (244, 240, 228, 255), (190, 180, 160, 255)]))
+    t.line([(0, h - 0.5), (w, h - 0.5)], fill=(246, 244, 236, 255), width=0.6)
     t.save(OUT, name)
 
 
@@ -2587,31 +2629,37 @@ def front_bridges(name):
     # l'ombra del ponte sull'acqua, a destra (la luce viene da sinistra in alto)
     q.fill(q.soften(q.poly(q.mask(), [(x + 4, y + 6) for x, y in R] + [(x + 22, y + 10) for x, y in reversed(R)]), 4), (30, 44, 40), 0.35)
     deck = q.poly(q.mask(), L + list(reversed(R)))
-    # la passerella in ciottoli (#378, come i ponti del Prato): sassi tondi e ovali messi a file trasversali, più piccoli
-    # lontano, ognuno con la luce in alto a sinistra e l'ombra sotto, nella malta scura
-    q.fill(deck, (138, 130, 118))
+    # la passerella in sanpietrini tondi (#378, come i ponti del Prato): sassi di trachite tondeggianti messi a file
+    # sfalsate, più piccoli lontano, nelle fughe scure; ogni sasso è un piccolo volume con la luce in alto a sinistra,
+    # l'ombra in basso a destra e il suo tono, un po' diverso dai vicini
+    q.fill(deck, (96, 90, 82))
     crng = rand(3794)
-    stones, shades, lights = q.mask(), q.mask(), q.mask()
-    for i in range(n * 2):
-        u = i / (n * 2)
-        y = yf + (yn - yf) * u
+    tones = [q.mask(), q.mask(), q.mask()]
+    shades, lights = q.mask(), q.mask()
+    y = yf + 1.5
+    row = 0
+    while y < yn:
+        u = (y - yf) / (yn - yf)
         k = scale(u)
-        lx, ly = edge(-1, u)
-        rx_, ry_ = edge(1, u)
-        rr = 2.6 * k  # i ciottoli, grandi quanto una mano a quella distanza
-        x = lx + rr * 1.2 + (crng.random() * rr if i % 2 else 0)
-        while x < rx_ - rr:
-            r = rr * crng.uniform(0.75, 1.15)
-            yy = ly + (ry_ - ly) * (x - lx) / max(1e-6, rx_ - lx)
-            q.ellipse(stones, x - r * 1.15, yy - r * 0.7, x + r * 1.15, yy + r * 0.7)
-            q.ellipse(lights, x - r * 0.9, yy - r * 0.62, x + r * 0.3, yy - r * 0.05)
-            q.ellipse(shades, x - r * 0.8, yy + r * 0.1, x + r * 1.15, yy + r * 0.7)
-            x += r * 2.3
-    stones = q.intersect(stones, deck)
-    q.fill(stones, (190, 182, 166))
-    q.fill(q.intersect(q.soften(shades, 0.4), stones), (150, 142, 128), 0.8)
-    q.fill(q.intersect(q.soften(lights, 0.4), stones), (226, 220, 206), 0.85)
-    q.fill(q.grain(stones, 0.3, 95, 0.5), (164, 156, 140), 0.5)
+        r = 3.2 * k
+        lx, _ = edge(-1, u)
+        rx_, _ = edge(1, u)
+        x = lx + r * (0.6 if row % 2 else 1.6)
+        while x < rx_ - r * 0.6:
+            rr = r * crng.uniform(0.85, 1.1)
+            ry_ = rr * 0.62
+            q.ellipse(tones[crng.randrange(3)], x - rr, y - ry_, x + rr, y + ry_)
+            q.ellipse(lights, x - rr * 0.75, y - ry_ * 0.85, x + rr * 0.2, y - ry_ * 0.05)
+            q.ellipse(shades, x - rr * 0.3, y - ry_ * 0.1, x + rr * 1.0, y + ry_ * 1.0)
+            x += rr * 2.15
+        y += r * 0.62 * 2.05
+        row += 1
+    stones = q.intersect(q.union(q.union(tones[0], tones[1]), tones[2]), deck)
+    for m_, col in zip(tones, ((182, 174, 160), (166, 160, 148), (196, 188, 172))):
+        q.fill(q.intersect(m_, deck), col)
+    q.fill(q.intersect(q.soften(shades, 0.5), stones), (120, 114, 104), 0.7)
+    q.fill(q.intersect(q.soften(lights, 0.5), stones), (232, 226, 212), 0.75)
+    q.fill(q.intersect(q.grain(stones, 0.5, 95, 0.4), stones), (140, 134, 122), 0.35)
     q.fill(q.intersect(q.soften(q.poly(q.mask(), [L[0], R[0], R[4], L[4]]), 3), deck), (40, 38, 34), 0.25)  # sotto il bordo della piazza
     # i due parapetti traforati a cerchi intrecciati, visti da dentro: cominciano poco dopo la piazza, così non coprono
     # i piedi di chi combatte; quello a destra è in ombra; gli obelischi alti sul capo di qua
@@ -2941,33 +2989,14 @@ def piano(name):
         return (cx + rx * f * math.cos(a), cy - ry * f * math.sin(a))
 
     rng = rand(300)
-    rings = [1.0, 0.9, 0.79, 0.67, 0.54, 0.4, 0.25, 0.1, 0.0]
-    base = mix(EDGE, STONE_LIGHT, 0.42)
     far_col = mix(EDGE, STONE, 0.62)
-    joints = []
-    for i, (fo, fi) in enumerate(zip(rings, rings[1:])):
-        fm = (fo + fi) / 2
-        n = max(6, int(math.pi * rx * fm / 46))  # lastre dell'anello
-        off = (i % 2) * 0.5
-        for j in range(n):
-            a0 = math.pi * max(0.0, min(1.0, (j + off) / n))
-            a1 = math.pi * max(0.0, min(1.0, (j + 1 + off) / n))
-            if a1 - a0 < 1e-3:
-                continue
-            outer = [pt(fo, a0 + (a1 - a0) * u / 4) for u in range(5)]
-            inner = [pt(fi, a1 - (a1 - a0) * u / 4) for u in range(5)]
-            depth = math.sin((a0 + a1) / 2) * fm  # 0 davanti, 1 in fondo
-            row_col = mix(base, far_col, depth)
-            col = mix(row_col, shade(row_col, 0.9), rng.random() * 0.6)
-            t.poly(outer + inner, fill=col)
-            if rng.random() < 0.22:  # qualche lastra consumata, più chiara al centro
-                mx, my = pt(fm, (a0 + a1) / 2)
-                t.glaze([(mx - 7, my), (mx, my - 1.2), (mx + 7, my), (mx, my + 1.2)], (255, 250, 236, 40))
-            joints.append(([pt(fo, a0), pt(fi, a0)], mix(STONE_SHADE, row_col, 0.35), 0.4 + 0.35 * (1 - depth)))
-        ring_col = mix(STONE_SHADE, mix(base, far_col, 0.5), 0.35)
-        joints.append(([pt(fi, math.pi * u / 80) for u in range(81)], ring_col, 0.5))
-    for pts, col, w in joints:
-        t.line(pts, fill=col, width=w)
+    # il piano dell'isola è in terriccio bianco e ghiaino come i viali del Prato (#378, chiesto da Riccardo): la fascia
+    # dove si combatte, il viale verso la fontana e l'anello attorno alla vasca; i prati si dipingono sopra
+    from pittura import Quadro
+    qg = Quadro(x1 - x0, y1 - y0, origin=(x0, y0))
+    half = qg.poly(qg.mask(), [pt(1.0, math.pi * u / 160) for u in range(161)])
+    paint_gravel(qg, half, 3001, cy - ry, 520)
+    t.img.alpha_composite(qg.img)
     # il ciglio dell'ovale: lo spigolo della pietra e un filo d'ombra, poi c'è il canale
     t.line([pt(1.0, math.pi * u / 120) for u in range(121)], fill=shade(far_col, 0.7), width=1.0)
     # l'isola è soprattutto prato (#378, dalle foto di Riccardo): i prati tagliati a strisce dietro la fascia lastricata
@@ -2985,27 +3014,16 @@ def piano(name):
         pts_[:] = [(x, y) for x, y in pts_ if abs(x - cx) > 34 and y < 506]
         pts_.append((cx + side * (rx - 60), 506))
         pts_.append((cx + side * 34, 506))
-    lawn_q = Tela(x1 - x0, y1 - y0, origin=(x0, y0))
+    ql = Quadro(x1 - x0, y1 - y0, origin=(x0, y0))
+    lawn_m = ql.mask()
     for pts_ in (lawn_pts_l, lawn_pts_r):
         if len(pts_) > 3:
-            lawn_q.poly(pts_, fill=(88, 112, 66, 255))
-    for k in range(-40, 40):  # le strisce del taglio dell'erba, in diagonale
-        xa = cx + k * 46
-        lawn_q.glaze([(xa, 520), (xa + 23, 520), (xa + 23 + 40, 460), (xa + 40, 460)], (130, 156, 96, 46) if k % 2 else (40, 60, 30, 30))
-    for k in range(2400):
-        gx, gy = rng.uniform(x0, x1), rng.uniform(462, 506)
-        lawn_q.line([(gx, gy), (gx + rng.uniform(-0.6, 0.6), gy - rng.uniform(1.0, 2.6))], fill=rng.choice([(64, 84, 48, 255), (112, 138, 82, 255)]), width=0.5)
-    mask = Image.new("L", t.img.size, 0)
-    md = ImageDraw.Draw(mask)
-    for pts_ in (lawn_pts_l, lawn_pts_r):
-        if len(pts_) > 3:
-            md.polygon(t._pts(pts_, 0, 0), fill=255)
-    rx_f, ry_f = 238, 25  # l'anello lastricato attorno alla vasca resta pietra
-    md.ellipse(t._box((cx - rx_f, 492 - ry_f, cx + rx_f, 492 + ry_f), 0, 0), fill=0)
-    t.img.paste(lawn_q.img, (0, 0), mask)
-    for pts_ in (lawn_pts_l, lawn_pts_r):
-        if len(pts_) > 3:
-            t.line(pts_ + [pts_[0]], fill=(150, 144, 130, 255), width=0.9)  # il bordo di pietra delle aiuole
+            ql.poly(lawn_m, pts_)
+    rx_f, ry_f = 238, 25  # l'anello in ghiaia attorno alla vasca
+    lawn_m = ql.minus(lawn_m, ql.ellipse(ql.mask(), cx - rx_f, 492 - ry_f, cx + rx_f, 492 + ry_f))
+    lawn_m = ql.smooth(lawn_m, 0.8)
+    paint_grass(ql, lawn_m, 3002, cy - ry, 506)
+    t.img.alpha_composite(ql.img)
     # il cordolo bianco sul ciglio dell'isola, con la fila di statue sui piedistalli (l'anello di dentro del Prato)
     t.line([pt(1.0, math.pi * u / 120) for u in range(121)], fill=(220, 214, 200, 255), width=2.4)
     t.line([(x, y + 1.2) for x, y in [pt(1.0, math.pi * u / 120) for u in range(121)]], fill=(150, 144, 130, 255), width=0.7)

@@ -2040,7 +2040,8 @@
             "file": "piano.png",
             "x": 960,
             "y": 524,
-            "scale": 0.5
+            "scale": 0.5,
+            "shadow": false
           },
           {
             "file": "platano.png",
@@ -2063,7 +2064,8 @@
           {
             "file": "fontana.png",
             "x": 960,
-            "y": 524
+            "y": 524,
+            "shadow": false
           },
           {
             "file": "fontana-davanti.png",

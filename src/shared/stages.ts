@@ -197,6 +197,7 @@ export interface StageProp {
   front?: boolean; // davanti ai lottatori (altrimenti dietro, subito dopo il palco)
   opacity?: number;
   floatersAfter?: boolean; // dopo questa decorazione il gioco disegna chi galleggia nella parte lontana del canale (#378)
+  shadow?: boolean; // false: niente ombra del sole a terra (#378), per un pavimento o una vasca che hanno già la loro dipinta
 }
 
 // Animazione di una trappola (#270): un foglio di fotogrammi uno accanto all'altro, rivolti a destra (il gioco li
@@ -544,13 +545,13 @@ export const STAGES: Record<string, StageSpec> = {
         { file: "platano.png", x: -330, y: 566, scale: 0.3 },
         { file: "platano.png", x: 2250, y: 566, scale: 0.3, flip: true },
         // Il piano dell'isola in profondità (#300): il lastricato dietro il bordo, su cui poggiano statue e platani
-        { file: "piano.png", x: 960, y: 524, scale: 0.5 },
+        { file: "piano.png", x: 960, y: 524, scale: 0.5, shadow: false }, // è il pavimento: niente ombra a terra
         // Due platani sulla piazza (#288), dietro alle statue: la chioma sta sopra le teste e lascia vedere il palco
         { file: "platano.png", x: 410, y: 522, scale: 0.5 },
         { file: "platano.png", x: 1510, y: 522, scale: 0.5, flip: true },
         // la metà vicina dell'isola ovale (#378): il prato davanti alla linea dove si gioca, il cordolo e il muro nel canale
         { file: "fianco.png", x: 960, y: 660 },
-        { file: "fontana.png", x: 960, y: 524 }, // la fontana dell'Isola Memmia: la vasca, i paracarri e la ringhiera
+        { file: "fontana.png", x: 960, y: 524, shadow: false }, // la fontana dell'Isola Memmia: la vasca, i paracarri e la ringhiera
         { file: "fontana-davanti.png", x: 960, y: 530, front: true, opacity: 0.7 }, // il bordo della vasca davanti ai piedi
         // La sponda di qua del canale (#378), sfocata davanti a tutto: il canale resta una striscia stretta come quello vero
         { file: "primo-piano.png", x: 960, y: 1100, scale: 1, front: true },

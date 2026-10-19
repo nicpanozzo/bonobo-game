@@ -139,3 +139,16 @@ func test_galleggianti_girano_attorno_al_canale() -> void:
 				seen_back = true
 				runner.check(float(p.k) < 0.75, "dietro è più piccolo")
 	runner.check(seen_front and seen_back, "passa davanti e dietro l'isola")
+
+
+# Il piano dell'isola di Padova e la vasca non fanno ombra a terra (#378): era una striscia grigia sul bordo
+func test_pavimento_senza_ombra() -> void:
+	var game := _game()
+	var seen := 0
+	for pr in game.stages.padova.art.props:
+		if str(pr.file) in ["piano.png", "fontana.png"]:
+			seen += 1
+			runner.check(not WorldView.prop_casts_shadow(pr), "%s senza ombra" % pr.file)
+		elif str(pr.file) == "platano.png":
+			runner.check(WorldView.prop_casts_shadow(pr), "i platani l'ombra la fanno")
+	runner.check(seen == 2, "il piano e la vasca: %d" % seen)
