@@ -1814,9 +1814,9 @@ func _draw_strike(p: Dictionary, now: float) -> void:
 	var chest := Vector2(p.x, p.y - float(game.fighter.height) * 0.6)
 	var arc := StrikeFx.arc_for(chest, int(p.facing), box)
 	var progress := (now - float(_strikes[p.id].at)) / maxf(1.0, float(spec.get("activeMs", 100)) * 0.6)
-	var heavy := str(p.attack).begins_with("heavy") or p.attack == "dashAttack"
+	var heavy: bool = kind.begins_with("heavy") or kind == "dashAttack"
 	var own: Variant = game.characters.get(p.characterId, {}).get("strikeColor")
-	var col := Color(own) if own is String else (Color(1, 0.75, 0.35) if heavy else Color.WHITE)
+	var col: Color = Color(own) if own is String else (Color(1, 0.75, 0.35) if heavy else Color.WHITE)
 	var poly := StrikeFx.crescent(arc, progress, float(game.effects.strikeWidth) * (1.5 if heavy else 1.0))
 	if poly.size() >= 3:
 		col.a = 0.55
