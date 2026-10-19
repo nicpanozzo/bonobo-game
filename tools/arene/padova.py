@@ -2014,7 +2014,7 @@ def near_statues(name):
     x0, y0, w, h = -460, 420, 2840, 680
     t = Tela(w, h, origin=(x0, y0), scale=1, ss=2)
     rng = rand(3784)
-    for x in (-270, 2190):  # solo fuori dal canale, dove non coprono chi rientra dai lati
+    for x in (-430, 2350):  # solo fuori dal canale e oltre i ponti, dove non coprono niente
         base = 760 + rng.uniform(-10, 10)
         ring_statue(t, x, base, 3.0, rng, 0.0)
     out = t.result().filter(ImageFilter.GaussianBlur(1.6))
@@ -2496,7 +2496,7 @@ def front_bridges(name):
     del canale ai lati e gli obelischi sul capo vicino. I parapetti cominciano un po' prima della piazza, così non
     coprono i piedi di chi combatte sopra la fontana. Decorazione davanti (front) in x 960, y 780, a 2x."""
     from pittura import Quadro
-    x0, y0, w, h = 700, 500, 520, 280
+    x0, y0, w, h = 700, 460, 520, 320
     q = Quadro(w, h, origin=(x0, y0))
     S, S_SH, S_HI = (228, 224, 212), (174, 168, 156), (246, 244, 236)
     ink = (78, 72, 66)
@@ -2527,34 +2527,101 @@ def front_bridges(name):
         q.stroke(joints, [(lx + (rx - lx) * f, ly) for (lx, ly), (rx, ry) in zip(L, R)], 0.5)
     q.fill(q.intersect(joints, deck), (166, 160, 146), 0.85)
     q.fill(q.intersect(q.soften(q.poly(q.mask(), [L[0], R[0], R[4], L[4]]), 3), deck), (40, 38, 34), 0.25)  # sotto il bordo della piazza
-    # i due parapetti traforati, visti da dentro: cominciano poco dopo la piazza
+    # i due parapetti traforati a cerchi intrecciati, visti da dentro: cominciano poco dopo la piazza, così non coprono
+    # i piedi di chi combatte; quello a destra è in ombra; gli obelischi alti sul capo di qua
     start = 5
-    for E, sgn in ((L, -1), (R, 1)):
-        pts = E[start:]
-        k = [scale(u) for u in us[start:]]
-        par = q.poly(q.mask(), pts + [(x, y - 13 * kk) for (x, y), kk in reversed(list(zip(pts, k)))])
-        holes = q.mask()
-        for (x, y), kk in list(zip(pts, k))[1:-1]:
-            yc = y - 6.5 * kk
-            for dx, dy in ((0, -2.2), (0, 2.2), (-2.2, 0), (2.2, 0)):
-                r = 1.3 * kk
-                q.ellipse(holes, x + dx * kk * 0.4 - r, yc + dy * kk - r, x + dx * kk * 0.4 + r, yc + dy * kk + r)
-        panel = q.minus(par, holes)
-        q.fill(panel, S if sgn < 0 else S_SH)  # quello a destra è nell'ombra
-        q.fill(q.intersect(holes, par), (92, 120, 112))  # dai trafori si vede l'acqua del canale
-        q.line([(x, y - 13.6 * kk) for (x, y), kk in zip(pts, k)], 3.2, S)
-        q.line([(x, y - 14.4 * kk) for (x, y), kk in zip(pts, k)], 1.0, S_HI)
-        q.outline(par, 0.5, ink)
+    _openwork(q, L[start:], 18, ink, face=S, shadow=(170, 164, 152), through=(92, 120, 112), seed=92)
+    _openwork(q, R[start:], 18, ink, face=S_SH, shadow=(140, 134, 124), through=(80, 108, 100), seed=93)
+    for x, y in (L[-1], R[-1]):
+        _obelisk_q(q, x, y + 3, 1.3, 94)
     out = q.result()
     t = Tela(w, h, origin=(x0, y0), ss=1)
     t.img = out
     t.d = ImageDraw.Draw(t.img)
     for x, y in (L[start], R[start]):  # piedistalli bassi verso la piazza
         t.rect(x - 4, y - 10, x + 4, y + 1, fill=(222, 218, 206, 255), ink=True, width=0.6, ink_col=(84, 78, 72, 255))
-    for x, y in (L[-1], R[-1]):  # gli obelischi alti sul capo di qua
-        _obelisk(t, x, y + 2, 1.35, (84, 78, 72, 255))
     t.img.save(os.path.join(OUT, name), optimize=True)
     print("scritto", name, t.img.size)
+
+
+def _obelisk_q(q, x, base, s, seed=0):
+    """Un obelisco del Prato dipinto (#378, dalle foto): il dado quadrato con lo zoccolo e la cornice, il plinto e
+    l'ago alto e sottile che si stringe, di pietra d'Istria con la luce a sinistra e le macchie del tempo."""
+    S, S_SH, S_HI = (230, 226, 214), (168, 162, 150), (248, 246, 238)
+    ink = (80, 74, 68)
+
+    def block(pts, shade=True):
+        m = q.poly(q.mask(), pts)
+        q.fill(m, S)
+        if shade:
+            bb = m.getbbox()
+            if bb:  # la faccia di destra in ombra: metà blocco
+                q.fill(q.inner_shadow(m, -(bb[2] - bb[0]) / q.k * 0.45, 0, 0.6), S_SH, 0.9)
+        q.fill(q.grain(m, 0.3, seed + int(x), 0.6), (150, 148, 138), 0.4)
+        q.fill(q.rim(m, -0.6, -0.6, 0.4), S_HI, 0.7)
+        q.outline(m, 0.45, ink)
+
+    w = 8 * s
+    block([(x - w * 1.25, base), (x + w * 1.25, base), (x + w * 1.25, base - 3 * s), (x - w * 1.25, base - 3 * s)])  # lo zoccolo
+    block([(x - w, base - 3 * s), (x + w, base - 3 * s), (x + w, base - 19 * s), (x - w, base - 19 * s)])  # il dado
+    block([(x - w * 1.2, base - 19 * s), (x + w * 1.2, base - 19 * s), (x + w * 1.2, base - 22 * s), (x - w * 1.2, base - 22 * s)])  # la cornice
+    block([(x - w * 0.62, base - 22 * s), (x + w * 0.62, base - 22 * s), (x + w * 0.62, base - 26 * s), (x - w * 0.62, base - 26 * s)])  # il plinto
+    needle = [(x - w * 0.5, base - 26 * s), (x + w * 0.5, base - 26 * s), (x + w * 0.16, base - 88 * s), (x, base - 93 * s), (x - w * 0.16, base - 88 * s)]
+    block(needle)
+
+
+def _openwork(q, pts, hgt, ink, face=(228, 224, 212), shadow=(176, 170, 158), through=(150, 168, 172), seed=0):
+    """Il parapetto traforato dei ponti del Prato (#378, dalle foto): una lastra di pietra sopra la linea pts (il
+    bordo del ponte), alta hgt, divisa in riquadri da pilastrini; in ogni riquadro una catena di cerchi intrecciati
+    traforati, da cui si vede quello che c'è dietro (through); sopra il corrimano tondo, sotto lo zoccolo."""
+    panel = q.poly(q.mask(), pts + [(x, y - hgt) for x, y in reversed(pts)])
+    holes, pils = q.mask(), q.mask()
+    total = 0.0
+    lens = [0.0]
+    for (ax, ay), (bx, by) in zip(pts, pts[1:]):
+        total += math.hypot(bx - ax, by - ay)
+        lens.append(total)
+
+    def at(d):
+        for i in range(1, len(lens)):
+            if lens[i] >= d:
+                u = (d - lens[i - 1]) / max(1e-6, lens[i] - lens[i - 1])
+                (ax, ay), (bx, by) = pts[i - 1], pts[i]
+                return ax + (bx - ax) * u, ay + (by - ay) * u
+        return pts[-1]
+
+    r = hgt * 0.2
+    step_p = max(hgt * 1.9, 14)  # un pilastrino ogni tanto
+    d = 0.0
+    while d <= total:
+        x, y = at(d)
+        q.poly(pils, [(x - r * 0.55, y), (x + r * 0.55, y), (x + r * 0.55, y - hgt), (x - r * 0.55, y - hgt)])
+        d += step_p
+    d = r * 1.6
+    while d < total - r:
+        x, y = at(d)
+        yc = y - hgt * 0.5
+        q.ellipse(holes, x - r * 0.62, yc - r * 0.62, x + r * 0.62, yc + r * 0.62)  # il cerchio traforato
+        for sgn in (-1, 1):  # i triangoli fra un cerchio e l'altro, sopra e sotto
+            q.poly(holes, [(x + r * 0.85, yc + sgn * r * 0.95), (x + r * 1.15, yc + sgn * r * 0.35), (x + r * 0.55, yc + sgn * r * 0.35)])
+        d += r * 1.7
+    holes = q.minus(holes, pils)
+    stone = q.minus(panel, holes)
+    q.fill(stone, face)
+    q.fill(q.grain(stone, 0.3, seed, 0.6), (156, 152, 142), 0.4)
+    rings = q.minus(q.soften(holes, r * 0.12), holes)  # l'orlo scolpito attorno ai trafori, in ombra
+    q.fill(q.intersect(rings, stone), shadow, 0.9)
+    q.fill(q.intersect(holes, panel), through)
+    q.fill(q.intersect(pils, panel), (238, 234, 224), 0.7)
+    q.outline(panel, 0.45, ink)
+    rail = q.mask()
+    q.stroke(rail, [(x, y - hgt) for x, y in pts], hgt * 0.22)
+    q.fill(rail, (240, 236, 226))
+    q.fill(q.inner_shadow(rail, 0, -hgt * 0.1, hgt * 0.06), shadow, 0.9)
+    q.outline(rail, 0.45, ink)
+    base = q.mask()
+    q.stroke(base, [(x, y - hgt * 0.06) for x, y in pts], hgt * 0.14)
+    q.fill(base, shadow, 0.8)
 
 
 def _profile_bridge(t, x_in, x_out, rng):
@@ -2565,8 +2632,8 @@ def _profile_bridge(t, x_in, x_out, rng):
     Dipinto con pittura.py e incollato nella tela; è dietro i lottatori e non si attraversa."""
     from pittura import Quadro
     a, b = min(x_in, x_out), max(x_in, x_out)
-    x0, y0 = a - 24, 452
-    q = Quadro(b - a + 48, 196, origin=(x0, y0), scale=t.k)
+    x0, y0 = a - 24, 420
+    q = Quadro(b - a + 48, 228, origin=(x0, y0), scale=t.k)
     S, S_SH, S_DK, S_HI = (228, 224, 212), (174, 168, 156), (124, 120, 112), (246, 244, 236)
     ink = (78, 72, 66)
     deck, water, hump = 521, 600, 5
@@ -2613,25 +2680,11 @@ def _profile_bridge(t, x_in, x_out, rng):
         q.stroke(refl, [(a + rng.uniform(0, 12), y), (b - rng.uniform(0, 12), y)], 1.0)
     hole_r = q.poly(q.mask(), [(mid - span / 2, water)] + [(x, 2 * water - y) for x, y in arch] + [(mid + span / 2, water)])
     q.fill(q.minus(q.soften(refl, 0.5), hole_r), (198, 202, 192), 0.45)
-    # il parapetto traforato a quadrifogli, come quelli veri
-    par = q.poly(q.mask(), top + [(x, y - 13) for x, y in reversed(top)])
-    holes = q.mask()
-    for i in range(1, n, 1):
-        x, y = top[i]
-        yc = y - 6.5
-        for dx, dy in ((0, -2.2), (0, 2.2), (-2.2, 0), (2.2, 0)):
-            q.ellipse(holes, x + dx - 1.3, yc + dy - 1.3, x + dx + 1.3, yc + dy + 1.3)
-    panel = q.minus(par, holes)
-    q.fill(panel, S)
-    q.fill(q.inner_shadow(panel, 0, -2, 1.2), S_SH, 0.75)
-    q.fill(q.intersect(holes, par), (150, 170, 176))  # dai trafori si vede il cielo e lo sfondo chiaro
-    q.line([(x, y - 13.6) for x, y in top], 3.0, S)
-    q.line([(x, y - 14.4) for x, y in top], 0.9, S_HI)
-    q.outline(par, 0.45, ink)
+    # il parapetto traforato a cerchi intrecciati, come quelli veri, e gli obelischi alti ai capi
+    _openwork(q, top, 20, ink, seed=83)  # alto come nelle foto: circa un quarto del ponte
+    for x in (a + 6, b - 6):
+        _obelisk_q(q, x, deck + 1, 1.0, 84)
     t.img.alpha_composite(q.result(), (int(round((x0 - t.ox) * t.k)), int(round((y0 - t.oy) * t.k))))
-    for x in (a + 4, b - 4):  # gli obelischi sui piedistalli ai capi
-        t.rect(x - 7, deck - 26, x + 7, deck, fill=(224, 220, 208, 255), ink=True, width=0.7, ink_col=(84, 78, 72, 255))
-        _obelisk(t, x, deck - 26, 0.9, (84, 78, 72, 255))
 
 
 def bridges_and_statues(name):
