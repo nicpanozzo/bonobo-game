@@ -140,7 +140,8 @@ export interface StageLife {
     scale?: number;
     deep?: string;
     // chi galleggia gira attorno al canale (#378): un giro in lapMs sull'ovale cx, cy, rx, ry; dietro è grande backK
-    floaters?: { lapMs: number; cx: number; cy: number; rx: number; ry: number; backK?: number; kinds: string[] };
+    // underX: oltre questa distanza da cx passa sotto i ponti di profilo alle punte dell'isola, coperto (pixel)
+    floaters?: { lapMs: number; cx: number; cy: number; rx: number; ry: number; backK?: number; underX?: number; kinds: string[] };
   };
   // Chi passa in primissimo piano (#378): figure sfocate (fogli di sheets, row per i fogli a righe) che attraversano la
   // strada davanti a tutto, alla y dei piedi, grandi k volte. Ognuna ogni everyMs, in crossMs, da from a to e ritorno
@@ -530,7 +531,7 @@ export const STAGES: Record<string, StageSpec> = {
       // sua tazza, inclinato quando lei è lontana dal centro. La tazza in cima è più grande (larga 180 invece di 120)
       moverSprites: [0, 1, 2].map((mover) => ({
         mover, file: mover === 2 ? "tazza-grande.png" : "tazza.png", frames: 4, fps: 8, scale: 0.5, footX: mover === 2 ? 210 : 150, footY: 24,
-        stem: { sheet: "getto", crown: "corona", baseY: 494, width: mover === 2 ? 60 : 52, hub: { x: 960, y: 492 } },
+        stem: { sheet: "getto", crown: "corona", baseY: 484, width: mover === 2 ? 60 : 52, hub: { x: 960, y: 482 } },
       })),
       hazardSprites: [
         { hazard: 0, file: "ciclista.png", frames: 8, fps: 16, scale: 0.58, footX: 150, footY: 312, shout: { text: "CANCAROOOO!", x: 200, y: 110 } },
@@ -552,7 +553,8 @@ export const STAGES: Record<string, StageSpec> = {
         // la metà vicina dell'isola ovale (#378): il prato davanti alla linea dove si gioca, il cordolo e il muro nel canale
         { file: "fianco.png", x: 960, y: 660 },
         { file: "fontana.png", x: 960, y: 524, shadow: false }, // la fontana dell'Isola Memmia: la vasca, i paracarri e la ringhiera
-        { file: "fontana-davanti.png", x: 960, y: 530, front: true, opacity: 0.7 }, // il bordo della vasca davanti ai piedi
+        // la metà vicina della ringhiera: tutta dietro la linea dove si combatte, quindi dietro a chi ci passa (#378)
+        { file: "fontana-davanti.png", x: 960, y: 530, shadow: false },
         // La sponda di qua del canale (#378), sfocata davanti a tutto: il canale resta una striscia stretta come quello vero
         { file: "primo-piano.png", x: 960, y: 1100, scale: 1, front: true },
         // I ponti del Prato davanti (#378, dalle foto di Riccardo): dalla piazza dove si gioca al parco di qua del canale.
@@ -627,7 +629,7 @@ export const STAGES: Record<string, StageSpec> = {
         },
         outerWater: {
           y: 622, file: "canale.png", deep: "26382f",
-          floaters: { lapMs: 150000, cx: 960, cy: 554, rx: 1080, ry: 94, backK: 0.45, kinds: ["bici-rotta", "ubriaco"] },
+          floaters: { lapMs: 150000, cx: 960, cy: 554, rx: 1080, ry: 94, backK: 0.45, underX: 850, kinds: ["bici-rotta", "ubriaco"] },
         },
         birds: { y: 40, parallax: 0.2, everyMs: 14000 },
         // Sulle punte delle lastre delle statue

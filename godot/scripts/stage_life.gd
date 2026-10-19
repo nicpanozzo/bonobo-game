@@ -828,7 +828,7 @@ func _draw_floaters(ci: CanvasItem, t: float, level: float, amb: Color) -> void:
 	if not f is Dictionary:
 		return
 	for p in floaters_at(f, t):
-		if p.front:
+		if p.front and not p.under:
 			_draw_floater(ci, p, t, amb)
 
 
@@ -837,11 +837,12 @@ func draw_floaters_back(ci: CanvasItem, t: float, amb: Color) -> void:
 	if not ow is Dictionary or not ow.get("floaters") is Dictionary:
 		return
 	for p in floaters_at(ow.floaters, t):
-		if not p.front:
+		if not p.front or p.under: # anche chi passa sotto un ponte di profilo: il ponte, disegnato dopo, lo copre
 			_draw_floater(ci, p, t, amb)
 
 
-# Dove stanno quelli che galleggiano all'istante t: per ognuno {kind, x, y, dir, k, front}. Sono sparsi in parti
+# Dove stanno quelli che galleggiano all'istante t: per ognuno {kind, x, y, dir, k, front, under}; under: oltre
+# underX da cx passa sotto i ponti di profilo alle punte dell'isola (#378) e si disegna dietro, coperto dal ponte. Sono sparsi in parti
 # uguali sull'anello e vanno in senso antiorario visto dall'alto (davanti verso destra)
 func floaters_at(f: Dictionary, t: float) -> Array:
 	var kinds: Array = f.kinds
@@ -851,7 +852,8 @@ func floaters_at(f: Dictionary, t: float) -> Array:
 		var sn := sin(th)
 		var depth := (sn + 1.0) / 2.0 # 1 davanti, 0 dietro
 		out.append({"kind": kinds[i], "x": float(f.cx) + float(f.rx) * cos(th), "y": float(f.cy) + float(f.ry) * sn,
-			"dir": 1 if sn >= 0.0 else -1, "k": lerpf(float(f.get("backK", 0.45)), 1.0, depth), "front": sn > 0.0})
+			"dir": 1 if sn >= 0.0 else -1, "k": lerpf(float(f.get("backK", 0.45)), 1.0, depth), "front": sn > 0.0,
+			"under": absf(float(f.rx) * cos(th)) > float(f.get("underX", INF))})
 	return out
 
 
@@ -883,12 +885,22 @@ func _draw_floater(ci: CanvasItem, p: Dictionary, t: float, amb: Color) -> void:
 		var b := Vector2(x - dir * (wide * 0.45 + 70.0 * k), y + side * 7.0 * k)
 		ci.draw_line(a, b, Color(foam, 0.35), 1.2 * k)
 	var frame := posmod(int(t / 500.0), int(sh.frames))
+	# l'acqua più scura attorno a chi galleggia (#378): lo appoggia sull'acqua invece di lasciarlo tagliato
+	var dark := PackedVector2Array()
+	for i in 16:
+		var a := TAU * i / 16.0
+		dark.append(Vector2(x + cos(a) * wide * 0.5, y + 1.0 * k + sin(a) * 4.0 * k))
+	ci.draw_colored_polygon(dark, Color(0.04, 0.12, 0.11, 0.3))
 	var src := Rect2(fw * frame, 0, fw, fh * 0.62)
 	var size := Vector2(fw, fh * 0.62) * sc
 	var dest := Rect2(x - size.x / 2.0, y - size.y + fh * 0.02 * sc, size.x, size.y)
 	if dir < 0:
 		dest.size.x = -size.x
 	ci.draw_texture_rect_region(sh.tex, dest, src, Color(amb.r, amb.g, amb.b, 1.0))
+	# la parte appena sotto il pelo dell'acqua, verdognola e trasparente: si intravede, non finisce di colpo
+	var under_src := Rect2(fw * frame, fh * 0.62, fw, fh * 0.16)
+	var under_dest := Rect2(dest.position.x, dest.end.y, dest.size.x, fh * 0.16 * sc)
+	ci.draw_texture_rect_region(sh.tex, under_dest, under_src, Color(0.42 * amb.r, 0.62 * amb.g, 0.58 * amb.b, 0.35))
 	# la schiuma lungo la linea di galleggiamento e la metà davanti dei cerchi
 	for j in 5:
 		var fx := x + (j - 2) * wide * 0.2 + sin(t / 300.0 + j) * 2.0 * k

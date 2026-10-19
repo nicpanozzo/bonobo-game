@@ -125,6 +125,9 @@ func test_galleggianti_girano_attorno_al_canale() -> void:
 	var f: Dictionary = game.stages.padova.art.life.outerWater.floaters
 	var a: Array = life.floaters_at(f, 0.0)
 	runner.check(a.size() == 2, "la bici e l'ubriaco: %d" % a.size())
+	runner.check(a[0].under, "in punta all'isola passa sotto il ponte di profilo")
+	var mid: Array = life.floaters_at(f, float(f.lapMs) * 0.75)
+	runner.check(mid[0].front and not mid[0].under, "davanti al centro si vede: %s" % [mid[0]])
 	var seen_front := false
 	var seen_back := false
 	for i in 40:

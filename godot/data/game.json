@@ -1943,11 +1943,11 @@
             "stem": {
               "sheet": "getto",
               "crown": "corona",
-              "baseY": 494,
+              "baseY": 484,
               "width": 52,
               "hub": {
                 "x": 960,
-                "y": 492
+                "y": 482
               }
             }
           },
@@ -1962,11 +1962,11 @@
             "stem": {
               "sheet": "getto",
               "crown": "corona",
-              "baseY": 494,
+              "baseY": 484,
               "width": 52,
               "hub": {
                 "x": 960,
-                "y": 492
+                "y": 482
               }
             }
           },
@@ -1981,11 +1981,11 @@
             "stem": {
               "sheet": "getto",
               "crown": "corona",
-              "baseY": 494,
+              "baseY": 484,
               "width": 60,
               "hub": {
                 "x": 960,
-                "y": 492
+                "y": 482
               }
             }
           }
@@ -2071,8 +2071,7 @@
             "file": "fontana-davanti.png",
             "x": 960,
             "y": 530,
-            "front": true,
-            "opacity": 0.7
+            "shadow": false
           },
           {
             "file": "primo-piano.png",
@@ -2332,6 +2331,7 @@
               "rx": 1080,
               "ry": 94,
               "backK": 0.45,
+              "underX": 850,
               "kinds": [
                 "bici-rotta",
                 "ubriaco"

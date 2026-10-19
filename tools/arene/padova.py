@@ -1486,6 +1486,91 @@ def chimney(t, x, base, kind, rng, ink):
     t.glaze([(x - w, top - 1), (x + w, top - 1), (x + w * 0.6, top + 4), (x - w * 0.4, top + 3)], (30, 26, 24, 70))  # la fuliggine
 
 
+def _facade_paint(t, x, w, top, wall_bot, holes, col, rng):
+    """L'intonaco dipinto di una casa sopra i portici (#378, chiesto da Riccardo: case con più texture): la luce da
+    sinistra che scurisce piano verso destra senza strisce, le chiazze grandi e la grana fine del marmorino, le colature
+    scure sotto i davanzali e sotto il cornicione, qualche pezzo d'intonaco caduto con i mattoni sotto, a volte il
+    bugnato agli spigoli e il pluviale di rame. holes sono i rettangoli delle finestre, che restano puliti."""
+    from pittura import Quadro
+    h = wall_bot - top
+    q = Quadro(w, h, origin=(x, top), scale=t.k, ss=1)
+    wall = q.poly(q.mask(), [(x, top), (x + w, top), (x + w, wall_bot), (x, wall_bot)])
+    hm = q.mask()
+    for hx0, hy0, hx1, hy1 in holes:
+        q.poly(hm, [(hx0, hy0), (hx1, hy0), (hx1, hy1), (hx0, hy1)])
+    wm = q.minus(wall, hm)
+    seed = rng.randrange(1 << 20)
+    # il volume: dalla luce a sinistra all'ombra a destra, una rampa continua
+    ramp = Image.linear_gradient("L").rotate(90, expand=True).transpose(Image.FLIP_LEFT_RIGHT).resize(q.size)
+    q.fill(q.intersect(ramp, wall), (30, 26, 34), 0.3)
+    # le chiazze e la grana dell'intonaco
+    q.fill(q.grain(wm, 0.55, seed, 11), shade(col, 0.8), 0.28)
+    q.fill(q.grain(wm, 0.5, seed + 1, 6), light(col, 1.12), 0.26)
+    q.fill(q.grain(wm, 0.7, seed + 2, 0.9), shade(col, 0.82), 0.3)
+    # le colature: sotto i davanzali e giù dal cornicione, dove l'acqua ha lavato il muro
+    streaks = q.mask()
+    for hx0, hy0, hx1, hy1 in holes:
+        for _ in range(2):
+            sx = rng.uniform(hx0 + 2, hx1 - 2)
+            q.stroke(streaks, [(sx, hy1), (sx + rng.uniform(-0.6, 0.6), hy1 + rng.uniform(6, 18))], rng.uniform(1.6, 3.2))
+    for _ in range(int(w / 9)):
+        sx = rng.uniform(x + 2, x + w - 2)
+        q.stroke(streaks, [(sx, top), (sx + rng.uniform(-1, 1), top + rng.uniform(8, 34))], rng.uniform(1.4, 4.0))
+    q.fill(q.intersect(q.soften(streaks, 1.6), wm), (60, 54, 50), 0.22)
+    # l'intonaco caduto: i mattoni sotto, l'orlo rotto in luce e la sua ombra
+    for _ in range(rng.choice((0, 1, 1, 2))):
+        px, py = rng.uniform(x + 12, x + w - 30), rng.uniform(top + 16, wall_bot - 20)
+        blob = q.mask()
+        for _k in range(4):
+            bx, by = px + rng.uniform(0, 18), py + rng.uniform(0, 9)
+            q.ellipse(blob, bx - rng.uniform(4, 9), by - rng.uniform(3, 6), bx + rng.uniform(4, 9), by + rng.uniform(3, 6))
+        blob = q.intersect(q.smooth(blob, 1.2), wm)
+        q.fill(blob, far((150, 96, 78, 255), 0.22))
+        courses = q.mask()
+        for k in range(14):
+            yy = py - 8 + k * 2.4
+            q.stroke(courses, [(px - 12, yy), (px + 40, yy)], 0.35)
+            off = 0 if k % 2 else 2.6
+            for bx in range(int(px - 12 + off), int(px + 40), 5):
+                q.stroke(courses, [(bx, yy), (bx, yy + 2.4)], 0.3)
+        q.fill(q.intersect(courses, blob), far((196, 176, 156, 255), 0.22), 0.8)
+        q.fill(q.inner_shadow(blob, 1.2, 1.2, 0.8), (40, 30, 28), 0.6)  # l'orlo dell'intonaco fa ombra sui mattoni
+        rim = q.minus(q.soften(blob, 0.9).point(lambda v: 255 if v > 20 else 0), blob)
+        q.fill(q.intersect(rim, wm), light(col, 1.2), 0.7)
+    # il bugnato d'angolo: conci chiari alternati, lunghi e corti, con la loro ombra
+    if rng.random() < 0.5:
+        stone = far((206, 198, 182, 255), 0.2)
+        blocks, joints = q.mask(), q.mask()
+        k = 0
+        yy = wall_bot
+        while yy > top + 4:
+            for edge, sgn in ((x, 1), (x + w, -1)):
+                ln = 11 if k % 2 else 7
+                q.poly(blocks, [(edge, yy - 8), (edge + sgn * ln, yy - 8), (edge + sgn * ln, yy), (edge, yy)])
+                q.stroke(joints, [(edge, yy - 0.3), (edge + sgn * ln, yy - 0.3)], 0.6)
+                q.stroke(joints, [(edge + sgn * ln, yy - 8), (edge + sgn * ln, yy)], 0.6)
+            yy -= 8
+            k += 1
+        blocks = q.intersect(blocks, wall)
+        q.fill(blocks, stone, 0.92)
+        q.fill(q.intersect(q.grain(blocks, 0.6, seed + 3, 1.2), blocks), shade(stone, 0.85), 0.4)
+        q.fill(q.intersect(joints, blocks), (90, 84, 76), 0.8)
+    # il pluviale di rame verde che scende dalla gronda
+    if rng.random() < 0.6:
+        px = x + w - rng.uniform(4, 8) if rng.random() < 0.6 else x + rng.uniform(4, 8)
+        pipe = q.stroke(q.mask(), [(px, top), (px, wall_bot)], 1.6)
+        q.fill(q.shift(q.soften(pipe, 0.8), 1.2, 0), (30, 26, 24), 0.35)
+        q.fill(pipe, far((104, 124, 112, 255), 0.18))
+        q.fill(q.stroke(q.mask(), [(px - 0.4, top), (px - 0.4, wall_bot)], 0.4), far((150, 172, 158, 255), 0.18), 0.8)
+        for yy in range(int(top + 14), int(wall_bot), 26):
+            q.fill(q.stroke(q.mask(), [(px - 1.6, yy), (px + 1.6, yy)], 0.7), (60, 56, 52))
+    dx, dy = int(round((x - t.ox) * t.k)), int(round((top - t.oy) * t.k))
+    img = q.img
+    if dx < 0:
+        img, dx = img.crop((-dx, 0, img.size[0], img.size[1])), 0
+    t.img.alpha_composite(img, dest=(dx, dy))
+
+
 def portico_house(t, x, w, base, rng):
     """Un palazzo sopra i portici: archi con le colonne, piani con le finestre e le persiane, qualche balconcino
     in ferro, marcapiani, cornicione con le mensole, tetto di coppi, camini a imbuto e qualche antenna."""
@@ -1530,12 +1615,23 @@ def portico_house(t, x, w, base, rng):
     t.line([(x, base - 62), (x + w, base - 62)], fill=ink, width=1.0)
     # i piani
     win = rng.choice(SHUTTERS)
+    holes = []  # le finestre con le persiane: l'intonaco dipinto dopo non ci va sopra
+    glass = far((150, 170, 180, 255), 0.2)
+    frame_col = far((214, 208, 196, 255), 0.18)
+
+    def slats(x0, y0, x1, y1, c):  # le stecche delle persiane
+        yy = y0 + 1.6
+        while yy < y1 - 0.8:
+            t.line([(x0 + 0.5, yy), (x1 - 0.5, yy)], fill=shade(c, 0.72), width=0.45)
+            yy += 2.0
+
     for f in range(floors):
         fy = base - 62 - (f + 1) * fh
         cols = max(2, int((w - 20) / 30))
         step = (w - 20) / cols
         for c in range(cols):
             wx = x + 10 + c * step + step / 2 - 6
+            holes.append((wx - 5, fy + 3, wx + 17, fy + fh - 3))
             if f == 0 and rng.random() < 0.5:  # piano nobile: finestra ad arco con il balconcino in ferro
                 t.rect(wx, fy + 10, wx + 12, fy + fh - 6, fill=(54, 54, 56, 255))
                 if rng.random() < 0.45:
@@ -1551,14 +1647,24 @@ def portico_house(t, x, w, base, rng):
                 t.rect(wx, fy + 10, wx + 2.2, fy + fh - 8, fill=(36, 36, 38, 255))
                 t.rect(wx, fy + 10, wx + 12, fy + 12.4, fill=(36, 36, 38, 255))
                 t.rect(wx + 10.6, fy + 12, wx + 12, fy + fh - 8, fill=(84, 84, 86, 255))
+                # i vetri (#378): il telaio chiaro a croce e il riflesso del cielo di sbieco
+                gy0, gy1 = fy + 12.4, fy + fh - 8
+                t.glaze([(wx + 2.2, gy0 + (gy1 - gy0) * 0.15), (wx + 7, gy0), (wx + 10.6, gy0), (wx + 2.2, gy1 - (gy1 - gy0) * 0.25)], (*glass[:3], 70))
+                t.line([(wx + 6.4, gy0), (wx + 6.4, gy1)], fill=frame_col, width=0.7)
+                t.line([(wx + 2.2, gy0 + (gy1 - gy0) * 0.38), (wx + 10.6, gy0 + (gy1 - gy0) * 0.38)], fill=frame_col, width=0.6)
+                t.rect(wx + 2.2, gy0, wx + 10.6, gy1, ink=True, width=0.5, ink_col=frame_col)
                 if rng.random() < 0.35:
                     lit_rect(t.lights, wx + 1, fy + 11, wx + 11, fy + fh - 9)
                 if rng.random() < 0.7:  # persiane aperte, a volte una chiusa
                     if rng.random() < 0.2:
                         t.rect(wx, fy + 10, wx + 12, fy + fh - 8, fill=far(win, 0.15))
+                        slats(wx, fy + 10, wx + 12, fy + fh - 8, far(win, 0.15))
+                        t.line([(wx + 6, fy + 10), (wx + 6, fy + fh - 8)], fill=shade(far(win, 0.15), 0.6), width=0.6)
                     else:
                         t.rect(wx - 5, fy + 10, wx, fy + fh - 8, fill=far(win, 0.15))
                         t.rect(wx + 12, fy + 10, wx + 17, fy + fh - 8, fill=far(shade(win, 0.85), 0.15))
+                        slats(wx - 5, fy + 10, wx, fy + fh - 8, far(win, 0.15))
+                        slats(wx + 12, fy + 10, wx + 17, fy + fh - 8, far(shade(win, 0.85), 0.15))
                 t.rect(wx - 2, fy + 8, wx + 14, fy + 10, fill=stone)
                 t.rect(wx - 2, fy + fh - 8, wx + 14, fy + fh - 6, fill=stone)
                 t.glaze([(wx - 1, fy + fh - 6), (wx + 15, fy + fh - 6), (wx + 16, fy + fh - 3.5), (wx, fy + fh - 3.5)], (30, 26, 24, 70))  # l'ombra del davanzale
@@ -1566,9 +1672,7 @@ def portico_house(t, x, w, base, rng):
         t.glaze([(x, fy + 0.6), (x + w, fy + 0.6), (x + w, fy + 3.6), (x, fy + 3.6)], (30, 26, 24, 55))  # ...e l'ombra sotto
     # il volume (#378): la luce viene da sinistra, quindi la facciata scurisce piano verso destra; il cornicione getta
     # un'ombra larga sotto di sé, e al piede il portico è più scuro (la luce non ci arriva)
-    for i in range(8):
-        u = i / 8
-        t.glaze([(x + w * u, top), (x + w * (u + 1 / 8), top), (x + w * (u + 1 / 8), base - 62), (x + w * u, base - 62)], (30, 26, 34, int(6 + 34 * u)))
+    _facade_paint(t, x, w, top, base - 62, holes, col, rng)
     t.glaze([(x, top), (x + w, top), (x + w, top + 12), (x, top + 12)], (30, 26, 24, 80))
     t.glaze([(x, top), (x + w, top), (x + w, top + 5), (x, top + 5)], (30, 26, 24, 60))
     t.glaze([(x, base - 62), (x + w, base - 62), (x + w, base - 56), (x, base - 56)], (20, 18, 16, 70))
@@ -1583,8 +1687,23 @@ def portico_house(t, x, w, base, rng):
     roof = far((122, 84, 68, 255), 0.18)
     t.poly([(x - 6, top - 8), (x + w + 6, top - 8), (x + w - 10, top - 22), (x + 10, top - 22)], fill=roof, ink=True, width=0.9, ink_col=ink)
     t.poly([(x + w + 6, top - 8), (x + w - 10, top - 22), (x + w - 30, top - 22), (x + w - 14, top - 8)], fill=shade(roof, 0.8))  # la falda di lato in ombra
-    for k in range(int(w / 6)):
-        t.arc(x + 4 + k * 6, top - 20, x + 10 + k * 6, top - 12, 180, 360, fill=shade(roof, 0.82), width=0.7)
+    # i coppi a file (#378): i canali che scendono verso la gronda, le file sfalsate, qualche coppo più scuro o
+    # più chiaro e il muschio verso la gronda
+    for k in range(int((w + 12) / 4.5)):
+        xb = x - 6 + k * 4.5
+        xt = x + 10 + (xb - (x - 6)) * (w - 20) / (w + 12)
+        t.line([(xt, top - 22), (xb, top - 8)], fill=shade(roof, 0.8), width=0.55)
+    for r_ in range(1, 5):
+        yy = top - 22 + r_ * 2.8
+        u = r_ * 2.8 / 14
+        xl, xr = x + 10 - 16 * u, x + w - 10 + 16 * u
+        for k in range(int((xr - xl) / 4.5)):
+            xa = xl + k * 4.5 + (2.2 if r_ % 2 else 0)
+            t.arc(xa, yy - 1.6, xa + 4.5, yy + 1.6, 0, 180, fill=shade(roof, 0.84), width=0.45)
+    for _ in range(int(w / 10)):
+        rx_, ry_ = rng.uniform(x + 6, x + w - 6), rng.uniform(top - 20, top - 10)
+        t.rect(rx_, ry_, rx_ + 3.6, ry_ + 2.4, fill=rng.choice((shade(roof, 0.75), light(roof, 1.12), far((116, 112, 80, 255), 0.25))))
+    t.glaze([(x - 6, top - 8), (x + w + 6, top - 8), (x + w - 2, top - 12), (x + 2, top - 12)], (92, 98, 70, 60))  # il muschio sulla gronda
     t.glaze([(x - 5, top - 2), (x + w + 5, top - 2), (x + w + 5, top), (x - 5, top)], (20, 18, 16, 90))  # il sottogronda
     for cxm in (x + w * 0.22, x + w * 0.72):
         if rng.random() < 0.8:
@@ -2003,17 +2122,57 @@ def near_bank(name):
         walk_arc.append((cx + (rx + WALK) * math.cos(a), cy + (ry + WALK) * math.sin(a)))
     road_top = 880
     lawn = q.poly(q.mask(), [(x0, split)] + walk_arc + [(x0 + w, split), (x0 + w, road_top), (x0, road_top)])
-    q.fill(lawn, GRASS)
-    q.fill(q.grain(lawn, 0.5, 31, 1.6), GRASS_D)
-    tufts = q.mask()
-    for k in range(2600):
-        x, y = rng.uniform(x0, x0 + w), rng.uniform(split, road_top)
-        ln = 2 + (y - 600) * 0.015
-        q.stroke(tufts, [(x, y), (x + rng.uniform(-1, 1), y - ln)], 0.6 + (y - 600) * 0.003)
-    q.fill(q.intersect(tufts, lawn), GRASS_L, 0.8)
+    # il prato del parco (#378, Riccardo: niente campo verde vuoto quando la telecamera si allarga): l'erba dipinta
+    # come sull'isola, i vialetti di ghiaia che vanno verso il canale come i raggi del Prato, le aiuole fiorite, le
+    # siepi basse di bosso e le panchine voltate verso il canale. Tutto basso: davanti alla scena non copre il gioco
+    paths = q.mask()
+    for xn in (300, 1620):  # i vialetti: larghi vicino, verso il punto di fuga del Prato
+        xf = xn + (960 - xn) * (road_top - 640) / (road_top + 420)
+        q.poly(paths, [(xf - 16, 630), (xf + 16, 630), (xn + 34, road_top + 2), (xn - 34, road_top + 2)])
+    paths = q.intersect(paths, lawn)
+    paint_grass(q, q.minus(lawn, paths), 3101, split, road_top, density=0.12)
+    paint_gravel(q, paths, 3102, 630, road_top, density=0.25)
     for k in range(5):  # le ombre degli alberi del parco sul prato
         x, y = rng.uniform(x0, x0 + w), rng.uniform(740, 860)
-        q.fill(q.intersect(q.soften(q.ellipse(q.mask(), x - 160, y - 22, x + 160, y + 22), 14), lawn), GRASS_D, 0.55)
+        q.fill(q.intersect(q.soften(q.ellipse(q.mask(), x - 160, y - 22, x + 160, y + 22), 14), lawn), GRASS_D, 0.45)
+    for bx, by, bw in ((60, 812, 150), (560, 790, 120), (1360, 790, 120), (1880, 812, 150)):  # le aiuole fiorite
+        bed = q.intersect(q.smooth(q.ellipse(q.mask(), bx - bw, by - 16, bx + bw, by + 16), 2), lawn)
+        q.fill(bed, (96, 74, 56))
+        fl = q.mask()
+        frng = random.Random(bx)
+        for _ in range(int(bw * 2.2)):
+            fx, fy = frng.uniform(bx - bw, bx + bw), frng.uniform(by - 14, by + 14)
+            r = frng.uniform(1.6, 3.2)
+            q.ellipse(fl, fx - r, fy - r * 0.8, fx + r, fy + r * 0.8)
+        q.fill(q.intersect(fl, bed), (70, 104, 60))
+        for colf in ((206, 70, 70), (236, 196, 80), (220, 220, 232), (176, 96, 170)):
+            fm = q.mask()
+            for _ in range(int(bw * 0.5)):
+                fx, fy = frng.uniform(bx - bw, bx + bw), frng.uniform(by - 13, by + 13)
+                q.ellipse(fm, fx - 1.6, fy - 1.3, fx + 1.6, fy + 1.3)
+            q.fill(q.intersect(fm, bed), colf, 0.9)
+        q.outline(bed, 0.8, (60, 48, 40))
+    for hx in (-240, 180, 760, 1160, 1740, 2160):  # le siepi basse di bosso, tonde
+        hy = 742
+        hedge = q.smooth(q.union(q.ellipse(q.mask(), hx - 40, hy - 20, hx + 40, hy + 8), q.ellipse(q.mask(), hx - 26, hy - 30, hx + 22, hy)), 2)
+        q.fill(q.shift(q.soften(hedge, 4), 4, 8), (30, 40, 24), 0.4)
+        q.fill(hedge, (58, 86, 46))
+        q.fill(q.grain(hedge, 0.8, hx + 9000, 2.2), (82, 114, 62), 0.6)
+        q.fill(q.inner_shadow(hedge, -4, -4, 4), (34, 52, 30), 0.7)
+        q.outline(hedge, 0.8, (34, 44, 30))
+    for bx in (-60, 460, 1460, 1980):  # le panchine di legno e ghisa, viste da dietro, voltate verso il canale
+        by = 716 if abs(bx - 960) < 700 else 706
+        wood, iron_c = (126, 92, 62), (40, 40, 42)
+        bm, wm_ = q.mask(), q.mask()
+        for lx in (bx - 44, bx + 40):
+            q.poly(bm, [(lx, by), (lx + 4, by), (lx + 4, by - 26), (lx, by - 26)])
+        for k in range(3):  # le doghe dello schienale
+            q.poly(wm_, [(bx - 52, by - 30 + k * 6), (bx + 52, by - 30 + k * 6), (bx + 52, by - 26 + k * 6), (bx - 52, by - 26 + k * 6)])
+        q.fill(q.shift(q.soften(q.union(bm, wm_), 3), 3, 6), (30, 28, 24), 0.35)
+        q.fill(wm_, wood)
+        q.fill(q.inner_shadow(wm_, 0, -2, 1), shade((*wood, 255), 0.7)[:3], 0.8)
+        q.fill(bm, iron_c)
+        q.outline(q.union(bm, wm_), 0.7, (36, 30, 26))
     # la strada che gira attorno al Prato: il marciapiede, l'asfalto vecchio e l'altro marciapiede
     walk2 = q.poly(q.mask(), [(x0, road_top), (x0 + w, road_top), (x0 + w, road_top + 14), (x0, road_top + 14)])
     q.fill(walk2, (188, 180, 164))
@@ -3019,8 +3178,8 @@ def piano(name):
     for pts_ in (lawn_pts_l, lawn_pts_r):
         if len(pts_) > 3:
             ql.poly(lawn_m, pts_)
-    rx_f, ry_f = 238, 25  # l'anello in ghiaia attorno alla vasca
-    lawn_m = ql.minus(lawn_m, ql.ellipse(ql.mask(), cx - rx_f, 492 - ry_f, cx + rx_f, 492 + ry_f))
+    rx_f, ry_f = 232, 22  # l'anello in ghiaia attorno alla vasca
+    lawn_m = ql.minus(lawn_m, ql.ellipse(ql.mask(), cx - rx_f, 484 - ry_f, cx + rx_f, 484 + ry_f))
     lawn_m = ql.smooth(lawn_m, 0.8)
     paint_grass(ql, lawn_m, 3002, cy - ry, 506)
     t.img.alpha_composite(ql.img)
@@ -3359,8 +3518,10 @@ def railing(t, x0, x1, y_top, y_bot, curls=True):
             t.arc(cx + side * h * 1.6 - h * 0.45, cy - h * 0.45, cx + side * h * 1.6 + h * 0.45, cy + h * 0.45, 0, 300, fill=IRON, width=0.8)
 
 
-FOUNTAIN = (960, 490, 160, 20)  # la vasca (#378): centro e raggi dell'anello di pietra, nella prospettiva del piano
-RING = (960, 494, 198, 24)  # l'anello dei paracarri con la ringhiera attorno alla vasca
+# la vasca (#378): centro e raggi dell'anello di pietra, nella prospettiva del piano. Tutta dietro la linea dove si
+# combatte (Riccardo: il ciclista passava attraverso la ringhiera): il davanti dell'anello arriva a y 504, non a 520
+FOUNTAIN = (960, 480, 150, 17)
+RING = (960, 484, 186, 20)  # l'anello dei paracarri con la ringhiera attorno alla vasca
 
 
 def _ring_posts(front):
@@ -3380,7 +3541,7 @@ def fountain_back():
     schiacciato come il lastricato attorno, il lato lontano tocca il ciglio di dietro e il davanti arriva al bordo
     dove si cammina. L'anello di pietra con i giunti, l'orlo interno in ombra sopra l'acqua, la parete curva davanti
     con le macchie d'umido e il muschio; dietro, la metà lontana dei paracarri con la ringhiera, più piccoli.
-    I piedi sono a (960, 524); i getti li disegna il gioco e partono dal centro dell'acqua (960, 492)."""
+    I piedi sono a (960, 524); i getti li disegna il gioco e partono dal centro dell'acqua (960, 482)."""
     t = Tela(440, 80, origin=(740, 444))
     cx, cy, rx, ry = FOUNTAIN
     stone, stone_sh, stone_l = (214, 208, 194, 255), (176, 168, 154, 255), (232, 228, 216, 255)
@@ -3447,8 +3608,8 @@ def fountain_back():
 
 
 def fountain_front():
-    """La metà vicina dei paracarri con la ringhiera attorno alla vasca (#378), davanti ai lottatori e
-    semitrasparente: più grandi e più in basso di quelli dietro, fino al bordo dove si cammina. Piedi a (960, 530)."""
+    """La metà vicina dei paracarri con la ringhiera attorno alla vasca (#378): più grandi e più in basso di quelli
+    dietro, ma sempre dietro la linea dove si combatte, quindi dietro ai lottatori. Piedi a (960, 530)."""
     t = Tela(440, 64, origin=(740, 466))
     posts = _ring_posts(True)
     for (x0_, y0_, h0), (x1_, y1_, h1) in zip(posts, posts[1:]):
