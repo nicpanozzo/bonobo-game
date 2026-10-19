@@ -2080,6 +2080,12 @@
             "front": true
           },
           {
+            "file": "ponti-davanti.png",
+            "x": 960,
+            "y": 780,
+            "front": true
+          },
+          {
             "file": "statue-primo-piano.png",
             "x": 960,
             "y": 1100,

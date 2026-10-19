@@ -554,6 +554,9 @@ export const STAGES: Record<string, StageSpec> = {
         { file: "fontana-davanti.png", x: 960, y: 530, front: true, opacity: 0.7 }, // il bordo della vasca davanti ai piedi
         // La sponda di qua del canale (#378), sfocata davanti a tutto: il canale resta una striscia stretta come quello vero
         { file: "primo-piano.png", x: 960, y: 1100, scale: 1, front: true },
+        // I ponti del Prato davanti (#378, dalle foto di Riccardo): dalla piazza dove si gioca al parco di qua del canale.
+        // Solo paesaggio: non si attraversano (vengono verso la telecamera, fuori dal piano di gioco)
+        { file: "ponti-davanti.png", x: 960, y: 780, front: true },
         // Le statue del Prato in primissimo piano (#378), sfocate e trasparenti, solo fuori dall'isola
         { file: "statue-primo-piano.png", x: 960, y: 1100, scale: 1, front: true, opacity: 0.45 },
         // Le statue che reggono le lastre: il giovane con l'alloro, il filosofo con la barba, la dama col velo
