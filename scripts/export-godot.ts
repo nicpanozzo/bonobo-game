@@ -10,7 +10,7 @@ import type { SpriteFolderSpec } from "../src/shared/characters";
 import { CHARACTERS, CREWS, DEFAULT_CHARACTER_ID, isSpriteFolder, resolvedAnimations, SPECIAL_KINDS, SPECIAL_SLOTS, specialAttackSpec, specialsFor, spriteStatePath, supremeAttackSpec } from "../src/shared/characters";
 import { ATTACKS, AUDIO, BIRRA, BONG, CAMERA, FUNGHI, COLORS, EFFECTS, FIGHTER, INPUT, ITEM_RULES, LEDGE, MICELIO, NET, POWERUP, PROTOCOL_VERSION, RUMBLE, SHIELD, SPORE, TEAM_COLORS, TEAM_NAMES, WORLD } from "../src/shared/constants";
 import { RECONNECT, RECONNECT_HOLD_MS } from "../src/shared/constants";
-import { COLORS_COLORBLIND, TEAM_COLORS_COLORBLIND } from "../src/shared/constants";
+import { COLORS_COLORBLIND, MAX_TEAMS, TEAM_COLORS_COLORBLIND } from "../src/shared/constants";
 import { TRAINING } from "../src/shared/constants";
 import { DASH, DODGE, RECOVERY, TICK_RATE } from "../src/shared/constants";
 import { predictionTraces } from "../src/shared/predictionTraces";
@@ -251,6 +251,7 @@ const data = {
   colorsColorblind: COLORS_COLORBLIND,
   teamColorsColorblind: TEAM_COLORS_COLORBLIND,
   teamNames: TEAM_NAMES,
+  maxTeams: MAX_TEAMS, // #409
   defaultStageId: DEFAULT_STAGE_ID,
   stages: STAGES,
   defaultCharacterId: DEFAULT_CHARACTER_ID,

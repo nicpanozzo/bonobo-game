@@ -121,7 +121,7 @@ export function attachGame(io: Server<ClientToServer, ServerToClient>, deps: Gam
       room = r;
       socket.join(code);
       const name = sanitizeName(data.name, r.match.players.map((p) => p.name));
-      r.addPlayer(playerId, name, characterId, data.skinId);
+      r.addPlayer(playerId, name, characterId, data.skinId, data.team);
       owners.set(playerId, socket);
       const fresh = r.seats.issue(playerId);
       socket.emit("welcome", { id: playerId, room: code, stageId: r.stage.id, rules: r.rules, stage: r.stage, token: fresh, resumed: false, serverVersion: SERVER_VERSION });
@@ -135,6 +135,10 @@ export function attachGame(io: Server<ClientToServer, ServerToClient>, deps: Gam
     });
     socket.on("rematch", () => {
       if (room && allow(rematchBucket)) room.requestRematch();
+    });
+    // Cambio di squadra (#409): la Match accetta solo una squadra che esiste in queste regole
+    socket.on("team", (raw: unknown) => {
+      if (room && allow(rematchBucket) && typeof raw === "object" && raw !== null) room.match.setTeam(playerId, (raw as { team?: unknown }).team);
     });
     // Allenamento (#113): solo in palestra e da soli, altrimenti si rallenterebbero gli altri
     const trainingBucket = new TokenBucket(NET_LIMITS.trainingPerSecond, NET_LIMITS.trainingPerSecond, Date.now());
