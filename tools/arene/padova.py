@@ -292,6 +292,280 @@ def slab():
     t.save(OUT, "lastra.png")
 
 
+def statue_painted(name, total_h, slab_w, kind):
+    """Le statue del Prato che reggono le lastre (#378, dalle foto di Riccardo): marmo d'Istria dipinto in volume, su un
+    piedistallo tondo come quelli veri (zoccolo, tori, fusto con la targa e il festone, cornice), e la figura in piedi
+    con la veste a pieghe, le braccia alzate che reggono la lastra, la testa scolpita. La luce viene da sinistra in
+    alto; il marmo ha le macchie grigie del tempo. kind: "filosofo" (barba, mantello), "giovane" (alloro, toga), "dama"
+    (velo, veste lunga). Stessa misura di prima: i piedi in fondo all'immagine, le mani in cima, dove sta la lastra."""
+    from pittura import Quadro, bezier
+    w = max(slab_w, 76)
+    q = Quadro(w, total_h, origin=(-w / 2, -total_h))
+    rng = random.Random(len(name) * 31 + len(kind))
+    M, M_SH, M_DK, M_HI = (228, 223, 210), (160, 156, 148), (116, 112, 106), (248, 245, 236)
+    ink = (66, 62, 58)
+    stain = (120, 118, 108)
+
+    def marble(m, light_dx=-1.0, depth=None, seed=0, cyl=False):
+        """Il marmo in volume: il tono, l'ombra dalla parte opposta alla luce, la luce sul bordo e le macchie."""
+        size = depth if depth is not None else 4.0
+        q.fill(m, M)
+        if cyl:  # un cilindro: la luce a sinistra (un terzo) sfuma nell'ombra a destra, con il riflesso sul bordo
+            bb = m.getbbox()
+            if bb:
+                gx = Image.new("L", (bb[2] - bb[0], 1))
+                for i in range(gx.width):
+                    u = i / max(1, gx.width - 1)
+                    v = 0.0 if u < 0.3 else min(1.0, (u - 0.3) / 0.55) ** 0.9
+                    if u > 0.92:
+                        v *= 0.8  # il riflesso sul bordo in ombra
+                    gx.putpixel((i, 0), int(255 * v))
+                g = Image.new("L", m.size, 0)
+                g.paste(gx.resize((gx.width, bb[3] - bb[1])), (bb[0], bb[1]))
+                q.fill(q.intersect(g, m), M_SH, 0.95)
+                hl = Image.new("L", m.size, 0)
+                hx = bb[0] + int((bb[2] - bb[0]) * 0.22)
+                ImageDraw.Draw(hl).rectangle([hx - (bb[2] - bb[0]) * 0.06, bb[1], hx + (bb[2] - bb[0]) * 0.06, bb[3]], fill=255)
+                q.fill(q.intersect(hl.filter(ImageFilter.GaussianBlur((bb[2] - bb[0]) * 0.05)), m), M_HI, 0.7)
+        else:
+            q.fill(q.inner_shadow(m, -size, -size * 0.6, size * 0.7), M_SH, 0.9)
+        q.fill(q.rim(m, -size * 0.35, -size * 0.35, size * 0.3), M_HI, 0.8)
+        q.fill(q.grain(m, 0.28, seed + 7, 0.8), stain, 0.35)
+        q.outline(m, 0.55, ink)
+
+    # --- il piedistallo tondo ---
+    ped_h = total_h * (0.36 if total_h > 150 else 0.38)
+    pw = min(w * 0.42, 40) / 2  # mezza larghezza del fusto
+    y = 0.0
+
+    def ring(y0, y1, half, seed, cyl=True):
+        m = q.mask()
+        q.poly(m, [(-half, y0), (half, y0), (half, y1), (-half, y1)])
+        marble(m, depth=(y0 - y1) * 0.3 + 1, seed=seed, cyl=cyl)
+
+    def torus(y0, y1, half, seed):
+        m = q.mask()
+        q.ellipse(m, -half, y1, half, y0)
+        q.poly(m, [(-half + (y0 - y1) / 2, y1), (half - (y0 - y1) / 2, y1), (half - (y0 - y1) / 2, y0), (-half + (y0 - y1) / 2, y0)])
+        m = q.smooth(m, 0.4)
+        q.fill(m, M)
+        q.fill(q.inner_shadow(m, -2, -1.6, 1.2), M_SH, 0.9)
+        q.fill(q.rim(m, -0.8, -1.0, 0.6), M_HI, 0.85)
+        q.outline(m, 0.5, ink)
+
+    h = ped_h
+    ring(0, -h * 0.1, pw + 7, 1, cyl=False)  # lo zoccolo
+    torus(-h * 0.1, -h * 0.19, pw + 5, 2)
+    torus(-h * 0.19, -h * 0.25, pw + 3, 3)
+    shaft = q.mask()
+    q.poly(shaft, [(-pw, -h * 0.25), (pw, -h * 0.25), (pw * 0.94, -h * 0.82), (-pw * 0.94, -h * 0.82)])
+    marble(shaft, depth=pw * 0.5, seed=4, cyl=True)
+    # la targa e il festone di foglie appeso, come sui piedistalli veri
+    plate = q.mask()
+    q.poly(plate, [(-pw * 0.55, -h * 0.4), (pw * 0.55, -h * 0.4), (pw * 0.55, -h * 0.58), (-pw * 0.55, -h * 0.58)])
+    q.fill(plate, M_HI, 0.6)
+    q.fill(q.inner_shadow(plate, 1, 1, 0.6), M_SH, 0.9)
+    q.outline(plate, 0.4, ink)
+    letters = q.mask()
+    for row in range(2):
+        ly = -h * 0.53 + row * h * 0.07
+        lx = -pw * 0.42
+        while lx < pw * 0.4:
+            seg = rng.uniform(1.0, 2.6)
+            q.stroke(letters, [(lx, ly), (min(lx + seg, pw * 0.42), ly)], 0.45)
+            lx += seg + 1.0
+    q.fill(letters, M_DK, 0.8)
+    fest = q.mask()
+    pts = bezier((-pw * 0.92, -h * 0.74), (-pw * 0.5, -h * 0.62), (pw * 0.5, -h * 0.62), (pw * 0.92, -h * 0.74), 20)
+    for i, (fx, fy) in enumerate(pts):
+        r = 1.6 + 0.7 * math.sin(i)
+        q.ellipse(fest, fx - r, fy - r * 0.8, fx + r, fy + r * 0.8)
+    q.fill(fest, M)
+    q.fill(q.inner_shadow(fest, -0.8, -0.8, 0.5), M_SH, 0.95)
+    q.fill(q.grain(fest, 0.6, 9, 0.5), M_DK, 0.5)
+    q.outline(fest, 0.4, ink)
+    torus(-h * 0.82, -h * 0.88, pw + 2, 5)
+    ring(-h * 0.88, -h, pw + 5, 6, cyl=False)  # la cornice che sporge
+    q.fill(q.soften(q.poly(q.mask(), [(-pw - 2, -h * 0.88), (pw + 2, -h * 0.88), (pw, -h * 0.85), (-pw, -h * 0.85)]), 0.8), (40, 38, 34), 0.35)
+    # --- la figura ---
+    F = total_h - ped_h  # dai piedi alle mani
+    feet = -ped_h
+    top = -total_h
+    head_r = F * 0.072
+    head_cy = top + F * 0.215
+    sh_y = head_cy + head_r * 1.75
+    sh_w = F * 0.135
+    waist_y = sh_y + F * 0.27
+    hip = F * 0.025  # posa a riposo: il fianco spinto da una parte, il ginocchio dell'altra gamba avanti
+    hem_w = F * (0.2 if kind == "dama" else 0.16)
+    knee = (-F * 0.055, feet - F * 0.27)
+    # il plinto sotto i piedi
+    pl = q.mask()
+    q.poly(pl, [(-hem_w - 3, feet), (hem_w + 3, feet), (hem_w + 2, feet - 3), (-hem_w - 2, feet - 3)])
+    marble(pl, depth=1.5, seed=10)
+    # le braccia alzate: la parte alta che sale in fuori fino al gomito, l'avambraccio che torna su verso la lastra
+    elbows, hand_pos = [], []
+    for side in (-1, 1):
+        elbows.append((side * F * 0.26, head_cy - head_r * 0.1))
+        hand_pos.append((side * F * 0.165, top + F * 0.035))
+    arms = q.mask()
+    for side, (ex, ey), (hx, hy) in zip((-1, 1), elbows, hand_pos):
+        shoulder = (side * sh_w * 0.85, sh_y + F * 0.01)
+        q.poly(arms, [(shoulder[0] - side * F * 0.02, shoulder[1] - F * 0.04), (ex + side * F * 0.03, ey - F * 0.02),
+                      (ex + side * F * 0.012, ey + F * 0.045), (shoulder[0] + side * F * 0.01, shoulder[1] + F * 0.06)])  # il braccio, col deltoide
+        q.poly(arms, [(ex + side * F * 0.03, ey - F * 0.02), (hx + side * F * 0.03, hy + F * 0.04), (hx - side * F * 0.015, hy + F * 0.045), (ex - side * F * 0.02, ey + F * 0.03)])
+    arms = q.smooth(arms, F * 0.008)
+    marble(arms, depth=F * 0.035, seed=11)
+    sleeve = q.mask()  # le maniche larghe: la stoffa pende sotto il braccio alzato, dalla spalla al gomito, morbida
+    for side, (ex, ey) in zip((-1, 1), elbows):
+        sx, sy = side * sh_w * 0.85, sh_y + F * 0.01
+        q.poly(sleeve, [(sx, sy - F * 0.03), (ex + side * F * 0.02, ey - F * 0.01)] + bezier((ex + side * F * 0.02, ey + F * 0.03), (ex, ey + F * 0.11), (sx + side * F * 0.02, sy + F * 0.1), (sx - side * F * 0.02, sy + F * 0.06), 10))
+    sleeve = q.smooth(sleeve, F * 0.015)
+    marble(sleeve, depth=F * 0.03, seed=12)
+    sfold = q.mask()
+    for side, (ex, ey) in zip((-1, 1), elbows):
+        for j in range(3):
+            u = (j + 1) / 4
+            px, py = ex + (side * sh_w * 0.85 - ex) * u, ey + (sh_y - ey) * u
+            q.stroke(sfold, [(px, py + F * 0.01), (px + side * F * 0.01, py + F * 0.08)], F * 0.007)
+    q.fill(q.intersect(q.soften(sfold, 0.4), sleeve), M_DK, 0.7)
+    hands = q.mask()  # le mani aperte sotto la lastra: il palmo piatto contro il marmo e il polso
+    for side, (hx, hy) in zip((-1, 1), hand_pos):
+        q.ellipse(hands, hx - F * 0.05, top + 0.4, hx + F * 0.05, top + F * 0.045)
+        q.ellipse(hands, hx - F * 0.028, top + F * 0.02, hx + F * 0.028, hy + F * 0.05)
+    hands = q.smooth(hands, 0.8)
+    marble(hands, depth=1.4, seed=13)
+    fingers = q.mask()
+    for side, (hx, hy) in zip((-1, 1), hand_pos):
+        for j in range(3):
+            fx = hx - F * 0.025 + j * F * 0.022
+            q.stroke(fingers, [(fx, top + 0.8), (fx, top + F * 0.02)], 0.35)
+    q.fill(q.intersect(fingers, hands), M_DK, 0.7)
+    # il corpo: spalle tonde, il petto, la vita, il fianco spinto e la veste che si apre fino all'orlo
+    body = q.mask()
+    left = bezier((-sh_w * 0.55, sh_y - F * 0.015), (-sh_w * 1.15, sh_y), (-sh_w * 0.95, waist_y), (-sh_w * 0.85 + hip, waist_y + F * 0.04), 12) \
+        + bezier((-sh_w * 0.85 + hip, waist_y + F * 0.04), (-hem_w * 0.95 + hip, waist_y + F * 0.25), (-hem_w * 1.1, feet - F * 0.12), (-hem_w, feet - 2.5), 12)
+    right = bezier((sh_w * 0.55, sh_y - F * 0.015), (sh_w * 1.15, sh_y), (sh_w * 1.0, waist_y), (sh_w * 0.95 + hip, waist_y + F * 0.05), 12) \
+        + bezier((sh_w * 0.95 + hip, waist_y + F * 0.05), (hem_w * 1.05 + hip, waist_y + F * 0.3), (hem_w * 1.05, feet - F * 0.1), (hem_w, feet - 2.5), 12)
+    hem = [(-hem_w + (2 * hem_w) * i / 14, feet - 2.5 + 1.3 * math.sin(i * 1.4)) for i in range(15)]
+    q.poly(body, left + hem + list(reversed(right)))
+    body = q.smooth(body, 0.7)
+    q.fill(body, M)
+    q.fill(q.inner_shadow(body, -F * 0.09, -F * 0.03, F * 0.07), M_SH, 0.95)  # il corpo è tondo: ombra larga a destra
+    q.fill(q.inner_shadow(body, -F * 0.03, 0, F * 0.02), M_DK, 0.45)
+    q.fill(q.rim(body, -F * 0.012, -F * 0.012, F * 0.01), M_HI, 0.85)
+    kn = q.ellipse(q.mask(), knee[0] - F * 0.05, knee[1] - F * 0.06, knee[0] + F * 0.04, knee[1] + F * 0.05)
+    q.fill(q.intersect(q.soften(kn, F * 0.02), body), M_HI, 0.7)  # il ginocchio avanti prende la luce
+    # le pieghe: cadono dalla vita, si piegano attorno al ginocchio e si aprono sull'orlo; filo di luce accanto
+    folds, glints = q.mask(), q.mask()
+    n = 9 if kind == "dama" else 7
+    for i in range(n):
+        u = -0.85 + 1.7 * i / (n - 1)
+        x0 = u * sh_w * 0.8 + hip
+        x1 = u * hem_w * 0.92 + rng.uniform(-1.2, 1.2)
+        bend = (knee[0] - x0) * 0.35 if abs(u + 0.3) < 0.5 else rng.uniform(-1.5, 1.5)
+        pts = bezier((x0, waist_y + F * 0.04), (x0 + bend, waist_y + F * 0.2), (x1 - bend * 0.5, feet - F * 0.18), (x1, feet - 3), 16)
+        q.stroke(folds, pts, F * (0.014 if i % 2 else 0.009))
+        q.stroke(glints, [(px - F * 0.014, py) for px, py in pts], F * 0.006)
+    for j in range(4):  # le pieghe a V sul petto sotto le braccia alzate
+        yy = sh_y + F * (0.05 + j * 0.05)
+        q.stroke(folds, [(-sh_w * 0.7, yy - F * 0.03), (hip * 0.5, yy + F * 0.02), (sh_w * 0.7, yy - F * 0.03)], F * 0.006)
+    q.fill(q.intersect(q.soften(folds, F * 0.006), body), M_DK, 0.7)
+    q.fill(q.intersect(q.soften(glints, F * 0.004), body), M_HI, 0.75)
+    q.outline(body, 0.6, ink)
+    belt = q.mask()  # la cintura annodata
+    q.poly(belt, [(-sh_w * 0.95 + hip, waist_y + F * 0.02), (sh_w * 1.0 + hip, waist_y + F * 0.01), (sh_w * 1.0 + hip, waist_y + F * 0.045), (-sh_w * 0.95 + hip, waist_y + F * 0.055)])
+    q.fill(q.intersect(belt, body), M_SH, 0.85)
+    q.fill(q.intersect(q.ellipse(q.mask(), hip - F * 0.03, waist_y + F * 0.01, hip + F * 0.03, waist_y + F * 0.06), body), M_HI, 0.7)
+    drape = q.mask()
+    if kind == "giovane":  # la toga che scende in diagonale dalla spalla al fianco e ricade
+        q.poly(drape, bezier((-sh_w * 1.0, sh_y), (-sh_w * 0.2, sh_y + F * 0.05), (sh_w * 0.6, waist_y), (sh_w * 1.1 + hip, waist_y + F * 0.15), 12)
+               + bezier((sh_w * 1.1 + hip, waist_y + F * 0.28), (sh_w * 0.4, waist_y + F * 0.12), (-sh_w * 0.3, sh_y + F * 0.12), (-sh_w * 0.9, sh_y + F * 0.06), 12))
+    elif kind == "filosofo":  # il mantello che cade da una spalla fino ai piedi, a grandi pieghe
+        q.poly(drape, bezier((sh_w * 0.3, sh_y - F * 0.01), (sh_w * 1.3, sh_y), (hem_w * 1.4, feet - F * 0.3), (hem_w * 1.2, feet - 3), 14)
+               + bezier((hem_w * 0.2, feet - 3), (sh_w * 0.4, waist_y + F * 0.2), (sh_w * 0.7, waist_y - F * 0.05), (sh_w * 0.4, sh_y + F * 0.05), 14))
+    else:  # il velo che copre la testa, tondo, e scende morbido sulle spalle
+        q.ellipse(drape, -head_r * 1.25, head_cy - head_r * 1.3, head_r * 1.25, head_cy + head_r * 0.9)
+        q.poly(drape, [(-head_r * 1.2, head_cy), (head_r * 1.2, head_cy)] + bezier((head_r * 1.2, head_cy), (head_r * 1.5, sh_y), (sh_w * 1.15, sh_y + F * 0.04), (sh_w * 1.05, sh_y + F * 0.16), 10)
+               + bezier((-sh_w * 1.05, sh_y + F * 0.16), (-sh_w * 1.15, sh_y + F * 0.04), (-head_r * 1.5, sh_y), (-head_r * 1.2, head_cy), 10))
+    drape = q.smooth(drape, F * 0.02)
+    q.fill(drape, M)
+    q.fill(q.inner_shadow(drape, -F * 0.05, -F * 0.03, F * 0.04), M_SH, 0.95)
+    q.fill(q.rim(drape, -F * 0.01, -F * 0.012, F * 0.008), M_HI, 0.85)
+    dfolds = q.mask()
+    for i in range(5):
+        u = (i + 0.5) / 5
+        if kind == "filosofo":
+            pts = bezier((sh_w * (0.5 + 0.6 * u), sh_y + 2), (sh_w * (0.8 + 0.6 * u), waist_y), (hem_w * (0.5 + 0.6 * u), feet - F * 0.2), (hem_w * (0.3 + 0.85 * u), feet - 4), 12)
+        elif kind == "giovane":
+            pts = [(-sh_w * 0.8 + u * sh_w * 1.2, sh_y + F * 0.02 + u * F * 0.06), (-sh_w * 0.2 + u * sh_w * 1.3, sh_y + F * 0.1 + u * F * 0.12)]
+        else:
+            pts = bezier((-head_r * 1.1 + u * head_r * 2.2, head_cy - head_r * 0.4), ((-1.2 + 2.4 * u) * head_r * 1.4, head_cy + head_r), ((-1.2 + 2.4 * u) * sh_w, sh_y + F * 0.05), ((-1.25 + 2.5 * u) * sh_w, sh_y + F * 0.19), 10)
+        q.stroke(dfolds, pts, F * 0.009)
+    q.fill(q.intersect(q.soften(dfolds, 0.4), drape), M_DK, 0.75)
+    q.fill(q.grain(drape, 0.25, 30, 0.8), stain, 0.3)
+    q.outline(drape, 0.55, ink)
+    # i piedi con i sandali, che escono dall'orlo
+    for side in (-1, 1):
+        fx = side * hem_w * 0.4 + (F * 0.02 if side < 0 else 0)
+        fm = q.ellipse(q.mask(), fx - F * 0.045, feet - 4, fx + F * 0.045, feet - 0.6)
+        marble(fm, depth=0.8, seed=16)
+    # il collo e la testa scolpita
+    neck = q.mask()
+    q.poly(neck, [(-head_r * 0.42, head_cy + head_r * 0.6), (head_r * 0.42, head_cy + head_r * 0.6), (head_r * 0.6, sh_y + 1), (-head_r * 0.6, sh_y + 1)])
+    marble(neck, depth=1.0, seed=17)
+    if kind == "filosofo":  # i riccioli dietro la testa
+        back = q.ellipse(q.mask(), -head_r * 1.12, head_cy - head_r * 1.12, head_r * 1.12, head_cy + head_r * 0.6)
+        marble(back, depth=1.2, seed=18)
+        q.fill(q.grain(back, 0.9, 25, 0.45), M_DK, 0.6)
+    head = q.mask()  # la testa: ovale con la mascella
+    q.poly(head, bezier((0, head_cy - head_r), (-head_r * 1.15, head_cy - head_r), (-head_r * 0.95, head_cy + head_r * 0.7), (0, head_cy + head_r * 1.02), 12)
+           + bezier((0, head_cy + head_r * 1.02), (head_r * 0.95, head_cy + head_r * 0.7), (head_r * 1.15, head_cy - head_r), (0, head_cy - head_r), 12))
+    q.fill(head, M)
+    q.fill(q.inner_shadow(head, -head_r * 0.6, -head_r * 0.2, head_r * 0.45), M_SH, 0.95)
+    q.fill(q.rim(head, -head_r * 0.15, -head_r * 0.15, head_r * 0.12), M_HI, 0.8)
+    face = q.mask()  # gli incavi degli occhi, l'ombra del naso e sotto il labbro: il volto si legge dalle ombre
+    for ex in (-head_r * 0.36, head_r * 0.36):
+        q.ellipse(face, ex - head_r * 0.2, head_cy - head_r * 0.22, ex + head_r * 0.2, head_cy + head_r * 0.0)
+    q.poly(face, [(head_r * 0.04, head_cy - head_r * 0.08), (head_r * 0.16, head_cy + head_r * 0.36), (head_r * 0.0, head_cy + head_r * 0.36)])
+    q.ellipse(face, -head_r * 0.2, head_cy + head_r * 0.54, head_r * 0.22, head_cy + head_r * 0.62)
+    q.fill(q.intersect(q.soften(face, head_r * 0.08), head), M_DK, 0.75)
+    brow = q.mask()
+    q.stroke(brow, [(-head_r * 0.62, head_cy - head_r * 0.3), (head_r * 0.62, head_cy - head_r * 0.3)], head_r * 0.1)
+    q.fill(q.intersect(q.soften(brow, head_r * 0.05), head), M_HI, 0.6)
+    q.outline(head, 0.5, ink)
+    if kind == "filosofo":  # la barba a riccioli
+        beard = q.mask()
+        q.poly(beard, bezier((-head_r * 0.85, head_cy + head_r * 0.05), (-head_r * 0.95, head_cy + head_r * 1.6), (head_r * 0.95, head_cy + head_r * 1.6), (head_r * 0.85, head_cy + head_r * 0.05), 14))
+        q.fill(beard, M)
+        q.fill(q.inner_shadow(beard, -head_r * 0.5, -head_r * 0.2, head_r * 0.35), M_SH, 0.95)
+        q.fill(q.grain(beard, 0.95, 21, 0.45), M_DK, 0.6)
+        q.fill(q.ellipse(q.mask(), -head_r * 0.24, head_cy + head_r * 0.48, head_r * 0.24, head_cy + head_r * 0.58), M_DK, 0.8)
+        q.outline(beard, 0.45, ink)
+    hair = q.mask()
+    if kind == "dama":  # i capelli divisi in mezzo che spuntano dal velo
+        q.poly(hair, bezier((-head_r * 0.85, head_cy - head_r * 0.1), (-head_r * 0.9, head_cy - head_r * 0.95), (head_r * 0.9, head_cy - head_r * 0.95), (head_r * 0.85, head_cy - head_r * 0.1), 12) + [(0, head_cy - head_r * 0.55)])
+    else:
+        q.poly(hair, bezier((-head_r * 0.98, head_cy - head_r * 0.05), (-head_r * 1.05, head_cy - head_r * 1.35), (head_r * 1.05, head_cy - head_r * 1.35), (head_r * 0.98, head_cy - head_r * 0.05), 14) + [(head_r * 0.55, head_cy - head_r * 0.55), (-head_r * 0.55, head_cy - head_r * 0.55)])
+    hair = q.smooth(hair, 0.4)
+    q.fill(hair, M)
+    q.fill(q.inner_shadow(hair, -head_r * 0.4, -head_r * 0.3, head_r * 0.3), M_SH, 0.9)
+    q.fill(q.grain(hair, 0.95, 23, 0.4), M_DK, 0.6)
+    q.outline(hair, 0.45, ink)
+    if kind == "giovane":  # la corona d'alloro, foglia per foglia
+        laurel = q.mask()
+        for i in range(11):
+            a = math.pi * (1.0 + i / 10)
+            lx, ly = head_r * 1.0 * math.cos(a), head_cy - head_r * 0.45 + head_r * 0.5 * math.sin(a)
+            q.ellipse(laurel, lx - 1.4, ly - 0.75, lx + 1.4, ly + 0.75)
+        q.fill(laurel, M)
+        q.fill(q.inner_shadow(laurel, -0.6, -0.6, 0.4), M_SH, 0.9)
+        q.outline(laurel, 0.35, ink)
+    # l'ombra di contatto sulla cornice del piedistallo
+    q.fill(q.soften(q.ellipse(q.mask(), -hem_w - 3, feet - 1, hem_w + 6, feet + 2.5), 1.0), (40, 38, 34), 0.35)
+    q.save(OUT, name)
+
+
 def statue(name, total_h, slab_w, kind):
     """Statua del Prato su piedistallo tondo, che regge una lastra sulle mani, con il volto disegnato.
 
@@ -1895,8 +2169,10 @@ def bridges_and_statues(name):
     # (dallo schizzo di Riccardo): partono dall'angolo della piazza e scendono verso la sponda di fuori, che lì gira
     # verso di noi, con la gobba alta
     for side in (-1, 1):
-        p_in = (960 + side * 868, 527)  # il capo con l'obelisco sull'angolo davanti della piazza
-        p_out = (oval_edge_x(546, side) + side * 30, 546)  # quasi in piano: la sponda di fuori è appena più avanti
+        # sulla stessa linea del piano di gioco (#378, chiesto da Riccardo): il bordo di qua del ponte continua il bordo
+        # dove si cammina (y 521), dall'angolo della piazza dritto fino alla sponda di fuori
+        p_in = (960 + side * 866, 521)
+        p_out = (oval_edge_x(521, side) + side * 34, 521)
         _side_bridge(t, p_in, p_out, rng, 1.7)
     t.save(OUT, name, colors=256)
 
@@ -2559,9 +2835,9 @@ if __name__ == "__main__":
     quay_wall()
     coping("bordo.png")
     slab()
-    statue("statua-ponte.png", 112, 180, "giovane")  # regge la lastra a y 410 dalla piazza a y 520 (+2 di appoggio)
-    statue("statua-alta.png", 192, 140, "filosofo")  # regge la lastra a y 330
-    statue("statua-piazza.png", 142, 180, "dama")  # regge la lastra a y 380
+    statue_painted("statua-ponte.png", 112, 180, "giovane")  # regge la lastra a y 410 dalla piazza a y 520 (+2 di appoggio)
+    statue_painted("statua-alta.png", 192, 140, "filosofo")  # regge la lastra a y 330
+    statue_painted("statua-piazza.png", 142, 180, "dama")  # regge la lastra a y 380
     # palazzo(), balcony_rail() e balcony_floor() disegnavano la Padova col palazzo, ora ferma in padova-palazzo (#378)
     fountain_back()
     fountain_front()
