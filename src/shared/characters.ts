@@ -831,8 +831,42 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     name: "Marcomunista",
     quotes: { taunt: "Viva il comunismo!" }, // il suo tormentone; la scheda e la #352 non dicono altro
     crews: ["cuamm", "cologna"],
-    // Il disegno è il suo foglio delle pose in #352, ritagliato da tools/sprite/foglio_a_colori.py come Bradipo Giallo
-    sprite: sheetSprite("marcomunista", 304, 196, 182),
+    // Animato dalla GIF di arti marziali di Nicola (tools/sprite/marcomunista_dalla_gif.py), con l'energia verde come scia;
+    // corsa e scatto restano le pose del suo foglio (#352), allargate al fotogramma nuovo
+    sprite: {
+      dir: "assets/characters/marcomunista",
+      frameWidth: 400, // largo: calcio e nuvola della super escono di lato
+      frameHeight: 240,
+      footY: 222,
+      scale: 0.5, // alto come le pose del foglio
+      animations: {
+        idle: { fps: 8, loop: true }, // respira, le braccia si aprono appena
+        walk: { fps: 6, loop: true }, // passo e corsa del foglio, alternati
+        dash: { fps: 1, loop: false },
+        jump: { fps: 24, loop: false },
+        fall: { fps: 10, loop: true },
+        doubleJump: { fps: 24, loop: false }, // la giravolta con l'anello verde
+        tumble: { fps: 18, loop: true },
+        land: { fps: 24, loop: false },
+        hit: { fps: 12, loop: false }, // mano in faccia, piegato all'indietro
+        taunt: { fps: 10, loop: false }, // tai chi con l'energia
+        shield: { fps: 8, loop: true },
+        light: { fps: 24, loop: false, hitFrame: 2 }, // colpo di palmo
+        heavy: { fps: 24, loop: false, hitFrame: 5 }, // calcio con l'esplosione verde
+        lightUp: { fps: 24, loop: false, hitFrame: 3 },
+        heavyUp: { fps: 24, loop: false, hitFrame: 4 },
+        lightDown: { fps: 24, loop: false, hitFrame: 2 },
+        heavyDown: { fps: 24, loop: false, hitFrame: 3 }, // giù di peso, energia a terra dai due lati
+        lightAir: { fps: 24, loop: false, hitFrame: 1 },
+        heavyAir: { fps: 24, loop: false, hitFrame: 3 }, // l'anello attorno alla vita
+        recovery: { fps: 24, loop: false, hitFrame: 0 },
+        grab: { fps: 24, loop: false, hitFrame: 2 },
+        throw: { fps: 24, loop: false, hitFrame: 0 },
+        specialNeutral: { fps: 24, loop: false, hitFrame: 5 }, // spinta in avanti
+        specialDown: { fps: 24, loop: false, hitFrame: 1 }, // Rolling: para, mano alla bocca
+        supreme: { fps: 24, loop: false, hitFrame: 12 }, // …COSA?: l'anello, poi la nuvola quando torna indietro
+      },
+    },
     // dalla scheda: corsa non molto, aria e salto abbastanza, leggero, gravità bassa (la #352 dà lo stile del disegno, non i numeri)
     stats: { weight: 0.95, speed: 0.95, airSpeed: 1.05, jump: 1.05, gravity: 0.95 },
     // dalla scheda: "…COSA?", torna a com'era 3 secondi prima e stordisce chi è vicino (#358)
