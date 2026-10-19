@@ -58,6 +58,9 @@ var _textures := {} # id personaggio -> Texture2D dello spritesheet (nel formato
 var _state_textures := {} # id personaggio -> { stato: Texture2D }, solo per il formato cartella (E7 passo 2)
 var _sprite_keep := {} # id personaggio -> quanto è stato rimpicciolito il suo foglio al caricamento (#320), 1 = intero
 var _anims := {} # id giocatore -> { name, since }: animazione in corso e da quando
+const RigView := preload("res://scripts/rig_view.gd") # prova del lottatore a pezzi in tempo reale (#403)
+var _rigs := {} # id personaggio -> RigView, solo per chi ha il rig e l'ha caricato
+var use_rigs := not OS.get_cmdline_user_args().has("--no-rig") # con --no-rig si vedono le strisce di prima
 var show_hitboxes := false # allenamento (E15): corpo dei lottatori visibile anche sopra gli sprite
 var attack_boxes := true # rettangolo del colpo in corso (opzioni → Video), main.gd lo legge dalle preferenze
 var _air_jumps := {} # id giocatore -> quando ha fatto il doppio salto (ms), per l'animazione doubleJump (#103)
@@ -155,6 +158,9 @@ func _load_character(c: Dictionary) -> void:
 			if not states.has(src):
 				states[src] = _sprite_texture("res://data/%s/%s.png" % [c.sprite.dir, src], filter, k)
 		_state_textures[id] = states
+		var rig: RefCounted = RigView.open("res://data/" + str(c.sprite.rig)) if c.sprite.get("rig") != null else null
+		if rig != null:
+			_rigs[id] = rig
 		_textures[id] = states.idle
 		_sprite_keep[id] = _kept(states.idle, "res://data/%s/idle.png" % c.sprite.dir)
 	else:
@@ -2070,6 +2076,13 @@ func _draw_sprite(p: Dictionary, character: Dictionary, now: float, react := Tra
 	state["attacking"] = p.attack != null
 	var a: Dictionary = anims[name]
 	var attack := FighterPose.attack_spec(game, p.characterId, str(state.get("kind", "")))
+	var tint := FighterPose.sprite_modulate(int(_variants.get(p.id, 0)), FighterPose.away_alpha(p), maxf(FighterPose.charge_flash(p, now, Access.calm), _hit_flash(p.id, now)))
+	var rig: RefCounted = _rigs.get(character.id) if use_rigs else null
+	if rig != null and rig.has_state(str(a.src)):
+		# a pezzi (#403): stessi stati e stessi tempi, ma la posa si interpola invece di saltare di fotogramma in fotogramma
+		var feet := react * Transform2D(0.0, Vector2(p.facing, 1.0), 0.0, Vector2(p.x, p.y))
+		rig.draw(self, feet, str(a.src), FighterPose.rig_frame(a, now - float(state.since), attack), bool(a.loop), tint)
+		return
 	var frame := FighterPose.sprite_frame(a, now - float(state.since), attack)
 	var fw: float = sheet.frameWidth
 	var fh: float = sheet.frameHeight
@@ -2082,7 +2095,7 @@ func _draw_sprite(p: Dictionary, character: Dictionary, now: float, react := Tra
 	var scale: float = sheet.get("scale", 1.0) # 0.5 per i disegni fatti a 2x
 	draw_set_transform_matrix(react * Transform2D(0.0, Vector2(p.facing * scale, scale), 0.0, Vector2(p.x, p.y)))
 	var foot_y: float = sheet.get("footY", fh) # dove stanno i piedi nel fotogramma: sotto c'è chi è appeso al bordo
-	draw_texture_rect_region(texture, Rect2(-fw / 2, -foot_y, fw, fh), src, FighterPose.sprite_modulate(int(_variants.get(p.id, 0)), FighterPose.away_alpha(p), maxf(FighterPose.charge_flash(p, now, Access.calm), _hit_flash(p.id, now))))
+	draw_texture_rect_region(texture, Rect2(-fw / 2, -foot_y, fw, fh), src, tint)
 	draw_set_transform(Vector2.ZERO)
 
 

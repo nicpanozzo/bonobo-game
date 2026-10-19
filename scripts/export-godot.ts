@@ -94,7 +94,59 @@ function folderSprite(id: string, sprite: SpriteFolderSpec): SpriteFolderSpec {
       console.warn(`Attenzione: ${sprite.dir}/${file} non è uno stato di ${id} in characters.ts, non si usa`);
     }
   }
-  return { ...sprite, animations: resolvedAnimations(animations) as SpriteFolderSpec["animations"] };
+  const rig = sprite.rig ? rigFor(id, sprite.rig, animations) : undefined;
+  return { ...sprite, rig, animations: resolvedAnimations(animations) as SpriteFolderSpec["animations"] };
+}
+
+// La prova del rig in tempo reale (#403): da rig.json e animazioni.json di tools/rig/ un file solo per Godot,
+// <rig>/godot.json, con le ossa in ordine (i genitori prima), i pezzi già in ordine di disegno (inchiostro compreso)
+// e per ogni stato i fotogrammi come [radice x, radice y, gradi di ogni osso]. Ritorna il percorso in godot/data
+const rigFiles: Record<string, string> = {};
+interface RigBone { name: string; parent: string | null; head: [number, number]; deform: boolean }
+interface RigPiece { bone: string; z: number; image: string; x: number; y: number; ink?: string; inkZ?: number }
+interface RigFrame { bones: Record<string, number>; root: [number, number] }
+function rigFor(id: string, dir: string, animations: Record<string, object>): string | undefined {
+  const rigPath = `${publicDir}${dir}/rig.json`;
+  const animPath = `${publicDir}${dir}/animazioni.json`;
+  if (!existsSync(rigPath) || !existsSync(animPath)) {
+    spriteErrors.push(`${id}: il rig vuole public/${dir}/rig.json e animazioni.json (tools/rig/)`);
+    return undefined;
+  }
+  const rig = JSON.parse(readFileSync(rigPath, "utf8")) as { scale: number; bones: RigBone[]; pieces: RigPiece[] };
+  const anim = JSON.parse(readFileSync(animPath, "utf8")) as { animations: Record<string, { frames: RigFrame[] }> };
+  const bones = rig.bones.filter((b) => b.deform);
+  const index = new Map(bones.map((b, i) => [b.name, i]));
+  // stesso ordine di Pittore in rendi_sprite.py: pezzo, poi il suo inchiostro, e un ordinamento stabile per z
+  const layers: { z: number; bone: number; image: string; x: number; y: number }[] = [];
+  for (const p of rig.pieces) {
+    const bone = index.get(p.bone);
+    if (bone === undefined) {
+      spriteErrors.push(`${id}: il pezzo ${p.image} sta sull'osso ${p.bone}, che non si muove`);
+      continue;
+    }
+    layers.push({ z: p.z, bone, image: `${dir}/${p.image}`, x: p.x, y: p.y });
+    if (p.ink) layers.push({ z: p.inkZ ?? p.z - 0.5, bone, image: `${dir}/${p.ink}`, x: p.x, y: p.y });
+  }
+  layers.sort((a, b) => a.z - b.z);
+  const r = (v: number) => Math.round(v * 100) / 100;
+  const states: Record<string, number[][]> = {};
+  for (const [state, a] of Object.entries(animations) as [string, { frames: number }][]) {
+    const frames = anim.animations[state]?.frames;
+    if (!frames) continue; // lo stato senza pose resta a striscia
+    if (frames.length !== a.frames) {
+      spriteErrors.push(`${id}: "${state}" ha ${frames.length} pose in animazioni.json ma ${a.frames} fotogrammi nel PNG: rifai le strisce con rendi_sprite.py`);
+    }
+    states[state] = frames.map((f) => [r(f.root[0]), r(f.root[1]), ...bones.map((b) => r(f.bones[b.name] ?? 0))]);
+  }
+  for (const l of layers) spriteFiles.push(l.image);
+  const out = `${dir}/godot.json`;
+  rigFiles[out] = JSON.stringify({
+    scale: rig.scale,
+    bones: bones.map((b) => ({ name: b.name, parent: b.parent === null ? -1 : (index.get(b.parent) ?? -1), head: b.head })),
+    pieces: layers.map(({ bone, image, x, y }) => ({ bone, image, x, y })),
+    animations: states,
+  }) + "\n";
+  return out;
 }
 
 const characters: Record<string, unknown> = {};
@@ -211,6 +263,10 @@ for (const path of spriteFiles) {
   mkdirSync(dirname(godotData + path), { recursive: true });
   copyFileSync(publicDir + path, godotData + path);
   console.log(`Copiato ${path}`);
+}
+for (const [path, json] of Object.entries(rigFiles)) {
+  writeFileSync(godotData + path, json); // la cartella c'è già: ci sono stati copiati i pezzi
+  console.log(`Scritto ${path}`);
 }
 
 // I file audio: la cartella di destinazione si rifà da zero, così un file tolto sparisce anche da Godot

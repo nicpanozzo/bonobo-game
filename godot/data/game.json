@@ -7438,7 +7438,8 @@
             "frames": 18,
             "src": "heavy"
           }
-        }
+        },
+        "rig": "assets/characters/nonnagina/rig/godot.json"
       },
       "stats": {
         "speed": 0.85,

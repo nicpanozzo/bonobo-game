@@ -117,6 +117,28 @@ static func sprite_frame(a: Dictionary, elapsed_ms: float, attack: Dictionary = 
 	return mini(hit + int((elapsed_ms - startup) / rest * (frames - hit)), frames - 1)
 
 
+# Come sprite_frame(), ma frazionario per il rig in tempo reale (#403), che mescola le pose vicine. Perché il colpo
+# non sembri una molla: l'ultimo fotogramma prima dell'impatto parte piano e scatta (la carica si tiene), la posa
+# d'impatto resta ferma finché la hitbox è accesa (activeMs) e il recupero arriva alla fine con cooldownMs
+static func rig_frame(a: Dictionary, elapsed_ms: float, attack: Dictionary = {}) -> float:
+	var last := float(int(a.frames) - 1)
+	if attack.is_empty() or not a.has("hitFrame"):
+		var f := elapsed_ms / 1000.0 * float(a.fps)
+		return fposmod(f, last + 1.0) if a.loop else minf(f, last)
+	var hit := float(a.hitFrame)
+	var startup: float = attack.startupMs
+	if elapsed_ms < startup:
+		var first := minf(float(a.get("startFrame", 0)), hit)
+		var f := first + elapsed_ms / startup * (hit - first)
+		var snap := maxf(first, hit - 1.0)
+		return snap + pow((f - snap) / (hit - snap), 3.0) * (hit - snap) if f > snap else f
+	var held := startup + float(attack.get("activeMs", 0))
+	if elapsed_ms < held:
+		return hit
+	var rest := maxf(1.0, animation_ms(a, attack) - held)
+	return minf(hit + (elapsed_ms - held) / rest * (last - hit), last)
+
+
 # Quanto dura un giro dell'animazione, in ms
 static func animation_ms(a: Dictionary, attack: Dictionary = {}) -> float:
 	if not attack.is_empty() and a.has("hitFrame"):
