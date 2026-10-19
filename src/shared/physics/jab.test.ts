@@ -2,12 +2,14 @@
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { ATTACKS, FIGHTER, JAB, TICK_RATE } from "../constants";
+import { ATTACKS, FIGHTER, HITSTOP, JAB, TICK_RATE } from "../constants";
 import { getStage } from "../stages";
 import type { GameEvent, InputState } from "../types";
 import { createFighter, emptyInput, stepWorld, type Fighter, type PhysicsContext } from "./index";
 
 const DT = 1000 / TICK_RATE;
+// Attesa tra un leggero e il successivo: 14 tick più il fermo al colpo (HITSTOP), in cui i timer non scorrono
+const WAIT = 14 + Math.ceil((HITSTOP.baseMs + HITSTOP.perDamageMs * ATTACKS.light.damage) / DT);
 const stage = getStage(undefined);
 
 function setup() {
@@ -43,7 +45,7 @@ function tap(s: ReturnType<typeof setup>, waitTicks: number) {
 describe("combo di leggeri", () => {
   it("tre leggeri di fila: due colpi e il finale che lancia", () => {
     const s = setup();
-    for (let n = 0; n < 3; n++) tap(s, 14);
+    for (let n = 0; n < 3; n++) tap(s, WAIT);
     const h = hits(s.ctx.events);
     assert.deepEqual(h.map((e) => e.damage), [ATTACKS.light.damage, JAB.steps[0].damage, JAB.steps[1].damage]);
     assert.ok(h[2].knockback > h[1].knockback * 2, `il finale lancia: ${h.map((e) => e.knockback)}`);
@@ -51,7 +53,7 @@ describe("combo di leggeri", () => {
 
   it("la combo non aspetta l'attesa del leggero", () => {
     const s = setup();
-    tap(s, 14); // meno dell'attesa di un leggero (ATTACKS.light.cooldownMs = 280 ms, circa 17 tick)
+    tap(s, WAIT); // meno dell'attesa di un leggero (ATTACKS.light.cooldownMs = 280 ms, circa 17 tick oltre il fermo)
     assert.ok(s.a.cooldownTimer > 0, "il primo leggero ha ancora l'attesa");
     tap(s, 2);
     assert.equal(s.a.attack, "light");
@@ -60,8 +62,8 @@ describe("combo di leggeri", () => {
 
   it("troppo tardi o a vuoto si ricomincia dal primo", () => {
     const late = setup();
-    tap(late, 14 + Math.ceil(JAB.windowMs / DT) + 20);
-    tap(late, 14);
+    tap(late, WAIT + Math.ceil(JAB.windowMs / DT) + 20);
+    tap(late, WAIT);
     assert.deepEqual(hits(late.ctx.events).map((e) => e.damage), [ATTACKS.light.damage, ATTACKS.light.damage]);
     const miss = setup();
     miss.fighters[1].x = 900; // nessuno a portata
@@ -72,7 +74,7 @@ describe("combo di leggeri", () => {
 
   it("dopo il finale si riparte dal primo", () => {
     const s = setup();
-    for (let n = 0; n < 3; n++) tap(s, 14);
+    for (let n = 0; n < 3; n++) tap(s, WAIT);
     assert.equal(s.a.jabTimer, 0);
   });
 });

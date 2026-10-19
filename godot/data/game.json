@@ -252,9 +252,9 @@
     }
   },
   "hitstop": {
-    "baseMs": 30,
-    "perDamageMs": 6,
-    "maxMs": 200
+    "baseMs": 70,
+    "perDamageMs": 8,
+    "maxMs": 350
   },
   "smashCharge": {
     "maxMs": 1000,
@@ -631,7 +631,11 @@
     "hitReactTilt": 0.35,
     "hitReactSquash": 0.22,
     "hitReactRecoil": 10,
-    "hitShakePx": 7,
+    "hitShakePx": 10,
+    "hitFlash": 0.8,
+    "koZoomKnockback": 1100,
+    "koZoom": 0.08,
+    "koZoomMs": 320,
     "hitShakeHz": 30,
     "impactLines": 8,
     "impactLinesKnockback": 700

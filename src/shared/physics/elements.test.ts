@@ -2,12 +2,14 @@
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { HAZARD, TICK_RATE, WORLD } from "../constants";
+import { HAZARD, HITSTOP, TICK_RATE, WORLD } from "../constants";
 import type { Hazard, MovingPlatform, StageSpec } from "../stages";
 import { getStage } from "../stages";
 import { createFighter, floodPhase, hazardActive, hazardRect, jetPhase, moverPosition, stepWorld, travelDirection, travelPhase, type PhysicsContext } from "./index";
 
 const DT = 1000 / TICK_RATE;
+// Tick di fermo (HITSTOP) dopo un colpo da `damage`: si vola via solo dopo
+const stopTicks = (damage: number) => Math.ceil(Math.min(HITSTOP.maxMs, HITSTOP.baseMs + HITSTOP.perDamageMs * damage) / DT);
 
 const elevator: MovingPlatform = { width: 200, path: [{ x: 500, y: 600 }, { x: 500, y: 300 }], periodMs: 4000, pauseMs: 1000 };
 const shuttle: MovingPlatform = { width: 200, path: [{ x: 300, y: 500 }, { x: 700, y: 500 }], periodMs: 4000 };
@@ -104,7 +106,7 @@ describe("trappole", () => {
     assert.equal(f.percent, 10);
     const ev = ctx.events.filter((e) => e.type === "hazard");
     assert.equal(ev.length, 1);
-    run(f, ctx, 12);
+    run(f, ctx, 12 + stopTicks(10));
     assert.ok(f.y < 620, `è stato lanciato in alto (y = ${f.y})`);
     run(f, ctx, Math.round(HAZARD.cooldownMs / DT) - 20);
     assert.equal(f.percent, 10, "niente colpi a raffica");
@@ -163,7 +165,7 @@ describe("acqua alta (#228)", () => {
     run(f, ctx, 2);
     assert.equal(f.percent, 6);
     assert.equal(ctx.events.filter((e) => e.type === "hazard").length, 1, "evento hazard come le altre trappole");
-    run(f, ctx, 10);
+    run(f, ctx, 10 + stopTicks(6));
     assert.ok(f.y < 540, `è stato lanciato fuori dall'acqua (y = ${f.y})`);
   });
 
