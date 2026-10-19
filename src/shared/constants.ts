@@ -311,24 +311,30 @@ export const COURSE = {
   respawnHeight: 120, // si ricompare un po' sopra il checkpoint
 };
 
-// Squadre (#17): una tonalità per ogni compagno (fino a 4 contro 4), così i compagni si distinguono tra loro
-export const TEAM_COLORS: Record<1 | 2, number[]> = {
+// Squadre (#17): una tonalità per ogni compagno (fino a 4 contro 4), così i compagni si distinguono tra loro.
+// Fino a MAX_TEAMS squadre (#409); il primo colore di ognuna è quello di COLORS con lo stesso indice
+export const MAX_TEAMS = 4; // squadre al massimo in modalità Squadre; in Bandiera sono sempre 2
+export const TEAM_COLORS: Record<number, number[]> = {
   1: [0xe74c3c, 0xff9a8a, 0xb03020, 0xff6f5e],
   2: [0x3498db, 0x8fd0ff, 0x1f5f9a, 0x5dade2],
+  3: [0x2ecc71, 0xa3f0c0, 0x1e8449, 0x58d68d],
+  4: [0xf1c40f, 0xfff08a, 0xb7950b, 0xf7dc6f],
 };
 // Bandiera (#56): chi porta la bandiera è più lento, così ha bisogno dei compagni
 export const FLAG = {
   carrierSpeed: 0.85, // frazione della velocità normale, a terra e in aria
 };
 
-export const TEAM_NAMES: Record<1 | 2, string> = { 1: "Rossa", 2: "Blu" };
+export const TEAM_NAMES: Record<number, string> = { 1: "Rossa", 2: "Blu", 3: "Verde", 4: "Gialla" };
 
 // Palette per daltonici (E14, opzioni → Accessibilità), dai colori di Okabe e Ito: il client Godot
 // sostituisce COLORS[i] con COLORS_COLORBLIND[i] (e lo stesso per le squadre). Il server non cambia.
 export const COLORS_COLORBLIND = [0xd55e00, 0x0072b2, 0x009e73, 0xf0e442, 0xcc79a7, 0xe69f00, 0x56b4e9, 0xffffff];
-export const TEAM_COLORS_COLORBLIND: Record<1 | 2, number[]> = {
+export const TEAM_COLORS_COLORBLIND: Record<number, number[]> = {
   1: [0xd55e00, 0xffd27a, 0x9e5a00, 0xe69f00], // arancioni: il primo è COLORS_COLORBLIND[0], come nell'originale
   2: [0x0072b2, 0x8ccff5, 0x003f63, 0x56b4e9], // blu
+  3: [0x009e73, 0x7fe0c4, 0x005a40, 0x3fc79f], // verdi acqua: il primo è COLORS_COLORBLIND[2]
+  4: [0xf0e442, 0xfff6a8, 0xa89c1a, 0xd9cc2a], // gialli: il primo è COLORS_COLORBLIND[3]
 };
 
 // Audio (#6): volumi di partenza, da 0 a 1. Ognuno poi li cambia nelle opzioni.

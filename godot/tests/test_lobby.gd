@@ -207,6 +207,26 @@ func test_torna_dalla_partita_sulla_stessa_stanza() -> void:
 	lobby.free()
 
 
+# Squadre (#409): quante squadre nelle regole, la tua squadra nella pagina del lottatore
+func test_squadre_e_la_tua_squadra() -> void:
+	var lobby := _lobby(false, {"rules": {"mode": "teams", "teamCount": 3}, "team": 3})
+	runner.check(lobby._team_count_box.visible, "a squadre si sceglie quante squadre")
+	runner.check(lobby._team_picker.get_child_count() == 4, "Automatica e tre squadre: %d" % lobby._team_picker.get_child_count())
+	runner.check(lobby._team_picker.selected == 3, "la squadra di prima resta scelta")
+	var c := _last_choice(lobby, lobby._submit)
+	runner.check(c.rules.teamCount == 3 and c.team == 3, "regole e squadra nella scelta: %s %s" % [c.rules, c.team])
+	# Con due squadre la Verde non c'è più: si torna ad Automatica
+	lobby._team_count.select(0)
+	lobby._sync_rules()
+	runner.check(lobby._team_picker.selected == 0, "squadra che non c'è più: automatica")
+	lobby._set_mode("ffa")
+	runner.check(not lobby._team_box.visible and not lobby._team_count_box.visible, "tutti contro tutti: niente squadre")
+	runner.check(_last_choice(lobby, lobby._submit).team == 0, "e nessuna squadra chiesta")
+	lobby._set_kind("join")
+	runner.check(lobby._team_box.visible, "entrando la squadra si sceglie comunque")
+	lobby.free()
+
+
 func test_arene_nascoste_fuori_dalla_lobby() -> void:
 	var lobby := _lobby(false)
 	var ids := []

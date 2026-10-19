@@ -64,3 +64,12 @@ func test_ritratto_ritagliato_e_proporzionato() -> void:
 	runner.check(Hud.used_region(empty, Rect2(0, 0, 64, 96)) == Rect2(0, 0, 64, 96), "fotogramma vuoto: tutto")
 	var fit := Hud.fit_rect(Vector2(20, 40), Rect2(0, 0, 40, 40))
 	runner.check(fit == Rect2(10, 0, 20, 40), "proporzioni tenute, centrato: %s" % fit)
+
+
+# Squadre (#409): le schede stanno a gruppi, una squadra dopo l'altra, ognuno nell'ordine di prima
+func test_schede_raggruppate_per_squadra() -> void:
+	var players := [{"id": "a", "team": 2}, {"id": "b", "team": 1}, {"id": "c", "team": 2}, {"id": "d", "team": 3}]
+	var ordered := Hud.team_order(players)
+	runner.check(ordered.map(func(p): return p.id) == ["b", "a", "c", "d"], "in ordine di squadra: %s" % [ordered])
+	runner.check(Hud.team_breaks(ordered) == [[0, 1], [1, 2], [3, 1]], "tre gruppi: %s" % [Hud.team_breaks(ordered)])
+	runner.check(Hud.team_breaks([{"id": "a", "team": 0}, {"id": "b", "team": 0}]) == [[0, 2]], "senza squadre un gruppo solo")
