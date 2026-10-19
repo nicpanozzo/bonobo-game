@@ -5852,15 +5852,15 @@
       ],
       "sprite": {
         "dir": "assets/characters/marcomunista",
-        "frameWidth": 304,
-        "frameHeight": 196,
-        "footY": 182,
+        "frameWidth": 400,
+        "frameHeight": 240,
+        "footY": 222,
         "scale": 0.5,
         "animations": {
           "idle": {
-            "fps": 1,
+            "fps": 8,
             "loop": true,
-            "frames": 1,
+            "frames": 8,
             "src": "idle"
           },
           "walk": {
@@ -5870,141 +5870,153 @@
             "src": "walk"
           },
           "jump": {
-            "fps": 1,
+            "fps": 24,
             "loop": false,
-            "frames": 1,
+            "frames": 5,
             "src": "jump"
           },
           "fall": {
-            "fps": 1,
-            "loop": false,
-            "frames": 1,
+            "fps": 10,
+            "loop": true,
+            "frames": 4,
             "src": "fall"
           },
           "light": {
-            "fps": 1,
+            "fps": 24,
             "loop": false,
-            "frames": 1,
+            "hitFrame": 2,
+            "frames": 5,
             "src": "light"
           },
           "heavy": {
-            "fps": 1,
+            "fps": 24,
             "loop": false,
-            "frames": 1,
+            "hitFrame": 5,
+            "frames": 11,
             "src": "heavy"
           },
           "hit": {
-            "fps": 1,
+            "fps": 12,
             "loop": false,
-            "frames": 1,
+            "frames": 2,
             "src": "hit"
           },
           "doubleJump": {
-            "fps": 1,
+            "fps": 24,
             "loop": false,
-            "frames": 1,
-            "src": "jump"
+            "frames": 8,
+            "src": "doubleJump"
           },
           "tumble": {
-            "fps": 1,
-            "loop": false,
-            "frames": 1,
-            "src": "hit"
+            "fps": 18,
+            "loop": true,
+            "frames": 6,
+            "src": "tumble"
           },
           "ledge": {
-            "fps": 1,
+            "fps": 24,
             "loop": false,
-            "frames": 1,
+            "frames": 5,
             "src": "jump"
           },
           "climb": {
-            "fps": 1,
+            "fps": 24,
             "loop": false,
-            "frames": 1,
+            "frames": 5,
             "src": "jump"
           },
           "land": {
-            "fps": 1,
+            "fps": 24,
             "loop": false,
-            "frames": 1,
+            "frames": 3,
             "src": "land"
           },
           "lightUp": {
-            "fps": 1,
+            "fps": 24,
             "loop": false,
-            "frames": 1,
+            "hitFrame": 3,
+            "frames": 6,
             "src": "lightUp"
           },
           "lightDown": {
-            "fps": 1,
+            "fps": 24,
             "loop": false,
-            "frames": 1,
+            "hitFrame": 2,
+            "frames": 5,
             "src": "lightDown"
           },
           "lightAir": {
-            "fps": 1,
+            "fps": 24,
             "loop": false,
-            "frames": 1,
+            "hitFrame": 1,
+            "frames": 4,
             "src": "lightAir"
           },
           "heavyUp": {
-            "fps": 1,
+            "fps": 24,
             "loop": false,
-            "frames": 1,
+            "hitFrame": 4,
+            "frames": 6,
             "src": "heavyUp"
           },
           "heavyDown": {
-            "fps": 1,
+            "fps": 24,
             "loop": false,
-            "frames": 1,
+            "hitFrame": 3,
+            "frames": 7,
             "src": "heavyDown"
           },
           "heavyAir": {
-            "fps": 1,
+            "fps": 24,
             "loop": false,
-            "frames": 1,
+            "hitFrame": 3,
+            "frames": 6,
             "src": "heavyAir"
           },
           "recovery": {
-            "fps": 1,
+            "fps": 24,
             "loop": false,
-            "frames": 1,
+            "hitFrame": 0,
+            "frames": 4,
             "src": "recovery"
           },
           "taunt": {
-            "fps": 1,
-            "loop": true,
-            "frames": 1,
-            "src": "idle"
+            "fps": 10,
+            "loop": false,
+            "frames": 10,
+            "src": "taunt"
           },
           "shield": {
-            "fps": 1,
-            "loop": false,
-            "frames": 1,
+            "fps": 8,
+            "loop": true,
+            "frames": 6,
             "src": "shield"
           },
           "grab": {
-            "fps": 1,
+            "fps": 24,
             "loop": false,
-            "frames": 1,
+            "hitFrame": 2,
+            "frames": 3,
             "src": "grab"
           },
           "throw": {
-            "fps": 1,
+            "fps": 24,
             "loop": false,
-            "frames": 1,
+            "hitFrame": 0,
+            "frames": 4,
             "src": "throw"
           },
           "grabbed": {
-            "fps": 1,
+            "fps": 12,
             "loop": false,
-            "frames": 1,
+            "frames": 2,
             "src": "hit"
           },
           "special": {
-            "fps": 1,
+            "fps": 24,
             "loop": false,
-            "frames": 1,
+            "hitFrame": 5,
+            "frames": 11,
             "src": "heavy"
           },
           "dash": {
@@ -6014,33 +6026,38 @@
             "src": "dash"
           },
           "supreme": {
-            "fps": 1,
+            "fps": 24,
             "loop": false,
-            "frames": 1,
+            "hitFrame": 12,
+            "frames": 22,
             "src": "supreme"
           },
           "specialNeutral": {
-            "fps": 1,
+            "fps": 24,
             "loop": false,
-            "frames": 1,
+            "hitFrame": 5,
+            "frames": 8,
             "src": "specialNeutral"
           },
           "specialSide": {
-            "fps": 1,
+            "fps": 24,
             "loop": false,
-            "frames": 1,
+            "hitFrame": 5,
+            "frames": 11,
             "src": "heavy"
           },
           "specialDown": {
-            "fps": 1,
+            "fps": 24,
             "loop": false,
-            "frames": 1,
+            "hitFrame": 1,
+            "frames": 8,
             "src": "specialDown"
           },
           "dashAttack": {
-            "fps": 1,
+            "fps": 24,
             "loop": false,
-            "frames": 1,
+            "hitFrame": 5,
+            "frames": 11,
             "src": "heavy"
           }
         }

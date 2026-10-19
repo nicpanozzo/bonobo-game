@@ -18,7 +18,6 @@ const STEP := 4 # pixel del PNG tra un campione e l'altro: basta per la sagoma e
 # fuori zona fa fallire il test; quando uno di questi viene sistemato, lo si toglie da qui
 const KNOWN_OFF := {
 	"bradipo": ["lightUp"], # la posa del foglio di Marco non alza il braccio sopra la testa
-	"marcomunista": ["lightUp"],
 }
 
 
