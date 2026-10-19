@@ -306,6 +306,9 @@ export interface StageSpec {
   itemSpots?: ItemSpot[]; // zone dove gli oggetti cadono più spesso (#253)
   music?: StageMusic; // musica della partita (E12 passo 4)
   art?: StageArt; // sfondo a strati (E12 passo 3)
+  // Nascosta (#408): resta nella repo e il server la avvia ancora per id, ma la lobby non la mostra e non può essere
+  // l'arena predefinita. Per rimetterla in gioco basta togliere il campo.
+  hidden?: boolean;
 }
 
 // Larghezza del mondo di un'arena: lo schermo, o di più per i percorsi
@@ -669,9 +672,12 @@ export const STAGES: Record<string, StageSpec> = {
 
   // Padova · il palazzo (#378): la Padova di prima dell'idea di Nicola, conservata com'era il 18 ottobre 2026, con il
   // palazzo signorile e i suoi balconi al centro e lo zampillo che lancia in alto. I disegni sono una copia ferma.
+  // Nascosta dal 20 ottobre 2026 (#408): tenuta per le emergenze, si avvia ancora per id. Per rimetterla nella lobby
+  // basta togliere la riga hidden.
   "padova-palazzo": {
     id: "padova-palazzo",
     name: "Padova · il palazzo",
+    hidden: true,
     width: 1920,
     camera: { minZoom: 0.6 },
     solids: [

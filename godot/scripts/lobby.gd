@@ -450,11 +450,14 @@ func _stage_page(params: Dictionary) -> Control:
 	return page
 
 
-# Le arene di stages.ts più una generata a caso: cliccandola di nuovo se ne genera un'altra
+# Le arene di stages.ts più una generata a caso: cliccandola di nuovo se ne genera un'altra.
+# Quelle con hidden (#408) restano fuori, anche se si possono ancora avviare per id
 func _draw_stages() -> void:
 	for c in _stages.get_children():
 		c.queue_free()
 	for id in game.stages:
+		if game.stages[id].get("hidden", false):
+			continue
 		_stages.add_child(_stage_card(id, game.stages[id].name, game.stages[id]))
 	_stages.add_child(_stage_card(_random_stage, "Casuale", {}))
 
