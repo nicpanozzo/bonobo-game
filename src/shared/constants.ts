@@ -615,7 +615,7 @@ export const STAGE_CHECK = {
 
 // Allenamento (E15, #113): comandi della palestra, accettati solo con un umano nella stanza
 export const TRAINING = {
-  speeds: [1, 0.5, 0.25], // velocità dell'orologio ammesse: 1 normale, 0.5 e 0.25 rallentatore
+  speeds: [1, 0.9, 0.8, 0.5, 0.25], // velocità dell'orologio ammesse: 1 normale, 0.9 e 0.8 per provare un gioco più lento (#384), 0.5 e 0.25 rallentatore
   maxPercent: 999, // percentuale massima che si può dare al bot
 };
 
