@@ -109,7 +109,9 @@ static func sprite_frame(a: Dictionary, elapsed_ms: float, attack: Dictionary = 
 	var hit := int(a.hitFrame)
 	var startup: float = attack.startupMs
 	if elapsed_ms < startup:
-		return int(elapsed_ms / startup * hit)
+		# startFrame salta la posa di riposo degli scheletri: la sagoma cambia subito (#384 C1)
+		var first := mini(int(a.get("startFrame", 0)), hit)
+		return first + int(elapsed_ms / startup * (hit - first))
 	var rest := maxf(1.0, animation_ms(a, attack) - startup)
 	return mini(hit + int((elapsed_ms - startup) / rest * (frames - hit)), frames - 1)
 
