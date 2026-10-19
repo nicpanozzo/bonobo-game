@@ -46,6 +46,9 @@ var _props_back: Array = [] # decorazioni dietro ai lottatori (#237): [texture, 
 var _props_front: Array = [] # e davanti
 var _hazard_sprites := {} # indice della trappola -> {tex, frames, fps, scale, footX, footY}: animazioni disegnate (#270)
 var _mover_sprites := {} # indice della piattaforma mobile -> come sopra (#273)
+var _t_draw := 0.0 # il tempo dell'arena del frame che si sta disegnando (#378, per i ganci dentro le decorazioni)
+const SHADOW_STEPS := 6 # ovali sovrapposti di un'ombra a terra (#378): più sono, più è sfumata
+const SHADOW_STEP_ALPHA := 0.17 # quanto scurisce ognuno: al centro si arriva a circa 2/3 della forza dell'ombra
 var _light_layers := {} # parallasse -> [Texture2D, Rect2]: i vetri accesi di quello strato (#288), ritagliati; Rect2 in frazioni dello strato
 var _light_props: Array = [] # [texture, decorazione] con i vetri accesi, sopra le decorazioni (#288)
 var _life: RefCounted = preload("res://scripts/stage_life.gd").new() # sfondo vivo (#260)
@@ -339,7 +342,8 @@ func _load_stage_dressing(dir: String, art: Dictionary) -> void:
 		var tex := _stage_texture(dir, ms.file)
 		if tex != null:
 			_mover_sprites[int(ms.mover)] = {"tex": tex, "frames": int(ms.frames), "fps": float(ms.fps), "scale": float(ms.get("scale", 1.0)),
-				"footX": float(ms.get("footX", tex.get_width() / float(ms.frames) / 2.0)), "footY": float(ms.get("footY", tex.get_height()))}
+				"footX": float(ms.get("footX", tex.get_width() / float(ms.frames) / 2.0)), "footY": float(ms.get("footY", tex.get_height())),
+				"stem": ms.get("stem") if ms.get("stem") is Dictionary else {}, "phase": float(ms.mover) * 1.7}
 	# Luci della notte precise (#288): strati e decorazioni con solo i vetri accesi
 	_light_layers = {}
 	_light_props = []
@@ -498,6 +502,8 @@ func _draw_props(list: Array) -> void:
 		if pr.get("flip", false):
 			rect.size.x = -size.x # con la larghezza negativa Godot la specchia restando nello stesso posto
 		draw_texture_rect(tex, rect, false, Color(_ambient.r, _ambient.g, _ambient.b, float(pr.get("opacity", 1.0))))
+		if pr.get("floatersAfter", false) and not _life.is_empty(): # chi galleggia dietro l'isola (#378)
+			_life.draw_floaters_back(self, _t_draw, _ambient)
 
 
 # Uno strato dello sfondo (E12): [texture, parallasse], o [] se il file non c'è (si vede il colore del cielo)
@@ -786,6 +792,7 @@ func _draw() -> void:
 	if bz is Dictionary:
 		draw_rect(Rect2(bz.left - 200, bz.top - 200, bz.right - bz.left + 400, bz.bottom - bz.top + 400), _palette.sky)
 	var t_stage := buffer.sample_stage_ms(Time.get_ticks_msec())
+	_t_draw = t_stage
 	var view_center := view_rect.get_center()
 	var rain := _rain_now(t_stage)
 	_ambient = _life.sky.ambient(t_stage) # la luce del momento del giorno (#267), bianca senza ciclo
@@ -872,6 +879,8 @@ func _draw() -> void:
 	if not _life.is_empty():
 		_life.draw_outer_water(self, t_stage, now, _flood_up(t_stage), view_rect, positions) # davanti a chi cade (#264)
 	_draw_props(_props_front)
+	if not _life.is_empty():
+		_life.draw_near(self, t_stage, _ambient) # chi passa sfocato in primissimo piano (#378)
 	_draw_rails(true) # ringhiere davanti, di solito trasparenti
 	if not _foreground.is_empty():
 		_draw_layer(_foreground)
@@ -1240,7 +1249,13 @@ func _draw_trail(id: String, p: Dictionary) -> void:
 # Ascensori e trappole (#14), dove sono all'istante t dell'arena: stessi calcoli di physics/elements.ts
 func _draw_elements(t: float) -> void:
 	var movers: Array = stage.get("movers") if stage.get("movers") != null else []
-	for mi in movers.size():
+	var hubs := {} # i mozzi dei getti della fontana (#378), uno per fontana
+	for spr in _mover_sprites.values():
+		var st: Dictionary = spr.get("stem", {})
+		if st.get("hub") is Dictionary and not hubs.has(str(st.hub)):
+			hubs[str(st.hub)] = st
+			_draw_wheel_trunk(st, t)
+	for mi in StageMotion.movers_back_to_front(movers, t): # la giostra d'acqua: prima quelle che passano dietro
 		var m: Dictionary = movers[mi]
 		var pos := StageMotion.mover_position(m, t)
 		if _mover_sprites.has(mi):
@@ -1253,6 +1268,8 @@ func _draw_elements(t: float) -> void:
 		# Strisce gialle e nere sotto: si capisce che si muove
 		for x in range(0, int(m.width), 20):
 			draw_rect(Rect2(pos.x + x, pos.y + 10, minf(10, m.width - x), 5), Color("f1c40f"))
+	for st in hubs.values(): # la schiuma all'ugello, sopra i piedi dei getti
+		_draw_hub_foam(st, t)
 	var hazards: Array = stage.get("hazards") if stage.get("hazards") != null else []
 	for i in hazards.size():
 		var h: Dictionary = hazards[i]
@@ -1351,6 +1368,8 @@ func _draw_sun_light(t: float) -> void:
 		var ground: float = entry[2]
 		if absf(ground - float(pr.y)) > 8.0:
 			continue # non poggia sul palco (il palazzo, le fondamenta)
+		if not prop_casts_shadow(pr):
+			continue
 		var w := tex.get_width() * float(pr.get("scale", _layer_scale)) * 0.55
 		_draw_shadow(SunLight.shadow(Vector2(pr.x, ground), w, l))
 	for id in player_ids:
@@ -1363,19 +1382,26 @@ func _draw_sun_light(t: float) -> void:
 		_draw_shadow(SunLight.shadow(Vector2(p.x, ground), float(game.fighter.width), l, ground - float(p.y)))
 
 
+# Un pavimento o una vasca con l'ombra già dipinta (shadow: false, #378) non fa ombra a terra: larga quanto il piano
+# dell'isola diventava una striscia grigia sul bordo dove si cammina
+static func prop_casts_shadow(pr: Dictionary) -> bool:
+	return bool(pr.get("shadow", true))
+
+
 func _draw_shadow(s: Array) -> void:
 	if float(s[1]) <= 0.0:
 		return
 	var pts: PackedVector2Array = s[0]
-	_draw_convex(pts, Color(0.05, 0.05, 0.1, float(s[1]) * 0.6))
-	# il nucleo più scuro, vicino a chi la fa: un'ombra morbida ai bordi
 	var c := Vector2.ZERO
 	for q in pts:
 		c += q
 	c /= pts.size()
-	# q -> c + (q - c) * 0.6, fatto dal motore su tutto il poligono invece che punto per punto in GDScript
-	var core := Transform2D(0.0, Vector2(0.6, 0.6), 0.0, c * 0.4) * pts
-	_draw_convex(core, Color(0.05, 0.05, 0.1, float(s[1]) * 0.5))
+	# Un'ombra sfumata (#378, Riccardo: non due cerchi uno dentro l'altro): tanti ovali sempre più piccoli e leggeri
+	# uno sopra l'altro, così dal centro scuro si arriva al bordo trasparente senza scalini.
+	# q -> c + (q - c) * k, fatto dal motore su tutto il poligono invece che punto per punto in GDScript
+	for i in SHADOW_STEPS:
+		var k := 1.0 - 0.75 * i / float(SHADOW_STEPS)
+		_draw_convex(Transform2D(0.0, Vector2(k, k), 0.0, c * (1.0 - k)) * pts, Color(0.05, 0.05, 0.1, float(s[1]) * SHADOW_STEP_ALPHA))
 
 
 # Un poligono convesso a ventaglio dal primo punto, senza la triangolazione generica di draw_colored_polygon:
@@ -1504,7 +1530,125 @@ func _draw_mover_sprite(spr: Dictionary, m: Dictionary, pos: Vector2, t: float) 
 	var bob := sin(t / 500.0) * 1.2 if m.get("kind", "") == "barca" else 0.0
 	var surface := Rect2(pos.x, pos.y - 1.0 + bob, w, 1.0)
 	var frame := StageMotion.hazard_frame(t, spr.fps, spr.frames)
+	var stem: Dictionary = spr.get("stem", {})
+	if not stem.is_empty(): # lo spruzzo che regge la piattaforma (#378), sotto di lei
+		# il getto arriva al bottone sotto la tazza (26 pixel sotto il piano): si vede che è l'acqua a reggerla
+		_draw_mover_stem(stem, pos.x + w / 2.0, pos.y + (26.0 if stem.get("hub") is Dictionary else 4.0), t, float(spr.get("phase", 0.0)), w)
 	draw_texture_rect_region(tex, StageMotion.hazard_sprite_rect(spr, fw, tex.get_height(), surface, dir), Rect2(frame * fw, 0, fw, tex.get_height()), _stage_light())
+
+
+# Lo spruzzo d'acqua che regge una piattaforma (#378): il foglio dipinto (il getto della fontana) stirato dalla vasca
+# fino al fondo della piattaforma, largo sempre uguale; ogni spruzzo è sfasato per non pulsare insieme agli altri
+func _draw_mover_stem(stem: Dictionary, cx: float, top: float, t: float, phase: float, plat_w := 0.0) -> void:
+	var sh: Dictionary = _life.sheet(str(stem.sheet))
+	if sh.is_empty():
+		return
+	var fw: float = sh.fw
+	var fh: float = sh.fh
+	var frame := int(t / 90.0 + phase) % int(sh.frames)
+	if stem.get("hub") is Dictionary: # un getto curvo dall'ugello alla piattaforma (#378, dallo schizzo di Riccardo)
+		var hub := Vector2(float(stem.hub.x), float(stem.hub.y))
+		var curve := StageMotion.jet_curve(hub, Vector2(cx, top), 14)
+		_draw_curved_jet(sh, frame, curve, float(stem.width))
+		# il cuore del getto, pieno e bianco, e il nodo di schiuma dove spinge contro la tazza
+		var white := Color(0.96, 0.99, 1.0, 1.0) * Color(_stage_light(), 1.0)
+		draw_polyline(curve, Color(white, 0.55), float(stem.width) * 0.32, true)
+		draw_polyline(curve, Color(white, 0.85), float(stem.width) * 0.12, true)
+		for i in 6:
+			var a := t / 160.0 + i * TAU / 6.0 + phase
+			draw_circle(Vector2(cx, top + 2.0) + Vector2(cos(a) * 7.0, sin(a) * 3.0), 4.5, Color(white, 0.85))
+		if stem.get("crown") != null: # dove batte sotto la tazza si apre a ombrello e ricade a rami
+			_draw_jet_crown(str(stem.crown), Vector2(cx, top), plat_w, t, phase)
+		# le gocce che cadono dal bordo della tazza giù nella vasca, ognuna lungo la sua parabola
+		var drop := Color(0.93, 0.97, 0.98, 1.0) * Color(_stage_light(), 1.0)
+		var fall := float(stem.baseY) - top
+		for i in 12:
+			var k := fposmod(t / 1100.0 + i * 0.283 + phase * 0.31, 1.0)
+			var side := -1.0 if i % 2 == 0 else 1.0
+			var edge := plat_w / 2.0 * (0.55 + 0.45 * fposmod(i * 0.61, 1.0))
+			var p := Vector2(cx + side * (edge + 10.0 * k), top + 2.0 + fall * k * k)
+			draw_circle(p, 2.4 * (1.0 - 0.45 * k), Color(drop, 0.85 - 0.6 * k))
+		return
+	var r := StageMotion.stem_rect(cx, top, float(stem.baseY), float(stem.width))
+	if r.size.y < 2.0:
+		return
+	draw_texture_rect_region(sh.tex, r, Rect2(frame * fw, 0, fw, fh), _stage_light())
+
+
+# Il getto curvo (#378): la colonna d'acqua dipinta (la parte sotto la corona del foglio "getto") piegata lungo la
+# curva, a pezzi di quattro punti con le coordinate della texture, un po' più sottile in cima
+func _draw_curved_jet(sh: Dictionary, frame: int, pts: PackedVector2Array, width: float) -> void:
+	var tex: Texture2D = sh.tex
+	var tw := float(tex.get_width())
+	var fw: float = sh.fw
+	var u0 := (frame * fw + fw * 0.2) / tw # la colonna sta nel mezzo del fotogramma
+	var u1 := (frame * fw + fw * 0.8) / tw
+	var col := _stage_light()
+	var n := pts.size() - 1
+	var sides: Array = []
+	for i in pts.size():
+		var d := (pts[mini(i + 1, n)] - pts[maxi(i - 1, 0)]).normalized()
+		var normal := Vector2(-d.y, d.x)
+		var half := width * (1.0 - 0.25 * i / float(n)) / 2.0
+		sides.append([pts[i] - normal * half, pts[i] + normal * half, lerpf(1.0, 0.27, i / float(n))])
+	for i in n:
+		var a: Array = sides[i]
+		var b: Array = sides[i + 1]
+		draw_primitive(PackedVector2Array([a[0], b[0], b[1], a[1]]), PackedColorArray([col, col, col, col]),
+			PackedVector2Array([Vector2(u0, a[2]), Vector2(u0, b[2]), Vector2(u1, b[2]), Vector2(u1, a[2])]), tex)
+
+
+# La corona sotto la tazza (#378): il foglio dipinto, con il punto dove arriva il getto in (fw/2, 28) del fotogramma,
+# largo poco più della tazza
+func _draw_jet_crown(name: String, at: Vector2, plat_w: float, t: float, phase: float) -> void:
+	var sh: Dictionary = _life.sheet(name)
+	if sh.is_empty():
+		return
+	var fw: float = sh.fw
+	var fh: float = sh.fh
+	var k := plat_w * 1.15 / (fw * float(sh.scale))
+	var size := Vector2(fw, fh) * float(sh.scale) * k
+	var anchor := Vector2(fw / 2.0, 28.0) * float(sh.scale) * k
+	var frame := posmod(int(t / 110.0 + phase * 2.0), int(sh.frames))
+	draw_texture_rect_region(sh.tex, Rect2(at - anchor, size), Rect2(frame * fw, 0, fw, fh), _stage_light())
+
+
+# Il getto unico che sale dal centro della vasca fino al mozzo della ruota (#378), dove si apre in tre raggi:
+# lì l'acqua fa una corona di schiuma che pulsa appena
+func _draw_wheel_trunk(stem: Dictionary, t: float) -> void:
+	var sh: Dictionary = _life.sheet(str(stem.sheet))
+	if sh.is_empty():
+		return
+	var hub := Vector2(float(stem.hub.x), float(stem.hub.y))
+	if float(stem.baseY) - hub.y < 10.0:
+		return # i getti partono già dalla vasca: niente tronco
+	var w: float = float(stem.width) * 1.5
+	var r := StageMotion.stem_rect(hub.x, hub.y - 6.0, float(stem.baseY), w)
+	var fw: float = sh.fw
+	var frame := int(t / 90.0) % int(sh.frames)
+	draw_texture_rect_region(sh.tex, r, Rect2(frame * fw, 0, fw, sh.fh), _stage_light())
+
+
+# La schiuma dove partono i getti (#378): all'ugello nella vasca un ribollire largo e basso, come nelle foto della
+# fontana vera; su un mozzo in alto una corona più piccola
+func _draw_hub_foam(stem: Dictionary, t: float) -> void:
+	var hub := Vector2(float(stem.hub.x), float(stem.hub.y))
+	var low := float(stem.baseY) - hub.y < 10.0
+	var foam := Color(0.95, 0.98, 0.97, 1.0) * Color(_stage_light(), 1.0)
+	var n := 16 if low else 7
+	for i in n:
+		var a := t / 900.0 + i * TAU / n
+		var rr := (26.0 if low else 7.0) * (0.6 + 0.4 * fposmod(i * 0.37, 1.0)) + 2.0 * sin(t / 180.0 + i)
+		var p := hub + Vector2(cos(a) * rr, sin(a) * rr * (0.3 if low else 1.0) - (4.0 if low else 0.0))
+		draw_circle(p, (5.5 if low else 4.5) - 0.3 * (i % 3), Color(foam, 0.8))
+	if low: # gli schizzi che saltano su attorno ai piedi dei getti
+		for i in 10:
+			var k := fposmod(t / 700.0 + i * 0.173, 1.0)
+			var side := -1.0 if i % 2 == 0 else 1.0
+			var p := hub + Vector2(side * (8.0 + 30.0 * k), -22.0 * sin(k * PI) - 3.0)
+			draw_circle(p, 2.6 * (1.0 - 0.5 * k), Color(foam, 0.9 - 0.6 * k))
+	else:
+		draw_circle(hub, 7.0, Color(foam, 0.95))
 
 
 # Il fumetto di una trappola che urla, come il "CANCAROOOO!" di Cancaro Man (#270): una nuvola a punte che compare

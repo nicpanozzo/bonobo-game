@@ -289,7 +289,7 @@ describe("Padova, isola sospesa con la fontana (#288)", () => {
   it("la piazza è una sola, sospesa: niente canale, barche o acqua", () => {
     const stage = getStage("padova");
     assert.equal(stage.solids.length, 1);
-    assert.ok(!(stage.movers ?? []).length && !(stage.hazards ?? []).some((h) => h.kind === "acqua"));
+    assert.ok(!(stage.movers ?? []).some((m) => m.kind === "barca") && !(stage.hazards ?? []).some((h) => h.kind === "acqua"));
     assert.ok(stage.solids[0].y + stage.solids[0].height < stage.blastZone.bottom, "sotto la piazza si cade");
   });
 
@@ -297,5 +297,53 @@ describe("Padova, isola sospesa con la fontana (#288)", () => {
     const stage = getStage("padova");
     const bike = stage.hazards!.find((h) => h.kind === "ciclista")!;
     assert.ok(bike.damage > 10 && bike.travel!.crossMs > 2800, "più lento e più cattivo di prima");
+  });
+});
+
+describe("Padova, la giostra d'acqua della fontana (#378, idea di Nicola)", () => {
+  const stage = getStage("padova");
+  const movers = stage.movers ?? [];
+  const center = (m: MovingPlatform, t: number) => {
+    const p = moverPosition(m, t);
+    return { x: p.x + m.width / 2, y: p.y };
+  };
+
+  it("tre tazze a tre altezze, la più alta è la più grande e la cima del gioco; niente palazzo né getto", () => {
+    assert.equal(movers.length, 3);
+    assert.ok(!stage.jets?.length, "niente zampillo che lancia");
+    const top = movers[2];
+    assert.ok(top.width > movers[0].width && top.width > movers[1].width, "la tazza in cima è più grande");
+    const highestOther = Math.min(...stage.platforms.map((p) => p.y));
+    for (let t = 0; t < 21000; t += 250) {
+      const ys = movers.map((m) => center(m, t).y);
+      assert.ok(ys[0] > ys[1] + 50 && ys[1] > ys[2] + 50, `sempre una sopra l'altra, ben distanziate (${ys.map((y) => y.toFixed(0))})`);
+      assert.ok(ys[2] < highestOther - 150, "la più alta sta sopra tutte le lastre");
+      for (const m of movers) assert.ok(Math.abs(center(m, t).x - 960) <= 161, "girano attorno alla fontana");
+    }
+  });
+
+  it("la più bassa si raggiunge con un salto doppio dal pavimento", () => {
+    const y = Math.max(...movers[0].path.map((p) => p.y));
+    assert.ok(520 - y < 230, `dislivello ${520 - y}`);
+  });
+
+  it("gira lenta: meno di 60 pixel al secondo", () => {
+    for (const m of movers) {
+      const a = center(m, 1000);
+      const b = center(m, 2000);
+      assert.ok(Math.hypot(b.x - a.x, b.y - a.y) < 60);
+    }
+  });
+
+  it("chi ci sale sopra ci resta e viene portato in giro", () => {
+    const t0 = 2000;
+    const start = center(movers[0], t0);
+    const { ctx, f } = setup(stage, { x: start.x, y: start.y - 2 });
+    ctx.timeMs = t0;
+    run(f, ctx, TICK_RATE * 3); // il passo fa avanzare anche il tempo dell'arena
+    assert.equal(f.riding, 0, "è ancora sulla tazza");
+    const now = center(movers[0], ctx.timeMs!);
+    assert.ok(Math.abs(f.y - now.y) < 1 && Math.abs(f.x - now.x) < 8, `segue la tazza (${f.x.toFixed(0)}, ${f.y.toFixed(0)})`);
+    assert.ok(Math.hypot(now.x - start.x, now.y - start.y) > 60, "in 3 secondi la tazza si è spostata");
   });
 });

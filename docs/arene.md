@@ -100,6 +100,12 @@ Una piattaforma sottile che passa per una lista di punti. Chi ci sta sopra viene
 { width: 140, path: [{ x: 570, y: 540 }, { x: 570, y: 260 }], periodMs: 7000, pauseMs: 1200 } // ascensore
 ```
 
+**Ruota** (#378, la fontana di Padova): `waterWheel(cx, cy, r, n, width, periodMs)` in `stages.ts` dà `n` piattaforme sullo stesso cerchio, sfasate in parti uguali, che girano restando in piano come le cabine di una ruota panoramica. È un `path` chiuso di 36 lati con `loop: true`: non serve altra fisica.
+
+```ts
+movers: waterWheel(960, 330, 130, 3, 120, 18000), // tre tazze, un giro in 18 s
+```
+
 Una piattaforma mobile con `kind: "barca"` si disegna come una barca (#264): la superficie su cui si sta è sempre la `y` del percorso. Con le piattaforme mobili il predittore del proprio lottatore si spegne solo vicino al loro percorso.
 
 ### Trappola (`hazards`): spuntoni, fuoco, laser
@@ -172,7 +178,7 @@ hazardSprites: [{ hazard: 1, file: "ciclista.png", frames: 8, fps: 16, scale: 0.
 
 Cancaro Man di Padova lo disegna `tools/arene/ciclista.py`: un disegno vero lo sostituisce tenendo le stesse misure (8 fotogrammi da 300×320).
 
-Le piattaforme mobili hanno lo stesso meccanismo con `art.moverSprites` (#273): `{ mover, file, frames, fps, scale, footX, footY }`, dove `mover` è l'indice in `movers` e `footX`, `footY` va sul centro della superficie. L'animazione si gira nel verso in cui va la piattaforma, e da ferma verso il centro dell'arena. Le barche che Padova aveva prima del #288 erano fatte così; il generatore è nella storia di git (`tools/arene/barca.py`).
+Le piattaforme mobili hanno lo stesso meccanismo con `art.moverSprites` (#273): `{ mover, file, frames, fps, scale, footX, footY }`, dove `mover` è l'indice in `movers` e `footX`, `footY` va sul centro della superficie. L'animazione si gira nel verso in cui va la piattaforma, e da ferma verso il centro dell'arena. Con `stem: { sheet, baseY, width }` sotto la piattaforma si disegna anche il gambo che la regge, un foglio di `life.sheets` stirato da `baseY` fino a lei (#378); con `hub: { x, y }` il gambo sale unico fino al mozzo e da lì un raggio va a ogni piattaforma, come i tre spruzzi della fontana di Padova. Le barche che Padova aveva prima del #288 erano fatte così; il generatore è nella storia di git (`tools/arene/barca.py`).
 
 ```ts
 { kind: "ciclista", x: 0, y: 0, width: 80, height: 95, damage: 10, knockback: 600, knockbackGrowth: 5, angleDeg: 35,

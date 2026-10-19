@@ -129,7 +129,29 @@ export interface StageLife {
   // 0,5 mezzanotte, 0,75 alba). Di notte le stelle; i lampioni si accendono al tramonto e si spengono all'alba
   // Acqua intorno all'arena (#264): da y in giù, davanti a chi cade (splash). Con flood (indice di una trappola con
   // l'acqua alta) sale fino a highY insieme a lei
-  outerWater?: { y: number; highY?: number; flood?: number };
+  // Con file (#378) l'acqua è dipinta: una striscia che si ripete in orizzontale, col pelo dell'acqua in cima (scale come
+  // le altre immagini, 0,5 se manca; deep è la tinta del fondo sotto la striscia). floaters: ogni everyMs una cosa
+  // gira lenta attorno al canale ad anello (fogli di life.sheets in kinds)
+  outerWater?: {
+    y: number;
+    highY?: number;
+    flood?: number;
+    file?: string;
+    scale?: number;
+    deep?: string;
+    // chi galleggia gira attorno al canale (#378): un giro in lapMs sull'ovale cx, cy, rx, ry; dietro è grande backK
+    // underX: oltre questa distanza da cx passa sotto i ponti di profilo alle punte dell'isola, coperto (pixel)
+    floaters?: { lapMs: number; cx: number; cy: number; rx: number; ry: number; backK?: number; underX?: number; kinds: string[] };
+  };
+  // Chi passa in primissimo piano (#378): figure sfocate (fogli di sheets, row per i fogli a righe) che attraversano la
+  // strada davanti a tutto, alla y dei piedi, grandi k volte. Ognuna ogni everyMs, in crossMs, da from a to e ritorno
+  near?: {
+    from: number;
+    to: number;
+    figures: { sheet: string; row?: number; y: number; k: number; everyMs: number; crossMs: number; offsetMs?: number }[];
+    // chi sta fermo (#378): i ragazzi alla ringhiera, animati sul posto a fps fotogrammi al secondo
+    still?: { sheet: string; row?: number; x: number; y: number; k: number; fps: number; flip?: boolean }[];
+  };
   // Fogli di fotogrammi dipinti (#288) per lo sfondo vivo, per nome: nuvole, gabbiano, rondine, pipistrello, piccione.
   // Fotogrammi in fila da sinistra, a 2x (scale 0.5 se manca). Senza, si disegnano le forme semplici di prima
   sheets?: Record<string, { file: string; frames: number; rows?: number; scale?: number }>;
@@ -175,6 +197,8 @@ export interface StageProp {
   flip?: boolean; // specchiata in orizzontale
   front?: boolean; // davanti ai lottatori (altrimenti dietro, subito dopo il palco)
   opacity?: number;
+  floatersAfter?: boolean; // dopo questa decorazione il gioco disegna chi galleggia nella parte lontana del canale (#378)
+  shadow?: boolean; // false: niente ombra del sole a terra (#378), per un pavimento o una vasca che hanno già la loro dipinta
 }
 
 // Animazione di una trappola (#270): un foglio di fotogrammi uno accanto all'altro, rivolti a destra (il gioco li
@@ -198,6 +222,12 @@ export interface HazardSprite extends SpriteStrip {
 // superficie. Rivolta a destra; si gira nel verso in cui va, e da ferma verso il centro dell'arena
 export interface MoverSprite extends SpriteStrip {
   mover: number; // indice della piattaforma in movers
+  // Il gambo che regge la piattaforma (#378), come lo spruzzo della fontana di Padova: un foglio di sfondo vivo
+  // (art.life.sheets) stirato dalla base (baseY, y del mondo) fino al fondo della piattaforma, largo width pixel di mondo.
+  // Con hub il getto va dal mozzo (hub) alla piattaforma piegandosi: esce dritto in su e ci arriva dritto da sotto; se il
+  // mozzo sta sopra la base, un getto unico largo 1,5 volte sale prima dalla base fino al mozzo
+  // crown (un foglio di life.sheets): la corona d'acqua dove il getto batte sotto la piattaforma, che ricade a rami
+  stem?: { sheet: string; baseY: number; width: number; hub?: { x: number; y: number }; crown?: string };
 }
 
 // Tutti i file che lo sfondo e il palco di un'arena nominano (export e test li cercano in public/assets/stages/<dir>/)
@@ -214,6 +244,7 @@ export function stageArtFiles(art: StageArt): string[] {
   for (const m of art.moverSprites ?? []) files.push(m.file);
   for (const l of [...(art.life?.daycycle?.lightLayers ?? []), ...(art.life?.daycycle?.lightProps ?? [])]) files.push(l.file);
   for (const sh of Object.values(art.life?.sheets ?? {})) files.push(sh.file);
+  if (art.life?.outerWater?.file) files.push(art.life.outerWater.file);
   return [...new Set(files)];
 }
 
@@ -277,6 +308,31 @@ export interface StageSpec {
 export const stageWidth = (stage: StageSpec) => stage.width ?? WORLD.width;
 
 export const DEFAULT_STAGE_ID = "palco";
+
+// La giostra d'acqua (#378, idea di Nicola dalle foto di Riccardo): getti che partono dallo stesso ugello al centro e
+// reggono una piattaforma ciascuno, ognuno alla sua altezza. Girano attorno al centro come una giostra vista di lato:
+// la piattaforma va avanti e indietro (raggio r) e, passando dietro, sale appena (la profondità, depth × r), passando
+// davanti scende. Il giro è un ovale chiuso di 36 lati: i movers ad anello sanno già portare chi ci sta sopra.
+export interface CarouselJet {
+  y: number; // altezza della piattaforma (la sua superficie) al centro dell'ovale
+  r: number; // quanto va lontano dal centro, a destra e a sinistra
+  width: number;
+}
+
+export function fountainCarousel(cx: number, jets: CarouselJet[], periodMs: number, depth = 0.14): MovingPlatform[] {
+  const sides = 36;
+  const round = (v: number) => Math.round(v * 10) / 10;
+  return jets.map((j, k) => ({
+    width: j.width,
+    path: Array.from({ length: sides }, (_, i) => {
+      const a = (i / sides) * Math.PI * 2;
+      return { x: round(cx + j.r * Math.cos(a) - j.width / 2), y: round(j.y - depth * j.r * Math.sin(a)) };
+    }),
+    periodMs,
+    loop: true,
+    offsetMs: Math.round((k * periodMs) / jets.length),
+  }));
+}
 
 const MAIN = { x: 240, y: 560, width: 800, height: 80 };
 
@@ -396,9 +452,9 @@ export const STAGES: Record<string, StageSpec> = {
   },
 
   // Padova, Prato della Valle (#230, idea di Riccardo): un'isola sospesa sopra il Prato (#288), una piazza continua
-  // con al centro la fontana dell'Isola Memmia, il cui zampillo ogni tanto lancia in alto chi ci sta sopra. Le statue
-  // del Prato reggono le lastre, il palazzo ha i balconi calpestabili, e un signore arrabbiato in bici attraversa
-  // tutto gridando. Larga 1,5 schermi: la telecamera si allontana fino a 0,6.
+  // con al centro la fontana dell'Isola Memmia: dall'idea di Nicola (#378) i suoi tre spruzzi portano in giro tre tazze
+  // su cui si sta in piedi. Le statue del Prato reggono le lastre, dietro si vede l'isola con le statue e il ponticello,
+  // e un signore arrabbiato in bici attraversa tutto gridando. Larga 1,5 schermi: la telecamera si allontana fino a 0,6.
   padova: {
     id: "padova",
     name: "Padova",
@@ -414,9 +470,6 @@ export const STAGES: Record<string, StageSpec> = {
       { x: 1310, y: 330, width: 140 },
       { x: 220, y: 380, width: 180 }, // ...e verso i bordi
       { x: 1520, y: 380, width: 180 },
-      // I balconi del palazzo signorile dietro la fontana (idea di Riccardo): la casa è sfondo, i balconi si calpestano
-      { x: 800, y: 300, width: 320 }, // il balcone largo del piano nobile
-      { x: 900, y: 180, width: 120 }, // il balconcino dell'ultimo piano: la cima dell'arena
     ],
     hazards: [
       // Il ciclista arrabbiato (#229): entra da fuori, attraversa la piazza ed esce. Più lento e più cattivo dal #288
@@ -424,8 +477,15 @@ export const STAGES: Record<string, StageSpec> = {
       { kind: "ciclista", x: 0, y: 0, width: 80, height: 95, damage: 13, knockback: 620, knockbackGrowth: 5, angleDeg: 35,
         travel: { path: [{ x: -160, y: 425 }, { x: 2080, y: 425 }], periodMs: 20000, warnMs: 1200, crossMs: 4200, alternate: true, offsetMs: 7000 } },
     ],
-    // Lo zampillo della fontana (#288): ogni 7 s gorgoglia e poi lancia in alto chi sta sulla vasca, verso lastre e balcone
-    jets: [{ x: 915, y: 520, width: 90, height: 320, speed: 1350, periodMs: 7000, warnMs: 1200, activeMs: 1600, offsetMs: 3000, idle: 70 }],
+    // L'idea di Nicola (#378): dall'ugello al centro della vasca escono tre getti, come nelle foto della fontana vera, e
+    // ognuno regge una tazza di marmo su cui si sta in piedi. Girano lenti attorno al centro come una giostra: il più
+    // basso (y 320, un salto doppio dal pavimento) va più largo, quello in mezzo sale a 225, e il più alto, quasi dritto,
+    // regge la tazza più grande a y 125: la cima del gioco, sopra le lastre delle statue (330).
+    movers: fountainCarousel(960, [
+      { y: 320, r: 160, width: 120 },
+      { y: 225, r: 115, width: 120 },
+      { y: 125, r: 60, width: 180 },
+    ], 21000),
     // Gli oggetti cadono spesso sulla fontana e sulle lastre delle statue: rischio e premio, e un motivo per salire
     itemSpots: [
       { x: 840, y: 520, width: 240, weight: 3 },
@@ -435,11 +495,10 @@ export const STAGES: Record<string, StageSpec> = {
       { x: 1310, y: 330, width: 140, weight: 2 },
       { x: 220, y: 380, width: 180, weight: 2 },
       { x: 1520, y: 380, width: 180, weight: 2 },
-      { x: 800, y: 300, width: 320, weight: 3 }, // il balcone del palazzo
     ],
     blastZone: { left: -300, right: 2220, top: -420, bottom: 1000 },
     spawns: [300, 450, 200, 600, 380, 520, 250, 660].flatMap((x) => [{ x, y: 520 }, { x: 1920 - x, y: 520 }]).slice(0, 8),
-    respawn: { x: 960, y: 100 },
+    respawn: { x: 960, y: 40 }, // sopra la tazza più alta (#378)
     colors: { sky: 0x7aa0c4, solid: 0x6f6a60, solidEdge: 0xe8e2d2, platform: 0xd9d4c7 },
     // Rilassata, da pomeriggio in piazza. TODO community: un pezzo del canale da rifare per Padova?
     music: { bpm: 116, chords: ["F", "Am", "Bb", "C"], lead: "triangle" },
@@ -456,30 +515,53 @@ export const STAGES: Record<string, StageSpec> = {
       skins: {
         pietra: { file: "pietra.png", edge: "bordo.png" },
         riva: { file: "riva.png", edge: "bordo.png" }, // il fianco della piazza, a grandi blocchi
+        // il fianco ovale (#378) lo disegna la decorazione fianco.png: il materiale mette solo la copertina chiara
+        fianco: { file: "vuoto.png", edge: "bordo.png" },
         lastra: { file: "lastra.png", depth: 12 },
-        balcone: { file: "balcone.png", depth: 14, rails: [{ file: "balaustra-balcone.png", height: 30, offsetY: 2 }] },
       },
       solidSkin: "pietra",
       platformSkin: "lastra",
       pieces: {
-        solids: ["riva"],
-        platforms: ["lastra", "lastra", "lastra", "lastra", "lastra", "lastra", "balcone", "balcone"],
+        solids: ["fianco"],
+        platforms: ["lastra", "lastra", "lastra", "lastra", "lastra", "lastra"],
       },
       // Cancaro Man (#270, dal disegno di Riccardo): la pedalata in 8 fotogrammi da tools/arene/ciclista.py
       // TODO community: la voce del "CANCAROOOO!" da registrare; intanto c'è il fumetto
+      // Le tre tazze della giostra d'acqua (#378): ogni getto parte dall'ugello al centro della vasca (y 492) e va fino alla
+      // sua tazza, inclinato quando lei è lontana dal centro. La tazza in cima è più grande (larga 180 invece di 120)
+      moverSprites: [0, 1, 2].map((mover) => ({
+        mover, file: mover === 2 ? "tazza-grande.png" : "tazza.png", frames: 4, fps: 8, scale: 0.5, footX: mover === 2 ? 210 : 150, footY: 24,
+        stem: { sheet: "getto", crown: "corona", baseY: 484, width: mover === 2 ? 60 : 52, hub: { x: 960, y: 482 } },
+      })),
       hazardSprites: [
         { hazard: 0, file: "ciclista.png", frames: 8, fps: 16, scale: 0.58, footX: 150, footY: 312, shout: { text: "CANCAROOOO!", x: 200, y: 110 } },
       ],
       props: [
-        { file: "palazzo.png", x: 960, y: 522, scale: 0.5 }, // il palazzo signorile: la facciata, dietro a tutto il palco
-        // Il piano dell'isola in profondità (#300): il lastricato dietro il bordo, su cui poggiano palazzo, statue e platani
-        { file: "piano.png", x: 960, y: 524, scale: 0.5 },
+        // Le anse del canale ai lati (#378): il canale è un anello ovale e si chiude attorno alle punte dell'isola
+        // Il canale dietro e attorno all'isola (#378), le anse ai lati, la fila di statue sulla sponda di là e i ponticelli
+        { file: "canale-dietro.png", x: 960, y: 644, floatersAfter: true },
+        { file: "ansa.png", x: 960, y: 604 },
+        { file: "ponticelli.png", x: 960, y: 690 },
+        // il parco oltre il vialetto, ai lati: i platani più lontani, più piccoli
+        { file: "platano.png", x: -330, y: 566, scale: 0.3 },
+        { file: "platano.png", x: 2250, y: 566, scale: 0.3, flip: true },
+        // Il piano dell'isola in profondità (#300): il lastricato dietro il bordo, su cui poggiano statue e platani
+        { file: "piano.png", x: 960, y: 524, scale: 0.5, shadow: false }, // è il pavimento: niente ombra a terra
         // Due platani sulla piazza (#288), dietro alle statue: la chioma sta sopra le teste e lascia vedere il palco
         { file: "platano.png", x: 410, y: 522, scale: 0.5 },
         { file: "platano.png", x: 1510, y: 522, scale: 0.5, flip: true },
-        { file: "fondamenta.png", x: 960, y: 760 }, // sotto la piazza: le fondamenta di mattoni e pietra, con l'edera
-        { file: "fontana.png", x: 960, y: 524 }, // la fontana dell'Isola Memmia: la vasca, i paracarri e la ringhiera
-        { file: "fontana-davanti.png", x: 960, y: 530, front: true, opacity: 0.7 }, // il bordo della vasca davanti ai piedi
+        // la metà vicina dell'isola ovale (#378): il prato davanti alla linea dove si gioca, il cordolo e il muro nel canale
+        { file: "fianco.png", x: 960, y: 660 },
+        { file: "fontana.png", x: 960, y: 524, shadow: false }, // la fontana dell'Isola Memmia: la vasca, i paracarri e la ringhiera
+        // la metà vicina della ringhiera: tutta dietro la linea dove si combatte, quindi dietro a chi ci passa (#378)
+        { file: "fontana-davanti.png", x: 960, y: 530, shadow: false },
+        // La sponda di qua del canale (#378), sfocata davanti a tutto: il canale resta una striscia stretta come quello vero
+        { file: "primo-piano.png", x: 960, y: 1100, scale: 1, front: true },
+        // I ponti del Prato davanti (#378, dalle foto di Riccardo): dalla piazza dove si gioca al parco di qua del canale.
+        // Solo paesaggio: non si attraversano (vengono verso la telecamera, fuori dal piano di gioco)
+        { file: "ponti-davanti.png", x: 960, y: 780, front: true },
+        // Le statue del Prato in primissimo piano (#378), sfocate e trasparenti, solo fuori dall'isola
+        { file: "statue-primo-piano.png", x: 960, y: 1100, scale: 1, front: true, opacity: 0.45 },
         // Le statue che reggono le lastre: il giovane con l'alloro, il filosofo con la barba, la dama col velo
         { file: "statua-ponte.png", x: 690, y: 522, scale: 0.5 },
         { file: "statua-ponte.png", x: 1230, y: 522, scale: 0.5, flip: true },
@@ -512,28 +594,61 @@ export const STAGES: Record<string, StageSpec> = {
           bus: { file: "bus.png", frames: 1 },
           tram: { file: "tram.png", frames: 1 },
           // L'acqua della fontana (#288 passo 3d): lo zampillo a riposo e il getto acceso
-          zampillo: { file: "zampillo.png", frames: 6 },
           getto: { file: "getto.png", frames: 4 },
+          // Chi galleggia nel canale (#378, idea di Riccardo): la bici tutta rovinata e il tizio ubriaco a pancia in su
+          corona: { file: "corona.png", frames: 6 }, // la corona dei getti sotto le tazze (#378)
+          // chi passa sfocato in primissimo piano (#378)
+          ragazzi: { file: "ragazzi.png", frames: 6, rows: 4 }, // i ragazzi alla ringhiera (#378)
+          "passanti-sfocati": { file: "passanti-sfocati.png", frames: 8, rows: 9 },
+          "bici-sfocata": { file: "bici-sfocata.png", frames: 4 },
+          "bici-rotta": { file: "bici-rotta.png", frames: 2 },
+          ubriaco: { file: "ubriaco.png", frames: 4 },
+        },
+        // Il canale dell'Isola Memmia (#378, idea di Riccardo): acqua stagnante attorno all'isola, a filo degli archi di
+        // mattoni sotto la piazza. Chi ci cade fa uno spruzzo e affonda come nel vuoto di prima (blastZone.bottom). Una bici
+        // rovinata e un ubriaco che dorme a galla fanno piano il giro dell'anello, in due minuti e mezzo
+        // In primissimo piano, sul vialetto e sulla strada davanti al canale, passa gente sfocata (#378, idea di Riccardo):
+        // sotto il canale, dove il gioco non c'è, così non copre niente
+        near: {
+          from: -560, to: 2480,
+          // i ragazzi alla ringhiera vicino alle bici, di spalle mentre guardano la rissa (idea di Riccardo): uno seduto
+          // sulla ringhiera, uno che indica, uno che esulta e uno che filma col telefono
+          still: [
+            { sheet: "ragazzi", row: 0, x: 404, y: 693, k: 1.0, fps: 3 },
+            { sheet: "ragazzi", row: 1, x: 442, y: 708, k: 1.02, fps: 4 },
+            { sheet: "ragazzi", row: 2, x: 486, y: 710, k: 1.04, fps: 5 },
+            { sheet: "ragazzi", row: 3, x: 526, y: 709, k: 1.0, fps: 2 },
+          ],
+          figures: [
+            { sheet: "passanti-sfocati", row: 0, y: 742, k: 2.2, everyMs: 26000, crossMs: 19000 },
+            { sheet: "bici-sfocata", y: 940, k: 2.6, everyMs: 33000, crossMs: 8000, offsetMs: 9000 },
+            { sheet: "passanti-sfocati", row: 4, y: 760, k: 2.3, everyMs: 41000, crossMs: 24000, offsetMs: 21000 },
+            { sheet: "passanti-sfocati", row: 3, y: 980, k: 2.8, everyMs: 47000, crossMs: 10000, offsetMs: 30000 },
+            { sheet: "bici-sfocata", y: 744, k: 2.2, everyMs: 52000, crossMs: 11000, offsetMs: 40000 },
+          ],
+        },
+        outerWater: {
+          y: 622, file: "canale.png", deep: "26382f",
+          floaters: { lapMs: 150000, cx: 960, cy: 554, rx: 1080, ry: 94, backK: 0.45, underX: 850, kinds: ["bici-rotta", "ubriaco"] },
         },
         birds: { y: 40, parallax: 0.2, everyMs: 14000 },
-        // Sulle punte delle lastre delle statue e sul cornicione del palazzo
-        pigeons: [{ x: 485, y: 330 }, { x: 1435, y: 330 }, { x: 235, y: 380 }, { x: 1685, y: 380 }, { x: 790, y: 100 }, { x: 1130, y: 100 }],
-        // Lo sfondo è salito per stare dietro il piano dell'isola (#300, LIFT in padova.py): prato e bar 30 px, strada 24
-        walkers: { y: 480, parallax: 0.75, count: 14, umbrellas: true },
+        // Sulle punte delle lastre delle statue
+        pigeons: [{ x: 485, y: 330 }, { x: 1435, y: 330 }, { x: 235, y: 380 }, { x: 1685, y: 380 }],
+        // Lo sfondo è salito per stare dietro il piano dell'isola (#300 e #378, LIFT in padova.py): prato e bar 96 px, strada 82
+        walkers: { y: 414, parallax: 0.75, count: 14, umbrellas: true },
         // Il tram e il traffico passano sulla strada davanti ai portici (#278): più giù le piazze li coprirebbero
-        vehicles: { y: 464, parallax: 0.5, everyMs: 23000, kind: "tram" },
-        traffic: { y: 464, parallax: 0.5, everyMs: 2600, kinds: ["auto", "auto", "auto", "vespa", "vespa", "furgone", "bici", "bus"] },
+        vehicles: { y: 406, parallax: 0.5, everyMs: 23000, kind: "tram" },
+        traffic: { y: 406, parallax: 0.5, everyMs: 2600, kinds: ["auto", "auto", "auto", "vespa", "vespa", "furgone", "bici", "bus"] },
         flyers: { y: 90, parallax: 0.6, count: 7 }, // rondini sul Prato, di notte i pipistrelli
         planes: { y: -60, everyMs: 75000 },
-        bar: { x: 120, y: 474, parallax: 0.8, tables: 3, spacing: 72 }, // il chiosco dello spritz sul prato
+        bar: { x: 120, y: 408, parallax: 0.8, tables: 3, spacing: 72 }, // il chiosco dello spritz sul prato
         daycycle: {
           cycleMs: 240000, // un giorno intero in 4 minuti: alba, giorno, tramonto e notte
           startAt: 0.8, // si parte poco dopo l'alba
           sky: true, // il cielo vivo dietro alle sagome di Santa Giustina e del Santo (#267)
-          lamps: [90, 390, 690, 990, 1290, 1590, 1890, 2190].map((x) => ({ x: x - 260, y: 379, parallax: 0.75 })), // i lampioni del prato
-          // Di notte i vetri accesi del palazzo, delle case e della città lontana, e le lanterne dei lampioni (#288)
+          lamps: [90, 390, 690, 990, 1290, 1590, 1890, 2190].map((x) => ({ x: x - 260, y: 313, parallax: 0.75 })), // i lampioni del prato
+          // Di notte i vetri accesi delle case e della città lontana, e le lanterne dei lampioni (#288)
           lightLayers: [0, 1, 2].map((i) => ({ file: `sfondo-${i}-luci.png`, parallax: [0.15, 0.45, 0.75][i] })),
-          lightProps: [{ file: "palazzo-luci.png", x: 960, y: 522, scale: 0.5 }],
         },
       },
     },
