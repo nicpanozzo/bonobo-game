@@ -332,7 +332,7 @@ func _load_stage_dressing(dir: String, art: Dictionary) -> void:
 	var skins: Dictionary = art.get("skins", {}) if art.get("skins") is Dictionary else {}
 	for name in skins:
 		var k: Dictionary = skins[name]
-		var tex := _stage_texture(dir, k.file)
+		var tex: Texture2D = _stage_texture(dir, k.file)
 		if tex == null:
 			continue
 		var rails: Array = []
@@ -340,6 +340,8 @@ func _load_stage_dressing(dir: String, art: Dictionary) -> void:
 			var rt := _stage_texture(dir, r.file)
 			if rt != null:
 				rails.append({"tex": rt, "height": float(r.height), "offsetY": float(r.get("offsetY", 0)), "front": bool(r.get("front", false)), "opacity": float(r.get("opacity", 1.0))})
+		if texture_is_clear(dir, k.file):
+			tex = null # un materiale tutto trasparente (vuoto.png, #380) non si disegna: a piastrelle di 2 pixel erano 30000 disegni a frame
 		_skins[name] = {"tex": tex, "edge": _stage_texture(dir, k.edge) if k.get("edge") != null else null, "depth": float(k.get("depth", 12)), "rails": rails}
 	for pr in art.get("props", []):
 		var tex := _stage_texture(dir, pr.file)
@@ -409,6 +411,15 @@ static func _lit_texture(dir: String, file: String, world_scale := 0.0) -> Array
 	return [canvas, Rect2(Vector2(used.position) / full, Vector2(used.size) / full)]
 
 
+# Un'immagine dell'arena senza nemmeno un pixel visibile (#83)
+static func texture_is_clear(dir: String, file: String) -> bool:
+	var path := "res://data/assets/stages/%s/%s" % [dir, file]
+	if not ResourceLoader.exists(path):
+		return false
+	var img: Image = (load(path) as Texture2D).get_image()
+	return img != null and not img.is_compressed() and img.is_invisible()
+
+
 # Il materiale di un pezzo: l'eccezione in art.pieces (null = tinta unita), o quello di base; {} se non c'è
 func _skin_for(kind: String, i: int) -> Dictionary:
 	var art: Dictionary = stage.get("art", {}) if stage.get("art") is Dictionary else {}
@@ -469,7 +480,8 @@ func _draw_strip(tex: Texture2D, p: Dictionary, top: float, height: float, mod :
 
 
 func _draw_skinned_solid(s: Dictionary, skin: Dictionary) -> void:
-	_draw_tiled(skin.tex, Rect2(s.x, s.y, s.width, s.height))
+	if skin.tex != null:
+		_draw_tiled(skin.tex, Rect2(s.x, s.y, s.width, s.height))
 	if skin.edge != null:
 		_draw_tiled(skin.edge, Rect2(s.x, s.y, s.width, minf(skin.edge.get_height() * _layer_scale, s.height)))
 
@@ -487,11 +499,13 @@ func _draw_skinned_platform(p: Dictionary, skin: Dictionary) -> void:
 			var top := maxf(PredictMovement.surface_y(p, x0), PredictMovement.surface_y(p, x0 + step))
 			var h := minf(rise / n + 6.0, bottom - top)
 			if h > 0:
-				_draw_tiled(skin.tex, Rect2(x0, top, step + 0.5, h))
+				if skin.tex != null:
+					_draw_tiled(skin.tex, Rect2(x0, top, step + 0.5, h))
 				if edge != null:
 					_draw_tiled(edge, Rect2(x0, top, step + 0.5, minf(edge.get_height() * _layer_scale, h)))
 		return
-	_draw_strip(skin.tex, p, 0.0, skin.depth)
+	if skin.tex != null:
+		_draw_strip(skin.tex, p, 0.0, skin.depth)
 	if edge != null:
 		_draw_strip(edge, p, 0.0, minf(edge.get_height() * _layer_scale, skin.depth))
 
