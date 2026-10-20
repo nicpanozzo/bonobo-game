@@ -2522,37 +2522,89 @@ def front_bridges(name):
     # l'ombra del ponte sull'acqua, a destra (la luce viene da sinistra in alto)
     q.fill(q.soften(q.poly(q.mask(), [(x + 4, y + 6) for x, y in R] + [(x + 22, y + 10) for x, y in reversed(R)]), 4), (30, 44, 40), 0.35)
     deck = q.poly(q.mask(), L + list(reversed(R)))
-    # la passerella in sanpietrini tondi (#378, come i ponti del Prato): sassi di trachite tondeggianti messi a file
-    # sfalsate, più piccoli lontano, nelle fughe scure; ogni sasso è un piccolo volume con la luce in alto a sinistra,
-    # l'ombra in basso a destra e il suo tono, un po' diverso dai vicini
-    q.fill(deck, (96, 90, 82))
+    # la passerella in sanpietrini (#378, #408 passo 2, come i ponti del Prato): cubetti di trachite messi a file
+    # sfalsate di traverso, schiacciati dalla prospettiva e un po' più grandi vicino; tra un cubetto e l'altro il giunto
+    # di malta scura. Ogni cubetto è un piccolo volume: la luce da sinistra in alto accende lo spigolo in alto a sinistra
+    # e la cima consumata, l'ombra a due toni sta in basso a destra e cade nel giunto. I toni cambiano sasso per sasso
+    # (grigio caldo, grigio azzurro, qualcuno ocra o più scuro), con qualche crepa e un po' di muschio nei giunti ai lati.
+    # Lungo i parapetti corre il cordolo di lastre lunghe.
+    q.fill(deck, (110, 104, 94))
     crng = rand(3794)
-    tones = [q.mask(), q.mask(), q.mask()]
-    shades, lights = q.mask(), q.mask()
-    y = yf + 1.5
+    curb = 0.1  # quanto è largo il cordolo, in frazione della mezza passerella
+
+    def at(o, u):  # il punto della passerella: o da -1 (sinistra) a 1 (destra), u da 0 (isola) a 1 (piazza)
+        return edge(o, u)
+
+    tone_cols = ((178, 172, 160), (166, 160, 150), (190, 184, 170), (158, 160, 158), (184, 172, 148), (142, 136, 126), (198, 192, 178))
+    tone_w = (5, 5, 4, 3, 2, 1.5, 2)
+    tones = [q.mask() for _ in tone_cols]
+    gloss, cracks = q.mask(), q.mask()
+    u = 0.004
     row = 0
-    while y < yn:
-        u = (y - yf) / (yn - yf)
+    while u < 0.995:
         k = scale(u)
-        r = 3.2 * k
-        lx, _ = edge(-1, u)
-        rx_, _ = edge(1, u)
-        x = lx + r * (0.6 if row % 2 else 1.6)
-        while x < rx_ - r * 0.6:
-            rr = r * crng.uniform(0.85, 1.1)
-            ry_ = rr * 0.62
-            q.ellipse(tones[crng.randrange(3)], x - rr, y - ry_, x + rr, y + ry_)
-            q.ellipse(lights, x - rr * 0.75, y - ry_ * 0.85, x + rr * 0.2, y - ry_ * 0.05)
-            q.ellipse(shades, x - rr * 0.3, y - ry_ * 0.1, x + rr * 1.0, y + ry_ * 1.0)
-            x += rr * 2.15
-        y += r * 0.62 * 2.05
+        du = 4.3 * k / (yn - yf)  # quanto è profonda la fila, in frazione del ponte
+        u1 = min(0.998, u + du * crng.uniform(0.92, 1.08))
+        half_w = (edge(1, u)[0] - edge(-1, u)[0]) / 2
+        do = 5.8 * k / half_w  # quanto è largo un cubetto, in frazione della mezza passerella
+        o = -1 + curb - (do * crng.uniform(0.35, 0.65) if row % 2 else 0)  # le file sfalsate
+        while o < 1 - curb - 0.02:
+            o1 = min(1 - curb, o + do * crng.uniform(0.75, 1.25))
+            oa, ob = max(-1 + curb, o), o1
+            if ob - oa > do * 0.3:
+                g_o, g_u = 0.055 * do, 0.075 * du  # il giunto
+                ca, cb = oa + g_o, ob - g_o
+                ua, ub = u + g_u, u1 - g_u
+                cut = 0.2
+                pts = []
+                for (po, pu) in ((ca + (cb - ca) * cut, ua), (cb - (cb - ca) * cut, ua), (cb, ua + (ub - ua) * cut), (cb, ub - (ub - ua) * cut),
+                                 (cb - (cb - ca) * cut, ub), (ca + (cb - ca) * cut, ub), (ca, ub - (ub - ua) * cut), (ca, ua + (ub - ua) * cut)):
+                    x, y = at(po, pu)
+                    pts.append((x + crng.uniform(-0.35, 0.35), y + crng.uniform(-0.25, 0.25)))
+                ti = crng.choices(range(len(tone_cols)), tone_w)[0]
+                q.poly(tones[ti], pts)
+                (x0_, y0_), (x1_, y1_) = at(ca, ua), at(cb, ub)
+                w_, h_ = x1_ - x0_, y1_ - y0_
+                q.ellipse(gloss, x0_ + w_ * 0.15, y0_ + h_ * 0.12, x0_ + w_ * 0.62, y0_ + h_ * 0.5)  # la cima consumata, in luce
+                if crng.random() < 0.06:  # una crepa
+                    cx_ = x0_ + w_ * crng.uniform(0.3, 0.7)
+                    q.stroke(cracks, [(cx_, y0_ + h_ * 0.15), (cx_ + crng.uniform(-1.2, 1.2), y0_ + h_ * 0.5), (cx_ + crng.uniform(-1.5, 1.5), y0_ + h_ * 0.85)], 0.3)
+            o = o1
+        u = u1
         row += 1
-    stones = q.intersect(q.union(q.union(tones[0], tones[1]), tones[2]), deck)
-    for m_, col in zip(tones, ((182, 174, 160), (166, 160, 148), (196, 188, 172))):
+    stones = q.mask()
+    for m_ in tones:
+        stones = q.union(stones, m_)
+    stones = q.intersect(stones, deck)
+    for m_, col in zip(tones, tone_cols):
         q.fill(q.intersect(m_, deck), col)
-    q.fill(q.intersect(q.soften(shades, 0.5), stones), (120, 114, 104), 0.7)
-    q.fill(q.intersect(q.soften(lights, 0.5), stones), (232, 226, 212), 0.75)
-    q.fill(q.intersect(q.grain(stones, 0.5, 95, 0.4), stones), (140, 134, 122), 0.35)
+    q.fill(q.intersect(q.grain(stones, 0.45, 95, 0.5), stones), (128, 122, 112), 0.3)
+    q.fill(q.intersect(q.soften(gloss, 0.4), stones), (222, 216, 202), 0.4)
+    q.fill(q.inner_shadow(stones, -0.9, -0.8, 0.15), (112, 106, 96), 0.9)  # l'ombra netta in basso a destra
+    q.fill(q.rim(stones, -0.45, -0.45, 0.12), (232, 228, 216), 0.85)  # lo spigolo in luce in alto a sinistra
+    q.fill(q.intersect(q.minus(q.shift(stones, 0.6, 0.6), stones), deck), (62, 58, 52), 0.55)  # l'ombra nel giunto
+    q.fill(q.intersect(cracks, stones), (96, 90, 82), 0.85)
+    # il muschio nei giunti, dove si cammina meno: lungo i cordoli e verso l'isola
+    joints = q.minus(deck, stones)
+    edges_m = q.soften(q.union(q.poly(q.mask(), [at(-1, 0), at(-1 + curb * 2.6, 0), at(-1 + curb * 2.6, 1), at(-1, 1)]),
+                               q.poly(q.mask(), [at(1 - curb * 2.6, 0), at(1, 0), at(1, 1), at(1 - curb * 2.6, 1)])), 3)
+    q.fill(q.intersect(q.intersect(q.grain(joints, 0.9, 97, 0.6), edges_m), joints), (88, 100, 66), 0.8)
+    # il cordolo di lastre lunghe sotto i parapetti, con i giunti di traverso
+    for side in (-1, 1):
+        oa, ob = (-1, -1 + curb) if side < 0 else (1 - curb, 1)
+        slab = q.poly(q.mask(), [at(oa, uu / 20) for uu in range(21)] + [at(ob, uu / 20) for uu in range(20, -1, -1)])
+        q.fill(slab, (164, 158, 146))
+        q.fill(q.grain(slab, 0.4, 98 + side, 0.8), (136, 130, 120), 0.4)
+        sj = q.mask()
+        uu = crng.uniform(0.02, 0.1)
+        while uu < 1:
+            q.stroke(sj, [at(oa, uu), at(ob, uu)], 0.45)
+            uu += 15 * scale(uu) / (yn - yf) * crng.uniform(0.8, 1.2)
+        q.fill(q.intersect(sj, slab), (70, 64, 58), 0.9)
+        q.fill(q.rim(slab, -0.5, -0.5, 0.15), (220, 214, 200), 0.7)
+        q.fill(q.inner_shadow(slab, -0.8, -0.6, 0.15), (120, 114, 104), 0.8)
+    # l'ombra del parapetto di sinistra sulla passerella (la luce viene da sinistra) e una velatura verso l'isola
+    q.fill(q.intersect(q.soften(q.poly(q.mask(), [at(-1, u_) for u_ in (0, 1)] + [at(-0.72, 1), at(-0.72, 0)]), 3.5), deck), (40, 38, 46), 0.3)
     q.fill(q.intersect(q.soften(q.poly(q.mask(), [L[0], R[0], R[4], L[4]]), 3), deck), (40, 38, 34), 0.25)  # sotto il bordo della piazza
     # i due parapetti traforati a cerchi intrecciati, visti da dentro: cominciano poco dopo la piazza, così non coprono
     # i piedi di chi combatte; quello a destra è in ombra; gli obelischi alti sul capo di qua
@@ -2651,12 +2703,63 @@ def _openwork(q, pts, hgt, ink, face=(228, 224, 212), shadow=(176, 170, 158), th
     q.fill(base, shadow, 0.8)
 
 
+def _break_line(x, y_top, y_bot, rng, solid, course=4.5, jog=3.5, lean=0.0):
+    """Il bordo di una rottura nella muratura (#408): una linea a gradini dall'alto in basso, che segue i corsi delle
+    pietre (ogni course in altezza un piccolo scalino in orizzontale, qualche volta uno spigolo scheggiato in obliquo).
+    solid dice da che parte sta la parte rimasta (-1 a sinistra, 1 a destra); lean sposta il fondo verso il vuoto."""
+    pts = [(x, y_top)]
+    y = y_top
+    cx = x
+    while y < y_bot:
+        ny = min(y_bot, y + course * rng.uniform(0.7, 1.3))
+        u = (ny - y_top) / max(1e-6, y_bot - y_top)
+        nx = x - solid * lean * u + rng.uniform(-jog, jog)
+        if rng.random() < 0.3:  # uno spigolo scheggiato: il pezzo si è staccato in obliquo
+            pts.append((nx, ny))
+        else:  # un corso di pietre: prima giù, poi lo scalino
+            pts.append((cx, ny))
+            pts.append((nx, ny))
+        cx, y = nx, ny
+    return pts
+
+
+def _erase(q, m):
+    """Toglie dal disegno di q tutto quello che sta sotto la maschera m (il pezzo di ponte che è crollato)."""
+    q.img.putalpha(ImageChops.subtract(q.img.getchannel("A"), m))
+
+
+def _cut_ink(q, cuts, width, ink):
+    """L'inchiostro lungo i bordi tagliati: il contorno di quello che resta, solo vicino ai tagli."""
+    alpha = q.img.getchannel("A").point(lambda v: 255 if v > 90 else 0)
+    px = max(3, int(round(q._r(width))) * 2 + 1)
+    ring = ImageChops.subtract(alpha.filter(ImageFilter.MaxFilter(px)), alpha)
+    near = cuts.filter(ImageFilter.MaxFilter(px * 2 + 1))
+    q.fill(ImageChops.multiply(ring, near).filter(ImageFilter.GaussianBlur(0.8)), ink)
+
+
+def _stone_block(q, pts, col, ink, seed, water=None, wet=(92, 100, 84), hi=(246, 244, 236), sh=(150, 144, 132)):
+    """Un blocco di pietra caduto (#408): faccia col suo tono, luce sul bordo in alto a sinistra, ombra in basso a
+    destra a due toni, la grana e il contorno; se water è dato, sotto la superficie è nascosto e appena sopra è bagnato."""
+    m = q.poly(q.mask(), pts)
+    if water is not None:
+        m = q.minus(m, q.poly(q.mask(), [(-9999, water), (9999, water), (9999, 9999), (-9999, 9999)]))
+    q.fill(m, col)
+    q.fill(q.inner_shadow(m, -1.6, -1.2, 0.35), sh, 0.95)
+    q.fill(q.rim(m, -0.7, -0.7, 0.3), hi, 0.8)
+    q.fill(q.grain(m, 0.3, seed, 0.7), (140, 136, 126), 0.35)
+    if water is not None:
+        q.fill(q.intersect(q.soften(q.poly(q.mask(), [(-9999, water - 3), (9999, water - 3), (9999, water), (-9999, water)]), 0.8), m), wet, 0.85)
+    q.outline(m, 0.45, ink)
+    return m
+
+
 def _profile_bridge(t, x_in, x_out, rng):
-    """Un ponte del Prato visto di fianco (#378, come nelle foto di Riccardo): collega la punta dell'isola, alla
-    stessa quota della striscia dove si gioca (y 520), alla piazza di fuori, oltre il canale. Arco ribassato di pietra
-    d'Istria con i conci e la chiave, il parapetto traforato a quadrifogli che segue la leggera gobba, la cornice che fa
-    ombra, l'umido e le alghe dove tocca l'acqua (y 600), il riflesso spezzato; ai capi gli obelischi sui piedistalli.
-    Dipinto con pittura.py e incollato nella tela; è dietro i lottatori e non si attraversa."""
+    """Un ponte del Prato visto di fianco, crollato (#378, #408 passo 2): collegava la punta dell'isola, alla quota
+    della striscia dove si gioca (y 520), alla piazza di fuori, oltre il canale. Ne restano i due monconi sulle sponde:
+    l'arco ribassato di pietra d'Istria spezzato a metà, con i conci a dente sulla rottura e il cuore di mattoni che si
+    vede dove la pietra si è staccata, il parapetto traforato rotto, i ferri delle grappe piegati, l'erba e un fico
+    selvatico nelle crepe. Nel varco si vede il canale dietro; i blocchi caduti, un pezzo di parapetto e la punta
+    dell'obelisco spezzato spuntano dall'acqua (y 600). È solo paesaggio, dietro i lottatori: non si attraversa."""
     from pittura import Quadro
     a, b = min(x_in, x_out), max(x_in, x_out)
     x0, y0 = a - 24, 420
@@ -2668,99 +2771,215 @@ def _profile_bridge(t, x_in, x_out, rng):
     xs = [a + (b - a) * i / n for i in range(n + 1)]
     top = [(x, deck - hump * math.sin(math.pi * i / n) ** 0.9) for i, x in enumerate(xs)]
     span, mid = (b - a) * 0.74, (a + b) / 2
-    arch = [(mid - span / 2 + span * i / n, water - (water - deck - 18 + hump) * math.sin(math.pi * i / n) ** 0.55) for i in range(n + 1)]
+    rise = water - deck - 18 + hump
+
+    def arch_y(x):  # l'intradosso dell'arco alla x data (water fuori dall'arco)
+        u = (x - (mid - span / 2)) / span
+        return water - rise * math.sin(math.pi * u) ** 0.55 if 0 < u < 1 else water
+
+    arch = [(mid - span / 2 + span * i / n, arch_y(mid - span / 2 + span * i / n)) for i in range(n + 1)]
     opening = q.poly(q.mask(), [(mid - span / 2, water + 1)] + arch + [(mid + span / 2, water + 1)])
-    # sotto l'arco si vede il canale che continua (#378, chiesto da Riccardo): l'acqua va via da noi e, siccome il canale
-    # è un anello ovale, piega verso il centro dietro l'isola. Le due sponde convergono verso un punto di fuga spostato
-    # dalla parte dell'isola; lontano l'acqua è più chiara e riflette il cielo, in fondo si vedono il prato e gli alberi
-    # della sponda che gira. In alto la volta del ponte in ombra.
-    sg = 1 if mid < 960 else -1  # da che parte sta l'isola (il centro dell'ovale)
-    H = water - arch[n // 2][1]
-    hz = water - H * 0.5  # l'orizzonte del canale dentro l'arco
-    vx = mid + sg * span * 0.28  # il punto di fuga: il canale piega verso l'isola
-    left_x, right_x = mid - span / 2, mid + span / 2
-    inner_x, outer_x = (right_x, left_x) if sg > 0 else (left_x, right_x)
+    sg = 1 if mid < 960 else -1  # da che parte sta l'isola: il varco è un po' spostato verso di lei, così si vede di più
+    gc = mid + sg * span * rng.uniform(0.06, 0.14)  # il centro del varco
+    gw = span * rng.uniform(0.28, 0.36)  # quanto è largo
+    gl, gr = gc - gw / 2, gc + gw / 2
+    par_h = 20
+    yt = deck - hump - par_h - 8  # sopra il parapetto
+    # tre rotture una dentro l'altra: la pietra di facciata si è staccata più indietro del cuore di mattoni, il
+    # parapetto ancora più indietro; sotto la rottura scende dritta nel varco, dove non c'è più niente
+    def gap(back, seed_shift, lean):
+        r = random.Random(rng.random() + seed_shift)
+        lx = gl - back
+        rx_ = gr + back
+        L = _break_line(lx, yt, arch_y(lx) + 2, r, -1, course=5, jog=7, lean=lean)
+        R = _break_line(rx_, yt, arch_y(rx_) + 2, r, 1, course=5, jog=7, lean=lean)
+        return q.poly(q.mask(), [(lx, yt - 40)] + L + [(L[-1][0], water + 40), (R[-1][0], water + 40)] + list(reversed(R)) + [(rx_, yt - 40)])
 
-    def vgrad(y_top, y_bot):  # una maschera che va da pieno in alto (y_top) a vuoto in basso (y_bot)
-        g = Image.new("L", q.size, 0)
-        dg = ImageDraw.Draw(g)
-        ya, yb = q._p(0, y_top)[1], q._p(0, y_bot)[1]
-        for py in range(int(ya), int(yb) + 1):
-            u = (py - ya) / max(1, yb - ya)
-            dg.line([(0, py), (q.size[0], py)], fill=int(255 * (1 - u) ** 1.3))
-        return g
-
-    q.fill(opening, (128, 150, 136))  # lontano, sopra l'orizzonte: la sponda che gira, verde di prato e alberi
-    trees = q.mask()
-    for k in range(7):
-        tx = vx + sg * rng.uniform(-span * 0.1, span * 0.3)
-        q.ellipse(trees, tx - 9, hz - 15 - rng.uniform(0, 6), tx + 9, hz + 2)
-    q.fill(q.intersect(q.soften(trees, 1.5), opening), (96, 120, 92), 0.9)
-    farbank = q.poly(q.mask(), [(left_x, hz), (right_x, hz), (right_x, hz - 3), (left_x, hz - 3)])
-    q.fill(q.intersect(farbank, opening), (214, 208, 194))  # il cordolo bianco della sponda in fondo
-    wat = q.poly(q.mask(), [(left_x, water + 1), (right_x, water + 1), (right_x, hz), (left_x, hz)])
-    q.fill(q.intersect(wat, opening), (72, 100, 94))
-    q.fill(q.intersect(q.intersect(vgrad(hz, water), wat), opening), (170, 194, 188), 0.9)  # lontano più chiaro
-    # le due sponde che convergono verso il punto di fuga: quella di fuori (pietra chiara, in luce) e il muro
-    # dell'isola (mattoni in ombra), alte vicino e basse lontano
-    for bx, col, hgt in ((outer_x, (206, 200, 186), H * 0.42), (inner_x, (128, 100, 86), H * 0.5)):
-        wall = q.poly(q.mask(), [(bx, water + 1), (bx, water - hgt), (vx, hz - 2), (vx, hz)])
-        q.fill(q.intersect(wall, opening), col)
-        q.fill(q.intersect(q.intersect(vgrad(hz - hgt * 0.2, water), wall), opening), (150, 168, 160), 0.5)  # la foschia lontano
-        edge = q.mask()
-        q.stroke(edge, [(bx, water - hgt), (vx, hz - 2)], 1.0)
-        q.fill(q.intersect(edge, opening), (236, 232, 222) if bx == outer_x else (96, 76, 66))
-        refl = q.poly(q.mask(), [(bx, water + 1), (bx + (vx - bx) * 0.05, water + 1), (vx, hz), (vx, hz + 1)])
-    # i riflessi del cielo sull'acqua, a pennellate orizzontali più corte e fitte lontano
-    rip = q.mask()
-    for k in range(26):
-        u = rng.random() ** 1.6  # 0 vicino, 1 lontano
-        y = water - 2 - u * (water - hz - 3)
-        half = (1 - u) * span * 0.18 + 2
-        x = rng.uniform(left_x + span * 0.15, right_x - span * 0.15) * (1 - u) + vx * u
-        q.stroke(rip, [(x - half, y), (x + half, y)], 0.7 - 0.3 * u)
-    q.fill(q.intersect(q.intersect(rip, wat), opening), (200, 220, 214), 0.7)
-    # la volta del ponte vista da sotto: una fascia in ombra lungo l'intradosso, più larga dalla parte dell'isola
-    vault = q.poly(q.mask(), arch + [(x + sg * 10 * math.sin(math.pi * i / n), y + 12 * math.sin(math.pi * i / n) ** 0.5) for i, (x, y) in reversed(list(enumerate(arch)))])
-    q.fill(q.intersect(q.soften(vault, 2.5), opening), (54, 66, 62), 0.85)
-    q.fill(q.intersect(q.soften(q.poly(q.mask(), [(left_x, water - 3), (right_x, water - 3), (right_x, water + 1), (left_x, water + 1)]), 1.5), opening), (40, 56, 52), 0.5)  # l'ombra del ponte sull'acqua vicina
-    # la faccia del ponte
-    face = q.minus(q.poly(q.mask(), top + [(b, water), (a, water)]), opening)
+    g_core = gap(0, 0.1, -18)  # i conci dell'arco sporgono a dente sotto (lean negativo: il fondo va verso il vuoto)
+    g_face = gap(rng.uniform(6, 9), 0.2, -12)
+    g_par = gap(rng.uniform(10, 16), 0.3, 4)
+    wall = q.minus(q.poly(q.mask(), top + [(b, water), (a, water)]), opening)
+    body = q.minus(wall, g_core)
+    face = q.minus(wall, g_face)
+    core = q.minus(body, face)  # il cuore di mattoni e malta che si vede sulla rottura
+    # la faccia del ponte, solo quella rimasta
     q.fill(face, S)
     q.fill(q.grain(face, 0.35, 81, 0.8), (150, 148, 138), 0.45)
     damp = q.poly(q.mask(), [(a, water - 16), (b, water - 16), (b, water), (a, water)])
     q.fill(q.intersect(q.soften(damp, 5), face), (96, 102, 82), 0.65)
     q.fill(q.intersect(q.soften(q.poly(q.mask(), [(a, water - 4), (b, water - 4), (b, water), (a, water)]), 1), face), (86, 102, 62), 0.8)
+    streaks = q.mask()  # le colature scure dell'acqua piovana sotto la cornice, sui monconi
+    for k in range(10):
+        sx = rng.uniform(a + 8, b - 8)
+        q.stroke(streaks, [(sx, deck + 2), (sx + rng.uniform(-1, 1), deck + rng.uniform(10, 30))], rng.uniform(1.2, 3))
+    q.fill(q.intersect(q.soften(streaks, 1.2), face), (128, 124, 112), 0.35)
     ring = q.minus(q.poly(q.mask(), [(mid - span / 2 - 10, water)] + [(x + (x - mid) * 0.1, y - 10 * math.sin(math.pi * i / n) ** 0.4) for i, (x, y) in enumerate(arch)] + [(mid + span / 2 + 10, water)]), opening)
-    q.fill(q.intersect(ring, face), (236, 232, 222))
+    ring_f = q.intersect(ring, face)
+    q.fill(ring_f, (236, 232, 222))
     vj = q.mask()
     for i in range(1, 22):
-        u = i / 22
-        px, py = arch[int(u * n)]
+        px, py = arch[int(i / 22 * n)]
         ang = math.atan2(py - water, px - mid)
         q.stroke(vj, [(px, py), (px + math.cos(ang) * 11, py + math.sin(ang) * 11)], 0.55)
-    q.fill(q.intersect(vj, ring), S_DK, 0.75)
-    kx, ky = arch[n // 2]
-    key = q.poly(q.mask(), [(kx - 4.5, ky - 12), (kx + 4.5, ky - 12), (kx + 3.5, ky + 1), (kx - 3.5, ky + 1)])
-    q.fill(key, S_HI)
-    q.fill(q.inner_shadow(key, -2, -1, 1), S_SH, 0.9)
-    q.outline(key, 0.5, ink)
-    q.fill(q.inner_shadow(face, -8, -3, 6), S_SH, 0.5)
-    corn = q.poly(q.mask(), top + [(x, y + 5) for x, y in reversed(top)])
+    q.fill(q.intersect(vj, ring_f), S_DK, 0.75)
+    q.fill(q.intersect(q.inner_shadow(face, -8, -3, 6), face), S_SH, 0.5)
+    corn = q.intersect(q.poly(q.mask(), top + [(x, y + 5) for x, y in reversed(top)]), face)
     q.fill(corn, S_HI)
-    q.fill(q.soften(q.poly(q.mask(), [(x, y + 5) for x, y in top] + [(x, y + 10) for x, y in reversed(top)]), 2), (40, 38, 34), 0.3)
-    q.outline(q.union(face, opening), 0.6, ink)
-    # il riflesso nell'acqua, spezzato
-    refl = q.mask()
+    q.fill(q.intersect(q.soften(q.poly(q.mask(), [(x, y + 5) for x, y in top] + [(x, y + 10) for x, y in reversed(top)]), 2), face), (40, 38, 34), 0.3)
+    # il cuore della muratura dove la pietra è caduta: mattoni rossicci spenti e malta, in ombra verso il vuoto
+    q.fill(core, (150, 104, 86))
+    bricks = q.mask()
+    yy = deck - hump
+    while yy < water:
+        q.stroke(bricks, [(gl - 20, yy), (gr + 20, yy)], 0.45)
+        yy += 2.6
+    for k in range(40):
+        bx = rng.uniform(gl - 12, gr + 12)
+        by = deck - hump + rng.randrange(14) * 2.6
+        q.stroke(bricks, [(bx, by), (bx, by + 2.6)], 0.4)
+    q.fill(q.intersect(bricks, core), (104, 84, 74), 0.85)
+    q.fill(q.intersect(q.grain(core, 0.5, 87, 0.6), core), (120, 80, 66), 0.5)
+    q.fill(q.intersect(q.inner_shadow(core, -1.5, -1, 0.4), core), (96, 66, 56), 0.7)
+    # le crepe che partono dalla rottura e corrono indietro sulla faccia
+    cracks = q.mask()
+    for side, ex in ((-1, gl), (1, gr)):
+        for k in range(2):
+            x, y = ex + side * 8, rng.uniform(deck + 2, arch_y(ex) - 2)
+            pts = [(x, y)]
+            for s in range(5):
+                x += side * rng.uniform(3, 7)
+                y += rng.uniform(-2.5, 3.5)
+                pts.append((x, y))
+            q.stroke(cracks, pts, 0.45)
+    q.fill(q.intersect(cracks, face), (96, 90, 82), 0.9)
+    q.outline(body, 0.6, ink)
+    q.outline(q.intersect(q.minus(face.filter(ImageFilter.MaxFilter(3)), face), body), 0.3, (110, 80, 68))
+    # il parapetto traforato, rotto: dipinto intero su un quadro a parte e poi spezzato, con due tacche sul corrimano
+    pq = Quadro(b - a + 48, 228, origin=(x0, y0), scale=t.k)
+    _openwork(pq, top, par_h, ink, seed=83)
+    cuts = g_par
+    for side in (-1, 1):  # un pezzo di corrimano e di traforo staccato, sul moncone più lungo dei due
+        if (side < 0) != (gl - a > b - gr):
+            continue
+        nx = (a + gl) / 2 if side < 0 else (gr + b) / 2
+        nx += rng.uniform(-10, 10)
+        ny = deck - hump * 0.6 - par_h
+        hw = rng.uniform(7, 10)
+        notch = [(nx - hw - 2, ny - 4), (nx - hw, ny + rng.uniform(2, 4))]
+        for i in range(1, 6):  # il fondo frastagliato
+            notch.append((nx - hw + 2 * hw * i / 6, ny + rng.uniform(5, 10)))
+        notch += [(nx + hw, ny + rng.uniform(2, 4)), (nx + hw + 2, ny - 4)]
+        cuts = q.union(cuts, q.poly(q.mask(), notch))
+    _erase(pq, cuts)
+    _cut_ink(pq, cuts, 0.45, ink)
+    # gli obelischi ai capi: quello di fuori intero, quello sull'isola spezzato a metà ago
+    oq = Quadro(b - a + 48, 228, origin=(x0, y0), scale=t.k)
+    x_out_ob, x_isl_ob = (a + 6, b - 6) if sg > 0 else (b - 6, a + 6)
+    _obelisk_q(pq, x_out_ob, deck + 1, 1.0, 84)
+    _obelisk_q(oq, x_isl_ob, deck + 1, 1.0, 85)
+    cut_y = deck + 1 - 58
+    snap = q.poly(q.mask(), [(x_isl_ob - 20, cut_y - 80), (x_isl_ob + 20, cut_y - 80), (x_isl_ob + 20, cut_y + 1.5), (x_isl_ob + 2, cut_y - 1),
+                             (x_isl_ob + 0.5, cut_y + 2.5), (x_isl_ob - 1.5, cut_y - 2), (x_isl_ob - 20, cut_y + 2)])
+    _erase(oq, snap)
+    _cut_ink(oq, snap, 0.45, ink)
+    pq.img.alpha_composite(oq.img)
+    q.img.alpha_composite(pq.img)
+    # i ferri delle grappe che spuntano dalla rottura, piegati e arrugginiti
+    for side, ex in ((-1, gl), (1, gr)):
+        for k in range(rng.choice((1, 2))):
+            x, y = ex + side * 5, rng.uniform(deck + 1, arch_y(ex) - 3)  # parte da dentro il muro
+            ang = rng.uniform(-0.5, 0.2)
+            pts = [(x, y)]
+            ln = rng.uniform(12, 17)
+            for s in range(4):
+                ang += rng.uniform(0.15, 0.45)  # si piegano verso il basso
+                x -= side * math.cos(ang) * ln / 4
+                y += math.sin(ang) * ln / 4
+                pts.append((x, y))
+            q.line(pts, 0.9, (58, 44, 40))
+            q.line(pts, 0.4, (156, 88, 56), 0.9)
+    # erba e un fico selvatico che crescono sui monconi, nelle crepe
+    tuft = q.mask()
+    for side, ex in ((-1, gl), (1, gr)):
+        for k in range(7):
+            gx = ex + side * rng.uniform(16, 34)
+            gy = deck - hump - 0.5
+            for s in range(3):
+                h = rng.uniform(2.5, 6)
+                q.stroke(tuft, [(gx, gy), (gx + rng.uniform(-2, 2), gy - h)], 0.5)
+    q.fill(tuft, (88, 104, 70))
+    fx = (gl - 6) if sg < 0 else (gr + 6)  # il fico sul moncone verso l'isola, che a zoom normale si vede
+    fy = deck - hump - 2
+    fig = q.mask()
+    for k in range(16):  # le foglie a ciuffi, che si piegano verso il varco e ricadono
+        ang = rng.uniform(-math.pi * 0.95, 0.1) if sg < 0 else rng.uniform(-math.pi - 0.1, -math.pi * 0.05)
+        rr = rng.uniform(3, 10)
+        lx, ly = fx + math.cos(ang) * rr - sg * 3, fy - 3 + math.sin(ang) * rr * 0.7
+        q.ellipse(fig, lx - 2.6, ly - 2, lx + 2.6, ly + 2)
+    fig = q.smooth(fig, 0.6)
+    q.line([(fx, fy + 6), (fx - sg * 2, fy - 2), (fx - sg * 6, fy - 6)], 0.9, (90, 72, 60))
+    q.line([(fx - sg * 2, fy - 2), (fx + sg * 3, fy - 8)], 0.7, (90, 72, 60))
+    q.fill(fig, (96, 116, 78))
+    q.fill(q.inner_shadow(fig, -2, -2, 0.4), (70, 88, 60), 0.95)
+    q.fill(q.rim(fig, -0.8, -0.8, 0.3), (140, 158, 108), 0.8)
+    q.outline(fig, 0.45, (56, 64, 48))
+    ivy = q.mask()  # l'edera che scende dalla cornice del moncone di fuori
+    ix = (gl - 30) if sg > 0 else (gr + 30)
+    for strand in range(4):
+        sx = ix + rng.uniform(-8, 8)
+        for k in range(rng.randrange(5, 15)):
+            lx = sx + rng.uniform(-1.5, 1.5)
+            q.ellipse(ivy, lx - 1.8, deck + k * 1.7 - 1.4, lx + 1.8, deck + k * 1.7 + 1.4)
+    ivy = q.intersect(ivy, body)
+    q.fill(ivy, (84, 102, 68))
+    q.fill(q.inner_shadow(ivy, -0.6, -0.6, 0.2), (62, 78, 52), 0.9)
+    # nel varco, i pezzi caduti in acqua: i conci a cuneo, i blocchi del muro, un pezzo di parapetto e la punta
+    # dell'obelisco; attorno a ognuno la schiuma chiara e sotto il riflesso scuro, spezzato
+    refl, foam = q.mask(), q.mask()
+    blocks = []
+    for k in range(rng.randrange(13, 18)):
+        bx = rng.gauss(gc, gw * 0.26)
+        w_, h_ = rng.uniform(7, 18), rng.uniform(5, 10)
+        top_y = water - 1 - rng.uniform(2, 14) * (1 - min(1, abs(bx - gc) / (gw * 0.75)))
+        ang = rng.uniform(-0.5, 0.5)
+        ca, sa = math.cos(ang), math.sin(ang)
+        wedge = rng.random() < 0.4  # un concio dell'arco, a cuneo
+        corners = [(-w_ / 2 * (0.7 if wedge else 1), 0), (w_ / 2 * (0.7 if wedge else 1), 0), (w_ / 2, h_), (-w_ / 2, h_)]
+        pts = [(bx + cx_ * ca - cy * sa, top_y + cx_ * sa + cy * ca) for cx_, cy in corners]
+        blocks.append((top_y, pts, rng.choice((S, (220, 214, 200), (208, 202, 188), (198, 190, 176)))))
+    for top_y, pts, col in sorted(blocks, key=lambda bl: -bl[0]):  # prima quelli più bassi, dietro
+        m = _stone_block(q, pts, col, ink, int(pts[0][0] * 7) % 997, water=water)
+        bb = m.getbbox()
+        if bb:
+            x1, x2 = bb[0] / q.k + q.ox, bb[2] / q.k + q.ox
+            q.stroke(foam, [(x1 - 1, water + 0.6), (x2 + 1, water + 0.6)], 0.9)
+            for i in range(4):
+                q.stroke(refl, [(x1 + rng.uniform(0, 2), water + 2 + i * 2), (x2 - rng.uniform(0, 2), water + 2 + i * 2)], 1.0)
+    # il pezzo di parapetto caduto, inclinato, che esce per metà
+    px_ = gc + rng.uniform(-gw * 0.25, gw * 0.25)
+    fq = Quadro(b - a + 48, 228, origin=(x0, y0), scale=t.k)
+    tilt = rng.choice((-1, 1)) * rng.uniform(0.25, 0.4)
+    _openwork(fq, [(px_ - 12 + i * 3, water + 6 + tilt * (i * 3 - 12)) for i in range(9)], par_h * 0.9, ink, seed=89)
+    _erase(fq, q.poly(q.mask(), [(-9999, water), (9999, water), (9999, 9999), (-9999, 9999)]))
+    q.img.alpha_composite(fq.img)
+    # la punta dell'obelisco sull'isola, piantata storta nell'acqua ai piedi della spalla
+    nx_ = x_isl_ob - sg * rng.uniform(16, 24)
+    ln, tilt = 34, sg * rng.uniform(0.5, 0.7)
+    dx, dy = math.sin(tilt), -math.cos(tilt)
+    px, py = -dy, dx
+    base = (nx_, water + 4)
+    tip = (base[0] + dx * ln, base[1] + dy * ln)
+    needle = [(base[0] - px * 3, base[1] - py * 3), (base[0] + px * 3, base[1] + py * 3), (tip[0] + px * 1.2, tip[1] + py * 1.2), tip, (tip[0] - px * 1.2, tip[1] - py * 1.2)]
+    m = _stone_block(q, needle, (230, 226, 214), ink, 91, water=water)
+    q.stroke(foam, [(nx_ - 4, water + 0.6), (nx_ + 4, water + 0.6)], 0.9)
+    q.fill(q.soften(foam, 0.3), (214, 230, 224), 0.85)
+    # il riflesso dei monconi e dei pezzi caduti, spezzato
     for i in range(12):
         y = water + 2 + i * 2
-        q.stroke(refl, [(a + rng.uniform(0, 12), y), (b - rng.uniform(0, 12), y)], 1.0)
+        for xa, xb in ((a, gl), (gr, b)):
+            q.stroke(refl, [(xa + rng.uniform(0, 10), y), (xb - rng.uniform(0, 10), y)], 1.0)
     hole_r = q.poly(q.mask(), [(mid - span / 2, water)] + [(x, 2 * water - y) for x, y in arch] + [(mid + span / 2, water)])
-    q.fill(q.minus(q.soften(refl, 0.5), hole_r), (198, 202, 192), 0.45)
-    # il parapetto traforato a cerchi intrecciati, come quelli veri, e gli obelischi alti ai capi
-    _openwork(q, top, 20, ink, seed=83)  # alto come nelle foto: circa un quarto del ponte
-    for x in (a + 6, b - 6):
-        _obelisk_q(q, x, deck + 1, 1.0, 84)
+    q.fill(q.minus(q.soften(refl, 0.5), q.union(hole_r, q.soften(foam, 0.6))), (198, 202, 192), 0.4)
     t.img.alpha_composite(q.result(), (int(round((x0 - t.ox) * t.k)), int(round((y0 - t.oy) * t.k))))
 
 
