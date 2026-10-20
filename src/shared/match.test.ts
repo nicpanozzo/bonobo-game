@@ -327,7 +327,11 @@ describe("predizione (E17)", () => {
     const pressedNow = me(m).predict!;
     assert.ok(pressedNow.jumpBuffer > 0, "la pressione è nel buffer prima del tick");
     run(m, 1);
+    assert.equal(me(m).predict!.jumpBuffer, 0, "la preparazione al salto ha consumato la pressione");
+    assert.equal(me(m).jumpSquat, FIGHTER.jumpSquatMs, "a terra ci si prepara al salto (#384 A3)");
+    run(m, Math.round(FIGHTER.jumpSquatMs / (1000 / TICK_RATE)));
     const p = me(m).predict!;
+    assert.equal(me(m).jumpSquat, undefined);
     assert.equal(p.jumps, FIGHTER.maxJumps - 1);
     assert.equal(p.rising, true);
     assert.equal(p.jumpBuffer, 0, "il salto è partito e ha consumato la pressione");

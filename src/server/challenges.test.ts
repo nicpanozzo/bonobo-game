@@ -30,17 +30,17 @@ function play(c: Challenge, player: "difficile" | ((me: Fighter, target: Fighter
   return run;
 }
 
-// Pesante in su da sotto, poi in aria leggeri finché è lì sopra
+// Pesante in su da sotto (da terra: saltando insieme, staccati su + pesante sarebbe il recupero), poi in aria leggeri finché è lì sopra
 function juggler(me: Fighter, target: Fighter, tick: number) {
   const input = emptyInput();
   const dx = target.x - me.x;
   const dy = target.y - me.y;
   if (Math.abs(dx) > 20) input[dx > 0 ? "right" : "left"] = true;
   if (target.onGround) {
-    input.up = input.jump = Math.abs(dx) < 70;
+    input.up = Math.abs(dx) < 70;
     input.heavy = tick % 2 === 0 && !me.attack && Math.abs(dx) < 70; // premuto e lasciato: niente colpo caricato
   } else {
-    input.up = input.jump = dy < -60 && tick % 4 === 0; // col fermo al colpo di #384 si risale prima
+    input.up = input.jump = dy < -60 && tick % 6 < 3; // salto tenuto 3 tick su 6: dura quanto la preparazione al salto (#384 A3)
     input.light = tick % 2 === 0 && Math.abs(dy) < 120;
   }
   return input;

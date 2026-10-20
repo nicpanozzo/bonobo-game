@@ -24,7 +24,9 @@
     "shortHopCut": 0.45,
     "hitstunDriftAccel": 700,
     "archSnapPx": 8,
-    "slopeSnapStepPx": 20
+    "slopeSnapStepPx": 20,
+    "jumpSquatMs": 50,
+    "landingLagMs": 33
   },
   "dash": {
     "doubleTapMs": 250,
@@ -74,7 +76,8 @@
       "height": 48,
       "angleDeg": 85,
       "boxX": -27,
-      "boxY": -128
+      "boxY": -128,
+      "landingLagMs": 100
     },
     "lightDown": {
       "damage": 4,
@@ -100,7 +103,8 @@
       "height": 50,
       "angleDeg": 40,
       "boxX": 8,
-      "boxY": -72
+      "boxY": -72,
+      "landingLagMs": 100
     },
     "heavyUp": {
       "damage": 14,
@@ -113,7 +117,8 @@
       "height": 64,
       "angleDeg": 88,
       "boxX": -40,
-      "boxY": -144
+      "boxY": -144,
+      "landingLagMs": 167
     },
     "heavyDown": {
       "damage": 12,
@@ -139,7 +144,8 @@
       "height": 60,
       "angleDeg": 32,
       "boxX": 12,
-      "boxY": -82
+      "boxY": -82,
+      "landingLagMs": 200
     },
     "dashAttack": {
       "damage": 10,
@@ -252,9 +258,9 @@
     }
   },
   "hitstop": {
-    "baseMs": 70,
-    "perDamageMs": 8,
-    "maxMs": 350
+    "baseMs": 100,
+    "perDamageMs": 11,
+    "maxMs": 500
   },
   "smashCharge": {
     "maxMs": 1000,
@@ -739,6 +745,58 @@
     "holdOffsetX": 22,
     "holdOffsetY": 52
   },
+  "itemAmounts": [
+    {
+      "label": "Nessuno",
+      "everyMs": 0,
+      "maxOnStage": 0
+    },
+    {
+      "label": "Pochi",
+      "everyMs": 18000,
+      "maxOnStage": 1
+    },
+    {
+      "label": "Normali",
+      "everyMs": 11000,
+      "maxOnStage": 2
+    },
+    {
+      "label": "Tanti",
+      "everyMs": 6000,
+      "maxOnStage": 4
+    },
+    {
+      "label": "Pioggia",
+      "everyMs": 2500,
+      "maxOnStage": 8
+    }
+  ],
+  "droppableItems": [
+    "banana",
+    "birra",
+    "bong",
+    "fiore",
+    "funghetti"
+  ],
+  "supremeSpeeds": [
+    {
+      "mult": 1,
+      "label": "Normale"
+    },
+    {
+      "mult": 1.5,
+      "label": "Veloce"
+    },
+    {
+      "mult": 2,
+      "label": "Molto veloce"
+    },
+    {
+      "mult": 4,
+      "label": "Turbo"
+    }
+  ],
   "powerup": {
     "flowerMs": 8000,
     "damageMult": 1.3,
@@ -3547,6 +3605,13 @@
             "fps": 8,
             "loop": false,
             "src": "heavy"
+          },
+          "jumpSquat": {
+            "row": 0,
+            "frames": 4,
+            "fps": 4,
+            "loop": true,
+            "src": "idle"
           }
         }
       },
@@ -3893,6 +3958,12 @@
             "startFrame": 1,
             "frames": 18,
             "src": "heavy"
+          },
+          "jumpSquat": {
+            "fps": 24,
+            "loop": false,
+            "frames": 6,
+            "src": "land"
           }
         }
       },
@@ -4223,6 +4294,12 @@
             "hitFrame": 6,
             "frames": 8,
             "src": "heavy"
+          },
+          "jumpSquat": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
           }
         }
       },
@@ -4462,6 +4539,12 @@
             "loop": false,
             "frames": 1,
             "src": "heavy"
+          },
+          "jumpSquat": {
+            "fps": 1,
+            "loop": false,
+            "frames": 1,
+            "src": "land"
           }
         }
       },
@@ -4793,6 +4876,12 @@
             "startFrame": 1,
             "frames": 18,
             "src": "heavy"
+          },
+          "jumpSquat": {
+            "fps": 24,
+            "loop": false,
+            "frames": 6,
+            "src": "land"
           }
         }
       },
@@ -5023,6 +5112,12 @@
                 "startFrame": 1,
                 "frames": 18,
                 "src": "heavy"
+              },
+              "jumpSquat": {
+                "fps": 24,
+                "loop": false,
+                "frames": 6,
+                "src": "land"
               }
             }
           },
@@ -5356,6 +5451,12 @@
             "loop": false,
             "frames": 1,
             "src": "heavy"
+          },
+          "jumpSquat": {
+            "fps": 1,
+            "loop": false,
+            "frames": 1,
+            "src": "land"
           }
         }
       },
@@ -5722,6 +5823,12 @@
             "startFrame": 1,
             "frames": 18,
             "src": "heavy"
+          },
+          "jumpSquat": {
+            "fps": 24,
+            "loop": false,
+            "frames": 6,
+            "src": "land"
           }
         }
       },
@@ -6086,6 +6193,12 @@
             "hitFrame": 5,
             "frames": 11,
             "src": "heavy"
+          },
+          "jumpSquat": {
+            "fps": 24,
+            "loop": false,
+            "frames": 3,
+            "src": "land"
           }
         }
       },
@@ -6431,6 +6544,12 @@
             "startFrame": 1,
             "frames": 18,
             "src": "heavy"
+          },
+          "jumpSquat": {
+            "fps": 24,
+            "loop": false,
+            "frames": 6,
+            "src": "land"
           }
         }
       },
@@ -6784,6 +6903,12 @@
             "startFrame": 1,
             "frames": 18,
             "src": "heavy"
+          },
+          "jumpSquat": {
+            "fps": 24,
+            "loop": false,
+            "frames": 6,
+            "src": "land"
           }
         }
       },
@@ -7146,6 +7271,12 @@
             "startFrame": 1,
             "frames": 18,
             "src": "heavy"
+          },
+          "jumpSquat": {
+            "fps": 24,
+            "loop": false,
+            "frames": 6,
+            "src": "land"
           }
         }
       },
@@ -7526,6 +7657,12 @@
             "startFrame": 1,
             "frames": 18,
             "src": "heavy"
+          },
+          "jumpSquat": {
+            "fps": 24,
+            "loop": false,
+            "frames": 6,
+            "src": "land"
           }
         },
         "rig": "assets/characters/nonnagina/rig/godot.json"
