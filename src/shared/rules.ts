@@ -1,6 +1,7 @@
 // Regole della partita: valori di default e controllo di quelle che arrivano dai client.
 
-import { MAX_TEAMS, STOCKS } from "./constants";
+import { DEFAULT_ITEM_AMOUNT, ITEM_AMOUNTS, MAX_TEAMS, STOCKS, SUPREME_SPEEDS } from "./constants";
+import { DROPPABLE_ITEMS } from "./items";
 import type { MatchRules } from "./types";
 
 export const DEFAULT_RULES: MatchRules = {
@@ -9,6 +10,9 @@ export const DEFAULT_RULES: MatchRules = {
   timeLimitSec: 0,
   friendlyFire: false,
   teamCount: 2,
+  supremeSpeed: 1,
+  itemAmount: DEFAULT_ITEM_AMOUNT,
+  itemKinds: [...DROPPABLE_ITEMS],
 };
 
 export const RULE_LIMITS = {
@@ -30,6 +34,10 @@ export function sanitizeRules(raw: Partial<MatchRules> | undefined): MatchRules 
     friendlyFire: typeof r.friendlyFire === "boolean" ? r.friendlyFire : DEFAULT_RULES.friendlyFire,
     // In Bandiera le squadre sono due: una bandiera a testa e i punti di una contro l'altra
     teamCount: mode === "teams" ? int(r.teamCount, 2, MAX_TEAMS, DEFAULT_RULES.teamCount) : DEFAULT_RULES.teamCount,
+    supremeSpeed: SUPREME_SPEEDS.some((s) => s.mult === r.supremeSpeed) ? (r.supremeSpeed as number) : DEFAULT_RULES.supremeSpeed,
+    itemAmount: int(r.itemAmount, 0, ITEM_AMOUNTS.length - 1, DEFAULT_RULES.itemAmount),
+    // Solo oggetti che esistono e cadono, senza doppioni e nell'ordine di sempre
+    itemKinds: Array.isArray(r.itemKinds) ? DROPPABLE_ITEMS.filter((k) => (r.itemKinds as unknown[]).includes(k)) : [...DEFAULT_RULES.itemKinds],
   };
 }
 

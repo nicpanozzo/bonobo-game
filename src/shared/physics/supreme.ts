@@ -11,10 +11,10 @@ import { fire } from "./projectiles";
 
 export const supremeReady = (f: Fighter) => f.supreme >= SUPREME.max;
 
-// Aggiunge carica, senza passare il massimo (negli snapshot viaggia arrotondata per difetto, match.ts)
+// Aggiunge carica, moltiplicata per la velocità scelta nelle regole, senza passare il massimo (negli snapshot viaggia arrotondata per difetto, match.ts)
 export function chargeSupreme(f: Fighter, amount: number): void {
   if (amount <= 0 || f.eliminated) return;
-  f.supreme = Math.min(SUPREME.max, f.supreme + amount);
+  f.supreme = Math.min(SUPREME.max, f.supreme + amount * f.supremeRate);
 }
 
 // Un colpo di damage punti da attacker a target. attacker null: trappole e colpi senza autore.

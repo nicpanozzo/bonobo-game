@@ -739,6 +739,58 @@
     "holdOffsetX": 22,
     "holdOffsetY": 52
   },
+  "itemAmounts": [
+    {
+      "label": "Nessuno",
+      "everyMs": 0,
+      "maxOnStage": 0
+    },
+    {
+      "label": "Pochi",
+      "everyMs": 18000,
+      "maxOnStage": 1
+    },
+    {
+      "label": "Normali",
+      "everyMs": 11000,
+      "maxOnStage": 2
+    },
+    {
+      "label": "Tanti",
+      "everyMs": 6000,
+      "maxOnStage": 4
+    },
+    {
+      "label": "Pioggia",
+      "everyMs": 2500,
+      "maxOnStage": 8
+    }
+  ],
+  "droppableItems": [
+    "banana",
+    "birra",
+    "bong",
+    "fiore",
+    "funghetti"
+  ],
+  "supremeSpeeds": [
+    {
+      "mult": 1,
+      "label": "Normale"
+    },
+    {
+      "mult": 1.5,
+      "label": "Veloce"
+    },
+    {
+      "mult": 2,
+      "label": "Molto veloce"
+    },
+    {
+      "mult": 4,
+      "label": "Turbo"
+    }
+  ],
   "powerup": {
     "flowerMs": 8000,
     "damageMult": 1.3,

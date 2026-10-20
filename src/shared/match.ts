@@ -3,7 +3,7 @@
 // girare in locale (allenamento, predizione) e un porting su un altro motore parte da qui.
 
 import { getCharacter, skinFor } from "./characters";
-import { COLORS, FIGHTER, MATCH_RESTART_MS, MAX_PLAYERS_PER_ROOM, RECONNECT_RESUME_INVULNERABLE_MS, TEAM_COLORS, TRAINING } from "./constants";
+import { COLORS, FIGHTER, ITEM_AMOUNTS, MATCH_RESTART_MS, MAX_PLAYERS_PER_ROOM, RECONNECT_RESUME_INVULNERABLE_MS, TEAM_COLORS, TRAINING } from "./constants";
 import { bufferPresses, createFighter, emptyInput, resetForMatch, stepWorld, type Fighter, type PhysicsContext } from "./physics";
 import { createItemWorld, handleItemInput, itemStates, resetItems, stepItems, type ItemWorld } from "./physics/items";
 import { companionState } from "./physics/companion";
@@ -54,8 +54,9 @@ export class Match {
       unlimitedStocks: rules.mode === "flag" || rules.mode === "race" || rules.mode === "training",
       projectiles: this.projectiles,
     };
-    const withItems = options.items !== false && (rules.mode === "ffa" || rules.mode === "teams");
-    this.items = withItems ? createItemWorld(seedOf(this.stage.id)) : null;
+    const amount = ITEM_AMOUNTS[rules.itemAmount];
+    const withItems = options.items !== false && (rules.mode === "ffa" || rules.mode === "teams") && amount.maxOnStage > 0 && rules.itemKinds.length > 0;
+    this.items = withItems ? createItemWorld(seedOf(this.stage.id), { everyMs: amount.everyMs, maxOnStage: amount.maxOnStage, kinds: rules.itemKinds }) : null;
   }
 
   get size() {
@@ -84,6 +85,7 @@ export class Match {
         team,
         index,
         stocks: this.rules.stocks,
+        supremeRate: this.rules.supremeSpeed,
       },
       this.stage,
     );

@@ -207,6 +207,19 @@ func test_torna_dalla_partita_sulla_stessa_stanza() -> void:
 	lobby.free()
 
 
+# Suprema più veloce e oggetti scelti: arrivano nelle regole, gli oggetti solo dove cadono
+func test_suprema_e_oggetti() -> void:
+	var lobby := _lobby(false, {"rules": {"mode": "ffa", "supremeSpeed": 2, "itemAmount": 0, "itemKinds": ["banana"]}})
+	runner.check(lobby._items_box.visible, "in tutti contro tutti si scelgono gli oggetti")
+	runner.check(lobby._item_checks.size() >= 2 and lobby._item_checks["banana"].button_pressed and not lobby._item_checks["birra"].button_pressed, "tornano quelli scelti")
+	runner.check(lobby._item_checks["banana"].disabled, "con Nessuno i tipi non si scelgono")
+	var c := _last_choice(lobby, lobby._submit)
+	runner.check(is_equal_approx(float(c.rules.supremeSpeed), 2.0) and c.rules.itemAmount == 0 and c.rules.itemKinds == ["banana"], "nella scelta: %s" % [c.rules])
+	lobby._set_mode("flag")
+	runner.check(not lobby._items_box.visible, "in Bandiera niente oggetti")
+	lobby.free()
+
+
 # Squadre (#409): quante squadre nelle regole, la tua squadra nella pagina del lottatore
 func test_squadre_e_la_tua_squadra() -> void:
 	var lobby := _lobby(false, {"rules": {"mode": "teams", "teamCount": 3}, "team": 3})

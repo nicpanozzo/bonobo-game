@@ -73,6 +73,10 @@ var _team_picker: TeamPicker # la tua squadra (#409), nella pagina del lottatore
 var _team_box: Control # titoletto, fila dei colori e nota: si nascondono insieme
 var _team_note: Label
 var _ff := CheckButton.new()
+var _supreme_speed := Stepper.new() # velocità della barra della suprema (SUPREME_SPEEDS)
+var _item_amount := Stepper.new() # quanti oggetti cadono (ITEM_AMOUNTS)
+var _item_checks := {} # id dell'oggetto -> CheckButton: quali possono cadere
+var _items_box: Control # quanti e quali oggetti: solo dove gli oggetti ci sono
 var _host: CheckButton # Crea: ospita dal proprio computer (#308), solo nell'app per computer
 var _host_status: Label # a che punto è il server mentre si accende
 var _bot := Stepper.new()
@@ -359,6 +363,33 @@ func _match_page(params: Dictionary) -> Control:
 	_ff.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	_ff.custom_minimum_size = Vector2(374, 0) # l'interruttore finisce dove finiscono le frecce
 	rules.add_child(_ff)
+	# Suprema e oggetti: i valori stanno nel server (constants.ts), qui solo le scelte
+	var speeds: Array = game.get("supremeSpeeds", [])
+	for sp in speeds:
+		_supreme_speed.add_item(sp.label)
+	_supreme_speed.select(maxi(0, speeds.map(func(sp): return float(sp.mult)).find(float(saved.get("supremeSpeed", 1)))))
+	rules.add_child(_labeled(UI.heading("Suprema"), _supreme_speed))
+	var items_box := VBoxContainer.new()
+	items_box.add_theme_constant_override("separation", UI.GAP_S)
+	var amounts: Array = game.get("itemAmounts", [])
+	for a in amounts:
+		_item_amount.add_item(a.label)
+	_item_amount.select(clampi(int(saved.get("itemAmount", 2)), 0, maxi(0, amounts.size() - 1)))
+	_item_amount.item_selected.connect(func(_i): _sync_rules())
+	items_box.add_child(_labeled(UI.heading("Oggetti"), _item_amount))
+	var kinds_row := HFlowContainer.new()
+	kinds_row.add_theme_constant_override("h_separation", UI.GAP_M)
+	var saved_kinds = saved.get("itemKinds")
+	var items_spec: Dictionary = game.get("items", {})
+	for k in game.get("droppableItems", []):
+		var c := CheckButton.new()
+		c.text = str(items_spec.get(k, {}).get("name", k))
+		c.button_pressed = not (saved_kinds is Array) or (saved_kinds as Array).has(k)
+		_item_checks[k] = c
+		kinds_row.add_child(c)
+	items_box.add_child(kinds_row)
+	_items_box = items_box
+	rules.add_child(items_box)
 	rules_box.add_child(rules)
 	_course_note = UI.label("In Corsa si gioca su un percorso lungo, nuovo a ogni stanza: vince chi arriva prima al traguardo.", UI.SIZE_SMALL, Color(UI.TEXT, 0.7))
 	_course_note.autowrap_mode = TextServer.AUTOWRAP_WORD
@@ -369,6 +400,11 @@ func _match_page(params: Dictionary) -> Control:
 	_rules_box = rules_box
 	page.add_child(rules_box)
 	return page
+
+
+func _supreme_mult() -> float:
+	var speeds: Array = game.get("supremeSpeeds", [])
+	return float(speeds[_supreme_speed.selected].mult) if _supreme_speed.selected >= 0 and _supreme_speed.selected < speeds.size() else 1.0
 
 
 func _labeled(label: Label, control: Control) -> HBoxContainer:
@@ -417,6 +453,10 @@ func _sync_rules() -> void:
 	_select_cards(_mode_cards, mode)
 	_ff.visible = mode == "teams" or mode == "flag"
 	_team_count_box.visible = mode == "teams"
+	# Gli oggetti cadono solo in Tutti contro tutti e Squadre; con "Nessuno" la scelta dei tipi non serve
+	_items_box.visible = mode == "ffa" or mode == "teams"
+	for c in _item_checks.values():
+		c.disabled = _item_amount.selected == 0
 	_sync_team_picker()
 	var race := mode == "race"
 	var training := mode == "training"
@@ -1094,7 +1134,7 @@ func _choice(bot: String) -> Dictionary:
 		"skin": _skin,
 		# Chi entra in una stanza che non c'è ancora la crea con le regole di questa pagina
 		"stage": _new_id("corsa-") if mode == "race" else _stage,
-		"rules": {"mode": mode, "stocks": _stocks.selected + 1, "timeLimitSec": TIMES[_time.selected][0], "friendlyFire": _ff.button_pressed, "teamCount": _team_count.selected + 2},
+		"rules": {"mode": mode, "stocks": _stocks.selected + 1, "timeLimitSec": TIMES[_time.selected][0], "friendlyFire": _ff.button_pressed, "teamCount": _team_count.selected + 2, "supremeSpeed": _supreme_mult(), "itemAmount": _item_amount.selected, "itemKinds": _item_checks.keys().filter(func(k): return _item_checks[k].button_pressed)},
 		"team": _team_picker.selected if _team_box.visible else 0, # la squadra chiesta (#409), 0 = automatica
 		"server": _server.text.strip_edges(),
 		"bot": "manichino" if mode == "training" and bot == "" else bot, # conta solo se la stanza è nuova

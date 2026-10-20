@@ -5,7 +5,7 @@
 
 import { characterStats } from "../characters";
 import { BONG, FIGHTER, FUNGHI, HITSTOP, HITSTUN_PER_KNOCKBACK, ITEM_RULES } from "../constants";
-import { ITEMS } from "../items";
+import { DROPPABLE_ITEMS, ITEMS } from "../items";
 import type { ItemSpot } from "../stages";
 import { rng } from "../stageGenerator";
 import type { ItemState } from "../types";
@@ -32,16 +32,36 @@ export interface ItemWorld {
   nextId: number;
   spawnTimer: number;
   random: () => number;
+  everyMs: number; // ogni quanto ne cade uno (regole della stanza, ITEM_AMOUNTS)
+  maxOnStage: number; // quanti al massimo in campo insieme
+  kinds: readonly string[]; // quali possono cadere
 }
 
-export function createItemWorld(seed: number): ItemWorld {
-  return { items: [], nextId: 1, spawnTimer: ITEM_RULES.firstSpawnMs, random: rng(seed).next };
+export interface ItemOptions {
+  everyMs?: number;
+  maxOnStage?: number;
+  kinds?: readonly string[];
+}
+
+// Senza opzioni cadono tutti, coi tempi di ITEM_RULES
+export function createItemWorld(seed: number, options: ItemOptions = {}): ItemWorld {
+  const everyMs = options.everyMs ?? ITEM_RULES.spawnEveryMs;
+  return {
+    items: [],
+    nextId: 1,
+    // Con tanti oggetti anche il primo arriva prima
+    spawnTimer: Math.min(ITEM_RULES.firstSpawnMs, everyMs),
+    random: rng(seed).next,
+    everyMs,
+    maxOnStage: options.maxOnStage ?? ITEM_RULES.maxOnStage,
+    kinds: options.kinds ?? DROPPABLE_ITEMS,
+  };
 }
 
 // Si ricomincia: via gli oggetti, il primo ricade dopo l'attesa iniziale
 export function resetItems(world: ItemWorld): void {
   world.items = [];
-  world.spawnTimer = ITEM_RULES.firstSpawnMs;
+  world.spawnTimer = Math.min(ITEM_RULES.firstSpawnMs, world.everyMs);
 }
 
 // Non si raccoglie né si lancia mentre si è occupati: colpiti, in attacco, in schivata o inermi dopo il recupero
@@ -270,8 +290,8 @@ export function stepItems(world: ItemWorld, fighters: Fighter[], dtMs: number, c
 
   world.spawnTimer -= dtMs;
   if (world.spawnTimer <= 0) {
-    world.spawnTimer = ITEM_RULES.spawnEveryMs;
-    if (world.items.filter((i) => !ITEMS[i.kind].planted).length < ITEM_RULES.maxOnStage) spawn(world, ctx);
+    world.spawnTimer = world.everyMs;
+    if (world.items.filter((i) => !ITEMS[i.kind].planted).length < world.maxOnStage) spawn(world, ctx);
   }
 
   for (const item of world.items) {
@@ -318,7 +338,7 @@ function spawn(world: ItemWorld, ctx: PhysicsContext) {
   const surfaces = [...ctx.stage.solids, ...ctx.stage.platforms].filter((s) => s.width >= 80);
   if (surfaces.length === 0) return;
   const s = pickSurface(surfaces, ctx.stage.itemSpots ?? [], world.random());
-  const kind = pickKind(world.random());
+  const kind = pickKind(world.random(), world.kinds);
   const x = Math.round(s.x + 30 + world.random() * (s.width - 60));
   const y = s.y - ITEM_RULES.dropHeight;
   const item: Item = { id: world.nextId++, kind, x, y, vx: 0, vy: 0, heldBy: null, thrown: false, onGround: false, riding: -1, thrownBy: null, lifeMs: ITEM_RULES.lifeMs, loadMs: -1 };
@@ -327,8 +347,7 @@ function spawn(world: ItemWorld, ctx: PhysicsContext) {
 }
 
 // Quale oggetto cade: a caso pesando ITEMS[k].weight (#231), con un solo numero casuale
-export function pickKind(r: number): string {
-  const kinds = Object.keys(ITEMS).filter((k) => (ITEMS[k].weight ?? 1) > 0).sort(); // i funghetti piantati non cadono
+export function pickKind(r: number, kinds: readonly string[] = DROPPABLE_ITEMS): string {
   const weight = (k: string) => ITEMS[k].weight ?? 1;
   let left = r * kinds.reduce((sum, k) => sum + weight(k), 0);
   for (const k of kinds) {
