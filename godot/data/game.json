@@ -681,27 +681,16 @@
         "ms": 8000
       }
     },
-    "funghetti": {
-      "id": "funghetti",
-      "name": "Funghetti",
-      "damage": 4,
-      "knockback": 250,
-      "width": 24,
-      "height": 20,
-      "color": 10181046,
-      "weight": 2,
-      "mushrooms": true
-    },
     "fungo": {
       "id": "fungo",
-      "name": "Funghetto",
-      "damage": 0,
-      "knockback": 0,
-      "width": 20,
-      "height": 16,
-      "color": 12597547,
-      "weight": 0,
-      "planted": true
+      "name": "Fungo di Teemo",
+      "damage": 4,
+      "knockback": 200,
+      "width": 36,
+      "height": 34,
+      "color": 4182346,
+      "weight": 2,
+      "shroom": true
     },
     "birra": {
       "id": "birra",
@@ -777,7 +766,7 @@
     "birra",
     "bong",
     "fiore",
-    "funghetti"
+    "fungo"
   ],
   "supremeSpeeds": [
     {
@@ -818,13 +807,19 @@
     "angleDeg": 40,
     "cooldownMs": 350
   },
-  "funghi": {
-    "uses": 3,
+  "fungo": {
+    "thrownDamage": 4,
     "armMs": 600,
-    "lifeMs": 20000,
-    "damage": 6,
-    "tripMs": 3000,
-    "popVy": 520
+    "lifeMs": 25000,
+    "damage": 8,
+    "blastRadius": 70,
+    "poisonMs": 6000,
+    "poisonTickMs": 500,
+    "poisonPerSec": 2,
+    "slowMs": 2000,
+    "slowMult": 0.6,
+    "bounceVx": 260,
+    "bounceVy": 420
   },
   "spore": {
     "ms": 4000,

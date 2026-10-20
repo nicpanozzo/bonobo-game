@@ -18,7 +18,7 @@ Tutti i nomi sono provvisori: `// TODO community` finché il canale non li scegl
 | Banana | Si lancia, colpisce chi tocca. |
 | Fiore (#231) | Si consuma: 8 s intoccabili, colpi ×1,3, passo lento. |
 | **Bong** (#303) | Tre fasi, sotto. |
-| Funghetti di Teemo (#317) | Giù + J pianta funghetti quasi invisibili: chi li calpesta ha i comandi invertiti per 3 s. |
+| **Fungo di Teemo** (idea di Riccardo) | Sotto. Ha preso il posto del sacchetto di funghetti (#317). |
 | **Birra** (idea di Nicola) | Cappello da tirolese per 8 s: colpi ×1,4, un po' più veloci, ma si barcolla avanti e indietro. |
 
 ## Il Bong (idea di Nicola)
@@ -37,13 +37,29 @@ Cade come gli altri, si raccoglie con J o K e si tiene in mano.
 
 Con **K** il bong si lancia come la banana (giù + K lo posa), se preferisci tirarlo in testa a qualcuno.
 
+## Il Fungo di Teemo (idea di Riccardo)
+
+Un fungo solo, grande, come quello di Teemo in League of Legends: cappello verde acceso a cupola con
+macchie viola, gambo panna. Numeri in `FUNGO` (`constants.ts`).
+
+1. **Lancio.** Si raccoglie con J o K e si lancia con K come gli altri (su = in alto, giù = posalo ai piedi).
+   In volo colpisce come la banana (4%), poi cade dritto e si piazza lo stesso.
+2. **Si piazza dove atterra** e in 0,6 s si arma: affonda un po' e **sparisce agli avversari**. Chi l'ha
+   lanciato (e la sua squadra) lo vede trasparente. Resta a terra 25 s.
+3. **Rimbalzo.** Se cade su un fungo già piazzato rimbalza e si posa più avanti, nella direzione del lancio.
+4. **Scoppio.** Un avversario che lo tocca lo fa scoppiare in una nube di veleno che prende **tutti gli
+   avversari vicini**: 8% subito, poi **veleno** per 6 s (+1% ogni mezzo secondo, 12% in tutto) e per i
+   primi 2 s si va più piano. Il veleno prende il posto di birra e bong; col fiore si è intoccabili.
+5. **Grafica.** Il cappello si gonfia e scoppia, la nube verde-viola si allarga a cupola, ribolle e si
+   dissolve dal basso; le spore viola schizzano fuori. Chi è avvelenato ha una tinta verde che pulsa a
+   ogni scatto, bolle sopra la testa e una nuvoletta che lo segue; nell'HUD una barra verde-viola.
+
 ## Prossimi oggetti
 
 Ordinati per quanto valgono rispetto a quanto costano da fare.
 
 | Oggetto | Da dove viene | Cosa fa |
 | --- | --- | --- |
-| **Funghetti di Teemo** | LoL, Teemo | Raccolti, piazzi 3 funghetti quasi invisibili agli altri. Chi ci passa sopra resta in una nube: piccolo danno nel tempo e **comandi invertiti** per 3 s (il viaggio). |
 | **Divano** | LoL, Clessidra di Zhonya | Ti spiaggi sul divano (couch-lock): 2,5 s fermo e intoccabile, poi ti rialzi. Salva da una combo o da un KO sicuro. |
 | **Brownie spaziale** | Isaac, le pillole | Lo mangi e non succede niente... per 4 s. Poi sale: un effetto a caso tra buoni e cattivi (più veloce, più forte, gigante, piccolo, comandi invertiti, sonno). Come le pillole di Isaac, l'effetto si scopre solo dopo. |
 | **Clipper** | LoL, Incendio (Ignite) | Arma da tenere: J fa una fiammata corta che dà fuoco. Chi brucia prende danno a scatti per 4 s. |

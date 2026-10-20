@@ -2,13 +2,13 @@
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { BIRRA, BONG, FIGHTER, FUNGHI, ITEM_RULES, POWERUP, TICK_RATE } from "../constants";
+import { BIRRA, BONG, FIGHTER, FUNGO, ITEM_RULES, POWERUP, TICK_RATE } from "../constants";
 import { ITEMS } from "../items";
 import { getStage } from "../stages";
 import type { GameEvent, InputState } from "../types";
 import { createFighter, emptyInput, stepWorld, type Fighter, type PhysicsContext } from "./index";
 import { canBeHit, launch } from "./attacks";
-import { createItemWorld, handleItemInput, itemStates, pickKind, stepItems, type Item, type ItemWorld } from "./items";
+import { createItemWorld, handleItemInput, itemStates, pickKind, poisonSlowed, stepItems, type Item, type ItemWorld } from "./items";
 
 const DT = 1000 / TICK_RATE;
 const SQUAT = Math.round(FIGHTER.jumpSquatMs / DT); // tick di preparazione al salto (#384 A3)
@@ -171,14 +171,13 @@ describe("oggetti scelti nelle regole della stanza", () => {
 describe("il fiore, oggetto da consumare (#231)", () => {
   const fiore = (x: number, y: number): Item => ({ ...banana(x, y), kind: "fiore" });
 
-  it("compare una volta ogni tre banane (e due bong, due sacchetti di funghetti e due birre, #302)", () => {
+  it("compare una volta ogni tre banane (e due bong, due funghi di Teemo e due birre, #302)", () => {
     const kinds = Array.from({ length: 1000 }, (_, i) => pickKind(i / 1000));
     assert.equal(kinds.filter((k) => k === "birra").length, 200);
     assert.equal(kinds.filter((k) => k === "fiore").length, 100);
     assert.equal(kinds.filter((k) => k === "banana").length, 300);
     assert.equal(kinds.filter((k) => k === "bong").length, 200);
-    assert.equal(kinds.filter((k) => k === "funghetti").length, 200);
-    assert.equal(kinds.filter((k) => k === "fungo").length, 0, "i funghetti piantati non cadono dal cielo");
+    assert.equal(kinds.filter((k) => k === "fungo").length, 200);
   });
 
   it("raccolto sparisce e potenzia subito, senza attaccare", () => {
@@ -397,72 +396,195 @@ describe("il bong, in tre fasi (#302)", () => {
   });
 });
 
-describe("i funghetti di Teemo (#302)", () => {
-  const bag = (x: number, y: number): Item => ({ ...banana(x, y), kind: "funghetti" });
+describe("il fungo di Teemo", () => {
+  type Setup = ReturnType<typeof setup>;
 
-  // a raccoglie il sacchetto e pianta un funghetto dove sta
-  function plant() {
+  // a sta a x 400 guardando a destra, b dietro di lui (il palco va da 240 a 1040)
+  function ready(): Setup {
     const s = setup();
     const [a, b] = s.fighters;
-    a.x = 500;
-    b.x = 900;
-    s.world.items.push(bag(a.x + 10, a.y));
-    for (const keys of [{ light: true }, {}, { light: true, down: true }, {}]) {
-      press(a, keys);
-      run(s.world, s.fighters, s.ctx, 1);
-    }
+    a.x = 400;
+    a.facing = 1;
+    b.x = 290;
+    run(s.world, s.fighters, s.ctx, 2);
     return s;
   }
 
-  it("giù + J pianta un funghetto ai piedi, senza attaccare; tre e il sacchetto è finito", () => {
-    const { ctx, world, fighters } = plant();
-    const [a] = fighters;
-    const planted = world.items.filter((i) => i.kind === "fungo");
-    assert.equal(planted.length, 1);
-    assert.equal(planted[0].ownerId, a.id);
-    assert.equal(itemStates(world).find((i) => i.kind === "fungo")!.owner, a.id);
-    assert.equal(ofType(ctx.events, "attack").length, 0);
-    for (let k = 0; k < 2; k++) {
-      a.x += 60;
-      for (const keys of [{ light: true, down: true }, {}]) {
-        press(a, keys);
-        run(world, fighters, ctx, 1);
-      }
+  // a raccoglie un fungo che ha davanti e lo lancia con K (con giù lo posa ai piedi), poi aspetta che atterri
+  function throwShroom(s: Setup, keys: Partial<InputState> = {}): Item {
+    const [a] = s.fighters;
+    const item: Item = { ...banana(a.x + 10, a.y), id: s.world.nextId++, kind: "fungo" };
+    s.world.items.push(item);
+    for (const k of [{ light: true }, {}, { heavy: true, ...keys }, {}]) {
+      press(a, k);
+      run(s.world, s.fighters, s.ctx, 1);
     }
-    assert.equal(world.items.filter((i) => i.kind === "fungo").length, FUNGHI.uses);
-    assert.equal(world.items.filter((i) => i.kind === "funghetti").length, 0, "sacchetto vuoto, sparito");
+    run(s.world, s.fighters, s.ctx, 90);
+    return item;
+  }
+
+  const arm = (s: Setup) => run(s.world, s.fighters, s.ctx, Math.ceil(FUNGO.armMs / DT) + 1);
+
+  function addFighter(s: Setup, x: number): Fighter {
+    const f = createFighter({ id: `p${s.fighters.length}`, name: "C", characterId: "default", color: 0, team: 0, index: s.fighters.length, stocks: 3 }, stage);
+    f.x = x;
+    f.y = s.fighters[0].y;
+    s.fighters.push(f);
+    return f;
+  }
+
+  it("lanciato si piazza dove atterra: non si raccoglie più e nello snapshot dice di chi è", () => {
+    const s = ready();
+    const [a] = s.fighters;
+    const fungo = throwShroom(s);
+    assert.equal(ofType(s.ctx.events, "attack").length, 0, "raccogliere e lanciare non attacca");
+    assert.ok(fungo.onGround);
+    assert.ok(fungo.x > a.x + 60, "è volato avanti");
+    assert.equal(fungo.ownerId, a.id);
+    assert.equal(fungo.vx, 0);
+    assert.equal(itemStates(s.world).find((i) => i.id === fungo.id)!.owner, a.id);
+    a.x = fungo.x;
+    for (const k of [{ light: true }, {}]) {
+      press(a, k);
+      run(s.world, s.fighters, s.ctx, 1);
+    }
+    assert.equal(fungo.heldBy, null, "un fungo piazzato non si raccoglie");
   });
 
-  it("chi lo pianta non lo fa scattare; chi lo calpesta prende danno e ha destra e sinistra invertite", () => {
-    const { ctx, world, fighters } = plant();
-    const [a, b] = fighters;
-    const fungo = world.items.find((i) => i.kind === "fungo")!;
-    run(world, fighters, ctx, Math.ceil(FUNGHI.armMs / DT) + 1);
-    assert.ok(world.items.includes(fungo), "il proprietario ci sta sopra e non scatta");
-    a.x = 200;
+  it("con giù si posa ai piedi", () => {
+    const s = ready();
+    const [a] = s.fighters;
+    const fungo = throwShroom(s, { down: true });
+    assert.ok(Math.abs(fungo.x - a.x) < 40);
+    assert.equal(fungo.ownerId, a.id);
+  });
+
+  it("chi l'ha lanciato non lo fa scattare; un avversario sì: scoppio e veleno", () => {
+    const s = ready();
+    const [a, b] = s.fighters;
+    const fungo = throwShroom(s, { down: true });
+    arm(s);
+    assert.ok(s.world.items.includes(fungo), "il proprietario ci sta sopra e non scatta");
+    a.x = 1000;
     b.x = fungo.x;
-    b.y = fungo.y;
-    run(world, fighters, ctx, 1);
-    assert.ok(!world.items.includes(fungo));
-    assert.equal(b.percent, FUNGHI.damage);
-    assert.equal(b.powerup, "trip");
-    run(world, fighters, ctx, 30); // a terra
-    press(b, { right: true });
-    run(world, fighters, ctx, 3);
-    assert.ok(b.vx < 0, "destra porta a sinistra");
-    assert.equal(b.input.right, true, "l'input vero resta quello premuto");
-    run(world, fighters, ctx, Math.ceil(FUNGHI.tripMs / DT));
-    assert.equal(b.powerup, null);
-    press(b, { right: true });
-    run(world, fighters, ctx, 3);
-    assert.ok(b.vx > 0, "finito il viaggio si torna normali");
+    run(s.world, s.fighters, s.ctx, 1);
+    assert.ok(!s.world.items.includes(fungo), "è scoppiato");
+    assert.equal(b.percent, FUNGO.damage);
+    assert.equal(b.powerup, "veleno");
+    assert.equal(b.lastHitById, a.id, "il KO conta per chi l'ha lanciato");
+    const blast = ofType(s.ctx.events, "powerUp").filter((e) => e.kind === "veleno");
+    assert.equal(blast.length, 1);
+    assert.equal(blast[0].itemId, fungo.id);
   });
 
-  it("i funghetti piantati non tolgono posto agli oggetti che cadono", () => {
-    const { ctx, world, fighters } = plant();
-    world.spawnTimer = 0;
-    run(world, fighters, ctx, 1);
-    assert.equal(ofType(ctx.events, "itemSpawn").filter((e) => e.kind !== "fungo").length, 1);
+  it("non scatta prima di essersi armato", () => {
+    const s = ready();
+    const [a, b] = s.fighters;
+    const fungo = throwShroom(s, { down: true });
+    fungo.armMs = FUNGO.armMs; // appena piazzato
+    a.x = 1000;
+    b.x = fungo.x;
+    run(s.world, s.fighters, s.ctx, 1);
+    assert.ok(s.world.items.includes(fungo));
+    assert.equal(b.percent, 0);
+  });
+
+  it("la nube avvelena tutti gli avversari vicini, non quelli lontani", () => {
+    const s = ready();
+    const [a, b] = s.fighters;
+    const fungo = throwShroom(s, { down: true });
+    arm(s);
+    a.x = 1000;
+    const near = addFighter(s, fungo.x + 45);
+    const far = addFighter(s, fungo.x + 300);
+    b.x = fungo.x;
+    run(s.world, s.fighters, s.ctx, 1);
+    assert.equal(near.powerup, "veleno");
+    assert.equal(near.percent, FUNGO.damage);
+    assert.equal(far.powerup, null);
+    assert.equal(far.percent, 0);
+  });
+
+  it("il veleno fa salire la percentuale a scatti per poisonMs, poi finisce", () => {
+    const s = ready();
+    const [a, b] = s.fighters;
+    const fungo = throwShroom(s, { down: true });
+    arm(s);
+    a.x = 1000;
+    b.x = fungo.x;
+    run(s.world, s.fighters, s.ctx, 1);
+    run(s.world, s.fighters, s.ctx, Math.round(FUNGO.poisonTickMs / DT) + 1);
+    assert.equal(b.percent, FUNGO.damage + (FUNGO.poisonPerSec * FUNGO.poisonTickMs) / 1000, "il primo scatto");
+    run(s.world, s.fighters, s.ctx, Math.ceil(FUNGO.poisonMs / DT) + 2);
+    assert.equal(b.percent, FUNGO.damage + (FUNGO.poisonPerSec * FUNGO.poisonMs) / 1000);
+    assert.equal(b.powerup, null);
+  });
+
+  it("all'inizio del veleno si va più piano, dopo slowMs no", () => {
+    const walk = (poisoned: boolean) => {
+      const s = ready();
+      const [, b] = s.fighters;
+      if (poisoned) {
+        b.powerup = "veleno";
+        b.powerupMs = FUNGO.poisonMs;
+      }
+      press(b, { right: true });
+      run(s.world, s.fighters, s.ctx, 30);
+      return { vx: Math.abs(b.vx), slowed: poisonSlowed(b), b, s };
+    };
+    const normal = walk(false);
+    const slow = walk(true);
+    assert.ok(slow.slowed);
+    assert.ok(slow.vx < normal.vx, `${slow.vx} < ${normal.vx}`);
+    run(slow.s.world, slow.s.fighters, slow.s.ctx, Math.ceil(FUNGO.slowMs / DT));
+    assert.equal(poisonSlowed(slow.b), false);
+    assert.equal(slow.b.powerup, "veleno", "il veleno continua");
+  });
+
+  it("un fungo che cade su un altro rimbalza avanti e si piazza più in là", () => {
+    const s = ready();
+    const [a] = s.fighters;
+    const first = throwShroom(s, { down: true });
+    arm(s);
+    const second = throwShroom(s, { down: true });
+    run(s.world, s.fighters, s.ctx, 60);
+    assert.equal(second.ownerId, a.id);
+    assert.ok(second.onGround);
+    assert.ok(second.x - first.x >= 36, `rimbalzato in avanti: ${first.x} → ${second.x}`);
+    assert.equal(s.world.items.filter((i) => i.kind === "fungo").length, 2);
+  });
+
+  it("chi è della squadra di chi l'ha lanciato non lo fa scattare", () => {
+    const s = ready();
+    const [a, b] = s.fighters;
+    s.ctx.canHit = () => false;
+    const fungo = throwShroom(s, { down: true });
+    arm(s);
+    a.x = 1000;
+    b.x = fungo.x;
+    run(s.world, s.fighters, s.ctx, 1);
+    assert.ok(s.world.items.includes(fungo));
+    assert.equal(b.percent, 0);
+  });
+
+  it("in volo colpisce come una banana, poi cade e si piazza lo stesso", () => {
+    const s = ready();
+    const [a, b] = s.fighters;
+    b.x = a.x + 90;
+    run(s.world, s.fighters, s.ctx, 2);
+    const fungo = throwShroom(s);
+    assert.ok(b.percent >= FUNGO.thrownDamage, `b preso in volo: ${b.percent}`);
+    assert.ok(s.world.items.includes(fungo) || b.powerup === "veleno", "il fungo non si consuma nel colpo");
+    assert.ok(ofType(s.ctx.events, "hit").some((e) => e.itemKind === "fungo"));
+  });
+
+  it("i funghi piazzati non tolgono posto agli oggetti che cadono", () => {
+    const s = ready();
+    throwShroom(s, { down: true });
+    s.ctx.events.length = 0;
+    s.world.spawnTimer = 0;
+    run(s.world, s.fighters, s.ctx, 1);
+    assert.equal(ofType(s.ctx.events, "itemSpawn").length, 1);
   });
 });
 

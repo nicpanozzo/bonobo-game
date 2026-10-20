@@ -1,11 +1,12 @@
 // Corsa, controllo in aria, salti, caduta veloce e gravità.
 
 import { characterStats } from "../characters";
-import { ATTACKS, BIRRA, BONG, DASH, DODGE, FIGHTER, FLAG, HITSTUN_AIR_DRAG, POWERUP, RECOVERY, SLICK, SPORE } from "../constants";
+import { ATTACKS, BIRRA, BONG, DASH, DODGE, FIGHTER, FLAG, FUNGO, HITSTUN_AIR_DRAG, POWERUP, RECOVERY, SLICK, SPORE } from "../constants";
 import { attackSpecFor, startAttack } from "./attacks";
 import { endDash, stepDash } from "./dash";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
 import { onPuddle } from "./projectiles";
+import { poisonSlowed } from "./items";
 import { attackMoveFactor } from "./supreme";
 
 // Cosa fa il lottatore con i tasti premuti (solo se non è stordito)
@@ -53,7 +54,8 @@ export function applyControls(f: Fighter, dt: number, ctx: PhysicsContext): void
     return;
   }
   const stats = characterStats(f.characterId);
-  const speed = (f.carrier ? FLAG.carrierSpeed : 1) * (f.powerup === "fiore" ? POWERUP.speedMult : f.powerup === "birra" ? BIRRA.speedMult : f.powerup === "spore" ? SPORE.speedMult : 1); // la bandiera pesa, il fiore rilassa (#231), la birra spinge (#302), le spore rallentano (#358)
+  const speed = (f.carrier ? FLAG.carrierSpeed : 1) * (f.powerup === "fiore" ? POWERUP.speedMult : f.powerup === "birra" ? BIRRA.speedMult : f.powerup === "spore" ? SPORE.speedMult : poisonSlowed(f) ? FUNGO.slowMult : 1); // la bandiera pesa, il fiore rilassa (#231), la birra spinge (#302), le spore rallentano (#358), il veleno del fungo all'inizio
+
   // Durante un attacco da terra si resta fermi, in aria si mantiene lo slancio
   const dashSpeed = stepDash(f, dir, dt * 1000, ctx); // scatto e corsa (#199)
   if (f.onGround && dashSpeed !== null) {

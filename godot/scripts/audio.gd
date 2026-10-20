@@ -183,7 +183,7 @@ func on_event(e: Dictionary) -> void:
 		# Il fiore (#231): un respiro lungo che entra, e uno che esce quando finisce
 		"powerUp":
 			var power_kind := str(e.get("kind"))
-			_play("dizzy" if power_kind == "trip" else ("burp" if power_kind == "birra" else "inhale"), {"x": e.x}) # funghetti e birra (#302)
+			_play("shroomPop" if power_kind == "veleno" else ("burp" if power_kind == "birra" else "inhale"), {"x": e.x}) # il fungo di Teemo e la birra (#302)
 		"powerEnd":
 			_play("exhale", {"volume": 0.6})
 		# Il bong (#302): gorgoglio quando si carica, colpo di tosse con la nuvola, giramento di testa nel crollo
@@ -723,6 +723,13 @@ func _build_sounds() -> void:
 		s.noise(0, "bandpass", 900, 400, 0.35, 0.7)
 		s.noise(0.38, "bandpass", 1300, 500, 0.14, 0.55)
 		s.noise(0.6, "bandpass", 1200, 450, 0.16, 0.5))
+	# Il fungo di Teemo che scoppia: un tonfo sordo, il soffio della nube e lo sfrigolio del veleno che bolle
+	_sounds.shroomPop = make.call(1.0, func(s):
+		s.tone(0, "sine", 180, 60, 0.18, 0.6)
+		s.noise(0, "lowpass", 1800, 300, 0.25, 0.6)
+		s.noise(0.1, "bandpass", 3200, 1800, 0.7, 0.18)
+		for k in 4:
+			s.tone(0.2 + k * 0.13, "sine", 500 + k * 70, 900 + k * 60, 0.05, 0.08))
 	# La birra (#302): un rutto basso che vibra
 	_sounds.burp = make.call(0.6, func(s):
 		s.tone(0, "square", 110, 70, 0.5, 0.25)

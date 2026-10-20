@@ -4,7 +4,7 @@
 //   stepItems() dopo stepWorld: comparsa, caduta, oggetti in mano e colpi di quelli lanciati
 
 import { characterStats } from "../characters";
-import { BONG, FIGHTER, FUNGHI, HITSTOP, HITSTUN_PER_KNOCKBACK, ITEM_RULES } from "../constants";
+import { BONG, FIGHTER, FUNGO, HITSTOP, HITSTUN_PER_KNOCKBACK, ITEM_RULES } from "../constants";
 import { DROPPABLE_ITEMS, ITEMS } from "../items";
 import type { ItemSpot } from "../stages";
 import { rng } from "../stageGenerator";
@@ -21,9 +21,10 @@ export interface Item extends ItemState {
   riding: number; // indice della piattaforma mobile su cui è appoggiato, -1 se nessuna (#14)
   thrownBy: string | null;
   lifeMs: number; // ms che restano a terra prima di sparire
-  ownerId?: string; // il funghetto piantato (#302): chi l'ha piantato, a lui non scatta
-  uses?: number; // il sacchetto dei funghetti: quanti ne restano
-  armMs?: number; // il funghetto piantato: ms prima che scatti
+  ownerId?: string; // il fungo piazzato: chi l'ha lanciato, a lui e alla sua squadra non scatta
+  armMs?: number; // il fungo piazzato: ms prima che si armi
+  plantBy?: string; // il fungo lanciato o posato: chi lo piazzerà quando tocca terra
+  plantDir?: 1 | -1; // il fungo lanciato: verso dove rimbalza se cade su un altro fungo
   loadMs?: number; // il bong (#302): ms di carica tenendo J, assente o -1 se non lo si carica
 }
 
@@ -64,6 +65,9 @@ export function resetItems(world: ItemWorld): void {
   world.spawnTimer = Math.min(ITEM_RULES.firstSpawnMs, world.everyMs);
 }
 
+// Un fungo piazzato non si raccoglie e scatta sugli avversari; non conta tra gli oggetti che cadono
+const planted = (i: Item) => i.ownerId !== undefined;
+
 // Non si raccoglie né si lancia mentre si è occupati: colpiti, in attacco, in schivata o inermi dopo il recupero
 const busy = (f: Fighter) =>
   f.eliminated || f.respawning || f.hitstun || f.hitstopTimer > 0 || f.attack !== null || f.helpless || f.dodgeTimer > 0;
@@ -91,19 +95,13 @@ export function handleItemInput(world: ItemWorld, fighters: Fighter[], ctx: Phys
       consumeAttackKeys(f);
       continue;
     }
-    // Il sacchetto dei funghetti (#302): giù + J ne pianta uno ai piedi, finiti sparisce. Senza giù si lancia come gli altri
-    if (held && ITEMS[held.kind].mushrooms && pressed(f, "light") && f.input.down && f.onGround) {
-      plantMushroom(world, held, f, ctx);
-      consumeAttackKeys(f);
-      continue;
-    }
     if (held) {
       throwItem(held, f, ctx);
       consumeAttackKeys(f);
       continue;
     }
     const near = world.items.find(
-      (i) => !i.heldBy && !i.thrown && !ITEMS[i.kind].planted && Math.abs(i.x - f.x) < ITEM_RULES.pickRange && i.y > f.y - FIGHTER.height && i.y < f.y + 12,
+      (i) => !i.heldBy && !i.thrown && !planted(i) && Math.abs(i.x - f.x) < ITEM_RULES.pickRange && i.y > f.y - FIGHTER.height && i.y < f.y + 12,
     );
     if (near && ITEMS[near.kind].consume) {
       powerUp(world, near, f, ctx);
@@ -127,56 +125,72 @@ function powerUp(world: ItemWorld, item: Item, f: Fighter, ctx: PhysicsContext) 
   ctx.events.push({ type: "powerUp", itemId: item.id, id: f.id, kind: use.powerup, x: Math.round(f.x), y: Math.round(f.y) });
 }
 
-function plantMushroom(world: ItemWorld, bag: Item, f: Fighter, ctx: PhysicsContext) {
-  const x = Math.round(f.x);
-  const y = Math.round(f.y);
-  const item: Item = { id: world.nextId++, kind: "fungo", x, y, vx: 0, vy: 0, heldBy: null, thrown: false, onGround: false, riding: -1, thrownBy: null, lifeMs: FUNGHI.lifeMs, ownerId: f.id, armMs: FUNGHI.armMs };
-  world.items.push(item);
-  ctx.events.push({ type: "itemSpawn", itemId: item.id, kind: "fungo", x, y });
-  bag.uses = (bag.uses ?? FUNGHI.uses) - 1;
-  if (bag.uses <= 0) bag.lifeMs = 0; // sacchetto vuoto: sparisce al filtro
+// Il fungo lanciato o posato tocca terra: se c'è già un fungo piazzato lì sotto rimbalza in avanti
+// (come quello di Teemo), altrimenti si piazza e comincia ad armarsi
+function settleShroom(world: ItemWorld, item: Item) {
+  const half = ITEMS.fungo.width / 2;
+  const onShroom = world.items.some((o) => o !== item && planted(o) && Math.abs(o.x - item.x) < half * 2 && Math.abs(o.y - item.y) < 8);
+  if (onShroom) {
+    item.vx = (item.plantDir ?? 1) * FUNGO.bounceVx;
+    item.vy = -FUNGO.bounceVy;
+    item.onGround = false;
+    return;
+  }
+  item.ownerId = item.plantBy;
+  item.plantBy = undefined;
+  item.plantDir = undefined;
+  item.armMs = FUNGO.armMs;
+  item.lifeMs = FUNGO.lifeMs;
+  item.vx = 0;
 }
 
-// Chi calpesta un funghetto armato (#302): piccolo danno, saltello e destra/sinistra invertite per un po'
+// Un avversario tocca il fungo armato: scoppia in una nube che avvelena tutti gli avversari dentro blastRadius
 function triggerMushroom(item: Item, fighters: Fighter[], ctx: PhysicsContext) {
   if ((item.armMs ?? 0) > 0) return;
   const owner = fighters.find((f) => f.id === item.ownerId);
-  for (const target of fighters) {
-    if (target.id === item.ownerId || target.eliminated || target.respawning || target.invulnerable) continue;
-    if (owner && ctx.canHit && !ctx.canHit(owner, target)) continue;
+  const foes = fighters.filter(
+    (t) => t.id !== item.ownerId && !t.eliminated && !t.respawning && !t.invulnerable && !(owner && ctx.canHit && !ctx.canHit(owner, t)),
+  );
+  const spec = ITEMS.fungo;
+  const half = spec.width / 2;
+  const stepped = foes.some((t) => {
+    const body = bodyBox(t);
+    return item.x + half > body.x && item.x - half < body.x + body.w && item.y > body.y && item.y - spec.height < body.y + body.h;
+  });
+  if (!stepped) return;
+  item.lifeMs = 0;
+  const cx = item.x;
+  const cy = item.y - spec.height / 2;
+  for (const target of foes) {
     const body = bodyBox(target);
-    const half = ITEMS.fungo.width / 2;
-    if (!(item.x + half > body.x && item.x - half < body.x + body.w && item.y > body.y && item.y - ITEMS.fungo.height < body.y + body.h)) continue;
-    item.lifeMs = 0;
-    target.percent = Math.min(999, target.percent + FUNGHI.damage);
-    target.vy = -FUNGHI.popVy;
-    target.onGround = false;
+    const nx = Math.max(body.x, Math.min(cx, body.x + body.w));
+    const ny = Math.max(body.y, Math.min(cy, body.y + body.h));
+    if ((nx - cx) ** 2 + (ny - cy) ** 2 > FUNGO.blastRadius ** 2) continue;
+    target.percent = Math.min(999, target.percent + FUNGO.damage);
     target.lastHitById = item.ownerId ?? null;
-    if (target.powerup !== "fiore") {
-      // Il viaggio prende il posto del bong: chi era fatto ora è confuso
-      target.powerup = "trip";
-      target.powerupMs = FUNGHI.tripMs;
-    }
-    ctx.events.push({ type: "powerUp", itemId: item.id, id: target.id, kind: "trip", x: Math.round(item.x), y: Math.round(item.y) });
-    return;
+    // Il veleno prende il posto di birra e bong; il fiore rende intoccabili, quindi qui non arriva
+    target.powerup = "veleno";
+    target.powerupMs = FUNGO.poisonMs;
+    ctx.events.push({ type: "powerUp", itemId: item.id, id: target.id, kind: "veleno", x: Math.round(item.x), y: Math.round(item.y) });
   }
 }
 
-// Il viaggio dei funghetti (#302): per chi ce l'ha destra e sinistra si scambiano, prima e dopo il passo di stepWorld
-// Restituisce chi ha scambiato: si rimettono a posto proprio loro, anche se il viaggio finisce nel passo
-export function swapTripInput(fighters: Fighter[]): Fighter[] {
-  const tripping = fighters.filter((f) => f.powerup === "trip");
-  for (const f of tripping) {
-    f.input = { ...f.input, left: f.input.right, right: f.input.left };
-    f.prevInput = { ...f.prevInput, left: f.prevInput.right, right: f.prevInput.left };
-  }
-  return tripping;
+// Il veleno del fungo: la percentuale sale a scatti di poisonTickMs mentre il tempo scorre (l'ultimo a tempo finito)
+function poisonTick(f: Fighter, beforeMs: number, afterMs: number) {
+  const ticks = Math.ceil(beforeMs / FUNGO.poisonTickMs) - Math.ceil(afterMs / FUNGO.poisonTickMs);
+  if (ticks <= 0) return;
+  f.percent = Math.min(999, f.percent + (ticks * FUNGO.poisonPerSec * FUNGO.poisonTickMs) / 1000);
 }
+
+// Da avvelenati, i primi slowMs si va più piano (come le spore, movement.ts)
+export const poisonSlowed = (f: Fighter) => f.powerup === "veleno" && f.powerupMs > FUNGO.poisonMs - FUNGO.slowMs;
 
 // Il tempo del potenziamento scorre come gli altri timer del lottatore (fermo nell'hitstop)
 export function tickPowerup(f: Fighter, dtMs: number, ctx: PhysicsContext): void {
   if (!f.powerup) return;
+  const beforeMs = f.powerupMs;
   f.powerupMs = Math.max(0, f.powerupMs - dtMs);
+  if (f.powerup === "veleno") poisonTick(f, beforeMs, f.powerupMs);
   if (f.powerupMs > 0) return;
   ctx.events.push({ type: "powerEnd", id: f.id, kind: f.powerup });
   // Troppo fatti (#302): non si è soffiato in tempo, si crolla tramortiti come con lo scudo rotto
@@ -267,6 +281,10 @@ function blowCloud(f: Fighter, fighters: Fighter[], ctx: PhysicsContext) {
 function throwItem(item: Item, f: Fighter, ctx: PhysicsContext) {
   item.heldBy = null;
   item.loadMs = -1;
+  if (ITEMS[item.kind].shroom) {
+    item.plantBy = f.id; // lanciato o posato ai piedi, dove tocca terra si piazza
+    item.plantDir = f.facing;
+  }
   if (f.input.down && !f.input.up) {
     item.vx = 0;
     item.vy = 0;
@@ -291,7 +309,7 @@ export function stepItems(world: ItemWorld, fighters: Fighter[], dtMs: number, c
   world.spawnTimer -= dtMs;
   if (world.spawnTimer <= 0) {
     world.spawnTimer = world.everyMs;
-    if (world.items.filter((i) => !ITEMS[i.kind].planted).length < world.maxOnStage) spawn(world, ctx);
+    if (world.items.filter((i) => !planted(i)).length < world.maxOnStage) spawn(world, ctx);
   }
 
   for (const item of world.items) {
@@ -322,7 +340,8 @@ export function stepItems(world: ItemWorld, fighters: Fighter[], dtMs: number, c
     land(item, prevY, spec.width / 2, dtMs, ctx);
 
     if (item.thrown) hitWithItem(item, fighters, ctx);
-    if (spec.planted) {
+    if (spec.shroom && item.onGround && item.plantBy) settleShroom(world, item);
+    if (planted(item)) {
       item.armMs = Math.max(0, (item.armMs ?? 0) - dtMs);
       triggerMushroom(item, fighters, ctx);
       if (!item.onGround) item.lifeMs -= dtMs; // anche se cade nel vuoto prima o poi sparisce
@@ -427,7 +446,9 @@ function hitWithItem(item: Item, fighters: Fighter[], ctx: PhysicsContext) {
     if (!(box.x < body.x + body.w && box.x + box.w > body.x && box.y < body.y + body.h && box.y + box.h > body.y)) continue;
 
     const dir = item.vx !== 0 ? (Math.sign(item.vx) as 1 | -1) : target.x >= item.x ? 1 : -1;
-    item.lifeMs = 0; // sparisce al prossimo filtro
+    // Sparisce al prossimo filtro; il fungo invece cade dritto e si piazza lo stesso
+    if (spec.shroom) item.vx = 0;
+    else item.lifeMs = 0;
     // Lo scudo para anche gli oggetti lanciati (#109): l'oggetto si consuma lo stesso
     if (target.shielding) {
       hitShield(target, item.thrownBy ?? "", spec.damage, dir, Math.round(item.x), Math.round(item.y - spec.height / 2), ctx);
