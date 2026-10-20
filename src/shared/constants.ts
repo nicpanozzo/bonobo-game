@@ -495,6 +495,24 @@ export const ITEM_RULES = {
   holdOffsetY: 52, // pixel sopra i piedi
 };
 
+// Quanti oggetti cadono, scelto da chi crea la stanza: indice in rules.itemAmount. Il default è "Normali" = ITEM_RULES
+export const ITEM_AMOUNTS = [
+  { label: "Nessuno", everyMs: 0, maxOnStage: 0 },
+  { label: "Pochi", everyMs: 18000, maxOnStage: 1 }, // ms tra un oggetto e l'altro, oggetti in campo insieme
+  { label: "Normali", everyMs: ITEM_RULES.spawnEveryMs, maxOnStage: ITEM_RULES.maxOnStage },
+  { label: "Tanti", everyMs: 6000, maxOnStage: 4 },
+  { label: "Pioggia", everyMs: 2500, maxOnStage: 8 },
+];
+export const DEFAULT_ITEM_AMOUNT = 2;
+
+// Velocità della barra della suprema, scelta da chi crea la stanza: moltiplica tutta la carica (rules.supremeSpeed)
+export const SUPREME_SPEEDS = [
+  { mult: 1, label: "Normale" },
+  { mult: 1.5, label: "Veloce" },
+  { mult: 2, label: "Molto veloce" },
+  { mult: 4, label: "Turbo" },
+];
+
 // Potenziamenti degli oggetti da consumare (#231): il fiore rende intoccabili ma "rilassati"
 export const POWERUP = {
   flowerMs: 8000, // ms di effetto dalla raccolta

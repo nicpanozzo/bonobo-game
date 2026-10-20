@@ -161,6 +161,9 @@ export interface MatchRules {
   timeLimitSec: number; // 0 = senza limite di tempo
   friendlyFire: boolean; // nelle squadre, se ci si può colpire tra compagni
   teamCount: number; // quante squadre in modalità Squadre, da 2 a MAX_TEAMS (#409); in Bandiera sempre 2
+  supremeSpeed: number; // moltiplicatore della carica della suprema, uno dei SUPREME_SPEEDS (1 = normale)
+  itemAmount: number; // quanti oggetti cadono: indice in ITEM_AMOUNTS (0 = nessuno)
+  itemKinds: string[]; // quali oggetti possono cadere (id di ITEMS); vuoto = nessuno
 }
 
 // Cose successe tra uno snapshot e l'altro. La fisica le produce, e chi disegna,
