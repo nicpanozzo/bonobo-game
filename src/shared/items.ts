@@ -1,4 +1,4 @@
-import { BIRRA, POWERUP } from "./constants";
+import { BIRRA, FUNGO, POWERUP } from "./constants";
 
 // Oggetti che cadono nell'arena (#17 passo 3). Caduta, raccolta e lancio sono in
 // src/shared/physics/items.ts, i numeri comuni in ITEM_RULES (constants.ts).
@@ -14,8 +14,7 @@ export interface ItemSpec {
   weight?: number; // quanto spesso compare rispetto agli altri (1 se manca)
   // Oggetto da consumare (#231): raccolto non si tiene in mano, dà subito il potenziamento per ms
   consume?: { powerup: string; ms: number };
-  mushrooms?: boolean; // il sacchetto dei funghetti di Teemo (#302): giù + J ne pianta uno, senza giù si lancia
-  planted?: boolean; // un funghetto piantato: non si raccoglie, scatta su chi lo calpesta
+  shroom?: boolean; // il fungo di Teemo: lanciato o posato si piazza dove atterra, armato scoppia sugli avversari (FUNGO)
   bong?: boolean; // si tiene in mano e si fuma in tre fasi (#302): J carica, K lancia come gli altri
 }
 
@@ -25,13 +24,12 @@ export const ITEMS: Record<string, ItemSpec> = {
   // TODO community: il nome nel gioco (#231). Intoccabili, colpi più forti, passo lento (POWERUP)
   fiore: { id: "fiore", name: "Fiore", damage: 0, knockback: 0, width: 26, height: 26, color: 0x4caf50, weight: 1, consume: { powerup: "fiore", ms: POWERUP.flowerMs } },
   // TODO community: il nome nel gioco (#302). Carica, fatto, nuvola di fumo (BONG)
-  // TODO community: il nome nel gioco (#302). Teemo di LoL: trappole quasi invisibili che fanno "viaggiare" (FUNGHI)
-  funghetti: { id: "funghetti", name: "Funghetti", damage: 4, knockback: 250, width: 24, height: 20, color: 0x9b59b6, weight: 2, mushrooms: true },
-  fungo: { id: "fungo", name: "Funghetto", damage: 0, knockback: 0, width: 20, height: 16, color: 0xc0392b, weight: 0, planted: true },
+  // TODO community: il nome nel gioco. Teemo di LoL: un fungo grande, invisibile da armato, scoppia in una nube di veleno (FUNGO)
+  fungo: { id: "fungo", name: "Fungo di Teemo", damage: FUNGO.thrownDamage, knockback: 200, width: 36, height: 34, color: 0x3fd14a, weight: 2, shroom: true },
   // TODO community: il nome nel gioco (#302). Cappello tirolese, colpi più forti, si barcolla (BIRRA)
   birra: { id: "birra", name: "Birra", damage: 0, knockback: 0, width: 22, height: 30, color: 0xf0b030, weight: 2, consume: { powerup: "birra", ms: BIRRA.ms } },
   bong: { id: "bong", name: "Bong", damage: 10, knockback: 380, width: 22, height: 40, color: 0x7fd8c4, weight: 2, bong: true },
 };
 
-// Gli oggetti che possono cadere dal cielo (i funghetti piantati no), in ordine: si scelgono nelle regole della stanza
+// Gli oggetti che possono cadere dal cielo (peso 0 no), in ordine: si scelgono nelle regole della stanza
 export const DROPPABLE_ITEMS: readonly string[] = Object.keys(ITEMS).filter((k) => (ITEMS[k].weight ?? 1) > 0).sort();

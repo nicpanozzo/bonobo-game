@@ -35,8 +35,8 @@ describe("regole della partita", () => {
     assert.equal(DEFAULT_RULES.supremeSpeed, 1);
     assert.equal(ITEM_AMOUNTS[DEFAULT_RULES.itemAmount].everyMs, ITEM_RULES.spawnEveryMs);
     assert.equal(ITEM_AMOUNTS[DEFAULT_RULES.itemAmount].maxOnStage, ITEM_RULES.maxOnStage);
-    assert.ok(DEFAULT_RULES.itemKinds.includes("banana") && !DEFAULT_RULES.itemKinds.includes("fungo"));
-    const r = sanitizeRules({ supremeSpeed: 2, itemAmount: 99, itemKinds: ["bong", "fungo", "boh", "banana", "bong"] });
+    assert.ok(DEFAULT_RULES.itemKinds.includes("banana") && DEFAULT_RULES.itemKinds.includes("fungo") && !DEFAULT_RULES.itemKinds.includes("funghetti"));
+    const r = sanitizeRules({ supremeSpeed: 2, itemAmount: 99, itemKinds: ["bong", "funghetti", "boh", "banana", "bong"] });
     assert.equal(r.supremeSpeed, 2);
     assert.equal(r.itemAmount, ITEM_AMOUNTS.length - 1);
     assert.deepEqual(r.itemKinds, ["banana", "bong"]);

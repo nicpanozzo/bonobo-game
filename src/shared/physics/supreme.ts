@@ -106,7 +106,7 @@ function infectOf(characterId: string): InfectSupreme | null {
 }
 
 // La suprema "infect" (#358) ha preso target: lui prende le spore, chi la fa il micelio. Il fiore protegge già
-// (invulnerabili), il resto lo sostituisce come fanno i funghetti
+// (invulnerabili), il resto lo sostituisce come fa il veleno del fungo di Teemo
 export function infect(attacker: Fighter, target: Fighter, ctx: PhysicsContext): void {
   if (attacker.attack !== "supreme" || !infectOf(attacker.characterId)) return;
   const x = Math.round(target.x);

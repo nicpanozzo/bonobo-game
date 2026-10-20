@@ -542,14 +542,21 @@ export const BONG = {
   cooldownMs: 350, // ms dopo la nuvola prima di poter attaccare
 };
 
-// I funghetti di Teemo (#302): dal sacchetto giù + J ne pianta uno ai piedi; quasi invisibili agli altri, chi li calpesta "viaggia"
-export const FUNGHI = {
-  uses: 3, // funghetti in un sacchetto
-  armMs: 600, // ms dopo averlo piantato prima che scatti (non lo si calpesta da soli piantandolo)
-  lifeMs: 20000, // ms prima che un funghetto piantato sparisca
-  damage: 6, // percentuale a chi lo calpesta
-  tripMs: 3000, // ms con destra e sinistra invertite
-  popVy: 520, // pixel/s verso l'alto: il funghetto che scoppia fa saltellare
+// Il fungo di Teemo (idea di Riccardo): si lancia, si piazza dove atterra e da armato gli avversari non lo vedono.
+// Chi ci passa sopra lo fa scoppiare in una nube di veleno che colpisce tutti gli avversari vicini
+export const FUNGO = {
+  thrownDamage: 4, // percentuale a chi viene preso dal fungo in volo (poi cade e si piazza lo stesso)
+  armMs: 600, // ms dopo l'atterraggio prima che si armi (e sparisca alla vista degli avversari)
+  lifeMs: 25000, // ms prima che un fungo piazzato sparisca
+  damage: 8, // percentuale dello scoppio
+  blastRadius: 70, // pixel: raggio della nube, dal centro del fungo al punto più vicino del corpo
+  poisonMs: 6000, // ms di veleno
+  poisonTickMs: 500, // ms tra uno scatto di veleno e l'altro
+  poisonPerSec: 2, // percentuale al secondo del veleno (12% in tutto con 6 s)
+  slowMs: 2000, // ms di rallentamento all'inizio del veleno
+  slowMult: 0.6, // frazione della velocità orizzontale da rallentati
+  bounceVx: 260, // pixel/s in avanti: un fungo che cade su un altro rimbalza nella direzione del lancio
+  bounceVy: 420, // pixel/s verso l'alto del rimbalzo
 };
 
 // La birra (#302, idea di Nicola): cappello da tirolese, si barcolla ma si picchia più forte
