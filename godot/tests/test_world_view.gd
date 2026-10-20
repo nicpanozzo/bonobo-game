@@ -29,6 +29,19 @@ func test_server_vecchio_senza_campo_ledge() -> void:
 	runner.check(FighterPose.animation_for(p) == "fall", "senza ledge si cade come prima")
 
 
+# Preparazione al salto e pausa all'atterraggio (#384 A3): campi facoltativi, chi non li manda resta com'era
+func test_preparazione_al_salto_e_atterraggio() -> void:
+	runner.check(FighterPose.animation_for(_player({"jumpSquat": 33})) == "jumpSquat", "preparazione al salto")
+	runner.check(FighterPose.animation_for(_player({"landing": 100})) == "land", "pausa all'atterraggio")
+	runner.check(FighterPose.animation_for(_player({"landing": 100, "hitstun": true})) == "hit", "colpiti vince sull'atterraggio")
+	runner.check(FighterPose.animation_for(_player({})) == "idle", "senza i campi, fermi")
+	var game: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/game.json"))
+	for id in game.characters:
+		var anims: Dictionary = game.characters[id].get("sprite", {}).get("animations", {})
+		if not anims.is_empty():
+			runner.check(anims.has("jumpSquat") and anims.has("land"), "%s: jumpSquat e land ripiegano su uno stato disegnato" % id)
+
+
 func test_stato_preciso_dei_colpi() -> void:
 	runner.check(FighterPose.animation_for(_player({"attack": "lightUp"})) == "lightUp", "variante leggera")
 	runner.check(FighterPose.animation_for(_player({"attack": "heavyAir", "onGround": false})) == "heavyAir", "variante pesante in aria")

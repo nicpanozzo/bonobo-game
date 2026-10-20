@@ -74,6 +74,8 @@ export interface PlayerState {
   stunned: boolean; // stordito dopo che lo scudo si è rotto: fermo e colpibile
   grabbedBy: string | null; // id di chi lo tiene con la presa (#109), null se libero
   dashing: boolean; // scatta o corre dopo un doppio tocco (#199)
+  jumpSquat?: number; // ms di preparazione al salto che restano, a terra (#384 A3); manca se non ci si prepara
+  landing?: number; // ms di pausa all'atterraggio che restano (#384 A3); manca se non si sta atterrando
   charge: number; // carica della speciale in corso (E10), da 0 a 1; 0 se non si carica
   supreme: number; // barra della suprema (#101), da 0 a SUPREME.max: piena, il tasto suprema la lancia
   powerup: string | null; // potenziamento in corso da un oggetto consumato (#231), null se nessuno
@@ -117,6 +119,7 @@ export interface PredictionState {
   helpless: boolean; // dopo il recupero niente attacchi fino all'atterraggio
   lightBuffer: number; // ms in cui una pressione del leggero vale ancora (E6)
   heavyBuffer: number; // ms in cui una pressione del pesante vale ancora (E6)
+  attackAir?: boolean; // l'attacco in corso è partito in aria: atterrando si interrompe con la sua pausa (#384 A3)
 }
 
 // Un proiettile in volo (E10): lo tira una speciale e colpisce come un attacco

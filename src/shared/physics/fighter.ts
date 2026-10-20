@@ -70,6 +70,9 @@ export interface Fighter extends PlayerState {
   dashByTap: boolean; // il doppio tocco fa scattare (i bot no: i loro tocchi brevi scatterebbero per sbaglio)
   coyoteTimer: number; // ms in cui, appena scesi dal bordo, il salto vale ancora da terra
   jumpRising: boolean; // si sta salendo per un salto: lasciando il tasto si accorcia
+  jumpSquatTimer: number; // ms di preparazione al salto che restano (#384 A3): a 0 ci si stacca da terra
+  landingTimer: number; // ms di pausa all'atterraggio che restano (#384 A3): fermi, niente tasti
+  attackAir: boolean; // l'attacco in corso è partito in aria: atterrando si interrompe con la sua pausa (#384 A3)
   shortHop: boolean; // lasciare presto il salto lo accorcia (i bot no: tengono il tasto un tick solo)
   inputSeq: number; // E17: InputState.seq dell'input in uso, -1 se il client non lo manda
   inputTicks: number; // tick giocati con quell'input
@@ -151,6 +154,9 @@ export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
     dashByTap: DASH.byTap,
     coyoteTimer: 0,
     jumpRising: false,
+    jumpSquatTimer: 0,
+    landingTimer: 0,
+    attackAir: false,
     shortHop: true,
     inputSeq: -1,
     inputTicks: 0,

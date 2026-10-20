@@ -14,7 +14,8 @@ func test_numero_dell_input_e_il_tick_locale() -> void:
 const KEYS := {"l": "left", "r": "right", "j": "jump", "d": "down", "x": "dodge", "a": "light", "h": "heavy", "u": "up", "s": "run"}
 const FIELDS := ["x", "y", "vx", "vy", "onGround", "facing", "jumps", "coyote", "rising", "drop", "jumpBuffer",
 	"dashing", "dash", "tapDir", "tapTimer", "tapHold", "dodge", "dodgeCooldown", "airDodge", "dodgeBuffer",
-	"attack", "attackTimer", "smashCharge", "cooldown", "recoveryUsed", "helpless", "lightBuffer", "heavyBuffer"]
+	"attack", "attackTimer", "smashCharge", "cooldown", "recoveryUsed", "helpless", "lightBuffer", "heavyBuffer",
+	"jumpSquat", "landing", "attackAir"]
 
 
 func _input(keys: String) -> Dictionary:
