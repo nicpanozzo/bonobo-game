@@ -2619,6 +2619,7 @@
     "padova-palazzo": {
       "id": "padova-palazzo",
       "name": "Padova · il palazzo",
+      "hidden": true,
       "width": 1920,
       "camera": {
         "minZoom": 0.6

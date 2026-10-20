@@ -8,7 +8,7 @@ import { hazardActive, moverPosition } from "./physics/elements";
 import { courseSteps, generateCourse } from "./courseGenerator";
 import { generateStage, seedFromStageId } from "./stageGenerator";
 import { JUMP_HEIGHT, reachable, SIDE_REACH, stageCheckData } from "./stageCheck";
-import { CHORD_NAME, getStage, STAGE_MUSIC_LEADS, STAGES, stageArtFiles, stageWidth, type StageMusic, type StageSpec } from "./stages";
+import { CHORD_NAME, DEFAULT_STAGE_ID, getStage, STAGE_MUSIC_LEADS, STAGES, stageArtFiles, stageWidth, type StageMusic, type StageSpec } from "./stages";
 
 function checkStage(stage: StageSpec) {
   for (const p of [...stage.solids, ...stage.platforms]) {
@@ -177,6 +177,14 @@ describe("arene", () => {
     assert.equal(getStage("isole").id, "isole");
     assert.equal(getStage("casuale-42").id, "casuale-42");
     assert.equal(seedFromStageId("casuale-abc"), null);
+  });
+
+  it("le arene nascoste si avviano ancora per id ma non sono l'arena predefinita (#408)", () => {
+    assert.ok(!STAGES[DEFAULT_STAGE_ID].hidden, "l'arena predefinita si vede nella lobby");
+    assert.equal(STAGES["padova-palazzo"].hidden, true, "la vecchia Padova è nascosta");
+    assert.equal(getStage("padova-palazzo").id, "padova-palazzo", "ma resta giocabile per id");
+    const shown = Object.values(STAGES).filter((s) => !s.hidden);
+    assert.deepEqual(shown.filter((s) => s.id.startsWith("padova")).map((s) => s.id), ["padova"], "una sola Padova nella lobby");
   });
 
   it("i percorsi della Corsa si fanno tutti saltando da un appoggio al successivo", () => {
