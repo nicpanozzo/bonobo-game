@@ -1722,7 +1722,7 @@ def loggia_amulea(t, lx, base):
     from pittura import Quadro
     W, H = 340, 270
     top = base - H
-    q = Quadro(W + 12, H + 44, origin=(lx - 6, top - 42), scale=t.k, ss=1)
+    q = Quadro(W + 12, H + 58, origin=(lx - 6, top - 56), scale=t.k, ss=1)  # 56 sopra il tetto: le guglie (#408)
     rng = random.Random(1309)
     brick, mortar = (150, 90, 74), (186, 150, 132)
     stone, stone_l, stone_s = (214, 206, 190), (236, 232, 220), (168, 160, 146)
@@ -1823,9 +1823,13 @@ def loggia_amulea(t, lx, base):
     q.fill(q.intersect(q.soften(q.poly(q.mask(), [(lx, base - 10), (lx + W, base - 10), (lx + W, base), (lx, base)]), 3), brickm), (60, 50, 40), 0.35)
     # la merlatura a coda di rondine sopra la cornice (Riccardo: guglie più belle): ogni merlo ha il suo spessore,
     # la faccia in luce, il fianco destro in ombra, il cappello di pietra e l'ombra che getta sul successivo
+    # #408: i merli stanno tra le due guglie, centrati, così gli spigoli restano liberi per i loro dadi
     merl, side, caps = q.mask(), q.mask(), q.mask()
-    for i in range(21):
-        mx = lx + 2 + i * 16
+    G = 15  # metà della guglia più il respiro: i merli partono da lx + G e finiscono a lx + W - G
+    nm = 19
+    m0 = lx + G + (W - 2 * G - ((nm - 1) * 16 + 11)) / 2
+    for i in range(nm):
+        mx = m0 + i * 16
         q.poly(merl, [(mx, top), (mx, top - 17), (mx + 4.5, top - 12), (mx + 9, top - 17), (mx + 9, top)])
         q.poly(side, [(mx + 9, top), (mx + 9, top - 17), (mx + 11, top - 16), (mx + 11, top)])
         q.poly(caps, [(mx - 0.6, top - 17), (mx + 1.6, top - 18.2), (mx + 4.5, top - 13.4), (mx + 7.4, top - 18.2), (mx + 9.6, top - 17), (mx + 4.5, top - 11.6)])
@@ -1837,38 +1841,63 @@ def loggia_amulea(t, lx, base):
     q.fill(q.inner_shadow(merl, -1.2, 0, 0.6), stone_s, 0.6)
     q.fill(caps, stone_l)
     streaks = q.mask()
-    for i in range(21):
-        mx = lx + 2 + i * 16
+    for i in range(nm):
+        mx = m0 + i * 16
         for _ in range(2):
             sx = mx + rng.uniform(1, 8)
             q.stroke(streaks, [(sx, top - 12), (sx, top - rng.uniform(3, 8))], 0.8)
     q.fill(q.intersect(q.soften(streaks, 0.5), merl), (130, 120, 108), 0.4)
     q.outline(q.union(merl, side), 0.5, ink)
-    # le due guglie sugli spigoli: il dado di pietra, la cuspide a quattro facce con la luce a sinistra e la palla
-    for gx in (lx - 2, lx + W + 2):
-        die = q.poly(q.mask(), [(gx - 5, top - 2), (gx + 5, top - 2), (gx + 5, top - 12), (gx - 5, top - 12)])
+    # le due guglie sugli spigoli (#408: prima sporgevano fuori dal muro ed erano sottili): ognuna sta sopra lo
+    # spigolo, con il dado alto poco più dei merli appoggiato sulla cornice, il cappello che sporge, la cuspide a
+    # quattro facce con la luce da sinistra e i fogliami rampanti, la palla in cima sull'asse. Il dado getta la sua
+    # ombra a destra, sui merli e sul cielo no (è cielo): solo sulla cornice.
+    spires = []
+    for gx in (lx + 7, lx + W - 7):
+        foot, dtop, ctop, tip = top - 3, top - 20, top - 22.5, top - 46
+        q.fill(q.soften(q.poly(q.mask(), [(gx + 7, foot), (gx + 11, foot), (gx + 11, foot + 3), (gx + 7, foot + 3)]), 0.8), (40, 30, 30), 0.35)
+        plinth = q.poly(q.mask(), [(gx - 8, foot + 1), (gx + 8, foot + 1), (gx + 8, foot - 2), (gx - 8, foot - 2)])
+        q.fill(plinth, stone)
+        q.fill(q.poly(q.mask(), [(gx - 8, foot - 2), (gx + 8, foot - 2), (gx + 8, foot - 1), (gx - 8, foot - 1)]), stone_l)
+        die = q.poly(q.mask(), [(gx - 7, foot - 2), (gx + 7, foot - 2), (gx + 7, dtop), (gx - 7, dtop)])
         q.fill(die, stone)
-        q.fill(q.poly(q.mask(), [(gx + 1.5, top - 2), (gx + 5, top - 2), (gx + 5, top - 12), (gx + 1.5, top - 12)]), stone_s)
-        q.fill(q.poly(q.mask(), [(gx - 6, top - 12), (gx + 6, top - 12), (gx + 6, top - 14), (gx - 6, top - 14)]), stone_l)
-        spire_l = q.poly(q.mask(), [(gx - 4.5, top - 14), (gx, top - 14), (gx, top - 37)])
-        spire_r = q.poly(q.mask(), [(gx, top - 14), (gx + 4.5, top - 14), (gx, top - 37)])
+        q.fill(q.grain(die, 0.5, 1315, 1.0), stone_s, 0.3)
+        q.fill(q.poly(q.mask(), [(gx + 2.5, foot - 2), (gx + 7, foot - 2), (gx + 7, dtop), (gx + 2.5, dtop)]), stone_s)
+        # la nicchia cieca a sesto acuto sulla faccia, come le bifore della loggia
+        niche = q.poly(q.mask(), _ogive(gx - 3.5, gx + 1.5, foot - 11, foot - 4))
+        q.fill(niche, (96, 86, 80))
+        q.fill(q.inner_shadow(niche, 1, 1, 0.6), (60, 50, 48), 0.6)
+        cap = q.poly(q.mask(), [(gx - 8.5, dtop), (gx + 8.5, dtop), (gx + 8.5, ctop), (gx - 8.5, ctop)])
+        q.fill(cap, stone_l)
+        q.fill(q.poly(q.mask(), [(gx + 3, dtop), (gx + 8.5, dtop), (gx + 8.5, ctop), (gx + 3, ctop)]), stone)
+        spire_l = q.poly(q.mask(), [(gx - 6, ctop), (gx, ctop), (gx, tip)])
+        spire_r = q.poly(q.mask(), [(gx, ctop), (gx + 6, ctop), (gx, tip)])
         q.fill(spire_l, stone_l)
         q.fill(spire_r, stone_s)
-        for k in range(1, 4):  # i fogliami rampanti sugli spigoli della cuspide
-            yy = top - 14 - k * 5.5
-            u = 1 - k * 5.5 / 23
+        h = ctop - tip
+        crk = q.mask()
+        for k in range(1, 4):  # i fogliami rampanti sugli spigoli della cuspide, attaccati e più piccoli verso la cima
+            u = 1 - k / 4
+            yy = ctop - k * h / 4
+            r = 0.9 + 0.5 * u
             for sgn in (-1, 1):
-                q.fill(q.ellipse(q.mask(), gx + sgn * 4.5 * u - 1, yy - 1, gx + sgn * 4.5 * u + 1, yy + 1), stone if sgn < 0 else stone_s)
-        ball = q.ellipse(q.mask(), gx - 2, top - 40.6, gx + 2, top - 36.6)
+                cx = gx + sgn * (6 * u + 0.3)
+                leaf = q.ellipse(q.mask(), cx - r, yy - r * 1.3, cx + r, yy + r * 0.7)
+                q.fill(leaf, stone_l if sgn < 0 else stone_s)
+                crk = q.union(crk, leaf)
+        ball = q.ellipse(q.mask(), gx - 2.4, tip - 4.6, gx + 2.4, tip + 0.2)
         q.fill(ball, stone)
         q.fill(q.rim(ball, -0.6, -0.6, 0.4), stone_l, 0.9)
-        q.outline(q.union(q.union(die, q.union(spire_l, spire_r)), ball), 0.5, ink)
+        q.outline(q.union(q.union(q.union(plinth, die), q.union(cap, q.union(q.union(spire_l, spire_r), crk))), ball), 0.5, ink)
+        spires.append(gx)
     q.outline(wall, 0.9, ink)
     q.outline(holes, 0.5, ink)
-    dx, dy = int(round((lx - 6 - t.ox) * t.k)), int(round((top - 42 - t.oy) * t.k))
+    dx, dy = int(round((lx - 6 - t.ox) * t.k)), int(round((top - 56 - t.oy) * t.k))
     t.img.alpha_composite(q.img, dest=(dx, dy))
     if t.lights is not None:  # niente vetri accesi: quelli delle case dietro la loggia si vedevano sulla facciata
         t.lights.rect(lx - 2, top - 32, lx + W + 2, base, fill=(0, 0, 0, 0))
+        for gx in spires:  # e quelli dietro le punte delle guglie
+            t.lights.rect(gx - 9, top - 52, gx + 9, top - 32, fill=(0, 0, 0, 0))
 
 
 def market(t, x0, base, rng):
