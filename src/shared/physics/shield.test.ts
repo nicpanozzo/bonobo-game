@@ -8,6 +8,7 @@ import type { GameEvent, InputState } from "../types";
 import { createFighter, emptyInput, stepWorld, type Fighter, type PhysicsContext } from "./index";
 
 const DT = 1000 / TICK_RATE;
+const SQUAT = Math.round(FIGHTER.jumpSquatMs / DT); // tick di preparazione al salto (#384 A3)
 const stage = getStage(undefined); // il palco di base: un blocco da x 240 a 1040, in alto a y 560
 
 // a attacca verso destra, b gli sta davanti girato verso di lui
@@ -151,7 +152,7 @@ describe("scudo", () => {
       press(b, { shield: true });
       run(fighters, ctx, 10);
       press(b, { shield: true, jump: true });
-      run(fighters, ctx, 1);
+      run(fighters, ctx, 1 + SQUAT);
       assert.equal(ofType(ctx.events, "jump").length, 1);
       assert.equal(b.shielding, false);
     }

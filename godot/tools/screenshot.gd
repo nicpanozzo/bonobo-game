@@ -10,7 +10,7 @@ var _out := "user://screenshots"
 var _game: Dictionary
 var _world: Node2D # nella partita finta: riceve uno snapshot a ogni frame
 var _hud: Control
-const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
+const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre", "lobby_regole"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
 var _index := -1
 var _frame := 0
 var _failed := false
@@ -74,6 +74,20 @@ func _lobby_squadre() -> void:
 	root.add_child(lobby)
 	lobby.setup(_game, {"name": "CI", "room": "ci", "server": "http://localhost:3000", "team": 2, "rules": {"mode": "teams", "teamCount": 3}}, func(r): return "http://x/?room=" + r)
 	lobby.open_page("fighter")
+
+
+# Le regole di chi crea la stanza, in fondo alla prima pagina: suprema e oggetti
+func _lobby_regole() -> void:
+	var lobby: Control = load("res://scripts/lobby.gd").new()
+	root.add_child(lobby)
+	lobby.setup(_game, {"name": "CI", "room": "ci", "server": "http://localhost:3000", "kind": "create", "rules": {"supremeSpeed": 2, "itemAmount": 3, "itemKinds": ["banana", "birra", "fiore"]}}, func(r): return "http://x/?room=" + r, "create")
+	var scroll: ScrollContainer = lobby.find_children("*", "ScrollContainer", true, false)[0]
+	_scroll_down.call_deferred(scroll)
+
+
+func _scroll_down(scroll: ScrollContainer) -> void:
+	await root.get_tree().process_frame
+	scroll.scroll_vertical = int(scroll.get_v_scroll_bar().max_value)
 
 
 # La stessa partita finta divisa in tre squadre: anelli, nomi colorati, schede a gruppi, vite per squadra

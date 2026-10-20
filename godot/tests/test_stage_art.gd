@@ -181,3 +181,10 @@ func test_sfondo_vivo_con_la_parallasse_verticale() -> void:
 	life.setup({"art": {}}, 1920.0, 720.0)
 	runner.check(life.offset(0.5, Vector2(1160, 160)) == Vector2(100, -100), "senza il campo come prima")
 
+
+
+func test_materiale_trasparente_non_si_disegna() -> void:
+	# #83: vuoto.png (4×4 trasparente) a piastrelle sul fianco dell'isola di Padova erano 30000 disegni a frame
+	runner.check(WorldView.texture_is_clear("padova", "vuoto.png"), "vuoto.png è tutto trasparente")
+	runner.check(not WorldView.texture_is_clear("padova", "bordo.png"), "il bordo si vede")
+	runner.check(not WorldView.texture_is_clear("padova", "non-esiste.png"), "un file che manca non conta")

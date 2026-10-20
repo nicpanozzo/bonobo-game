@@ -1,8 +1,8 @@
 # Il movimento del proprio lottatore in GDScript, per la predizione (E17 passo 3).
 # È una copia della parte di src/shared/physics che muove un lottatore libero: corsa, aria, salti,
 # salto corto, coyote, gravità, caduta veloce, piattaforme sottili, scatto, corsa, schivata, attacchi leggeri
-# e pesanti, recupero, fermo del colpo e contatto con l'arena (stepFighter in index.ts, applyControls/applyGravity/
-# tickCoyote in movement.ts, stepDash in dash.ts, tryStartAttack/updateAttack in attacks.ts, collideWithStage in stage.ts).
+# e pesanti, recupero, fermo del colpo, preparazione al salto e pause all'atterraggio (#384 A3) e contatto con l'arena
+# (stepFighter in index.ts, applyControls/applyGravity/tickCoyote/stepLag/startLanding in movement.ts, stepDash in dash.ts, tryStartAttack/updateAttack in attacks.ts, collideWithStage in stage.ts).
 # La fisica vera resta quella: se cambia, tests/test_prediction.gd rigioca le tracce generate dal
 # TypeScript e diventa rosso finché questo file non fa lo stesso. Fuori da qui (colpi subiti, bordo,
 # scudo, presa, speciali, suprema, oggetti, ascensori) la predizione non prova a indovinare: decide il server.
@@ -54,6 +54,8 @@ static func state_from(p: Dictionary, timers: Dictionary, input: Dictionary) -> 
 		"cooldown": float(timers.get("cooldown", 0)), "hitstop": float(timers.get("hitstop", 0)),
 		"recoveryUsed": bool(timers.get("recoveryUsed", false)), "helpless": bool(timers.get("helpless", false)),
 		"lightBuffer": float(timers.get("lightBuffer", 0)), "heavyBuffer": float(timers.get("heavyBuffer", 0)),
+		"jumpSquat": float(p.get("jumpSquat", 0)), "landing": float(p.get("landing", 0)), # mancano se sono a zero (#384 A3)
+		"attackAir": bool(timers.get("attackAir", false)),
 		"input": input.duplicate(), "prev": input.duplicate(),
 	}
 
@@ -92,13 +94,20 @@ func step(s: Dictionary, dt_ms: float) -> void:
 	s.lightBuffer = maxf(0.0, s.lightBuffer - dt_ms)
 	s.heavyBuffer = maxf(0.0, s.heavyBuffer - dt_ms)
 	_update_attack(s, dt_ms)
-	_apply_controls(s, dt)
-	_try_start_attack(s)
+	if _step_lag(s, dt_ms):
+		_end_dash(s)
+		s.rising = false
+	else:
+		_apply_controls(s, dt)
+		_try_start_attack(s)
 	_apply_gravity(s, dt)
 	var prev_y: float = s.y
+	var was_on_ground: bool = s.onGround
 	s.x += s.vx * dt
 	s.y += s.vy * dt
 	_collide(s, prev_y)
+	if s.onGround and not was_on_ground:
+		_start_landing(s)
 	s.prev = s.input
 
 
@@ -163,8 +172,11 @@ func _apply_controls(s: Dictionary, dt: float) -> void:
 		s.rising = false
 		_start_attack(s, "recovery")
 		return
-	# Salto e doppio salto
-	if (_pressed(s, "jump") or s.jumpBuffer > 0) and s.jumps > 0:
+	# Salto e doppio salto. Da terra prima la preparazione (#384 A3): ci si stacca in _step_lag
+	if (_pressed(s, "jump") or s.jumpBuffer > 0) and s.jumps > 0 and s.onGround:
+		s.jumpBuffer = 0.0
+		s.jumpSquat = float(fighter.jumpSquatMs)
+	elif (_pressed(s, "jump") or s.jumpBuffer > 0) and s.jumps > 0:
 		s.jumpBuffer = 0.0
 		var from_ground: bool = s.onGround or s.coyote > 0
 		s.vy = -float(fighter.jumpSpeed if from_ground else fighter.doubleJumpSpeed) * float(stats.jump)
@@ -177,10 +189,52 @@ func _apply_controls(s: Dictionary, dt: float) -> void:
 		s.dropFromY = s.y # rampe e archi più in basso di così ti prendono (#246)
 
 
+# Preparazione al salto e pausa all'atterraggio (stepLag in movement.ts): true se in questo tick non si comanda niente
+func _step_lag(s: Dictionary, dt_ms: float) -> bool:
+	if s.landing > 0:
+		s.landing = _tick_down(s.landing, dt_ms)
+		if s.onGround:
+			s.vx = 0.0
+		if s.landing > 0:
+			return true
+	if s.jumpSquat == 0.0:
+		return false
+	s.jumpSquat = _tick_down(s.jumpSquat, dt_ms)
+	s.jumpBuffer = 0.0
+	if s.jumpSquat > 0:
+		return true
+	s.vy = -float(fighter.jumpSpeed) * float(stats.jump)
+	s.jumps = int(fighter.maxJumps) - 1
+	s.onGround = false
+	s.coyote = 0.0
+	s.rising = true
+	return false
+
+
+# Sotto mezzo millisecondo il tempo è finito, come tickDown in movement.ts
+static func _tick_down(ms: float, dt_ms: float) -> float:
+	return ms - dt_ms if ms - dt_ms > 0.5 else 0.0
+
+
+# Appena atterrati (startLanding in movement.ts): la pausa breve, o quella dell'attacco in aria, che si interrompe
+func _start_landing(s: Dictionary) -> void:
+	if s.dodge > 0:
+		return
+	if s.attack == "":
+		s.landing = float(fighter.landingLagMs)
+		return
+	var lag: Variant = attack_spec(s.attack).get("landingLagMs")
+	if not s.attackAir or lag == null:
+		return
+	s.landing = float(lag)
+	s.attack = ""
+	s.cooldown = 0.0
+
+
 # Attacchi leggeri e pesanti (tryStartAttack in attacks.ts). Speciali e suprema non ci sono: con quei tasti
 # il predittore lascia decidere il server
 func _try_start_attack(s: Dictionary) -> void:
-	if s.attack != "" or s.cooldown > 0 or s.helpless or s.dodge > 0:
+	if s.attack != "" or s.cooldown > 0 or s.helpless or s.dodge > 0 or s.jumpSquat > 0 or s.landing > 0:
 		return
 	if _pressed(s, "heavy") or s.heavyBuffer > 0:
 		var running: bool = s.dashing and s.onGround and not s.input.get("up", false) and not s.input.get("down", false)
@@ -206,6 +260,7 @@ func _variant(s: Dictionary, base: String) -> String:
 func _start_attack(s: Dictionary, kind: String) -> void:
 	s.attack = kind
 	s.attackTimer = 0.0
+	s.attackAir = not s.onGround
 	s.cooldown = float(attack_spec(kind).cooldownMs)
 	s.smashCharge = -1.0
 	s.lightBuffer = 0.0

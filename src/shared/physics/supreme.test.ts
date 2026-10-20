@@ -53,6 +53,16 @@ describe("barra della suprema", () => {
     assert.ok(Math.abs(a.supreme - 10 * SUPREME.perSecond) < 0.01, `barra ${a.supreme}`);
   });
 
+  it("con la velocità scelta nelle regole si carica più in fretta", () => {
+    const { ctx, fighters, a } = setup(400);
+    a.supremeRate = 2;
+    run(fighters, ctx, TICK_RATE * 10);
+    assert.ok(Math.abs(a.supreme - 20 * SUPREME.perSecond) < 0.01, `barra ${a.supreme}`);
+    const match = new Match({ rules: { supremeSpeed: 4 } });
+    match.addPlayer("x", "X");
+    assert.equal(match.players[0].supremeRate, 4);
+  });
+
   it("si carica con i danni dati e presi, di più per chi colpisce", () => {
     const { ctx, fighters, a, b } = setup();
     press(a, { light: true });

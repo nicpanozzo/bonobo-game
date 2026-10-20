@@ -61,6 +61,7 @@ export interface Fighter extends PlayerState {
   rewindTrail: { x: number; y: number; percent: number }[]; // la suprema "rewind" (#358): com'era a ogni tick, i più vecchi prima
   rewindDone: boolean; // la "rewind" in corso è già tornata indietro
   pet: Companion | null; // il compagno che lo segue (#369), null se il personaggio non ne ha
+  supremeRate: number; // moltiplicatore della carica della suprema, dalle regole della stanza (1 = normale)
   supremeBusyMs: number; // ms che restano della suprema in corso, attesa finale compresa: intanto la barra non si carica col tempo
   dashTimer: number; // ms di scatto rimasti (#199); finito, se si tiene la direzione si corre
   dashTapDir: number; // direzione dell'ultimo tocco, per riconoscere il doppio tocco
@@ -69,6 +70,9 @@ export interface Fighter extends PlayerState {
   dashByTap: boolean; // il doppio tocco fa scattare (i bot no: i loro tocchi brevi scatterebbero per sbaglio)
   coyoteTimer: number; // ms in cui, appena scesi dal bordo, il salto vale ancora da terra
   jumpRising: boolean; // si sta salendo per un salto: lasciando il tasto si accorcia
+  jumpSquatTimer: number; // ms di preparazione al salto che restano (#384 A3): a 0 ci si stacca da terra
+  landingTimer: number; // ms di pausa all'atterraggio che restano (#384 A3): fermi, niente tasti
+  attackAir: boolean; // l'attacco in corso è partito in aria: atterrando si interrompe con la sua pausa (#384 A3)
   shortHop: boolean; // lasciare presto il salto lo accorcia (i bot no: tengono il tasto un tick solo)
   inputSeq: number; // E17: InputState.seq dell'input in uso, -1 se il client non lo manda
   inputTicks: number; // tick giocati con quell'input
@@ -109,6 +113,7 @@ export interface FighterSetup {
   team: number;
   index: number; // posto nella stanza: decide punto di partenza e verso
   stocks: number;
+  supremeRate?: number; // regole della stanza; 1 se manca
 }
 
 export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
@@ -149,6 +154,9 @@ export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
     dashByTap: DASH.byTap,
     coyoteTimer: 0,
     jumpRising: false,
+    jumpSquatTimer: 0,
+    landingTimer: 0,
+    attackAir: false,
     shortHop: true,
     inputSeq: -1,
     inputTicks: 0,
@@ -209,6 +217,7 @@ export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
     rewindTrail: [],
     rewindDone: false,
     pet: null,
+    supremeRate: s.supremeRate ?? 1,
     supremeBusyMs: 0,
   };
 }

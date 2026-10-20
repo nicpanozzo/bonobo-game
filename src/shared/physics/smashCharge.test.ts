@@ -3,7 +3,7 @@
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { ATTACKS, FIGHTER, SMASH_CHARGE, TICK_RATE } from "../constants";
+import { ATTACKS, FIGHTER, HITSTOP, SMASH_CHARGE, TICK_RATE } from "../constants";
 import { getStage } from "../stages";
 import type { GameEvent, InputState } from "../types";
 import { createFighter, emptyInput, stepWorld, type Fighter, type PhysicsContext } from "./index";
@@ -91,7 +91,8 @@ describe("colpi caricati", () => {
     run(fighters, ctx, 10);
     press(b, { light: true });
     for (let i = 0; i < 30 && hits(ctx.events).length === 0; i++) run(fighters, ctx, 1);
-    run(fighters, ctx, 10);
+    // la carica si perde a fermo al colpo (HITSTOP) finito
+    run(fighters, ctx, 2 + Math.ceil((HITSTOP.baseMs + HITSTOP.perDamageMs * ATTACKS.light.damage) / DT));
     assert.equal(a.attack, null);
     assert.equal(a.charge, 0);
     assert.equal(a.smashChargeMs, -1);

@@ -137,6 +137,11 @@ func sample(now_ms: float, server: Variant = null) -> Variant:
 		out.facing = _state.facing
 		out.attack = _state.attack if _state.attack != "" else null
 		out.attackActive = _movement.attack_active(_state)
+		for key in ["jumpSquat", "landing"]: # preparazione al salto e atterraggio (#384 A3): mancano se a zero
+			if _state[key] > 0:
+				out[key] = _state[key]
+			else:
+				out.erase(key)
 	elif server == null:
 		_last_out = Vector2(NAN, NAN)
 		_was_active = false

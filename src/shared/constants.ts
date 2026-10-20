@@ -36,6 +36,9 @@ export const FIGHTER = {
   hitstunDriftAccel: 700, // pixel/s²: tenendo una direzione mentre si vola via si corregge un po' la traiettoria
   archSnapPx: 8, // pixel: camminando su una piattaforma ad arco (#244) si resta attaccati alla curva se il dislivello in un passo è entro questo
   slopeSnapStepPx: 20, // pixel orizzontali in un passo, scatto compreso: sulle rampe (#246) l'aggancio cresce di pendenza × questo
+  // Ritmo di salti e atterraggi come Smash (#384 A3, valori di Riccardo)
+  jumpSquatMs: 50, // ms (3 fotogrammi a 60 Hz) a terra prima di staccarsi; lasciando il salto prima della fine si fa il salto corto
+  landingLagMs: 33, // ms (2 fotogrammi) fermi dopo un atterraggio normale; dopo un attacco in aria vale landingLagMs dell'attacco
 };
 
 // Scatto con doppio tocco (#199): numeri provvisori, da rivedere al playtest (#22).
@@ -63,6 +66,7 @@ export interface AttackSpec {
   boxX?: number; // pixel dal centro del personaggio, in avanti, dove comincia la hitbox (di base: metà larghezza)
   boxY?: number; // pixel dai piedi in su dove sta il bordo alto della hitbox, negativo (di base: -70% dell'altezza)
   outward?: boolean; // colpo ad area (#102): lancia lontano dal centro di chi colpisce, non dalla parte in cui guarda
+  landingLagMs?: number; // ms fermi se si atterra mentre è in corso, partito in aria (#384 A3); senza, FIGHTER.landingLagMs
 }
 
 // Le speciali (E10) non sono qui: i loro numeri dipendono dal personaggio (specialAttackSpec in characters.ts)
@@ -90,12 +94,12 @@ export const ATTACKS: Record<Exclude<AttackKind, SpecialKind>, AttackSpec> = {
     angleDeg: 42,
   },
   // Attacchi direzionali (#2): valori provvisori, da discutere alla serata di playtest (#22)
-  lightUp: { damage: 6, baseKnockback: 280, knockbackGrowth: 5, startupMs: 60, activeMs: 110, cooldownMs: 320, range: 54, height: 48, angleDeg: 85, boxX: -27, boxY: -128 }, // sopra la testa
+  lightUp: { damage: 6, baseKnockback: 280, knockbackGrowth: 5, startupMs: 60, activeMs: 110, cooldownMs: 320, range: 54, height: 48, angleDeg: 85, boxX: -27, boxY: -128, landingLagMs: 100 }, // sopra la testa; in aria 6 fotogrammi di pausa atterrando
   lightDown: { damage: 4, baseKnockback: 230, knockbackGrowth: 4.5, startupMs: 50, activeMs: 110, cooldownMs: 300, range: 60, height: 24, angleDeg: 18, boxX: 10, boxY: -24 }, // sgambetto basso
-  lightAir: { damage: 6, baseKnockback: 260, knockbackGrowth: 5, startupMs: 50, activeMs: 160, cooldownMs: 320, range: 54, height: 50, angleDeg: 40, boxX: 8, boxY: -72 },
-  heavyUp: { damage: 14, baseKnockback: 430, knockbackGrowth: 11.5, startupMs: 280, activeMs: 130, cooldownMs: 800, range: 80, height: 64, angleDeg: 88, boxX: -40, boxY: -144 }, // lancia in verticale
+  lightAir: { damage: 6, baseKnockback: 260, knockbackGrowth: 5, startupMs: 50, activeMs: 160, cooldownMs: 320, range: 54, height: 50, angleDeg: 40, boxX: 8, boxY: -72, landingLagMs: 100 }, // 6 fotogrammi di pausa atterrando
+  heavyUp: { damage: 14, baseKnockback: 430, knockbackGrowth: 11.5, startupMs: 280, activeMs: 130, cooldownMs: 800, range: 80, height: 64, angleDeg: 88, boxX: -40, boxY: -144, landingLagMs: 167 }, // lancia in verticale; in aria 10 fotogrammi di pausa atterrando
   heavyDown: { damage: 12, baseKnockback: 400, knockbackGrowth: 10, startupMs: 240, activeMs: 140, cooldownMs: 760, range: 88, height: 30, angleDeg: 25, boxX: 8, boxY: -30 }, // spazzata radente
-  heavyAir: { damage: 12, baseKnockback: 410, knockbackGrowth: 10.5, startupMs: 200, activeMs: 140, cooldownMs: 700, range: 66, height: 60, angleDeg: 32, boxX: 12, boxY: -82 },
+  heavyAir: { damage: 12, baseKnockback: 410, knockbackGrowth: 10.5, startupMs: 200, activeMs: 140, cooldownMs: 700, range: 66, height: 60, angleDeg: 32, boxX: 12, boxY: -82, landingLagMs: 200 }, // 12 fotogrammi di pausa atterrando
   // Attacco in corsa: il pesante tenendo la corsa (DASH.attackSlide), più veloce del pesante ma meno forte
   dashAttack: { damage: 10, baseKnockback: 400, knockbackGrowth: 9, startupMs: 100, activeMs: 160, cooldownMs: 620, range: 58, height: 44, angleDeg: 45 },
   // Mossa di recupero (#11): la spinta sta in RECOVERY, qui solo il colpetto che dà salendo
@@ -267,11 +271,11 @@ export const HITSTUN_AIR_DRAG = 0.985; // rallentamento per tick mentre si vola 
 
 // Hitstop (#15): quando un colpo entra attaccante e bersaglio si fermano per un istante,
 // più a lungo se il colpo è forte. Il bersaglio parte in volo solo dopo.
-// Al 70% di Smash Ultimate (100 ms + 11 ms per punto, massimo 500), perché i colpi pesino (#384 A2)
+// Come Smash Ultimate (100 ms + 11 ms per punto, massimo 500), perché i colpi pesino (#384 A2, valori di Riccardo)
 export const HITSTOP = {
-  baseMs: 70, // anche il colpo più debole si sente
-  perDamageMs: 8, // ms in più per ogni punto di danno: leggero (5) = 110 ms, pesante (13) = 174 ms
-  maxMs: 350,
+  baseMs: 100, // ms: anche il colpo più debole si sente
+  perDamageMs: 11, // ms in più per ogni punto di danno: leggero (5) = 155 ms, pesante (13) = 243 ms
+  maxMs: 500, // ms
 };
 
 export const STOCKS = 3; // vite per partita
@@ -494,6 +498,24 @@ export const ITEM_RULES = {
   holdOffsetX: 22, // pixel davanti al centro dove si tiene l'oggetto
   holdOffsetY: 52, // pixel sopra i piedi
 };
+
+// Quanti oggetti cadono, scelto da chi crea la stanza: indice in rules.itemAmount. Il default è "Normali" = ITEM_RULES
+export const ITEM_AMOUNTS = [
+  { label: "Nessuno", everyMs: 0, maxOnStage: 0 },
+  { label: "Pochi", everyMs: 18000, maxOnStage: 1 }, // ms tra un oggetto e l'altro, oggetti in campo insieme
+  { label: "Normali", everyMs: ITEM_RULES.spawnEveryMs, maxOnStage: ITEM_RULES.maxOnStage },
+  { label: "Tanti", everyMs: 6000, maxOnStage: 4 },
+  { label: "Pioggia", everyMs: 2500, maxOnStage: 8 },
+];
+export const DEFAULT_ITEM_AMOUNT = 2;
+
+// Velocità della barra della suprema, scelta da chi crea la stanza: moltiplica tutta la carica (rules.supremeSpeed)
+export const SUPREME_SPEEDS = [
+  { mult: 1, label: "Normale" },
+  { mult: 1.5, label: "Veloce" },
+  { mult: 2, label: "Molto veloce" },
+  { mult: 4, label: "Turbo" },
+];
 
 // Potenziamenti degli oggetti da consumare (#231): il fiore rende intoccabili ma "rilassati"
 export const POWERUP = {
