@@ -48,6 +48,10 @@ var _props_front: Array = [] # e davanti
 var _hazard_sprites := {} # indice della trappola -> {tex, frames, fps, scale, footX, footY}: animazioni disegnate (#270)
 var _mover_sprites := {} # indice della piattaforma mobile -> come sopra (#273)
 var _t_draw := 0.0 # il tempo dell'arena del frame che si sta disegnando (#378, per i ganci dentro le decorazioni)
+const TEAM_RING_WIDTH := 0.8 # raggio dell'anello della squadra sotto i piedi, rispetto alla larghezza del lottatore (#409)
+const TEAM_RING_SQUASH := 0.28 # l'anello è un ovale schiacciato: sta per terra
+const TEAM_NAME_LIGHTEN := 0.35 # il nome sopra la testa ha il colore della squadra, un po' più chiaro
+const TEAM_NAME_OUTLINE := 4 # bordo scuro del nome a squadre, pixel
 const SHADOW_STEPS := 6 # ovali sovrapposti di un'ombra a terra (#378): più sono, più è sfumata
 const SHADOW_STEP_ALPHA := 0.17 # quanto scurisce ognuno: al centro si arriva a circa 2/3 della forza dell'ombra
 var _light_layers := {} # parallasse -> [Texture2D, Rect2]: i vetri accesi di quello strato (#288), ritagliati; Rect2 in frazioni dello strato
@@ -328,7 +332,7 @@ func _load_stage_dressing(dir: String, art: Dictionary) -> void:
 	var skins: Dictionary = art.get("skins", {}) if art.get("skins") is Dictionary else {}
 	for name in skins:
 		var k: Dictionary = skins[name]
-		var tex := _stage_texture(dir, k.file)
+		var tex: Texture2D = _stage_texture(dir, k.file)
 		if tex == null:
 			continue
 		var rails: Array = []
@@ -336,6 +340,8 @@ func _load_stage_dressing(dir: String, art: Dictionary) -> void:
 			var rt := _stage_texture(dir, r.file)
 			if rt != null:
 				rails.append({"tex": rt, "height": float(r.height), "offsetY": float(r.get("offsetY", 0)), "front": bool(r.get("front", false)), "opacity": float(r.get("opacity", 1.0))})
+		if texture_is_clear(dir, k.file):
+			tex = null # un materiale tutto trasparente (vuoto.png, #380) non si disegna: a piastrelle di 2 pixel erano 30000 disegni a frame
 		_skins[name] = {"tex": tex, "edge": _stage_texture(dir, k.edge) if k.get("edge") != null else null, "depth": float(k.get("depth", 12)), "rails": rails}
 	for pr in art.get("props", []):
 		var tex := _stage_texture(dir, pr.file)
@@ -405,6 +411,15 @@ static func _lit_texture(dir: String, file: String, world_scale := 0.0) -> Array
 	return [canvas, Rect2(Vector2(used.position) / full, Vector2(used.size) / full)]
 
 
+# Un'immagine dell'arena senza nemmeno un pixel visibile (#83)
+static func texture_is_clear(dir: String, file: String) -> bool:
+	var path := "res://data/assets/stages/%s/%s" % [dir, file]
+	if not ResourceLoader.exists(path):
+		return false
+	var img: Image = (load(path) as Texture2D).get_image()
+	return img != null and not img.is_compressed() and img.is_invisible()
+
+
 # Il materiale di un pezzo: l'eccezione in art.pieces (null = tinta unita), o quello di base; {} se non c'è
 func _skin_for(kind: String, i: int) -> Dictionary:
 	var art: Dictionary = stage.get("art", {}) if stage.get("art") is Dictionary else {}
@@ -465,7 +480,8 @@ func _draw_strip(tex: Texture2D, p: Dictionary, top: float, height: float, mod :
 
 
 func _draw_skinned_solid(s: Dictionary, skin: Dictionary) -> void:
-	_draw_tiled(skin.tex, Rect2(s.x, s.y, s.width, s.height))
+	if skin.tex != null:
+		_draw_tiled(skin.tex, Rect2(s.x, s.y, s.width, s.height))
 	if skin.edge != null:
 		_draw_tiled(skin.edge, Rect2(s.x, s.y, s.width, minf(skin.edge.get_height() * _layer_scale, s.height)))
 
@@ -483,11 +499,13 @@ func _draw_skinned_platform(p: Dictionary, skin: Dictionary) -> void:
 			var top := maxf(PredictMovement.surface_y(p, x0), PredictMovement.surface_y(p, x0 + step))
 			var h := minf(rise / n + 6.0, bottom - top)
 			if h > 0:
-				_draw_tiled(skin.tex, Rect2(x0, top, step + 0.5, h))
+				if skin.tex != null:
+					_draw_tiled(skin.tex, Rect2(x0, top, step + 0.5, h))
 				if edge != null:
 					_draw_tiled(edge, Rect2(x0, top, step + 0.5, minf(edge.get_height() * _layer_scale, h)))
 		return
-	_draw_strip(skin.tex, p, 0.0, skin.depth)
+	if skin.tex != null:
+		_draw_strip(skin.tex, p, 0.0, skin.depth)
 	if edge != null:
 		_draw_strip(edge, p, 0.0, minf(edge.get_height() * _layer_scale, skin.depth))
 
@@ -1868,6 +1886,8 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 	var charge := float(p.get("charge", 0.0))
 	if charge > 0.0:
 		_draw_charge(Vector2(p.x, p.y - fh / 2), charge, now)
+	if int(p.team) > 0:
+		_draw_team_ring(p, fw)
 	var react := _reaction_transform(p, now) * _motion_transform(p, now)
 	if _textures.has(character.id):
 		_draw_sprite(p, character, now, react)
@@ -1958,7 +1978,13 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 
 	var label := "%s  %d%%" % [p.name, roundi(p.percent)]
 	var size := _font.get_string_size(label, HORIZONTAL_ALIGNMENT_CENTER, -1, Access.px(16))
-	draw_string(_font, Vector2(p.x - size.x / 2, p.y - head - 10), label, HORIZONTAL_ALIGNMENT_LEFT, -1, Access.px(16), Color.WHITE)
+	var label_pos := Vector2(p.x - size.x / 2, p.y - head - 10)
+	if int(p.team) > 0:
+		# A squadre il nome ha il colore della squadra, bordato di scuro perché si legga su ogni sfondo (#409)
+		draw_string_outline(_font, label_pos, label, HORIZONTAL_ALIGNMENT_LEFT, -1, Access.px(16), TEAM_NAME_OUTLINE, Color(0, 0, 0, 0.85))
+		draw_string(_font, label_pos, label, HORIZONTAL_ALIGNMENT_LEFT, -1, Access.px(16), Access.team_color(game, int(p.team)).lightened(TEAM_NAME_LIGHTEN))
+	else:
+		draw_string(_font, label_pos, label, HORIZONTAL_ALIGNMENT_LEFT, -1, Access.px(16), Color.WHITE)
 	if away:
 		var note := "disconnesso"
 		var note_size := _font.get_string_size(note, HORIZONTAL_ALIGNMENT_CENTER, -1, Access.px(13))
@@ -1974,6 +2000,18 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 		draw_rect(Rect2(p.x - 1, top - 30, 3, 30), Color.WHITE)
 		var team_color := Access.team_color(game, int(p.team))
 		draw_colored_polygon(PackedVector2Array([Vector2(p.x + 2, top - 30), Vector2(p.x + 26, top - 22), Vector2(p.x + 2, top - 14)]), team_color)
+
+
+# Squadre (#409): un anello del colore della squadra sotto i piedi, come nei picchiaduro a squadre:
+# si capisce chi è con chi anche quando i lottatori hanno colori simili o si mescolano
+func _draw_team_ring(p: Dictionary, fw: float) -> void:
+	var c := Access.team_color(game, int(p.team))
+	var rx := fw * TEAM_RING_WIDTH
+	draw_set_transform(Vector2(p.x, p.y), 0.0, Vector2(1.0, TEAM_RING_SQUASH))
+	draw_circle(Vector2.ZERO, rx, Color(c, 0.28))
+	draw_arc(Vector2.ZERO, rx, 0.0, TAU, 32, Color(0, 0, 0, 0.6), 7.0)
+	draw_arc(Vector2.ZERO, rx, 0.0, TAU, 32, c, 4.0)
+	draw_set_transform(Vector2.ZERO)
 
 
 # La zona del colpo in corso: la stessa hitbox di attackBox() in src/shared/physics/attacks.ts,
@@ -2125,7 +2163,7 @@ func _rig_context(p: Dictionary, name: String, state: Dictionary, attack: Dictio
 			best = d.length()
 			near = Vector2(d.x * facing, d.y)
 	var startup := float(attack.get("startupMs", -1.0))
-	var calm: bool = name in ["idle", "walk", "dash", "shield", "jump", "fall", "land"]
+	var calm: bool = name in ["idle", "walk", "dash", "shield", "jump", "fall", "land", "jumpSquat"]
 	return {
 		"token": "%s|%s|%s" % [name, state.get("kind", ""), state.get("start", 0)],
 		# nei colpi il passaggio è più corto: l'impatto deve cadere quando si accende la hitbox

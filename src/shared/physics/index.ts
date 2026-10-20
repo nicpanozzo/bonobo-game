@@ -22,7 +22,7 @@ import { tickBuffer, type Fighter, type PhysicsContext } from "./fighter";
 import { grabbing, inGrab, resolveGrabs, stepGrabs } from "./grab";
 import { swapTripInput, tickPowerup } from "./items";
 import { holdLedge, tryGrabLedge } from "./ledge";
-import { applyControls, applyGravity, tickCoyote } from "./movement";
+import { applyControls, applyGravity, startLanding, stepLag, tickCoyote } from "./movement";
 import { holdShield } from "./shield";
 import { stepProjectiles } from "./projectiles";
 import { cancelSpecial, specialing } from "./specials";
@@ -110,7 +110,7 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
     return;
   }
   // Durante la presa, sullo scudo o storditi niente controlli né attacchi
-  if (!grabbing(f, dtMs, ctx) && !specialing(f, dtMs, ctx) && !holdShield(f, dtMs, ctx)) {
+  if (!grabbing(f, dtMs, ctx) && !specialing(f, dtMs, ctx) && !stepLag(f, dtMs, ctx) && !holdShield(f, dtMs, ctx)) {
     applyControls(f, dt, ctx);
     tryStartAttack(f, ctx);
   } else {
@@ -125,6 +125,7 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
   f.y += f.vy * dt;
 
   collideWithStage(f, prevY, ctx, dtMs);
+  if (f.onGround && !wasOnGround) startLanding(f); // #384 A3
   landTech(f, wasOnGround, ctx);
 
   if (f.onGround && f.hitstun) f.vx *= 0.8; // attrito quando si atterra stordito

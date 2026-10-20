@@ -280,7 +280,7 @@ func _join(choice: Dictionary) -> void:
 	if not choice.get("gym", false):
 		# Ospitando (#308) il server è 127.0.0.1: si ricorda quello di prima, per quando non si ospita
 		var saved_server: String = settings.profile.get("server", "") if _local_host() else params.server
-		settings.profile = {"name": params.name, "room": params.room, "char": params.get("char", ""), "skin": params.get("skin", ""), "stage": params.get("stage", ""), "rules": params.get("rules", {}), "server": saved_server, "host": params.get("host", false)}
+		settings.profile = {"name": params.name, "room": params.room, "char": params.get("char", ""), "skin": params.get("skin", ""), "team": params.get("team", 0), "stage": params.get("stage", ""), "rules": params.get("rules", {}), "server": saved_server, "host": params.get("host", false)}
 		settings.save()
 	_set_url(params.room)
 	if is_instance_valid(lobby):
@@ -399,6 +399,8 @@ func _on_connected() -> void:
 		data.characterId = params.char
 	if params.get("skin", "") != "":
 		data.skinId = params.skin # la controlla il server: se quel lottatore non ce l'ha, aspetto base (#339)
+	if int(params.get("team", 0)) > 0:
+		data.team = int(params.team) # la squadra chiesta (#409): se nella stanza non c'è, il server sceglie
 	if params.get("rules") is Dictionary and not params.rules.is_empty():
 		data.rules = params.rules # contano solo se la stanza è nuova
 	if params.get("bot", "") != "":
@@ -801,6 +803,9 @@ func _open_pause() -> void:
 	ui_layer.add_child(pause_menu)
 	pause_menu.setup(settings, room_link(params.room), {"server": params.server, "room": params.room, "stage": world.stage.get("name", ""), "rules": hud.rules, "players": _last_players, "me": world.my_id})
 	pause_menu.left.connect(_leave)
+	pause_menu.team_chosen.connect(func(team: int):
+		params.team = team # anche la prossima volta si entra in questa squadra
+		socket.emit("team", {"team": team}))
 
 
 func _send_input() -> void:

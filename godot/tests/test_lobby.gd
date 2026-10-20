@@ -205,3 +205,36 @@ func test_torna_dalla_partita_sulla_stessa_stanza() -> void:
 	lobby = _lobby(false, {"room": "vecchia", "kind": "create"})
 	runner.check(lobby._new_room.text != "vecchia", "aprendo il gioco la stanza è nuova")
 	lobby.free()
+
+
+# Suprema più veloce e oggetti scelti: arrivano nelle regole, gli oggetti solo dove cadono
+func test_suprema_e_oggetti() -> void:
+	var lobby := _lobby(false, {"rules": {"mode": "ffa", "supremeSpeed": 2, "itemAmount": 0, "itemKinds": ["banana"]}})
+	runner.check(lobby._items_box.visible, "in tutti contro tutti si scelgono gli oggetti")
+	runner.check(lobby._item_checks.size() >= 2 and lobby._item_checks["banana"].button_pressed and not lobby._item_checks["birra"].button_pressed, "tornano quelli scelti")
+	runner.check(lobby._item_checks["banana"].disabled, "con Nessuno i tipi non si scelgono")
+	var c := _last_choice(lobby, lobby._submit)
+	runner.check(is_equal_approx(float(c.rules.supremeSpeed), 2.0) and c.rules.itemAmount == 0 and c.rules.itemKinds == ["banana"], "nella scelta: %s" % [c.rules])
+	lobby._set_mode("flag")
+	runner.check(not lobby._items_box.visible, "in Bandiera niente oggetti")
+	lobby.free()
+
+
+# Squadre (#409): quante squadre nelle regole, la tua squadra nella pagina del lottatore
+func test_squadre_e_la_tua_squadra() -> void:
+	var lobby := _lobby(false, {"rules": {"mode": "teams", "teamCount": 3}, "team": 3})
+	runner.check(lobby._team_count_box.visible, "a squadre si sceglie quante squadre")
+	runner.check(lobby._team_picker.get_child_count() == 4, "Automatica e tre squadre: %d" % lobby._team_picker.get_child_count())
+	runner.check(lobby._team_picker.selected == 3, "la squadra di prima resta scelta")
+	var c := _last_choice(lobby, lobby._submit)
+	runner.check(c.rules.teamCount == 3 and c.team == 3, "regole e squadra nella scelta: %s %s" % [c.rules, c.team])
+	# Con due squadre la Verde non c'è più: si torna ad Automatica
+	lobby._team_count.select(0)
+	lobby._sync_rules()
+	runner.check(lobby._team_picker.selected == 0, "squadra che non c'è più: automatica")
+	lobby._set_mode("ffa")
+	runner.check(not lobby._team_box.visible and not lobby._team_count_box.visible, "tutti contro tutti: niente squadre")
+	runner.check(_last_choice(lobby, lobby._submit).team == 0, "e nessuna squadra chiesta")
+	lobby._set_kind("join")
+	runner.check(lobby._team_box.visible, "entrando la squadra si sceglie comunque")
+	lobby.free()

@@ -10,10 +10,11 @@ var _out := "user://screenshots"
 var _game: Dictionary
 var _world: Node2D # nella partita finta: riceve uno snapshot a ogni frame
 var _hud: Control
-const SHOTS := ["lobby", "partita"] # nome del PNG = funzione che prepara la scena (_lobby, _partita)
+const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre", "lobby_regole"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
 var _index := -1
 var _frame := 0
 var _failed := false
+var _teams := false # la partita finta a tre squadre (#409)
 
 
 func _initialize() -> void:
@@ -67,6 +68,35 @@ func _lobby() -> void:
 	lobby.setup(_game, {"name": "CI", "room": "ci", "server": "http://localhost:3000"}, func(r): return "http://x/?room=" + r)
 
 
+# La pagina del lottatore con la scelta della squadra, in una partita a tre squadre (#409)
+func _lobby_squadre() -> void:
+	var lobby: Control = load("res://scripts/lobby.gd").new()
+	root.add_child(lobby)
+	lobby.setup(_game, {"name": "CI", "room": "ci", "server": "http://localhost:3000", "team": 2, "rules": {"mode": "teams", "teamCount": 3}}, func(r): return "http://x/?room=" + r)
+	lobby.open_page("fighter")
+
+
+# Le regole di chi crea la stanza, in fondo alla prima pagina: suprema e oggetti
+func _lobby_regole() -> void:
+	var lobby: Control = load("res://scripts/lobby.gd").new()
+	root.add_child(lobby)
+	lobby.setup(_game, {"name": "CI", "room": "ci", "server": "http://localhost:3000", "kind": "create", "rules": {"supremeSpeed": 2, "itemAmount": 3, "itemKinds": ["banana", "birra", "fiore"]}}, func(r): return "http://x/?room=" + r, "create")
+	var scroll: ScrollContainer = lobby.find_children("*", "ScrollContainer", true, false)[0]
+	_scroll_down.call_deferred(scroll)
+
+
+func _scroll_down(scroll: ScrollContainer) -> void:
+	await root.get_tree().process_frame
+	scroll.scroll_vertical = int(scroll.get_v_scroll_bar().max_value)
+
+
+# La stessa partita finta divisa in tre squadre: anelli, nomi colorati, schede a gruppi, vite per squadra
+func _squadre() -> void:
+	_teams = true
+	_partita()
+	_hud.on_welcome({"id": "p0", "room": "ci", "stageId": _game.defaultStageId, "rules": {"mode": "teams", "stocks": 3, "teamCount": 3}}, _world.stage)
+
+
 # Quattro lottatori sul palco di base: due con lo stesso personaggio (colori alternativi), un proiettile e una carica
 func _partita() -> void:
 	var world: Node2D = load("res://scripts/world_view.gd").new()
@@ -93,9 +123,12 @@ func _partita() -> void:
 func _snapshot(frame: int) -> Dictionary:
 	var spots := [[420, "default", 0xe74c3c, 0.0], [560, "orsoblu", 0x3498db, 0.7], [760, "bonobot", 0x2ecc71, 0.0], [880, "bonobot", 0xf1c40f, 0.0], [300, "nonnagina", 0x9b59b6, 0.0]] # Nonna Gina a pezzi (#403)
 	var players := []
+	var teams := [1, 2, 3, 1, 2]
 	for i in spots.size():
+		var team: int = teams[i] if _teams else 0
+		var color: int = int(_game.teamColors[str(team)][0 if i < 3 else 1]) if _teams else spots[i][2]
 		players.append({
-			"id": "p%d" % i, "name": "P%d" % (i + 1), "characterId": spots[i][1], "color": spots[i][2], "team": 0,
+			"id": "p%d" % i, "name": "P%d" % (i + 1), "characterId": spots[i][1], "color": color, "team": team,
 			"x": spots[i][0], "y": 560, "vx": 0, "vy": 0, "facing": 1 if i < 2 else -1, "percent": i * 37, "stocks": 3,
 			"onGround": true, "attack": null, "attackActive": false, "hitstun": false, "respawning": false,
 			"invulnerable": false, "eliminated": false, "carrier": false, "ledge": null, "away": false,

@@ -32,3 +32,6 @@ export const ITEMS: Record<string, ItemSpec> = {
   birra: { id: "birra", name: "Birra", damage: 0, knockback: 0, width: 22, height: 30, color: 0xf0b030, weight: 2, consume: { powerup: "birra", ms: BIRRA.ms } },
   bong: { id: "bong", name: "Bong", damage: 10, knockback: 380, width: 22, height: 40, color: 0x7fd8c4, weight: 2, bong: true },
 };
+
+// Gli oggetti che possono cadere dal cielo (i funghetti piantati no), in ordine: si scelgono nelle regole della stanza
+export const DROPPABLE_ITEMS: readonly string[] = Object.keys(ITEMS).filter((k) => (ITEMS[k].weight ?? 1) > 0).sort();

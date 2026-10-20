@@ -26,8 +26,10 @@ var cards_band := Vector2.ZERO # da x a x dove stanno le schede (tra levetta e t
 const WorldView := preload("res://scripts/world_view.gd")
 const SpeechBubbles := preload("res://scripts/speech_bubbles.gd")
 const FighterPose := preload("res://scripts/fighter_pose.gd")
+const TeamPicker := preload("res://scripts/team_picker.gd")
 const PORTRAIT := 40.0 # lato del ritratto che spunta sopra la scheda, pixel
 const PORTRAIT_ROW := 26.0 # lato del ritratto accanto al nome nella classifica
+const TEAM_GAP := 18.0 # a squadre, spazio tra un gruppo di schede e l'altro, pixel (#409)
 
 
 func _ready() -> void:
@@ -135,6 +137,8 @@ func _draw() -> void:
 	if scores != null:
 		var names: Dictionary = game.teamNames
 		_centered("%s %d  –  %d %s" % [names["1"], scores["1"], scores["2"], names["2"]], Vector2(w / 2, y), 24, Color.WHITE)
+	elif rules.get("mode", "ffa") == "teams":
+		_draw_team_lives(w / 2, y)
 
 	# Con il testo più grande le schede crescono tutte insieme, a partire dal fondo dello schermo
 	var k := Access.text_scale
@@ -149,12 +153,31 @@ func _draw() -> void:
 
 # Una scheda per giocatore in basso, tra band.x e band.y
 func _draw_cards(band: Vector2, h: float, flag: bool) -> void:
-	var players: Array = _snap.players
-	var card_w := minf(170.0, (band.y - band.x - 20) / maxi(1, players.size())) # fino a 8 giocatori in una riga
-	var x0 := (band.x + band.y) / 2 - card_w * players.size() / 2
+	var players: Array = team_order(_snap.players)
+	var groups := team_breaks(players)
+	var gaps := TEAM_GAP * maxi(0, groups.size() - 1)
+	var card_w := minf(170.0, (band.y - band.x - 20 - gaps) / maxi(1, players.size())) # fino a 8 giocatori in una riga
+	var x0 := (band.x + band.y) / 2 - (card_w * players.size() + gaps) / 2
+	# A squadre (#409) le schede stanno a gruppi, con sopra una linguetta col nome e il colore della squadra
+	for g in groups.size():
+		var first: int = groups[g][0]
+		var count: int = groups[g][1]
+		var team := int(players[first].team)
+		if team <= 0:
+			continue
+		var gx := x0 + first * card_w + g * TEAM_GAP
+		var tc := Access.team_color(game, team)
+		draw_rect(Rect2(gx + 6, h - 90, count * card_w - 12, 4), tc)
+		var tname := str(game.teamNames[str(team)]).to_upper()
+		var tw := _font.get_string_size(tname, HORIZONTAL_ALIGNMENT_LEFT, -1, 12).x
+		draw_rect(Rect2(gx + 6, h - 106, tw + 14, 18), tc)
+		draw_string(_font, Vector2(gx + 13, h - 92), tname, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, TeamPicker.text_on(tc))
+	var group := 0
 	for i in players.size():
 		var p: Dictionary = players[i]
-		var x := x0 + i * card_w
+		while group + 1 < groups.size() and i >= int(groups[group + 1][0]):
+			group += 1
+		var x := x0 + i * card_w + group * TEAM_GAP
 		var col := Access.color(p.color)
 		# Il ritratto spunta sopra l'angolo destro della scheda, come nei picchiaduro (E11 passo C)
 		_draw_portrait(p, Rect2(x + card_w - 12 - PORTRAIT, h - 86 - PORTRAIT * 0.8, PORTRAIT, PORTRAIT))
@@ -167,6 +190,9 @@ func _draw_cards(band: Vector2, h: float, flag: bool) -> void:
 		draw_string(_font, Vector2(x + 20, h - 64), name, HORIZONTAL_ALIGNMENT_LEFT, name_w, 15, Color.WHITE)
 		if supreme_full:
 			draw_string(_font, Vector2(x + card_w - 72, h - 65), "SUPREMA!", HORIZONTAL_ALIGNMENT_RIGHT, 58, 11, UI.ACCENT)
+		elif p.get("nextTeam") != null:
+			# Ha chiesto di cambiare squadra a partita in corso: ci passa dalla prossima (#409)
+			draw_string(_font, Vector2(x + card_w - 72, h - 65), "→ " + str(game.teamNames[str(int(p.nextTeam))]), HORIZONTAL_ALIGNMENT_RIGHT, 58, 11, Access.team_color(game, int(p.nextTeam)))
 		var pct := "OUT" if p.eliminated else "%d%%" % roundi(p.percent)
 		var pos := Vector2(x + 20, h - 30)
 		var size := 28
@@ -194,6 +220,55 @@ func _draw_cards(band: Vector2, h: float, flag: bool) -> void:
 					draw_circle(c, 5, col)
 				else:
 					draw_arc(c, 5, 0, TAU, 12, col, 1.5)
+
+
+# A squadre (#409), in alto al centro: le vite rimaste di ogni squadra, ognuna col suo colore
+func _draw_team_lives(cx: float, y: float) -> void:
+	var lives := {}
+	for p in _snap.players:
+		var t := int(p.team)
+		if t > 0:
+			lives[t] = int(lives.get(t, 0)) + maxi(0, int(p.stocks))
+	var teams := lives.keys()
+	teams.sort()
+	var parts := []
+	for t in teams:
+		var n: int = lives[t]
+		parts.append(["%s %d %s" % [game.teamNames[str(t)], n, "vita" if n == 1 else "vite"], Access.team_color(game, t).lightened(0.3)])
+	var size := Access.px(20)
+	var sep := "   "
+	var total := 0.0
+	for part in parts:
+		total += _font.get_string_size(part[0], HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
+	total += _font.get_string_size(sep, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x * maxi(0, parts.size() - 1)
+	var x := cx - total / 2
+	for part in parts:
+		draw_string_outline(_font, Vector2(x, y), part[0], HORIZONTAL_ALIGNMENT_LEFT, -1, size, 4, Color(0, 0, 0, 0.8))
+		draw_string(_font, Vector2(x, y), part[0], HORIZONTAL_ALIGNMENT_LEFT, -1, size, part[1])
+		x += _font.get_string_size(part[0] + sep, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
+
+
+# A squadre (#409) i giocatori in ordine di squadra, ognuno nell'ordine dello snapshot; altrimenti come sono
+static func team_order(players: Array) -> Array:
+	var list := players.duplicate()
+	var index := {}
+	for i in list.size():
+		index[list[i].id] = i
+	list.sort_custom(func(a, b):
+		if int(a.team) != int(b.team):
+			return int(a.team) < int(b.team)
+		return index[a.id] < index[b.id])
+	return list
+
+
+# I gruppi di una lista già in ordine di squadra: [primo indice, quanti] per ogni squadra
+static func team_breaks(players: Array) -> Array:
+	var groups := []
+	for i in players.size():
+		if groups.is_empty() or int(players[i].team) != int(players[groups[-1][0]].team):
+			groups.append([i, 0])
+		groups[-1][1] += 1
+	return groups
 
 
 # Barra della suprema (#101) sotto la percentuale. Piena diventa dorata, più spessa e pulsa
@@ -252,11 +327,14 @@ func _draw_results(w: float, _h: float) -> void:
 		if p.id == _snap.winnerId:
 			winner = p
 	var title := "Pareggio!"
+	var title_color := UI.ACCENT
 	if not winner.is_empty():
-		var team: bool = rules.get("mode", "ffa") != "ffa"
+		var team: bool = int(winner.team) > 0
 		title = ("Squadra %s vince!" % game.teamNames[str(int(winner.team))]) if team else "%s vince!" % winner.name
+		if team:
+			title_color = Access.team_color(game, int(winner.team)).lightened(0.2) # la scritta ha il colore di chi ha vinto (#409)
 	var lift := 110.0 if compact else 0.0 # sul telefono tutto più in alto: sotto ci sono Rivincita e Cambia lottatore
-	_centered(title, Vector2(w / 2, 200 - lift), 48, UI.ACCENT)
+	_centered(title, Vector2(w / 2, 200 - lift), 48, title_color)
 	# La frase di vittoria del suo personaggio (#13), o la provocazione se la scheda ha solo quella
 	if not winner.is_empty() and rules.get("mode", "ffa") == "ffa":
 		var c: Dictionary = game.characters.get(winner.get("characterId", ""), {})

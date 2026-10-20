@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { COLORS, COLORS_COLORBLIND, TEAM_COLORS, TEAM_COLORS_COLORBLIND } from "./constants";
+import { COLORS, COLORS_COLORBLIND, MAX_TEAMS, TEAM_COLORS, TEAM_COLORS_COLORBLIND } from "./constants";
 
 // Come vede un colore chi ha la deuteranopia (matrice di Machado, Oliveira e Fernandes 2009, gravità 1),
 // poi in CIE Lab: la distanza tra due colori Lab è quanto li si distingue (sotto 10 si confondono)
@@ -45,13 +45,13 @@ function minBetween(a: number[], b: number[]): number {
 describe("palette per daltonici", () => {
   it("ha un colore al posto di ognuno dell'originale", () => {
     assert.equal(COLORS_COLORBLIND.length, COLORS.length);
-    for (const t of [1, 2] as const) assert.equal(TEAM_COLORS_COLORBLIND[t].length, TEAM_COLORS[t].length);
+    for (const t of [1, 2, 3, 4]) assert.equal(TEAM_COLORS_COLORBLIND[t].length, TEAM_COLORS[t].length);
   });
 
   it("un colore del server diventa sempre lo stesso colore", () => {
     // Il client rimappa per valore: se un colore sta in due tabelle, deve finire uguale in entrambe
     const map = new Map<number, number>();
-    const pairs: [number[], number[]][] = [[COLORS, COLORS_COLORBLIND], [TEAM_COLORS[1], TEAM_COLORS_COLORBLIND[1]], [TEAM_COLORS[2], TEAM_COLORS_COLORBLIND[2]]];
+    const pairs: [number[], number[]][] = [[COLORS, COLORS_COLORBLIND], ...[1, 2, 3, 4].map((t): [number[], number[]] => [TEAM_COLORS[t], TEAM_COLORS_COLORBLIND[t]])];
     for (const [from, to] of pairs) {
       from.forEach((c, i) => {
         if (map.has(c)) assert.equal(map.get(c), to[i], c.toString(16));
@@ -69,5 +69,14 @@ describe("palette per daltonici", () => {
     const blind = minBetween(TEAM_COLORS_COLORBLIND[1], TEAM_COLORS_COLORBLIND[2]);
     assert.ok(blind > 40, `minimo ${blind}`);
     assert.ok(blind > minBetween(TEAM_COLORS[1], TEAM_COLORS[2]));
+  });
+
+  it("con la deuteranopia anche tre o quattro squadre si distinguono tra loro (#409)", () => {
+    for (let a = 1; a <= MAX_TEAMS; a++) {
+      for (let b = a + 1; b <= MAX_TEAMS; b++) {
+        const d = distance(TEAM_COLORS_COLORBLIND[a][0], TEAM_COLORS_COLORBLIND[b][0]);
+        assert.ok(d > 25, `squadre ${a} e ${b}: ${d}`);
+      }
+    }
   });
 });

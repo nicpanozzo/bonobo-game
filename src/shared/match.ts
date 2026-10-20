@@ -3,12 +3,12 @@
 // girare in locale (allenamento, predizione) e un porting su un altro motore parte da qui.
 
 import { getCharacter, skinFor } from "./characters";
-import { COLORS, FIGHTER, MATCH_RESTART_MS, MAX_PLAYERS_PER_ROOM, RECONNECT_RESUME_INVULNERABLE_MS, TEAM_COLORS, TRAINING } from "./constants";
+import { COLORS, FIGHTER, ITEM_AMOUNTS, MATCH_RESTART_MS, MAX_PLAYERS_PER_ROOM, RECONNECT_RESUME_INVULNERABLE_MS, TEAM_COLORS, TRAINING } from "./constants";
 import { bufferPresses, createFighter, emptyInput, resetForMatch, stepWorld, type Fighter, type PhysicsContext } from "./physics";
 import { createItemWorld, handleItemInput, itemStates, resetItems, stepItems, type ItemWorld } from "./physics/items";
 import { companionState } from "./physics/companion";
 import { createProjectileWorld, projectileStates, puddleStates, type ProjectileWorld } from "./physics/projectiles";
-import { canHitWithRules, flagWinnerTeam, isTeamMode, lastStanding, leaderOnTime, sanitizeRules } from "./rules";
+import { canHitWithRules, flagWinnerTeam, isTeamMode, lastStanding, leaderOnTime, requestedTeam, sanitizeRules } from "./rules";
 import { COURSE_PREFIX, seedFromCourseId } from "./courseGenerator";
 import { seedFromStageId } from "./stageGenerator";
 import { getStage, type StageSpec } from "./stages";
@@ -39,6 +39,7 @@ export class Match {
   private matchTimeMs = 0;
   private ctx: PhysicsContext;
   private scores: Record<1 | 2, number> = { 1: 0, 2: 0 }; // solo in Bandiera
+  private pendingTeams = new Map<string, number>(); // cambi di squadra chiesti a partita in corso (#409)
   private items: ItemWorld | null; // oggetti (#17): solo in Tutti contro tutti e Squadre
   private projectiles: ProjectileWorld = createProjectileWorld(); // proiettili delle speciali (E10)
 
@@ -53,8 +54,9 @@ export class Match {
       unlimitedStocks: rules.mode === "flag" || rules.mode === "race" || rules.mode === "training",
       projectiles: this.projectiles,
     };
-    const withItems = options.items !== false && (rules.mode === "ffa" || rules.mode === "teams");
-    this.items = withItems ? createItemWorld(seedOf(this.stage.id)) : null;
+    const amount = ITEM_AMOUNTS[rules.itemAmount];
+    const withItems = options.items !== false && (rules.mode === "ffa" || rules.mode === "teams") && amount.maxOnStage > 0 && rules.itemKinds.length > 0;
+    this.items = withItems ? createItemWorld(seedOf(this.stage.id), { everyMs: amount.everyMs, maxOnStage: amount.maxOnStage, kinds: rules.itemKinds }) : null;
   }
 
   get size() {
@@ -69,19 +71,21 @@ export class Match {
     return [...this.fighters.values()];
   }
 
-  addPlayer(id: string, name: string, characterId?: string, skinId?: string) {
+  // team: la squadra chiesta (#409); se non c'è in queste regole si entra in quella con meno giocatori
+  addPlayer(id: string, name: string, characterId?: string, skinId?: string, wantedTeam?: number) {
     const index = this.freeIndex();
-    const team = isTeamMode(this.rules) ? this.smallerTeam() : 0;
+    const team = isTeamMode(this.rules) ? requestedTeam(this.rules, wantedTeam) || this.smallerTeam() : 0;
     const fighter = createFighter(
       {
         id,
         name: shortName(name) || "Bonobo",
         characterId: getCharacter(characterId).id,
         skinId: skinFor(characterId, skinId),
-        color: team ? this.teamColor(team as 1 | 2) : COLORS[index],
+        color: team ? this.teamColor(team) : COLORS[index],
         team,
         index,
         stocks: this.rules.stocks,
+        supremeRate: this.rules.supremeSpeed,
       },
       this.stage,
     );
@@ -90,7 +94,35 @@ export class Match {
     this.assignFlags();
   }
 
+  // Cambio di squadra (#409): a partita ferma (da soli o a fine partita) subito, altrimenti dalla prossima,
+  // così nessuno passa alla squadra che sta vincendo a metà partita
+  setTeam(id: string, wanted: unknown) {
+    const f = this.fighters.get(id);
+    const team = requestedTeam(this.rules, wanted);
+    if (!f || !team) return;
+    if (team === f.team) {
+      this.pendingTeams.delete(id);
+      return;
+    }
+    if (this.winnerId || this.matchTimeMs === 0) this.moveToTeam(f, team);
+    else this.pendingTeams.set(id, team);
+  }
+
+  // La squadra in cui passerà alla prossima partita, se l'ha chiesto
+  pendingTeam(id: string): number | undefined {
+    return this.pendingTeams.get(id);
+  }
+
+  private moveToTeam(f: Fighter, team: number) {
+    this.pendingTeams.delete(f.id);
+    f.carrier = false;
+    f.team = team;
+    f.color = this.teamColor(team, f);
+    this.assignFlags();
+  }
+
   removePlayer(id: string) {
+    this.pendingTeams.delete(id);
     this.fighters.delete(id);
     this.slots.delete(id);
     this.assignFlags(); // se se ne va il portabandiera, la bandiera passa a un compagno
@@ -185,6 +217,7 @@ export class Match {
         skinId: f.skinId,
         color: f.color,
         team: f.team,
+        ...(this.pendingTeams.has(f.id) ? { nextTeam: this.pendingTeams.get(f.id) } : {}),
         x: Math.round(f.x),
         y: Math.round(f.y),
         vx: Math.round(f.vx),
@@ -207,6 +240,8 @@ export class Match {
         stunned: f.stunned,
         grabbedBy: f.grabbedBy,
         dashing: f.dashing,
+        ...(f.jumpSquatTimer > 0 && { jumpSquat: Math.round(f.jumpSquatTimer) }),
+        ...(f.landingTimer > 0 && { landing: Math.round(f.landingTimer) }),
         charge: f.charge,
         supreme: Math.floor(f.supreme), // per difetto: 100 solo quando è davvero piena
         powerup: f.powerup,
@@ -223,19 +258,18 @@ export class Match {
     return { t, players, winnerId: this.winnerId, timeLeftMs: this.timeLeftMs(), teamScores, items, projectiles, puddles, events, stageMs };
   }
 
-  // Si entra nella squadra con meno giocatori (a parità, la Rossa)
-  private smallerTeam(): 1 | 2 {
-    let one = 0;
-    let two = 0;
-    for (const f of this.fighters.values()) {
-      if (f.team === 1) one++;
-      if (f.team === 2) two++;
-    }
-    return two < one ? 2 : 1;
+  // Si entra nella squadra con meno giocatori (a parità, quella col numero più basso: prima la Rossa)
+  private smallerTeam(): number {
+    const count = new Array<number>(this.rules.teamCount + 1).fill(0);
+    for (const f of this.fighters.values()) if (f.team >= 1 && f.team <= this.rules.teamCount) count[f.team]++;
+    let best = 1;
+    for (let t = 2; t <= this.rules.teamCount; t++) if (count[t] < count[best]) best = t;
+    return best;
   }
 
-  private teamColor(team: 1 | 2): number {
-    const used = new Set([...this.fighters.values()].map((f) => f.color));
+  // Una tonalità della squadra che nessun altro ha ancora (self: chi cambia squadra non conta il suo colore)
+  private teamColor(team: number, self?: Fighter): number {
+    const used = new Set([...this.fighters.values()].filter((f) => f !== self).map((f) => f.color));
     return TEAM_COLORS[team].find((c) => !used.has(c)) ?? TEAM_COLORS[team][0];
   }
 
@@ -332,6 +366,11 @@ export class Match {
   }
 
   private restartMatch() {
+    for (const [id, team] of this.pendingTeams) {
+      const f = this.fighters.get(id);
+      if (f) this.moveToTeam(f, team);
+    }
+    this.pendingTeams.clear();
     this.winnerId = null;
     this.matchTimeMs = 0;
     this.scores = { 1: 0, 2: 0 };
@@ -390,5 +429,6 @@ function predictionState(f: Fighter): PredictionState {
     helpless: f.helpless,
     lightBuffer: Math.round(f.buffer.light),
     heavyBuffer: Math.round(f.buffer.heavy),
+    attackAir: f.attackAir,
   };
 }

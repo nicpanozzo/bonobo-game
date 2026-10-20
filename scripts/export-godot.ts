@@ -8,16 +8,16 @@ import { basename, dirname, extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { SpriteFolderSpec } from "../src/shared/characters";
 import { CHARACTERS, CREWS, DEFAULT_CHARACTER_ID, isSpriteFolder, resolvedAnimations, SPECIAL_KINDS, SPECIAL_SLOTS, specialAttackSpec, specialsFor, spriteStatePath, supremeAttackSpec } from "../src/shared/characters";
-import { ATTACKS, AUDIO, BIRRA, BONG, CAMERA, FUNGHI, COLORS, EFFECTS, FIGHTER, INPUT, ITEM_RULES, LEDGE, MICELIO, NET, POWERUP, PROTOCOL_VERSION, RUMBLE, SHIELD, SPORE, TEAM_COLORS, TEAM_NAMES, WORLD } from "../src/shared/constants";
+import { ATTACKS, AUDIO, BIRRA, BONG, CAMERA, FUNGHI, COLORS, EFFECTS, FIGHTER, INPUT, ITEM_AMOUNTS, ITEM_RULES, LEDGE, MICELIO, NET, POWERUP, PROTOCOL_VERSION, RUMBLE, SHIELD, SPORE, SUPREME_SPEEDS, TEAM_COLORS, TEAM_NAMES, WORLD } from "../src/shared/constants";
 import { RECONNECT, RECONNECT_HOLD_MS } from "../src/shared/constants";
-import { COLORS_COLORBLIND, TEAM_COLORS_COLORBLIND } from "../src/shared/constants";
+import { COLORS_COLORBLIND, MAX_TEAMS, TEAM_COLORS_COLORBLIND } from "../src/shared/constants";
 import { TRAINING } from "../src/shared/constants";
 import { DASH, DODGE, RECOVERY, TICK_RATE } from "../src/shared/constants";
 import { predictionTraces } from "../src/shared/predictionTraces";
 import { HITSTOP, SMASH_CHARGE, SUPREME } from "../src/shared/constants";
 import { LESSONS, TUTORIAL_BOT, TUTORIAL_STAGE_ID } from "../src/shared/tutorial";
 import { CHALLENGES } from "../src/shared/challenges";
-import { ITEMS } from "../src/shared/items";
+import { DROPPABLE_ITEMS, ITEMS } from "../src/shared/items";
 import { DEFAULT_STAGE_ID, STAGES, stageArtFiles } from "../src/shared/stages";
 import { stageCheckData } from "../src/shared/stageCheck";
 import { RANDOM_STAGE_ART } from "../src/shared/stageGenerator";
@@ -240,6 +240,9 @@ const data = {
   effects: EFFECTS,
   items: ITEMS,
   itemRules: ITEM_RULES,
+  itemAmounts: ITEM_AMOUNTS, // regole della stanza: quanti oggetti cadono
+  droppableItems: DROPPABLE_ITEMS, // regole della stanza: quali oggetti si possono scegliere
+  supremeSpeeds: SUPREME_SPEEDS, // regole della stanza: velocità della barra della suprema
   powerup: POWERUP, // #231
   bong: BONG, // #302
   funghi: FUNGHI, // #302
@@ -251,6 +254,7 @@ const data = {
   colorsColorblind: COLORS_COLORBLIND,
   teamColorsColorblind: TEAM_COLORS_COLORBLIND,
   teamNames: TEAM_NAMES,
+  maxTeams: MAX_TEAMS, // #409
   defaultStageId: DEFAULT_STAGE_ID,
   stages: STAGES,
   defaultCharacterId: DEFAULT_CHARACTER_ID,

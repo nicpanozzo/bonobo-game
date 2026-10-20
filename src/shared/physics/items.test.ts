@@ -11,6 +11,7 @@ import { canBeHit, launch } from "./attacks";
 import { createItemWorld, handleItemInput, itemStates, pickKind, stepItems, type Item, type ItemWorld } from "./items";
 
 const DT = 1000 / TICK_RATE;
+const SQUAT = Math.round(FIGHTER.jumpSquatMs / DT); // tick di preparazione al salto (#384 A3)
 const stage = getStage(undefined);
 
 function setup() {
@@ -151,6 +152,22 @@ describe("zone degli oggetti (#253)", () => {
   });
 });
 
+describe("oggetti scelti nelle regole della stanza", () => {
+  it("cadono solo i tipi scelti, e quanti se ne scelgono", () => {
+    const ctx: PhysicsContext = { stage, events: [] };
+    const world = createItemWorld(7, { everyMs: 500, maxOnStage: 3, kinds: ["birra"] });
+    run(world, [], ctx, Math.round(10000 / DT));
+    const spawns = ofType(ctx.events, "itemSpawn");
+    assert.ok(spawns.length >= 3, `ne sono caduti ${spawns.length}`);
+    assert.ok(spawns.every((e) => e.kind === "birra"));
+    assert.ok(world.items.length <= 3);
+  });
+
+  it("pickKind sceglie solo tra quelli dati", () => {
+    for (let i = 0; i < 100; i++) assert.ok(["fiore", "bong"].includes(pickKind(i / 100, ["bong", "fiore"])));
+  });
+});
+
 describe("il fiore, oggetto da consumare (#231)", () => {
   const fiore = (x: number, y: number): Item => ({ ...banana(x, y), kind: "fiore" });
 
@@ -204,7 +221,7 @@ describe("il fiore, oggetto da consumare (#231)", () => {
       run(world, fighters, ctx, 3);
       const vx = a.vx;
       press(a, { jump: true });
-      run(world, fighters, ctx, 1);
+      run(world, fighters, ctx, 1 + SQUAT);
       return { vx, vy: a.vy };
     });
     assert.ok(speeds[0].vx > 0 && speeds[0].vy < 0, "si cammina e si salta");
