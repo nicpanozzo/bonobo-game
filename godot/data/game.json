@@ -252,9 +252,9 @@
     }
   },
   "hitstop": {
-    "baseMs": 70,
-    "perDamageMs": 8,
-    "maxMs": 350
+    "baseMs": 100,
+    "perDamageMs": 11,
+    "maxMs": 500
   },
   "smashCharge": {
     "maxMs": 1000,

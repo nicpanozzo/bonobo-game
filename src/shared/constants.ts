@@ -267,11 +267,11 @@ export const HITSTUN_AIR_DRAG = 0.985; // rallentamento per tick mentre si vola 
 
 // Hitstop (#15): quando un colpo entra attaccante e bersaglio si fermano per un istante,
 // più a lungo se il colpo è forte. Il bersaglio parte in volo solo dopo.
-// Al 70% di Smash Ultimate (100 ms + 11 ms per punto, massimo 500), perché i colpi pesino (#384 A2)
+// Come Smash Ultimate (100 ms + 11 ms per punto, massimo 500), perché i colpi pesino (#384 A2, valori di Riccardo)
 export const HITSTOP = {
-  baseMs: 70, // anche il colpo più debole si sente
-  perDamageMs: 8, // ms in più per ogni punto di danno: leggero (5) = 110 ms, pesante (13) = 174 ms
-  maxMs: 350,
+  baseMs: 100, // ms: anche il colpo più debole si sente
+  perDamageMs: 11, // ms in più per ogni punto di danno: leggero (5) = 155 ms, pesante (13) = 243 ms
+  maxMs: 500, // ms
 };
 
 export const STOCKS = 3; // vite per partita
