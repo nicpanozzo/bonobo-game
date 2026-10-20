@@ -238,3 +238,17 @@ func test_squadre_e_la_tua_squadra() -> void:
 	lobby._set_kind("join")
 	runner.check(lobby._team_box.visible, "entrando la squadra si sceglie comunque")
 	lobby.free()
+
+
+func test_arene_nascoste_fuori_dalla_lobby() -> void:
+	var lobby := _lobby(false)
+	var ids := []
+	for b in lobby._stages.get_children():
+		if not b.is_queued_for_deletion():
+			ids.append(b.get_meta("id"))
+	runner.check(lobby.game.stages.has("padova-palazzo"), "la vecchia Padova resta tra le arene, per id (#408)")
+	runner.check(not ids.has("padova-palazzo"), "ma non ha la sua carta nella lobby: %s" % [ids])
+	runner.check(ids.filter(func(id): return id.begins_with("padova")) == ["padova"], "una sola Padova: %s" % [ids])
+	for id in ids:
+		runner.check(id.begins_with("casuale-") or not lobby.game.stages[id].get("hidden", false), "%s non è nascosta" % id)
+	lobby.free()
