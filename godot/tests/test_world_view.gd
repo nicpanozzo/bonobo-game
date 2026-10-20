@@ -286,5 +286,24 @@ func test_quanto_si_e_fatti_col_bong() -> void:
 	runner.check(FighterPose.high_level({"powerup": "fiore", "powerupMs": 5000}, 7000.0) == 0.0, "il fiore non distorce")
 	var soon := FighterPose.high_level({"powerup": "bong", "powerupMs": 7000}, 7000.0)
 	var late := FighterPose.high_level({"powerup": "bong", "powerupMs": 500}, 7000.0)
-	runner.check(FighterPose.high_level({"powerup": "trip", "powerupMs": 2000}, 7000.0) > 0.0, "i funghetti distorcono un po'")
+	runner.check(FighterPose.high_level({"powerup": "veleno", "powerupMs": 2000}, 7000.0) == 0.0, "il veleno del fungo non distorce lo schermo")
 	runner.check(soon > 0.0 and soon < late and late <= 1.0, "cresce col tempo: %s → %s" % [soon, late])
+
+
+# Il fungo di Teemo: agli avversari sparisce mentre si arma; chi l'ha lanciato lo vede sempre, più trasparente
+func test_fungo_invisibile_agli_avversari() -> void:
+	runner.check(WorldView.shroom_alpha(false, 0.0, 0.0) == 1.0, "appena piazzato lo vedono tutti")
+	runner.check(WorldView.shroom_alpha(false, 0.5, 0.0) > 0.0 and WorldView.shroom_alpha(false, 0.5, 0.0) < 1.0, "mentre si arma sfuma")
+	runner.check(WorldView.shroom_alpha(false, 1.0, 1234.0) == 0.0, "armato, gli avversari non lo vedono")
+	runner.check(WorldView.shroom_alpha(false, 3.0, 0.0) == 0.0, "e non torna visibile col tempo")
+	for now in [0.0, 300.0, 900.0, 2000.0]:
+		var a := WorldView.shroom_alpha(true, 1.0, now)
+		runner.check(a > 0.3 and a < 0.7, "chi l'ha lanciato lo vede trasparente: %s" % a)
+
+
+# Il veleno: la tinta si accende a ogni scatto (ogni 500 ms dall'inizio) e si spegne in fretta
+func test_veleno_pulsa_a_ogni_scatto() -> void:
+	runner.check(FighterPose.poison_pulse(6000.0, 6000.0, 500.0) == 1.0, "allo scoppio è accesa")
+	runner.check(FighterPose.poison_pulse(5700.0, 6000.0, 500.0) == 0.0, "tra uno scatto e l'altro è spenta")
+	runner.check(FighterPose.poison_pulse(5500.0, 6000.0, 500.0) == 1.0, "al secondo scatto si riaccende")
+	runner.check(FighterPose.poison_pulse(0.0, 6000.0, 500.0) == 0.0, "finito il veleno niente")

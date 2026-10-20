@@ -385,6 +385,8 @@ func _match_page(params: Dictionary) -> Control:
 		var c := CheckButton.new()
 		c.text = str(items_spec.get(k, {}).get("name", k))
 		c.button_pressed = not (saved_kinds is Array) or (saved_kinds as Array).has(k)
+		if k == "fungo" and saved_kinds is Array and (saved_kinds as Array).has("funghetti"):
+			c.button_pressed = true # chi aveva scelto i vecchi funghetti ritrova il fungo di Teemo
 		_item_checks[k] = c
 		kinds_row.add_child(c)
 	items_box.add_child(kinds_row)
