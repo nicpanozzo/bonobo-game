@@ -203,18 +203,27 @@ def _part(q, pts_or_mask, col, shade_k=0.78, width=None, ink=0.5):
         m = pts_or_mask
     m = q.smooth(m, 0.35)
     q.fill(m, col)
-    q.fill(q.inner_shadow(m, -1.0, -1.6, 0.9), tuple(int(c * shade_k) for c in col[:3]), 0.85)
-    q.fill(q.rim(m, -0.6, -0.9, 0.5), tuple(min(255, int(c * 1.15)) for c in col[:3]), 0.5)
+    # ombra a 2 toni col bordo netto (stile grafico, #408 passo 4), luce stretta dalla parte della luce
+    q.fill(q.inner_shadow(m, -1.0, -1.6, 0.25), tuple(int(c * shade_k) for c in col[:3]), 0.95)
+    q.fill(q.rim(m, -0.5, -0.7, 0.2), tuple(min(255, int(c * 1.12)) for c in col[:3]), 0.45)
     if ink:
         q.outline(m, ink, INK)
     return m
 
 
-def person(q, x, base, phase, outfit, run=False, lean=0.0, hold=None, coat=False, skirt=False, hair="corti", cap=None, wreath=False, height=38.0):
+def _shoe(foot):
+    """La scarpa di profilo (#408): il tacco dietro, la suola dritta e la punta tonda in avanti."""
+    fx, fy = foot
+    return [(fx - 1.4, fy + 0.8), (fx - 1.5, fy - 1.2), (fx + 0.6, fy - 1.8), (fx + 2.6, fy - 0.9), (fx + 4.0, fy + 0.1), (fx + 4.0, fy + 0.8)]
+
+
+def person(q, x, base, phase, outfit, run=False, lean=0.0, hold=None, coat=False, skirt=False, hair="corti", cap=None, wreath=False, height=38.0, scarf=None, glasses=False, pack=None):
     """Una persona di profilo che cammina verso destra. phase da 0 a 1 è il passo: gambe e braccia si alternano,
     con le ginocchia che piegano e il corpo che sale e scende appena. outfit: (giacca, pantaloni, scarpe, pelle,
     capelli). hold: dove vanno le mani ("avanti" per il passeggino, "su" per il giornale, "bastone", "guinzaglio",
-    "borsa"). Restituisce la posizione della mano davanti, per attaccarci gli oggetti."""
+    "borsa"). scarf, glasses e pack aggiungono sciarpa, occhiali e zaino (#408), per avere più varietà senza righe nuove.
+    Proporzioni (#408 passo 4): la testa è circa un settimo dell'altezza, con il collo che si vede, spalle più larghe
+    dei fianchi e scarpe con la punta. Restituisce la posizione della mano davanti, per attaccarci gli oggetti."""
     jacket, pants, shoes, skin, hair_col = outfit
     H = height
     amp = 0.75 if run else 0.42
@@ -222,7 +231,8 @@ def person(q, x, base, phase, outfit, run=False, lean=0.0, hold=None, coat=False
     bob = abs(math.cos(phase * math.tau)) * (1.6 if run else 0.8)
     hip = (x, base - H * 0.5 - bob + 0.8)
     sh = (x + lean * H * 0.25, base - H * 0.77 - bob)
-    head = (sh[0] + 1.2 + lean * 3, sh[1] - 5.2)
+    hs = 0.75 * H / 38  # la scala della testa: più piccola di prima, in proporzione col corpo
+    head = (sh[0] + 1.0 + lean * 3, sh[1] - 5.6 * hs - 1.0)
     thigh, shin = H * 0.27, H * 0.25
     legs = []
     for side in (-1, 1):  # -1 gamba dietro, 1 gamba davanti
@@ -240,53 +250,72 @@ def person(q, x, base, phase, outfit, run=False, lean=0.0, hold=None, coat=False
     if hold == "avanti":
         arms = [(s, (sh[0] + 4, sh[1] + 5), (sh[0] + 9, sh[1] + 9 + s)) for s, _, _ in arms]
     elif hold == "su":
-        arms = [(s, (sh[0] + 3 * s + 1, sh[1] - 4), (sh[0] + 4 * s + 2, sh[1] - 9)) for s, _, _ in arms]
+        arms = [(s, (sh[0] + 2.5 + s, sh[1] + 5), (sh[0] + 6.5 + s * 0.8, sh[1] + 1.5 - s)) for s, _, _ in arms]  # le mani tengono il giornale davanti
     elif hold == "bastone":
         arms[1] = (1, (sh[0] + 3, sh[1] + 6), (sh[0] + 7, sh[1] + 11))
     elif hold == "guinzaglio":
         arms[1] = (1, (sh[0] + 3, sh[1] + 6), (sh[0] + 8, sh[1] + 9))
     back_col = tuple(int(c * 0.82) for c in jacket)
     # braccio e gamba di dietro, più scuri
-    _part(q, [sh, arms[0][1], arms[0][2]], back_col, width=H * 0.075)
-    _part(q, [hip, legs[0][1], legs[0][2]], tuple(int(c * 0.82) for c in pants), width=H * 0.09)
-    _part(q, q.ellipse(q.mask(), legs[0][2][0] - 1.2, legs[0][2][1] - 1.6, legs[0][2][0] + 3.6, legs[0][2][1] + 0.8), tuple(int(c * 0.8) for c in shoes))
+    _part(q, [sh, arms[0][1], arms[0][2]], back_col, width=H * 0.085)
+    _part(q, [hip, legs[0][1], legs[0][2]], tuple(int(c * 0.82) for c in pants), width=H * 0.105)
+    _part(q, _shoe(legs[0][2]), tuple(int(c * 0.8) for c in shoes), ink=0.4)
     # busto: dalle spalle ai fianchi, con il cappotto lungo o la gonna
     hem = base - H * (0.22 if coat else 0.42)
-    torso = [(sh[0] - H * 0.09, sh[1]), (sh[0] + H * 0.08, sh[1] + 0.5), (hip[0] + H * 0.1, hem), (hip[0] - H * 0.1, hem)]
+    torso = [(sh[0] - H * 0.115, sh[1] + 0.8), (sh[0] - H * 0.07, sh[1] - 0.7), (sh[0] + H * 0.06, sh[1] - 0.5), (sh[0] + H * 0.12, sh[1] + H * 0.08),
+             (sh[0] + H * 0.1, sh[1] + H * 0.16), (hip[0] + H * 0.09, hem), (hip[0] - H * 0.1, hem)]  # spalle tonde, il petto davanti
     if skirt:
-        torso = [(sh[0] - H * 0.09, sh[1]), (sh[0] + H * 0.08, sh[1] + 0.5), (hip[0] + H * 0.08, hip[1]), (hip[0] + H * 0.16, base - H * 0.24), (hip[0] - H * 0.14, base - H * 0.24), (hip[0] - H * 0.08, hip[1])]
+        torso = [(sh[0] - H * 0.1, sh[1] + 0.8), (sh[0] - H * 0.06, sh[1] - 0.6), (sh[0] + H * 0.06, sh[1] - 0.4), (sh[0] + H * 0.1, sh[1] + H * 0.1), (hip[0] + H * 0.08, hip[1]), (hip[0] + H * 0.16, base - H * 0.24), (hip[0] - H * 0.14, base - H * 0.24), (hip[0] - H * 0.08, hip[1])]
     # gamba davanti, sotto la giacca
-    _part(q, [hip, legs[1][1], legs[1][2]], pants, width=H * 0.09)
-    _part(q, q.ellipse(q.mask(), legs[1][2][0] - 1.2, legs[1][2][1] - 1.6, legs[1][2][0] + 3.8, legs[1][2][1] + 0.8), shoes)
+    _part(q, [hip, legs[1][1], legs[1][2]], pants, width=H * 0.105)
+    _part(q, _shoe(legs[1][2]), shoes, ink=0.4)
     _part(q, torso, jacket)
+    if pack:  # lo zaino sulla schiena, con lo spallaccio
+        _part(q, [(sh[0] - H * 0.1, sh[1] + 1.2), (sh[0] - H * 0.2, sh[1] + 2.4), (sh[0] - H * 0.21, sh[1] + H * 0.26), (sh[0] - H * 0.1, sh[1] + H * 0.27)], pack)
+        q.line([(sh[0] - H * 0.04, sh[1]), (sh[0] - H * 0.05, sh[1] + H * 0.18)], 0.6, tuple(int(c * 0.6) for c in pack), 0.9)
     q.line([(sh[0] + 1, sh[1] + 2), (hip[0] + 1.5, hem - 1)], 0.35, tuple(int(c * 0.6) for c in jacket), 0.6)  # la piega dei bottoni
     # collo e testa di profilo: nuca, fronte, naso, mento; capelli
-    q.fill(q.smooth(q.stroke(q.mask(), [sh, (head[0] - 0.3, head[1] + 2)], H * 0.06), 0.3), skin)
+    q.fill(q.smooth(q.stroke(q.mask(), [sh, (head[0] - 0.3 * hs, head[1] + 2 * hs)], H * 0.06), 0.3), skin)
     hm = q.mask()
-    q.ellipse(hm, head[0] - 3.6, head[1] - 4.2, head[0] + 3.4, head[1] + 3.8)
-    q.poly(hm, [(head[0] + 3.0, head[1] - 0.6), (head[0] + 4.6, head[1] + 0.8), (head[0] + 3.0, head[1] + 1.4)])  # naso
+    q.ellipse(hm, head[0] - 3.6 * hs, head[1] - 4.2 * hs, head[0] + 3.4 * hs, head[1] + 3.8 * hs)
+    q.poly(hm, [(head[0] + 3.0 * hs, head[1] - 0.6 * hs), (head[0] + 4.6 * hs, head[1] + 0.8 * hs), (head[0] + 3.0 * hs, head[1] + 1.4 * hs)])  # naso
     _part(q, hm, skin)
-    q.fill(q.ellipse(q.mask(), head[0] + 1.4, head[1] - 1.1, head[0] + 2.4, head[1] - 0.1), (40, 34, 30))  # occhio
+    q.fill(q.ellipse(q.mask(), head[0] + 1.4 * hs, head[1] - 1.1 * hs, head[0] + 2.4 * hs, head[1] - 0.1 * hs), (40, 34, 30))  # occhio
     hair_m = q.mask()
     if hair == "corti":
-        q.poly(hair_m, [(head[0] - 3.8, head[1] + 1.5), (head[0] - 3.7, head[1] - 3.2), (head[0] - 1, head[1] - 4.7), (head[0] + 2.6, head[1] - 4.1), (head[0] + 3.4, head[1] - 2.2), (head[0] + 0.5, head[1] - 2.6), (head[0] - 1.2, head[1] + 0.2)])
+        q.poly(hair_m, [(head[0] - 3.8 * hs, head[1] + 1.5 * hs), (head[0] - 3.7 * hs, head[1] - 3.2 * hs), (head[0] - 1 * hs, head[1] - 4.7 * hs), (head[0] + 2.6 * hs, head[1] - 4.1 * hs), (head[0] + 3.4 * hs, head[1] - 2.2 * hs), (head[0] + 0.5 * hs, head[1] - 2.6 * hs), (head[0] - 1.2 * hs, head[1] + 0.2 * hs)])
     elif hair == "lunghi":
-        q.poly(hair_m, [(head[0] - 4.2, head[1] + 6.0), (head[0] - 3.9, head[1] - 3.4), (head[0] - 0.6, head[1] - 4.9), (head[0] + 2.8, head[1] - 4.1), (head[0] + 3.4, head[1] - 2.0), (head[0] + 0.2, head[1] - 2.8), (head[0] - 1.4, head[1] + 1.0), (head[0] - 1.6, head[1] + 6.4)])
+        q.poly(hair_m, [(head[0] - 4.2 * hs, head[1] + 6.0 * hs), (head[0] - 3.9 * hs, head[1] - 3.4 * hs), (head[0] - 0.6 * hs, head[1] - 4.9 * hs), (head[0] + 2.8 * hs, head[1] - 4.1 * hs), (head[0] + 3.4 * hs, head[1] - 2.0 * hs), (head[0] + 0.2 * hs, head[1] - 2.8 * hs), (head[0] - 1.4 * hs, head[1] + 1.0 * hs), (head[0] - 1.6 * hs, head[1] + 6.4 * hs)])
     elif hair == "chignon":
-        q.poly(hair_m, [(head[0] - 3.8, head[1] + 1.0), (head[0] - 3.6, head[1] - 3.4), (head[0] + 0.4, head[1] - 4.8), (head[0] + 3.2, head[1] - 3.2), (head[0] - 0.8, head[1] - 2.4)])
-        q.ellipse(hair_m, head[0] - 6.4, head[1] - 4.4, head[0] - 2.4, head[1] - 0.6)
+        q.poly(hair_m, [(head[0] - 3.8 * hs, head[1] + 1.0 * hs), (head[0] - 3.6 * hs, head[1] - 3.4 * hs), (head[0] + 0.4 * hs, head[1] - 4.8 * hs), (head[0] + 3.2 * hs, head[1] - 3.2 * hs), (head[0] - 0.8 * hs, head[1] - 2.4 * hs)])
+        q.ellipse(hair_m, head[0] - 6.4 * hs, head[1] - 4.4 * hs, head[0] - 2.4 * hs, head[1] - 0.6 * hs)
+    elif hair == "ricci":  # una massa tonda di riccioli
+        for k in range(8):  # solo sulla nuca e in cima: la fronte e l'occhio restano liberi
+            a = math.pi * (0.9 + k * 0.11)
+            cx_, cy_ = head[0] - 0.8 * hs + math.cos(a) * 3.3 * hs, head[1] - 0.9 * hs + math.sin(a) * 3.5 * hs
+            q.ellipse(hair_m, cx_ - 1.5 * hs, cy_ - 1.5 * hs, cx_ + 1.5 * hs, cy_ + 1.5 * hs)
+        q.poly(hair_m, [(head[0] - 3.4 * hs, head[1] + 0.6 * hs), (head[0] - 2.6 * hs, head[1] - 3.6 * hs), (head[0] + 2.0 * hs, head[1] - 3.6 * hs), (head[0] + 0.4 * hs, head[1] - 2.2 * hs), (head[0] - 1.2 * hs, head[1] + 0.2 * hs)])
+    elif hair == "coda":  # la coda di cavallo che ballonzola col passo
+        q.poly(hair_m, [(head[0] - 3.8 * hs, head[1] + 1.0 * hs), (head[0] - 3.6 * hs, head[1] - 3.4 * hs), (head[0] + 0.4 * hs, head[1] - 4.8 * hs), (head[0] + 3.2 * hs, head[1] - 3.2 * hs), (head[0] - 0.8 * hs, head[1] - 2.4 * hs)])
+        q.stroke(hair_m, [(head[0] - 3.4 * hs, head[1] - 2.4 * hs), (head[0] - 6.2 * hs, head[1] - 0.6 * hs + swing * 0.6), (head[0] - 6.6 * hs, head[1] + 3.6 * hs + swing)], 1.7 * hs)
     elif hair == "calvo":
-        q.poly(hair_m, [(head[0] - 3.8, head[1] + 1.2), (head[0] - 3.6, head[1] - 1.6), (head[0] - 1.8, head[1] - 0.8), (head[0] - 1.8, head[1] + 1.6)])
+        q.poly(hair_m, [(head[0] - 3.8 * hs, head[1] + 1.2 * hs), (head[0] - 3.6 * hs, head[1] - 1.6 * hs), (head[0] - 1.8 * hs, head[1] - 0.8 * hs), (head[0] - 1.8 * hs, head[1] + 1.6 * hs)])
     _part(q, hair_m, hair_col, ink=0.4)
+    if glasses:  # gli occhiali di profilo: la lente e la stanghetta
+        q.line([(head[0] + 1.0 * hs, head[1] - 0.8 * hs), (head[0] - 1.6 * hs, head[1] - 1.0 * hs)], 0.25, INK, 0.8)
+        q.line([(head[0] + 2.6 * hs, head[1] - 1.4 * hs), (head[0] + 3.1 * hs, head[1] + 0.2 * hs)], 0.35, INK, 0.9)
     if cap:
-        _part(q, [(head[0] - 3.9, head[1] - 2.0), (head[0] - 3.2, head[1] - 4.8), (head[0] + 1.6, head[1] - 5.2), (head[0] + 3.6, head[1] - 3.2), (head[0] + 6.0, head[1] - 2.6), (head[0] + 3.0, head[1] - 2.0)], cap)
+        _part(q, [(head[0] - 3.9 * hs, head[1] - 2.0 * hs), (head[0] - 3.2 * hs, head[1] - 4.8 * hs), (head[0] + 1.6 * hs, head[1] - 5.2 * hs), (head[0] + 3.6 * hs, head[1] - 3.2 * hs), (head[0] + 6.0 * hs, head[1] - 2.6 * hs), (head[0] + 3.0 * hs, head[1] - 2.0 * hs)], cap)
     if wreath:  # la corona d'alloro di chi si è appena laureato
         for k in range(8):
             a = math.pi * (1.05 + k * 0.12)
-            lx, ly = head[0] + math.cos(a) * 3.9, head[1] - 2.2 + math.sin(a) * 2.5
-            _part(q, q.ellipse(q.mask(), lx - 1.3, ly - 0.7, lx + 1.3, ly + 0.7), (110, 138, 84), ink=0.25)
+            lx, ly = head[0] + math.cos(a) * 3.9 * hs, head[1] - 2.2 * hs + math.sin(a) * 2.5 * hs
+            _part(q, q.ellipse(q.mask(), lx - 1.2, ly - 0.65, lx + 1.2, ly + 0.65), (110, 138, 84), ink=0.25)
+    if scarf:  # la sciarpa attorno al collo, con un capo che scende davanti
+        _part(q, [(sh[0] - 1.6, sh[1] - 0.4), (sh[0] - 1.2, sh[1] - 2.4), (sh[0] + 2.6, sh[1] - 2.2), (sh[0] + 3.0, sh[1] + 0.2)], scarf, ink=0.35)
+        _part(q, [(sh[0] + 1.6, sh[1] - 0.6), (sh[0] + 3.2, sh[1] - 0.2), (sh[0] + 2.6 + swing * 0.4, sh[1] + 6.5), (sh[0] + 1.0 + swing * 0.4, sh[1] + 6.2)], tuple(int(c * 0.9) for c in scarf), ink=0.35)
     # braccio davanti con la mano
-    _part(q, [sh, arms[1][1], arms[1][2]], jacket, width=H * 0.075)
+    _part(q, [sh, arms[1][1], arms[1][2]], jacket, width=H * 0.085)
     hand = arms[1][2]
     _part(q, q.ellipse(q.mask(), hand[0] - 1.3, hand[1] - 1.3, hand[0] + 1.3, hand[1] + 1.3), skin, ink=0.35)
     return hand, arms[0][2], head
@@ -345,23 +374,25 @@ def walker_rows():
         _part(q, [(h[0] - 2.5, h[1] + 1.5), (h[0] + 3.5, h[1] + 1.5), (h[0] + 4, h[1] + 9), (h[0] - 3, h[1] + 9)], (176, 164, 136))
         q.line([(h[0] + 0.5, h[1] + 2), (h[0] + 0.5, h[1] + 5)], 0.4, (120, 140, 90))  # un porro che spunta
 
-    def with_paper(q, phase, hand):
+    def with_paper(q, phase, hand):  # il giornale aperto davanti alla faccia (#408): si vede la piega e le colonne
         h = hand[2]
-        _part(q, [(h[0] - 9, h[1] - 7.5), (h[0] + 8, h[1] - 8.5), (h[0] + 7, h[1] - 6), (h[0] - 8, h[1] - 5)], (220, 214, 196))
-        for k in range(3):
-            q.line([(h[0] - 6 + k * 4, h[1] - 7.2), (h[0] - 4 + k * 4, h[1] - 7.4)], 0.3, (120, 116, 110), 0.8)
+        page = [(h[0] + 3.4, h[1] - 5.5), (h[0] + 7.6, h[1] - 6.6), (h[0] + 9.2, h[1] + 6.2), (h[0] + 4.6, h[1] + 7.0)]
+        _part(q, page, (220, 214, 196), shade_k=0.86)
+        for k in range(4):
+            y = h[1] - 3.6 + k * 2.6
+            q.line([(h[0] + 5.0 + k * 0.25, y), (h[0] + 7.6 + k * 0.3, y - 0.5)], 0.3, (120, 116, 110), 0.8)
 
     S, H = SKINS, HAIRS
     return [
-        ("signore", sheet_row(outfit=((88, 92, 104), (70, 72, 80), (50, 40, 34), S[0], H[2]), coat=True, hair="calvo", cap=(110, 96, 80))),
+        ("signore", sheet_row(outfit=((88, 92, 104), (70, 72, 80), (50, 40, 34), S[0], H[2]), coat=True, hair="calvo", cap=(110, 96, 80), scarf=(130, 60, 56))),
         ("signora", sheet_row(outfit=((150, 104, 96), (60, 60, 66), (70, 50, 44), S[2], H[1]), skirt=True, hair="chignon")),
-        ("cane", sheet_row(outfit=((96, 112, 92), (82, 78, 72), (60, 50, 42), S[1], H[0]), hair="corti", hold="guinzaglio", extra=with_dog)),
-        ("corsa", sheet_row(outfit=((150, 156, 164), (54, 58, 70), (210, 210, 206), S[3], H[0]), run=True, lean=0.5, hair="corti")),
+        ("cane", sheet_row(outfit=((96, 112, 92), (82, 78, 72), (60, 50, 42), S[1], H[0]), hair="ricci", hold="guinzaglio", extra=with_dog)),
+        ("corsa", sheet_row(outfit=((150, 156, 164), (54, 58, 70), (210, 210, 206), S[3], H[0]), run=True, lean=0.5, hair="corti", pack=(70, 84, 96))),
         ("passeggino", sheet_row(outfit=((122, 112, 140), (70, 70, 84), (60, 50, 46), S[4], H[4]), hair="lunghi", hold="avanti", extra=with_pram)),
         ("bastone", sheet_row(outfit=((110, 96, 80), (84, 80, 74), (52, 44, 40), S[0], H[2]), coat=True, lean=0.35, hair="calvo", cap=(80, 74, 66), hold="bastone", extra=with_cane)),
-        ("laurea", sheet_row(outfit=((54, 58, 70), (48, 50, 58), (40, 34, 30), S[2], H[3]), hair="corti", wreath=True)),
-        ("borsa", sheet_row(outfit=((140, 120, 92), (80, 76, 70), (64, 52, 42), S[1], H[1]), skirt=True, hair="lunghi", extra=with_bag)),
-        ("giornale", sheet_row(outfit=((104, 100, 92), (66, 66, 70), (50, 42, 36), S[4], H[0]), hair="corti", hold="su", extra=with_paper)),
+        ("laurea", sheet_row(outfit=((54, 58, 70), (48, 50, 58), (40, 34, 30), S[2], H[3]), hair="corti", wreath=True, pack=(96, 70, 60))),
+        ("borsa", sheet_row(outfit=((140, 120, 92), (80, 76, 70), (64, 52, 42), S[1], H[1]), skirt=True, hair="coda", extra=with_bag)),
+        ("giornale", sheet_row(outfit=((104, 100, 92), (66, 66, 70), (50, 42, 36), S[4], H[0]), hair="corti", hold="su", glasses=True, extra=with_paper)),
     ]
 
 
