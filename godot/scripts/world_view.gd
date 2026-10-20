@@ -2163,7 +2163,7 @@ func _rig_context(p: Dictionary, name: String, state: Dictionary, attack: Dictio
 			best = d.length()
 			near = Vector2(d.x * facing, d.y)
 	var startup := float(attack.get("startupMs", -1.0))
-	var calm: bool = name in ["idle", "walk", "dash", "shield", "jump", "fall", "land"]
+	var calm: bool = name in ["idle", "walk", "dash", "shield", "jump", "fall", "land", "jumpSquat"]
 	return {
 		"token": "%s|%s|%s" % [name, state.get("kind", ""), state.get("start", 0)],
 		# nei colpi il passaggio è più corto: l'impatto deve cadere quando si accende la hitbox

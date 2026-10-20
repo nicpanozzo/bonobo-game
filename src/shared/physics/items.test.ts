@@ -11,6 +11,7 @@ import { canBeHit, launch } from "./attacks";
 import { createItemWorld, handleItemInput, itemStates, pickKind, stepItems, type Item, type ItemWorld } from "./items";
 
 const DT = 1000 / TICK_RATE;
+const SQUAT = Math.round(FIGHTER.jumpSquatMs / DT); // tick di preparazione al salto (#384 A3)
 const stage = getStage(undefined);
 
 function setup() {
@@ -220,7 +221,7 @@ describe("il fiore, oggetto da consumare (#231)", () => {
       run(world, fighters, ctx, 3);
       const vx = a.vx;
       press(a, { jump: true });
-      run(world, fighters, ctx, 1);
+      run(world, fighters, ctx, 1 + SQUAT);
       return { vx, vy: a.vy };
     });
     assert.ok(speeds[0].vx > 0 && speeds[0].vy < 0, "si cammina e si salta");

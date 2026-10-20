@@ -5,7 +5,8 @@
 // così chi cambia il movimento solo in TypeScript vede rossa prima una CI e poi l'altra.
 //
 // Solo il movimento che il client predice: corsa, aria, salti, salto corto, coyote, gravità, caduta veloce,
-// piattaforme sottili, scatto con il doppio tocco, schivata, attacchi leggeri e pesanti (fermi a terra) e recupero.
+// piattaforme sottili, scatto con il doppio tocco, schivata, attacchi leggeri e pesanti (fermi a terra) e recupero,
+// preparazione al salto e pause all'atterraggio (#384 A3).
 // Una traccia si ferma prima del primo tick fuori da lì (bordo, KO, ascensori).
 
 import { characterStats } from "./characters";
@@ -69,6 +70,9 @@ export interface TraceState {
   helpless: boolean;
   lightBuffer: number;
   heavyBuffer: number;
+  jumpSquat: number; // ms di preparazione al salto (#384 A3)
+  landing: number; // ms di pausa all'atterraggio (#384 A3)
+  attackAir: boolean; // l'attacco in corso è partito in aria
 }
 
 export interface PredictionTrace {
@@ -114,6 +118,9 @@ function stateOf(f: Fighter): TraceState {
     helpless: f.helpless,
     lightBuffer: round(f.buffer.light),
     heavyBuffer: round(f.buffer.heavy),
+    jumpSquat: round(f.jumpSquatTimer),
+    landing: round(f.landingTimer),
+    attackAir: f.attackAir,
   };
 }
 

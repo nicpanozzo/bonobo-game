@@ -8,6 +8,7 @@ import type { GameEvent, InputState } from "../types";
 import { createFighter, emptyInput, stepWorld, type Fighter, type PhysicsContext } from "./index";
 
 const DT = 1000 / TICK_RATE;
+const SQUAT = Math.round(FIGHTER.jumpSquatMs / DT); // tick di preparazione al salto (#384 A3)
 const stage = getStage(undefined); // il palco di base: un blocco da x 240 a 1040
 
 function setup(x = 400) {
@@ -105,7 +106,7 @@ describe("scatto con doppio tocco", () => {
     const { ctx, f } = setup();
     tap(f, ctx, "right");
     hold(f, { right: true, jump: true });
-    run([f], ctx, 3);
+    run([f], ctx, 3 + SQUAT);
     assert.equal(f.onGround, false);
     assert.equal(f.dashing, false);
   });

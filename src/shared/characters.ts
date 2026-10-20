@@ -34,6 +34,7 @@ export const OPTIONAL_ANIMATION_NAMES = [
   "specialSide",
   "specialDown",
   "dashAttack", // attacco in corsa: senza disegno, la posa del pesante
+  "jumpSquat", // preparazione al salto (#384 A3): senza disegno, la posa dell'atterraggio
 ] as const;
 export type OptionalAnimationName = (typeof OPTIONAL_ANIMATION_NAMES)[number];
 export type SpriteState = AnimationName | OptionalAnimationName;
@@ -66,6 +67,7 @@ export const ANIMATION_FALLBACK: Record<OptionalAnimationName, SpriteState> = {
   specialNeutral: "special",
   specialSide: "special",
   specialDown: "special",
+  jumpSquat: "land", // e chi non ha nemmeno quella resta fermo (idle)
 };
 
 export interface SpriteAnimation {

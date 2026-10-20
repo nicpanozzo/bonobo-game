@@ -240,6 +240,8 @@ export class Match {
         stunned: f.stunned,
         grabbedBy: f.grabbedBy,
         dashing: f.dashing,
+        ...(f.jumpSquatTimer > 0 && { jumpSquat: Math.round(f.jumpSquatTimer) }),
+        ...(f.landingTimer > 0 && { landing: Math.round(f.landingTimer) }),
         charge: f.charge,
         supreme: Math.floor(f.supreme), // per difetto: 100 solo quando è davvero piena
         powerup: f.powerup,
@@ -427,5 +429,6 @@ function predictionState(f: Fighter): PredictionState {
     helpless: f.helpless,
     lightBuffer: Math.round(f.buffer.light),
     heavyBuffer: Math.round(f.buffer.heavy),
+    attackAir: f.attackAir,
   };
 }

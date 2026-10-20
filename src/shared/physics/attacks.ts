@@ -11,6 +11,7 @@ import { chargeFromHit, hitOrigin, infect, snatch, spinRehit, supremeMelee, tryS
 
 export function tryStartAttack(f: Fighter, ctx: PhysicsContext): void {
   if (f.hitstun || f.attack || f.helpless || f.dodgeTimer > 0) return;
+  if (f.jumpSquatTimer > 0 || f.landingTimer > 0) return; // #384 A3: il tasto resta nel buffer, l'aereo parte staccandosi
   if (canChainJab(f) && pressed(f, "light")) return startJab(f, f.jabStep + 1, ctx); // la combo non aspetta l'attesa
   if (f.cooldownTimer > 0) return;
   if (tryStartSupreme(f, ctx)) return; // #101: solo con la barra piena
@@ -91,6 +92,7 @@ function specialSpecFor(characterId: string, kind: SpecialKind): AttackSpec {
 export function startAttack(f: Fighter, kind: AttackKind, ctx: PhysicsContext) {
   f.attack = kind;
   f.attackTimer = 0;
+  f.attackAir = !f.onGround; // atterrando a colpo in corso si ferma con la sua pausa (#384 A3)
   f.chargeMultiplier = 1; // solo il rilascio della carica lo cambia, dopo questa chiamata
   if (f.smashChargeMs >= 0) endSmashCharge(f);
   f.jabStep = 0; // la combo la riprende startJab
