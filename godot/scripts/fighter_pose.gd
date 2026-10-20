@@ -177,6 +177,10 @@ static func animation_for(p: Dictionary, holding := false) -> String:
 		return "walk"
 	if p.get("shielding", false):
 		return "shield" # scudo (#109): chi non l'ha disegnato resta fermo, dentro la bolla
+	if float(p.get("jumpSquat", 0)) > 0:
+		return "jumpSquat" # preparazione al salto (#384 A3); senza disegno l'atterraggio, poi la posa ferma
+	if float(p.get("landing", 0)) > 0 and p.onGround:
+		return "land" # pausa all'atterraggio (#384 A3); senza disegno la posa ferma
 	if not p.onGround:
 		return "jump" if p.vy < 0 else "fall"
 	if p.get("dashing", false):

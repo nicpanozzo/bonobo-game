@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { MAX_TEAMS } from "./constants";
+import { ITEM_AMOUNTS, ITEM_RULES } from "./constants";
 import { canHitWithRules, DEFAULT_RULES, flagWinnerTeam, lastStanding, leaderOnTime, requestedTeam, RULE_LIMITS, sanitizeRules } from "./rules";
 
 describe("regole della partita", () => {
@@ -24,7 +25,23 @@ describe("regole della partita", () => {
       timeLimitSec: 180,
       friendlyFire: true,
       teamCount: 2,
+      supremeSpeed: 1,
+      itemAmount: DEFAULT_RULES.itemAmount,
+      itemKinds: DEFAULT_RULES.itemKinds,
     });
+  });
+
+  it("velocità della suprema e oggetti: solo valori previsti, default come prima", () => {
+    assert.equal(DEFAULT_RULES.supremeSpeed, 1);
+    assert.equal(ITEM_AMOUNTS[DEFAULT_RULES.itemAmount].everyMs, ITEM_RULES.spawnEveryMs);
+    assert.equal(ITEM_AMOUNTS[DEFAULT_RULES.itemAmount].maxOnStage, ITEM_RULES.maxOnStage);
+    assert.ok(DEFAULT_RULES.itemKinds.includes("banana") && !DEFAULT_RULES.itemKinds.includes("fungo"));
+    const r = sanitizeRules({ supremeSpeed: 2, itemAmount: 99, itemKinds: ["bong", "fungo", "boh", "banana", "bong"] });
+    assert.equal(r.supremeSpeed, 2);
+    assert.equal(r.itemAmount, ITEM_AMOUNTS.length - 1);
+    assert.deepEqual(r.itemKinds, ["banana", "bong"]);
+    assert.equal(sanitizeRules({ supremeSpeed: 1000 }).supremeSpeed, 1);
+    assert.deepEqual(sanitizeRules({ itemKinds: [] }).itemKinds, []);
   });
 
   it("a squadre si sceglie quante squadre, in Bandiera sono sempre due (#409)", () => {
