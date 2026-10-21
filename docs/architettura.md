@@ -14,7 +14,7 @@ Le frecce vanno in una sola direzione: `server` usa `shared`, mai il contrario; 
 
 | Strato | File principali | Cosa sa |
 |---|---|---|
-| Gioco | `match.ts` (una partita intera), `physics/` (un passo di simulazione), `rules.ts`, `stages.ts`, `stageGenerator.ts`, `characters.ts`, `items.ts`, `constants.ts`, `types.ts` | tutto quello che succede, niente di come si vede o di come viaggia |
+| Gioco | `match.ts` (una partita intera), `physics/` (un passo di simulazione), `rules.ts`, `stages.ts`, `stageGenerator.ts`, `musicStage.ts` (arena musicale, [guida](arena-musicale.md)), `characters.ts`, `items.ts`, `constants.ts`, `types.ts` | tutto quello che succede, niente di come si vede o di come viaggia |
 | Rete | `server/index.ts` (stanze), `server/Room.ts` (passo fisso a 60 Hz, snapshot a 30 Hz, ganci per bot e Discord) | quando far avanzare la partita e a chi mandarla |
 | Schermo | `godot/scripts/`: `main.gd` (regista), `world_view.gd`, `hud.gd`, `audio.gd`, `lobby.gd`, `options.gd`, `pause_menu.gd`, `snapshot_buffer.gd`, `socket_io.gd` | come mostrare lo stato e quali tasti sono premuti |
 

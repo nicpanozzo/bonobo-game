@@ -108,6 +108,8 @@ describe("bottoni sonori (#423)", () => {
     for (const p of pads) {
       assert.ok(movers.some((m) => m.group === p.effect.group), `${p.sound}: gruppo ${p.effect.group}`);
       assert.ok(p.cooldownMs > p.effect.durationMs, `${p.sound}: l'attesa è più lunga dell'effetto`);
+      const { respawn } = STAGES.musica;
+      assert.ok(respawn.x < p.x || respawn.x > p.x + p.width, `${p.sound}: chi ricompare non ci cade sopra`);
     }
   });
 });

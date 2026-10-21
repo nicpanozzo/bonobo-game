@@ -881,8 +881,9 @@ export const STAGES: Record<string, StageSpec> = {
     pads: [
       // L'accordo accende tutti i tasti della melodia: per 4 s c'è una scala fino in cima
       { x: 262, y: MAIN.y, width: 56, sound: "accordo", cooldownMs: 12000, effect: { group: "melodia", durationMs: 4000, on: true } },
-      // Il piatto alza di colpo la navetta degli accordi sopra i tasti: un passaggio verso la cima
-      { x: 612, y: MAIN.y, width: 56, sound: "piatto", cooldownMs: 9000, effect: { group: "accordi", durationMs: 3500, dy: -190 } },
+      // Il piatto alza di colpo la navetta degli accordi sopra i tasti: un passaggio verso la cima. Non sotto il punto
+      // di rientro (x 640): chi ricompare ci cadrebbe sopra e lo premerebbe
+      { x: 560, y: MAIN.y, width: 56, sound: "piatto", cooldownMs: 9000, effect: { group: "accordi", durationMs: 3500, dy: -190 } },
       // La cassa spara in alto gli ascensori del basso
       { x: 962, y: MAIN.y, width: 56, sound: "cassa", cooldownMs: 12000, effect: { group: "basso", durationMs: 4000, dy: -150 } },
     ],

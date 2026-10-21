@@ -115,6 +115,8 @@ Una piattaforma mobile con `kind: "barca"` si disegna come una barca (#264): la 
 
 ### Arena musicale (`song`): piattaforme che vanno a tempo di un MIDI (#423)
 
+**Guida completa: [arena-musicale.md](arena-musicale.md)** (come funziona, bottoni sonori, come cambiare brano).
+
 Le tracce di un brano diventano piattaforme mobili: si muovono o compaiono con le note, e Godot suona il brano allineato al tempo dell'arena. Il primo esempio è **Sala Prove** (`musica` in `stages.ts`), con un brano nostro di 32 secondi.
 
 Una piattaforma mobile può avere, al posto del solo `path`:
@@ -124,6 +126,8 @@ Una piattaforma mobile può avere, al posto del solo `path`:
 | `keys` | posizioni a tempo `[ms nel giro, x, y]`, in ordine; tra due chiavi va dritta |
 | `on` | finestre `[da ms, a ms)` del giro in cui c'è; fuori non c'è e chi ci sta sopra cade |
 | `tint` | il colore della traccia (solo disegno, con `kind: "nota"`) |
+
+Con `pads` l'arena ha anche **bottoni sonori**: si premono saltandoci sopra o colpendoli, suonano e per qualche secondo accendono o spostano le piattaforme di un `group`, poi restano scarichi per un po'.
 
 Non si scrivono a mano: `songMovers(brano, ruoli)` in `src/shared/musicStage.ts` le calcola dalle note. Ruoli: `lift` (ascensore che sale con le note più alte), `slide` (navetta che va a destra con le note più alte), `keys` (tasti che si accendono con le note, come un piano roll). Per un brano nuovo vedi [src/shared/music/README.md](../src/shared/music/README.md).
 
