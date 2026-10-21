@@ -64,3 +64,35 @@ func test_sala_prove_ha_i_bottoni() -> void:
 	var pads: Array = game.stages.musica.get("pads", [])
 	runner.check(pads.size() == 3, "tre bottoni")
 	runner.check(game.get("pad") is Dictionary and game.pad.has("rampMs"), "i numeri dei bottoni in game.json")
+
+
+func test_meraviglia_solo_con_tutti_i_bottoni() -> void:
+	var Wonder: GDScript = load("res://scripts/wonder_stage.gd")
+	var pads := [
+		{"sound": "accordo", "cooldownMs": 12000, "effect": {"group": "melodia", "durationMs": 4000}},
+		{"sound": "cassa", "cooldownMs": 12000, "effect": {"group": "basso", "durationMs": 3000}},
+	]
+	runner.check(Wonder.wonder(5000, pads, [4000, null])[0] == 0.0, "con un bottone solo niente")
+	var w: Array = Wonder.wonder(5000, pads, [4000, 4500])
+	runner.check(w[0] == 1.0 and w[1] == 4500.0, "tutti e due attivi: Meraviglia, cominciata con l'ultimo")
+	runner.check(is_equal_approx(Wonder.wonder(4700, pads, [4000, 4500])[0], 0.5), "entra piano")
+	runner.check(Wonder.wonder(7600, pads, [4000, 4500])[0] == 0.0, "finisce con il primo effetto che scade")
+
+
+func test_battito_e_note() -> void:
+	var Wonder: GDScript = load("res://scripts/wonder_stage.gd")
+	runner.check(is_equal_approx(Wonder.beat_phase(750, 120), 0.5), "a 120 bpm un battito dura 500 ms")
+	runner.check(Wonder.beat_index(1250, 120) == 2, "il terzo battito")
+	runner.check(Wonder.bop(1000, 120) > 0.99 and Wonder.bop(1400, 120) < 0.05, "il colpo arriva sul battito e si spegne")
+	var key := {"periodMs": 4000, "on": [[500, 1400]]}
+	runner.check(Wonder.since_on(key, 700) == 200.0, "acceso da 200 ms")
+	runner.check(Wonder.since_on(key, 1500) == INF, "spento")
+
+
+func test_sala_prove_balla_a_tempo() -> void:
+	var game: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/game.json"))
+	var view: RefCounted = load("res://scripts/wonder_stage.gd").new()
+	view.setup(game.stages.musica)
+	runner.check(view.active and view.bpm == 120.0, "la Sala Prove balla a 120 bpm")
+	view.setup(game.stages.palco)
+	runner.check(not view.active, "le altre arene no")

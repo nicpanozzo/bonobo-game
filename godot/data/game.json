@@ -5081,7 +5081,8 @@
       ],
       "song": {
         "id": "sala-prove",
-        "lengthMs": 32000
+        "lengthMs": 32000,
+        "bpm": 120
       },
       "music": {
         "bpm": 120,
