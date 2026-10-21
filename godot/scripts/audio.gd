@@ -49,6 +49,7 @@ const WAKA_MS := 270
 var _waka_at := 0 # Pac-Man (#427): quando è suonato l'ultimo "waka" (ms dell'orologio)
 var _song := "" # brano dell'arena musicale (#423): una traccia di _music_files, o "" se l'arena non ne ha
 var _song_ms := 0.0 # quanto dura un giro del brano
+var _stage_track := "" # brano registrato dell'arena (StageSpec.music.track): una traccia di _music_files, o ""
 const SONG_DRIFT_S := 0.08 # il brano si rimette a tempo con l'arena se si sposta più di così (secondi)
 var _jets := {} # indice del getto -> fase dell'ultimo snapshot
 var _announcer := AudioStreamPlayer.new() # la voce dell'annunciatore, sul bus Voci
@@ -549,7 +550,11 @@ func play_music(track: String) -> void:
 # Si calcola un pezzo per frame; finché non è pronta continua quella che suona
 func set_stage_music(preset: Variant) -> void:
 	_stage_key = ""
-	if preset is Dictionary:
+	_stage_track = ""
+	# Con un brano registrato (music.track) non si calcola niente; se il file manca resta il preset
+	if preset is Dictionary and _music_files.has(str(preset.get("track", ""))):
+		_stage_track = str(preset.track)
+	elif preset is Dictionary:
 		var p := normalize_music(preset, game.audio)
 		_stage_key = music_key(p)
 		_queue_music(p)
@@ -590,6 +595,8 @@ func _update_music() -> void:
 	var stream: AudioStream = _music_files.get(_track, _synth_music)
 	if _track == "match" and _stage_key != "":
 		stream = _rendered.get(_stage_key)
+	if _track == "match" and _stage_track != "":
+		stream = _music_files[_stage_track] # il brano registrato dell'arena
 	if _track == "match" and _song != "":
 		stream = _music_files[_song] # l'arena musicale (#423)
 	if stream and stream != _music.stream:

@@ -147,6 +147,26 @@ func test_ogni_arena_la_sua_musica() -> void:
 	a.free()
 
 
+func test_arena_col_brano_registrato() -> void:
+	var a := _audio({"music": {"massima-tackenza": ["assets/music/massima-tackenza.ogg"]}})
+	var music: Dictionary = a.game.stages.padova.music
+	runner.check(str(music.get("track", "")) == "massima-tackenza", "Padova ha il suo brano")
+	runner.check(a._music_files.get("massima-tackenza") is AudioStreamOggVorbis and a._music_files["massima-tackenza"].loop, "il brano si carica e gira")
+	a.set_stage_music(music)
+	a.play_music("match")
+	runner.check(a.stage_music_ready(), "niente da calcolare")
+	runner.check(a._music.stream == a._music_files["massima-tackenza"], "in partita suona il brano registrato")
+	a.set_stage_music(a.game.stages.isole.music)
+	for i in 100:
+		a._process(0.016)
+	runner.check(a._music.stream != a._music_files["massima-tackenza"], "su un'altra arena no")
+	a.free()
+	var b := _audio()
+	b.set_stage_music(music)
+	runner.check(not b.stage_music_ready(), "senza il file si calcola il preset di ripiego")
+	b.free()
+
+
 func test_voce_del_personaggio_o_di_quello_base() -> void:
 	var a := AudioStreamWAV.new()
 	var b := AudioStreamWAV.new()

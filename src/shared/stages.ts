@@ -104,6 +104,9 @@ export interface StageMusic {
   bpm: number; // battiti al minuto, tra AUDIO.musicBpmMin e AUDIO.musicBpmMax
   chords: string[]; // un accordo per battuta, per nome: "C", "F#", "Bb", con "m" se minore ("Am", "C#m")
   lead: StageMusicLead; // timbro della melodia
+  // Brano registrato: public/assets/music/<track>.ogg, in partita al posto del sintetizzatore e in giro intero.
+  // Il preset sopra resta come ripiego se il file non si carica
+  track?: string;
 }
 
 export type StageMusicLead = "square" | "triangle" | "sawtooth" | "sine";
@@ -543,8 +546,9 @@ export const STAGES: Record<string, StageSpec> = {
     spawns: [300, 450, 200, 600, 380, 520, 250, 660].flatMap((x) => [{ x, y: 520 }, { x: 1920 - x, y: 520 }]).slice(0, 8),
     respawn: { x: 960, y: 40 }, // sopra la tazza più alta (#378)
     colors: { sky: 0x7aa0c4, solid: 0x6f6a60, solidEdge: 0xe8e2d2, platform: 0xd9d4c7 },
-    // Rilassata, da pomeriggio in piazza. TODO community: un pezzo del canale da rifare per Padova?
-    music: { bpm: 116, chords: ["F", "Am", "Bb", "C"], lead: "triangle" },
+    // "Massima Tackenza" di Riccardo (#286): barocco veneziano da battaglia, Fa maggiore, 133 bpm, 2:55 in giro.
+    // Il preset resta come ripiego se il file non si carica
+    music: { bpm: 116, chords: ["F", "Am", "Bb", "C"], lead: "triangle", track: "massima-tackenza" },
     // Disegnati col codice da tools/arene/padova.py (#280), a 2x: chi disegna in Krita può sostituirli, stessi nomi e misure
     art: {
       verticalParallax: 0, // in verticale lo sfondo resta attaccato all'isola (#400): la strada non si stacca più

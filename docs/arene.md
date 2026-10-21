@@ -227,17 +227,21 @@ itemSpots: [{ x: 740, y: 690, width: 440, weight: 3 }],
 
 ### Musica (`music`)
 
-Facoltativa: senza, in partita si sente la musica di sempre. È un preset per il sintetizzatore del gioco (`audio.gd`), non un file.
+Facoltativa: senza, in partita si sente la musica di sempre. È un preset per il sintetizzatore del gioco (`audio.gd`), più un brano registrato facoltativo.
 
 | Campo | Cosa fa |
 |---|---|
 | `bpm` | velocità, tra `AUDIO.musicBpmMin` e `AUDIO.musicBpmMax` (in `constants.ts`) |
 | `chords` | da 1 a 8 accordi per nome, uno per battuta: `"C"`, `"F#"`, `"Bb"`, con `m` se minore (`"Am"`) |
 | `lead` | timbro della melodia: `"square"`, `"triangle"`, `"sawtooth"` o `"sine"` |
+| `track` | facoltativo: un brano registrato, `public/assets/music/<track>.ogg`, che in partita suona al posto del sintetizzatore e ricomincia da capo quando finisce. Il preset resta come ripiego se il file non si carica |
 
 ```ts
 music: { bpm: 108, chords: ["C", "Am", "F", "G"], lead: "triangle" } // Le Isole
+music: { bpm: 116, chords: ["F", "Am", "Bb", "C"], lead: "triangle", track: "massima-tackenza" } // Padova, col brano registrato
 ```
+
+Il brano registrato segue le regole di [voci.md](voci.md) (Ogg Vorbis 44,1 kHz stereo, circa -16 LUFS, `npm run audio:check`), con due differenze: pesa più di 500 KB (Padova, 2:55, ne pesa 1,9 MB; tutto l'audio del gioco resta sotto i 5 MB), e va tagliato in modo che la fine si attacchi bene all'inizio, perché il giro riparte dal primo campione.
 
 ### Sfondo a strati (`art`)
 

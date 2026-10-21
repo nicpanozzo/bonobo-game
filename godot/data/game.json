@@ -339,6 +339,9 @@
   "audioFiles": {
     "sfx": {},
     "music": {
+      "massima-tackenza": [
+        "assets/music/massima-tackenza.ogg"
+      ],
       "sala-prove": [
         "assets/music/sala-prove.ogg"
       ]
@@ -2047,7 +2050,8 @@
           "Bb",
           "C"
         ],
-        "lead": "triangle"
+        "lead": "triangle",
+        "track": "massima-tackenza"
       },
       "art": {
         "verticalParallax": 0,
