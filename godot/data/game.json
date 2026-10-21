@@ -609,6 +609,12 @@
     "smoothingMs": 220,
     "stageMinZoomFloor": 0.45
   },
+  "pad": {
+    "heightPx": 14,
+    "hitPx": 60,
+    "rampMs": 250,
+    "landTolerancePx": 4
+  },
   "effects": {
     "hitSparkMs": 220,
     "shakeKo": 14,
@@ -3859,7 +3865,8 @@
             ]
           ],
           "kind": "nota",
-          "tint": 5227511
+          "tint": 5227511,
+          "group": "basso"
         },
         {
           "width": 130,
@@ -4487,7 +4494,8 @@
             ]
           ],
           "kind": "nota",
-          "tint": 5227511
+          "tint": 5227511,
+          "group": "basso"
         },
         {
           "width": 200,
@@ -4625,7 +4633,8 @@
             ]
           ],
           "kind": "nota",
-          "tint": 8505220
+          "tint": 8505220,
+          "group": "accordi"
         },
         {
           "width": 90,
@@ -4647,7 +4656,8 @@
             ]
           ],
           "kind": "nota",
-          "tint": 16758605
+          "tint": 16758605,
+          "group": "melodia"
         },
         {
           "width": 90,
@@ -4673,7 +4683,8 @@
             ]
           ],
           "kind": "nota",
-          "tint": 16758605
+          "tint": 16758605,
+          "group": "melodia"
         },
         {
           "width": 90,
@@ -4711,7 +4722,8 @@
             ]
           ],
           "kind": "nota",
-          "tint": 16758605
+          "tint": 16758605,
+          "group": "melodia"
         },
         {
           "width": 90,
@@ -4749,7 +4761,8 @@
             ]
           ],
           "kind": "nota",
-          "tint": 16758605
+          "tint": 16758605,
+          "group": "melodia"
         },
         {
           "width": 90,
@@ -4799,7 +4812,8 @@
             ]
           ],
           "kind": "nota",
-          "tint": 16758605
+          "tint": 16758605,
+          "group": "melodia"
         },
         {
           "width": 90,
@@ -4857,7 +4871,8 @@
             ]
           ],
           "kind": "nota",
-          "tint": 16758605
+          "tint": 16758605,
+          "group": "melodia"
         },
         {
           "width": 90,
@@ -4887,7 +4902,8 @@
             ]
           ],
           "kind": "nota",
-          "tint": 16758605
+          "tint": 16758605,
+          "group": "melodia"
         },
         {
           "width": 90,
@@ -4921,7 +4937,8 @@
             ]
           ],
           "kind": "nota",
-          "tint": 16758605
+          "tint": 16758605,
+          "group": "melodia"
         },
         {
           "width": 100,
@@ -5024,6 +5041,44 @@
         "solidEdge": 16732120,
         "platform": 10146047
       },
+      "pads": [
+        {
+          "x": 262,
+          "y": 560,
+          "width": 56,
+          "sound": "accordo",
+          "cooldownMs": 12000,
+          "effect": {
+            "group": "melodia",
+            "durationMs": 4000,
+            "on": true
+          }
+        },
+        {
+          "x": 560,
+          "y": 560,
+          "width": 56,
+          "sound": "piatto",
+          "cooldownMs": 9000,
+          "effect": {
+            "group": "accordi",
+            "durationMs": 3500,
+            "dy": -190
+          }
+        },
+        {
+          "x": 962,
+          "y": 560,
+          "width": 56,
+          "sound": "cassa",
+          "cooldownMs": 12000,
+          "effect": {
+            "group": "basso",
+            "durationMs": 4000,
+            "dy": -150
+          }
+        }
+      ],
       "song": {
         "id": "sala-prove",
         "lengthMs": 32000

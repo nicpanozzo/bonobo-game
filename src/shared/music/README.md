@@ -1,5 +1,7 @@
 # Brani delle arene musicali (#423)
 
+Come funziona tutta l'arena musicale, bottoni compresi: [docs/arena-musicale.md](../../../docs/arena-musicale.md).
+
 I file `<id>.ts` qui dentro sono generati: le note di un MIDI in millisecondi, una lista per traccia.
 
 ## Un brano nuovo

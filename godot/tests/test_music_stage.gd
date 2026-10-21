@@ -39,3 +39,28 @@ func test_sala_prove_nei_dati() -> void:
 	runner.check(stage.song is Dictionary and game.audioFiles.music.has(stage.song.id), "il brano dell'arena è tra i file audio")
 	for m: Dictionary in stage.movers:
 		runner.check(m.kind == "nota" and float(m.periodMs) == float(stage.song.lengthMs), "ogni piattaforma gira col brano")
+
+
+func test_bottoni_come_la_fisica() -> void:
+	var pads := [
+		{"sound": "cassa", "cooldownMs": 5000, "effect": {"group": "basso", "durationMs": 2000, "dy": -100}},
+		{"sound": "accordo", "cooldownMs": 5000, "effect": {"group": "melodia", "durationMs": 2000, "on": true}},
+	]
+	var lift := {"group": "basso"}
+	var key := {"group": "melodia"}
+	var pressed := [1000, null]
+	runner.check(StageMotion.pad_fx(lift, 900, pads, pressed, 250).dy == 0.0, "prima niente")
+	runner.check(is_equal_approx(StageMotion.pad_fx(lift, 1125, pads, pressed, 250).dy, -50.0), "sale piano")
+	runner.check(is_equal_approx(StageMotion.pad_fx(lift, 2000, pads, pressed, 250).dy, -100.0), "in alto")
+	runner.check(StageMotion.pad_fx(lift, 3000, pads, pressed, 250).dy == 0.0, "finito")
+	runner.check(not StageMotion.pad_fx(key, 2000, pads, pressed, 250).on, "l'accordo non premuto non accende")
+	runner.check(StageMotion.pad_fx(key, 1500, pads, [null, 1000], 250).on, "premuto accende i tasti")
+	runner.check(StageMotion.pad_charge(pads[0], null, 0) == 1.0, "mai premuto: carico")
+	runner.check(is_equal_approx(StageMotion.pad_charge(pads[0], 1000, 3500), 0.5), "a metà dell'attesa")
+
+
+func test_sala_prove_ha_i_bottoni() -> void:
+	var game: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/game.json"))
+	var pads: Array = game.stages.musica.get("pads", [])
+	runner.check(pads.size() == 3, "tre bottoni")
+	runner.check(game.get("pad") is Dictionary and game.pad.has("rampMs"), "i numeri dei bottoni in game.json")

@@ -255,7 +255,8 @@ export class Match {
     const items = this.items ? itemStates(this.items) : [];
     const projectiles = projectileStates(this.projectiles);
     const puddles = puddleStates(this.projectiles);
-    return { t, players, winnerId: this.winnerId, timeLeftMs: this.timeLeftMs(), teamScores, items, projectiles, puddles, events, stageMs };
+    const pads = this.ctx.padsMs ? [...this.ctx.padsMs] : undefined; // bottoni sonori (#423)
+    return { t, players, winnerId: this.winnerId, timeLeftMs: this.timeLeftMs(), teamScores, items, projectiles, puddles, events, stageMs, ...(pads && { pads }) };
   }
 
   // Si entra nella squadra con meno giocatori (a parità, quella col numero più basso: prima la Rossa)

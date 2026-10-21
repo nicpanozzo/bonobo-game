@@ -18,6 +18,7 @@
 import { resolveHits, tryStartAttack, updateAttack } from "./attacks";
 import { stepCompanion } from "./companion";
 import { applyJets, carryRider, resolveHazards } from "./elements";
+import { pressPads } from "./pads";
 import { tickBuffer, type Fighter, type PhysicsContext } from "./fighter";
 import { grabbing, inGrab, resolveGrabs, stepGrabs } from "./grab";
 import { swapTripInput, tickPowerup } from "./items";
@@ -34,7 +35,7 @@ import { landTech, tickTech } from "./tech";
 
 export * from "./fighter";
 export { resolveHits } from "./attacks";
-export { floodPhase, hazardActive, hazardRect, jetPhase, moverOn, moverPosition, travelDirection, travelPhase, type FloodPhase, type JetPhase, type TravelPhase } from "./elements";
+export { floodPhase, hazardActive, hazardRect, jetPhase, moverHere, moverOn, moverPlace, moverPosition, padFx, travelDirection, travelPhase, type FloodPhase, type JetPhase, type TravelPhase } from "./elements";
 export { ledgesOf } from "./ledge";
 
 // Un passo di simulazione per un lottatore (dtMs = durata del tick)
@@ -138,6 +139,7 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
 // Un tick intero: l'arena va avanti, tutti si muovono, poi si risolvono i colpi e le trappole
 export function stepWorld(fighters: Fighter[], dtMs: number, ctx: PhysicsContext): void {
   ctx.timeMs = (ctx.timeMs ?? 0) + dtMs;
+  const firstEvent = ctx.events.length; // da qui gli eventi di questo tick (i bottoni sonori guardano gli atterraggi)
   stepGrabs(fighters, dtMs, ctx);
   const tripping = swapTripInput(fighters); // funghetti (#302): destra e sinistra invertite solo per il passo
   for (const f of fighters) stepFighter(f, dtMs, ctx);
@@ -152,4 +154,5 @@ export function stepWorld(fighters: Fighter[], dtMs: number, ctx: PhysicsContext
   resolveGrabs(fighters, ctx); // dopo i colpi: un colpo nello stesso tick vince sulla presa
   resolveHazards(fighters, ctx);
   applyJets(fighters, ctx); // getti d'acqua (#253)
+  pressPads(fighters, ctx, firstEvent); // bottoni sonori (#423)
 }

@@ -484,6 +484,14 @@ export const MUSIC_STAGE = {
   chordMs: 30, // ms: note che partono più vicine di così sono un accordo, e conta la più bassa
 };
 
+// Bottoni sonori (#423, src/shared/physics/pads.ts): attesa ed effetti stanno nei dati dell'arena
+export const PAD = {
+  heightPx: 14, // quanto sporge il bottone sopra la superficie (disegno)
+  hitPx: 60, // px sopra la superficie in cui un colpo lo preme: basta un colpo normale da in piedi accanto
+  rampMs: 250, // ms in cui l'effetto entra ed esce: le piattaforme spostate non scattano
+  landTolerancePx: 4, // px: chi atterra con i piedi fin qui dalla superficie del bottone lo preme
+};
+
 // Classifica delle partite (#18, src/server/leaderboard.ts)
 export const LEADERBOARD = {
   windowDays: 7, // la pagina /classifica conta le partite degli ultimi 7 giorni

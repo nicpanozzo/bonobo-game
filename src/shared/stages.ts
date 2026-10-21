@@ -37,6 +37,25 @@ export interface MovingPlatform {
   keys?: [number, number, number][];
   on?: [number, number][]; // finestre [da ms, a ms) del giro in cui la piattaforma c'è; senza, c'è sempre
   tint?: number; // solo per il disegno: il colore della traccia che la muove
+  group?: string; // i bottoni sonori (pads) con questo gruppo la cambiano per un po' (#423)
+}
+
+// Bottone sonoro (#423): un pezzo dell'arena che si attiva saltandoci sopra o colpendolo. Suona e per
+// effect.durationMs cambia le piattaforme mobili del suo gruppo; poi resta scarico per cooldownMs
+export interface SoundPad {
+  x: number; // bordo sinistro
+  y: number; // la superficie su cui poggia (il bottone sporge sopra di PAD.heightPx)
+  width: number;
+  sound: string; // suono e disegno: "accordo", "cassa", "piatto"
+  cooldownMs: number; // da quando lo si preme a quando si può ripremere
+  effect: PadEffect;
+}
+
+export interface PadEffect {
+  group: string; // le piattaforme mobili con questo group
+  durationMs: number; // quanto dura l'effetto
+  on?: boolean; // le accende tutte, anche fuori dalle loro note
+  dy?: number; // le sposta in verticale di tanto (negativo = su), entrando e uscendo dolcemente
 }
 
 // Trappola: un rettangolo che, quando è acceso, toglie percentuale e lancia via chi lo tocca
@@ -313,6 +332,7 @@ export interface StageSpec {
   itemSpots?: ItemSpot[]; // zone dove gli oggetti cadono più spesso (#253)
   music?: StageMusic; // musica della partita (E12 passo 4)
   song?: StageSong; // arena musicale (#423): il brano registrato a cui sono legate le piattaforme
+  pads?: SoundPad[]; // bottoni sonori (#423)
   art?: StageArt; // sfondo a strati (E12 passo 3)
   // Nascosta (#408): resta nella repo e il server la avvia ancora per id, ma la lobby non la mostra e non può essere
   // l'arena predefinita. Per rimetterla in gioco basta togliere il campo.
@@ -839,12 +859,13 @@ export const STAGES: Record<string, StageSpec> = {
     solids: [MAIN],
     platforms: [],
     movers: songMovers(SALA_PROVE, [
-      { role: "lift", track: "Basso", x: 90, width: 130, yLow: 520, yHigh: 360, tint: 0x4fc3f7 },
-      { role: "lift", track: "Basso", x: 1060, width: 130, yLow: 520, yHigh: 360, invert: true, tint: 0x4fc3f7 },
-      { role: "slide", track: "Accordi", y: 420, width: 200, xLow: 340, xHigh: 740, tint: 0x81c784 },
+      { role: "lift", track: "Basso", x: 90, width: 130, yLow: 520, yHigh: 360, tint: 0x4fc3f7, group: "basso" },
+      { role: "lift", track: "Basso", x: 1060, width: 130, yLow: 520, yHigh: 360, invert: true, tint: 0x4fc3f7, group: "basso" },
+      { role: "slide", track: "Accordi", y: 420, width: 200, xLow: 340, xHigh: 740, tint: 0x81c784, group: "accordi" },
       {
         role: "keys",
         track: "Melodia",
+        group: "melodia",
         width: 90,
         slots: [0, 1, 2, 3, 4, 5, 6, 7].map((i) => ({ x: 250 + i * 100, y: 330 - i * 12 })),
         tint: 0xffb74d,
@@ -855,6 +876,17 @@ export const STAGES: Record<string, StageSpec> = {
     spawns: [0.3, 0.7, 0.45, 0.55, 0.2, 0.8, 0.37, 0.63].map((f) => ({ x: MAIN.x + MAIN.width * f, y: MAIN.y })),
     respawn: { x: WORLD.width / 2, y: 160 },
     colors: { sky: 0x170f2e, solid: 0x2b2145, solidEdge: 0xff4fd8, platform: 0x9ad0ff },
+    // Tre bottoni sonori sul pavimento: ci si salta sopra o si colpiscono, suonano e per qualche secondo cambiano la mappa.
+    // Poi restano scarichi per un po', così non si possono tenere sempre accesi
+    pads: [
+      // L'accordo accende tutti i tasti della melodia: per 4 s c'è una scala fino in cima
+      { x: 262, y: MAIN.y, width: 56, sound: "accordo", cooldownMs: 12000, effect: { group: "melodia", durationMs: 4000, on: true } },
+      // Il piatto alza di colpo la navetta degli accordi sopra i tasti: un passaggio verso la cima. Non sotto il punto
+      // di rientro (x 640): chi ricompare ci cadrebbe sopra e lo premerebbe
+      { x: 560, y: MAIN.y, width: 56, sound: "piatto", cooldownMs: 9000, effect: { group: "accordi", durationMs: 3500, dy: -190 } },
+      // La cassa spara in alto gli ascensori del basso
+      { x: 962, y: MAIN.y, width: 56, sound: "cassa", cooldownMs: 12000, effect: { group: "basso", durationMs: 4000, dy: -150 } },
+    ],
     song: { id: SALA_PROVE.id, lengthMs: SALA_PROVE.lengthMs },
     music: { bpm: SALA_PROVE.bpm, chords: ["Am", "F", "C", "G"], lead: "square" }, // se il brano non si carica
   },

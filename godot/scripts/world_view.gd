@@ -47,6 +47,7 @@ var _props_back: Array = [] # decorazioni dietro ai lottatori (#237): [texture, 
 var _props_front: Array = [] # e davanti
 var _hazard_sprites := {} # indice della trappola -> {tex, frames, fps, scale, footX, footY}: animazioni disegnate (#270)
 var _mover_sprites := {} # indice della piattaforma mobile -> come sopra (#273)
+var _pads_pressed: Array = [] # bottoni sonori (#423): stageMs dell'ultima pressione di ognuno, dallo snapshot
 var _t_draw := 0.0 # il tempo dell'arena del frame che si sta disegnando (#378, per i ganci dentro le decorazioni)
 const TEAM_RING_WIDTH := 0.8 # raggio dell'anello della squadra sotto i piedi, rispetto alla larghezza del lottatore (#409)
 const TEAM_RING_SQUASH := 0.28 # l'anello è un ovale schiacciato: sta per terra
@@ -581,6 +582,7 @@ func on_snapshot(snap: Dictionary) -> void:
 	buffer.push(snap.t, Time.get_ticks_msec(), snap.players, float(snap.get("stageMs", 0)))
 	predictor.items_present = not snap.get("items", []).is_empty()
 	_puddles = snap.get("puddles", [])
+	_pads_pressed = snap.get("pads", []) if snap.get("pads") is Array else [] # bottoni sonori (#423)
 	_companions.on_snapshot(snap.players, game.characters)
 	predictor.puddles = _puddles
 	for p in snap.players:
@@ -624,6 +626,10 @@ func on_event(e: Dictionary) -> void:
 			if kb >= float(fx.get("koZoomKnockback", INF)):
 				_punch = {"at": Time.get_ticks_msec(), "x": float(e.x), "y": float(e.y)}
 			_react(e)
+		"pad":
+			# Bottone sonoro (#423): uno sbuffo di scintille del colore del bottone e una scossa leggera
+			_sparks.append({"x": e.x, "y": float(e.y) - 10.0, "age": 0.0, "size": 34.0, "color": _color(PAD_COLORS.get(str(e.get("sound", "")), 0xff4fd8))})
+			_shake = maxf(_shake, 4.0)
 		"hazard":
 			# Trappola (#14): scintilla arancione e scossa come un colpo forte
 			_sparks.append({"x": e.x, "y": e.y, "age": 0.0, "size": 30.0, "color": Color(1, 0.55, 0.15)})
@@ -1314,14 +1320,16 @@ func _draw_elements(t: float) -> void:
 	for mi in StageMotion.movers_back_to_front(movers, t): # la giostra d'acqua: prima quelle che passano dietro
 		var m: Dictionary = movers[mi]
 		var pos := StageMotion.mover_position(m, t)
+		var fx := _pad_fx(m, t) # i bottoni sonori la alzano o la accendono (#423)
+		pos.y += float(fx.dy)
+		if m.get("kind", "") == "nota":
+			_draw_note_platform(m, pos, t, fx.on)
+			continue
 		if _mover_sprites.has(mi):
 			_draw_mover_sprite(_mover_sprites[mi], m, pos, t)
 			continue
 		if m.get("kind", "") == "barca":
 			_draw_boat(pos, float(m.width), t)
-			continue
-		if m.get("kind", "") == "nota":
-			_draw_note_platform(m, pos, t)
 			continue
 		draw_rect(Rect2(pos.x, pos.y, m.width, 10), _palette.platform)
 		# Strisce gialle e nere sotto: si capisce che si muove
@@ -1329,6 +1337,9 @@ func _draw_elements(t: float) -> void:
 			draw_rect(Rect2(pos.x + x, pos.y + 10, minf(10, m.width - x), 5), Color("f1c40f"))
 	for st in hubs.values(): # la schiuma all'ugello, sopra i piedi dei getti
 		_draw_hub_foam(st, t)
+	var pads: Array = stage.get("pads") if stage.get("pads") is Array else []
+	for i in pads.size():
+		_draw_pad(pads[i], _pads_pressed[i] if i < _pads_pressed.size() else null, t)
 	var hazards: Array = stage.get("hazards") if stage.get("hazards") != null else []
 	for i in hazards.size():
 		var h: Dictionary = hazards[i]
@@ -1567,15 +1578,63 @@ func _draw_fountain_plume(cx: float, base: float, w: float, h: float, t: float, 
 
 
 # La barca del canale (#264): ponte di legno dove si sta in piedi (y), scafo scuro sotto, prua e poppa rialzate
+func _pad_fx(m: Dictionary, t: float) -> Dictionary:
+	if _pads_pressed.is_empty() or not (stage.get("pads") is Array):
+		return {"on": false, "dy": 0.0}
+	return StageMotion.pad_fx(m, t, stage.pads, _pads_pressed, float(game.get("pad", {}).get("rampMs", 250)))
+
+
+# Bottone sonoro (#423): una base scura e un tasto colorato che sporge. Appena premuto si abbassa e brilla;
+# finché si ricarica è grigio e una barra si riempie, carico pulsa piano col suo colore
+const PAD_COLORS := {"accordo": 0xffb74d, "piatto": 0x81c784, "cassa": 0x4fc3f7}
+
+
+func _draw_pad(p: Dictionary, pressed_at: Variant, t: float) -> void:
+	var w: float = p.width
+	var x: float = p.x
+	var y: float = p.y
+	var h: float = game.get("pad", {}).get("heightPx", 14)
+	var col := _color(PAD_COLORS.get(str(p.sound), 0xff4fd8))
+	var charge := StageMotion.pad_charge(p, pressed_at, t)
+	var since := INF if pressed_at == null else t - float(pressed_at)
+	var down := since < 200.0 # schiacciato per un attimo
+	draw_rect(Rect2(x - 4, y - 5, w + 8, 5), Color(0.08, 0.06, 0.12)) # la base
+	var cap_h := h * (0.35 if down else 1.0)
+	var cap := Rect2(x + 4, y - 5 - cap_h, w - 8, cap_h)
+	if charge >= 1.0:
+		var glow := 0.18 + 0.12 * (0.5 + 0.5 * sin(t / 300.0))
+		draw_rect(cap.grow(5), Color(col, glow))
+		draw_rect(cap, col)
+		draw_rect(Rect2(cap.position, Vector2(cap.size.x, 3)), col.lightened(0.5))
+	else:
+		if down:
+			draw_rect(cap.grow(10), Color(col, 0.5))
+		draw_rect(cap, Color(0.35, 0.35, 0.4) if not down else col)
+		draw_rect(Rect2(x, y + 3, w * charge, 4), col) # la carica che torna
+	# Il simbolo del suono sul tasto: una nota per l'accordo, un cerchio per la cassa, una riga per il piatto
+	var c := cap.get_center()
+	var ink := Color(0.1, 0.07, 0.15, 0.8)
+	match str(p.sound):
+		"accordo":
+			draw_circle(c + Vector2(-2, 2), 3.0, ink)
+			draw_line(c + Vector2(1, 2), c + Vector2(1, -5), ink, 1.5)
+		"cassa":
+			draw_arc(c, 4.0, 0, TAU, 12, ink, 1.5)
+		_:
+			draw_line(c + Vector2(-6, 0), c + Vector2(6, 0), ink, 2.0)
+
+
 # Arena musicale (#423): la piattaforma nel colore della sua traccia. Un tasto spento è solo un contorno tenue,
 # che lampeggia nei NOTE_WARN_MS prima della nota: si vede dove comparirà
 const NOTE_WARN_MS := 400.0
 
 
-func _draw_note_platform(m: Dictionary, pos: Vector2, t: float) -> void:
+func _draw_note_platform(m: Dictionary, pos: Vector2, t: float, forced := false) -> void:
 	var w: float = m.width
 	var tint := _color(m.get("tint", 0x9ad0ff))
-	if not StageMotion.mover_on(m, t):
+	if forced:
+		tint = tint.lightened(0.35) # accesa da un bottone: più chiara, si capisce che non è la nota
+	if not forced and not StageMotion.mover_on(m, t):
 		var next := StageMotion.mover_next_on(m, t)
 		var a := 0.12
 		if next < NOTE_WARN_MS:
