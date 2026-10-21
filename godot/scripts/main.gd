@@ -525,6 +525,7 @@ func _on_event(name: String, data: Variant) -> void:
 				world.set_stage(data.stageId)
 			hud.on_welcome(data, world.stage)
 			audio.set_stage_music(world.stage.get("music")) # la musica dell'arena, se ne ha una (E12)
+			audio.set_stage_song(world.stage.get("song")) # il brano dell'arena musicale (#423)
 			audio.stage_hazards = world.stage.get("hazards", []) if world.stage.get("hazards") is Array else [] # il ciclista (#229)
 			audio.stage_jets = world.stage.get("jets", []) if world.stage.get("jets") is Array else [] # i getti d'acqua (#253)
 			gym.on_welcome(data)
@@ -563,6 +564,8 @@ func _process(_delta: float) -> void:
 	if playing and _last_snapshot > 0 and Time.get_ticks_msec() - _last_snapshot > int(game.reconnect.snapshotSilenceMs):
 		_last_snapshot = 0
 		socket.drop()
+	if playing and gym.speed == 1.0: # al rallentatore dell'allenamento il brano non insegue l'arena
+		audio.sync_song(world._t_draw) # l'arena musicale (#423): il brano a tempo con le piattaforme
 	var panel_open: bool = is_instance_valid(gym.training) and gym.training.is_open()
 	touch.visible = playing and touch.active and not is_instance_valid(pause_menu) and not panel_open
 	touch.extras = {"panel": "Pannello"} if is_instance_valid(gym.training) else {}

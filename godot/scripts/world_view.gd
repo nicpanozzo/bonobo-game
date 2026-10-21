@@ -1320,6 +1320,9 @@ func _draw_elements(t: float) -> void:
 		if m.get("kind", "") == "barca":
 			_draw_boat(pos, float(m.width), t)
 			continue
+		if m.get("kind", "") == "nota":
+			_draw_note_platform(m, pos, t)
+			continue
 		draw_rect(Rect2(pos.x, pos.y, m.width, 10), _palette.platform)
 		# Strisce gialle e nere sotto: si capisce che si muove
 		for x in range(0, int(m.width), 20):
@@ -1564,6 +1567,30 @@ func _draw_fountain_plume(cx: float, base: float, w: float, h: float, t: float, 
 
 
 # La barca del canale (#264): ponte di legno dove si sta in piedi (y), scafo scuro sotto, prua e poppa rialzate
+# Arena musicale (#423): la piattaforma nel colore della sua traccia. Un tasto spento è solo un contorno tenue,
+# che lampeggia nei NOTE_WARN_MS prima della nota: si vede dove comparirà
+const NOTE_WARN_MS := 400.0
+
+
+func _draw_note_platform(m: Dictionary, pos: Vector2, t: float) -> void:
+	var w: float = m.width
+	var tint := _color(m.get("tint", 0x9ad0ff))
+	if not StageMotion.mover_on(m, t):
+		var next := StageMotion.mover_next_on(m, t)
+		var a := 0.12
+		if next < NOTE_WARN_MS:
+			a = 0.25 + 0.35 * (0.5 + 0.5 * sin(t / 45.0))
+		draw_rect(Rect2(pos.x, pos.y, w, 10), Color(tint, a), false, 2.0)
+		return
+	draw_rect(Rect2(pos.x - 4, pos.y - 4, w + 8, 18), Color(tint, 0.22)) # il bagliore
+	draw_rect(Rect2(pos.x, pos.y, w, 10), tint)
+	draw_rect(Rect2(pos.x, pos.y, w, 3), tint.lightened(0.5))
+	# Sotto, tre teste di nota: si capisce che la muove la musica
+	for i in 3:
+		var c := Vector2(pos.x + w * (i + 1) / 4.0, pos.y + 15)
+		draw_circle(c, 3.5, tint.darkened(0.25))
+
+
 func _draw_boat(pos: Vector2, w: float, t: float) -> void:
 	var ink := Color("1e1a17")
 	var bob := sin(t / 500.0) * 1.5 # dondola appena: la superficie vera resta pos.y

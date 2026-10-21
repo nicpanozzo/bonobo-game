@@ -10,7 +10,7 @@ import type { ItemSpot } from "../stages";
 import { rng } from "../stageGenerator";
 import type { ItemState } from "../types";
 import { bodyBox } from "./attacks";
-import { moverPosition } from "./elements";
+import { moverOn, moverPosition } from "./elements";
 import { chargeFromHit } from "./supreme";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
 import { clearStun, hitShield } from "./shield";
@@ -375,6 +375,11 @@ function carry(item: Item, dtMs: number, ctx: PhysicsContext) {
   const m = item.riding >= 0 ? ctx.stage.movers?.[item.riding] : undefined;
   if (!m || !item.onGround) return;
   const t = ctx.timeMs ?? 0;
+  if (!moverOn(m, t)) {
+    item.onGround = false; // la nota è finita (#423): l'oggetto cade
+    item.riding = -1;
+    return;
+  }
   const before = moverPosition(m, t - dtMs);
   const now = moverPosition(m, t);
   item.x += now.x - before.x;
@@ -395,6 +400,7 @@ function land(item: Item, prevY: number, half: number, dtMs: number, ctx: Physic
   const movers = ctx.stage.movers ?? [];
   const t = ctx.timeMs ?? 0;
   for (let i = 0; i < movers.length; i++) {
+    if (!moverOn(movers[i], t)) continue;
     const now = moverPosition(movers[i], t);
     const before = moverPosition(movers[i], t - dtMs);
     const over = item.x + half > now.x && item.x - half < now.x + movers[i].width;
