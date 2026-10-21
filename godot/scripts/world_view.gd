@@ -59,6 +59,7 @@ var _light_layers := {} # parallasse -> [Texture2D, Rect2]: i vetri accesi di qu
 var _light_props: Array = [] # [texture, decorazione] con i vetri accesi, sopra le decorazioni (#288)
 var _life: RefCounted = preload("res://scripts/stage_life.gd").new() # sfondo vivo (#260)
 var _wonder: RefCounted = preload("res://scripts/wonder_stage.gd").new() # l'arena musicale che balla a tempo (#423)
+var _arcade: RefCounted = preload("res://scripts/arcade_view.gd").new() # pezzi e blocchi del power-up Tetris (#427)
 var _ambient := Color.WHITE # luce del momento del giorno (#267): moltiplica strati e decorazioni, un po' il palco
 var _textures := {} # id personaggio -> Texture2D dello spritesheet (nel formato cartella, quella di idle)
 var _state_textures := {} # id personaggio -> { stato: Texture2D }, solo per il formato cartella (E7 passo 2)
@@ -246,6 +247,7 @@ func reset() -> void:
 	_projectiles = []
 	_puddles = []
 	_companions.clear()
+	_arcade.clear()
 	_item_pos = {}
 	_dust = []
 	_trails = {}
@@ -287,6 +289,7 @@ func set_stage_spec(spec: Dictionary) -> void:
 	_load_stage_dressing(art.get("dir", spec.id), art)
 	_life.setup(spec, stage_width(), game.world.height)
 	_wonder.setup(spec)
+	_arcade.setup(game)
 	_supreme_view.stage = spec
 	_reached = 0
 	queue_redraw()
@@ -586,6 +589,8 @@ func on_snapshot(snap: Dictionary) -> void:
 	_puddles = snap.get("puddles", [])
 	_pads_pressed = snap.get("pads", []) if snap.get("pads") is Array else [] # bottoni sonori (#423)
 	_companions.on_snapshot(snap.players, game.characters)
+	_arcade.on_snapshot(snap) # #427
+	predictor.blocks = _arcade.blocks
 	predictor.puddles = _puddles
 	for p in snap.players:
 		_load_character(_look(p))
@@ -911,6 +916,7 @@ func _draw() -> void:
 			draw_colored_polygon(StageMotion.arch_polygon(p, 8.0), _palette.platform)
 		else:
 			draw_rect(Rect2(p.x, p.y, p.width, 8), _palette.platform)
+	_arcade.draw_blocks(self, Time.get_ticks_msec()) # i pezzi del Tetris posati (#427)
 	_draw_rails(false) # ringhiere dietro ai lottatori
 	if not _life.is_empty():
 		_life.draw_pigeons(self, t_stage, Time.get_ticks_msec(), positions.values(), _threats(t_stage))
@@ -943,6 +949,7 @@ func _draw() -> void:
 	_draw_puddles(now)
 	_draw_items(now)
 	_draw_projectiles()
+	_arcade.draw_pieces(self, _sampled) # i pezzi del Tetris che cadono (#427)
 	if not _life.is_empty():
 		_life.draw_outer_water(self, t_stage, now, _flood_up(t_stage), view_rect, positions) # davanti a chi cade (#264)
 	_draw_props(_props_front)
@@ -1106,6 +1113,13 @@ func _draw_item(kind: String, base: Vector2, spin: float, load: float = -1.0, al
 		var glow := 0.5 + 0.5 * sin(Time.get_ticks_msec() / 260.0)
 		draw_circle(Vector2(0, -h * 0.05), h * (0.8 + 0.12 * glow), Color(FLOWER_GREEN.lightened(0.4), 0.25 + 0.15 * glow))
 		draw_leaf(self, Vector2(0, h / 2), h * 1.3, FLOWER_GREEN.lightened(0.1))
+	elif kind == "tetris":
+		# Il Tetris (#427): un pezzo a T che brilla, con i quadretti in rilievo
+		var glow := 0.5 + 0.5 * sin(Time.get_ticks_msec() / 220.0)
+		draw_circle(Vector2.ZERO, w * (0.85 + 0.1 * glow), Color(0.3, 0.85, 1.0, 0.18 + 0.12 * glow))
+		var q := w / 3.0
+		for c: Vector2 in [Vector2(-1.5, -0.5), Vector2(-0.5, -0.5), Vector2(0.5, -0.5), Vector2(-0.5, 0.5)]:
+			_arcade.draw_cell(self, c * q, q, Color("b04df0"))
 	elif kind == "bong":
 		_draw_bong(spec, h, load)
 	elif kind == "fungo":
@@ -1966,6 +1980,10 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 	var fh: float = game.fighter.height
 	# Chi è appena rientrato lampeggia finché è invulnerabile; chi ha perso la rete no, è solo trasparente (#107)
 	var away: bool = p.get("away", false)
+	# A Tetris (#427) si è fuori dalla partita: al posto del lottatore il cabinato
+	if p.get("powerup") == "tetris" and not p.respawning:
+		_arcade.draw_cabinet(self, p, Access.color(p.color), int(now))
+		return
 	# Chi fa la suprema propria (#102) è invulnerabile ma appeso alla liana: non lampeggia
 	# Col fiore (#231) si è intoccabili per 8 s: invece di lampeggiare si ha l'alone verde
 	var powered: bool = p.get("powerup") == "fiore" and not away

@@ -1,6 +1,7 @@
 // Contatto con l'arena: blocchi pieni, piattaforme sottili, zone di espulsione, vite e ritorno in gioco.
 
 import { COURSE, FIGHTER, RESPAWN_INVULNERABLE_MS, RESPAWN_MS, SUPREME } from "../constants";
+import { arcadeSolids } from "./arcade";
 import { landOnMover } from "./elements";
 import type { Fighter, PhysicsContext } from "./fighter";
 import { resetShield } from "./shield";
@@ -35,7 +36,9 @@ export function collideWithStage(f: Fighter, prevY: number, ctx: PhysicsContext,
   f.onGround = false;
   f.riding = -1;
 
-  for (const s of ctx.stage.solids) {
+  // I blocchi del Tetris (#427) sono blocchi pieni come quelli dell'arena
+  const solids = ctx.arcade?.blocks.length ? [...ctx.stage.solids, ...arcadeSolids(ctx)] : ctx.stage.solids;
+  for (const s of solids) {
     // Blocco pieno: si atterra sopra...
     const over = f.x + half > s.x && f.x - half < s.x + s.width;
     if (!over) continue;

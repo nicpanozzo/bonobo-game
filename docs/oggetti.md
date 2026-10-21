@@ -20,6 +20,7 @@ Tutti i nomi sono provvisori: `// TODO community` finché il canale non li scegl
 | **Bong** (#303) | Tre fasi, sotto. |
 | Funghetti di Teemo (#317) | Giù + J pianta funghetti quasi invisibili: chi li calpesta ha i comandi invertiti per 3 s. |
 | **Birra** (idea di Nicola) | Cappello da tirolese per 8 s: colpi ×1,4, un po' più veloci, ma si barcolla avanti e indietro. |
+| **Tetris** (#427, idea di Nicola) | Ci si assenta per 9 s in un cabinato, fermi e intoccabili: i tasti guidano pezzi che cadono dall'alto (destra/sinistra spostano, su/salto/J ruotano, giù accelera, K li fa cadere di colpo). Un pezzo colpisce chi tocca; posato, diventa blocchi solidi per 10 s. Logica in `physics/arcade.ts`. |
 
 ## Il Bong (idea di Nicola)
 

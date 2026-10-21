@@ -615,6 +615,23 @@
     "rampMs": 250,
     "landTolerancePx": 4
   },
+  "tetris": {
+    "ms": 9000,
+    "cellPx": 40,
+    "spawnY": -40,
+    "fallPxS": 240,
+    "softPxS": 800,
+    "dropPxS": 2400,
+    "repeatMs": 120,
+    "blockMs": 10000,
+    "fadeMs": 1500,
+    "maxBlocks": 48,
+    "damage": 12,
+    "knockback": 480,
+    "knockbackGrowth": 5,
+    "angleDeg": 50,
+    "returnInvulnerableMs": 600
+  },
   "effects": {
     "hitSparkMs": 220,
     "shakeKo": 14,
@@ -737,6 +754,20 @@
       "color": 8378564,
       "weight": 2,
       "bong": true
+    },
+    "tetris": {
+      "id": "tetris",
+      "name": "Tetris",
+      "damage": 0,
+      "knockback": 0,
+      "width": 28,
+      "height": 28,
+      "color": 48340,
+      "weight": 1,
+      "consume": {
+        "powerup": "tetris",
+        "ms": 9000
+      }
     }
   },
   "itemRules": {
@@ -787,7 +818,8 @@
     "birra",
     "bong",
     "fiore",
-    "funghetti"
+    "funghetti",
+    "tetris"
   ],
   "supremeSpeeds": [
     {

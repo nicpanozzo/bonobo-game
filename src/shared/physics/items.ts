@@ -9,6 +9,7 @@ import { DROPPABLE_ITEMS, ITEMS } from "../items";
 import type { ItemSpot } from "../stages";
 import { rng } from "../stageGenerator";
 import type { ItemState } from "../types";
+import { endArcade, isArcade, startArcade } from "./arcade";
 import { bodyBox } from "./attacks";
 import { moverHere, moverPlace } from "./elements";
 import { chargeFromHit } from "./supreme";
@@ -66,7 +67,7 @@ export function resetItems(world: ItemWorld): void {
 
 // Non si raccoglie né si lancia mentre si è occupati: colpiti, in attacco, in schivata o inermi dopo il recupero
 const busy = (f: Fighter) =>
-  f.eliminated || f.respawning || f.hitstun || f.hitstopTimer > 0 || f.attack !== null || f.helpless || f.dodgeTimer > 0;
+  f.eliminated || f.respawning || f.hitstun || f.hitstopTimer > 0 || f.attack !== null || f.helpless || f.dodgeTimer > 0 || isArcade(f);
 
 // Il tasto usato per l'oggetto non deve far partire anche un attacco: lo si segna come già premuto
 function consumeAttackKeys(f: Fighter) {
@@ -124,6 +125,7 @@ function powerUp(world: ItemWorld, item: Item, f: Fighter, ctx: PhysicsContext) 
   f.powerup = use.powerup;
   f.powerupMs = use.ms;
   f.invulnerable = true;
+  if (isArcade(f)) startArcade(f);
   ctx.events.push({ type: "powerUp", itemId: item.id, id: f.id, kind: use.powerup, x: Math.round(f.x), y: Math.round(f.y) });
 }
 
@@ -179,6 +181,7 @@ export function tickPowerup(f: Fighter, dtMs: number, ctx: PhysicsContext): void
   f.powerupMs = Math.max(0, f.powerupMs - dtMs);
   if (f.powerupMs > 0) return;
   ctx.events.push({ type: "powerEnd", id: f.id, kind: f.powerup });
+  if (isArcade(f)) endArcade(f); // si torna in partita (#427)
   // Troppo fatti (#302): non si è soffiato in tempo, si crolla tramortiti come con lo scudo rotto
   if (f.powerup === "bong") {
     f.stunTimer = BONG.stunMs;
