@@ -642,6 +642,19 @@ export const TETRIS = {
   returnInvulnerableMs: 600, // ms intoccabili quando si torna in partita
 };
 
+// Il power-up Pac-Man (#427): per un po' si è Pac-Man. Niente gravità, si va sempre dritti nella direzione scelta,
+// si passa attraverso tutto e si esce da un lato dello schermo per rientrare dall'altro; si è intoccabili e si mangia chi si tocca
+export const PACMAN = {
+  ms: 8000, // ms da Pac-Man dalla raccolta
+  speedPxS: 380, // pixel/s, sempre uguale come nel gioco vero
+  radiusPx: 34, // raggio della bocca: chi ci entra col corpo viene mangiato
+  damage: 14, // percentuale a chi viene mangiato
+  knockback: 560, // pixel/s di lancio
+  knockbackGrowth: 6, // pixel/s in più per ogni punto di percentuale del bersaglio
+  angleDeg: 45, // angolo di lancio
+  eatAgainMs: 1200, // ms prima di poter mangiare di nuovo lo stesso lottatore
+};
+
 // Limiti della rete (#105): il server non si fida di quello che riceve
 export const NET_LIMITS = {
   maxMessageBytes: 16_384, // byte massimi di un messaggio Socket.IO (il predefinito è 1 MB)

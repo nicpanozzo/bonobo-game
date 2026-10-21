@@ -77,6 +77,7 @@ export interface Fighter extends PlayerState {
   shortHop: boolean; // lasciare presto il salto lo accorcia (i bot no: tengono il tasto un tick solo)
   inputSeq: number; // E17: InputState.seq dell'input in uso, -1 se il client non lo manda
   inputTicks: number; // tick giocati con quell'input
+  pacDir?: { x: number; y: number }; // da Pac-Man (#427): dove si va, una sola tra x e y è -1 o 1
 }
 
 // Quello che serve alla fisica oltre ai lottatori: l'arena e dove scrivere gli eventi

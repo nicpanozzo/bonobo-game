@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { TETRIS, TICK_RATE, WORLD } from "../constants";
+import { FIGHTER, PACMAN, TETRIS, TICK_RATE, WORLD } from "../constants";
 import { ITEMS, DROPPABLE_ITEMS } from "../items";
 import type { StageSpec } from "../stages";
 import { emptyInput, createFighter, stepWorld, type PhysicsContext } from "./index";
-import { pieceCells, tetrisState } from "./arcade";
+import { pieceCells, startArcade, tetrisState } from "./arcade";
 import { tickPowerup } from "./items";
 
 const DT = 1000 / TICK_RATE;
@@ -120,5 +120,79 @@ describe("power-up Tetris (#427)", () => {
     ctx.arcade = { pieces: [], blocks: [{ x: 0, y: 0, kind: "I", lifeMs: 100 }], nextId: 1, random: () => 0 };
     steps(10, list, ctx);
     assert.equal(tetrisState(ctx), undefined);
+  });
+});
+
+describe("power-up Pac-Man (#427)", () => {
+  function pacSetup() {
+    const t = setup();
+    t.player.powerup = "pacman";
+    t.player.powerupMs = PACMAN.ms;
+    t.player.facing = 1;
+    startArcade(t.player);
+    t.player.y = 300;
+    t.other.x = 1100;
+    return t;
+  }
+
+  it("è un oggetto da consumare che cade dal cielo", () => {
+    assert.deepEqual(ITEMS.pacman.consume, { powerup: "pacman", ms: PACMAN.ms });
+    assert.ok(DROPPABLE_ITEMS.includes("pacman"));
+  });
+
+  it("va dritto senza gravità e intoccabile, cambia direzione con una freccia appena premuta", () => {
+    const { ctx, player, list } = pacSetup();
+    const x = player.x;
+    steps(TICK_RATE / 2, list, ctx);
+    assert.ok(Math.abs(player.x - (x + PACMAN.speedPxS / 2)) < 2, `dritto a destra (x = ${player.x})`);
+    assert.equal(player.y, 300, "non cade");
+    assert.ok(player.invulnerable);
+    player.input = { ...emptyInput(), up: true };
+    steps(TICK_RATE / 4, list, ctx);
+    assert.ok(player.y < 300 - PACMAN.speedPxS / 4 + 10, "su");
+    player.input = emptyInput();
+    const y = player.y;
+    steps(3, list, ctx);
+    assert.ok(player.y < y, "lasciata la freccia continua per la sua strada");
+  });
+
+  it("passa attraverso il pavimento ed esce da un lato per rientrare dall'altro", () => {
+    const { ctx, player, list } = pacSetup();
+    player.pacDir = { x: 0, y: 1 };
+    steps(Math.round(TICK_RATE * 1.5), list, ctx); // 570 pixel in giù: oltre il bordo basso
+    assert.ok(player.y >= 0 && player.y < WORLD.height, `dentro lo schermo (y = ${player.y})`);
+    assert.ok(player.y < 300, "è rientrato dall'alto dopo aver attraversato il pavimento");
+    player.pacDir = { x: -1, y: 0 };
+    player.x = 10;
+    steps(3, list, ctx);
+    assert.ok(player.x > WORLD.width - 30, `rientrato da destra (x = ${player.x})`);
+    assert.ok(!ctx.events.some((e) => e.type === "ko"), "niente KO");
+  });
+
+  it("mangia chi tocca, una volta ogni tanto", () => {
+    const { ctx, player, other, list } = pacSetup();
+    player.pacDir = { x: 0, y: 0 };
+    player.x = 800;
+    other.x = 800;
+    other.y = 300 + FIGHTER.height / 2;
+    steps(1, list, ctx);
+    const hit = ctx.events.find((e) => e.type === "hit" && e.targetId === "p1");
+    assert.ok(hit && hit.type === "hit" && hit.itemKind === "pacman" && hit.attackerId === "p0", "mangiato");
+    assert.equal(other.percent, PACMAN.damage);
+    other.x = 800;
+    other.y = 300 + FIGHTER.height / 2;
+    other.hitstunTimer = 0;
+    steps(1, list, ctx);
+    assert.equal(ctx.events.filter((e) => e.type === "hit").length, 1, "non subito di nuovo");
+  });
+
+  it("finito il tempo si torna normali, fermi e coi salti", () => {
+    const { ctx, player } = pacSetup();
+    player.powerupMs = 1;
+    player.jumpsLeft = 0;
+    tickPowerup(player, DT, ctx);
+    assert.equal(player.powerup, null);
+    assert.equal(player.vx, 0);
+    assert.equal(player.jumpsLeft, FIGHTER.maxJumps);
   });
 });

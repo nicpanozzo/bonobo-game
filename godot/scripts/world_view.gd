@@ -79,6 +79,7 @@ var _holding := {} # id di chi tiene qualcuno con la presa (#109), dall'ultimo s
 var _palette := {} # colori dell'arena già convertiti (stage.colors), per non rifarlo a ogni frame
 var _variants := {} # id giocatore -> variante di colore (0 = originale), ricalcolata a ogni snapshot (E11)
 const StageMotion := preload("res://scripts/stage_motion.gd")
+const ArcadeView := preload("res://scripts/arcade_view.gd")
 const FighterPose := preload("res://scripts/fighter_pose.gd")
 const HitReaction := preload("res://scripts/hit_reaction.gd") # il corpo si piega dove è colpito (#305)
 const MotionFeel := preload("res://scripts/motion_feel.gd") # squash & stretch di salto, atterraggio e corsa
@@ -917,6 +918,7 @@ func _draw() -> void:
 		else:
 			draw_rect(Rect2(p.x, p.y, p.width, 8), _palette.platform)
 	_arcade.draw_blocks(self, Time.get_ticks_msec()) # i pezzi del Tetris posati (#427)
+	_arcade.draw_pellets(self, stage, _sampled, stage_width(), Time.get_ticks_msec()) # le palline di Pac-Man
 	_draw_rails(false) # ringhiere dietro ai lottatori
 	if not _life.is_empty():
 		_life.draw_pigeons(self, t_stage, Time.get_ticks_msec(), positions.values(), _threats(t_stage))
@@ -950,6 +952,7 @@ func _draw() -> void:
 	_draw_items(now)
 	_draw_projectiles()
 	_arcade.draw_pieces(self, _sampled) # i pezzi del Tetris che cadono (#427)
+	_arcade.draw_ghosts(self, _sampled, now) # con Pac-Man gli altri sono fantasmini (#427)
 	if not _life.is_empty():
 		_life.draw_outer_water(self, t_stage, now, _flood_up(t_stage), view_rect, positions) # davanti a chi cade (#264)
 	_draw_props(_props_front)
@@ -1113,6 +1116,14 @@ func _draw_item(kind: String, base: Vector2, spin: float, load: float = -1.0, al
 		var glow := 0.5 + 0.5 * sin(Time.get_ticks_msec() / 260.0)
 		draw_circle(Vector2(0, -h * 0.05), h * (0.8 + 0.12 * glow), Color(FLOWER_GREEN.lightened(0.4), 0.25 + 0.15 * glow))
 		draw_leaf(self, Vector2(0, h / 2), h * 1.3, FLOWER_GREEN.lightened(0.1))
+	elif kind == "pacman":
+		# Pac-Man (#427): la bocca che mastica, con una pallina davanti
+		var chew := 0.08 + 0.25 * absf(sin(Time.get_ticks_msec() / 120.0))
+		var pts := PackedVector2Array([Vector2.ZERO])
+		for k in 17:
+			pts.append(Vector2.from_angle(chew * PI + (TAU - 2.0 * chew * PI) * k / 16.0) * w / 2.0)
+		draw_colored_polygon(pts, ArcadeView.PAC_YELLOW)
+		draw_circle(Vector2(w * 0.55, 0), 3.0, ArcadeView.PELLET)
 	elif kind == "tetris":
 		# Il Tetris (#427): un pezzo a T che brilla, con i quadretti in rilievo
 		var glow := 0.5 + 0.5 * sin(Time.get_ticks_msec() / 220.0)
@@ -1983,6 +1994,9 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 	# A Tetris (#427) si è fuori dalla partita: al posto del lottatore il cabinato
 	if p.get("powerup") == "tetris" and not p.respawning:
 		_arcade.draw_cabinet(self, p, Access.color(p.color), int(now))
+		return
+	if p.get("powerup") == "pacman" and not p.respawning:
+		_arcade.draw_pacman(self, p, Access.color(p.color), int(now), float(game.get("pacman", {}).get("radiusPx", 34)))
 		return
 	# Chi fa la suprema propria (#102) è invulnerabile ma appeso alla liana: non lampeggia
 	# Col fiore (#231) si è intoccabili per 8 s: invece di lampeggiare si ha l'alone verde

@@ -1,22 +1,33 @@
-# Power-up arcade (#427): i pezzi del Tetris che cadono, i blocchi posati e il cabinato di chi gioca.
-# Solo disegno: pezzi e blocchi arrivano nello snapshot (tetris), calcolati dal server in physics/arcade.ts.
+# Power-up arcade (#427): i pezzi del Tetris che cadono, i blocchi posati e il cabinato di chi gioca;
+# Pac-Man, i fantasmini spaventati al posto degli altri e le palline da mangiare.
+# Solo disegno: pezzi, blocchi e Pac-Man arrivano nello snapshot, calcolati dal server in physics/arcade.ts.
+# Le palline sono solo del client: spariscono dove passa Pac-Man e non contano per la partita.
 # world_view.gd lo chiama dentro _draw.
 extends RefCounted
 
 # I colori classici delle sette forme
 const COLORS := {"I": Color("29d3ea"), "O": Color("ffd23f"), "T": Color("b04df0"), "L": Color("ff9a1f"), "J": Color("3d6df2"), "S": Color("4ee05a"), "Z": Color("f2424a")}
 const INK := Color("101018")
+const PAC_YELLOW := Color("ffe11a")
+const GHOST_BLUE := Color("2a3cff")
+const PELLET := Color("ffd9b0")
+const PELLET_STEP := 40.0 # pixel tra due palline
 
 var cell := 40.0
 var fade_ms := 1500.0
 var pieces: Array = []
 var blocks: Array = []
+var fighter_h := 90.0
+var pac_ms := 8000.0
+var _pellets: Array = [] # [posizione, pallina grande]
 
 
 func setup(game: Dictionary) -> void:
 	var t: Dictionary = game.get("tetris", {})
 	cell = float(t.get("cellPx", 40))
 	fade_ms = float(t.get("fadeMs", 1500))
+	fighter_h = float(game.get("fighter", {}).get("height", 90))
+	pac_ms = float(game.get("pacman", {}).get("ms", 8000))
 
 
 func on_snapshot(snap: Dictionary) -> void:
@@ -28,6 +39,7 @@ func on_snapshot(snap: Dictionary) -> void:
 func clear() -> void:
 	pieces = []
 	blocks = []
+	_pellets = []
 
 
 static func color_of(kind: String) -> Color:
@@ -107,3 +119,94 @@ static func draw_cabinet(canvas: CanvasItem, p: Dictionary, tint: Color, now: in
 	var font := ThemeDB.fallback_font
 	var rise := fposmod(now / 900.0, 1.0)
 	canvas.draw_string(font, base + Vector2(w / 2 + 2 + 8 * rise, -h + 10 - 26 * rise), "♪", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color(tint.lightened(0.4), 1.0 - rise))
+
+
+# Chi è Pac-Man (#427) nello snapshot campionato, con il centro della bocca
+func pacmen(players: Dictionary) -> Array:
+	var out := []
+	for p: Variant in players.values():
+		if p is Dictionary and p.get("powerup") == "pacman" and not p.get("respawning", false) and not p.get("eliminated", false):
+			out.append(p)
+	return out
+
+
+# Le palline sulle superfici dell'arena, una ogni PELLET_STEP pixel, ogni tanto una grande
+static func pellets_for(stage: Dictionary, width: float) -> Array:
+	var out := []
+	var tops := []
+	for s: Dictionary in stage.get("solids", []):
+		tops.append([float(s.x), float(s.width), float(s.y)])
+	for p: Dictionary in stage.get("platforms", []):
+		tops.append([float(p.x), float(p.width), float(p.y)])
+	for t: Array in tops:
+		var x: float = maxf(t[0], 0.0) + PELLET_STEP / 2.0
+		var end: float = minf(t[0] + t[1], width) - PELLET_STEP / 2.0
+		var i := 0
+		while x <= end:
+			out.append([Vector2(x, t[2] - 40.0), i % 8 == 4])
+			x += PELLET_STEP
+			i += 1
+	return out
+
+
+# Le palline compaiono quando qualcuno diventa Pac-Man e spariscono dove passa; finite, ricominciano
+func draw_pellets(canvas: CanvasItem, stage: Dictionary, players: Dictionary, width: float, now: int) -> void:
+	var mouths := pacmen(players).map(func(p): return Vector2(float(p.x), float(p.y) - fighter_h / 2.0))
+	if mouths.is_empty():
+		_pellets = []
+		return
+	if _pellets.is_empty():
+		_pellets = pellets_for(stage, width)
+	_pellets = _pellets.filter(func(q): return mouths.all(func(m): return m.distance_to(q[0]) > 34.0))
+	var pulse := 0.5 + 0.5 * sin(now / 150.0)
+	for q: Array in _pellets:
+		canvas.draw_circle(q[0], 9.0 + 2.0 * pulse if q[1] else 4.0, PELLET)
+
+
+# Pac-Man al posto del lottatore: giallo, la bocca verso dove va che si apre e chiude, una fascia del suo colore
+func draw_pacman(canvas: CanvasItem, p: Dictionary, tint: Color, now: int, radius: float) -> void:
+	var c := Vector2(float(p.x), float(p.y) - fighter_h / 2.0)
+	var dir := Vector2(float(p.get("vx", 0)), float(p.get("vy", 0)))
+	var angle := dir.angle() if dir.length() > 1.0 else (0.0 if int(p.get("facing", 1)) > 0 else PI)
+	var open := 0.05 + 0.33 * absf(sin(now / 70.0))
+	var pts := PackedVector2Array([c])
+	for k in 25:
+		var a := angle + open * PI + (TAU - 2.0 * open * PI) * k / 24.0
+		pts.append(c + Vector2.from_angle(a) * radius)
+	canvas.draw_colored_polygon(pts, PAC_YELLOW)
+	canvas.draw_polyline(pts + PackedVector2Array([c]), INK, 2.5)
+	# L'occhio sta sopra la bocca, dal lato giusto anche quando va a sinistra
+	var up := Vector2.from_angle(angle - PI / 2.0) if cos(angle) >= -0.01 else Vector2.from_angle(angle + PI / 2.0)
+	canvas.draw_circle(c + up * radius * 0.5 + Vector2.from_angle(angle) * radius * 0.12, radius * 0.11, INK)
+	# La fascia del colore di chi è, come un cappellino
+	canvas.draw_arc(c, radius + 4.0, -PI * 0.8, -PI * 0.2, 12, tint, 5.0)
+
+
+# Gli altri, finché c'è un Pac-Man, sono fantasmini spaventati: blu, occhietti e bocca a zigzag. Lampeggiano
+# di bianco quando Pac-Man sta per finire
+func draw_ghosts(canvas: CanvasItem, players: Dictionary, now: int) -> void:
+	var pacs := pacmen(players)
+	if pacs.is_empty():
+		return
+	var ending := pacs.all(func(p): return float(p.get("powerupMs", pac_ms)) < 1500.0)
+	var body := GHOST_BLUE if not ending or int(now / 200) % 2 == 0 else Color.WHITE
+	for p: Variant in players.values():
+		if not (p is Dictionary) or pacs.has(p) or p.get("respawning", false) or p.get("eliminated", false) or p.get("powerup") == "tetris":
+			continue
+		var w := 58.0
+		var top := Vector2(float(p.x), float(p.y) - fighter_h - 8.0)
+		var h := fighter_h + 8.0
+		var pts := PackedVector2Array()
+		for k in 13:
+			pts.append(top + Vector2.from_angle(PI + PI * k / 12.0) * w / 2.0 + Vector2(0, w / 2.0))
+		for k in 7:
+			var x := w / 2.0 - w * k / 6.0
+			pts.append(top + Vector2(x, h - (8.0 if (k + int(now / 150)) % 2 == 0 else 0.0)))
+		canvas.draw_colored_polygon(pts, Color(body, 0.6))
+		var face := Color("ffd9b0") if body == GHOST_BLUE else Color("f2424a")
+		canvas.draw_circle(top + Vector2(-10, w / 2.0), 4.0, face)
+		canvas.draw_circle(top + Vector2(10, w / 2.0), 4.0, face)
+		var mouth := PackedVector2Array()
+		for k in 7:
+			mouth.append(top + Vector2(-15.0 + 5.0 * k, w / 2.0 + 18.0 + (4.0 if k % 2 == 0 else 0.0)))
+		canvas.draw_polyline(mouth, face, 2.0)
