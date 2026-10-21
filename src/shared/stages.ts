@@ -343,6 +343,7 @@ export interface StageSpec {
 export interface StageSong {
   id: string;
   lengthMs: number; // durata di un giro del brano, uguale al periodMs delle sue piattaforme
+  bpm?: number; // battiti al minuto: Godot fa ballare lo sfondo a tempo (#423)
 }
 
 // Larghezza del mondo di un'arena: lo schermo, o di più per i percorsi
@@ -887,7 +888,7 @@ export const STAGES: Record<string, StageSpec> = {
       // La cassa spara in alto gli ascensori del basso
       { x: 962, y: MAIN.y, width: 56, sound: "cassa", cooldownMs: 12000, effect: { group: "basso", durationMs: 4000, dy: -150 } },
     ],
-    song: { id: SALA_PROVE.id, lengthMs: SALA_PROVE.lengthMs },
+    song: { id: SALA_PROVE.id, lengthMs: SALA_PROVE.lengthMs, bpm: SALA_PROVE.bpm },
     music: { bpm: SALA_PROVE.bpm, chords: ["Am", "F", "C", "G"], lead: "square" }, // se il brano non si carica
   },
 };

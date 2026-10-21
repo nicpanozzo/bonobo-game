@@ -10,11 +10,12 @@ var _out := "user://screenshots"
 var _game: Dictionary
 var _world: Node2D # nella partita finta: riceve uno snapshot a ogni frame
 var _hud: Control
-const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre", "lobby_regole"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
+const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre", "lobby_regole", "musica"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
 var _index := -1
 var _frame := 0
 var _failed := false
 var _teams := false # la partita finta a tre squadre (#409)
+var _music := false # la partita finta nell'arena musicale, durante la Meraviglia (#423)
 
 
 func _initialize() -> void:
@@ -98,11 +99,18 @@ func _squadre() -> void:
 
 
 # Quattro lottatori sul palco di base: due con lo stesso personaggio (colori alternativi), un proiettile e una carica
+# La Sala Prove (#423) con i tre bottoni appena premuti: la Meraviglia, i fiori che cantano, la tastiera accesa
+func _musica() -> void:
+	_teams = false
+	_music = true
+	_partita()
+
+
 func _partita() -> void:
 	var world: Node2D = load("res://scripts/world_view.gd").new()
 	root.add_child(world)
 	world.setup(_game)
-	world.set_stage(_game.defaultStageId)
+	world.set_stage("musica" if _music else _game.defaultStageId)
 	world.my_id = "p0"
 	var cam := Camera2D.new()
 	cam.position = Vector2(640, 430)
@@ -134,8 +142,11 @@ func _snapshot(frame: int) -> Dictionary:
 			"invulnerable": false, "eliminated": false, "carrier": false, "ledge": null, "away": false,
 			"shielding": i == 3, "shieldHp": 40, "stunned": false, "grabbedBy": null, "charge": spots[i][3],
 		})
-	var snap := {"t": frame * 16, "players": players, "items": [], "events": [], "stageMs": frame * 16, "winnerId": null, "timeLeftMs": 90000, "teamScores": null,
+	var stage_ms := frame * 16 + (9000 if _music else 0)
+	var snap := {"t": frame * 16, "players": players, "items": [], "events": [], "stageMs": stage_ms, "winnerId": null, "timeLeftMs": 90000, "teamScores": null,
 		"projectiles": [{"id": 1, "ownerId": "p0", "kind": "specialNeutral", "characterId": "default", "x": 500, "y": 470, "vx": 560, "vy": -120}]}
+	if _music:
+		snap.pads = [8800, 8800, 8800] # tutti e tre premuti da poco: la Meraviglia
 	return snap
 
 

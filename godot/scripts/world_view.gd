@@ -58,6 +58,7 @@ const SHADOW_STEP_ALPHA := 0.17 # quanto scurisce ognuno: al centro si arriva a 
 var _light_layers := {} # parallasse -> [Texture2D, Rect2]: i vetri accesi di quello strato (#288), ritagliati; Rect2 in frazioni dello strato
 var _light_props: Array = [] # [texture, decorazione] con i vetri accesi, sopra le decorazioni (#288)
 var _life: RefCounted = preload("res://scripts/stage_life.gd").new() # sfondo vivo (#260)
+var _wonder: RefCounted = preload("res://scripts/wonder_stage.gd").new() # l'arena musicale che balla a tempo (#423)
 var _ambient := Color.WHITE # luce del momento del giorno (#267): moltiplica strati e decorazioni, un po' il palco
 var _textures := {} # id personaggio -> Texture2D dello spritesheet (nel formato cartella, quella di idle)
 var _state_textures := {} # id personaggio -> { stato: Texture2D }, solo per il formato cartella (E7 passo 2)
@@ -285,6 +286,7 @@ func set_stage_spec(spec: Dictionary) -> void:
 	_layer_scale = art.get("scale", 1.0)
 	_load_stage_dressing(art.get("dir", spec.id), art)
 	_life.setup(spec, stage_width(), game.world.height)
+	_wonder.setup(spec)
 	_supreme_view.stage = spec
 	_reached = 0
 	queue_redraw()
@@ -630,6 +632,7 @@ func on_event(e: Dictionary) -> void:
 			# Bottone sonoro (#423): uno sbuffo di scintille del colore del bottone e una scossa leggera
 			_sparks.append({"x": e.x, "y": float(e.y) - 10.0, "age": 0.0, "size": 34.0, "color": _color(PAD_COLORS.get(str(e.get("sound", "")), 0xff4fd8))})
 			_shake = maxf(_shake, 4.0)
+			_wonder.on_pad(e, Time.get_ticks_msec()) # il fiore più vicino commenta (#423)
 		"hazard":
 			# Trappola (#14): scintilla arancione e scossa come un colpo forte
 			_sparks.append({"x": e.x, "y": e.y, "age": 0.0, "size": 30.0, "color": Color(1, 0.55, 0.15)})
@@ -852,6 +855,7 @@ func _draw() -> void:
 		draw_rect(Rect2(bz.left - 200, bz.top - 200, bz.right - bz.left + 400, bz.bottom - bz.top + 400), _palette.sky)
 	var t_stage := buffer.sample_stage_ms(Time.get_ticks_msec())
 	_t_draw = t_stage
+	_wonder.draw_back(self, t_stage, view_rect, _pads_pressed, Time.get_ticks_msec()) # solo nelle arene col brano (#423)
 	var view_center := view_rect.get_center()
 	var rain := _rain_now(t_stage)
 	_ambient = _life.sky.ambient(t_stage) # la luce del momento del giorno (#267), bianca senza ciclo
@@ -893,6 +897,7 @@ func _draw() -> void:
 		if skin.is_empty():
 			draw_rect(Rect2(s.x, s.y, s.width, s.height), _palette.solid)
 			draw_rect(Rect2(s.x, s.y, s.width, 6), _palette.solidEdge)
+			_wonder.draw_floor(self, s, t_stage, _pads_pressed, _pad_fx) # la tastiera del pianoforte (#423)
 		else:
 			_draw_skinned_solid(s, skin)
 	for i in stage.platforms.size():
@@ -974,6 +979,7 @@ func _draw() -> void:
 		var tip := Vector2(s.vx, s.vy).normalized() * 12.0
 		draw_line(Vector2(s.x, s.y) - tip, Vector2(s.x, s.y) + tip, c, 4.0)
 
+	_wonder.draw_front(self, t_stage, view_rect, _pads_pressed) # coriandoli e scritta della Meraviglia (#423)
 	if _flash > 0:
 		draw_rect(view_rect.grow(40), Color(1, 1, 1, 0.45 * _flash / float(game.effects.flashMs)))
 
@@ -1644,10 +1650,21 @@ func _draw_note_platform(m: Dictionary, pos: Vector2, t: float, forced := false)
 	draw_rect(Rect2(pos.x - 4, pos.y - 4, w + 8, 18), Color(tint, 0.22)) # il bagliore
 	draw_rect(Rect2(pos.x, pos.y, w, 10), tint)
 	draw_rect(Rect2(pos.x, pos.y, w, 3), tint.lightened(0.5))
+	if _wonder.active: # nell'arena musicale ha la faccia e guarda chi le sta più vicino (#423)
+		_wonder.draw_face(self, pos, w, tint, t, _nearest_fighter(pos + Vector2(w / 2.0, 0)), _wonder.since_on(m, t))
+		return
 	# Sotto, tre teste di nota: si capisce che la muove la musica
 	for i in 3:
 		var c := Vector2(pos.x + w * (i + 1) / 4.0, pos.y + 15)
 		draw_circle(c, 3.5, tint.darkened(0.25))
+
+
+func _nearest_fighter(from: Vector2) -> Variant:
+	var best: Variant = null
+	for p: Vector2 in positions.values():
+		if best == null or p.distance_to(from) < (best as Vector2).distance_to(from):
+			best = p
+	return best
 
 
 func _draw_boat(pos: Vector2, w: float, t: float) -> void:

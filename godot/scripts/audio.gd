@@ -5,6 +5,7 @@
 extends Node2D
 
 const StageMotion := preload("res://scripts/stage_motion.gd")
+const WonderStage := preload("res://scripts/wonder_stage.gd")
 const PLAYERS := 12 # suoni che possono sovrapporsi
 const MUSIC_STEPS_PER_FRAME := 4 # la musica si calcola un pezzo per frame, senza bloccare il gioco
 const STEPS := 16 # sedicesimi in una battuta
@@ -42,6 +43,8 @@ var _duck: Tween
 var stage_hazards: Array = [] # trappole dell'arena della partita: il ciclista (#229) suona da solo, senza eventi
 var _travel := {} # indice della trappola che viaggia -> fase dell'ultimo snapshot
 var stage_jets: Array = [] # getti d'acqua dell'arena (#253): bolle e spruzzo, dal tempo dell'arena
+var stage_pads: Array = [] # bottoni sonori dell'arena (#423): servono per sentire quando arriva la Meraviglia
+var _wonder_on := false
 var _song := "" # brano dell'arena musicale (#423): una traccia di _music_files, o "" se l'arena non ne ha
 var _song_ms := 0.0 # quanto dura un giro del brano
 const SONG_DRIFT_S := 0.08 # il brano si rimette a tempo con l'arena se si sposta più di così (secondi)
@@ -246,6 +249,11 @@ func on_snapshot(data: Dictionary) -> void:
 			elif jp == "active":
 				_play("splash", {"x": float(j.x) + float(j.width) / 2.0})
 		_jets[i] = jp
+	# La Meraviglia dell'arena musicale (#423): i tre bottoni attivi insieme, un arpeggio che sale quando comincia
+	var wonder_now: bool = WonderStage.wonder(stage_ms, stage_pads, data.get("pads", []) if data.get("pads") is Array else [])[0] > 0.0
+	if wonder_now and not _wonder_on:
+		_play("wonder")
+	_wonder_on = wonder_now
 	# La carica (E10) non ha eventi: si sente quando parte e quando è piena
 	for p in data.get("players", []):
 		var now := float(p.get("charge", 0.0))
@@ -695,6 +703,13 @@ func _build_sounds() -> void:
 	_sounds.ledge = make.call(0.12, func(s):
 		s.tone(0, "sine", 170, 80, 0.09, 0.7)
 		s.noise(0, "lowpass", 600, 150, 0.05, 0.5))
+	# La Meraviglia (#423): un arpeggio di La minore che sale e un luccichio
+	_sounds.wonder = make.call(1.3, func(s):
+		var notes := [440.0, 523.25, 659.25, 880.0, 1046.5, 1318.5]
+		for i in notes.size():
+			s.tone(i * 0.08, "triangle", notes[i], notes[i], 0.5, 0.25)
+			s.tone(i * 0.08, "square", notes[i] * 2.0, notes[i] * 2.0, 0.08, 0.05)
+		s.noise(0.4, "highpass", 9000, 7000, 0.8, 0.15))
 	# Bottoni sonori dell'arena musicale (#423), in La minore come Sala Prove: accordo, cassa e piatto
 	_sounds.pad_accordo = make.call(0.7, func(s):
 		for f: float in [220.0, 261.63, 329.63, 440.0]:
