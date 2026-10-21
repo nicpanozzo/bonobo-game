@@ -14,6 +14,22 @@ func test_tetris_nei_dati() -> void:
 	runner.check("tetris" in game.droppableItems, "si può scegliere nelle regole della stanza")
 
 
+func test_pacman_nei_dati() -> void:
+	var game: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/game.json"))
+	runner.check(game.get("pacman") is Dictionary and float(game.pacman.radiusPx) > 0.0, "i numeri di Pac-Man in game.json")
+	runner.check(game.items.has("pacman") and "pacman" in game.droppableItems, "l'oggetto Pac-Man")
+
+
+func test_palline_e_pacman() -> void:
+	var stage := {"solids": [{"x": -100, "y": 560, "width": 500, "height": 100}], "platforms": [{"x": 600, "y": 400, "width": 160}]}
+	var dots: Array = ArcadeView.pellets_for(stage, 1280.0)
+	runner.check(dots.size() == 10 + 4, "una pallina ogni 40 pixel, dentro lo schermo")
+	runner.check(dots.any(func(d): return d[1]), "e qualche pallina grande")
+	var view: RefCounted = ArcadeView.new()
+	var players := {"p0": {"id": "p0", "powerup": "pacman", "x": 100, "y": 300}, "p1": {"id": "p1", "powerup": null, "x": 500, "y": 560}}
+	runner.check(view.pacmen(players).size() == 1, "chi è Pac-Man")
+
+
 func test_pezzi_dallo_snapshot() -> void:
 	var view: RefCounted = ArcadeView.new()
 	view.on_snapshot({"tetris": {"pieces": [{"id": 1, "ownerId": "p0", "kind": "T", "cells": [[0, 0], [40, 0], [80, 0], [40, -40]]}], "blocks": [{"x": 0, "y": 560, "kind": "I", "ms": 3000}]}})

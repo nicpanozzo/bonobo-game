@@ -14,9 +14,9 @@
 //   supreme.ts   barra della suprema (#101)
 //   tech.ts      rialzata al volo dopo un colpo
 //   companion.ts il compagno che segue il lottatore (#369)
-//   arcade.ts    power-up Tetris (#427)
+//   arcade.ts    power-up Tetris e Pac-Man (#427)
 
-import { isArcade, playTetris, stepArcade } from "./arcade";
+import { isArcade, playPacman, playTetris, stepArcade } from "./arcade";
 import { resolveHits, tryStartAttack, updateAttack } from "./attacks";
 import { stepCompanion } from "./companion";
 import { applyJets, carryRider, resolveHazards } from "./elements";
@@ -94,6 +94,12 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
     f.prevInput = f.input;
     return;
   }
+  // Da Pac-Man (#427) niente controlli né gravità: si va dritti attraverso tutto
+  if (f.powerup === "pacman") {
+    playPacman(f, dtMs);
+    f.prevInput = f.input;
+    return;
+  }
   if (f.hitstun) f.ledgeGrabs = 0; // un colpo ridà le prese del bordo (#110)
 
   // Nella presa (#109) si sta fermi: la posizione di chi è tenuto la decide stepGrabs
@@ -164,5 +170,5 @@ export function stepWorld(fighters: Fighter[], dtMs: number, ctx: PhysicsContext
   resolveHazards(fighters, ctx);
   applyJets(fighters, ctx); // getti d'acqua (#253)
   pressPads(fighters, ctx, firstEvent); // bottoni sonori (#423)
-  stepArcade(fighters, dtMs, ctx); // pezzi del Tetris (#427)
+  stepArcade(fighters, dtMs, ctx); // pezzi del Tetris e bocconi di Pac-Man (#427)
 }

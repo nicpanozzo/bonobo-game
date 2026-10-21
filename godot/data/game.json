@@ -632,6 +632,16 @@
     "angleDeg": 50,
     "returnInvulnerableMs": 600
   },
+  "pacman": {
+    "ms": 8000,
+    "speedPxS": 380,
+    "radiusPx": 34,
+    "damage": 14,
+    "knockback": 560,
+    "knockbackGrowth": 6,
+    "angleDeg": 45,
+    "eatAgainMs": 1200
+  },
   "effects": {
     "hitSparkMs": 220,
     "shakeKo": 14,
@@ -755,6 +765,20 @@
       "weight": 2,
       "bong": true
     },
+    "pacman": {
+      "id": "pacman",
+      "name": "Pac-Man",
+      "damage": 0,
+      "knockback": 0,
+      "width": 28,
+      "height": 28,
+      "color": 16771899,
+      "weight": 1,
+      "consume": {
+        "powerup": "pacman",
+        "ms": 8000
+      }
+    },
     "tetris": {
       "id": "tetris",
       "name": "Tetris",
@@ -819,6 +843,7 @@
     "bong",
     "fiore",
     "funghetti",
+    "pacman",
     "tetris"
   ],
   "supremeSpeeds": [

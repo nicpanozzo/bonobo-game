@@ -10,13 +10,14 @@ var _out := "user://screenshots"
 var _game: Dictionary
 var _world: Node2D # nella partita finta: riceve uno snapshot a ogni frame
 var _hud: Control
-const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre", "lobby_regole", "musica", "tetris"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
+const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre", "lobby_regole", "musica", "tetris", "pacman"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
 var _index := -1
 var _frame := 0
 var _failed := false
 var _teams := false # la partita finta a tre squadre (#409)
 var _music := false # la partita finta nell'arena musicale, durante la Meraviglia (#423)
 var _tetris_on := false # la partita finta con uno che gioca a Tetris (#427)
+var _pacman_on := false # la partita finta con un Pac-Man e i fantasmini (#427)
 
 
 func _initialize() -> void:
@@ -114,6 +115,13 @@ func _tetris() -> void:
 	_partita()
 
 
+# Pac-Man (#427): uno è Pac-Man in mezzo alle palline, gli altri fantasmini spaventati
+func _pacman() -> void:
+	_tetris_on = false
+	_pacman_on = true
+	_partita()
+
+
 func _partita() -> void:
 	var world: Node2D = load("res://scripts/world_view.gd").new()
 	root.add_child(world)
@@ -155,6 +163,13 @@ func _snapshot(frame: int) -> Dictionary:
 		"projectiles": [{"id": 1, "ownerId": "p0", "kind": "specialNeutral", "characterId": "default", "x": 500, "y": 470, "vx": 560, "vy": -120}]}
 	if _music:
 		snap.pads = [8800, 8800, 8800] # tutti e tre premuti da poco: la Meraviglia
+	if _pacman_on:
+		players[1].powerup = "pacman"
+		players[1].powerupMs = 5000
+		players[1].invulnerable = true
+		players[1].y = 470
+		players[1].vx = 380
+		snap.items = [{"id": 9, "kind": "pacman", "x": 680, "y": 560, "vx": 0, "vy": 0, "heldBy": null, "thrown": false}]
 	if _tetris_on:
 		players[4].powerup = "tetris"
 		players[4].powerupMs = 6000

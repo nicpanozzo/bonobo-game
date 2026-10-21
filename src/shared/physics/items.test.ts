@@ -171,7 +171,7 @@ describe("oggetti scelti nelle regole della stanza", () => {
 describe("il fiore, oggetto da consumare (#231)", () => {
   const fiore = (x: number, y: number): Item => ({ ...banana(x, y), kind: "fiore" });
 
-  it("compare una volta ogni tre banane (e due bong, due sacchetti di funghetti e due birre, #302; un Tetris, #427)", () => {
+  it("compare una volta ogni tre banane (e due bong, due sacchetti di funghetti e due birre, #302; un Tetris e un Pac-Man, #427)", () => {
     const n = 100 * DROPPABLE_ITEMS.reduce((sum, k) => sum + (ITEMS[k].weight ?? 1), 0); // 100 estrazioni per ogni punto di peso
     const kinds = Array.from({ length: n }, (_, i) => pickKind(i / n));
     assert.equal(kinds.filter((k) => k === "birra").length, 200);
@@ -180,6 +180,7 @@ describe("il fiore, oggetto da consumare (#231)", () => {
     assert.equal(kinds.filter((k) => k === "bong").length, 200);
     assert.equal(kinds.filter((k) => k === "funghetti").length, 200);
     assert.equal(kinds.filter((k) => k === "tetris").length, 100);
+    assert.equal(kinds.filter((k) => k === "pacman").length, 100);
     assert.equal(kinds.filter((k) => k === "fungo").length, 0, "i funghetti piantati non cadono dal cielo");
   });
 

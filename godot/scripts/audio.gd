@@ -45,6 +45,8 @@ var _travel := {} # indice della trappola che viaggia -> fase dell'ultimo snapsh
 var stage_jets: Array = [] # getti d'acqua dell'arena (#253): bolle e spruzzo, dal tempo dell'arena
 var stage_pads: Array = [] # bottoni sonori dell'arena (#423): servono per sentire quando arriva la Meraviglia
 var _wonder_on := false
+const WAKA_MS := 270
+var _waka_at := 0 # Pac-Man (#427): quando è suonato l'ultimo "waka" (ms dell'orologio)
 var _song := "" # brano dell'arena musicale (#423): una traccia di _music_files, o "" se l'arena non ne ha
 var _song_ms := 0.0 # quanto dura un giro del brano
 const SONG_DRIFT_S := 0.08 # il brano si rimette a tempo con l'arena se si sposta più di così (secondi)
@@ -132,6 +134,9 @@ func on_event(e: Dictionary) -> void:
 			if e.kind == "grab":
 				_play("hitLight", {"volume": 0.45, "x": e.x, "pitch": 1.3}) # colpetto durante la presa
 				return
+			if e.get("itemKind") == "pacman":
+				_play("pacEat", {"x": e.x}) # mangiato da Pac-Man (#427)
+				return
 			# Più alta la percentuale del bersaglio, più forte e più grave il colpo
 			var strength := minf(1.0, e.percent / game.audio.hitLoudPercent)
 			_play("hitHeavy" if str(e.kind).begins_with("heavy") else "hitLight", {"volume": 0.6 + 0.4 * strength, "x": e.x, "pitch": 1.1 - 0.3 * strength})
@@ -203,6 +208,9 @@ func on_event(e: Dictionary) -> void:
 			if power_kind == "tetris":
 				_play("tetrisTheme", {"volume": 0.7}) # il motivetto (#427)
 				return
+			if power_kind == "pacman":
+				_play("pacStart", {"volume": 0.7}) # #427
+				return
 			_play("dizzy" if power_kind == "trip" else ("burp" if power_kind == "birra" else "inhale"), {"x": e.x}) # funghetti e birra (#302)
 		"powerEnd":
 			_play("exhale", {"volume": 0.6})
@@ -264,6 +272,13 @@ func on_snapshot(data: Dictionary) -> void:
 	if wonder_now and not _wonder_on:
 		_play("wonder")
 	_wonder_on = wonder_now
+	# Pac-Man (#427): finché qualcuno lo è, "waka waka" a tempo
+	var clock := Time.get_ticks_msec()
+	for p in data.get("players", []):
+		if p.get("powerup") == "pacman" and not p.get("respawning", false) and clock - _waka_at >= WAKA_MS:
+			_waka_at = clock
+			_play("waka", {"volume": 0.45, "x": p.x})
+			break
 	# La carica (E10) non ha eventi: si sente quando parte e quando è piena
 	for p in data.get("players", []):
 		var now := float(p.get("charge", 0.0))
@@ -730,6 +745,18 @@ func _build_sounds() -> void:
 			s.tone(t, "square", f, f, n[1] * 0.27, 0.09)
 			s.tone(t, "triangle", f / 2.0, f / 2.0, n[1] * 0.27, 0.12)
 			t += n[1] * 0.3)
+	# Pac-Man (#427): la bocca che si apre e chiude, il boccone e la sigla d'inizio (note nostre, non quella del gioco)
+	_sounds.waka = make.call(0.24, func(s):
+		s.tone(0, "triangle", 240, 480, 0.11, 0.3)
+		s.tone(0.12, "triangle", 480, 240, 0.11, 0.3))
+	_sounds.pacEat = make.call(0.5, func(s):
+		s.tone(0, "square", 200, 1200, 0.22, 0.12)
+		s.tone(0.22, "square", 1200, 600, 0.2, 0.1))
+	_sounds.pacStart = make.call(1.0, func(s):
+		var notes := [392.0, 523.25, 659.25, 783.99, 1046.5]
+		for i in notes.size():
+			s.tone(i * 0.09, "square", notes[i], notes[i], 0.08, 0.1)
+		s.tone(0.5, "triangle", 300, 1400, 0.4, 0.2))
 	_sounds.tetrisMove = make.call(0.05, func(s): s.tone(0, "square", 900, 900, 0.03, 0.08))
 	_sounds.tetrisRotate = make.call(0.08, func(s): s.tone(0, "square", 600, 1200, 0.06, 0.1))
 	_sounds.tetrisDrop = make.call(0.2, func(s): s.tone(0, "square", 1200, 200, 0.16, 0.1))

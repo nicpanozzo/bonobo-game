@@ -1,11 +1,13 @@
 // I power-up arcade (#427). Tetris: chi lo prende si assenta, fermo e intoccabile, e con i suoi tasti guida
 // un pezzo che cade dall'alto dell'arena; il pezzo colpisce chi tocca e, posato, diventa blocchi solidi.
+// Pac-Man: si va dritti nelle quattro direzioni attraverso tutto, si rientra dall'altro lato e si mangia chi si tocca.
 //   playTetris()  dentro stepFighter, al posto dei controlli: compare, sposta e ruota il pezzo di chi gioca
-//   stepArcade()  alla fine di stepWorld: caduta, colpi, posa e durata dei blocchi
+//   playPacman()  dentro stepFighter, al posto di controlli e gravità
+//   stepArcade()  alla fine di stepWorld: caduta, colpi, posa e durata dei blocchi; chi viene mangiato
 //   arcadeSolids() i blocchi posati come blocchi pieni per collideWithStage
 
 import { characterStats } from "../characters";
-import { FIGHTER, HITSTOP, HITSTUN_PER_KNOCKBACK, TETRIS, WORLD } from "../constants";
+import { FIGHTER, HITSTOP, HITSTUN_PER_KNOCKBACK, PACMAN, TETRIS, WORLD } from "../constants";
 import type { Rect } from "../stages";
 import { rng } from "../stageGenerator";
 import type { TetrisState } from "../types";
@@ -52,6 +54,7 @@ export interface ArcadeWorld {
   blocks: Block[];
   nextId: number;
   random: () => number;
+  eaten?: Record<string, number>; // Pac-Man: "chi/chi è stato mangiato" -> tempo dell'arena del boccone
 }
 
 const C = TETRIS.cellPx;
@@ -138,8 +141,55 @@ function room(x: number, bottom: number, fall: number, ctx: PhysicsContext, bloc
   return best;
 }
 
-// Caduta, colpi e posa di tutti i pezzi; i blocchi posati invecchiano
+// Le frecce di Pac-Man: su vale anche col salto
+const PAC_KEYS: [keyof Fighter["input"], number, number][] = [["left", -1, 0], ["right", 1, 0], ["up", 0, -1], ["jump", 0, -1], ["down", 0, 1]];
+
+// Da Pac-Man si va sempre dritti: una freccia appena premuta cambia direzione. Si passa attraverso tutto
+// e chi esce da un lato dello schermo rientra dall'altro
+export function playPacman(f: Fighter, dtMs: number): void {
+  const turn = PAC_KEYS.find(([k]) => f.input[k] && !f.prevInput[k]);
+  if (turn) f.pacDir = { x: turn[1], y: turn[2] };
+  const dir = f.pacDir ?? { x: f.facing, y: 0 };
+  f.vx = dir.x * PACMAN.speedPxS;
+  f.vy = dir.y * PACMAN.speedPxS;
+  if (dir.x !== 0) f.facing = dir.x as 1 | -1;
+  f.x = wrap(f.x + (f.vx * dtMs) / 1000, WORLD.width);
+  f.y = wrap(f.y + (f.vy * dtMs) / 1000, WORLD.height);
+  f.onGround = false;
+  f.riding = -1;
+}
+
+const wrap = (v: number, size: number) => ((v % size) + size) % size;
+
+// Chi entra nella bocca di Pac-Man viene mangiato: vola via, e per un po' non si rimangia
+function eatWithPacman(fighters: Fighter[], ctx: PhysicsContext) {
+  const pacmen = fighters.filter((f) => f.powerup === "pacman" && !f.eliminated && !f.respawning);
+  if (pacmen.length === 0) return;
+  const world = arcade(ctx);
+  const eaten = (world.eaten ??= {});
+  const now = ctx.timeMs ?? 0;
+  for (const pac of pacmen) {
+    const cx = pac.x;
+    const cy = pac.y - FIGHTER.height / 2;
+    for (const target of fighters) {
+      if (target === pac || target.eliminated || target.respawning || target.invulnerable) continue;
+      if (ctx.canHit && !ctx.canHit(pac, target)) continue;
+      const key = `${pac.id}/${target.id}`;
+      if (now - (eaten[key] ?? -Infinity) < PACMAN.eatAgainMs) continue;
+      const body = bodyBox(target);
+      const nx = Math.max(body.x, Math.min(cx, body.x + body.w));
+      const ny = Math.max(body.y, Math.min(cy, body.y + body.h));
+      if ((nx - cx) ** 2 + (ny - cy) ** 2 > PACMAN.radiusPx ** 2) continue;
+      eaten[key] = now;
+      const dir = pac.vx !== 0 ? (Math.sign(pac.vx) as 1 | -1) : target.x >= pac.x ? 1 : -1;
+      arcadeHit(target, pac, PACMAN.damage, PACMAN.knockback, PACMAN.knockbackGrowth, PACMAN.angleDeg, dir, nx, ny, "pacman", ctx);
+    }
+  }
+}
+
+// Caduta, colpi e posa di tutti i pezzi; i blocchi posati invecchiano. Pac-Man mangia
 export function stepArcade(fighters: Fighter[], dtMs: number, ctx: PhysicsContext): void {
+  eatWithPacman(fighters, ctx);
   const world = ctx.arcade;
   if (!world) return;
   for (const b of world.blocks) b.lifeMs -= dtMs;
@@ -207,23 +257,26 @@ export function arcadeSolids(ctx: PhysicsContext): Rect[] {
   return (ctx.arcade?.blocks ?? []).map((b) => ({ x: b.x, y: b.y, width: C, height: C }));
 }
 
-// Prendere un power-up arcade ferma quello che si stava facendo
+// Prendere un power-up arcade ferma quello che si stava facendo. Pac-Man parte verso dove si guarda
 export function startArcade(f: Fighter): void {
   f.attack = null;
   f.attackActive = false;
   f.vx = 0;
   f.vy = 0;
+  f.pacDir = { x: f.facing, y: 0 };
 }
 
 // Si torna in partita: dove si era, coi salti e un attimo intoccabili
 export function endArcade(f: Fighter): void {
+  f.vx = 0;
+  f.vy = 0;
   f.jumpsLeft = FIGHTER.maxJumps;
   f.recoveryUsed = false;
   f.helpless = false;
   f.invulnerableTimer = Math.max(f.invulnerableTimer, TETRIS.returnInvulnerableMs);
 }
 
-export const isArcade = (f: Fighter) => f.powerup === "tetris";
+export const isArcade = (f: Fighter) => f.powerup === "tetris" || f.powerup === "pacman";
 
 // Quello che va nello snapshot, solo quando c'è qualcosa
 export function tetrisState(ctx: PhysicsContext): TetrisState | undefined {
