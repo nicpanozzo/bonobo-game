@@ -339,8 +339,8 @@
   "audioFiles": {
     "sfx": {},
     "music": {
-      "padova": [
-        "assets/music/padova.ogg"
+      "massima-tackenza": [
+        "assets/music/massima-tackenza.ogg"
       ],
       "sala-prove": [
         "assets/music/sala-prove.ogg"
@@ -2051,7 +2051,7 @@
           "C"
         ],
         "lead": "triangle",
-        "track": "padova"
+        "track": "massima-tackenza"
       },
       "art": {
         "verticalParallax": 0,
