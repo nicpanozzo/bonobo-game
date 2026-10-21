@@ -3,7 +3,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { BIRRA, BONG, FIGHTER, FUNGHI, ITEM_RULES, POWERUP, TICK_RATE } from "../constants";
-import { ITEMS } from "../items";
+import { DROPPABLE_ITEMS, ITEMS } from "../items";
 import { getStage } from "../stages";
 import type { GameEvent, InputState } from "../types";
 import { createFighter, emptyInput, stepWorld, type Fighter, type PhysicsContext } from "./index";
@@ -171,13 +171,15 @@ describe("oggetti scelti nelle regole della stanza", () => {
 describe("il fiore, oggetto da consumare (#231)", () => {
   const fiore = (x: number, y: number): Item => ({ ...banana(x, y), kind: "fiore" });
 
-  it("compare una volta ogni tre banane (e due bong, due sacchetti di funghetti e due birre, #302)", () => {
-    const kinds = Array.from({ length: 1000 }, (_, i) => pickKind(i / 1000));
+  it("compare una volta ogni tre banane (e due bong, due sacchetti di funghetti e due birre, #302; un Tetris, #427)", () => {
+    const n = 100 * DROPPABLE_ITEMS.reduce((sum, k) => sum + (ITEMS[k].weight ?? 1), 0); // 100 estrazioni per ogni punto di peso
+    const kinds = Array.from({ length: n }, (_, i) => pickKind(i / n));
     assert.equal(kinds.filter((k) => k === "birra").length, 200);
     assert.equal(kinds.filter((k) => k === "fiore").length, 100);
     assert.equal(kinds.filter((k) => k === "banana").length, 300);
     assert.equal(kinds.filter((k) => k === "bong").length, 200);
     assert.equal(kinds.filter((k) => k === "funghetti").length, 200);
+    assert.equal(kinds.filter((k) => k === "tetris").length, 100);
     assert.equal(kinds.filter((k) => k === "fungo").length, 0, "i funghetti piantati non cadono dal cielo");
   });
 

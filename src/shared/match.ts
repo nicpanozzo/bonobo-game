@@ -7,6 +7,7 @@ import { COLORS, FIGHTER, ITEM_AMOUNTS, MATCH_RESTART_MS, MAX_PLAYERS_PER_ROOM, 
 import { bufferPresses, createFighter, emptyInput, resetForMatch, stepWorld, type Fighter, type PhysicsContext } from "./physics";
 import { createItemWorld, handleItemInput, itemStates, resetItems, stepItems, type ItemWorld } from "./physics/items";
 import { companionState } from "./physics/companion";
+import { tetrisState } from "./physics/arcade";
 import { createProjectileWorld, projectileStates, puddleStates, type ProjectileWorld } from "./physics/projectiles";
 import { canHitWithRules, flagWinnerTeam, isTeamMode, lastStanding, leaderOnTime, requestedTeam, sanitizeRules } from "./rules";
 import { COURSE_PREFIX, seedFromCourseId } from "./courseGenerator";
@@ -256,7 +257,8 @@ export class Match {
     const projectiles = projectileStates(this.projectiles);
     const puddles = puddleStates(this.projectiles);
     const pads = this.ctx.padsMs ? [...this.ctx.padsMs] : undefined; // bottoni sonori (#423)
-    return { t, players, winnerId: this.winnerId, timeLeftMs: this.timeLeftMs(), teamScores, items, projectiles, puddles, events, stageMs, ...(pads && { pads }) };
+    const tetris = tetrisState(this.ctx); // #427
+    return { t, players, winnerId: this.winnerId, timeLeftMs: this.timeLeftMs(), teamScores, items, projectiles, puddles, events, stageMs, ...(pads && { pads }), ...(tetris && { tetris }) };
   }
 
   // Si entra nella squadra con meno giocatori (a parità, quella col numero più basso: prima la Rossa)
@@ -377,6 +379,7 @@ export class Match {
     this.scores = { 1: 0, 2: 0 };
     if (this.items) resetItems(this.items);
     this.projectiles.puddles = [];
+    this.ctx.arcade = undefined; // via pezzi e blocchi del Tetris (#427)
     this.projectiles.list = []; // gli id continuano: un client non confonde un proiettile vecchio con uno nuovo
     for (const f of this.fighters.values()) resetForMatch(f, this.slots.get(f.id) ?? 0, this.rules.stocks, this.stage);
     this.assignFlags(); // si riparte dal primo di ogni squadra

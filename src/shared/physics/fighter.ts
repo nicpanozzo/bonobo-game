@@ -4,6 +4,7 @@
 import { DASH, FIGHTER, INPUT, SHIELD } from "../constants";
 import type { StageSpec } from "../stages";
 import type { GameEvent, InputState, PlayerState, SpecialKind } from "../types";
+import type { ArcadeWorld } from "./arcade";
 import type { ProjectileWorld } from "./projectiles";
 import type { Companion } from "./companion";
 
@@ -87,6 +88,7 @@ export interface PhysicsContext {
   timeMs?: number; // tempo dell'arena in ms: muove ascensori e trappole (#14). Lo fa avanzare stepWorld
   projectiles?: ProjectileWorld; // proiettili in volo (E10): li crea match.ts, o il primo tiro
   padsMs?: (number | null)[]; // bottoni sonori (#423): quando è stato premuto l'ultima volta ognuno (tempo dell'arena)
+  arcade?: ArcadeWorld; // pezzi e blocchi dei power-up arcade (#427): nasce col primo pezzo
 }
 
 export const emptyInput = (): InputState => ({

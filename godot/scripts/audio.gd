@@ -137,6 +137,13 @@ func on_event(e: Dictionary) -> void:
 			_play("hitHeavy" if str(e.kind).begins_with("heavy") else "hitLight", {"volume": 0.6 + 0.4 * strength, "x": e.x, "pitch": 1.1 - 0.3 * strength})
 		"hazard":
 			_play("hitHeavy", {"volume": 0.8, "x": e.x, "pitch": 0.8})
+		# Il Tetris (#427): i rumori del Game Boy per il pezzo, un tonfo quando si posa
+		"tetris":
+			match str(e.phase):
+				"move": _play("tetrisMove", {"volume": 0.35, "x": e.x})
+				"rotate": _play("tetrisRotate", {"volume": 0.45, "x": e.x})
+				"drop": _play("tetrisDrop", {"volume": 0.55, "x": e.x})
+				"land": _play("tetrisLand", {"x": e.x})
 		"pad":
 			# Bottone sonoro dell'arena musicale (#423): ognuno il suo suono, nella tonalità del brano
 			var pad_sound := "pad_" + str(e.get("sound", ""))
@@ -193,6 +200,9 @@ func on_event(e: Dictionary) -> void:
 		# Il fiore (#231): un respiro lungo che entra, e uno che esce quando finisce
 		"powerUp":
 			var power_kind := str(e.get("kind"))
+			if power_kind == "tetris":
+				_play("tetrisTheme", {"volume": 0.7}) # il motivetto (#427)
+				return
 			_play("dizzy" if power_kind == "trip" else ("burp" if power_kind == "birra" else "inhale"), {"x": e.x}) # funghetti e birra (#302)
 		"powerEnd":
 			_play("exhale", {"volume": 0.6})
@@ -710,6 +720,22 @@ func _build_sounds() -> void:
 			s.tone(i * 0.08, "triangle", notes[i], notes[i], 0.5, 0.25)
 			s.tone(i * 0.08, "square", notes[i] * 2.0, notes[i] * 2.0, 0.08, 0.05)
 		s.noise(0.4, "highpass", 9000, 7000, 0.8, 0.15))
+	# Il Tetris (#427): il motivetto è Korobeiniki, canto popolare russo (dominio pubblico), in La minore
+	_sounds.tetrisTheme = make.call(4.7, func(s):
+		var hz := {"A": 440.0, "B": 493.88, "C": 523.25, "D": 587.33, "E": 659.25}
+		var tune := [["E", 1], ["B", 0.5], ["C", 0.5], ["D", 1], ["C", 0.5], ["B", 0.5], ["A", 1], ["A", 0.5], ["C", 0.5], ["E", 1], ["D", 0.5], ["C", 0.5], ["B", 1.5], ["C", 0.5], ["D", 1], ["E", 1], ["C", 1], ["A", 1], ["A", 1]]
+		var t := 0.0
+		for n: Array in tune:
+			var f: float = hz[n[0]]
+			s.tone(t, "square", f, f, n[1] * 0.27, 0.09)
+			s.tone(t, "triangle", f / 2.0, f / 2.0, n[1] * 0.27, 0.12)
+			t += n[1] * 0.3)
+	_sounds.tetrisMove = make.call(0.05, func(s): s.tone(0, "square", 900, 900, 0.03, 0.08))
+	_sounds.tetrisRotate = make.call(0.08, func(s): s.tone(0, "square", 600, 1200, 0.06, 0.1))
+	_sounds.tetrisDrop = make.call(0.2, func(s): s.tone(0, "square", 1200, 200, 0.16, 0.1))
+	_sounds.tetrisLand = make.call(0.3, func(s):
+		s.tone(0, "square", 140, 70, 0.12, 0.3)
+		s.noise(0, "lowpass", 1200, 150, 0.2, 0.7))
 	# Bottoni sonori dell'arena musicale (#423), in La minore come Sala Prove: accordo, cassa e piatto
 	_sounds.pad_accordo = make.call(0.7, func(s):
 		for f: float in [220.0, 261.63, 329.63, 440.0]:

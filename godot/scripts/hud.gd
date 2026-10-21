@@ -296,6 +296,13 @@ func _draw_powerup(card: Rect2, ms_left: float, kind: String = "fiore") -> void:
 		# Il filo di Kirschner (#358): barra verde muschio che si accorcia
 		draw_rect(Rect2(card.position, Vector2(card.size.x * clampf(ms_left / float(game.get(kind, {}).get("ms", 4000)), 0.0, 1.0), 4)), Color(0.66, 0.77, 0.42))
 		return
+	if kind == "tetris":
+		# Il Tetris (#427): barra a quadretti colorati che si accorcia
+		var cells := int(ceil(10.0 * clampf(ms_left / float(game.get("tetris", {}).get("ms", 9000)), 0.0, 1.0)))
+		var colors := [Color("29d3ea"), Color("ffd23f"), Color("b04df0"), Color("ff9a1f"), Color("3d6df2"), Color("4ee05a"), Color("f2424a")]
+		for i in cells:
+			draw_rect(Rect2(card.position + Vector2(card.size.x * i / 10.0, 0), Vector2(card.size.x / 10.0 - 1, 5)), colors[i % colors.size()])
+		return
 	if kind == "trip":
 		# I funghetti (#302): barra viola che si accorcia
 		draw_rect(Rect2(card.position, Vector2(card.size.x * clampf(ms_left / float(game.get("funghi", {}).get("tripMs", 3000)), 0.0, 1.0), 4)), Color(0.75, 0.4, 0.95))

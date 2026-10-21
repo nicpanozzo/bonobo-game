@@ -14,7 +14,9 @@
 //   supreme.ts   barra della suprema (#101)
 //   tech.ts      rialzata al volo dopo un colpo
 //   companion.ts il compagno che segue il lottatore (#369)
+//   arcade.ts    power-up Tetris (#427)
 
+import { isArcade, playTetris, stepArcade } from "./arcade";
 import { resolveHits, tryStartAttack, updateAttack } from "./attacks";
 import { stepCompanion } from "./companion";
 import { applyJets, carryRider, resolveHazards } from "./elements";
@@ -84,7 +86,14 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
   tickBuffer(f, dtMs);
   f.hitstun = f.hitstunTimer > 0;
   tickPowerup(f, dtMs, ctx); // #231
-  f.invulnerable = f.invulnerableTimer > 0 || (f.powerup === "fiore" && f.powerupMs > 0); // il bong (#302) non protegge
+  f.invulnerable = f.invulnerableTimer > 0 || (f.powerup === "fiore" && f.powerupMs > 0) || isArcade(f); // il bong (#302) non protegge
+  // A Tetris (#427) si è assenti: fermi dove si era, i tasti guidano il pezzo
+  if (f.powerup === "tetris") {
+    f.vx = f.vy = 0;
+    playTetris(f, dtMs, ctx);
+    f.prevInput = f.input;
+    return;
+  }
   if (f.hitstun) f.ledgeGrabs = 0; // un colpo ridà le prese del bordo (#110)
 
   // Nella presa (#109) si sta fermi: la posizione di chi è tenuto la decide stepGrabs
@@ -155,4 +164,5 @@ export function stepWorld(fighters: Fighter[], dtMs: number, ctx: PhysicsContext
   resolveHazards(fighters, ctx);
   applyJets(fighters, ctx); // getti d'acqua (#253)
   pressPads(fighters, ctx, firstEvent); // bottoni sonori (#423)
+  stepArcade(fighters, dtMs, ctx); // pezzi del Tetris (#427)
 }

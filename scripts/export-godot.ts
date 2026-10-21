@@ -11,7 +11,7 @@ import { CHARACTERS, CREWS, DEFAULT_CHARACTER_ID, isSpriteFolder, resolvedAnimat
 import { ATTACKS, AUDIO, BIRRA, BONG, CAMERA, FUNGHI, COLORS, EFFECTS, FIGHTER, INPUT, ITEM_AMOUNTS, ITEM_RULES, LEDGE, MICELIO, NET, PAD, POWERUP, PROTOCOL_VERSION, RUMBLE, SHIELD, SPORE, SUPREME_SPEEDS, TEAM_COLORS, TEAM_NAMES, WORLD } from "../src/shared/constants";
 import { RECONNECT, RECONNECT_HOLD_MS } from "../src/shared/constants";
 import { COLORS_COLORBLIND, MAX_TEAMS, TEAM_COLORS_COLORBLIND } from "../src/shared/constants";
-import { TRAINING } from "../src/shared/constants";
+import { TETRIS, TRAINING } from "../src/shared/constants";
 import { DASH, DODGE, RECOVERY, TICK_RATE } from "../src/shared/constants";
 import { predictionTraces } from "../src/shared/predictionTraces";
 import { HITSTOP, SMASH_CHARGE, SUPREME } from "../src/shared/constants";
@@ -238,6 +238,7 @@ const data = {
   challenges: CHALLENGES, // sfide con medaglie (E15 passo 3)
   camera: CAMERA,
   pad: PAD, // bottoni sonori dell'arena musicale (#423)
+  tetris: TETRIS, // il power-up Tetris (#427)
   effects: EFFECTS,
   items: ITEMS,
   itemRules: ITEM_RULES,

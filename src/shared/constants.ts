@@ -454,7 +454,7 @@ export const BOT = {
   ledgeRollNear: 200, // pixel: il difficile preferisce la rotolata se il bersaglio è più vicino di così al bordo
   shieldHoldMs: 300, // ms: il difficile tiene lo scudo per tanto dopo aver visto partire un attacco vicino (#109)
   shieldMinHp: 15, // punti di scudo: sotto questi il difficile non si para più, così non se lo fa rompere
-  grabShieldMs: 300, // ms: semplice e difficile afferrano chi tiene lo scudo da più di tanto (E8)
+  grabShieldMs: 150, // ms: semplice e difficile afferrano chi tiene lo scudo da più di tanto (E8). Meno di shieldHoldMs, sennò due difficili si parano e colpiscono a vuoto per sempre (#427)
   shootFrom: 300, // pixel: più lontano di così il bot tira il proiettile della speciale (E10)
   dashFrom: 160, // pixel: tra dashFrom e shootFrom scatta verso il bersaglio
   specialEveryMs: 1200, // ms tra una speciale e l'altra del bot
@@ -620,6 +620,26 @@ export const BIRRA = {
   speedMult: 1.1, // frazione della velocità orizzontale: si va un po' più svelti
   swayPxS: 110, // pixel/s di barcollamento a terra, avanti e indietro
   swayPeriodMs: 900, // ms di un'oscillazione completa del barcollamento
+};
+
+// Il power-up Tetris (#427): chi lo prende si assenta (fermo e intoccabile) e guida pezzi che cadono dall'alto
+// dell'arena. Un pezzo colpisce chi tocca e, posato, diventa blocchi solidi per un po'
+export const TETRIS = {
+  ms: 9000, // ms di partita a Tetris dalla raccolta
+  cellPx: 40, // lato di un quadretto, pixel: le colonne sono WORLD.width / cellPx
+  spawnY: -40, // pixel: bordo alto del quadretto centrale del pezzo quando compare, appena sopra lo schermo
+  fallPxS: 240, // pixel/s di caduta
+  softPxS: 800, // pixel/s tenendo giù
+  dropPxS: 2400, // pixel/s dopo K: cade di colpo
+  repeatMs: 120, // ms tra due spostamenti di colonna tenendo destra o sinistra
+  blockMs: 10000, // ms in cui un pezzo posato resta come blocchi solidi
+  fadeMs: 1500, // ms finali in cui i blocchi lampeggiano nel client, per avvisare che spariscono
+  maxBlocks: 48, // blocchi al massimo nell'arena: oltre, spariscono i più vecchi
+  damage: 12, // percentuale a chi viene preso da un pezzo che cade
+  knockback: 480, // pixel/s di lancio
+  knockbackGrowth: 5, // pixel/s in più per ogni punto di percentuale del bersaglio
+  angleDeg: 50, // angolo di lancio
+  returnInvulnerableMs: 600, // ms intoccabili quando si torna in partita
 };
 
 // Limiti della rete (#105): il server non si fida di quello che riceve

@@ -1,4 +1,4 @@
-import { BIRRA, POWERUP } from "./constants";
+import { BIRRA, POWERUP, TETRIS } from "./constants";
 
 // Oggetti che cadono nell'arena (#17 passo 3). Caduta, raccolta e lancio sono in
 // src/shared/physics/items.ts, i numeri comuni in ITEM_RULES (constants.ts).
@@ -31,6 +31,8 @@ export const ITEMS: Record<string, ItemSpec> = {
   // TODO community: il nome nel gioco (#302). Cappello tirolese, colpi più forti, si barcolla (BIRRA)
   birra: { id: "birra", name: "Birra", damage: 0, knockback: 0, width: 22, height: 30, color: 0xf0b030, weight: 2, consume: { powerup: "birra", ms: BIRRA.ms } },
   bong: { id: "bong", name: "Bong", damage: 10, knockback: 380, width: 22, height: 40, color: 0x7fd8c4, weight: 2, bong: true },
+  // Il Tetris (#427): ci si assenta e si guidano i pezzi che cadono dall'alto (TETRIS)
+  tetris: { id: "tetris", name: "Tetris", damage: 0, knockback: 0, width: 28, height: 28, color: 0x00bcd4, weight: 1, consume: { powerup: "tetris", ms: TETRIS.ms } },
 };
 
 // Gli oggetti che possono cadere dal cielo (i funghetti piantati no), in ordine: si scelgono nelle regole della stanza
