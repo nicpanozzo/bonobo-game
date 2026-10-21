@@ -339,6 +339,9 @@
   "audioFiles": {
     "sfx": {},
     "music": {
+      "padova": [
+        "assets/music/padova.ogg"
+      ],
       "sala-prove": [
         "assets/music/sala-prove.ogg"
       ]
@@ -2047,7 +2050,8 @@
           "Bb",
           "C"
         ],
-        "lead": "triangle"
+        "lead": "triangle",
+        "track": "padova"
       },
       "art": {
         "verticalParallax": 0,

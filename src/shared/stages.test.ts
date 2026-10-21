@@ -46,6 +46,9 @@ function musicProblems(music: StageMusic): string[] {
   if (music.chords.length < 1 || music.chords.length > 8) problems.push("da 1 a 8 accordi");
   for (const c of music.chords) if (!CHORD_NAME.test(c)) problems.push(`accordo "${c}" sconosciuto (es. "C", "F#", "Bbm")`);
   if (!STAGE_MUSIC_LEADS.includes(music.lead)) problems.push(`timbro "${music.lead}" sconosciuto`);
+  if (music.track !== undefined && !existsSync(new URL(`../../public/assets/music/${music.track}.ogg`, import.meta.url))) {
+    problems.push(`brano public/assets/music/${music.track}.ogg mancante`);
+  }
   return problems;
 }
 
@@ -150,6 +153,7 @@ describe("arene", () => {
     assert.equal(musicProblems({ bpm: 300, chords: ["H", "Am"], lead: "square" }).length, 2);
     assert.equal(musicProblems({ bpm: 120, chords: [], lead: "organo" as never }).length, 2);
     assert.deepEqual(musicProblems({ bpm: 120, chords: ["C#m", "Bb", "F"], lead: "sine" }), []);
+    assert.equal(musicProblems({ bpm: 120, chords: ["F"], lead: "sine", track: "non-esiste" }).length, 1);
   });
 
   it("ogni personaggio raggiunge tutte le piattaforme delle arene fatte a mano (E11)", () => {
