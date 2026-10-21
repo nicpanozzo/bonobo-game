@@ -475,6 +475,15 @@ export const HAZARD = {
   travelFeetPx: 12, // la trappola che viaggia (#229) colpisce solo chi ha i piedi entro questo sotto il suo percorso: sotto il ponte si è al riparo (#253)
 };
 
+// Arena musicale (#423, src/shared/musicStage.ts): come le note del brano muovono e accendono le piattaforme
+export const MUSIC_STAGE = {
+  liftGlideMs: 140, // ms in cui un ascensore va all'altezza della nota nuova
+  slideGlideMs: 450, // ms in cui una navetta va al posto della nota nuova (gli accordi cambiano piano)
+  keyMinOnMs: 900, // ms per cui un tasto resta almeno acceso, anche per una nota breve: ci si fa in tempo a salire
+  keyMergeMs: 150, // ms: due note dello stesso tasto più vicine di così lo tengono acceso senza buchi
+  chordMs: 30, // ms: note che partono più vicine di così sono un accordo, e conta la più bassa
+};
+
 // Classifica delle partite (#18, src/server/leaderboard.ts)
 export const LEADERBOARD = {
   windowDays: 7, // la pagina /classifica conta le partite degli ultimi 7 giorni

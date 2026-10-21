@@ -4,6 +4,8 @@
 import { WORLD } from "./constants";
 import { generateCourse, seedFromCourseId } from "./courseGenerator";
 import { generateStage, seedFromStageId } from "./stageGenerator";
+import { SALA_PROVE } from "./music/sala-prove";
+import { songMovers } from "./musicStage";
 
 export interface Rect {
   x: number; // bordo sinistro, pixel
@@ -29,7 +31,12 @@ export interface MovingPlatform {
   loop?: boolean; // true: dall'ultimo punto torna dritto al primo; altrimenti fa avanti e indietro
   pauseMs?: number; // sosta a ogni punto, come un ascensore al piano
   offsetMs?: number; // sfasamento, per far partire due piattaforme in momenti diversi
-  kind?: string; // solo per il disegno: "barca" (#264); altrimenti la piattaforma con le strisce gialle e nere
+  kind?: string; // solo per il disegno: "barca" (#264), "nota" (#423); altrimenti la piattaforma con le strisce gialle e nere
+  // Arena musicale (#423): al posto di path, le posizioni a tempo [ms nel giro, x, y], in ordine di tempo;
+  // tra una e l'altra la piattaforma va dritta. path resta per il riquadro in cui si muove (predizione, editor)
+  keys?: [number, number, number][];
+  on?: [number, number][]; // finestre [da ms, a ms) del giro in cui la piattaforma c'è; senza, c'è sempre
+  tint?: number; // solo per il disegno: il colore della traccia che la muove
 }
 
 // Trappola: un rettangolo che, quando è acceso, toglie percentuale e lancia via chi lo tocca
@@ -305,10 +312,17 @@ export interface StageSpec {
   jets?: Jet[]; // getti d'acqua a tempo che spingono in alto (#253)
   itemSpots?: ItemSpot[]; // zone dove gli oggetti cadono più spesso (#253)
   music?: StageMusic; // musica della partita (E12 passo 4)
+  song?: StageSong; // arena musicale (#423): il brano registrato a cui sono legate le piattaforme
   art?: StageArt; // sfondo a strati (E12 passo 3)
   // Nascosta (#408): resta nella repo e il server la avvia ancora per id, ma la lobby non la mostra e non può essere
   // l'arena predefinita. Per rimetterla in gioco basta togliere il campo.
   hidden?: boolean;
+}
+
+// Il brano di un'arena musicale (#423): public/assets/music/<id>.ogg, suonato in giro allineato al tempo dell'arena
+export interface StageSong {
+  id: string;
+  lengthMs: number; // durata di un giro del brano, uguale al periodMs delle sue piattaforme
 }
 
 // Larghezza del mondo di un'arena: lo schermo, o di più per i percorsi
@@ -814,6 +828,35 @@ export const STAGES: Record<string, StageSpec> = {
         },
       },
     },
+  },
+  // Arena musicale (#423, idea di Nicola): le tracce del brano muovono le piattaforme. Il basso alza e abbassa i due
+  // ascensori ai lati (uno al contrario dell'altro), gli accordi spostano la navetta in mezzo, la melodia accende i
+  // tasti in alto come un piano roll (più acuta la nota, più a destra e più in alto) e il battimani una piattaforma in cima.
+  // Per un altro brano: npm run midi:import su un altro MIDI con tracce dagli stessi nomi (src/shared/music/README.md)
+  musica: {
+    id: "musica",
+    name: "Sala Prove",
+    solids: [MAIN],
+    platforms: [],
+    movers: songMovers(SALA_PROVE, [
+      { role: "lift", track: "Basso", x: 90, width: 130, yLow: 520, yHigh: 360, tint: 0x4fc3f7 },
+      { role: "lift", track: "Basso", x: 1060, width: 130, yLow: 520, yHigh: 360, invert: true, tint: 0x4fc3f7 },
+      { role: "slide", track: "Accordi", y: 420, width: 200, xLow: 340, xHigh: 740, tint: 0x81c784 },
+      {
+        role: "keys",
+        track: "Melodia",
+        width: 90,
+        slots: [0, 1, 2, 3, 4, 5, 6, 7].map((i) => ({ x: 250 + i * 100, y: 330 - i * 12 })),
+        tint: 0xffb74d,
+      },
+      { role: "keys", track: "Batteria", pitches: [39], width: 100, slots: [{ x: 590, y: 190 }], tint: 0xf06292 },
+    ]),
+    blastZone: { left: -250, right: WORLD.width + 250, top: -350, bottom: WORLD.height + 200 },
+    spawns: [0.3, 0.7, 0.45, 0.55, 0.2, 0.8, 0.37, 0.63].map((f) => ({ x: MAIN.x + MAIN.width * f, y: MAIN.y })),
+    respawn: { x: WORLD.width / 2, y: 160 },
+    colors: { sky: 0x170f2e, solid: 0x2b2145, solidEdge: 0xff4fd8, platform: 0x9ad0ff },
+    song: { id: SALA_PROVE.id, lengthMs: SALA_PROVE.lengthMs },
+    music: { bpm: SALA_PROVE.bpm, chords: ["Am", "F", "C", "G"], lead: "square" }, // se il brano non si carica
   },
 };
 

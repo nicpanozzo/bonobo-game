@@ -34,7 +34,7 @@ import { landTech, tickTech } from "./tech";
 
 export * from "./fighter";
 export { resolveHits } from "./attacks";
-export { floodPhase, hazardActive, hazardRect, jetPhase, moverPosition, travelDirection, travelPhase, type FloodPhase, type JetPhase, type TravelPhase } from "./elements";
+export { floodPhase, hazardActive, hazardRect, jetPhase, moverOn, moverPosition, travelDirection, travelPhase, type FloodPhase, type JetPhase, type TravelPhase } from "./elements";
 export { ledgesOf } from "./ledge";
 
 // Un passo di simulazione per un lottatore (dtMs = durata del tick)

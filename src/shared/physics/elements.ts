@@ -12,6 +12,7 @@ const mod = (a: number, b: number) => ((a % b) + b) % b;
 // Dove si trova una piattaforma mobile (bordo sinistro, superficie) all'istante timeMs.
 // Il giro dura periodMs: a ogni punto c'è la sosta, il resto si divide tra i tratti in base alla lunghezza.
 export function moverPosition(m: MovingPlatform, timeMs: number): { x: number; y: number } {
+  if (m.keys?.length) return keyedPosition(m.keys, m.periodMs, timeMs + (m.offsetMs ?? 0));
   const pts = m.path;
   if (pts.length < 2) return pts[0] ?? { x: 0, y: 0 };
   const route = m.loop ? [...pts, pts[0]] : [...pts, ...pts.slice(0, -1).reverse()];
@@ -32,6 +33,34 @@ export function moverPosition(m: MovingPlatform, timeMs: number): { x: number; y
     t -= segMs;
   }
   return route[segments];
+}
+
+// Arena musicale (#423): la posizione tra le due chiavi a cavallo di t; dopo l'ultima si va verso la prima del giro dopo
+function keyedPosition(keys: [number, number, number][], periodMs: number, timeMs: number): { x: number; y: number } {
+  const t = mod(timeMs, periodMs);
+  let lo = 0;
+  let hi = keys.length - 1;
+  if (t < keys[0][0]) lo = -1;
+  else {
+    while (lo < hi) {
+      const mid = (lo + hi + 1) >> 1;
+      if (keys[mid][0] <= t) lo = mid;
+      else hi = mid - 1;
+    }
+  }
+  const a = lo < 0 ? keys[keys.length - 1] : keys[lo];
+  const b = lo + 1 < keys.length ? keys[lo + 1] : keys[0];
+  const ta = lo < 0 ? a[0] - periodMs : a[0];
+  const tb = lo + 1 < keys.length ? b[0] : b[0] + periodMs;
+  const k = tb > ta ? (t - ta) / (tb - ta) : 0;
+  return { x: a[1] + (b[1] - a[1]) * k, y: a[2] + (b[2] - a[2]) * k };
+}
+
+// Se una piattaforma c'è all'istante timeMs: senza finestre sempre, altrimenti solo dentro una di loro (#423)
+export function moverOn(m: MovingPlatform, timeMs: number): boolean {
+  if (!m.on) return true;
+  const t = mod(timeMs + (m.offsetMs ?? 0), m.periodMs);
+  return m.on.some(([from, to]) => t >= from && t < to);
 }
 
 // Una trappola senza ciclo è sempre accesa; con il ciclo, lo è nei primi activeMs di ogni giro
@@ -119,6 +148,12 @@ export function carryRider(f: Fighter, dtMs: number, ctx: PhysicsContext): void 
     f.riding = -1;
     return;
   }
+  if (!moverOn(m, ctx.timeMs ?? 0)) {
+    // La nota è finita (#423): la piattaforma sparisce e chi ci stava sopra cade
+    f.riding = -1;
+    f.onGround = false;
+    return;
+  }
   const t = ctx.timeMs ?? 0;
   const before = moverPosition(m, t - dtMs);
   const now = moverPosition(m, t);
@@ -134,6 +169,7 @@ export function landOnMover(f: Fighter, prevY: number, dtMs: number, ctx: Physic
   const t = ctx.timeMs ?? 0;
   const half = FIGHTER.width / 2;
   for (let i = 0; i < movers.length; i++) {
+    if (!moverOn(movers[i], t)) continue;
     const now = moverPosition(movers[i], t);
     const before = moverPosition(movers[i], t - dtMs);
     const over = f.x + half > now.x && f.x - half < now.x + movers[i].width;
