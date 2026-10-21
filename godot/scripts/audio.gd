@@ -134,6 +134,10 @@ func on_event(e: Dictionary) -> void:
 			_play("hitHeavy" if str(e.kind).begins_with("heavy") else "hitLight", {"volume": 0.6 + 0.4 * strength, "x": e.x, "pitch": 1.1 - 0.3 * strength})
 		"hazard":
 			_play("hitHeavy", {"volume": 0.8, "x": e.x, "pitch": 0.8})
+		"pad":
+			# Bottone sonoro dell'arena musicale (#423): ognuno il suo suono, nella tonalità del brano
+			var pad_sound := "pad_" + str(e.get("sound", ""))
+			_play(pad_sound if _sounds.has(pad_sound) else "pad_accordo", {"x": e.x})
 		"jump":
 			_play("doubleJump" if e.air else "jump", {"volume": 0.6, "x": e.x})
 		"land":
@@ -691,6 +695,17 @@ func _build_sounds() -> void:
 	_sounds.ledge = make.call(0.12, func(s):
 		s.tone(0, "sine", 170, 80, 0.09, 0.7)
 		s.noise(0, "lowpass", 600, 150, 0.05, 0.5))
+	# Bottoni sonori dell'arena musicale (#423), in La minore come Sala Prove: accordo, cassa e piatto
+	_sounds.pad_accordo = make.call(0.7, func(s):
+		for f: float in [220.0, 261.63, 329.63, 440.0]:
+			s.tone(0, "triangle", f, f, 0.6, 0.22)
+		s.tone(0, "square", 440.0, 440.0, 0.25, 0.08))
+	_sounds.pad_cassa = make.call(0.5, func(s):
+		s.tone(0, "sine", 160, 40, 0.45, 1.0)
+		s.noise(0, "lowpass", 900, 100, 0.08, 0.5))
+	_sounds.pad_piatto = make.call(0.9, func(s):
+		s.noise(0, "highpass", 9000, 5000, 0.85, 0.45)
+		s.noise(0, "bandpass", 4000, 3000, 0.3, 0.25))
 	# Rotolata dal bordo: un fruscio che scende
 	_sounds.roll = make.call(0.3, func(s): s.noise(0, "bandpass", 900, 350, 0.26, 0.4))
 	# Scudo colpito (#109): un "tonk" metallico e corto

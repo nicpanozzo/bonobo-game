@@ -193,7 +193,7 @@ export type GameEvent =
   | { type: "taunt"; id: string }
   | { type: "flag"; scoringTeam: number; byId: string | null; team: number; carrierId: string | null } // portabandiera di "team" buttato fuori: punto a scoringTeam, la bandiera passa a carrierId
   | { type: "checkpoint"; id: string; index: number } // in Corsa: nuovo punto da cui si riparte
-  | { type: "pad"; index: number; id: string; x: number; y: number } // id ha premuto il bottone sonoro stage.pads[index] (#423)
+  | { type: "pad"; index: number; sound: string; id: string; x: number; y: number } // id ha premuto il bottone sonoro stage.pads[index] (#423)
   | { type: "hazard"; id: string; index: number; damage: number; percent: number; knockback: number; x: number; y: number } // preso da una trappola (stage.hazards[index], #14)
   | { type: "itemSpawn"; itemId: number; kind: string; x: number; y: number } // un oggetto comincia a cadere (#17)
   | { type: "itemPick"; itemId: number; id: string } // id lo raccoglie

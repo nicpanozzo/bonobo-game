@@ -42,6 +42,6 @@ export function pressPads(fighters: Fighter[], ctx: PhysicsContext, firstEvent: 
     const f = presser(p, fighters, ctx, firstEvent);
     if (!f) return;
     ctx.padsMs![index] = t;
-    ctx.events.push({ type: "pad", index, id: f.id, x: Math.round(p.x + p.width / 2), y: Math.round(p.y) });
+    ctx.events.push({ type: "pad", index, sound: p.sound, id: f.id, x: Math.round(p.x + p.width / 2), y: Math.round(p.y) });
   });
 }

@@ -45,7 +45,7 @@ describe("bottoni sonori (#423)", () => {
     const { ctx, f } = setup(130, 560);
     for (let i = 0; i < 30; i++) stepWorld([f], DT, ctx);
     assert.equal(pressesOf(ctx).length, 1, "suona all'atterraggio");
-    assert.deepEqual(pressesOf(ctx)[0], { type: "pad", index: 0, id: "p0", x: 130, y: 650 });
+    assert.deepEqual(pressesOf(ctx)[0], { type: "pad", index: 0, sound: "cassa", id: "p0", x: 130, y: 650 });
     const at = ctx.padsMs![0]!;
     // Risaltarci sopra subito non fa niente
     f.y = 560;

@@ -71,6 +71,34 @@ static func mover_on(m: Dictionary, t: float) -> bool:
 	return false
 
 
+# Bottoni sonori (#423): come padFx() in physics/elements.ts. pressed = snapshot.pads (stageMs delle pressioni)
+static func pad_fx(m: Dictionary, t: float, pads: Array, pressed: Array, ramp_ms: float) -> Dictionary:
+	var fx := {"on": false, "dy": 0.0}
+	var group: String = str(m.get("group", ""))
+	if group == "":
+		return fx
+	for i in mini(pads.size(), pressed.size()):
+		var p: Dictionary = pads[i]
+		if pressed[i] == null or str(p.effect.group) != group:
+			continue
+		var since := t - float(pressed[i])
+		var dur: float = p.effect.durationMs
+		if since < 0.0 or since >= dur:
+			continue
+		if p.effect.get("on", false):
+			fx.on = true
+		var k := minf(1.0, minf(since / ramp_ms, (dur - since) / ramp_ms))
+		fx.dy += float(p.effect.get("dy", 0.0)) * k
+	return fx
+
+
+# Bottone sonoro: quanto è carico da 0 (appena premuto) a 1 (si può premere), come padReady() in physics/pads.ts
+static func pad_charge(p: Dictionary, pressed_at: Variant, t: float) -> float:
+	if pressed_at == null:
+		return 1.0
+	return clampf((t - float(pressed_at)) / float(p.cooldownMs), 0.0, 1.0)
+
+
 # Quanto manca (ms) alla prossima accensione di una piattaforma a finestre, per l'avviso; INF se non ne ha
 static func mover_next_on(m: Dictionary, t: float) -> float:
 	if not (m.get("on") is Array) or (m.on as Array).is_empty():
