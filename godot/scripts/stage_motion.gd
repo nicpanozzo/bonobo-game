@@ -4,6 +4,8 @@ extends RefCounted
 
 # Posizione di una piattaforma mobile al tempo t: la stessa formula di moverPosition() in physics/elements.ts
 static func mover_position(m: Dictionary, t: float) -> Vector2:
+	if m.get("keys") is Array and not (m.keys as Array).is_empty():
+		return keyed_position(m.keys, float(m.periodMs), t + float(m.get("offsetMs", 0)))
 	var pts: Array = m.path
 	if pts.size() < 2:
 		return Vector2(pts[0].x, pts[0].y)
@@ -34,6 +36,51 @@ static func mover_position(m: Dictionary, t: float) -> Vector2:
 			return a.lerp(Vector2(route[i + 1].x, route[i + 1].y), left / seg_ms)
 		left -= seg_ms
 	return Vector2(route[segments].x, route[segments].y)
+
+
+# Arena musicale (#423): come keyedPosition() in physics/elements.ts, tra le due chiavi [ms, x, y] a cavallo di t
+static func keyed_position(keys: Array, period: float, time: float) -> Vector2:
+	var t := fposmod(time, period)
+	var n := keys.size()
+	var lo := -1
+	if t >= float(keys[0][0]):
+		lo = 0
+		var hi := n - 1
+		while lo < hi:
+			var mid := (lo + hi + 1) >> 1
+			if float(keys[mid][0]) <= t:
+				lo = mid
+			else:
+				hi = mid - 1
+	var a: Array = keys[n - 1] if lo < 0 else keys[lo]
+	var b: Array = keys[lo + 1] if lo + 1 < n else keys[0]
+	var ta: float = float(a[0]) - period if lo < 0 else float(a[0])
+	var tb: float = float(b[0]) if lo + 1 < n else float(b[0]) + period
+	var k := (t - ta) / (tb - ta) if tb > ta else 0.0
+	return Vector2(float(a[1]), float(a[2])).lerp(Vector2(float(b[1]), float(b[2])), k)
+
+
+# Come moverOn() in physics/elements.ts: la piattaforma c'è (senza finestre "on" sempre)
+static func mover_on(m: Dictionary, t: float) -> bool:
+	if not (m.get("on") is Array):
+		return true
+	var left := fposmod(t + float(m.get("offsetMs", 0)), float(m.periodMs))
+	for w: Array in m.on:
+		if left >= float(w[0]) and left < float(w[1]):
+			return true
+	return false
+
+
+# Quanto manca (ms) alla prossima accensione di una piattaforma a finestre, per l'avviso; INF se non ne ha
+static func mover_next_on(m: Dictionary, t: float) -> float:
+	if not (m.get("on") is Array) or (m.on as Array).is_empty():
+		return INF
+	var period: float = m.periodMs
+	var left := fposmod(t + float(m.get("offsetMs", 0)), period)
+	var best := INF
+	for w: Array in m.on:
+		best = minf(best, fposmod(float(w[0]) - left, period))
+	return best
 
 
 # Piattaforma ad arco (#244): la striscia spessa thick che segue la curva di PredictMovement.surface_y

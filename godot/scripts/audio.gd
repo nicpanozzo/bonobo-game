@@ -42,6 +42,9 @@ var _duck: Tween
 var stage_hazards: Array = [] # trappole dell'arena della partita: il ciclista (#229) suona da solo, senza eventi
 var _travel := {} # indice della trappola che viaggia -> fase dell'ultimo snapshot
 var stage_jets: Array = [] # getti d'acqua dell'arena (#253): bolle e spruzzo, dal tempo dell'arena
+var _song := "" # brano dell'arena musicale (#423): una traccia di _music_files, o "" se l'arena non ne ha
+var _song_ms := 0.0 # quanto dura un giro del brano
+const SONG_DRIFT_S := 0.08 # il brano si rimette a tempo con l'arena se si sposta più di così (secondi)
 var _jets := {} # indice del getto -> fase dell'ultimo snapshot
 var _announcer := AudioStreamPlayer.new() # la voce dell'annunciatore, sul bus Voci
 var _phrases := {} # frase -> Array[AudioStream] (game.audioFiles.announcer)
@@ -516,6 +519,32 @@ func set_stage_music(preset: Variant) -> void:
 	_update_music()
 
 
+# L'arena musicale (#423): il brano registrato a cui sono legate le piattaforme (StageSpec.song), o null.
+# In partita vince sulla musica dell'arena; se il file non c'è resta quella (stage.music)
+func set_stage_song(song: Variant) -> void:
+	_song = ""
+	if song is Dictionary and _music_files.has(str(song.get("id", ""))):
+		_song = str(song.id)
+		_song_ms = maxf(1.0, float(song.get("lengthMs", 1)))
+	_update_music()
+
+
+# Ogni frame, col tempo dell'arena che si sta disegnando: il brano si sente insieme alle piattaforme che muove
+func sync_song(stage_ms: float) -> void:
+	if _song == "" or _track != "match" or not _music.playing or _music.stream != _music_files.get(_song):
+		return
+	var want := fposmod(stage_ms + AudioServer.get_output_latency() * 1000.0, _song_ms) / 1000.0
+	var now := _music.get_playback_position() + AudioServer.get_time_since_last_mix()
+	if song_drift(want, now, _song_ms / 1000.0) > SONG_DRIFT_S:
+		_music.seek(want)
+
+
+# Di quanto è fuori tempo il brano (secondi), sul giro: la fine e l'inizio sono vicini
+static func song_drift(want: float, now: float, length: float) -> float:
+	var off := absf(fposmod(want - now, length))
+	return minf(off, length - off)
+
+
 func stage_music_ready() -> bool:
 	return _stage_key == "" or _rendered.has(_stage_key)
 
@@ -524,6 +553,8 @@ func _update_music() -> void:
 	var stream: AudioStream = _music_files.get(_track, _synth_music)
 	if _track == "match" and _stage_key != "":
 		stream = _rendered.get(_stage_key)
+	if _track == "match" and _song != "":
+		stream = _music_files[_song] # l'arena musicale (#423)
 	if stream and stream != _music.stream:
 		_switch_music(stream)
 

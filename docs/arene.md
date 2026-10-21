@@ -113,6 +113,20 @@ movers: waterWheel(960, 330, 130, 3, 120, 18000), // tre tazze, un giro in 18 s
 
 Una piattaforma mobile con `kind: "barca"` si disegna come una barca (#264): la superficie su cui si sta è sempre la `y` del percorso. Con le piattaforme mobili il predittore del proprio lottatore si spegne solo vicino al loro percorso.
 
+### Arena musicale (`song`): piattaforme che vanno a tempo di un MIDI (#423)
+
+Le tracce di un brano diventano piattaforme mobili: si muovono o compaiono con le note, e Godot suona il brano allineato al tempo dell'arena. Il primo esempio è **Sala Prove** (`musica` in `stages.ts`), con un brano nostro di 32 secondi.
+
+Una piattaforma mobile può avere, al posto del solo `path`:
+
+| Campo | Cosa fa |
+|---|---|
+| `keys` | posizioni a tempo `[ms nel giro, x, y]`, in ordine; tra due chiavi va dritta |
+| `on` | finestre `[da ms, a ms)` del giro in cui c'è; fuori non c'è e chi ci sta sopra cade |
+| `tint` | il colore della traccia (solo disegno, con `kind: "nota"`) |
+
+Non si scrivono a mano: `songMovers(brano, ruoli)` in `src/shared/musicStage.ts` le calcola dalle note. Ruoli: `lift` (ascensore che sale con le note più alte), `slide` (navetta che va a destra con le note più alte), `keys` (tasti che si accendono con le note, come un piano roll). Per un brano nuovo vedi [src/shared/music/README.md](../src/shared/music/README.md).
+
 ### Trappola (`hazards`): spuntoni, fuoco, laser
 
 Un rettangolo che, quando è acceso, aggiunge percentuale e lancia via chi lo tocca (come un colpo). Il KO va a chi ti ci ha spinto. Dopo una trappola si è al sicuro per `HAZARD.cooldownMs` (in `constants.ts`).
