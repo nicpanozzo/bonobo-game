@@ -10,7 +10,7 @@ import type { ItemSpot } from "../stages";
 import { rng } from "../stageGenerator";
 import type { ItemState } from "../types";
 import { bodyBox } from "./attacks";
-import { moverOn, moverPosition } from "./elements";
+import { moverHere, moverPlace } from "./elements";
 import { chargeFromHit } from "./supreme";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
 import { clearStun, hitShield } from "./shield";
@@ -375,13 +375,13 @@ function carry(item: Item, dtMs: number, ctx: PhysicsContext) {
   const m = item.riding >= 0 ? ctx.stage.movers?.[item.riding] : undefined;
   if (!m || !item.onGround) return;
   const t = ctx.timeMs ?? 0;
-  if (!moverOn(m, t)) {
+  if (!moverHere(m, t, ctx)) {
     item.onGround = false; // la nota è finita (#423): l'oggetto cade
     item.riding = -1;
     return;
   }
-  const before = moverPosition(m, t - dtMs);
-  const now = moverPosition(m, t);
+  const before = moverPlace(m, t - dtMs, ctx);
+  const now = moverPlace(m, t, ctx);
   item.x += now.x - before.x;
   item.y += now.y - before.y;
 }
@@ -400,9 +400,9 @@ function land(item: Item, prevY: number, half: number, dtMs: number, ctx: Physic
   const movers = ctx.stage.movers ?? [];
   const t = ctx.timeMs ?? 0;
   for (let i = 0; i < movers.length; i++) {
-    if (!moverOn(movers[i], t)) continue;
-    const now = moverPosition(movers[i], t);
-    const before = moverPosition(movers[i], t - dtMs);
+    if (!moverHere(movers[i], t, ctx)) continue;
+    const now = moverPlace(movers[i], t, ctx);
+    const before = moverPlace(movers[i], t - dtMs, ctx);
     const over = item.x + half > now.x && item.x - half < now.x + movers[i].width;
     if (over && prevY <= Math.max(before.y, now.y) && item.y >= now.y) {
       settle(item, now.y);

@@ -19,8 +19,8 @@ export interface Song {
   tracks: SongTrack[];
 }
 
-// Cosa fa una traccia nell'arena
-export type TrackRole =
+// Cosa fa una traccia nell'arena. Con group, i bottoni sonori di quel gruppo cambiano le sue piattaforme (stages.ts, pads)
+export type TrackRole = { group?: string } & (
   // Ascensore: sta in x e sale con le note più alte (da yLow per la più bassa a yHigh per la più alta).
   // Con invert va al contrario: due ascensori sulla stessa traccia si incrociano
   | { role: "lift"; track: string; x: number; width: number; yLow: number; yHigh: number; invert?: boolean; tint: number }
@@ -28,7 +28,8 @@ export type TrackRole =
   | { role: "slide"; track: string; y: number; width: number; xLow: number; xHigh: number; tint: number }
   // Tasti: ogni nota accende per la sua durata la piattaforma della sua altezza, come in un piano roll.
   // Le altezze diverse si dividono gli slot in ordine (la più bassa nel primo); con pitches si prendono solo quelle note
-  | { role: "keys"; track: string; slots: { x: number; y: number }[]; width: number; pitches?: number[]; tint: number };
+  | { role: "keys"; track: string; slots: { x: number; y: number }[]; width: number; pitches?: number[]; tint: number }
+);
 
 const findTrack = (song: Song, name: string) => {
   const t = song.tracks.find((tr) => tr.name === name);
@@ -83,13 +84,13 @@ export function songMovers(song: Song, roles: TrackRole[]): MovingPlatform[] {
       const keys = followKeys(notes, (p) => ({ x: r.x, y: y(p) }), MUSIC_STAGE.liftGlideMs, periodMs);
       const ys = keys.map((kk) => kk[2]);
       const path = [{ x: r.x, y: Math.max(...ys) }, { x: r.x, y: Math.min(...ys) }];
-      out.push({ width: r.width, path, periodMs, keys, kind: "nota", tint: r.tint });
+      out.push({ width: r.width, path, periodMs, keys, kind: "nota", tint: r.tint, ...(r.group && { group: r.group }) });
     } else if (r.role === "slide") {
       const x = (p: number) => Math.round(r.xLow + (r.xHigh - r.xLow) * k(p));
       const keys = followKeys(notes, (p) => ({ x: x(p), y: r.y }), MUSIC_STAGE.slideGlideMs, periodMs);
       const xs = keys.map((kk) => kk[1]);
       const path = [{ x: Math.min(...xs), y: r.y }, { x: Math.max(...xs), y: r.y }];
-      out.push({ width: r.width, path, periodMs, keys, kind: "nota", tint: r.tint });
+      out.push({ width: r.width, path, periodMs, keys, kind: "nota", tint: r.tint, ...(r.group && { group: r.group }) });
     } else {
       const picked = r.pitches ? notes.filter((n) => r.pitches!.includes(n[2])) : notes;
       const heights = [...new Set(picked.map((n) => n[2]))].sort((a, b) => a - b);
@@ -105,7 +106,7 @@ export function songMovers(song: Song, roles: TrackRole[]): MovingPlatform[] {
           else on.push([start, end]);
         }
         if (on.length === 0) return;
-        out.push({ width: r.width, path: [slot, slot], periodMs, on, kind: "nota", tint: r.tint });
+        out.push({ width: r.width, path: [slot, slot], periodMs, on, kind: "nota", tint: r.tint, ...(r.group && { group: r.group }) });
       });
     }
   }

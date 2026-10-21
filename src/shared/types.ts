@@ -193,6 +193,7 @@ export type GameEvent =
   | { type: "taunt"; id: string }
   | { type: "flag"; scoringTeam: number; byId: string | null; team: number; carrierId: string | null } // portabandiera di "team" buttato fuori: punto a scoringTeam, la bandiera passa a carrierId
   | { type: "checkpoint"; id: string; index: number } // in Corsa: nuovo punto da cui si riparte
+  | { type: "pad"; index: number; id: string; x: number; y: number } // id ha premuto il bottone sonoro stage.pads[index] (#423)
   | { type: "hazard"; id: string; index: number; damage: number; percent: number; knockback: number; x: number; y: number } // preso da una trappola (stage.hazards[index], #14)
   | { type: "itemSpawn"; itemId: number; kind: string; x: number; y: number } // un oggetto comincia a cadere (#17)
   | { type: "itemPick"; itemId: number; id: string } // id lo raccoglie
@@ -227,6 +228,7 @@ export interface GameSnapshot {
   puddles: PuddleState[]; // pozze scivolose a terra (#13)
   events: GameEvent[]; // tutto quello che è successo dallo snapshot precedente
   stageMs: number; // tempo dell'arena: da qui il client calcola dove sono ascensori e trappole (#14)
+  pads?: (number | null)[]; // bottoni sonori (#423): stageMs dell'ultima pressione di ognuno, null se mai premuto
 }
 
 // Eventi Socket.IO tipizzati

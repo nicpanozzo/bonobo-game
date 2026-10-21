@@ -86,6 +86,7 @@ export interface PhysicsContext {
   unlimitedStocks?: boolean; // chi esce non perde vite (es. Bandiera, #56): torna e basta
   timeMs?: number; // tempo dell'arena in ms: muove ascensori e trappole (#14). Lo fa avanzare stepWorld
   projectiles?: ProjectileWorld; // proiettili in volo (E10): li crea match.ts, o il primo tiro
+  padsMs?: (number | null)[]; // bottoni sonori (#423): quando è stato premuto l'ultima volta ognuno (tempo dell'arena)
 }
 
 export const emptyInput = (): InputState => ({

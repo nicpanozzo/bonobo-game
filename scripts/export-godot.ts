@@ -8,7 +8,7 @@ import { basename, dirname, extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { SpriteFolderSpec } from "../src/shared/characters";
 import { CHARACTERS, CREWS, DEFAULT_CHARACTER_ID, isSpriteFolder, resolvedAnimations, SPECIAL_KINDS, SPECIAL_SLOTS, specialAttackSpec, specialsFor, spriteStatePath, supremeAttackSpec } from "../src/shared/characters";
-import { ATTACKS, AUDIO, BIRRA, BONG, CAMERA, FUNGHI, COLORS, EFFECTS, FIGHTER, INPUT, ITEM_AMOUNTS, ITEM_RULES, LEDGE, MICELIO, NET, POWERUP, PROTOCOL_VERSION, RUMBLE, SHIELD, SPORE, SUPREME_SPEEDS, TEAM_COLORS, TEAM_NAMES, WORLD } from "../src/shared/constants";
+import { ATTACKS, AUDIO, BIRRA, BONG, CAMERA, FUNGHI, COLORS, EFFECTS, FIGHTER, INPUT, ITEM_AMOUNTS, ITEM_RULES, LEDGE, MICELIO, NET, PAD, POWERUP, PROTOCOL_VERSION, RUMBLE, SHIELD, SPORE, SUPREME_SPEEDS, TEAM_COLORS, TEAM_NAMES, WORLD } from "../src/shared/constants";
 import { RECONNECT, RECONNECT_HOLD_MS } from "../src/shared/constants";
 import { COLORS_COLORBLIND, MAX_TEAMS, TEAM_COLORS_COLORBLIND } from "../src/shared/constants";
 import { TRAINING } from "../src/shared/constants";
@@ -237,6 +237,7 @@ const data = {
   tutorial: { stage: TUTORIAL_STAGE_ID, bot: TUTORIAL_BOT, lessons: LESSONS }, // tutorial a tappe (E15 passo 2)
   challenges: CHALLENGES, // sfide con medaglie (E15 passo 3)
   camera: CAMERA,
+  pad: PAD, // bottoni sonori dell'arena musicale (#423)
   effects: EFFECTS,
   items: ITEMS,
   itemRules: ITEM_RULES,

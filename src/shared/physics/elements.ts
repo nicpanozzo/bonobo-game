@@ -2,8 +2,8 @@
 // Tutto dipende solo dal tempo dell'arena (ctx.timeMs): il client Godot rifà gli stessi
 // calcoli in world_view.gd e disegna gli elementi senza riceverne le posizioni.
 
-import { FIGHTER, HAZARD, HITSTOP, HITSTUN_PER_KNOCKBACK } from "../constants";
-import type { Hazard, Jet, MovingPlatform } from "../stages";
+import { FIGHTER, HAZARD, HITSTOP, HITSTUN_PER_KNOCKBACK, PAD } from "../constants";
+import type { Hazard, Jet, MovingPlatform, SoundPad } from "../stages";
 import type { Fighter, PhysicsContext } from "./fighter";
 import { chargeFromHit } from "./supreme";
 
@@ -61,6 +61,35 @@ export function moverOn(m: MovingPlatform, timeMs: number): boolean {
   if (!m.on) return true;
   const t = mod(timeMs + (m.offsetMs ?? 0), m.periodMs);
   return m.on.some(([from, to]) => t >= from && t < to);
+}
+
+// Bottoni sonori (#423): cosa fanno adesso alla piattaforma m i bottoni del suo gruppo premuti da poco.
+// on: accesa per forza; dy: spostamento in verticale, che entra ed esce in PAD.rampMs. Godot rifà lo stesso
+// calcolo (pad_fx in stage_motion.gd) con i tempi delle pressioni che arrivano nello snapshot
+export function padFx(m: MovingPlatform, timeMs: number, pads: SoundPad[] | undefined, pressedMs: (number | null)[] | undefined): { on: boolean; dy: number } {
+  const fx = { on: false, dy: 0 };
+  if (!m.group || !pads || !pressedMs) return fx;
+  pads.forEach((p, i) => {
+    const at = pressedMs[i];
+    if (at == null || p.effect.group !== m.group) return;
+    const since = timeMs - at;
+    if (since < 0 || since >= p.effect.durationMs) return;
+    if (p.effect.on) fx.on = true;
+    const k = Math.min(1, since / PAD.rampMs, (p.effect.durationMs - since) / PAD.rampMs);
+    fx.dy += (p.effect.dy ?? 0) * k;
+  });
+  return fx;
+}
+
+// Dove si trova e se c'è una piattaforma nella partita, con gli effetti dei bottoni (moverPosition e moverOn da soli no)
+export function moverPlace(m: MovingPlatform, timeMs: number, ctx: PhysicsContext): { x: number; y: number } {
+  const p = moverPosition(m, timeMs);
+  const dy = padFx(m, timeMs, ctx.stage.pads, ctx.padsMs).dy;
+  return dy ? { x: p.x, y: p.y + dy } : p;
+}
+
+export function moverHere(m: MovingPlatform, timeMs: number, ctx: PhysicsContext): boolean {
+  return moverOn(m, timeMs) || padFx(m, timeMs, ctx.stage.pads, ctx.padsMs).on;
 }
 
 // Una trappola senza ciclo è sempre accesa; con il ciclo, lo è nei primi activeMs di ogni giro
@@ -148,15 +177,15 @@ export function carryRider(f: Fighter, dtMs: number, ctx: PhysicsContext): void 
     f.riding = -1;
     return;
   }
-  if (!moverOn(m, ctx.timeMs ?? 0)) {
+  if (!moverHere(m, ctx.timeMs ?? 0, ctx)) {
     // La nota è finita (#423): la piattaforma sparisce e chi ci stava sopra cade
     f.riding = -1;
     f.onGround = false;
     return;
   }
   const t = ctx.timeMs ?? 0;
-  const before = moverPosition(m, t - dtMs);
-  const now = moverPosition(m, t);
+  const before = moverPlace(m, t - dtMs, ctx);
+  const now = moverPlace(m, t, ctx);
   f.x += now.x - before.x;
   f.y += now.y - before.y;
 }
@@ -169,9 +198,9 @@ export function landOnMover(f: Fighter, prevY: number, dtMs: number, ctx: Physic
   const t = ctx.timeMs ?? 0;
   const half = FIGHTER.width / 2;
   for (let i = 0; i < movers.length; i++) {
-    if (!moverOn(movers[i], t)) continue;
-    const now = moverPosition(movers[i], t);
-    const before = moverPosition(movers[i], t - dtMs);
+    if (!moverHere(movers[i], t, ctx)) continue;
+    const now = moverPlace(movers[i], t, ctx);
+    const before = moverPlace(movers[i], t - dtMs, ctx);
     const over = f.x + half > now.x && f.x - half < now.x + movers[i].width;
     if (over && prevY <= Math.max(before.y, now.y) && f.y >= now.y) {
       f.y = now.y;
