@@ -139,8 +139,12 @@ func _draw() -> void:
 	if scores != null:
 		var names: Dictionary = game.teamNames
 		_centered("%s %d  –  %d %s" % [names["1"], scores["1"], scores["2"], names["2"]], Vector2(w / 2, y), 24, Color.WHITE)
+		y += 26 * Access.text_scale
 	elif rules.get("mode", "ffa") == "teams":
 		_draw_team_lives(w / 2, y)
+		y += 26 * Access.text_scale
+	if _snap.get("towerPoints") is Dictionary:
+		_draw_tower_points(w / 2, y) # postazioni (#433)
 
 	# Con il testo più grande le schede crescono tutte insieme, a partire dal fondo dello schermo
 	var k := Access.text_scale
@@ -264,6 +268,28 @@ func _draw_team_lives(cx: float, y: float) -> void:
 		draw_string_outline(_font, Vector2(x, y), part[0], HORIZONTAL_ALIGNMENT_LEFT, -1, size, 4, Color(0, 0, 0, 0.8))
 		draw_string(_font, Vector2(x, y), part[0], HORIZONTAL_ALIGNMENT_LEFT, -1, size, part[1])
 		x += _font.get_string_size(part[0] + sep, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
+
+
+# Punti torre (#433): un contatore per squadra col suo colore, piccoli in alto al centro
+func _draw_tower_points(cx: float, y: float) -> void:
+	var parts := tower_parts(_snap.towerPoints, _snap.players)
+	var size := Access.px(16)
+	var x := cx - 36.0 * parts.size()
+	for part: Array in parts:
+		var text := "Torre %d" % part[1]
+		draw_string_outline(_font, Vector2(x, y), text, HORIZONTAL_ALIGNMENT_CENTER, 72, size, 4, Color(0, 0, 0, 0.8))
+		draw_string(_font, Vector2(x, y), text, HORIZONTAL_ALIGNMENT_CENTER, 72, size, Access.team_color(game, part[0]).lightened(0.3))
+		x += 72.0
+
+
+# [squadra, punti] per ogni squadra in campo, in ordine; chi non ha ancora segnato ha 0
+static func tower_parts(points: Dictionary, players: Array) -> Array:
+	var teams := []
+	for p in players:
+		if int(p.team) > 0 and int(p.team) not in teams:
+			teams.append(int(p.team))
+	teams.sort()
+	return teams.map(func(t: int) -> Array: return [t, int(points.get(str(t), 0))])
 
 
 # A squadre (#409) i giocatori in ordine di squadra, ognuno nell'ordine dello snapshot; altrimenti come sono

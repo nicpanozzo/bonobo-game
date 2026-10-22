@@ -191,7 +191,8 @@ static func predictable(p: Dictionary, stage: Dictionary) -> bool:
 			return false
 	if p.get("attack") != null and not str(p.attack) in PREDICTED_ATTACKS:
 		return false
-	if p.get("ledge") != null or p.get("grabbedBy") != null:
+	# Alla postazione (#433) si sta fermi e i tasti guidano lei: decide il server, come per chi è assente
+	if p.get("ledge") != null or p.get("grabbedBy") != null or p.get("station") != null:
 		return false
 	# Col fiore (#231) si va più piano: il port non lo sa, si torna allo stato del server finché dura
 	if p.get("powerup") != null:
