@@ -8588,7 +8588,8 @@
           "height": 780,
           "width": 260,
           "toDeg": 62,
-          "warnMs": 6000
+          "warnMs": 6000,
+          "standFromMs": 0
         },
         "layers": [
           {

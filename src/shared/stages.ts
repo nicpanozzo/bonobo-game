@@ -162,6 +162,7 @@ export interface StageCollapse {
   width: number; // larghezza alla base
   toDeg: number; // di quanto ruota alla fine: 0 in piedi, 90 distesa a terra
   warnMs?: number; // avviso prima di atMs: crepe e un leggero tremito (6000 se manca)
+  standFromMs?: number; // da quando la torre si disegna in piedi, ferma e semitrasparente come un fondale (se manca, compare solo nell'avviso)
 }
 
 // Lo sfondo illustrato di un'arena: senza, si disegna con i colori di colors
@@ -1154,7 +1155,7 @@ export const STAGES: Record<string, StageSpec> = {
       verticalParallax: 1,
       scale: 0.5, // strati, materiali e decorazioni senza scala propria sono a 2x (stile grafico, sezione 5)
       // La Garisenda che cade verso l'Asinelli (#433): ruota attorno al suo piede destro (la punta arriva a circa x 1520, y 1570) fino ad appoggiarsi all'Asinelli
-      collapse: { atMs: BOLOGNA.collapseMs, durationMs: BOLOGNA.collapseFallMs, pivot: { x: 830, y: 1940 }, height: 780, width: 260, toDeg: 62, warnMs: 6000 },
+      collapse: { atMs: BOLOGNA.collapseMs, durationMs: BOLOGNA.collapseFallMs, pivot: { x: 830, y: 1940 }, height: 780, width: 260, toDeg: 62, warnMs: 6000, standFromMs: 0 },
       layers: [
         { file: "sfondo-0.png", parallax: 0.1 }, // il cielo trasparente, i colli con San Luca e il mare di tetti rossi
         { file: "sfondo-1.png", parallax: 0.4 }, // la città: San Petronio, la Prendiparte, l'orologio, la cupola della Vita
