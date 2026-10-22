@@ -162,6 +162,7 @@ export interface StageCollapse {
   width: number; // larghezza alla base
   toDeg: number; // di quanto ruota alla fine: 0 in piedi, 90 distesa a terra
   warnMs?: number; // avviso prima di atMs: crepe e un leggero tremito (6000 se manca)
+  standFromMs?: number; // da quando la torre si disegna in piedi, ferma e semitrasparente come un fondale (se manca, compare solo nell'avviso)
 }
 
 // Lo sfondo illustrato di un'arena: senza, si disegna con i colori di colors
@@ -1136,7 +1137,7 @@ export const STAGES: Record<string, StageSpec> = {
     prizeAtMs: BOLOGNA.collapseMs,
     prizeShowMs: BOLOGNA.brawlMs,
     // La Garisenda che cade verso l'Asinelli (#433): ruota attorno al suo piede destro (la punta arriva a circa x 1520, y 1570) fino ad appoggiarsi all'Asinelli
-    art: { layers: [], collapse: { atMs: BOLOGNA.collapseMs, durationMs: BOLOGNA.collapseFallMs, pivot: { x: 830, y: 1940 }, height: 780, width: 260, toDeg: 62, warnMs: 6000 } },
+    art: { layers: [], collapse: { atMs: BOLOGNA.collapseMs, durationMs: BOLOGNA.collapseFallMs, pivot: { x: 830, y: 1940 }, height: 780, width: 260, toDeg: 62, warnMs: 6000, standFromMs: 0 } },
     camera: { minZoom: 0.5, maxZoom: 1.1, floorY: 2080 },
     blastZone: { left: -180, right: 2380, top: 1300, bottom: 2500 }, // come la prima fase
     // Prime otto partenze: quattro sulla base della Garisenda (squadra 1), quattro su quella dell'Asinelli (squadra 2)

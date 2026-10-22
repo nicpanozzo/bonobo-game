@@ -268,7 +268,7 @@ L'esempio completo è **Bologna** (`bologna` in `stages.ts`, #433): arena a squa
 Solo grafica, tutta da `stageMs`, senza niente in rete: tra i pezzi che spariscono (`on`) e la rampa che appare, Godot disegna una sagoma di torre di mattoni che ruota attorno al suo piede verso destra, con polvere alla base e all'impatto, mattoni che volano e scossa di telecamera. Prima, nell'avviso, compaiono le crepe e la sagoma trema appena.
 
 ```ts
-art: { layers: [], collapse: { atMs: BOLOGNA.collapseMs, durationMs: BOLOGNA.collapseFallMs, pivot: { x: 830, y: 1940 }, height: 780, width: 260, toDeg: 62, warnMs: 6000 } }
+art: { layers: [], collapse: { atMs: BOLOGNA.collapseMs, durationMs: BOLOGNA.collapseFallMs, pivot: { x: 830, y: 1940 }, height: 780, width: 260, toDeg: 62, warnMs: 6000, standFromMs: 0 } }
 ```
 
 | Campo | Cosa fa |
@@ -278,6 +278,7 @@ art: { layers: [], collapse: { atMs: BOLOGNA.collapseMs, durationMs: BOLOGNA.col
 | `width`, `height` | la sagoma: larga alla base, più stretta in cima |
 | `toDeg` | di quanto ruota alla fine (positivo = verso destra, 90 = distesa); la cima deve arrivare dove si appoggia la rampa |
 | `warnMs` | l'avviso prima di `atMs` (6000 se manca) |
+| `standFromMs` | da quando la torre si vede in piedi, ferma e semitrasparente come un fondale (se manca, compare solo nell'avviso); nell'avviso poi si aggiungono crepe e tremito sopra la torre già in piedi |
 
 ### Postazioni (`stations`): bombarda e munizioni (#433)
 
