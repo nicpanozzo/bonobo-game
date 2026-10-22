@@ -7,7 +7,7 @@ import { COLORS, FIGHTER, GAME_SPEED, ITEM_AMOUNTS, MATCH_RESTART_MS, MAX_PLAYER
 import { bufferPresses, createFighter, emptyInput, resetForMatch, stepWorld, type Fighter, type PhysicsContext } from "./physics";
 import { createItemWorld, handleItemInput, itemStates, resetItems, stepItems, type ItemWorld } from "./physics/items";
 import { companionState } from "./physics/companion";
-import { stageIsTimed } from "./physics/timed";
+import { stageAt, stageIsTimed } from "./physics/timed";
 import { tetrisState } from "./physics/arcade";
 import { createProjectileWorld, projectileStates, puddleStates, type ProjectileWorld } from "./physics/projectiles";
 import { canHitWithRules, flagWinnerTeam, isTeamMode, lastStanding, leaderOnTime, requestedTeam, sanitizeRules } from "./rules";
@@ -18,6 +18,7 @@ import type { GameEvent, GameSnapshot, InputState, MatchRules, PlayerState, Pred
 
 export interface MatchOptions {
   stageId?: string;
+  stage?: StageSpec; // arena già pronta, per i test (es. i pezzi a tempo, #433): ha la precedenza su stageId
   rules?: Partial<MatchRules>;
   items?: boolean; // false = niente oggetti anche dove ci sarebbero (es. i test di bilanciamento dei personaggi, #302)
 }
@@ -47,7 +48,7 @@ export class Match {
 
   constructor(options: MatchOptions = {}) {
     this.rules = sanitizeRules(options.rules);
-    this.stage = stageFor(this.rules, options.stageId);
+    this.stage = options.stage ?? stageFor(this.rules, options.stageId);
     const rules = this.rules;
     this.ctx = {
       stage: this.stage,
@@ -71,6 +72,11 @@ export class Match {
 
   get players(): readonly Fighter[] {
     return [...this.fighters.values()];
+  }
+
+  // L'arena com'è adesso (#433): senza pezzi a tempo è la stessa di stage, con loro solo quelli che ci sono ora
+  get currentStage(): StageSpec {
+    return stageAt(this.stage, this.ctx.timeMs ?? 0);
   }
 
   // team: la squadra chiesta (#409); se non c'è in queste regole si entra in quella con meno giocatori
