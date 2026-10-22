@@ -320,7 +320,7 @@ export interface StageSpec {
   solids: Rect[]; // blocchi pieni: ci si cammina sopra e non si attraversano
   platforms: ThinPlatform[]; // sottili: si attraversano dal basso e scendendo con giù
   blastZone: { left: number; right: number; top: number; bottom: number }; // chi esce perde una vita
-  spawns: { x: number; y: number }[]; // punti di partenza, uno per giocatore (y = piedi), in coppie simmetriche
+  spawns: { x: number; y: number; team?: number }[]; // punti di partenza, uno per giocatore (y = piedi), in coppie simmetriche; `team` = squadra che parte lì nelle modalità a squadre (#433)
   respawn: { x: number; y: number }; // dove si ricompare dopo aver perso una vita
   colors: { sky: number; solid: number; solidEdge: number; platform: number }; // finché non c'è uno sfondo disegnato
   width?: number; // larghezza del mondo se più larga dello schermo (#240): nelle arene la telecamera inquadra tutti, nella Corsa segue
