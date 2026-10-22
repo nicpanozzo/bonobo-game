@@ -7,6 +7,7 @@ import type { GameEvent, InputState, PlayerState, SpecialKind } from "../types";
 import type { ArcadeWorld } from "./arcade";
 import type { ProjectileWorld } from "./projectiles";
 import type { Companion } from "./companion";
+import type { StationWorld } from "./stations";
 
 export interface Fighter extends PlayerState {
   input: InputState;
@@ -90,6 +91,7 @@ export interface PhysicsContext {
   projectiles?: ProjectileWorld; // proiettili in volo (E10): li crea match.ts, o il primo tiro
   padsMs?: (number | null)[]; // bottoni sonori (#423): quando è stato premuto l'ultima volta ognuno (tempo dell'arena)
   arcade?: ArcadeWorld; // pezzi e blocchi dei power-up arcade (#427): nasce col primo pezzo
+  stations?: StationWorld; // postazioni dell'arena (#433): nasce al primo passo
 }
 
 export const emptyInput = (): InputState => ({
