@@ -296,13 +296,14 @@ export interface StageCamera {
 
 // Getto d'acqua (#253): una colonna larga width che dalla base (y) sale per height pixel. A ogni giro, dopo
 // la calma, ci sono le bolle (warnMs) e poi il getto (activeMs): chi è nella colonna viene spinto in alto a
-// speed pixel/s, senza danno. Dipende solo dal tempo dell'arena, come le trappole.
+// speed pixel/s, senza danno. Con dir è una raffica: stessa zona, ma spinge di lato (WIND). Dipende solo dal tempo dell'arena, come le trappole.
 export interface Jet {
   x: number; // bordo sinistro
   y: number; // base della colonna
   width: number;
   height: number; // quanto sale la colonna d'acqua
-  speed: number; // pixel/s verso l'alto dati a chi ci sta dentro
+  speed: number; // pixel/s verso l'alto (o verso dir) dati a chi ci sta dentro
+  dir?: "left" | "right"; // raffica orizzontale (#433): senza, il getto spinge in alto
   periodMs: number;
   warnMs: number; // bolle prima del getto
   activeMs: number; // durata del getto
