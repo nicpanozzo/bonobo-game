@@ -6,6 +6,7 @@
 extends Node2D
 
 const GymFlow := preload("res://scripts/gym_flow.gd")
+const StagePhases := preload("res://scripts/stage_phases.gd")
 const DEFAULT_SERVER := "http://localhost:3000" # npm run dev
 const LINK_BUTTON_POS := Vector2(12, 36) # "Copia link" in partita, sotto la riga della stanza, pixel
 const HOST_LINK_TOAST_S := 10.0 # quanto resta l'avviso "link copiato" a chi ospita, secondi
@@ -57,6 +58,7 @@ var _p1_pad := -1 # l'ultimo pad usato dal primo giocatore: Start da un altro pa
 var _p2_hint: Label
 var _view := Vector2(1280, 720) # quanto mondo si vede alla telecamera 1: più largo sui telefoni lunghi (Phone)
 var _view_k := 1.0 # pixel dello schermo del gioco per pixel della vista: sul telefono si disegna più piccolo (Phone)
+var _phase_cam := {} # zoom e pavimento della telecamera ora, in transizione verso quelli della fase attiva (#433)
 var _cam_zoom := 1.0 # lo zoom della telecamera come se lo schermo fosse alto 720; camera.zoom ci aggiunge _view_k
 
 
@@ -315,6 +317,7 @@ func _leave(page := "match") -> void:
 	gym.close_all()
 	camera.position = Vector2.ZERO
 	_cam_zoom = 1.0
+	_phase_cam = {}
 	_hide_connecting()
 	_hide_results()
 	_show_lobby(str(params.get("kind", "")), true)
@@ -533,6 +536,7 @@ func _on_event(name: String, data: Variant) -> void:
 			_check_server_version(str(data.get("serverVersion", "")))
 			camera.position = Vector2.ZERO
 			_cam_zoom = 1.0
+	_phase_cam = {}
 		"snapshot":
 			_last_snapshot = Time.get_ticks_msec()
 			_last_players = data.get("players", [])
@@ -631,7 +635,7 @@ func _follow(delta: float) -> void:
 func _frame_fighters(delta: float) -> void:
 	var cam: Dictionary = game.camera
 	var screen := _view
-	var aim := framing(world.stage, cam, game, world.alive_positions(), screen)
+	var aim := framing(_phased_stage(delta), cam, game, world.alive_positions(), screen)
 	var limits: Rect2 = aim.limits
 	var target_zoom: float = aim.zoom
 	var center: Vector2 = aim.center
@@ -648,6 +652,22 @@ func _frame_fighters(delta: float) -> void:
 	camera.position = c - size / 2
 
 
+# L'arena con le zone di espulsione e la telecamera della fase attiva (#433). Zoom e pavimento
+# non saltano al cambio di fase: si avvicinano ai nuovi valori in CAMERA.phaseBlendMs.
+func _phased_stage(delta: float) -> Dictionary:
+	if not (world.stage.get("phases") is Array):
+		return world.stage
+	var stage := StagePhases.effective_stage(world.stage, world.buffer.sample_stage_ms(Time.get_ticks_msec()))
+	var own: Dictionary = stage.get("camera") if stage.get("camera") is Dictionary else {}
+	var target := {"minZoom": float(own.get("minZoom", game.camera.minZoom)), "maxZoom": float(own.get("maxZoom", game.camera.maxZoom))}
+	if own.has("floorY"):
+		target.floorY = float(own.floorY)
+	_phase_cam = StagePhases.blend_camera(_phase_cam, target, delta, float(game.camera.phaseBlendMs)) if not _phase_cam.is_empty() else target
+	var out := stage.duplicate()
+	out.camera = _phase_cam
+	return out
+
+
 # Dove punta la telecamera di un'arena: zoom e centro per inquadrare i lottatori vivi (posizioni ai piedi),
 # e il rettangolo delle zone di espulsione da cui la vista non esce. L'arena può chiedere il suo
 # zoom (camera.minZoom e maxZoom, #240): le arene più larghe dello schermo si allontanano di più.
@@ -656,7 +676,8 @@ static func framing(stage: Dictionary, cam: Dictionary, game: Dictionary, positi
 	if screen == Vector2.ZERO:
 		screen = Vector2(game.world.width, game.world.height)
 	var width := float(stage.get("width", screen.x))
-	var bz: Dictionary = stage.get("blastZone", {"left": 0, "right": width, "top": 0, "bottom": screen.y})
+	var height := float(stage.get("height", game.world.height)) # le arene verticali (#433) sono più alte dello schermo
+	var bz: Dictionary = stage.get("blastZone", {"left": 0, "right": width, "top": 0, "bottom": height})
 	var limits := Rect2(bz.left, bz.top, bz.right - bz.left, bz.bottom - bz.top)
 	var own: Dictionary = stage.get("camera") if stage.get("camera") is Dictionary else {}
 	var min_zoom: float = own.get("minZoom", cam.minZoom)
@@ -672,7 +693,7 @@ static func framing(stage: Dictionary, cam: Dictionary, game: Dictionary, positi
 		first = false
 	if first:
 		# Nessuno in campo: l'arena intera, al centro della sua larghezza
-		return {"zoom": clampf(minf(1.0, screen.x / width), far, max_zoom), "center": Vector2(width / 2.0, screen.y / 2.0), "limits": limits}
+		return {"zoom": clampf(minf(1.0, minf(screen.x / width, screen.y / height)), far, max_zoom), "center": Vector2(width / 2.0, height / 2.0), "limits": limits}
 	box = box.grow(cam.margin)
 	if own.has("floorY"): # il pavimento sempre in vista (#400): chi sale in cima non stacca lo sfondo dal palco
 		box = box.expand(Vector2(box.get_center().x, float(own.floorY)))
