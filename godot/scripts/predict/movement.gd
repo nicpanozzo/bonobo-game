@@ -365,7 +365,10 @@ func _collide(s: Dictionary, prev_y: float) -> void:
 	var height := float(fighter.height)
 	var was_on_ground: bool = s.onGround
 	s.onGround = false
+	var t := float(s.get("stageMs", 0.0)) # pezzi a tempo (#433): come la vista di stageAt() che usa il server
 	for b in solids:
+		if not piece_on(b, t):
+			continue
 		var bx := float(b.x)
 		var by := float(b.y)
 		var bw := float(b.width)
@@ -385,7 +388,7 @@ func _collide(s: Dictionary, prev_y: float) -> void:
 	# Da un blocco pieno si sale camminando su una rampa poco più su dei piedi (#246), come collideWithStage
 	if s.onGround and was_on_ground and s.drop == 0.0:
 		for p in platforms:
-			if p.get("y2") == null or not (s.x + half > float(p.x) and s.x - half < float(p.x) + float(p.width)):
+			if not piece_on(p, t) or p.get("y2") == null or not (s.x + half > float(p.x) and s.x - half < float(p.x) + float(p.width)):
 				continue
 			var ry := surface_y(p, s.x)
 			if ry < s.y and s.y - ry <= snap_px(p, fighter):
@@ -393,6 +396,8 @@ func _collide(s: Dictionary, prev_y: float) -> void:
 				break
 	if not s.onGround and s.vy >= 0:
 		for p in platforms:
+			if not piece_on(p, t):
+				continue
 			var px := float(p.x)
 			if not (s.x + half > px and s.x - half < px + float(p.width)):
 				continue
@@ -437,6 +442,16 @@ static func surface_y(p: Dictionary, x: float) -> float:
 	var half := float(p.width) / 2.0
 	var u := clampf((x - (float(p.x) + half)) / half, -1.0, 1.0)
 	return float(p.y) - arch * (1.0 - u * u)
+
+
+# Come pieceOn() in physics/timed.ts (#433): un pezzo con le finestre "on" c'è solo dentro una [da, a) del tempo dell'arena
+static func piece_on(p: Dictionary, t: float) -> bool:
+	if not (p.get("on") is Array):
+		return true
+	for w: Array in p.on:
+		if t >= float(w[0]) and t < float(w[1]):
+			return true
+	return false
 
 
 # Piattaforme non dritte (ad arco o inclinate): chi ci cammina segue la superficie

@@ -49,6 +49,7 @@ var _hazard_sprites := {} # indice della trappola -> {tex, frames, fps, scale, f
 var _mover_sprites := {} # indice della piattaforma mobile -> come sopra (#273)
 var _pads_pressed: Array = [] # bottoni sonori (#423): stageMs dell'ultima pressione di ognuno, dallo snapshot
 var _t_draw := 0.0 # il tempo dell'arena del frame che si sta disegnando (#378, per i ganci dentro le decorazioni)
+var _piece_alpha := 1.0 # pezzo a tempo (#433) che si sta disegnando: compare e sparisce sfumando
 const TEAM_RING_WIDTH := 0.8 # raggio dell'anello della squadra sotto i piedi, rispetto alla larghezza del lottatore (#409)
 const TEAM_RING_SQUASH := 0.28 # l'anello è un ovale schiacciato: sta per terra
 const TEAM_NAME_LIGHTEN := 0.35 # il nome sopra la testa ha il colore della squadra, un po' più chiaro
@@ -439,6 +440,11 @@ func _skin_for(kind: String, i: int) -> Dictionary:
 	return _skins[name]
 
 
+# Un colore del pezzo a tempo che si sta disegnando (#433), trasparente quanto il pezzo
+func _faded(c: Color) -> Color:
+	return Color(c, c.a * _piece_alpha)
+
+
 # Il palco prende solo un po' della luce del momento (#267): di notte resta ben leggibile
 func _stage_light() -> Color:
 	return Color.WHITE.lerp(_ambient, 0.4)
@@ -446,7 +452,7 @@ func _stage_light() -> Color:
 
 # Un PNG ripetuto dentro un rettangolo, a _layer_scale pixel di mondo per pixel; l'ultima fila e colonna si tagliano
 func _draw_tiled(tex: Texture2D, rect: Rect2, mod := Color.WHITE) -> void:
-	mod *= _stage_light()
+	mod *= _stage_light() * Color(1, 1, 1, _piece_alpha)
 	var tw := tex.get_width() * _layer_scale
 	var th := tex.get_height() * _layer_scale
 	if tw <= 0 or th <= 0:
@@ -465,7 +471,7 @@ func _draw_tiled(tex: Texture2D, rect: Rect2, mod := Color.WHITE) -> void:
 # Un PNG ripetuto lungo la superficie di una piattaforma (dritta, ad arco o inclinata), a colonne strette:
 # ogni colonna sta all'altezza della superficie in quel punto più top, ed è alta height
 func _draw_strip(tex: Texture2D, p: Dictionary, top: float, height: float, mod := Color.WHITE) -> void:
-	mod *= _stage_light()
+	mod *= _stage_light() * Color(1, 1, 1, _piece_alpha)
 	var src_w := float(tex.get_width())
 	var cw := 6.0 if PredictMovement.curved(p) else float(p.width)
 	var x: float = p.x
@@ -521,11 +527,13 @@ func _draw_skinned_platform(p: Dictionary, skin: Dictionary) -> void:
 func _draw_rails(front: bool) -> void:
 	for i in stage.platforms.size():
 		var skin := _skin_for("platforms", i)
-		if skin.is_empty():
+		_piece_alpha = StageMotion.piece_alpha(stage.platforms[i], _t_draw) # pezzi a tempo (#433)
+		if skin.is_empty() or _piece_alpha <= 0.0:
 			continue
 		for r in skin.rails:
 			if r.front == front:
 				_draw_strip(r.tex, stage.platforms[i], r.offsetY - r.height, r.height, Color(1, 1, 1, r.opacity))
+	_piece_alpha = 1.0
 
 
 # Decorazioni ferme (#237): i piedi (centro del lato basso) in x, y
@@ -593,6 +601,7 @@ func on_snapshot(snap: Dictionary) -> void:
 	_arcade.on_snapshot(snap) # #427
 	predictor.blocks = _arcade.blocks
 	predictor.puddles = _puddles
+	predictor.stage_ms = float(snap.get("stageMs", 0)) # pezzi a tempo (#433)
 	for p in snap.players:
 		_load_character(_look(p))
 		if p.id == my_id:
@@ -905,23 +914,30 @@ func _draw() -> void:
 	for i in stage.solids.size():
 		var s: Dictionary = stage.solids[i]
 		var skin := _skin_for("solids", i)
+		_piece_alpha = StageMotion.piece_alpha(s, t_stage) # pezzi a tempo (#433): sfumano entrando e uscendo
+		if _piece_alpha <= 0.0:
+			continue
 		if skin.is_empty():
-			draw_rect(Rect2(s.x, s.y, s.width, s.height), _palette.solid)
-			draw_rect(Rect2(s.x, s.y, s.width, 6), _palette.solidEdge)
+			draw_rect(Rect2(s.x, s.y, s.width, s.height), _faded(_palette.solid))
+			draw_rect(Rect2(s.x, s.y, s.width, 6), _faded(_palette.solidEdge))
 			_wonder.draw_floor(self, s, t_stage, _pads_pressed, _pad_fx) # la tastiera del pianoforte (#423)
 		else:
 			_draw_skinned_solid(s, skin)
 	for i in stage.platforms.size():
 		var p: Dictionary = stage.platforms[i]
 		var skin := _skin_for("platforms", i)
+		_piece_alpha = StageMotion.piece_alpha(p, t_stage)
+		if _piece_alpha <= 0.0:
+			continue
 		if not skin.is_empty():
 			_draw_skinned_platform(p, skin)
 		elif p.get("y2") != null:
-			_draw_stairs(p, _palette.platform)
+			_draw_stairs(p, _faded(_palette.platform))
 		elif float(p.get("arch", 0)) != 0.0:
-			draw_colored_polygon(StageMotion.arch_polygon(p, 8.0), _palette.platform)
+			draw_colored_polygon(StageMotion.arch_polygon(p, 8.0), _faded(_palette.platform))
 		else:
-			draw_rect(Rect2(p.x, p.y, p.width, 8), _palette.platform)
+			draw_rect(Rect2(p.x, p.y, p.width, 8), _faded(_palette.platform))
+	_piece_alpha = 1.0
 	_arcade.draw_blocks(self, Time.get_ticks_msec()) # i pezzi del Tetris posati (#427)
 	_arcade.draw_pellets(self, stage, _sampled, stage_width(), Time.get_ticks_msec()) # le palline di Pac-Man
 	_draw_rails(false) # ringhiere dietro ai lottatori
@@ -1380,13 +1396,15 @@ func _draw_elements(t: float) -> void:
 	var hazards: Array = stage.get("hazards") if stage.get("hazards") != null else []
 	for i in hazards.size():
 		var h: Dictionary = hazards[i]
-		_draw_hazard(h, StageMotion.hazard_active(h, t), t, i)
+		if PredictMovement.piece_on(h, t): # fuori dalle sue finestre la trappola non c'è (#433)
+			_draw_hazard(h, StageMotion.hazard_active(h, t), t, i)
 	var rain := _rain_now(t) # dall'acqua alta o dalla pioggia dello sfondo vivo (#288)
 	if rain > 0.0:
 		_draw_rain(rain, t)
 	var jets: Array = stage.get("jets") if stage.get("jets") is Array else []
 	for j in jets:
-		_draw_jet(j, t)
+		if PredictMovement.piece_on(j, t): # getto a tempo (#433)
+			_draw_jet(j, t)
 
 
 func _draw_hazard(h: Dictionary, on: bool, t: float, index := -1) -> void:
@@ -1525,10 +1543,10 @@ func _draw_convex(pts: PackedVector2Array, color: Color) -> void:
 func _surface_below(x: float, y: float) -> float:
 	var best := INF
 	for s in stage.solids:
-		if x >= float(s.x) and x <= float(s.x) + float(s.width) and float(s.y) >= y:
+		if x >= float(s.x) and x <= float(s.x) + float(s.width) and float(s.y) >= y and PredictMovement.piece_on(s, _t_draw):
 			best = minf(best, float(s.y))
 	for p in stage.platforms:
-		if x >= float(p.x) and x <= float(p.x) + float(p.width):
+		if x >= float(p.x) and x <= float(p.x) + float(p.width) and PredictMovement.piece_on(p, _t_draw):
 			var sy := PredictMovement.surface_y(p, x)
 			if sy >= y:
 				best = minf(best, sy)

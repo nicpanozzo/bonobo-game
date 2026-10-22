@@ -20,6 +20,7 @@ var teleport_distance := 300.0
 var items_present := false # oggetti nell'arena: leggero e pesante li lascia decidere al server
 var puddles: Array = [] # pozze scivolose dell'ultimo snapshot (#13): sopra si scivola, il port non lo sa
 var blocks: Array = [] # blocchi del Tetris dell'ultimo snapshot (#427): il port non li conosce
+var stage_ms := 0.0 # tempo dell'arena dell'ultimo snapshot (#433): i pezzi a tempo ci sono o no come sul server
 
 var _game: Dictionary
 var _tick_rate := 60.0
@@ -110,6 +111,7 @@ func on_server(p: Dictionary, now_ms: float, shown := Vector2(NAN, NAN)) -> void
 	# Lo stato del server è quello dopo il tick locale seq + ticks - 1
 	_tick = int(pr.seq) + int(pr.ticks) - 1
 	_state = PredictMovement.state_from(p, pr, input_at(int(pr.seq)))
+	_state.stageMs = stage_ms
 	_prev_xy = Vector2(_state.x, _state.y)
 	if local_tick(now_ms) - _tick > max_replay_ticks:
 		_active = false # troppo indietro: meglio lo stato del server che indovinare mezzo secondo
@@ -234,6 +236,7 @@ func _advance(now_ms: float) -> void:
 	while _tick < target:
 		_tick += 1
 		_prev_xy = Vector2(_state.x, _state.y)
+		_state.stageMs = float(_state.get("stageMs", 0.0)) + _dt_ms # l'arena va a tempo vero, come stepWorld (#433)
 		_movement.set_input(_state, input_at(_tick))
 		_movement.step(_state, _fight_ms)
 
