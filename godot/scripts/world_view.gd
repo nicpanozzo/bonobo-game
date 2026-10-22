@@ -288,7 +288,7 @@ func set_stage_spec(spec: Dictionary) -> void:
 		_foreground = _stage_layer(art.get("dir", spec.id), art.foreground, float(art.get("scale", 1.0)))
 	_layer_scale = art.get("scale", 1.0)
 	_load_stage_dressing(art.get("dir", spec.id), art)
-	_life.setup(spec, stage_width(), game.world.height)
+	_life.setup(spec, stage_width(), world_height())
 	_wonder.setup(spec)
 	_arcade.setup(game)
 	_supreme_view.stage = spec
@@ -564,7 +564,7 @@ func _vertical_parallax() -> float:
 func _draw_layer(layer: Array, mod := Color(-1, 0, 0)) -> void:
 	var tex: Texture2D = layer[0]
 	var size: Vector2 = layer[2] if layer.size() > 2 else tex.get_size()
-	var center := Vector2(stage_width() / 2.0, game.world.height / 2.0)
+	var center := Vector2(stage_width() / 2.0, world_height() / 2.0)
 	draw_texture_rect(tex, StageMotion.layer_rect(size * _layer_scale, layer[1], center, view_rect.get_center(), _vertical_parallax()), false, _ambient if mod.r < 0.0 else mod)
 
 
@@ -578,6 +578,12 @@ func alive_positions() -> Array[Vector2]:
 
 
 # Larghezza del mondo: lo schermo, o di più per i percorsi della Corsa (stageWidth in stages.ts)
+# Altezza del mondo: lo schermo, o di più nelle arene verticali (#433); serve a centrare gli strati
+func world_height() -> float:
+	var h: Variant = stage.get("height")
+	return float(h) if h != null else float(game.world.height)
+
+
 func stage_width() -> float:
 	var w: Variant = stage.get("width")
 	return float(w) if w != null else float(game.world.width)
@@ -858,7 +864,7 @@ func _draw() -> void:
 	if stage.is_empty():
 		return
 	var w: float = game.world.width
-	var h: float = game.world.height
+	var h: float = world_height()
 	draw_rect(Rect2(-400, -400, stage_width() + 800, h + 800), _palette.sky)
 	# Nelle arene grandi (#240) la telecamera si allontana fino alle zone di espulsione: il cielo arriva fin lì
 	var bz: Variant = stage.get("blastZone")
@@ -1990,7 +1996,7 @@ func _draw_bell_warning(r: Rect2, dir: int, t: float) -> void:
 # Pioggia su tutta l'arena: gocce oblique in posizioni fisse che scorrono col tempo dell'arena
 func _draw_rain(strength: float, t: float) -> void:
 	var w := stage_width() + 800.0
-	var hgt: float = game.world.height + 600.0
+	var hgt: float = world_height() + 600.0
 	var drops := int(160.0 * strength)
 	var col := Color(0.78, 0.84, 0.88, 0.3 * strength)
 	for i in drops:

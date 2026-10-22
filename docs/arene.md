@@ -62,6 +62,10 @@ camera: { minZoom: 0.6 },
 blastZone: { left: -300, right: 2220, top: -420, bottom: 1000 },
 ```
 
+**Arene alte** (#433): con `height` (per esempio 1800) l'arena è più alta dello schermo (720). Tutti i pezzi devono stare tra 0 e `height`, la telecamera inquadra anche in verticale e gli strati dello sfondo si centrano a metà altezza. Senza `height` vale 720 e nulla cambia. Allarga `blastZone.bottom` oltre `height`, e per vedere un'arena alta quasi intera abbassa `camera.minZoom` (non sotto 0,45).
+
+**Telecamera e testo per fase** (#433): se l'arena ha `phases` (il campo è descritto nel suo passo), la telecamera della fase attiva (`camera.minZoom`, `maxZoom`, `floorY`) sostituisce campo per campo quella dell'arena, e la sua `blastZone` limita la vista. Al cambio di fase zoom e pavimento si spostano piano in `CAMERA.phaseBlendMs` (1 s), senza salti. Il `name` della fase appena cominciata compare grande sullo schermo per `EFFECTS.phaseBannerMs` (2,5 s); `warnMs` prima dell'inizio compare in arancio il suo `announce`. È tutto del client, dal tempo dell'arena (`stageMs`): la logica sta in `godot/scripts/stage_phases.gd`.
+
 I percorsi della Corsa sono larghi anche loro, ma lì la telecamera segue il proprio lottatore: la differenza è il traguardo (`goal`).
 
 ### Arene nascoste (`hidden`)

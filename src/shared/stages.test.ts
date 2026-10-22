@@ -8,12 +8,12 @@ import { hazardActive, moverPosition } from "./physics/elements";
 import { courseSteps, generateCourse } from "./courseGenerator";
 import { generateStage, seedFromStageId } from "./stageGenerator";
 import { JUMP_HEIGHT, reachable, SIDE_REACH, stageCheckData } from "./stageCheck";
-import { CHORD_NAME, DEFAULT_STAGE_ID, getStage, STAGE_MUSIC_LEADS, STAGES, stageArtFiles, stageWidth, type StageMusic, type StageSpec } from "./stages";
+import { CHORD_NAME, DEFAULT_STAGE_ID, getStage, STAGE_MUSIC_LEADS, STAGES, stageArtFiles, stageHeight, stageWidth, type StageMusic, type StageSpec } from "./stages";
 
 function checkStage(stage: StageSpec) {
   for (const p of [...stage.solids, ...stage.platforms]) {
     assert.ok(p.x >= 0 && p.x + p.width <= stageWidth(stage), `${stage.id}: dentro il mondo`);
-    assert.ok(p.y > 0 && p.y < WORLD.height, `${stage.id}: altezza valida`);
+    assert.ok(p.y > 0 && p.y < stageHeight(stage), `${stage.id}: altezza valida`);
   }
   if (!stage.goal) {
     for (const p of stage.platforms) assert.ok(reachable(stage, p), `${stage.id}: piattaforma a ${p.x},${p.y} irraggiungibile`);
@@ -56,6 +56,7 @@ function musicProblems(music: StageMusic): string[] {
 function cameraProblems(stage: StageSpec): string[] {
   const problems: string[] = [];
   if (stage.width !== undefined && stage.width < WORLD.width) problems.push(`width ${stage.width} più stretta dello schermo (${WORLD.width})`);
+  if (stage.height !== undefined && stage.height < WORLD.height) problems.push(`height ${stage.height} più bassa dello schermo (${WORLD.height})`);
   const min = stage.camera?.minZoom ?? CAMERA.minZoom;
   const max = stage.camera?.maxZoom ?? CAMERA.maxZoom;
   if (min < CAMERA.stageMinZoomFloor) problems.push(`minZoom ${min} sotto ${CAMERA.stageMinZoomFloor}: lottatori troppo piccoli`);
