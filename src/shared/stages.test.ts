@@ -135,7 +135,7 @@ describe("arene", () => {
     assert.ok(withArt.length >= 1, "almeno Il Palco ha uno sfondo");
     for (const stage of withArt) {
       const art = stage.art!;
-      assert.ok(art.layers.length >= 1, `${stage.id}: almeno uno strato`);
+      assert.ok(art.layers.length >= 1 || art.collapse, `${stage.id}: almeno uno strato`); // Bologna per ora ha solo il crollo (#433)
       const layers = [...art.layers, ...(art.foreground ? [art.foreground] : [])];
       for (const l of layers) assert.ok(l.parallax >= 0 && l.parallax <= 1, `${stage.id}: parallasse di ${l.file} tra 0 e 1`);
       const v = art.verticalParallax ?? 1; // #400
@@ -169,6 +169,24 @@ describe("arene", () => {
     const both: StageSpec = { ...timed, id: "prova-tempo-2", platforms: base.platforms.map((p) => ({ ...p, on: [[0, 5000], [9000, 20000]] as [number, number][] })) };
     assert.deepEqual(timedReachProblems(both), []);
     assert.deepEqual(checkTimes(base), [0], "un'arena che non cambia si guarda una volta sola");
+  });
+
+  it("Bologna: il crollo della torre e l'avviso del fulmine sono solo grafica (#433)", () => {
+    const b = STAGES.bologna;
+    const c = b.art?.collapse;
+    assert.ok(c, "la Garisenda ha un crollo disegnato");
+    assert.equal(c.atMs, BOLOGNA.collapseMs, "comincia quando spariscono i suoi pezzi");
+    assert.equal(c.atMs + c.durationMs, BOLOGNA.rampMs, "finisce quando appare la rampa");
+    assert.ok(c.height > 0 && c.width > 0 && c.toDeg > 0 && c.toDeg <= 90);
+    // Il fulmine ha l'avviso, ma hazardActive è quello di sempre: negli ultimi warnMs prima della finestra non fa male
+    const bolt = b.hazards!.find((h) => h.kind === "fulmine")!;
+    assert.equal(bolt.warnMs, BOLOGNA.lightningWarnMs);
+    const plain = { ...bolt, warnMs: undefined };
+    for (let t = 0; t < 120000; t += 50) assert.equal(hazardActive(bolt, t), hazardActive(plain, t), `t ${t}`);
+    const start = BOLOGNA.brawlMs + 5000; // 170000: l'inizio di una finestra (offsetMs 10000, giro 20000)
+    assert.equal(hazardActive(bolt, start), true);
+    assert.equal(hazardActive(bolt, start - 1), false, "un attimo prima non fa male");
+    assert.equal(hazardActive(bolt, start - bolt.warnMs! / 2), false, "durante l'avviso non fa male");
   });
 
   it("Bologna: squadre ai lati, fasi in ordine e un'arena che cambia davvero (#433)", () => {

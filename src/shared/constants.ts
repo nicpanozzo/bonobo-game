@@ -778,6 +778,7 @@ export const PERF_BUDGET = {
 export const BOLOGNA = {
   towersMs: 45000, // 0:45 comincia "Ognuno sulla sua torre": appaiono le torri e l'ingorgo in via Rizzoli
   collapseMs: 150000, // 2:30 la Garisenda cede: spariscono i suoi pezzi e cadono i mattoni
+  collapseFallMs: 4000, // quanto dura la caduta della torre disegnata: finisce a 2:34, quando appare la rampa
   bricksEndMs: 156000, // 2:36 finiscono di cadere i mattoni
   rampMs: 154000, // 2:34 appare la rampa: la torre caduta appoggiata all'Asinelli
   brawlMs: 165000, // 2:45 comincia "La grande zuffa": tutti in cima all'Asinelli
@@ -789,6 +790,7 @@ export const BOLOGNA = {
   merlonPresentMs: 8000, // i merli della cima ci sono per tanto...
   merlonGoneMs: 1000, // ...e poi spariscono per tanto
   lightningPeriodMs: 20000, // un fulmine sul punto più alto ogni tanto
+  lightningWarnMs: 1200, // l'avviso prima del fulmine: la linea tratteggiata dal cielo e il bersaglio che si accende
   windPeriodMs: 9000, // una raffica ogni giro, a sinistra e a destra sfasate di mezzo giro
   aimMinDeg: 10, // gradi sopra l'orizzontale: la mira più bassa delle bombarde (arriva sulla torre avversaria)
   aimMaxDeg: 60, // gradi sopra l'orizzontale: la mira più alta delle bombarde

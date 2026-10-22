@@ -48,8 +48,11 @@ var _props_front: Array = [] # e davanti
 var _hazard_sprites := {} # indice della trappola -> {tex, frames, fps, scale, footX, footY}: animazioni disegnate (#270)
 var _mover_sprites := {} # indice della piattaforma mobile -> come sopra (#273)
 var _pads_pressed: Array = [] # bottoni sonori (#423): stageMs dell'ultima pressione di ognuno, dallo snapshot
+const StageCollapse := preload("res://scripts/stage_collapse.gd")
+const HazardFx := preload("res://scripts/hazard_fx.gd")
 var _t_draw := 0.0 # il tempo dell'arena del frame che si sta disegnando (#378, per i ganci dentro le decorazioni)
 var _prize_team := 0 # premio (#433): la squadra in testa ai punti torre, dallo snapshot; i pezzi con forLeader ci sono solo per lei
+var _collapse := {} # la torre che crolla dell'arena (#433), art.collapse, o vuoto
 var _piece_alpha := 1.0 # pezzo a tempo (#433) che si sta disegnando: compare e sparisce sfumando
 const TEAM_RING_WIDTH := 0.8 # raggio dell'anello della squadra sotto i piedi, rispetto alla larghezza del lottatore (#409)
 const TEAM_RING_SQUASH := 0.28 # l'anello è un ovale schiacciato: sta per terra
@@ -291,6 +294,7 @@ func set_stage_spec(spec: Dictionary) -> void:
 	if art.has("foreground"):
 		_foreground = _stage_layer(art.get("dir", spec.id), art.foreground, float(art.get("scale", 1.0)))
 	_layer_scale = art.get("scale", 1.0)
+	_collapse = StageCollapse.config(spec) # la caduta si disegna da stageMs (#433)
 	_load_stage_dressing(art.get("dir", spec.id), art)
 	_life.setup(spec, stage_width(), world_height())
 	_wonder.setup(spec)
@@ -1386,6 +1390,8 @@ func _draw_trail(id: String, p: Dictionary) -> void:
 
 # Ascensori e trappole (#14), dove sono all'istante t dell'arena: stessi calcoli di physics/elements.ts
 func _draw_elements(t: float) -> void:
+	if not _collapse.is_empty(): # la torre che cade, dietro a tutto il resto (#433)
+		_shake = maxf(_shake, StageCollapse.draw(self, _collapse, t, view_rect))
 	var movers: Array = stage.get("movers") if stage.get("movers") != null else []
 	var hubs := {} # i mozzi dei getti della fontana (#378), uno per fontana
 	for spr in _mover_sprites.values():
@@ -1432,9 +1438,16 @@ func _draw_elements(t: float) -> void:
 
 func _draw_hazard(h: Dictionary, on: bool, t: float, index := -1) -> void:
 	var r := StageMotion.hazard_rect(h, t)
+	var warn := HazardFx.warn_progress(h, t) # l'avviso prima di accendersi (#433), la fisica non cambia
+	if warn >= 0.0:
+		HazardFx.draw_warning(self, h, r, warn, t, view_rect)
 	match h.kind:
 		"ciclista":
 			_draw_cyclist(h, r, t, index)
+		"fulmine":
+			if on:
+				HazardFx.draw_lightning(self, r, t, fposmod(t + float(h.get("offsetMs", 0)), float(h.get("periodMs", 1))), view_rect, Access.calm)
+				_shake = maxf(_shake, 5.0)
 		"acqua":
 			# Acqua alta (#228): verde-grigia, non blu saturo (è il colore di P2), con la superficie che ondeggia
 			draw_rect(r, Color(0.29, 0.39, 0.4, 0.82))
