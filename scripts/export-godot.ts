@@ -12,6 +12,7 @@ import { ATTACKS, AUDIO, BIRRA, BONG, CAMERA, FUNGHI, COLORS, EFFECTS, FIGHTER, 
 import { RECONNECT, RECONNECT_HOLD_MS } from "../src/shared/constants";
 import { COLORS_COLORBLIND, MAX_TEAMS, TEAM_COLORS_COLORBLIND } from "../src/shared/constants";
 import { PACMAN, TETRIS, TRAINING } from "../src/shared/constants";
+import { STATION } from "../src/shared/constants";
 import { DASH, DODGE, GAME_SPEED, RECOVERY, TICK_RATE } from "../src/shared/constants";
 import { predictionTraces } from "../src/shared/predictionTraces";
 import { HITSTOP, SMASH_CHARGE, SUPREME } from "../src/shared/constants";
@@ -240,6 +241,7 @@ const data = {
   camera: CAMERA,
   pad: PAD, // bottoni sonori dell'arena musicale (#423)
   tetris: TETRIS, // il power-up Tetris (#427)
+  station: STATION, // postazioni: bombarda e munizioni (#433)
   pacman: PACMAN, // il power-up Pac-Man (#427)
   effects: EFFECTS,
   items: ITEMS,

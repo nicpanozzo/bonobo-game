@@ -9,6 +9,7 @@ import { createItemWorld, handleItemInput, itemStates, resetItems, stepItems, ty
 import { companionState } from "./physics/companion";
 import { stageAt, stageIsTimed } from "./physics/timed";
 import { tetrisState } from "./physics/arcade";
+import { resetStations, stationSnapshot } from "./physics/stations";
 import { createProjectileWorld, projectileStates, puddleStates, type ProjectileWorld } from "./physics/projectiles";
 import { canHitWithRules, flagWinnerTeam, isTeamMode, lastStanding, leaderOnTime, requestedTeam, sanitizeRules } from "./rules";
 import { COURSE_PREFIX, seedFromCourseId } from "./courseGenerator";
@@ -259,6 +260,7 @@ export class Match {
         powerupMs: Math.ceil(f.powerupMs),
         ...(f.inputSeq >= 0 && { predict: predictionState(f) }),
         ...(f.pet && f.pet.koMs <= 0 && { companion: companionState(f)! }),
+        ...(f.station !== undefined && { station: f.station }), // #433
       });
     }
     const teamScores = this.rules.mode === "flag" ? { ...this.scores } : null;
@@ -268,7 +270,7 @@ export class Match {
     const puddles = puddleStates(this.projectiles);
     const pads = this.ctx.padsMs ? [...this.ctx.padsMs] : undefined; // bottoni sonori (#423)
     const tetris = tetrisState(this.ctx); // #427
-    return { t, players, winnerId: this.winnerId, timeLeftMs: this.timeLeftMs(), teamScores, items, projectiles, puddles, events, stageMs, ...(pads && { pads }), ...(tetris && { tetris }) };
+    return { t, players, winnerId: this.winnerId, timeLeftMs: this.timeLeftMs(), teamScores, items, projectiles, puddles, events, stageMs, ...(pads && { pads }), ...(tetris && { tetris }), ...stationSnapshot(this.ctx) };
   }
 
   // Si entra nella squadra con meno giocatori (a parità, quella col numero più basso: prima la Rossa)
@@ -390,6 +392,7 @@ export class Match {
     if (this.items) resetItems(this.items);
     this.projectiles.puddles = [];
     this.ctx.arcade = undefined; // via pezzi e blocchi del Tetris (#427)
+    resetStations([...this.fighters.values()], this.ctx); // postazioni libere, munizioni e punti torre da capo (#433)
     if (stageIsTimed(this.stage)) this.ctx.timeMs = 0; // un'arena a fasi (#433) riparte dalla prima; le altre non saltano
     this.projectiles.list = []; // gli id continuano: un client non confonde un proiettile vecchio con uno nuovo
     for (const f of this.fighters.values()) {

@@ -56,6 +56,28 @@ export interface SoundPad {
   effect: PadEffect;
 }
 
+// Postazione (#433): un pezzo di pavimento da cui si guida qualcosa, come in Lovers in a Dangerous Spacetime. Chi ci sta
+// sopra a terra e preme attacco la usa coi suoi tasti (su e giù, attacco; salto per uscire). Logica in physics/stations.ts
+export interface Station {
+  kind: "bombarda" | "munizioni"; // bombarda: spara palle di mortadella; munizioni: carica le casse per una bombarda
+  x: number; // bordo sinistro dell'area su cui si sta
+  y: number; // superficie
+  width: number;
+  team?: number; // solo questa squadra la usa (nelle modalità a squadre); senza, chiunque
+  on?: TimeWindows; // postazione a tempo (#433): fuori dalle finestre non si usa e chi c'è viene buttato fuori
+  // Bombarda (senza, valgono i numeri di STATION in constants.ts)
+  dir?: 1 | -1; // verso cui spara: 1 a destra, -1 a sinistra
+  aimMinDeg?: number; // gradi sopra l'orizzontale
+  aimMaxDeg?: number;
+  ammoMax?: number;
+  autoAmmoMs?: number; // una palla in più ogni tanti ms anche senza munizioni (1 contro 1); senza, solo dalle casse
+  // Munizioni
+  feeds?: number; // indice in stations della bombarda che rifornisce
+  loadMs?: number; // ms di attacco tenuto per caricare una cassa
+  deliveryMs?: number; // ms di salita della cassa (l'ascensore disegnato resta una piattaforma mobile normale)
+  crate?: number; // palle in una cassa
+}
+
 export interface PadEffect {
   group: string; // le piattaforme mobili con questo group
   durationMs: number; // quanto dura l'effetto
@@ -359,6 +381,7 @@ export interface StageSpec {
   music?: StageMusic; // musica della partita (E12 passo 4)
   song?: StageSong; // arena musicale (#423): il brano registrato a cui sono legate le piattaforme
   pads?: SoundPad[]; // bottoni sonori (#423)
+  stations?: Station[]; // postazioni: bombarde e munizioni (#433)
   art?: StageArt; // sfondo a strati (E12 passo 3)
   // Nascosta (#408): resta nella repo e il server la avvia ancora per id, ma la lobby non la mostra e non può essere
   // l'arena predefinita. Per rimetterla in gioco basta togliere il campo.

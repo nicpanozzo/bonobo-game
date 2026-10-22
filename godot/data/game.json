@@ -646,6 +646,28 @@
     "lineReachPx": 80,
     "returnInvulnerableMs": 600
   },
+  "station": {
+    "standTolerancePx": 4,
+    "reenterMs": 800,
+    "aimDegS": 70,
+    "aimMinDeg": 5,
+    "aimMaxDeg": 60,
+    "ammoMax": 6,
+    "startAmmo": 2,
+    "fireMs": 900,
+    "pivotPx": 46,
+    "barrelPx": 56,
+    "ballSpeedPxS": 1050,
+    "ballGravityPxS2": 1300,
+    "ballRadiusPx": 15,
+    "ballDamage": 14,
+    "ballKnockback": 500,
+    "ballKnockbackGrowth": 4.5,
+    "ballAngleDeg": 40,
+    "loadMs": 1500,
+    "deliveryMs": 2500,
+    "crate": 3
+  },
   "pacman": {
     "ms": 8000,
     "speedPxS": 380,

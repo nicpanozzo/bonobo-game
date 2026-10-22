@@ -501,6 +501,31 @@ export const PAD = {
   landTolerancePx: 4, // px: chi atterra con i piedi fin qui dalla superficie del bottone lo preme
 };
 
+// Postazioni (#433, src/shared/physics/stations.ts): bombarda e munizioni, come in Lovers in a Dangerous Spacetime.
+// Valgono quando la postazione nei dati dell'arena non dice altro
+export const STATION = {
+  standTolerancePx: 4, // px: con i piedi fin qui dalla superficie della postazione ci si è sopra
+  reenterMs: 800, // ms dopo l'uscita prima che lo stesso lottatore possa rientrare in una postazione
+  aimDegS: 70, // gradi/s di cui gira la canna tenendo su o giù
+  aimMinDeg: 5, // gradi sopra l'orizzontale: la mira più bassa
+  aimMaxDeg: 60, // gradi sopra l'orizzontale: la mira più alta
+  ammoMax: 6, // palle di mortadella che la bombarda tiene al massimo
+  startAmmo: 2, // palle nella bombarda a inizio partita
+  fireMs: 900, // ms tra un colpo e il prossimo
+  pivotPx: 46, // px sopra la superficie del perno della canna
+  barrelPx: 56, // px di canna: la palla esce dalla bocca
+  ballSpeedPxS: 1050, // pixel/s di uscita della palla
+  ballGravityPxS2: 1300, // pixel/s² della palla: fa l'arco
+  ballRadiusPx: 15, // raggio della palla, pixel
+  ballDamage: 14, // percentuale a chi viene preso
+  ballKnockback: 500, // pixel/s di lancio
+  ballKnockbackGrowth: 4.5, // pixel/s in più per ogni punto di percentuale del bersaglio
+  ballAngleDeg: 40, // angolo di lancio di chi viene preso
+  loadMs: 1500, // munizioni: ms di attacco tenuto per caricare una cassa
+  deliveryMs: 2500, // munizioni: ms di salita della cassa fino alla bombarda
+  crate: 3, // munizioni: palle in una cassa
+};
+
 // Classifica delle partite (#18, src/server/leaderboard.ts)
 export const LEADERBOARD = {
   windowDays: 7, // la pagina /classifica conta le partite degli ultimi 7 giorni
