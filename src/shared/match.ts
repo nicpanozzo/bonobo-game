@@ -3,7 +3,7 @@
 // girare in locale (allenamento, predizione) e un porting su un altro motore parte da qui.
 
 import { getCharacter, skinFor } from "./characters";
-import { COLORS, FIGHTER, ITEM_AMOUNTS, MATCH_RESTART_MS, MAX_PLAYERS_PER_ROOM, RECONNECT_RESUME_INVULNERABLE_MS, TEAM_COLORS, TRAINING } from "./constants";
+import { COLORS, FIGHTER, GAME_SPEED, ITEM_AMOUNTS, MATCH_RESTART_MS, MAX_PLAYERS_PER_ROOM, RECONNECT_RESUME_INVULNERABLE_MS, TEAM_COLORS, TRAINING } from "./constants";
 import { bufferPresses, createFighter, emptyInput, resetForMatch, stepWorld, type Fighter, type PhysicsContext } from "./physics";
 import { createItemWorld, handleItemInput, itemStates, resetItems, stepItems, type ItemWorld } from "./physics/items";
 import { companionState } from "./physics/companion";
@@ -197,9 +197,10 @@ export class Match {
     // Gli oggetti cadono solo quando c'è qualcuno con cui litigarseli e la partita non è finita
     const items = this.items && list.length >= 2 && !this.winnerId ? this.items : null;
     if (items) handleItemInput(items, list, this.ctx);
-    stepWorld(list, dtMs, this.ctx);
+    const fightMs = dtMs * GAME_SPEED; // il combattimento va un po' più piano dell'orologio (#384 A4)
+    stepWorld(list, fightMs, this.ctx, dtMs);
     for (const f of list) f.inputTicks++; // E17: il client rigioca da qui il proprio movimento
-    if (items) stepItems(items, list, dtMs, this.ctx);
+    if (items) stepItems(items, list, fightMs, this.ctx);
     if (this.rules.mode === "flag" && !this.winnerId) this.scoreFlags();
     if (this.rules.mode === "race" && !this.winnerId) this.updateCheckpoints(list);
     this.updateMatch(list, dtMs);

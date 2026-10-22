@@ -14,6 +14,7 @@ export const WORLD = {
 export const TICK_RATE = 60; // aggiornamenti della fisica al secondo (server)
 export const SEND_RATE = 60; // stati inviati ai client al secondo: uno per tick, il movimento degli altri arriva prima e più fluido
 export const SNAPSHOT_CLOCK_RESYNC_MS = 100; // ms: oltre questo scarto dall'ora vera l'ora degli snapshot si riallinea (#320)
+export const GAME_SPEED = 0.9; // velocità del combattimento rispetto all'orologio vero: 0.9 = un po' più lento, come Smash (sondaggio di #384, A4). L'arena e il tempo della partita restano veri
 export const MAX_CATCHUP_TICKS = 5; // passi recuperabili in una volta se il server resta indietro
 export const MAX_PLAYERS_PER_ROOM = 8; // 4 contro 4 a squadre (#55)
 

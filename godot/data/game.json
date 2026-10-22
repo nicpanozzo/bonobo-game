@@ -2,6 +2,7 @@
   "version": "0.2.0",
   "protocol": 1,
   "tickRate": 60,
+  "gameSpeed": 0.9,
   "world": {
     "width": 1280,
     "height": 720

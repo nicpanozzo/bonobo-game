@@ -2186,7 +2186,7 @@ func _draw_strike(p: Dictionary, now: float) -> void:
 	var box := _attack_rect(p, spec)
 	var chest := Vector2(p.x, p.y - float(game.fighter.height) * 0.6)
 	var arc := StrikeFx.arc_for(chest, int(p.facing), box)
-	var progress := (now - float(_strikes[p.id].at)) / maxf(1.0, float(spec.get("activeMs", 100)) * 0.6)
+	var progress := _fight_ms(now, float(_strikes[p.id].at)) / maxf(1.0, float(spec.get("activeMs", 100)) * 0.6)
 	var heavy: bool = kind.begins_with("heavy") or kind == "dashAttack"
 	var own: Variant = game.characters.get(p.characterId, {}).get("strikeColor")
 	var col: Color = Color(own) if own is String else (Color(1, 0.75, 0.35) if heavy else Color.WHITE)
@@ -2208,6 +2208,11 @@ func _draw_speed_lines(p: Dictionary) -> void:
 		draw_line(l[0], l[1], col, 2.0)
 
 
+# Tempo del combattimento da since (#384 A4)
+func _fight_ms(now: float, since: float) -> float:
+	return FighterPose.fight_elapsed(game, now, since)
+
+
 # Un fotogramma dello spritesheet, con i piedi dello sprite su quelli del giocatore
 # e girato dalla parte in cui guarda
 func _draw_sprite(p: Dictionary, character: Dictionary, now: float, react := Transform2D.IDENTITY) -> void:
@@ -2221,7 +2226,7 @@ func _draw_sprite(p: Dictionary, character: Dictionary, now: float, react := Tra
 	# se si resta fermi a terra lasciamo finire l'animazione del colpo
 	var prev_kind: String = state.get("kind", "")
 	if name == "idle" and kind == "" and prev_kind != "" and anims.has(prev_name):
-		if now - float(state.since) < FighterPose.animation_ms(anims[prev_name], FighterPose.attack_spec(game, p.characterId, prev_kind)):
+		if _fight_ms(now, float(state.since)) < FighterPose.animation_ms(anims[prev_name], FighterPose.attack_spec(game, p.characterId, prev_kind)):
 			name = prev_name
 	# Gli stati di passaggio si mostrano solo a chi li ha disegnati: il ripiego fermerebbe la corsa o il salto
 	var flying: bool = p.hitstun and not p.onGround
@@ -2264,11 +2269,11 @@ func _draw_sprite(p: Dictionary, character: Dictionary, now: float, react := Tra
 		if not _rig_motion.has(p.id):
 			_rig_motion[p.id] = RigMotion.new()
 		var motion: RefCounted = _rig_motion[p.id]
-		var pose: PackedFloat32Array = rig.pose_at(str(a.src), now - float(state.since), attack, a)
+		var pose: PackedFloat32Array = rig.pose_at(str(a.src), _fight_ms(now, float(state.since)), attack, a)
 		pose = motion.apply(rig, pose, now, _rig_context(p, name, state, attack))
 		rig.draw(self, feet, pose, tint, motion.smear)
 		return
-	var frame := FighterPose.sprite_frame(a, now - float(state.since), attack)
+	var frame := FighterPose.sprite_frame(a, _fight_ms(now, float(state.since)), attack)
 	var fw: float = sheet.frameWidth
 	var fh: float = sheet.frameHeight
 	# Nel foglio unico ogni animazione è una riga; nel formato cartella è un PNG a sé, con una riga sola

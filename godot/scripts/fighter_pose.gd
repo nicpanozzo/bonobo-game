@@ -100,6 +100,12 @@ static func has_own(animations: Dictionary, name: String) -> bool:
 	return animations.has(name) and str(animations[name].get("src", name)) == name
 
 
+# Tempo di combattimento passato da since: col gioco rallentato (gameSpeed, #384 A4) i colpi durano di più
+# sull'orologio, e le animazioni seguono la fisica così il fotogramma d'impatto cade quando colpisce davvero
+static func fight_elapsed(game: Dictionary, now: float, since: float) -> float:
+	return (now - since) * float(game.get("gameSpeed", 1.0))
+
+
 # Il fotogramma da mostrare dopo elapsed_ms. Negli attacchi con hitFrame il fotogramma d'impatto cade quando
 # la hitbox si accende (startupMs) e l'animazione finisce con cooldownMs; senza, si va a fps.
 static func sprite_frame(a: Dictionary, elapsed_ms: float, attack: Dictionary = {}) -> int:

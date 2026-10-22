@@ -24,6 +24,7 @@ var blocks: Array = [] # blocchi del Tetris dell'ultimo snapshot (#427): il port
 var _game: Dictionary
 var _tick_rate := 60.0
 var _dt_ms := 1000.0 / 60.0
+var _fight_ms := 1000.0 / 60.0 # quanto avanza la fisica in un tick: meno di _dt_ms se il gioco è rallentato (#384 A4)
 var _stage: Dictionary = {}
 var _movement: PredictMovement
 var _movement_key := ""
@@ -43,6 +44,7 @@ func setup(game: Dictionary) -> void:
 	_game = game
 	_tick_rate = float(game.get("tickRate", 60))
 	_dt_ms = 1000.0 / _tick_rate
+	_fight_ms = _dt_ms * float(game.get("gameSpeed", 1.0))
 	smooth_ms = float(game.net.get("predictionSmoothMs", smooth_ms))
 	max_replay_ticks = int(ceil(float(game.net.get("predictionMaxReplayMs", 500)) / _dt_ms))
 	teleport_distance = float(game.net.teleportDistance)
@@ -233,7 +235,7 @@ func _advance(now_ms: float) -> void:
 		_tick += 1
 		_prev_xy = Vector2(_state.x, _state.y)
 		_movement.set_input(_state, input_at(_tick))
-		_movement.step(_state, _dt_ms)
+		_movement.step(_state, _fight_ms)
 
 
 # Tra un tick e l'altro: la via di mezzo, così a più di 60 fps il lottatore non va a scatti

@@ -12,7 +12,7 @@ import { ATTACKS, AUDIO, BIRRA, BONG, CAMERA, FUNGHI, COLORS, EFFECTS, FIGHTER, 
 import { RECONNECT, RECONNECT_HOLD_MS } from "../src/shared/constants";
 import { COLORS_COLORBLIND, MAX_TEAMS, TEAM_COLORS_COLORBLIND } from "../src/shared/constants";
 import { PACMAN, TETRIS, TRAINING } from "../src/shared/constants";
-import { DASH, DODGE, RECOVERY, TICK_RATE } from "../src/shared/constants";
+import { DASH, DODGE, GAME_SPEED, RECOVERY, TICK_RATE } from "../src/shared/constants";
 import { predictionTraces } from "../src/shared/predictionTraces";
 import { HITSTOP, SMASH_CHARGE, SUPREME } from "../src/shared/constants";
 import { LESSONS, TUTORIAL_BOT, TUTORIAL_STAGE_ID } from "../src/shared/tutorial";
@@ -215,6 +215,7 @@ const data = {
   version: pkg.version,
   protocol: PROTOCOL_VERSION,
   tickRate: TICK_RATE, // tick di fisica al secondo: il client numera gli input con il suo tick (E17)
+  gameSpeed: GAME_SPEED, // il combattimento va a questa frazione dell'orologio: predizione e animazioni dei colpi ci si adeguano (#384 A4)
   world: WORLD,
   fighter: FIGHTER, // misure e movimento: il port del movimento per la predizione li usa tutti (E17)
   dash: DASH, // scatto e corsa (#199), per la predizione (E17)
