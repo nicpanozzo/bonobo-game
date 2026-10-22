@@ -2,7 +2,7 @@
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { BOLOGNA, STATION, TICK_RATE } from "../constants";
+import { BOLOGNA, STATION, TETRIS, TICK_RATE } from "../constants";
 import { reachable, timedReachProblems } from "../stageCheck";
 import { STAGES, type Station } from "../stages";
 import { createFighter, emptyInput, pieceOn, stageAt, stepWorld, type PhysicsContext } from "./index";
@@ -51,7 +51,7 @@ const prizePieces = (ctx: PhysicsContext) => ctx.stage.platforms.filter((p) => p
 
 describe("Bologna: postazioni (#433)", () => {
   it("una bombarda per torre sulla cima, munizioni alla base, alla squadra giusta", () => {
-    assert.deepEqual(bologna.stations!.map((s) => [s.kind, s.team]), [["bombarda", 1], ["munizioni", 1], ["bombarda", 2], ["munizioni", 2]]);
+    assert.deepEqual(bologna.stations!.map((s) => [s.kind, s.team]), [["bombarda", 1], ["munizioni", 1], ["bombarda", 2], ["munizioni", 2], ["gru", 1], ["gru", 2]]);
     assert.equal(garisendaAmmo.feeds, 0);
     assert.equal(asinelliAmmo.feeds, 2);
     assert.equal(garisendaCannon.dir, 1);
@@ -170,6 +170,60 @@ describe("Bologna: il premio dei ponteggi (#433)", () => {
     for (const leader of [1, 2]) {
       const view = stageAt(bologna, inBrawl, leader);
       for (const p of view.platforms.filter((q) => q.forLeader === leader)) assert.ok(reachable(view, p), `ponteggio ${p.x},${p.y} (squadra ${leader})`);
+    }
+  });
+});
+
+describe("Bologna: le gru (#433)", () => {
+  const cranes = bologna.stations!.map((s, i) => [s, i] as const).filter(([s]) => s.kind === "gru");
+
+  it("una gru per torre, in fondo all'elenco, della squadra giusta e nelle finestre delle torri", () => {
+    assert.deepEqual(cranes.map(([s, i]) => [s.team, i]), [[1, 4], [2, 5]]);
+    const [g, a] = cranes.map(([s]) => s);
+    assert.ok(!pieceOn(g, BOLOGNA.towersMs - 1) && pieceOn(g, BOLOGNA.towersMs) && !pieceOn(g, BOLOGNA.collapseMs));
+    assert.ok(pieceOn(a, BOLOGNA.towersMs) && pieceOn(a, BOLOGNA.brawlMs - 1) && !pieceOn(a, BOLOGNA.brawlMs));
+  });
+
+  it("il tratto è fatto di colonne intere, dalla propria parte del tetto, e i pezzi pendono sopra il ripiano", () => {
+    const roof = bologna.platforms.find((p) => p.on?.[0]?.[0] === BOLOGNA.brawlMs && p.width === 460)!;
+    for (const [s] of cranes) {
+      assert.ok(s.fromX! % TETRIS.cellPx === 0 && s.toX! % TETRIS.cellPx === 0 && s.toX! - s.fromX! >= 4 * TETRIS.cellPx);
+      assert.ok(s.dropY! < s.landY!);
+      assert.ok(s.team === 1 ? s.toX! <= roof.x : s.fromX! >= roof.x + roof.width, `la gru ${s.team} è dalla sua parte`);
+    }
+  });
+
+  it("i pezzi di ogni gru si posano sul ripiano e restano fino alla zuffa, dove ci si sale sopra", () => {
+    for (const [s, i] of cranes) {
+      const ctx = newCtx(BOLOGNA.towersMs + 1000);
+      const f = createFighter({ id: "p0", name: "P0", characterId: "default", color: 0, team: s.team!, index: 0, stocks: 3 }, bologna);
+      f.x = s.x + s.width / 2;
+      f.y = s.y;
+      f.onGround = true;
+      stepWorld([f], DT, ctx);
+      f.input = { ...emptyInput(), light: true };
+      stepWorld([f], DT, ctx);
+      f.input = emptyInput();
+      assert.equal(f.station, i, "entra");
+      stepWorld([f], DT, ctx);
+      assert.ok(ctx.stations!.slots[i].held, "pende un pezzo");
+      f.input = { ...emptyInput(), heavy: true };
+      stepWorld([f], DT, ctx);
+      f.input = emptyInput();
+      for (let k = 0; k < 60 && ctx.arcade!.pieces.length > 0; k++) stepWorld([f], DT, ctx);
+      const blocks = ctx.arcade!.blocks;
+      assert.equal(blocks.length, 4);
+      assert.ok(blocks.every((b) => b.keep === i && b.x >= s.fromX! && b.x + TETRIS.cellPx <= s.toX!), "tutti dentro il tratto e fissi");
+      assert.equal(Math.max(...blocks.map((b) => b.y + TETRIS.cellPx)), s.landY, "il fondo sta sul ripiano");
+      // Nella zuffa la gru non c'è più ma i blocchi sì, e portano un lottatore
+      ctx.timeMs = BOLOGNA.brawlMs + 5000;
+      const top = Math.min(...blocks.map((b) => b.y));
+      const g = createFighter({ id: "p1", name: "P1", characterId: "default", color: 0, team: s.team!, index: 1, stocks: 3 }, bologna);
+      g.x = blocks.find((q) => q.y === top)!.x + TETRIS.cellPx / 2;
+      g.y = top - 30;
+      for (let k = 0; k < 40; k++) stepWorld([g], DT, ctx);
+      assert.equal(ctx.arcade!.blocks.length, 4, "restano");
+      assert.ok(g.onGround && Math.abs(g.y - top) < 1, `in piedi sul blocco più alto (${g.y} / ${top})`);
     }
   });
 });
