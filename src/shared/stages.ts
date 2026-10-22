@@ -1135,8 +1135,6 @@ export const STAGES: Record<string, StageSpec> = {
     // Il premio: chi ha più punti torre al crollo trova dei ponteggi nella zuffa
     prizeAtMs: BOLOGNA.collapseMs,
     prizeShowMs: BOLOGNA.brawlMs,
-    // La Garisenda che cade verso l'Asinelli (#433): ruota attorno al suo piede destro (la punta arriva a circa x 1520, y 1570) fino ad appoggiarsi all'Asinelli
-    art: { layers: [], collapse: { atMs: BOLOGNA.collapseMs, durationMs: BOLOGNA.collapseFallMs, pivot: { x: 830, y: 1940 }, height: 780, width: 260, toDeg: 62, warnMs: 6000 } },
     camera: { minZoom: 0.5, maxZoom: 1.1, floorY: 2080 },
     blastZone: { left: -180, right: 2380, top: 1300, bottom: 2500 }, // come la prima fase
     // Prime otto partenze: quattro sulla base della Garisenda (squadra 1), quattro su quella dell'Asinelli (squadra 2)
@@ -1148,6 +1146,98 @@ export const STAGES: Record<string, StageSpec> = {
     // "La Rossa": mattoni caldi con il bordo chiaro, legno ocra, cielo del tramonto; lontano dai colori dei giocatori (stile-grafico, sez. 7)
     colors: { sky: 0x3b2634, solid: 0x8a4a35, solidEdge: 0xf0d9b5, platform: 0xc49a5a },
     music: { bpm: 112, chords: ["Dm", "Bb", "F", "C"], lead: "triangle" },
+    // Disegnati col codice da tools/arene/bologna.py (#433), a 2x, nello stile di Padova. La Garisenda non c'è: la
+    // disegna il codice, che la fa crollare; qui solo il cantiere alla base
+    art: {
+      // Parallasse anche in verticale (#400): l'arena è alta, e salendo sull'Asinelli i colli e il mare di tetti restano
+      // all'orizzonte mentre i portici vicini scendono. Gli strati coprono tutta la salita (bologna.py, LAYERS)
+      verticalParallax: 1,
+      scale: 0.5, // strati, materiali e decorazioni senza scala propria sono a 2x (stile grafico, sezione 5)
+      // La Garisenda che cade verso l'Asinelli (#433): ruota attorno al suo piede destro (la punta arriva a circa x 1520, y 1570) fino ad appoggiarsi all'Asinelli
+      collapse: { atMs: BOLOGNA.collapseMs, durationMs: BOLOGNA.collapseFallMs, pivot: { x: 830, y: 1940 }, height: 780, width: 260, toDeg: 62, warnMs: 6000 },
+      layers: [
+        { file: "sfondo-0.png", parallax: 0.1 }, // il cielo trasparente, i colli con San Luca e il mare di tetti rossi
+        { file: "sfondo-1.png", parallax: 0.4 }, // la città: San Petronio, la Prendiparte, l'orologio, la cupola della Vita
+        { file: "sfondo-2.png", parallax: 0.85 }, // i portici attorno alla piazza, la Mercanzia, il selciato
+      ],
+      preview: "anteprima.png",
+      previewFull: true, // composta da bologna.py con i pezzi della seconda fase: la lobby non ci ridisegna sopra
+      skins: {
+        piazza: { file: "piazza.png", edge: "bordo.png" }, // la piazza: conci di arenaria
+        base: { file: "base.png", edge: "bordo.png" }, // le basi delle torri: selenite
+        legno: { file: "legno.png", edge: "bordo-legno.png", depth: 14 }, // balconi, scale e ponteggi
+        davanzale: { file: "davanzale.png", edge: "bordo.png", depth: 12 }, // le finestre delle torri
+        portico: { file: "portico.png", edge: "bordo.png", depth: 18 }, // il passaggio rialzato dei portici
+        coppi: { file: "coppi.png", edge: "bordo-coppi.png", depth: 22 }, // il tetto dei portici
+        mattoni: { file: "mattoni.png", edge: "bordo.png", depth: 24 }, // la cima, la torre caduta, i detriti, il tetto
+        merlo: { file: "merlo.png", edge: "bordo.png", depth: 80 }, // i merli che lampeggiano: dal piano (900) al tetto (980)
+      },
+      solidSkin: "base",
+      platformSkin: "legno",
+      pieces: {
+        solids: ["piazza", "base", "base"],
+        platforms: [
+          "portico", "coppi", "portico", "coppi", // 0-3 i portici
+          "legno", "legno", "davanzale", "legno", "legno", "legno", "davanzale", "legno", // 4-11 la Garisenda
+          "legno", "legno", "davanzale", "legno", "legno", "legno", "davanzale", "mattoni", // 12-19 l'Asinelli, la cima di mattoni
+          "mattoni", "mattoni", "mattoni", "mattoni", // 20-23 la rampa: la Garisenda caduta
+          "mattoni", "mattoni", "mattoni", "mattoni", "mattoni", "mattoni", // 24-29 i detriti
+          "mattoni", "merlo", "merlo", "merlo", "merlo", // 30 il tetto della zuffa, 31-34 i merli
+        ],
+      },
+      props: [
+        // i palazzi coi portici ai lati (pezzi 0-3): il basamento scende fino a y 2520 e copre il vuoto oltre la piazza
+        { file: "portico-casa.png", x: 45, y: 2520 },
+        { file: "portico-casa.png", x: 2155, y: 2520, flip: true },
+        // il fusto dell'Asinelli dietro i suoi pezzi, col montacarichi a destra e il parafulmine dove cade il fulmine
+        { file: "asinelli.png", x: 1560, y: 1945 },
+        { file: "cantiere.png", x: 700, y: 1942 }, // il recinto di container alla base della Garisenda
+        { file: "statua.png", x: 1150, y: 2000 }, // San Petronio col modellino della città
+        ...[330, 1040, 1260, 1860].map((x) => ({ file: "lampione.png", x, y: 2000 })),
+        // TODO community: il cartello della piazza (oggi "Città 30") è una battuta da confermare
+        { file: "cartello.png", x: 1770, y: 2000 },
+      ],
+      life: {
+        // piove dal crollo (2:30) in poi, fino al temporale della zuffa: i passanti aprono l'ombrello
+        rain: { periodMs: 900000, rainMs: 750000, offsetMs: 750000 },
+        sheets: {
+          nuvole: { file: "nuvole.png", frames: 4 },
+          gabbiano: { file: "gabbiano.png", frames: 8 },
+          rondine: { file: "rondine.png", frames: 4 },
+          pipistrello: { file: "pipistrello.png", frames: 4 },
+          piccione: { file: "piccione.png", frames: 6 },
+          passanti: { file: "passanti.png", frames: 8, rows: 9 },
+          ombrelli: { file: "ombrelli.png", frames: 4 },
+          auto: { file: "auto.png", frames: 5 },
+          furgone: { file: "furgone.png", frames: 1 },
+          vespa: { file: "vespa.png", frames: 2 },
+          bici: { file: "bici.png", frames: 4 },
+          bus: { file: "bus.png", frames: 1 }, // il bus arancio, senza scritte
+        },
+        birds: { y: 880, parallax: 0.2, everyMs: 16000 },
+        flyers: { y: 1150, parallax: 0.6, count: 6 }, // rondini attorno alle torri, di notte i pipistrelli
+        // sulla mitra di San Petronio, sulla corona dell'Asinelli, sui tetti dei portici e sulla rete del cantiere
+        pigeons: [{ x: 1152, y: 1717 }, { x: 1302, y: 982 }, { x: 1698, y: 982 }, { x: 130, y: 1760 }, { x: 2070, y: 1760 }, { x: 860, y: 1858 }],
+        // sotto i portici dello strato vicino (NEAR_BASE in bologna.py) e sulla strada davanti (ROAD_Y)
+        walkers: { y: 1778, parallax: 0.85, count: 10, umbrellas: true },
+        traffic: { y: 1832, parallax: 0.85, everyMs: 2600, kinds: ["auto", "auto", "bici", "bici", "vespa", "vespa", "bus", "furgone"] },
+        daycycle: {
+          // un giorno in 1000 s da metà pomeriggio: il sole tramonta poco prima del crollo (2:30), la zuffa è all'imbrunire
+          // con le finestre accese e la polvere (4:30) sale di notte
+          cycleMs: 1000000,
+          startAt: 0.11,
+          sky: true,
+          lamps: [-90, 330, 700, 1500, 1880, 2290].map((x) => ({ x, y: 1714, parallax: 0.85 })), // i lampioni dello strato vicino
+          lightLayers: [0, 1, 2].map((i) => ({ file: `sfondo-${i}-luci.png`, parallax: [0.1, 0.4, 0.85][i] })),
+          lightProps: [
+            { file: "asinelli-luci.png", x: 1560, y: 1945 },
+            { file: "portico-casa-luci.png", x: 45, y: 2520 },
+            { file: "portico-casa-luci-dx.png", x: 2155, y: 2520 },
+            ...[330, 1040, 1260, 1860].map((x) => ({ file: "lampione-luci.png", x, y: 2000 })),
+          ],
+        },
+      },
+    },
   },
 };
 
