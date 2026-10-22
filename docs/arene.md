@@ -260,6 +260,8 @@ phases: [
 ],
 ```
 
+L'esempio completo è **Bologna** (`bologna` in `stages.ts`, #433): arena a squadre di 2200×2400 con quattro fasi (piazza, torri, crollo della Garisenda, zuffa sull'Asinelli) fatta di pezzi a tempo, trappole che viaggiano, raffiche e polvere che sale; i tempi sono in `BOLOGNA` (`constants.ts`) e `blinkWindows` scrive le finestre dei merli che lampeggiano.
+
 ### Postazioni (`stations`): bombarda e munizioni (#433)
 
 Pezzi di pavimento da cui si guida qualcosa, come in *Lovers in a Dangerous Spacetime*. Il primo uso è la Bologna a squadre: una bombarda in cima alla torre e le sue munizioni in fondo, così un compagno sta sopra e uno sotto.

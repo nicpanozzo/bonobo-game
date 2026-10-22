@@ -2,9 +2,9 @@ import assert from "node:assert/strict";
 import { existsSync, statSync } from "node:fs";
 import { describe, it } from "node:test";
 import { CHARACTERS, characterStats } from "./characters";
-import { AUDIO, CAMERA, MAX_PLAYERS_PER_ROOM, TICK_RATE, WORLD } from "./constants";
-import { createFighter, stepWorld, type PhysicsContext } from "./physics";
-import { hazardActive, moverPosition } from "./physics/elements";
+import { AUDIO, BOLOGNA, CAMERA, MAX_PLAYERS_PER_ROOM, TICK_RATE, WORLD } from "./constants";
+import { createFighter, stageAt, stepWorld, type PhysicsContext } from "./physics";
+import { hazardActive, moverPosition, resolveHazards } from "./physics/elements";
 import { courseSteps, generateCourse } from "./courseGenerator";
 import { generateStage, seedFromStageId } from "./stageGenerator";
 import { checkTimes, JUMP_HEIGHT, reachable, SIDE_REACH, stageCheckData, timedReachProblems } from "./stageCheck";
@@ -171,6 +171,50 @@ describe("arene", () => {
     assert.deepEqual(checkTimes(base), [0], "un'arena che non cambia si guarda una volta sola");
   });
 
+  it("Bologna: squadre ai lati, fasi in ordine e un'arena che cambia davvero (#433)", () => {
+    const b = STAGES.bologna;
+    // Partenze: quattro per squadra, la 1 a sinistra del centro e la 2 a destra
+    const mid = stageWidth(b) / 2;
+    const [t1, t2] = [1, 2].map((team) => b.spawns.filter((s) => s.team === team));
+    assert.equal(t1.length, 4);
+    assert.equal(t2.length, 4);
+    assert.ok(t1.every((s) => s.x < mid) && t2.every((s) => s.x > mid), "squadra 1 a sinistra, squadra 2 a destra");
+    // Fasi in ordine, la prima da 0
+    const starts = b.phases!.map((p) => p.startMs);
+    assert.equal(starts[0], 0);
+    assert.deepEqual(starts, [...starts].sort((x, y) => x - y));
+    // A 2:40 la Garisenda non c'è più (otto pezzi, a tempo fino al crollo) e c'è la rampa (quattro tratti inclinati)
+    const garisenda = b.platforms.filter((p) => p.on?.[0]?.[1] === BOLOGNA.collapseMs);
+    assert.equal(garisenda.length, 8);
+    const ramp = (s: StageSpec) => s.platforms.filter((p) => p.y2 !== undefined && p.on?.[0]?.[0] === BOLOGNA.rampMs);
+    const before = stageAt(b, 100000);
+    const after = stageAt(b, 160000);
+    assert.ok(garisenda.every((p) => before.platforms.includes(p) && !after.platforms.includes(p)));
+    assert.equal(ramp(before).length, 0);
+    assert.equal(ramp(after).length, 4);
+    // I merli lampeggiano, sfasati: mai tutti spariti insieme, ma ognuno sparisce
+    const merlons = (s: StageSpec) => s.platforms.filter((p) => p.y === 900);
+    let fewest = 4;
+    for (let t = BOLOGNA.brawlMs; t < BOLOGNA.brawlMs + 60000; t += 250) fewest = Math.min(fewest, merlons(stageAt(b, t)).length);
+    assert.equal(merlons(stageAt(b, BOLOGNA.brawlMs)).length, 4, "all'inizio ci sono tutti");
+    assert.equal(fewest, 3, "uno alla volta");
+    // L'ingorgo (da 0:45) fa male a terra in qualche momento, mai sui portici né sulle basi; prima di 0:45 non c'è
+    const hurt = (t: number, x: number, y: number) => {
+      const ctx: PhysicsContext = { stage: stageAt(b, t), events: [], timeMs: t };
+      const f = createFighter({ id: "p", name: "", characterId: "default", color: 0, team: 0, index: 0, stocks: 3 }, b);
+      f.x = x;
+      f.y = y;
+      f.invulnerable = false;
+      resolveHazards([f], ctx);
+      return f.percent > 0;
+    };
+    const jam = [];
+    for (let t = BOLOGNA.towersMs; t < BOLOGNA.towersMs + 8000; t += 100) if (hurt(t, 500, 2000)) jam.push(t);
+    assert.ok(jam.length > 0, "a terra fa male nella fase 2");
+    for (const t of jam) assert.ok(!hurt(t, 150, 1880) && !hurt(t, 700, 1940), "portici e basi al riparo");
+    assert.ok(![44000, 44500].some((t) => hurt(t, 500, 2000) && !hazardActive(b.hazards![0], t)), "prima di 0:45 niente ingorgo");
+  });
+
   it("ogni personaggio raggiunge tutte le piattaforme delle arene fatte a mano (E11)", () => {
     for (const id of Object.keys(CHARACTERS)) {
       const { jump, gravity } = characterStats(id);
@@ -285,6 +329,8 @@ describe("arene", () => {
   it("un'arena copiata dall'editor si incolla in stages.ts e passa i controlli (E12)", async () => {
     const editor = await loadEditor();
     for (const base of [...Object.values(STAGES), generateStage(3), generateStage(17)]) {
+      // Eccezione (#433): l'editor rifà le partenze a coppie simmetriche e non conosce quelle di squadra (né fasi e pezzi a tempo)
+      if (base.spawns.some((s) => s.team !== undefined)) continue;
       const model = { ...base, id: "nuova", name: "Nuova arena" };
       const spec = editor.toStageSpec(model);
       assert.deepEqual(editor.problems(spec, stageCheckData(), Object.keys(STAGES)), [], base.id);
