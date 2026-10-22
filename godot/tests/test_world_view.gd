@@ -42,6 +42,15 @@ func test_preparazione_al_salto_e_atterraggio() -> void:
 			runner.check(anims.has("jumpSquat") and anims.has("land"), "%s: jumpSquat e land ripiegano su uno stato disegnato" % id)
 
 
+# Col gioco rallentato le animazioni contano il tempo del combattimento, come la fisica (#384 A4)
+func test_animazioni_al_passo_del_gioco() -> void:
+	var game: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/game.json"))
+	var speed := float(game.gameSpeed)
+	runner.check(speed > 0.0 and speed <= 1.0, "gameSpeed tra 0 e 1 (%s)" % speed)
+	runner.check(is_equal_approx(FighterPose.fight_elapsed(game, 1500.0, 500.0), 1000.0 * speed), "1 s d'orologio = %s ms di combattimento" % (1000.0 * speed))
+	runner.check(is_equal_approx(FighterPose.fight_elapsed({}, 1500.0, 500.0), 1000.0), "senza il campo, tempo vero")
+
+
 func test_stato_preciso_dei_colpi() -> void:
 	runner.check(FighterPose.animation_for(_player({"attack": "lightUp"})) == "lightUp", "variante leggera")
 	runner.check(FighterPose.animation_for(_player({"attack": "heavyAir", "onGround": false})) == "heavyAir", "variante pesante in aria")

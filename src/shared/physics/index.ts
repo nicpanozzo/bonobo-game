@@ -152,8 +152,9 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
 }
 
 // Un tick intero: l'arena va avanti, tutti si muovono, poi si risolvono i colpi e le trappole
-export function stepWorld(fighters: Fighter[], dtMs: number, ctx: PhysicsContext): void {
-  ctx.timeMs = (ctx.timeMs ?? 0) + dtMs;
+// stageMs: quanto avanza l'arena (piattaforme, musica), che va a tempo vero anche quando il combattimento è rallentato
+export function stepWorld(fighters: Fighter[], dtMs: number, ctx: PhysicsContext, stageMs = dtMs): void {
+  ctx.timeMs = (ctx.timeMs ?? 0) + stageMs;
   const firstEvent = ctx.events.length; // da qui gli eventi di questo tick (i bottoni sonori guardano gli atterraggi)
   stepGrabs(fighters, dtMs, ctx);
   const tripping = swapTripInput(fighters); // funghetti (#302): destra e sinistra invertite solo per il passo

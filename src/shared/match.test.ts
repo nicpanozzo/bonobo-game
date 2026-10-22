@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { FIGHTER, MAX_PLAYERS_PER_ROOM, RECONNECT_RESUME_INVULNERABLE_MS, RESPAWN_MS, TEAM_COLORS, TICK_RATE, TRAINING } from "./constants";
+import { FIGHTER, GAME_SPEED, MAX_PLAYERS_PER_ROOM, RECONNECT_RESUME_INVULNERABLE_MS, RESPAWN_MS, TEAM_COLORS, TICK_RATE, TRAINING } from "./constants";
 import { emptyInput, type Fighter } from "./physics";
 import { Match } from "./match";
 import type { GameEvent } from "./types";
 
 const DT = 1000 / TICK_RATE;
+const FIGHT_DT = DT * GAME_SPEED; // quanto avanza il combattimento in un tick (#384 A4)
 
 function run(match: Match, ticks: number): GameEvent[] {
   const events: GameEvent[] = [];
@@ -181,7 +182,7 @@ describe("partita", () => {
     // poi cade: riparte da lì, con le vite intatte
     a.x = cp.x;
     a.y = m.stage.blastZone.bottom + 50;
-    events = run(m, 2 + Math.ceil(RESPAWN_MS / DT));
+    events = run(m, 2 + Math.ceil(RESPAWN_MS / FIGHT_DT));
     assert.ok(events.some((e) => e.type === "respawn" && e.id === "a"));
     assert.equal(a.stocks, 3);
     assert.ok(Math.abs(a.x - cp.x) < 60, "di nuovo vicino al checkpoint");
@@ -239,7 +240,7 @@ describe("partita", () => {
     assert.ok(events.some((e) => e.type === "back" && e.id === "b"));
     assert.equal(b.away, false);
     assert.equal(b.invulnerable, true);
-    run(m, Math.ceil(RECONNECT_RESUME_INVULNERABLE_MS / DT) + 1);
+    run(m, Math.ceil(RECONNECT_RESUME_INVULNERABLE_MS / FIGHT_DT) + 1);
     assert.equal(b.invulnerable, false);
   });
 
@@ -329,7 +330,7 @@ describe("predizione (E17)", () => {
     run(m, 1);
     assert.equal(me(m).predict!.jumpBuffer, 0, "la preparazione al salto ha consumato la pressione");
     assert.equal(me(m).jumpSquat, FIGHTER.jumpSquatMs, "a terra ci si prepara al salto (#384 A3)");
-    run(m, Math.round(FIGHTER.jumpSquatMs / (1000 / TICK_RATE)));
+    run(m, Math.ceil(FIGHTER.jumpSquatMs / FIGHT_DT));
     const p = me(m).predict!;
     assert.equal(me(m).jumpSquat, undefined);
     assert.equal(p.jumps, FIGHTER.maxJumps - 1);

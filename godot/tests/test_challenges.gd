@@ -46,8 +46,8 @@ func test_medaglie() -> void:
 	var ko := _challenge("primo-ko") # 12, 7, 5 s
 	runner.check(Challenges.medal_for(ko, null) == 0, "senza KO niente medaglia")
 	runner.check(Challenges.medal_for(ko, 20.0) == 0 and Challenges.medal_for(ko, 7.0) == 2 and Challenges.medal_for(ko, 3.0) == 3, "tempo: meno è meglio")
-	var dmg := _challenge("mitraglia") # 60, 85, 100%
-	runner.check(Challenges.medal_for(dmg, 59.0) == 0 and Challenges.medal_for(dmg, 60.0) == 1 and Challenges.medal_for(dmg, 140.0) == 3, "danno: più è meglio")
+	var dmg := _challenge("mitraglia") # 50, 70, 85%
+	runner.check(Challenges.medal_for(dmg, 49.0) == 0 and Challenges.medal_for(dmg, 50.0) == 1 and Challenges.medal_for(dmg, 140.0) == 3, "danno: più è meglio")
 	runner.check(Challenges.score_text(dmg, 87.4) == "87%" and Challenges.score_text(ko, 4.25) == "4.2 s", "punteggi in chiaro")
 
 

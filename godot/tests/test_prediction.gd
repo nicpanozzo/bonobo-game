@@ -96,7 +96,7 @@ func test_il_salto_si_vede_subito() -> void:
 	pr.record_input({"jump": false}, 100)
 	pr.record_input({"jump": true}, 105) # premuto, il server non lo sa ancora
 	pr.on_server(_server_me(game, 100, 4), _ms(106))
-	var s: Variant = pr.sample(_ms(108))
+	var s: Variant = pr.sample(_ms(110)) # la preparazione al salto (50 ms) col gioco al 90% (#384 A4) dura 4 tick, poi si stacca
 	runner.check(s != null and not s.onGround and s.vy < 0, "il salto parte prima che il server lo veda: %s" % [s])
 
 

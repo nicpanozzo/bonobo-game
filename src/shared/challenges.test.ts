@@ -63,10 +63,10 @@ describe("sfide", () => {
   it("danno: somma i propri colpi fino al limite", () => {
     const run = new ChallengeRun(challenge("mitraglia"), "me");
     run.onTick(0, () => false);
-    for (let i = 0; i < 9; i++) run.onEvent(hit("me", "bot", 10), i * 1000);
+    for (let i = 0; i < 8; i++) run.onEvent(hit("me", "bot", 10), i * 1000);
     run.onEvent(hit("bot", "me", 50), 9_500);
     run.onTick(15_000, () => false);
-    assert.deepEqual([run.done, run.score, run.medal], [true, 90, 2]);
+    assert.deepEqual([run.done, run.score, run.medal], [true, 80, 2]);
   });
 
   it("palleggio: si azzera quando il bersaglio torna a terra, all'oro finisce subito", () => {

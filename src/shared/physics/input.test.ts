@@ -3,7 +3,7 @@
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { INPUT, TICK_RATE } from "../constants";
+import { GAME_SPEED, INPUT, TICK_RATE } from "../constants";
 import { Match } from "../match";
 import type { GameEvent, InputState } from "../types";
 import { emptyInput, type Fighter } from "./index";
@@ -97,7 +97,7 @@ describe("buffer degli input", () => {
     const f = getFighter(m);
     f.dodgeCooldown = 1000; // la schivata non può partire
     tap(m, { dodge: true });
-    run(m, Math.ceil(INPUT.bufferMs / DT));
+    run(m, Math.ceil(INPUT.bufferMs / (DT * GAME_SPEED))); // il buffer conta il tempo del combattimento (#384 A4)
     assert.equal(f.buffer.dodge, 0);
   });
 });
