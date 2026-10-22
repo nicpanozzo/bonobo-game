@@ -291,13 +291,14 @@ export interface StageCamera {
 
 // Getto d'acqua (#253): una colonna larga width che dalla base (y) sale per height pixel. A ogni giro, dopo
 // la calma, ci sono le bolle (warnMs) e poi il getto (activeMs): chi è nella colonna viene spinto in alto a
-// speed pixel/s, senza danno. Dipende solo dal tempo dell'arena, come le trappole.
+// speed pixel/s, senza danno. Con dir è una raffica: stessa zona, ma spinge di lato (WIND). Dipende solo dal tempo dell'arena, come le trappole.
 export interface Jet {
   x: number; // bordo sinistro
   y: number; // base della colonna
   width: number;
   height: number; // quanto sale la colonna d'acqua
-  speed: number; // pixel/s verso l'alto dati a chi ci sta dentro
+  speed: number; // pixel/s verso l'alto (o verso dir) dati a chi ci sta dentro
+  dir?: "left" | "right"; // raffica orizzontale (#433): senza, il getto spinge in alto
   periodMs: number;
   warnMs: number; // bolle prima del getto
   activeMs: number; // durata del getto
@@ -320,7 +321,7 @@ export interface StageSpec {
   solids: Rect[]; // blocchi pieni: ci si cammina sopra e non si attraversano
   platforms: ThinPlatform[]; // sottili: si attraversano dal basso e scendendo con giù
   blastZone: { left: number; right: number; top: number; bottom: number }; // chi esce perde una vita
-  spawns: { x: number; y: number }[]; // punti di partenza, uno per giocatore (y = piedi), in coppie simmetriche
+  spawns: { x: number; y: number; team?: number }[]; // punti di partenza, uno per giocatore (y = piedi), in coppie simmetriche; `team` = squadra che parte lì nelle modalità a squadre (#433)
   respawn: { x: number; y: number }; // dove si ricompare dopo aver perso una vita
   colors: { sky: number; solid: number; solidEdge: number; platform: number }; // finché non c'è uno sfondo disegnato
   width?: number; // larghezza del mondo se più larga dello schermo (#240): nelle arene la telecamera inquadra tutti, nella Corsa segue

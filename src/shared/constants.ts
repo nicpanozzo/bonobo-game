@@ -478,6 +478,12 @@ export const HAZARD = {
   travelFeetPx: 12, // la trappola che viaggia (#229) colpisce solo chi ha i piedi entro questo sotto il suo percorso: sotto il ponte si è al riparo (#253)
 };
 
+// Raffiche di vento (#433): i getti con dir spingono di lato, come il vento e non come un muro
+export const WIND = {
+  accelPxPerS2: 3600, // quanto in fretta la velocità orizzontale di chi è in aria va verso ±speed, pixel/s²
+  groundFactor: 0.25, // a terra la spinta è questa frazione di speed (spostamento diretto, i piedi frenano), 0..1
+};
+
 // Arena musicale (#423, src/shared/musicStage.ts): come le note del brano muovono e accendono le piattaforme
 export const MUSIC_STAGE = {
   liftGlideMs: 140, // ms in cui un ascensore va all'altezza della nota nuova
@@ -631,6 +637,8 @@ export const TETRIS = {
   ms: 9000, // ms di partita a Tetris dalla raccolta
   cellPx: 40, // lato di un quadretto, pixel: le colonne sono WORLD.width / cellPx
   spawnY: -40, // pixel: bordo alto del quadretto centrale del pezzo quando compare, appena sopra lo schermo
+  nextPieceMs: 800, // ms tra un pezzo posato (o fatto cadere con K) e il prossimo: senza, sarebbe una pioggia continua
+  spawnRoomPx: 160, // pixel liberi sotto un pezzo nuovo: se la pila è più alta, compare in un'altra colonna
   fallPxS: 240, // pixel/s di caduta
   softPxS: 800, // pixel/s tenendo giù
   dropPxS: 2400, // pixel/s dopo K: cade di colpo
@@ -642,6 +650,13 @@ export const TETRIS = {
   knockback: 480, // pixel/s di lancio
   knockbackGrowth: 5, // pixel/s in più per ogni punto di percentuale del bersaglio
   angleDeg: 50, // angolo di lancio
+  dropDamage: 18, // percentuale se il pezzo cade di colpo con K: più rischio di mancare, più danno
+  dropKnockback: 620, // pixel/s di lancio del pezzo fatto cadere di colpo
+  lineCells: 6, // blocchi posati in fila sulla stessa riga che fanno una riga: esplode come nel Tetris vero
+  lineDamage: 16, // percentuale a chi sta sopra o dentro una riga che esplode
+  lineKnockback: 640, // pixel/s di lancio della riga, quasi in verticale
+  lineAngleDeg: 80, // angolo di lancio della riga
+  lineReachPx: 80, // pixel sopra la riga in cui si viene presi: chi ci sta in piedi sopra vola via
   returnInvulnerableMs: 600, // ms intoccabili quando si torna in partita
 };
 

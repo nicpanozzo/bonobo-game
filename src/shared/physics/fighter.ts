@@ -116,12 +116,26 @@ export interface FighterSetup {
   color: number;
   team: number;
   index: number; // posto nella stanza: decide punto di partenza e verso
+  teamRank?: number; // posto tra i compagni di squadra (#433): sceglie il punto di partenza della squadra
   stocks: number;
   supremeRate?: number; // regole della stanza; 1 se manca
 }
 
+// Punto di partenza (#433): nelle modalità a squadre, se l'arena ha partenze con `team`, ogni squadra parte
+// dal suo lato; con più di due squadre se ne alternano due (4 squadre su un'arena a 2: 1 e 3 insieme).
+// Fuori dalle squadre `team` è 0 (lo imposta match.ts), quindi vale la scelta di sempre.
+export function spawnFor(s: FighterSetup, stage: StageSpec): { x: number; y: number } {
+  const byIndex = stage.spawns[s.index % stage.spawns.length];
+  const teamSpawns = stage.spawns.filter((p) => p.team !== undefined);
+  if (s.team < 1 || teamSpawns.length === 0) return byIndex;
+  const stageTeams = Math.max(...teamSpawns.map((p) => p.team ?? 0));
+  const wanted = ((s.team - 1) % stageTeams) + 1;
+  const mine = teamSpawns.filter((p) => p.team === wanted);
+  return mine.length > 0 ? mine[(s.teamRank ?? 0) % mine.length] : byIndex;
+}
+
 export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
-  const spawn = stage.spawns[s.index % stage.spawns.length];
+  const spawn = spawnFor(s, stage);
   return {
     id: s.id,
     name: s.name,
@@ -227,8 +241,8 @@ export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
 }
 
 // Riporta un lottatore all'inizio partita, tenendo i tasti che sta premendo
-export function resetForMatch(f: Fighter, index: number, stocks: number, stage: StageSpec): void {
-  const fresh = createFighter({ ...f, index, stocks }, stage);
+export function resetForMatch(f: Fighter, index: number, stocks: number, stage: StageSpec, teamRank = 0): void {
+  const fresh = createFighter({ ...f, index, stocks, teamRank }, stage);
   Object.assign(f, fresh, { input: f.input, prevInput: f.prevInput, away: f.away, dashByTap: f.dashByTap, shortHop: f.shortHop, inputSeq: f.inputSeq, inputTicks: f.inputTicks }); // chi è disconnesso resta tale nella rivincita
 }
 

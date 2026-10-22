@@ -20,7 +20,7 @@ Tutti i nomi sono provvisori: `// TODO community` finché il canale non li scegl
 | **Bong** (#303) | Tre fasi, sotto. |
 | Funghetti di Teemo (#317) | Giù + J pianta funghetti quasi invisibili: chi li calpesta ha i comandi invertiti per 3 s. |
 | **Birra** (idea di Nicola) | Cappello da tirolese per 8 s: colpi ×1,4, un po' più veloci, ma si barcolla avanti e indietro. |
-| **Tetris** (#427, idea di Nicola) | Ci si assenta per 9 s in un cabinato, fermi e intoccabili: i tasti guidano pezzi che cadono dall'alto (destra/sinistra spostano, su/salto/J ruotano, giù accelera, K li fa cadere di colpo). Un pezzo colpisce chi tocca; posato, diventa blocchi solidi per 10 s. Logica in `physics/arcade.ts`. |
+| **Tetris** (#427, idea di Nicola) | Ci si assenta per 9 s in un cabinato, fermi e intoccabili: i tasti guidano pezzi che cadono dall'alto (destra/sinistra spostano, su/salto/J ruotano, giù accelera, K li fa cadere di colpo). Il pezzo compare sopra l'avversario più vicino, con l'ombra di dove si poserà, e attraversa le piattaforme sottili. Colpisce chi tocca (12%, 18% se fatto cadere con K); posato, diventa blocchi solidi per 10 s. Sei blocchi in fila alla stessa altezza fanno una **riga**: esplode e lancia in alto chi ci sta sopra (16%). Tra un pezzo e il prossimo passano 0,8 s. Logica in `physics/arcade.ts`. |
 | **Pac-Man** (#427, idea di Nicola) | Per 8 s si è Pac-Man: niente gravità, si va sempre dritti nella direzione dell'ultima freccia premuta, attraverso muri e pavimenti, e chi esce da un lato dello schermo rientra dall'altro. Intoccabili; chi si tocca viene mangiato (14% e lancio, poi 1,2 s di respiro). Gli altri diventano fantasmini e compaiono le palline (solo disegno). |
 
 ## Il Bong (idea di Nicola)

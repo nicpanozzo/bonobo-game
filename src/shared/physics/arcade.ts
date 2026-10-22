@@ -3,7 +3,7 @@
 // Pac-Man: si va dritti nelle quattro direzioni attraverso tutto, si rientra dall'altro lato e si mangia chi si tocca.
 //   playTetris()  dentro stepFighter, al posto dei controlli: compare, sposta e ruota il pezzo di chi gioca
 //   playPacman()  dentro stepFighter, al posto di controlli e gravità
-//   stepArcade()  alla fine di stepWorld: caduta, colpi, posa e durata dei blocchi; chi viene mangiato
+//   stepArcade()  alla fine di stepWorld: pezzi nuovi, caduta, colpi, posa, righe e durata dei blocchi; chi viene mangiato
 //   arcadeSolids() i blocchi posati come blocchi pieni per collideWithStage
 
 import { characterStats } from "../characters";
@@ -14,7 +14,6 @@ import type { TetrisState } from "../types";
 import { bodyBox } from "./attacks";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
 import { clearStun, hitShield } from "./shield";
-import { platformSurfaceY } from "./stage";
 import { chargeFromHit } from "./supreme";
 
 // Le sette forme, in quadretti attorno al centro di rotazione [0, 0] (y verso il basso)
@@ -55,6 +54,7 @@ export interface ArcadeWorld {
   nextId: number;
   random: () => number;
   eaten?: Record<string, number>; // Pac-Man: "chi/chi è stato mangiato" -> tempo dell'arena del boccone
+  nextPieceMs?: Record<string, number>; // Tetris: chi gioca -> tempo dell'arena da cui può comparire il suo pezzo nuovo
 }
 
 const C = TETRIS.cellPx;
@@ -85,18 +85,10 @@ function fits(cells: [number, number][], ctx: PhysicsContext): boolean {
   return cells.every(([x, y]) => x >= 0 && x + C <= COLS * C && !solids.some((s) => boxOverlap(x, y, C, C, s)));
 }
 
-// Il pezzo di chi gioca: ne compare uno se non ce l'ha, poi i suoi tasti lo guidano
+// Il pezzo di chi gioca, guidato dai suoi tasti. Quando non ce l'ha, ne fa comparire uno stepArcade
 export function playTetris(f: Fighter, dtMs: number, ctx: PhysicsContext): void {
-  const world = arcade(ctx);
-  let p = world.pieces.find((q) => q.ownerId === f.id && !q.drop);
-  if (!p) {
-    const kind = KINDS[Math.floor(world.random() * KINDS.length)];
-    const col = Math.max(1, Math.min(COLS - 3, Math.round(f.x / C)));
-    p = { id: world.nextId++, ownerId: f.id, kind, col, y: TETRIS.spawnY, rot: 0, drop: false, soft: false, repeatMs: 0, hit: [] };
-    world.pieces.push(p);
-    tetrisEvent("spawn", p, ctx);
-    return;
-  }
+  const p = arcade(ctx).pieces.find((q) => q.ownerId === f.id && !q.drop);
+  if (!p) return;
   const dir = f.input.left === f.input.right ? 0 : f.input.left ? -1 : 1;
   const fresh = (pressed(f, "left") && dir < 0) || (pressed(f, "right") && dir > 0);
   p.repeatMs = dir === 0 || fresh ? 0 : p.repeatMs - dtMs;
@@ -119,23 +111,55 @@ export function playTetris(f: Fighter, dtMs: number, ctx: PhysicsContext): void 
   }
   p.soft = f.input.down;
   if (pressed(f, "heavy")) {
-    p.drop = true; // da qui il pezzo è libero: al prossimo tick ne compare un altro
+    p.drop = true; // da qui il pezzo è libero: tra poco ne compare un altro
     consume(f, "heavy");
+    pieceDone(p, arcade(ctx), ctx);
     tetrisEvent("drop", p, ctx);
   }
+}
+
+// Un pezzo nuovo compare sopra l'avversario più vicino: chi gioca deve solo aggiustare la mira, non attraversare l'arena.
+// Se lì la pila arriva in cima prova le colonne accanto; se è tutto pieno, come nel Tetris vero, la partita finisce
+function spawnPiece(f: Fighter, fighters: Fighter[], world: ArcadeWorld, ctx: PhysicsContext) {
+  const kind = KINDS[Math.floor(world.random() * KINDS.length)];
+  const aim = Math.max(1, Math.min(COLS - 3, Math.floor((nearestTarget(f, fighters, ctx) ?? f).x / C)));
+  const cols = Array.from({ length: COLS - 3 }, (_, i) => i + 1).sort((a, b) => Math.abs(a - aim) - Math.abs(b - aim));
+  for (const col of cols) {
+    const p: Piece = { id: world.nextId, ownerId: f.id, kind, col, y: TETRIS.spawnY, rot: 0, drop: false, soft: false, repeatMs: 0, hit: [] };
+    if (!fits(cellsOf(p), ctx) || fallLeft(p, ctx, world.blocks) < TETRIS.spawnRoomPx) continue;
+    world.nextId++;
+    world.pieces.push(p);
+    tetrisEvent("spawn", p, ctx);
+    return;
+  }
+  f.powerupMs = Math.min(f.powerupMs, 1); // tickPowerup lo riporta in partita al prossimo passo
+}
+
+function nearestTarget(f: Fighter, fighters: Fighter[], ctx: PhysicsContext): Fighter | undefined {
+  let best: Fighter | undefined;
+  for (const t of fighters) {
+    if (t === f || t.eliminated || t.respawning || isArcade(t) || (ctx.canHit && !ctx.canHit(f, t))) continue;
+    if (!best || Math.abs(t.x - f.x) < Math.abs(best.x - f.x)) best = t;
+  }
+  return best;
+}
+
+// Il pezzo nuovo arriva un attimo dopo: chi è sotto ha il tempo di vedere l'ombra e spostarsi
+function pieceDone(p: Piece, world: ArcadeWorld, ctx: PhysicsContext) {
+  (world.nextPieceMs ??= {})[p.ownerId] = (ctx.timeMs ?? 0) + TETRIS.nextPieceMs;
 }
 
 function tetrisEvent(phase: "spawn" | "move" | "rotate" | "drop" | "land", p: Piece, ctx: PhysicsContext) {
   ctx.events.push({ type: "tetris", phase, id: p.ownerId, x: p.col * C + C / 2, y: Math.round(p.y + C / 2) });
 }
 
-// Quanto può scendere una cella prima di toccare qualcosa sotto: pavimenti, piattaforme sottili, blocchi posati
+// Quanto può scendere una cella prima di toccare qualcosa sotto: pavimenti e blocchi posati. Le piattaforme sottili
+// si attraversano come fanno i lottatori da sotto: se fermassero i pezzi, chi ci sta sotto sarebbe sempre al riparo
 function room(x: number, bottom: number, fall: number, ctx: PhysicsContext, blocks: Block[]): number {
   const cx = x + C / 2;
   let best = fall;
   const tops: number[] = [];
   for (const s of ctx.stage.solids) if (cx > s.x && cx < s.x + s.width) tops.push(s.y);
-  for (const p of ctx.stage.platforms) if (cx > p.x && cx < p.x + p.width) tops.push(platformSurfaceY(p, cx));
   for (const b of blocks) if (cx > b.x && cx < b.x + C) tops.push(b.y);
   for (const top of tops) if (bottom <= top + 0.5 && bottom + best > top) best = Math.max(0, top - bottom);
   return best;
@@ -190,8 +214,14 @@ function eatWithPacman(fighters: Fighter[], ctx: PhysicsContext) {
 // Caduta, colpi e posa di tutti i pezzi; i blocchi posati invecchiano. Pac-Man mangia
 export function stepArcade(fighters: Fighter[], dtMs: number, ctx: PhysicsContext): void {
   eatWithPacman(fighters, ctx);
-  const world = ctx.arcade;
+  const players = fighters.filter((f) => f.powerup === "tetris" && !f.eliminated && !f.respawning);
+  const world = players.length > 0 ? arcade(ctx) : ctx.arcade;
   if (!world) return;
+  const wait = (world.nextPieceMs ??= {});
+  for (const f of players) {
+    if (world.pieces.some((p) => p.ownerId === f.id && !p.drop)) continue;
+    if ((ctx.timeMs ?? 0) >= (wait[f.id] ?? -Infinity)) spawnPiece(f, fighters, world, ctx);
+  }
   for (const b of world.blocks) b.lifeMs -= dtMs;
   world.blocks = world.blocks.filter((b) => b.lifeMs > 0);
   for (const p of world.pieces) {
@@ -206,10 +236,55 @@ export function stepArcade(fighters: Fighter[], dtMs: number, ctx: PhysicsContex
       for (const [x, y] of cellsOf(p)) world.blocks.push({ x, y: Math.round(y), kind: p.kind, lifeMs: TETRIS.blockMs });
       world.blocks.splice(0, Math.max(0, world.blocks.length - TETRIS.maxBlocks));
       tetrisEvent("land", p, ctx);
+      if (!p.drop) pieceDone(p, world, ctx);
+      clearLines(p, fighters, world, ctx);
       p.y = Infinity; // via al filtro qui sotto
     }
   }
   world.pieces = world.pieces.filter((p) => p.y < ctx.stage.blastZone.bottom);
+}
+
+// Quanto manca alla posa di un pezzo: il client ci disegna l'ombra, così si vede dove cadrà
+function fallLeft(p: Piece, ctx: PhysicsContext, blocks: Block[]): number {
+  const far = ctx.stage.blastZone.bottom - p.y;
+  return Math.round(Math.min(...cellsOf(p).map(([x, y]) => room(x, y + C, far, ctx, blocks))));
+}
+
+// Una riga come nel Tetris vero: TETRIS.lineCells blocchi in fila alla stessa altezza esplodono, e chi ci sta
+// sopra o dentro vola in alto. Si controllano solo le righe del pezzo appena posato
+function clearLines(p: Piece, fighters: Fighter[], world: ArcadeWorld, ctx: PhysicsContext) {
+  const owner = fighters.find((f) => f.id === p.ownerId);
+  const rows = new Set(world.blocks.filter((b) => cellsOf(p).some(([x, y]) => b.x === x && b.y === Math.round(y))).map((b) => b.y));
+  for (const y of rows) {
+    const row = world.blocks.filter((b) => b.y === y).sort((a, b) => a.x - b.x);
+    for (const run of runs(row)) {
+      if (run.length < TETRIS.lineCells) continue;
+      const left = run[0].x;
+      const width = run.length * C;
+      world.blocks = world.blocks.filter((b) => !run.includes(b));
+      ctx.events.push({ type: "tetris", phase: "line", id: p.ownerId, x: left + width / 2, y: y + C / 2, width });
+      for (const target of fighters) {
+        if (target.id === p.ownerId || target.eliminated || target.respawning || target.invulnerable) continue;
+        if (owner && ctx.canHit && !ctx.canHit(owner, target)) continue;
+        const body = bodyBox(target);
+        if (body.x + body.w < left || body.x > left + width || body.y + body.h < y - TETRIS.lineReachPx || body.y > y + C) continue;
+        const cx = Math.max(left, Math.min(target.x, left + width));
+        const dir = target.x >= left + width / 2 ? 1 : -1;
+        arcadeHit(target, owner ?? null, TETRIS.lineDamage, TETRIS.lineKnockback, TETRIS.knockbackGrowth, TETRIS.lineAngleDeg, dir, cx, y, "tetris", ctx);
+      }
+    }
+  }
+}
+
+// I tratti di blocchi attaccati in una riga già in ordine da sinistra
+function runs(row: Block[]): Block[][] {
+  const out: Block[][] = [];
+  for (const b of row) {
+    const last = out.at(-1);
+    if (last && b.x - last[last.length - 1].x === C) last.push(b);
+    else out.push([b]);
+  }
+  return out;
 }
 
 // Chi tocca un pezzo che cade vola via, una volta per pezzo
@@ -224,7 +299,9 @@ function hitWithPiece(p: Piece, fighters: Fighter[], ctx: PhysicsContext) {
     if (!cell) continue;
     p.hit.push(target.id);
     const dir = target.x >= cell[0] + C / 2 ? 1 : -1;
-    arcadeHit(target, owner ?? null, TETRIS.damage, TETRIS.knockback, TETRIS.knockbackGrowth, TETRIS.angleDeg, dir, cell[0] + C / 2, cell[1] + C / 2, "tetris", ctx);
+    // Fatto cadere di colpo con K fa più male: è più difficile da mirare
+    const [damage, knockback] = p.drop ? [TETRIS.dropDamage, TETRIS.dropKnockback] : [TETRIS.damage, TETRIS.knockback];
+    arcadeHit(target, owner ?? null, damage, knockback, TETRIS.knockbackGrowth, TETRIS.angleDeg, dir, cell[0] + C / 2, cell[1] + C / 2, "tetris", ctx);
   }
 }
 
@@ -283,7 +360,7 @@ export function tetrisState(ctx: PhysicsContext): TetrisState | undefined {
   const world = ctx.arcade;
   if (!world || (world.pieces.length === 0 && world.blocks.length === 0)) return undefined;
   return {
-    pieces: world.pieces.map((p) => ({ id: p.id, ownerId: p.ownerId, kind: p.kind, cells: cellsOf(p).map(([x, y]) => [x, Math.round(y)] as [number, number]) })),
+    pieces: world.pieces.map((p) => ({ id: p.id, ownerId: p.ownerId, kind: p.kind, cells: cellsOf(p).map(([x, y]) => [x, Math.round(y)] as [number, number]), fall: fallLeft(p, ctx, world.blocks) })),
     blocks: world.blocks.map((b) => ({ x: b.x, y: b.y, kind: b.kind, ms: Math.ceil(b.lifeMs / 100) * 100 })),
   };
 }

@@ -194,7 +194,8 @@ static func predictable(p: Dictionary, stage: Dictionary) -> bool:
 	# Col fiore (#231) si va più piano: il port non lo sa, si torna allo stato del server finché dura
 	if p.get("powerup") != null:
 		return false
-	# Nella colonna di un getto d'acqua (#253) il port non sa della spinta: si torna allo stato del server
+	# Nella colonna di un getto d'acqua (#253) il port non sa della spinta: si torna allo stato del server.
+	# Vale anche per le raffiche orizzontali (#433, applyJets in physics/elements.ts: stessa zona, il vento non si predice)
 	for j in stage.get("jets", []) if stage.get("jets") is Array else []:
 		if float(p.x) > float(j.x) - 30 and float(p.x) < float(j.x) + float(j.width) + 30 and float(p.y) > float(j.y) - float(j.height) - 40:
 			return false

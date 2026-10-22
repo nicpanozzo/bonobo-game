@@ -150,6 +150,7 @@ func on_event(e: Dictionary) -> void:
 				"rotate": _play("tetrisRotate", {"volume": 0.45, "x": e.x})
 				"drop": _play("tetrisDrop", {"volume": 0.55, "x": e.x})
 				"land": _play("tetrisLand", {"x": e.x})
+				"line": _play("tetrisLine", {"x": e.x})
 		"pad":
 			# Bottone sonoro dell'arena musicale (#423): ognuno il suo suono, nella tonalità del brano
 			var pad_sound := "pad_" + str(e.get("sound", ""))
@@ -770,6 +771,12 @@ func _build_sounds() -> void:
 	_sounds.tetrisLand = make.call(0.3, func(s):
 		s.tone(0, "square", 140, 70, 0.12, 0.3)
 		s.noise(0, "lowpass", 1200, 150, 0.2, 0.7))
+	# Una riga completa: l'arpeggio che sale del Game Boy e lo schianto dei blocchi
+	_sounds.tetrisLine = make.call(0.6, func(s):
+		var notes := [523.25, 659.25, 783.99, 1046.5]
+		for i in notes.size():
+			s.tone(i * 0.06, "square", notes[i], notes[i], 0.06, 0.12)
+		s.noise(0.2, "lowpass", 3000, 200, 0.35, 0.6))
 	# Bottoni sonori dell'arena musicale (#423), in La minore come Sala Prove: accordo, cassa e piatto
 	_sounds.pad_accordo = make.call(0.7, func(s):
 		for f: float in [220.0, 261.63, 329.63, 440.0]:

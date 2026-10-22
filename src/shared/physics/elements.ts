@@ -2,7 +2,7 @@
 // Tutto dipende solo dal tempo dell'arena (ctx.timeMs): il client Godot rifà gli stessi
 // calcoli in world_view.gd e disegna gli elementi senza riceverne le posizioni.
 
-import { FIGHTER, HAZARD, HITSTOP, HITSTUN_PER_KNOCKBACK, PAD } from "../constants";
+import { FIGHTER, HAZARD, HITSTOP, HITSTUN_PER_KNOCKBACK, PAD, TICK_RATE, WIND } from "../constants";
 import type { Hazard, Jet, MovingPlatform, SoundPad } from "../stages";
 import type { Fighter, PhysicsContext } from "./fighter";
 import { chargeFromHit } from "./supreme";
@@ -272,8 +272,10 @@ export function jetPhase(j: Jet, timeMs: number): JetPhase {
   return t < j.warnMs ? "warn" : "active";
 }
 
-// Chi sta nella colonna di un getto acceso viene spinto in alto, senza danno; può di nuovo usare il recupero
-export function applyJets(fighters: Fighter[], ctx: PhysicsContext): void {
+// Chi sta nella colonna di un getto acceso viene spinto in alto, senza danno; può di nuovo usare il recupero.
+// Con dir (#433) è una raffica: in aria vx accelera verso ±speed, a terra c'è solo uno spostamento (WIND.groundFactor);
+// non restituisce il recupero. Il predittore Godot non la simula: dentro la zona torna allo stato del server.
+export function applyJets(fighters: Fighter[], ctx: PhysicsContext, dtMs = 1000 / TICK_RATE): void {
   const jets = ctx.stage.jets ?? [];
   if (jets.length === 0) return;
   const t = ctx.timeMs ?? 0;
@@ -284,6 +286,17 @@ export function applyJets(fighters: Fighter[], ctx: PhysicsContext): void {
       if (f.eliminated || f.respawning || f.ledgeIndex >= 0) continue;
       const inside = f.x + half > j.x && f.x - half < j.x + j.width && f.y > j.y - j.height && f.y - FIGHTER.height < j.y;
       if (!inside) continue;
+      if (j.dir) {
+        const sign = j.dir === "left" ? -1 : 1;
+        const dt = dtMs / 1000;
+        if (f.onGround) f.x += sign * j.speed * WIND.groundFactor * dt;
+        else {
+          const target = sign * j.speed;
+          const step = WIND.accelPxPerS2 * dt;
+          f.vx += Math.max(-step, Math.min(step, target - f.vx));
+        }
+        continue;
+      }
       f.vy = Math.min(f.vy, -j.speed);
       f.onGround = false;
       f.riding = -1;

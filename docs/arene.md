@@ -45,6 +45,8 @@ fabbrica: {
 }
 ```
 
+Nelle partenze, `team` (facoltativo) dice quale squadra parte lì nelle modalità a squadre (#433): per esempio la squadra 1 a sinistra e la 2 a destra, con `{ x: 200, y: 560, team: 1 }` e `{ x: 1600, y: 560, team: 2 }`. Con più di due squadre su un'arena a due, la 3 parte dove la 1 e la 4 dove la 2. Ogni compagno prende un posto diverso della propria squadra. Senza `team` (o in FFA) la partenza è quella di sempre, per indice.
+
 ### Arene più grandi dello schermo e zoom (`width`, `camera`)
 
 Un'arena può essere più larga dello schermo con `width`, per esempio 1920 per un'arena da 1,5 schermi. Tutti i pezzi devono stare tra 0 e `width`. La telecamera inquadra tutti i lottatori vivi: si avvicina quando sono vicini e si allontana quando si sparpagliano, senza mai mostrare più delle zone di espulsione.
@@ -219,6 +221,7 @@ Servono a dare un motivo per andare in una zona rischiosa (#253). A Padova la fo
 - **`flood.lowSafe: true`** (nell'acqua alta): l'acqua bassa non fa male, solo quella che sale, resta alta e scende.
 - **Riparo dal ciclista:** la trappola che viaggia colpisce solo chi ha i piedi all'altezza del suo percorso, entro `HAZARD.travelFeetPx`. Chi sta più in basso, per esempio sotto il ponte, è al riparo.
 - **`jets`**, getti d'acqua a tempo: `{ x, y, width, height, speed, periodMs, warnMs, activeMs, offsetMs?, idle? }`.
+  - Con **`dir: "left" | "right"`** (#433) il getto diventa una **raffica di vento**: stessa zona (`x..x+width`, `y-height..y`) e stesso ciclo avviso/acceso, ma spinge di lato. In aria la velocità orizzontale accelera verso `speed` pixel/s (`WIND.accelPxPerS2`), a terra la spinta è solo una frazione (`WIND.groundFactor`). Nessun danno e il recupero non torna. Senza `dir` il getto sale, come sempre. Con l'avviso cominciano a volare foglie, poi righe di vento.
   - Con `idle` (solo grafica, #288) è una fontana: a riposo uno zampillo alto `idle` pixel, con l'avviso cresce e gorgoglia, poi parte il getto alto, che ricade a ventaglio.
   - La colonna parte da `y` e sale per `height`.
   - Dopo la calma ci sono le **bolle** (`warnMs`), poi il **getto** (`activeMs`): chi è nella colonna viene spinto in alto a `speed` pixel/s, senza danno, e può di nuovo usare il recupero.

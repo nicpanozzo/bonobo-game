@@ -624,6 +624,8 @@
     "ms": 9000,
     "cellPx": 40,
     "spawnY": -40,
+    "nextPieceMs": 800,
+    "spawnRoomPx": 160,
     "fallPxS": 240,
     "softPxS": 800,
     "dropPxS": 2400,
@@ -635,6 +637,13 @@
     "knockback": 480,
     "knockbackGrowth": 5,
     "angleDeg": 50,
+    "dropDamage": 18,
+    "dropKnockback": 620,
+    "lineCells": 6,
+    "lineDamage": 16,
+    "lineKnockback": 640,
+    "lineAngleDeg": 80,
+    "lineReachPx": 80,
     "returnInvulnerableMs": 600
   },
   "pacman": {
