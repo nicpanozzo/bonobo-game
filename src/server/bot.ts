@@ -81,11 +81,13 @@ export class Bots {
   // Prima di ogni passo di fisica: ogni bot decide i suoi tasti
   tick(match: Match): void {
     const players = match.players;
+    // L'arena com'è adesso (#433): i bot non puntano blocchi o piattaforme che in questo momento non ci sono
+    const stage = match.currentStage;
     for (const f of players) {
       const mem = this.bots.get(f.id);
       if (!mem) continue;
       const input =
-        mem.kind === "manichino" ? emptyInput() : mem.kind === "sparring" ? decideSparring(f, players, mem) : decideSimple(f, players, match.stage, mem, mem.kind);
+        mem.kind === "manichino" ? emptyInput() : mem.kind === "sparring" ? decideSparring(f, players, mem) : decideSimple(f, players, stage, mem, mem.kind);
       mem.last = input;
       match.setInput(f.id, input);
     }

@@ -4,6 +4,7 @@ import { describe, it } from "node:test";
 import { ATTACKS, BOT, FIGHTER, HITSTUN_PER_KNOCKBACK, LEDGE, SUPREME, TICK_RATE } from "../shared/constants";
 import { Match } from "../shared/match";
 import { emptyInput, ledgesOf } from "../shared/physics";
+import type { StageSpec } from "../shared/stages";
 import { Bots, parseBotKind } from "./bot";
 
 const DT = 1000 / TICK_RATE;
@@ -53,6 +54,39 @@ describe("bot", () => {
       const used = events.some((e) => e.type === "attack" && e.id === bot.id && e.kind === "supreme");
       assert.equal(used, uses, `bot ${kind}`);
     }
+  });
+
+  it("un bot fuori dal palco punta lo spigolo che c'è adesso: quando il blocco a tempo sparisce, cambia lato (#433)", () => {
+    // Palco a sinistra e un blocco a destra, presente solo nei primi 50 ms dell'arena
+    const stage: StageSpec = {
+      id: "prova-pezzi",
+      name: "Prova pezzi",
+      solids: [
+        { x: 0, y: 650, width: 400, height: 50 },
+        { x: 600, y: 400, width: 200, height: 250, on: [[0, 50]] },
+      ],
+      platforms: [],
+      blastZone: { left: -2000, right: 4000, top: -2000, bottom: 4000 },
+      spawns: [{ x: 200, y: 600 }],
+      respawn: { x: 200, y: 600 },
+      colors: { sky: 0, solid: 0, solidEdge: 0, platform: 0 },
+    };
+    const match = new Match({ stage, items: false });
+    const bots = new Bots();
+    const botId = bots.add(match, "semplice")!;
+    const bot = match.players.find((p) => p.id === botId)!;
+    // In aria, sopra il vuoto tra il palco e il blocco: lo spigolo più vicino è quello del blocco (a destra)
+    bot.x = 500;
+    bot.y = 300;
+    bot.onGround = false;
+    bot.vy = 0;
+    bots.tick(match);
+    assert.equal(bot.input.right, true, "con il blocco va verso di lui");
+    assert.equal(bot.input.left, false);
+    for (let i = 0; i < 4; i++) match.step(DT); // ~67 ms: il blocco non c'è più
+    bots.tick(match);
+    assert.equal(bot.input.left, true, "senza il blocco lo spigolo del palco è quello più vicino");
+    assert.equal(bot.input.right, false);
   });
 
   it("accetta solo i tipi conosciuti", () => {
