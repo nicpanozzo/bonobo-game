@@ -611,6 +611,7 @@
     "minZoom": 0.7,
     "maxZoom": 1.3,
     "smoothingMs": 220,
+    "phaseBlendMs": 1000,
     "stageMinZoomFloor": 0.45
   },
   "pad": {
@@ -647,6 +648,7 @@
     "eatAgainMs": 1200
   },
   "effects": {
+    "phaseBannerMs": 2500,
     "hitSparkMs": 220,
     "shakeKo": 14,
     "shakeDecay": 400,

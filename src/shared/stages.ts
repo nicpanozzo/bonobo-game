@@ -324,6 +324,7 @@ export interface StageSpec {
   respawn: { x: number; y: number }; // dove si ricompare dopo aver perso una vita
   colors: { sky: number; solid: number; solidEdge: number; platform: number }; // finché non c'è uno sfondo disegnato
   width?: number; // larghezza del mondo se più larga dello schermo (#240): nelle arene la telecamera inquadra tutti, nella Corsa segue
+  height?: number; // altezza del mondo se più alta dello schermo (720): arene verticali, i pezzi stanno tra 0 e height; senza vale WORLD.height
   camera?: StageCamera; // zoom della telecamera per quest'arena (#240): senza, valgono CAMERA.minZoom e maxZoom
   // Solo per i percorsi della modalità Corsa (#57)
   checkpoints?: { x: number; y: number }[]; // dove si ricompare dopo una caduta (y = superficie)
@@ -351,6 +352,8 @@ export interface StageSong {
 
 // Larghezza del mondo di un'arena: lo schermo, o di più per i percorsi
 export const stageWidth = (stage: StageSpec) => stage.width ?? WORLD.width;
+// Altezza del mondo di un'arena: lo schermo, o di più per le arene verticali
+export const stageHeight = (stage: StageSpec) => stage.height ?? WORLD.height;
 
 export const DEFAULT_STAGE_ID = "palco";
 

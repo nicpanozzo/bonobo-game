@@ -387,12 +387,14 @@ export const CAMERA = {
   minZoom: 0.7, // più piccolo = più lontano; 1 = l'arena intera come prima
   maxZoom: 1.3, // quanto si avvicina quando i lottatori sono vicini
   smoothingMs: 220, // più alto = movimenti più morbidi e più lenti
+  phaseBlendMs: 1000, // ms per portare zoom e pavimento della telecamera ai valori di una nuova fase (#433): niente salti
   stageMinZoomFloor: 0.45, // lo zoom più lontano che un'arena può chiedere con camera.minZoom (#240): oltre, i lottatori diventano troppo piccoli
 };
 
 // Effetti del client (#15 passi 2 e 3): solo grafica, partono dagli eventi dello snapshot.
 // Il knockback di un colpo va da ~260 px/s (leggero a 0%) a oltre 1500 (pesante sopra il 100%).
 export const EFFECTS = {
+  phaseBannerMs: 2500, // durata del nome grande a schermo quando comincia una fase dell'arena (#433)
   hitSparkMs: 220, // durata della scintilla di un colpo
   shakeKo: 14, // pixel di scossa a un KO
   shakeDecay: 400, // pixel/s di scossa che si spengono
