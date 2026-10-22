@@ -748,3 +748,21 @@ export const PERF_BUDGET = {
   snapshotDeflatedBytes: 1200, // snapshot compresso medio con 8 giocatori (oggi circa 590 B)
   clientScriptUs: 6000, // script di world_view e hud per frame, in µs (oggi circa 2400; un frame a 60 fps ne ha 16667)
 };
+
+// Arena Bologna (#433): i tempi dell'arena che cambia, tutti in ms dall'inizio della partita (stageMs)
+export const BOLOGNA = {
+  towersMs: 45000, // 0:45 comincia "Ognuno sulla sua torre": appaiono le torri e l'ingorgo in via Rizzoli
+  collapseMs: 150000, // 2:30 la Garisenda cede: spariscono i suoi pezzi e cadono i mattoni
+  bricksEndMs: 156000, // 2:36 finiscono di cadere i mattoni
+  rampMs: 154000, // 2:34 appare la rampa: la torre caduta appoggiata all'Asinelli
+  brawlMs: 165000, // 2:45 comincia "La grande zuffa": tutti in cima all'Asinelli
+  dustMs: 270000, // 4:30 comincia a salire la polvere
+  horizonMs: 900000, // 15 min: fin dove si scrivono le finestre dei pezzi a tempo (oltre non c'è partita)
+  liftPeriodMs: 3600000, // un'ora: l'ascensore a chiavi non deve ricominciare dentro una partita
+  jamPeriodMs: 4000, // l'ingorgo va a ondate: un giro...
+  jamActiveMs: 3000, // ...di cui acceso (poi 1 s di pausa)
+  merlonPresentMs: 8000, // i merli della cima ci sono per tanto...
+  merlonGoneMs: 1000, // ...e poi spariscono per tanto
+  lightningPeriodMs: 20000, // un fulmine sul punto più alto ogni tanto
+  windPeriodMs: 9000, // una raffica ogni giro, a sinistra e a destra sfasate di mezzo giro
+};
