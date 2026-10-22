@@ -5,6 +5,7 @@ extends RefCounted
 var runner
 
 const StationView := preload("res://scripts/station_view.gd")
+const ArcadeView := preload("res://scripts/arcade_view.gd")
 const Predictor := preload("res://scripts/predictor.gd")
 const Hud := preload("res://scripts/hud.gd")
 
@@ -44,3 +45,19 @@ func test_alla_postazione_decide_il_server() -> void:
 func test_punti_torre_per_squadra() -> void:
 	var parts: Array = Hud.tower_parts({"2": 3}, [{"team": 2}, {"team": 1}, {"team": 2}])
 	runner.check(parts == [[1, 0], [2, 3]], "ogni squadra in campo, in ordine, anche a zero")
+
+
+# La gru (#433): il pezzo appeso arriva dallo snapshot e i blocchi che restano non lampeggiano
+func test_gru_dallo_snapshot() -> void:
+	var game: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/game.json"))
+	runner.check(int(game.station.gruMaxBlocks) > 0 and float(game.station.gruCooldownMs) > 0.0, "i numeri della gru in game.json")
+	var view: RefCounted = StationView.new()
+	view.setup({"stations": [{"kind": "gru", "x": 100, "y": 650, "width": 80, "fromX": 400, "toX": 640, "dropY": 300, "landY": 600}]}, game)
+	var cells := [[480, 260], [520, 260], [480, 300], [520, 300]]
+	view.on_snapshot({"stations": [{"user": "p1", "readyAt": 0, "piece": {"kind": "O", "cells": cells}}]}, 0)
+	runner.check(view.station_of("p1") == 0, "chi usa la gru")
+	runner.check(view.states[0].piece.cells.size() == 4, "il pezzo appeso")
+	var arcade: RefCounted = ArcadeView.new()
+	arcade.setup(game)
+	arcade.on_snapshot({"tetris": {"pieces": [], "blocks": [{"x": 400, "y": 560, "kind": "O", "ms": 100, "keep": true}]}})
+	runner.check(arcade.blocks.size() == 1 and arcade.blocks[0].get("keep", false), "il blocco della gru resta")

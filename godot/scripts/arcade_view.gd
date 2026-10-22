@@ -85,7 +85,7 @@ func draw_blocks(canvas: CanvasItem, now: int) -> void:
 	for b: Dictionary in blocks:
 		var ms := float(b.ms)
 		var alpha := 1.0
-		if ms < fade_ms:
+		if ms < fade_ms and not b.get("keep", false): # i blocchi della gru (#433) restano: non lampeggiano
 			var speed := lerpf(5.0, 16.0, 1.0 - ms / fade_ms)
 			alpha = 0.35 + 0.65 * (0.5 + 0.5 * cos(now / 1000.0 * TAU * speed / 2.0))
 		draw_cell(canvas, Vector2(float(b.x), float(b.y)), cell, color_of(str(b.kind)), alpha)
