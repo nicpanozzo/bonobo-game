@@ -1,5 +1,5 @@
 # Postazioni dell'arena (#433): la bombarda con la canna che segue la mira e le palle che ha dentro, le munizioni
-# con la pila di casse e la barra della carica, le palle di mortadella in volo.
+# con la pila di casse e la barra della carica, la gru col pezzo del Tetris appeso e il suo ripiano, le palle di mortadella in volo.
 # Solo disegno: stato e palle arrivano nello snapshot (stations, cannonballs), calcolati dal server in physics/stations.ts.
 # world_view.gd lo chiama dentro _draw.
 extends RefCounted
@@ -8,6 +8,7 @@ const INK := Color("1c1410")
 const MORTADELLA := Color("f2a7b0")
 const BRONZE := Color("8a6a3a")
 const WOOD := Color("a0703c")
+const ArcadeView := preload("res://scripts/arcade_view.gd")
 
 var stations: Array = [] # stage.stations
 var states: Array = [] # snapshot.stations, stesso ordine
@@ -66,6 +67,8 @@ func draw(canvas: CanvasItem, t: float) -> void:
 		canvas.draw_rect(Rect2(float(s.x), float(s.y) - 6.0, float(s.width), 6.0), Color(tint.lightened(0.3 if used else 0.0), alpha))
 		if s.kind == "bombarda":
 			_draw_cannon(canvas, s, st, t, alpha)
+		elif s.kind == "gru":
+			_draw_crane(canvas, s, st, t, alpha, tint)
 		else:
 			_draw_crates(canvas, s, st, t, alpha)
 
@@ -92,6 +95,46 @@ func _draw_cannon(canvas: CanvasItem, s: Dictionary, st: Dictionary, t: float, a
 	for k in full:
 		var c := Vector2(float(s.x) + 8.0 + k * 12.0, float(s.y) + 14.0)
 		canvas.draw_circle(c, 5.0, Color(MORTADELLA if k < have else Color(0, 0, 0, 0.35), alpha))
+
+
+# La gru: un traliccio sulla pedana, il braccio fino al pezzo appeso col suo cavo, e il ripiano tratteggiato dove i pezzi si posano.
+# Il pezzo e i suoi quadretti arrivano dallo snapshot (physics/crane.ts); i blocchi già posati li disegna arcade_view
+func _draw_crane(canvas: CanvasItem, s: Dictionary, st: Dictionary, t: float, alpha: float, tint: Color) -> void:
+	var cell := float(game.get("tetris", {}).get("cellPx", 40))
+	var from_x := float(s.get("fromX", s.x))
+	var to_x := float(s.get("toX", s.x))
+	var land := float(s.get("landY", s.y))
+	var drop := float(s.get("dropY", s.y))
+	var mast := Vector2(float(s.x) + float(s.width) / 2.0, float(s.y) - 6.0)
+	var top := Vector2(mast.x, drop - cell * 2.5)
+	# Il ripiano: una linea a trattini lungo il tratto, e i bordi del tratto
+	var n := int((to_x - from_x) / 20.0)
+	for k in n:
+		if k % 2 == 0:
+			canvas.draw_line(Vector2(from_x + k * 20.0, land), Vector2(from_x + (k + 1) * 20.0, land), Color(tint, 0.55 * alpha), 3.0)
+	canvas.draw_line(Vector2(from_x, land), Vector2(from_x, land - cell * 0.6), Color(tint, 0.55 * alpha), 3.0)
+	canvas.draw_line(Vector2(to_x, land), Vector2(to_x, land - cell * 0.6), Color(tint, 0.55 * alpha), 3.0)
+	# Il traliccio e il braccio
+	canvas.draw_line(mast, top, Color(BRONZE, alpha), 12.0)
+	canvas.draw_line(mast + Vector2(-16, 0), mast + Vector2(16, 0), Color(INK, alpha), 8.0)
+	var piece: Variant = st.get("piece")
+	var cells: Array = piece.cells if piece is Dictionary else []
+	var hook := Vector2((from_x + to_x) / 2.0, drop - cell * 1.6)
+	if not cells.is_empty():
+		var lo := INF
+		var hi := -INF
+		var upper := INF
+		for c: Array in cells:
+			lo = minf(lo, float(c[0]))
+			hi = maxf(hi, float(c[0]) + cell)
+			upper = minf(upper, float(c[1]))
+		hook = Vector2((lo + hi) / 2.0, upper - cell * 0.5)
+		for c: Array in cells:
+			ArcadeView.draw_cell(canvas, Vector2(float(c[0]), float(c[1])), cell, ArcadeView.color_of(str(piece.kind)), alpha)
+		canvas.draw_line(hook, Vector2(hook.x, upper), Color(INK, alpha), 3.0)
+	canvas.draw_line(top, Vector2(hook.x, top.y), Color(BRONZE, alpha), 8.0)
+	canvas.draw_line(Vector2(hook.x, top.y), hook, Color(INK, alpha), 3.0)
+	canvas.draw_circle(hook, 6.0, Color(Color("ffcf5a") if not cells.is_empty() else INK, alpha))
 
 
 func _draw_crates(canvas: CanvasItem, s: Dictionary, st: Dictionary, t: float, alpha: float) -> void:

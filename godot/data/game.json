@@ -666,7 +666,10 @@
     "ballAngleDeg": 40,
     "loadMs": 1500,
     "deliveryMs": 2500,
-    "crate": 3
+    "crate": 3,
+    "gruMoveMs": 120,
+    "gruCooldownMs": 2500,
+    "gruMaxBlocks": 16
   },
   "pacman": {
     "ms": 8000,
@@ -8492,6 +8495,40 @@
           "width": 110,
           "team": 2,
           "feeds": 2,
+          "on": [
+            [
+              45000,
+              165000
+            ]
+          ]
+        },
+        {
+          "kind": "gru",
+          "x": 410,
+          "y": 1275,
+          "width": 110,
+          "team": 1,
+          "fromX": 1000,
+          "toX": 1240,
+          "dropY": 1000,
+          "landY": 1280,
+          "on": [
+            [
+              45000,
+              150000
+            ]
+          ]
+        },
+        {
+          "kind": "gru",
+          "x": 1370,
+          "y": 1100,
+          "width": 100,
+          "team": 2,
+          "fromX": 1760,
+          "toX": 2000,
+          "dropY": 1000,
+          "landY": 1280,
           "on": [
             [
               45000,

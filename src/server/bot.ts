@@ -161,6 +161,13 @@ function decideSimple(self: Fighter, players: readonly Fighter[], stage: StageSp
     if (!mem.last[key]) input[key] = true;
   };
 
+  // Alla postazione (#433, anche la gru) i bot non sanno guidarla: ci sono finiti premendo attacco sulla pedana, quindi escono col salto
+  if (self.station !== undefined) {
+    mem.ticks++;
+    if (mem.ticks % reactionTicks(level) === 0) tap("jump");
+    return input;
+  }
+
   // A Tetris (#427) il pezzo compare già sopra l'avversario: lo si fa cadere di colpo, coi tempi del livello
   if (self.powerup === "tetris") {
     mem.ticks++;

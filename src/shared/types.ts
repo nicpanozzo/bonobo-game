@@ -148,7 +148,7 @@ export interface PuddleState {
 // pixel, con [x, y] l'angolo in alto a sinistra; kind è la forma (I, O, T, L, J, S, Z) e decide il colore
 export interface TetrisState {
   pieces: { id: number; ownerId: string; kind: string; cells: [number, number][]; fall: number }[]; // fall: pixel che mancano alla posa, per l'ombra
-  blocks: { x: number; y: number; kind: string; ms: number }[]; // ms: quanto resta prima che il blocco sparisca
+  blocks: { x: number; y: number; kind: string; ms: number; keep?: true }[]; // ms: quanto resta prima che il blocco sparisca; keep: posato da una gru (#433), resta per tutta la partita
 }
 
 // Una postazione dell'arena (#433), nello stesso ordine di stage.stations. I tempi sono stageMs
@@ -159,6 +159,7 @@ export interface StationState {
   readyAt?: number; // bombarda: da quando può sparare di nuovo
   load?: number; // munizioni: quando è pronta la cassa in carica; manca se non se ne carica una
   crates?: number[]; // munizioni: quando arriva su ognuna delle casse in salita
+  piece?: { kind: string; cells: [number, number][] }; // gru: il pezzo appeso (forma e quadretti in pixel, angolo in alto a sinistra); manca se non ce n'è. readyAt: da quando pende il prossimo
 }
 
 // Una palla di mortadella sparata da una bombarda (#433): fa l'arco con STATION.ballGravityPxS2

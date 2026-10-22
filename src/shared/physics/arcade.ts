@@ -7,7 +7,7 @@
 //   arcadeSolids() i blocchi posati come blocchi pieni per collideWithStage
 
 import { characterStats } from "../characters";
-import { FIGHTER, HITSTOP, HITSTUN_PER_KNOCKBACK, PACMAN, TETRIS, WORLD } from "../constants";
+import { FIGHTER, HITSTOP, HITSTUN_PER_KNOCKBACK, PACMAN, STATION, TETRIS, WORLD } from "../constants";
 import type { Rect } from "../stages";
 import { rng } from "../stageGenerator";
 import type { TetrisState } from "../types";
@@ -39,6 +39,7 @@ export interface Piece {
   soft: boolean; // giù tenuto in questo tick
   repeatMs: number; // ms al prossimo spostamento tenendo destra o sinistra
   hit: string[]; // chi ha già preso questo pezzo
+  crane?: { slot: number; landY: number }; // lasciato da una gru (#433, stations): si posa su landY e i blocchi possono restare
 }
 
 export interface Block {
@@ -46,6 +47,7 @@ export interface Block {
   y: number;
   kind: string;
   lifeMs: number;
+  keep?: number; // posato da una gru (#433): indice della postazione; non invecchia e non si butta via
 }
 
 export interface ArcadeWorld {
@@ -60,7 +62,7 @@ export interface ArcadeWorld {
 const C = TETRIS.cellPx;
 const COLS = Math.floor(WORLD.width / C);
 
-function arcade(ctx: PhysicsContext): ArcadeWorld {
+export function arcadeWorld(ctx: PhysicsContext): ArcadeWorld {
   // Il caso con un seme fisso: la partita resta ripetibile come per gli oggetti
   ctx.arcade ??= { pieces: [], blocks: [], nextId: 1, random: rng(427).next };
   return ctx.arcade;
@@ -87,7 +89,7 @@ function fits(cells: [number, number][], ctx: PhysicsContext): boolean {
 
 // Il pezzo di chi gioca, guidato dai suoi tasti. Quando non ce l'ha, ne fa comparire uno stepArcade
 export function playTetris(f: Fighter, dtMs: number, ctx: PhysicsContext): void {
-  const p = arcade(ctx).pieces.find((q) => q.ownerId === f.id && !q.drop);
+  const p = arcadeWorld(ctx).pieces.find((q) => q.ownerId === f.id && !q.drop);
   if (!p) return;
   const dir = f.input.left === f.input.right ? 0 : f.input.left ? -1 : 1;
   const fresh = (pressed(f, "left") && dir < 0) || (pressed(f, "right") && dir > 0);
@@ -113,7 +115,7 @@ export function playTetris(f: Fighter, dtMs: number, ctx: PhysicsContext): void 
   if (pressed(f, "heavy")) {
     p.drop = true; // da qui il pezzo è libero: tra poco ne compare un altro
     consume(f, "heavy");
-    pieceDone(p, arcade(ctx), ctx);
+    pieceDone(p, arcadeWorld(ctx), ctx);
     tetrisEvent("drop", p, ctx);
   }
 }
@@ -155,10 +157,10 @@ function tetrisEvent(phase: "spawn" | "move" | "rotate" | "drop" | "land", p: Pi
 
 // Quanto può scendere una cella prima di toccare qualcosa sotto: pavimenti e blocchi posati. Le piattaforme sottili
 // si attraversano come fanno i lottatori da sotto: se fermassero i pezzi, chi ci sta sotto sarebbe sempre al riparo
-function room(x: number, bottom: number, fall: number, ctx: PhysicsContext, blocks: Block[]): number {
+function room(x: number, bottom: number, fall: number, ctx: PhysicsContext, blocks: Block[], floorY?: number): number {
   const cx = x + C / 2;
   let best = fall;
-  const tops: number[] = [];
+  const tops: number[] = floorY === undefined ? [] : [floorY]; // il ripiano della gru è un pavimento solo per i suoi pezzi
   for (const s of ctx.stage.solids) if (cx > s.x && cx < s.x + s.width) tops.push(s.y);
   for (const b of blocks) if (cx > b.x && cx < b.x + C) tops.push(b.y);
   for (const top of tops) if (bottom <= top + 0.5 && bottom + best > top) best = Math.max(0, top - bottom);
@@ -189,7 +191,7 @@ const wrap = (v: number, size: number) => ((v % size) + size) % size;
 function eatWithPacman(fighters: Fighter[], ctx: PhysicsContext) {
   const pacmen = fighters.filter((f) => f.powerup === "pacman" && !f.eliminated && !f.respawning);
   if (pacmen.length === 0) return;
-  const world = arcade(ctx);
+  const world = arcadeWorld(ctx);
   const eaten = (world.eaten ??= {});
   const now = ctx.timeMs ?? 0;
   for (const pac of pacmen) {
@@ -215,26 +217,31 @@ function eatWithPacman(fighters: Fighter[], ctx: PhysicsContext) {
 export function stepArcade(fighters: Fighter[], dtMs: number, ctx: PhysicsContext): void {
   eatWithPacman(fighters, ctx);
   const players = fighters.filter((f) => f.powerup === "tetris" && !f.eliminated && !f.respawning);
-  const world = players.length > 0 ? arcade(ctx) : ctx.arcade;
+  const world = players.length > 0 ? arcadeWorld(ctx) : ctx.arcade;
   if (!world) return;
   const wait = (world.nextPieceMs ??= {});
   for (const f of players) {
     if (world.pieces.some((p) => p.ownerId === f.id && !p.drop)) continue;
     if ((ctx.timeMs ?? 0) >= (wait[f.id] ?? -Infinity)) spawnPiece(f, fighters, world, ctx);
   }
-  for (const b of world.blocks) b.lifeMs -= dtMs;
+  for (const b of world.blocks) if (b.keep === undefined) b.lifeMs -= dtMs;
   world.blocks = world.blocks.filter((b) => b.lifeMs > 0);
   for (const p of world.pieces) {
     const speed = p.drop ? TETRIS.dropPxS : p.soft ? TETRIS.softPxS : TETRIS.fallPxS;
     const fall = (speed * dtMs) / 1000;
     const cells = cellsOf(p);
-    const step = Math.min(...cells.map(([x, y]) => room(x, y + C, fall, ctx, world.blocks)));
+    const step = Math.min(...cells.map(([x, y]) => room(x, y + C, fall, ctx, world.blocks, p.crane?.landY)));
     p.y += step;
     hitWithPiece(p, fighters, ctx);
     if (step < fall) {
       // Posato: diventa blocchi solidi
-      for (const [x, y] of cellsOf(p)) world.blocks.push({ x, y: Math.round(y), kind: p.kind, lifeMs: TETRIS.blockMs });
-      world.blocks.splice(0, Math.max(0, world.blocks.length - TETRIS.maxBlocks));
+      for (const [x, y] of cellsOf(p)) {
+        // Dalla gru (#433) i blocchi restano, fino a STATION.gruMaxBlocks per gru
+        const keep = p.crane !== undefined && world.blocks.filter((b) => b.keep === p.crane!.slot).length < STATION.gruMaxBlocks;
+        world.blocks.push({ x, y: Math.round(y), kind: p.kind, lifeMs: TETRIS.blockMs, ...(keep && { keep: p.crane!.slot }) });
+      }
+      let extra = world.blocks.length - TETRIS.maxBlocks; // oltre il tetto spariscono i più vecchi, ma non quelli della gru
+      world.blocks = world.blocks.filter((b) => b.keep !== undefined || extra-- <= 0);
       tetrisEvent("land", p, ctx);
       if (!p.drop) pieceDone(p, world, ctx);
       clearLines(p, fighters, world, ctx);
@@ -247,7 +254,7 @@ export function stepArcade(fighters: Fighter[], dtMs: number, ctx: PhysicsContex
 // Quanto manca alla posa di un pezzo: il client ci disegna l'ombra, così si vede dove cadrà
 function fallLeft(p: Piece, ctx: PhysicsContext, blocks: Block[]): number {
   const far = ctx.stage.blastZone.bottom - p.y;
-  return Math.round(Math.min(...cellsOf(p).map(([x, y]) => room(x, y + C, far, ctx, blocks))));
+  return Math.round(Math.min(...cellsOf(p).map(([x, y]) => room(x, y + C, far, ctx, blocks, p.crane?.landY))));
 }
 
 // Una riga come nel Tetris vero: TETRIS.lineCells blocchi in fila alla stessa altezza esplodono, e chi ci sta
@@ -256,7 +263,7 @@ function clearLines(p: Piece, fighters: Fighter[], world: ArcadeWorld, ctx: Phys
   const owner = fighters.find((f) => f.id === p.ownerId);
   const rows = new Set(world.blocks.filter((b) => cellsOf(p).some(([x, y]) => b.x === x && b.y === Math.round(y))).map((b) => b.y));
   for (const y of rows) {
-    const row = world.blocks.filter((b) => b.y === y).sort((a, b) => a.x - b.x);
+    const row = world.blocks.filter((b) => b.y === y && b.keep === undefined).sort((a, b) => a.x - b.x);
     for (const run of runs(row)) {
       if (run.length < TETRIS.lineCells) continue;
       const left = run[0].x;
@@ -361,6 +368,6 @@ export function tetrisState(ctx: PhysicsContext): TetrisState | undefined {
   if (!world || (world.pieces.length === 0 && world.blocks.length === 0)) return undefined;
   return {
     pieces: world.pieces.map((p) => ({ id: p.id, ownerId: p.ownerId, kind: p.kind, cells: cellsOf(p).map(([x, y]) => [x, Math.round(y)] as [number, number]), fall: fallLeft(p, ctx, world.blocks) })),
-    blocks: world.blocks.map((b) => ({ x: b.x, y: b.y, kind: b.kind, ms: Math.ceil(b.lifeMs / 100) * 100 })),
+    blocks: world.blocks.map((b) => ({ x: b.x, y: b.y, kind: b.kind, ms: Math.ceil(b.lifeMs / 100) * 100, ...(b.keep !== undefined && { keep: true as const }) })),
   };
 }

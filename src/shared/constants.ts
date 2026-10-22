@@ -529,6 +529,9 @@ export const STATION = {
   loadMs: 1500, // munizioni: ms di attacco tenuto per caricare una cassa
   deliveryMs: 2500, // munizioni: ms di salita della cassa fino alla bombarda
   crate: 3, // munizioni: palle in una cassa
+  gruMoveMs: 120, // gru: ms tra due spostamenti di colonna tenendo destra o sinistra
+  gruCooldownMs: 2500, // gru: ms dopo un pezzo lasciato cadere prima che ne penda un altro
+  gruMaxBlocks: 16, // gru: blocchi posati che restano per tutta la partita, per gru (circa 4 pezzi); oltre, spariscono come quelli del Tetris
 };
 
 // Classifica delle partite (#18, src/server/leaderboard.ts)
