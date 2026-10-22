@@ -11,7 +11,8 @@ const CAM := {"margin": 140, "minZoom": 0.7, "maxZoom": 1.3}
 const STAGE := {
 	"height": 1800,
 	"camera": {"minZoom": 0.5, "floorY": 1640},
-	"blastZone": {"left": -250, "right": 1530, "top": -350, "bottom": 2000},
+	# larga abbastanza: la telecamera non mostra mai più delle zone di espulsione, nemmeno in orizzontale
+	"blastZone": {"left": -600, "right": 1880, "top": -350, "bottom": 2000},
 	"phases": [
 		{"id": "torri", "name": "Le due torri", "startMs": 0},
 		{"id": "rissa", "name": "La rissa", "startMs": 60000, "announce": "Si sale!", "warnMs": 5000,
