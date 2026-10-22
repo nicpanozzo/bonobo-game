@@ -536,7 +536,7 @@ func _on_event(name: String, data: Variant) -> void:
 			_check_server_version(str(data.get("serverVersion", "")))
 			camera.position = Vector2.ZERO
 			_cam_zoom = 1.0
-	_phase_cam = {}
+			_phase_cam = {}
 		"snapshot":
 			_last_snapshot = Time.get_ticks_msec()
 			_last_players = data.get("players", [])
