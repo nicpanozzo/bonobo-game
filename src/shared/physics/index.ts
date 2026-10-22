@@ -15,6 +15,7 @@
 //   tech.ts      rialzata al volo dopo un colpo
 //   companion.ts il compagno che segue il lottatore (#369)
 //   arcade.ts    power-up Tetris e Pac-Man (#427)
+//   timed.ts     pezzi a tempo e fasi dell'arena (#433)
 
 import { isArcade, playPacman, playTetris, stepArcade } from "./arcade";
 import { resolveHits, tryStartAttack, updateAttack } from "./attacks";
@@ -24,7 +25,7 @@ import { pressPads } from "./pads";
 import { tickBuffer, type Fighter, type PhysicsContext } from "./fighter";
 import { grabbing, inGrab, resolveGrabs, stepGrabs } from "./grab";
 import { swapTripInput, tickPowerup } from "./items";
-import { holdLedge, tryGrabLedge } from "./ledge";
+import { holdLedge, remapLedges, tryGrabLedge } from "./ledge";
 import { applyControls, applyGravity, startLanding, stepLag, tickCoyote } from "./movement";
 import { holdShield } from "./shield";
 import { stepProjectiles } from "./projectiles";
@@ -34,11 +35,13 @@ import { collideWithStage, loseStock, outOfBlastZone, respawn } from "./stage";
 export { platformSurfaceY } from "./stage";
 import { burstFire, stepRewinds, supreming, tickSupreme } from "./supreme";
 import { landTech, tickTech } from "./tech";
+import { stageAt } from "./timed";
 
 export * from "./fighter";
 export { resolveHits } from "./attacks";
 export { floodPhase, hazardActive, hazardRect, jetPhase, moverHere, moverOn, moverPlace, moverPosition, padFx, travelDirection, travelPhase, type FloodPhase, type JetPhase, type TravelPhase } from "./elements";
 export { ledgesOf } from "./ledge";
+export { baseStage, phaseAt, phaseIndexAt, pieceOn, stageAt, stageIsTimed } from "./timed";
 
 // Un passo di simulazione per un lottatore (dtMs = durata del tick)
 export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void {
@@ -155,6 +158,12 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
 // stageMs: quanto avanza l'arena (piattaforme, musica), che va a tempo vero anche quando il combattimento è rallentato
 export function stepWorld(fighters: Fighter[], dtMs: number, ctx: PhysicsContext, stageMs = dtMs): void {
   ctx.timeMs = (ctx.timeMs ?? 0) + stageMs;
+  // Pezzi a tempo e fasi (#433): da qui in poi ctx.stage è l'arena com'è adesso (la stessa, se non cambia)
+  const view = stageAt(ctx.stage, ctx.timeMs);
+  if (view !== ctx.stage) {
+    remapLedges(fighters, ctx.stage, view);
+    ctx.stage = view;
+  }
   const firstEvent = ctx.events.length; // da qui gli eventi di questo tick (i bottoni sonori guardano gli atterraggi)
   stepGrabs(fighters, dtMs, ctx);
   const tripping = swapTripInput(fighters); // funghetti (#302): destra e sinistra invertite solo per il passo

@@ -7,7 +7,7 @@ import { createFighter, stepWorld, type PhysicsContext } from "./physics";
 import { hazardActive, moverPosition } from "./physics/elements";
 import { courseSteps, generateCourse } from "./courseGenerator";
 import { generateStage, seedFromStageId } from "./stageGenerator";
-import { JUMP_HEIGHT, reachable, SIDE_REACH, stageCheckData } from "./stageCheck";
+import { checkTimes, JUMP_HEIGHT, reachable, SIDE_REACH, stageCheckData, timedReachProblems } from "./stageCheck";
 import { CHORD_NAME, DEFAULT_STAGE_ID, getStage, STAGE_MUSIC_LEADS, STAGES, stageArtFiles, stageWidth, type StageMusic, type StageSpec } from "./stages";
 
 function checkStage(stage: StageSpec) {
@@ -17,6 +17,7 @@ function checkStage(stage: StageSpec) {
   }
   if (!stage.goal) {
     for (const p of stage.platforms) assert.ok(reachable(stage, p), `${stage.id}: piattaforma a ${p.x},${p.y} irraggiungibile`);
+    assert.deepEqual(timedReachProblems(stage), [], `${stage.id}: pezzi a tempo e fasi (#433)`);
   }
   assert.ok(stage.spawns.length >= MAX_PLAYERS_PER_ROOM, `${stage.id}: una partenza per giocatore`);
   assert.deepEqual(cameraProblems(stage), [], stage.id);
@@ -154,6 +155,19 @@ describe("arene", () => {
     assert.equal(musicProblems({ bpm: 120, chords: [], lead: "organo" as never }).length, 2);
     assert.deepEqual(musicProblems({ bpm: 120, chords: ["C#m", "Bb", "F"], lead: "sine" }), []);
     assert.equal(musicProblems({ bpm: 120, chords: ["F"], lead: "sine", track: "non-esiste" }).length, 1);
+  });
+
+  it("il controllo delle arene a tempo guarda ogni fase e ogni finestra (#433)", () => {
+    const base = STAGES.palco;
+    // Il palco sparisce a 5 s, torna a 9 s e sparisce a 20 s: senza, le sue piattaforme non si raggiungono
+    const timed: StageSpec = { ...base, id: "prova-tempo", solids: [{ ...base.solids[0], on: [[0, 5000], [9000, 20000]] }], phases: [{ id: "a", name: "A", startMs: 0 }, { id: "b", name: "B", startMs: 3000 }] };
+    assert.deepEqual(checkTimes(timed), [0, 3000, 5000, 9000, 20000]);
+    const problems = timedReachProblems(timed);
+    assert.ok(problems.length > 0 && problems.some((p) => p.startsWith("a 5000 ms")) && !problems.some((p) => p.startsWith("a 9000 ms")), problems.join("; "));
+    // Con le piattaforme a tempo anche loro sparite nel buco, va bene
+    const both: StageSpec = { ...timed, id: "prova-tempo-2", platforms: base.platforms.map((p) => ({ ...p, on: [[0, 5000], [9000, 20000]] as [number, number][] })) };
+    assert.deepEqual(timedReachProblems(both), []);
+    assert.deepEqual(checkTimes(base), [0], "un'arena che non cambia si guarda una volta sola");
   });
 
   it("ogni personaggio raggiunge tutte le piattaforme delle arene fatte a mano (E11)", () => {

@@ -2,7 +2,8 @@
 // che ne legge i numeri da godot/data/game.json (stageCheck) e rifà il conto in site/editor/arena.js.
 
 import { FIGHTER, STAGE_CHECK } from "./constants";
-import type { Rect, ThinPlatform } from "./stages";
+import { stageAt } from "./physics/timed";
+import type { Rect, StageSpec, ThinPlatform } from "./stages";
 
 // Un salto sale di v²/2g pixel; con il doppio salto si arriva alla somma dei due
 export const JUMP_HEIGHT = (FIGHTER.jumpSpeed * FIGHTER.jumpSpeed) / (2 * FIGHTER.gravity);
@@ -21,6 +22,24 @@ export function reachable(stage: { solids: Rect[]; platforms: ThinPlatform[] }, 
     const rise = s.y - py;
     return (gap <= SIDE_REACH && rise <= JUMP_HEIGHT * heightScale) || (gap === 0 && rise <= DOUBLE_JUMP_HEIGHT * heightScale * 0.9);
   });
+}
+
+// Arene che cambiano nel tempo (#433): si guarda all'inizio di ogni fase e a ogni bordo delle finestre dei blocchi
+// e delle piattaforme, cioè ogni volta che cambia cosa c'è. Senza fasi né pezzi a tempo basta l'istante 0
+export function checkTimes(stage: StageSpec): number[] {
+  const times = [0, ...(stage.phases ?? []).map((p) => p.startMs)];
+  for (const piece of [...stage.solids, ...stage.platforms]) for (const [from, to] of piece.on ?? []) times.push(from, to);
+  return [...new Set(times)].filter((t) => t >= 0).sort((a, b) => a - b);
+}
+
+// Le piattaforme che in qualche istante ci sono ma non si raggiungono con i pezzi presenti in quel momento
+export function timedReachProblems(stage: StageSpec, heightScale = 1): string[] {
+  const out: string[] = [];
+  for (const t of checkTimes(stage)) {
+    const now = stageAt(stage, t);
+    for (const p of now.platforms) if (!reachable(now, p, heightScale)) out.push(`a ${t} ms: piattaforma a ${p.x},${p.y} irraggiungibile`);
+  }
+  return out;
 }
 
 // I numeri che servono all'editor per rifare il conto
