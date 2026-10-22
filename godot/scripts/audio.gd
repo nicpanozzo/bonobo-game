@@ -143,6 +143,12 @@ func on_event(e: Dictionary) -> void:
 			_play("hitHeavy" if str(e.kind).begins_with("heavy") else "hitLight", {"volume": 0.6 + 0.4 * strength, "x": e.x, "pitch": 1.1 - 0.3 * strength})
 		"hazard":
 			_play("hitHeavy", {"volume": 0.8, "x": e.x, "pitch": 0.8})
+		# Postazioni (#433): il colpo della bombarda, il tonfo della palla di mortadella, le casse
+		"station":
+			match str(e.phase):
+				"fire": _play("cannonFire", {"x": e.x})
+				"boom": _play("tetrisLand", {"volume": 0.7, "x": e.x, "pitch": 0.7})
+				"load", "ammo": _play("tetrisMove", {"volume": 0.4, "x": e.x, "pitch": 0.5})
 		# Il Tetris (#427): i rumori del Game Boy per il pezzo, un tonfo quando si posa
 		"tetris":
 			match str(e.phase):
@@ -765,6 +771,10 @@ func _build_sounds() -> void:
 		for i in notes.size():
 			s.tone(i * 0.09, "square", notes[i], notes[i], 0.08, 0.1)
 		s.tone(0.5, "triangle", 300, 1400, 0.4, 0.2))
+	# La bombarda (#433): un colpo basso e uno sbuffo di rumore
+	_sounds.cannonFire = make.call(0.7, func(s):
+		s.tone(0, "sine", 110, 40, 0.5, 0.6)
+		s.noise(0, "lowpass", 2500, 120, 0.6, 0.8))
 	_sounds.tetrisMove = make.call(0.05, func(s): s.tone(0, "square", 900, 900, 0.03, 0.08))
 	_sounds.tetrisRotate = make.call(0.08, func(s): s.tone(0, "square", 600, 1200, 0.06, 0.1))
 	_sounds.tetrisDrop = make.call(0.2, func(s): s.tone(0, "square", 1200, 200, 0.16, 0.1))

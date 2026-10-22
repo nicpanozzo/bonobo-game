@@ -279,6 +279,32 @@ art: { layers: [], collapse: { atMs: BOLOGNA.collapseMs, durationMs: BOLOGNA.col
 | `toDeg` | di quanto ruota alla fine (positivo = verso destra, 90 = distesa); la cima deve arrivare dove si appoggia la rampa |
 | `warnMs` | l'avviso prima di `atMs` (6000 se manca) |
 
+### Postazioni (`stations`): bombarda e munizioni (#433)
+
+Pezzi di pavimento da cui si guida qualcosa, come in *Lovers in a Dangerous Spacetime*. Il primo uso è la Bologna a squadre: una bombarda in cima alla torre e le sue munizioni in fondo, così un compagno sta sopra e uno sotto.
+
+`stations: [{ kind, x, y, width, team?, on?, ...campi del tipo }, ...]`: `x`, `y` e `width` sono la pedana su cui si sta (`y` = superficie, sopra un blocco o una piattaforma). Le regole sono uguali per tutti i tipi:
+
+- **Entrare:** a terra sopra la pedana, si preme attacco (leggero o pesante). La postazione dev'essere libera e dentro le sue finestre `on`. Uno solo per postazione.
+- **Usarla:** si resta fermi nel mondo, visibili e colpibili. Nessun tasto nuovo: **su/giù** mirano, **attacco** agisce, **salto** fa uscire.
+- **Uscire per forza:** un colpo (anche di oggetti, trappole e palle), una presa, un KO o la fine della finestra `on` buttano fuori. Dopo l'uscita lo stesso lottatore non rientra per `STATION.reenterMs`.
+- **`team`:** nelle modalità a squadre la usa solo quella squadra; fuori dalle squadre chiunque.
+- I numeri che il dato non dice stanno in `STATION` (`constants.ts`). Alla rivincita munizioni e punti ripartono da capo.
+
+| Tipo | Campi | Cosa fa |
+|---|---|---|
+| `bombarda` | `dir` (1 destra, -1 sinistra), `aimMinDeg`, `aimMaxDeg`, `ammoMax`, `autoAmmoMs?` | Su/giù girano la canna a velocità costante. Attacco spara una **palla di mortadella** ad arco, se ha palle e se è passato `STATION.fireMs`. Chi viene preso si fa male e vola, e il KO va a chi ha sparato. Ogni avversario preso (non sullo scudo) vale **+1 punto torre** alla squadra di chi spara. Niente fuoco amico se le regole non lo vogliono. La palla si schianta sui blocchi pieni e attraversa le piattaforme sottili. Con `autoAmmoMs` arriva una palla in più ogni tanto anche senza munizioni (per l'1 contro 1). |
+| `munizioni` | `feeds` (indice della bombarda), `loadMs`, `deliveryMs`, `crate` | Attacco tenuto per `loadMs` carica una cassa. Dopo `deliveryMs` la bombarda di `feeds` prende `crate` palle, fino a `ammoMax`. Lasciando prima, uscendo o venendo colpiti la carica si perde. A bombarda piena (contando le casse in salita) non si carica. L'ascensore che si vede portare su le casse è una piattaforma mobile normale, a tempo. |
+
+```ts
+stations: [
+  { kind: "bombarda", x: 560, y: -180, width: 90, team: 1, dir: 1, aimMinDeg: 0, aimMaxDeg: 50, ammoMax: 6, autoAmmoMs: 8000 },
+  { kind: "munizioni", x: 540, y: 520, width: 110, team: 1, feeds: 0, loadMs: 1500, deliveryMs: 2500, crate: 3 },
+],
+```
+
+Nello snapshot ci sono `stations` (chi la usa, mira, palle, carica e casse in salita), `cannonballs` e `towerPoints` (punti torre per squadra, che l'HUD mostra in alto al centro), e `PlayerState.station` dice chi sta dove. Gli eventi `station` (`enter`, `exit`, `fire`, `load`, `ammo`, `boom`) servono a Godot per suoni e scintille. Logica in `physics/stations.ts`, disegno in `godot/scripts/station_view.gd`.
+
 ### Musica (`music`)
 
 Facoltativa: senza, in partita si sente la musica di sempre. È un preset per il sintetizzatore del gioco (`audio.gd`), più un brano registrato facoltativo.
@@ -389,3 +415,4 @@ Colori spenti, lontani da quelli dei giocatori (style guide, sezione 7). Quello 
 - Un elemento nuovo segue lo stesso schema: dati opzionali in `StageSpec`, logica pura in `src/shared/physics/elements.ts` con test in `elements.test.ts`, disegno in `_draw_elements` di `world_view.gd`, anteprima in `stage_preview.gd`.
 - Pezzi a tempo e fasi (#433): ogni tick `stepWorld` mette in `ctx.stage` la vista di `stageAt` (`physics/timed.ts`), con solo i blocchi e le piattaforme che ci sono e le zone della fase. Così chi legge `ctx.stage.solids` o `blastZone` non cambia. Trappole, getti e piattaforme mobili restano tutti, perché eventi e disegni li chiamano per indice: chi li usa salta quelli spenti con `pieceOn`. La predizione e il disegno rifanno lo stesso conto con `piece_on` (`predict/movement.gd`) dal `stageMs` dello snapshot. Un'arena che non cambia resta lo stesso oggetto.
 - Se l'elemento dipende da cosa fanno i giocatori (un pavimento che crolla quando ci stai sopra) il client non lo può ricalcolare dal tempo: il suo stato va nello snapshot, ed è un cambio di protocollo.
+- Così sono fatte le postazioni (#433, `physics/stations.ts`): lo stato sta in `ctx.stations` sul server e va nello snapshot. Chi ne usa una non si muove e la predizione di Godot la lascia al server (`station` in `predictable`, `predictor.gd`), come per chi è assente.

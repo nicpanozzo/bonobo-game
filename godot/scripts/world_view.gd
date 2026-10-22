@@ -64,6 +64,7 @@ var _light_props: Array = [] # [texture, decorazione] con i vetri accesi, sopra 
 var _life: RefCounted = preload("res://scripts/stage_life.gd").new() # sfondo vivo (#260)
 var _wonder: RefCounted = preload("res://scripts/wonder_stage.gd").new() # l'arena musicale che balla a tempo (#423)
 var _arcade: RefCounted = preload("res://scripts/arcade_view.gd").new() # pezzi e blocchi del power-up Tetris (#427)
+var _stations: RefCounted = preload("res://scripts/station_view.gd").new() # postazioni e palle di mortadella (#433)
 var _ambient := Color.WHITE # luce del momento del giorno (#267): moltiplica strati e decorazioni, un po' il palco
 var _textures := {} # id personaggio -> Texture2D dello spritesheet (nel formato cartella, quella di idle)
 var _state_textures := {} # id personaggio -> { stato: Texture2D }, solo per il formato cartella (E7 passo 2)
@@ -253,6 +254,7 @@ func reset() -> void:
 	_puddles = []
 	_companions.clear()
 	_arcade.clear()
+	_stations.clear()
 	_item_pos = {}
 	_dust = []
 	_trails = {}
@@ -296,6 +298,7 @@ func set_stage_spec(spec: Dictionary) -> void:
 	_life.setup(spec, stage_width(), world_height())
 	_wonder.setup(spec)
 	_arcade.setup(game)
+	_stations.setup(spec, game)
 	_supreme_view.stage = spec
 	_reached = 0
 	queue_redraw()
@@ -609,6 +612,7 @@ func on_snapshot(snap: Dictionary) -> void:
 	_pads_pressed = snap.get("pads", []) if snap.get("pads") is Array else [] # bottoni sonori (#423)
 	_companions.on_snapshot(snap.players, game.characters)
 	_arcade.on_snapshot(snap) # #427
+	_stations.on_snapshot(snap, Time.get_ticks_msec()) # #433
 	predictor.blocks = _arcade.blocks
 	predictor.puddles = _puddles
 	predictor.stage_ms = float(snap.get("stageMs", 0)) # pezzi a tempo (#433)
@@ -663,6 +667,13 @@ func on_event(e: Dictionary) -> void:
 			if e.phase == "line":
 				_arcade.on_line(e, Time.get_ticks_msec())
 				_shake = maxf(_shake, 10.0)
+		"station":
+			# Postazioni (#433): la bombarda spara con una scossa, la palla di mortadella si schianta in uno sbuffo rosa
+			if e.phase == "fire":
+				_shake = maxf(_shake, 6.0)
+			elif e.phase == "boom":
+				_sparks.append({"x": e.x, "y": e.y, "age": 0.0, "size": 40.0, "color": Color("f2a7b0")})
+				_shake = maxf(_shake, 5.0)
 		"hazard":
 			# Trappola (#14): scintilla arancione e scossa come un colpo forte
 			_sparks.append({"x": e.x, "y": e.y, "age": 0.0, "size": 30.0, "color": Color(1, 0.55, 0.15)})
@@ -949,6 +960,8 @@ func _draw() -> void:
 			draw_rect(Rect2(p.x, p.y, p.width, 8), _faded(_palette.platform))
 	_piece_alpha = 1.0
 	_arcade.draw_blocks(self, Time.get_ticks_msec()) # i pezzi del Tetris posati (#427)
+	if not _stations.is_empty():
+		_stations.draw(self, t_stage) # bombarde e munizioni (#433)
 	_arcade.draw_pellets(self, stage, _sampled, stage_width(), Time.get_ticks_msec()) # le palline di Pac-Man
 	_draw_rails(false) # ringhiere dietro ai lottatori
 	if not _life.is_empty():
@@ -983,6 +996,7 @@ func _draw() -> void:
 	_draw_items(now)
 	_draw_projectiles()
 	_arcade.draw_pieces(self, _sampled) # i pezzi del Tetris che cadono (#427)
+	_stations.draw_balls(self, Time.get_ticks_msec()) # le palle di mortadella (#433)
 	_arcade.draw_lines(self, now) # le righe del Tetris che esplodono (#427)
 	_arcade.draw_ghosts(self, _sampled, now) # con Pac-Man gli altri sono fantasmini (#427)
 	if not _life.is_empty():

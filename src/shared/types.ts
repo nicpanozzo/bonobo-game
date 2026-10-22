@@ -82,6 +82,7 @@ export interface PlayerState {
   powerupMs: number; // ms che restano del potenziamento, 0 se nessuno
   predict?: PredictionState; // E17: solo per chi manda InputState.seq
   companion?: CompanionState; // il compagno che lo segue (#369, il beagle di Lampione); manca se non ne ha
+  station?: number; // indice della postazione che sta usando (#433, stage.stations): fermo, i tasti guidano lei; manca se nessuna
 }
 
 // Il compagno di un lottatore (#369): dove è e dove guarda
@@ -150,6 +151,26 @@ export interface TetrisState {
   blocks: { x: number; y: number; kind: string; ms: number }[]; // ms: quanto resta prima che il blocco sparisca
 }
 
+// Una postazione dell'arena (#433), nello stesso ordine di stage.stations. I tempi sono stageMs
+export interface StationState {
+  user: string | null; // chi la sta usando
+  aim?: number; // bombarda: gradi sopra l'orizzontale
+  ammo?: number; // bombarda: palle di mortadella dentro
+  readyAt?: number; // bombarda: da quando può sparare di nuovo
+  load?: number; // munizioni: quando è pronta la cassa in carica; manca se non se ne carica una
+  crates?: number[]; // munizioni: quando arriva su ognuna delle casse in salita
+}
+
+// Una palla di mortadella sparata da una bombarda (#433): fa l'arco con STATION.ballGravityPxS2
+export interface CannonballState {
+  id: number;
+  ownerId: string; // chi l'ha sparata
+  x: number; // centro
+  y: number;
+  vx: number;
+  vy: number;
+}
+
 // Un oggetto nell'arena (#17): a terra, in volo o in mano a qualcuno
 export interface ItemState {
   id: number;
@@ -201,6 +222,9 @@ export type GameEvent =
   | { type: "flag"; scoringTeam: number; byId: string | null; team: number; carrierId: string | null } // portabandiera di "team" buttato fuori: punto a scoringTeam, la bandiera passa a carrierId
   | { type: "checkpoint"; id: string; index: number } // in Corsa: nuovo punto da cui si riparte
   | { type: "pad"; index: number; sound: string; id: string; x: number; y: number } // id ha premuto il bottone sonoro stage.pads[index] (#423)
+  // Postazione stage.stations[index] (#433): enter/exit = id entra o esce, fire = la bombarda spara, load = una cassa
+  // parte in salita, ammo = le palle arrivano alla bombarda, boom = una palla di mortadella si schianta (x, y)
+  | { type: "station"; phase: "enter" | "exit" | "fire" | "load" | "ammo" | "boom"; index: number; id: string | null; x: number; y: number }
   | { type: "hazard"; id: string; index: number; damage: number; percent: number; knockback: number; x: number; y: number } // preso da una trappola (stage.hazards[index], #14)
   | { type: "itemSpawn"; itemId: number; kind: string; x: number; y: number } // un oggetto comincia a cadere (#17)
   | { type: "itemPick"; itemId: number; id: string } // id lo raccoglie
@@ -238,6 +262,9 @@ export interface GameSnapshot {
   stageMs: number; // tempo dell'arena: da qui il client calcola dove sono ascensori e trappole (#14)
   pads?: (number | null)[]; // bottoni sonori (#423): stageMs dell'ultima pressione di ognuno, null se mai premuto
   tetris?: TetrisState; // pezzi e blocchi del power-up Tetris (#427), solo quando ce ne sono
+  stations?: StationState[]; // postazioni (#433), solo nelle arene che ne hanno
+  cannonballs?: CannonballState[]; // palle di mortadella in volo (#433), con stations
+  towerPoints?: Record<number, number>; // punti torre per squadra (#433): colpi di bombarda a segno sugli avversari, con stations
 }
 
 // Eventi Socket.IO tipizzati

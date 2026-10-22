@@ -16,6 +16,7 @@
 //   companion.ts il compagno che segue il lottatore (#369)
 //   arcade.ts    power-up Tetris e Pac-Man (#427)
 //   timed.ts     pezzi a tempo e fasi dell'arena (#433)
+//   stations.ts  postazioni: bombarda e munizioni (#433)
 
 import { isArcade, playPacman, playTetris, stepArcade } from "./arcade";
 import { resolveHits, tryStartAttack, updateAttack } from "./attacks";
@@ -36,6 +37,7 @@ export { platformSurfaceY } from "./stage";
 import { burstFire, stepRewinds, supreming, tickSupreme } from "./supreme";
 import { landTech, tickTech } from "./tech";
 import { stageAt } from "./timed";
+import { stepStations, useStation } from "./stations";
 
 export * from "./fighter";
 export { resolveHits } from "./attacks";
@@ -100,6 +102,12 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
   // Da Pac-Man (#427) niente controlli né gravità: si va dritti attraverso tutto
   if (f.powerup === "pacman") {
     playPacman(f, dtMs);
+    f.prevInput = f.input;
+    return;
+  }
+  // Alla postazione (#433) si sta fermi dove si è, e i tasti guidano la bombarda o le munizioni
+  if (useStation(f, dtMs, ctx)) {
+    if (outOfBlastZone(f, ctx)) loseStock(f, ctx); // una fase nuova può lasciarla fuori dall'arena
     f.prevInput = f.input;
     return;
   }
@@ -181,4 +189,5 @@ export function stepWorld(fighters: Fighter[], dtMs: number, ctx: PhysicsContext
   applyJets(fighters, ctx, dtMs); // getti d'acqua (#253)
   pressPads(fighters, ctx, firstEvent); // bottoni sonori (#423)
   stepArcade(fighters, dtMs, ctx); // pezzi del Tetris e bocconi di Pac-Man (#427)
+  stepStations(fighters, dtMs, ctx, firstEvent); // postazioni e palle di mortadella (#433), dopo colpi e prese
 }
