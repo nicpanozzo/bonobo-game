@@ -282,6 +282,7 @@ export const HITSTOP = {
 export const STOCKS = 3; // vite per partita
 export const RESPAWN_MS = 1500; // attesa dopo aver perso una vita
 export const RESPAWN_INVULNERABLE_MS = 1500;
+export const PHASE_LIFT_GAP_PX = 70; // px tra chi viene riportato su da una fase che stringe la zona di espulsione (Bologna, zuffa)
 export const MATCH_RESTART_MS = 5000; // pausa dopo la vittoria prima della nuova partita
 
 export const COLORS = [0xe74c3c, 0x3498db, 0x2ecc71, 0xf1c40f, 0x9b59b6, 0xe67e22, 0x1abc9c, 0xff6fb5];
@@ -463,6 +464,10 @@ export const BOT = {
   specialEveryMs: 1200, // ms tra una speciale e l'altra del bot
   sparringEveryMs: 1800, // ms tra un attacco e l'altro dello sparring del tutorial (E15): il tempo di alzare lo scudo
   sparringRange: 140, // pixel: lo sparring attacca solo se sei così vicino
+  climbReachPx: 150, // pixel: il bombardiere sale solo su pezzi più alti di così al massimo (un salto ne fa ~160): con di più oscilla
+  climbFromPx: 180, // pixel: un bersaglio più in alto di così, sulle torri, si raggiunge arrampicandosi
+  climbJumpPx: 70, // pixel: si salta già a questa distanza di lato dal pezzo: tra una scelta e l'altra il bot ne fa ~70 e il bersaglio stretto lo si salterebbe
+  climbSidePx: 260, // pixel: e solo se sono così vicini di lato
 };
 
 // Livelli di difficoltà dei bot (#20 passo 3): ?bot=facile, ?bot=semplice, ?bot=difficile

@@ -32,7 +32,7 @@ import { holdShield } from "./shield";
 import { stepProjectiles } from "./projectiles";
 import { cancelSpecial, specialing } from "./specials";
 import { endDash } from "./dash";
-import { collideWithStage, loseStock, outOfBlastZone, respawn } from "./stage";
+import { collideWithStage, liftOutOfZone, loseStock, outOfBlastZone, respawn } from "./stage";
 export { platformSurfaceY } from "./stage";
 import { burstFire, stepRewinds, supreming, tickSupreme } from "./supreme";
 import { landTech, tickTech } from "./tech";
@@ -170,8 +170,10 @@ export function stepWorld(fighters: Fighter[], dtMs: number, ctx: PhysicsContext
   // Pezzi a tempo e fasi (#433): da qui in poi ctx.stage è l'arena com'è adesso (la stessa, se non cambia)
   const view = stageAt(ctx.stage, ctx.timeMs, freezePrize(ctx));
   if (view !== ctx.stage) {
+    const shrinks = view.blastZone.bottom < ctx.stage.blastZone.bottom;
     remapLedges(fighters, ctx.stage, view);
     ctx.stage = view;
+    if (shrinks) liftOutOfZone(fighters, ctx); // la zuffa di Bologna stringe il fondo: chi è già sotto non è un KO
   }
   const firstEvent = ctx.events.length; // da qui gli eventi di questo tick (i bottoni sonori guardano gli atterraggi)
   stepGrabs(fighters, dtMs, ctx);
