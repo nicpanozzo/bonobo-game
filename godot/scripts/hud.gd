@@ -26,6 +26,7 @@ var cards_band := Vector2.ZERO # da x a x dove stanno le schede (tra levetta e t
 const WorldView := preload("res://scripts/world_view.gd")
 const SpeechBubbles := preload("res://scripts/speech_bubbles.gd")
 const FighterPose := preload("res://scripts/fighter_pose.gd")
+const StagePhases := preload("res://scripts/stage_phases.gd")
 const TeamPicker := preload("res://scripts/team_picker.gd")
 const PORTRAIT := 40.0 # lato del ritratto che spunta sopra la scheda, pixel
 const PORTRAIT_ROW := 26.0 # lato del ritratto accanto al nome nella classifica
@@ -125,6 +126,7 @@ func _draw() -> void:
 	if _snap.is_empty():
 		return
 
+	_draw_phase_banner(w, h)
 	var y := 70.0
 	var scores: Variant = _snap.get("teamScores")
 	if _snap.timeLeftMs != null:
@@ -149,6 +151,22 @@ func _draw() -> void:
 	draw_set_transform(Vector2.ZERO)
 	if _snap.winnerId != null:
 		_draw_results(w, h)
+
+
+# Il nome della fase appena cominciata (#433), o l'avviso della prossima, grande sopra la partita
+func _draw_phase_banner(w: float, h: float) -> void:
+	if not _stage.has("phases") or _snap.winnerId != null:
+		return
+	var b := StagePhases.banner(_stage, float(_snap.get("stageMs", 0.0)), float(game.effects.phaseBannerMs))
+	if b.is_empty():
+		return
+	var size := Access.px(34 if b.warn else 54)
+	var color := Color("e67e22") if b.warn else Color("ffcf4a") # arancio come l'avviso del campanello
+	var tw := _font.get_string_size(b.text, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
+	var pos := Vector2(w / 2 - tw / 2, h * 0.28)
+	color.a = b.alpha
+	draw_string_outline(_font, pos, b.text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, 6, Color(0, 0, 0, b.alpha))
+	draw_string(_font, pos, b.text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, color)
 
 
 # Una scheda per giocatore in basso, tra band.x e band.y
