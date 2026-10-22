@@ -227,6 +227,34 @@ jets: [{ x: 930, y: 690, width: 60, height: 300, speed: 1300, periodMs: 9000, wa
 itemSpots: [{ x: 740, y: 690, width: 440, weight: 3 }],
 ```
 
+### Pezzi a tempo (`on`): blocchi, piattaforme, trappole e getti che arrivano e se ne vanno (#433)
+
+Ogni blocco pieno, piattaforma sottile, trappola e getto può avere `on: [[da, a], ...]`: finestre `[da, a)` del **tempo dell'arena** in ms, dall'inizio della partita (non a giro, a differenza di `on` delle piattaforme mobili). Fuori dalle finestre il pezzo non c'è: non ci si sta sopra, non si sbatte, non fa male e non spinge. Chi ci stava sopra cade, chi era appeso al suo spigolo si stacca. Senza `on` il pezzo c'è sempre.
+
+- Godot lo disegna sfumando: compare negli ultimi 300 ms prima della finestra (un avviso) e sparisce negli ultimi 300 ms della finestra, quando ci si sta ancora sopra.
+- Il controllo delle arene guarda le piattaforme all'inizio di ogni fase e a ogni bordo di finestra: in ogni momento ognuna deve essere raggiungibile dai pezzi che ci sono.
+- Alla rivincita un'arena con pezzi a tempo o fasi riparte da 0 ms.
+
+```ts
+solids: [MAIN, { x: 900, y: 400, width: 200, height: 40, on: [[0, 60000]] }], // il tetto c'è solo nel primo minuto
+```
+
+### Fasi (`phases`): l'arena cambia durante la partita (#433)
+
+`phases: [{ id, name, startMs, announce?, warnMs?, blastZone?, respawn?, camera? }, ...]`, in ordine di `startMs`, la prima da 0. La fase attiva è l'ultima già cominciata. Insieme ai pezzi a tempo si fa un'arena che cambia, come la Bologna di #433.
+
+- **`blastZone`** e **`respawn`** della fase prendono il posto di quelli dell'arena finché dura (KO, ritorno in gioco, oggetti, proiettili, compagni).
+- **`name`**, **`announce`** (la scritta all'arrivo), **`warnMs`** (quanto prima avvisare) e **`camera`** (come `camera` dell'arena) sono solo per il client.
+- `id` è il nome stabile per il codice e i test.
+
+```ts
+phases: [
+  { id: "piazza", name: "Piazza Maggiore", startMs: 0 },
+  { id: "torri", name: "Le Due Torri", startMs: 60000, announce: "Si sale!", warnMs: 3000,
+    blastZone: { left: -300, right: 1580, top: -900, bottom: 920 }, respawn: { x: 640, y: -200 } },
+],
+```
+
 ### Musica (`music`)
 
 Facoltativa: senza, in partita si sente la musica di sempre. È un preset per il sintetizzatore del gioco (`audio.gd`), più un brano registrato facoltativo.
@@ -335,4 +363,5 @@ Colori spenti, lontani da quelli dei giocatori (style guide, sezione 7). Quello 
 
 - Ascensori e trappole dipendono solo dal **tempo dell'arena** (`ctx.timeMs`, che `stepWorld` fa avanzare). Il server lo manda nello snapshot (`stageMs`) e Godot rifà gli stessi calcoli (`mover_position` e `hazard_active` in `world_view.gd`): niente posizioni in rete, e il movimento è fluido perché si interpola il tempo.
 - Un elemento nuovo segue lo stesso schema: dati opzionali in `StageSpec`, logica pura in `src/shared/physics/elements.ts` con test in `elements.test.ts`, disegno in `_draw_elements` di `world_view.gd`, anteprima in `stage_preview.gd`.
+- Pezzi a tempo e fasi (#433): ogni tick `stepWorld` mette in `ctx.stage` la vista di `stageAt` (`physics/timed.ts`), con solo i blocchi e le piattaforme che ci sono e le zone della fase. Così chi legge `ctx.stage.solids` o `blastZone` non cambia. Trappole, getti e piattaforme mobili restano tutti, perché eventi e disegni li chiamano per indice: chi li usa salta quelli spenti con `pieceOn`. La predizione e il disegno rifanno lo stesso conto con `piece_on` (`predict/movement.gd`) dal `stageMs` dello snapshot. Un'arena che non cambia resta lo stesso oggetto.
 - Se l'elemento dipende da cosa fanno i giocatori (un pavimento che crolla quando ci stai sopra) il client non lo può ricalcolare dal tempo: il suo stato va nello snapshot, ed è un cambio di protocollo.
