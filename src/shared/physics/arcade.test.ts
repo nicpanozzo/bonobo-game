@@ -37,6 +37,8 @@ function setup() {
 const steps = (n: number, list: ReturnType<typeof setup>["list"], ctx: PhysicsContext) => {
   for (let i = 0; i < n; i++) stepWorld(list, DT, ctx);
 };
+// Il caso che fa uscire la O, la forma quadrata: è la seconda delle sette
+const KINDS_O = 1 / 7 + 0.01;
 const piece = (ctx: PhysicsContext) => ctx.arcade!.pieces.find((p) => !p.drop)!;
 
 describe("power-up Tetris (#427)", () => {
@@ -51,7 +53,7 @@ describe("power-up Tetris (#427)", () => {
     assert.deepEqual(pieceCells("O", 5, 0, 3), pieceCells("O", 5, 0, 0));
   });
 
-  it("chi gioca resta fermo e intoccabile, e compare un pezzo sopra di lui", () => {
+  it("chi gioca resta fermo e intoccabile, e compare un pezzo sopra l'avversario", () => {
     const { ctx, player, list } = setup();
     const x = player.x;
     player.input = { ...emptyInput(), right: true };
@@ -60,7 +62,9 @@ describe("power-up Tetris (#427)", () => {
     assert.ok(player.invulnerable);
     assert.equal(ctx.arcade!.pieces.length, 1);
     assert.equal(piece(ctx).ownerId, "p0");
-    assert.ok(Math.abs(piece(ctx).col * C - player.x) < 4 * C, "sopra di lui");
+    const other = list[1];
+    assert.ok(Math.abs(piece(ctx).col * C - other.x) < 4 * C, `sopra l'avversario (colonna ${piece(ctx).col}, x ${other.x})`);
+    assert.equal(tetrisState(ctx)!.pieces[0].fall, FLOOR - (piece(ctx).y + C * (1 + Math.max(...pieceCells(piece(ctx).kind, 0, 0, 0).map(([, y]) => y / C)))), "quanto manca alla posa, per l'ombra");
   });
 
   it("destra sposta di una colonna, su ruota, la pressione vale una volta sola", () => {
@@ -86,7 +90,8 @@ describe("power-up Tetris (#427)", () => {
     assert.equal(blocks.length, 4, "quattro quadretti posati");
     assert.equal(Math.max(...blocks.map((b) => b.y + C)), FLOOR, "appoggiati al pavimento");
     assert.ok(ctx.events.some((e) => e.type === "tetris" && e.phase === "land"));
-    assert.equal(ctx.arcade!.pieces.length, 1, "il pezzo nuovo");
+    steps(Math.ceil((TETRIS.nextPieceMs / 1000) * TICK_RATE) + 1, list, ctx);
+    assert.equal(ctx.arcade!.pieces.length, 1, "il pezzo nuovo, un attimo dopo");
     assert.equal(tetrisState(ctx)!.blocks.length, 4, "nello snapshot");
   });
 
@@ -107,8 +112,36 @@ describe("power-up Tetris (#427)", () => {
     player.input = { ...emptyInput(), heavy: true };
     steps(Math.ceil(((FLOOR + 200) / TETRIS.dropPxS) * TICK_RATE) + 2, list, ctx);
     const hit = ctx.events.find((e) => e.type === "hit" && e.targetId === "p1");
-    assert.ok(hit && hit.type === "hit" && hit.itemKind === "tetris" && hit.damage === TETRIS.damage, "colpito dal pezzo");
+    assert.ok(hit && hit.type === "hit" && hit.itemKind === "tetris" && hit.damage === TETRIS.dropDamage, "colpito dal pezzo, più forte perché fatto cadere");
     assert.equal(ctx.events.filter((e) => e.type === "hit").length, 1, "una volta sola");
+  });
+
+  it("senza K il pezzo fa il danno normale", () => {
+    const { ctx, other, list } = setup();
+    steps(1, list, ctx);
+    other.x = piece(ctx).col * C + C / 2;
+    steps(Math.ceil(((FLOOR + 200) / TETRIS.fallPxS) * TICK_RATE), list, ctx);
+    const hit = ctx.events.find((e) => e.type === "hit" && e.targetId === "p1");
+    assert.ok(hit && hit.type === "hit" && hit.damage === TETRIS.damage);
+  });
+
+  it("una fila di blocchi fa una riga: esplode e chi ci sta sopra vola in alto", () => {
+    const { ctx, player, other, list } = setup();
+    // Cinque blocchi già posati in fila; il pezzo O ne aggiunge due accanto e completa la riga
+    const blocks = [0, 1, 2, 3, 4].map((i) => ({ x: 400 + i * C, y: FLOOR - C, kind: "I", lifeMs: 5000 }));
+    ctx.arcade = { pieces: [], blocks, nextId: 1, random: () => KINDS_O };
+    other.x = 460;
+    other.y = FLOOR - C;
+    steps(1, list, ctx);
+    const p = piece(ctx);
+    p.col = 600 / C;
+    player.input = { ...emptyInput(), heavy: true };
+    steps(Math.ceil(((FLOOR + 200) / TETRIS.dropPxS) * TICK_RATE) + 2, list, ctx);
+    assert.ok(ctx.events.some((e) => e.type === "tetris" && e.phase === "line" && e.width === 7 * C), "la riga esplode");
+    assert.ok(!ctx.arcade!.blocks.some((b) => b.y === FLOOR - C), "i blocchi della riga spariscono");
+    const hit = ctx.events.find((e) => e.type === "hit" && e.targetId === "p1");
+    assert.ok(hit && hit.type === "hit" && hit.damage === TETRIS.lineDamage, "chi ci stava sopra è preso");
+    assert.ok(other.vy < 0, "vola in alto");
   });
 
   it("finito il tempo si torna in partita, un attimo intoccabili, e i blocchi poi spariscono", () => {

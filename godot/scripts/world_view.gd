@@ -639,6 +639,11 @@ func on_event(e: Dictionary) -> void:
 			_sparks.append({"x": e.x, "y": float(e.y) - 10.0, "age": 0.0, "size": 34.0, "color": _color(PAD_COLORS.get(str(e.get("sound", "")), 0xff4fd8))})
 			_shake = maxf(_shake, 4.0)
 			_wonder.on_pad(e, Time.get_ticks_msec()) # il fiore più vicino commenta (#423)
+		"tetris":
+			# Una riga del Tetris che esplode (#427): lampo lungo la riga e scossa
+			if e.phase == "line":
+				_arcade.on_line(e, Time.get_ticks_msec())
+				_shake = maxf(_shake, 10.0)
 		"hazard":
 			# Trappola (#14): scintilla arancione e scossa come un colpo forte
 			_sparks.append({"x": e.x, "y": e.y, "age": 0.0, "size": 30.0, "color": Color(1, 0.55, 0.15)})
@@ -952,6 +957,7 @@ func _draw() -> void:
 	_draw_items(now)
 	_draw_projectiles()
 	_arcade.draw_pieces(self, _sampled) # i pezzi del Tetris che cadono (#427)
+	_arcade.draw_lines(self, now) # le righe del Tetris che esplodono (#427)
 	_arcade.draw_ghosts(self, _sampled, now) # con Pac-Man gli altri sono fantasmini (#427)
 	if not _life.is_empty():
 		_life.draw_outer_water(self, t_stage, now, _flood_up(t_stage), view_rect, positions) # davanti a chi cade (#264)

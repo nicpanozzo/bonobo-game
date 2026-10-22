@@ -146,7 +146,7 @@ export interface PuddleState {
 // Il power-up Tetris (#427): i pezzi che cadono e i blocchi posati. Le celle sono quadretti di TETRIS.cellPx
 // pixel, con [x, y] l'angolo in alto a sinistra; kind è la forma (I, O, T, L, J, S, Z) e decide il colore
 export interface TetrisState {
-  pieces: { id: number; ownerId: string; kind: string; cells: [number, number][] }[];
+  pieces: { id: number; ownerId: string; kind: string; cells: [number, number][]; fall: number }[]; // fall: pixel che mancano alla posa, per l'ombra
   blocks: { x: number; y: number; kind: string; ms: number }[]; // ms: quanto resta prima che il blocco sparisca
 }
 
@@ -207,7 +207,7 @@ export type GameEvent =
   | { type: "itemThrow"; itemId: number; id: string; x: number; y: number }
   | { type: "powerUp"; itemId: number; id: string; kind: string; x: number; y: number } // id consuma l'oggetto e si potenzia (#231)
   | { type: "powerEnd"; id: string; kind: string } // il potenziamento di id finisce
-  | { type: "tetris"; phase: "spawn" | "move" | "rotate" | "drop" | "land"; id: string; x: number; y: number } // il pezzo di Tetris di id (#427)
+  | { type: "tetris"; phase: "spawn" | "move" | "rotate" | "drop" | "land" | "line"; id: string; x: number; y: number; width?: number } // il pezzo di Tetris di id (#427); line: esplode una riga larga width pixel, x e y al centro
   // Il bong (#302): load = comincia a caricarlo, smoke = soffia la nuvola (centro x,y, verso dir, danno), stun = troppo fatto, crolla
   | { type: "bong"; phase: "load" | "smoke" | "stun"; id: string; x: number; y: number; dir?: 1 | -1; damage?: number }
   | { type: "ledgeGrab"; id: string; x: number; y: number; invulnerable: boolean } // si aggrappa al bordo (#110)

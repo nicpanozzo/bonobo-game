@@ -20,6 +20,8 @@ var blocks: Array = []
 var fighter_h := 90.0
 var pac_ms := 8000.0
 var _pellets: Array = [] # [posizione, pallina grande]
+var _lines: Array = [] # righe del Tetris che esplodono: [{ x, y, width, at }], x e y al centro
+const LINE_MS := 450.0 # ms del lampo di una riga
 
 
 func setup(game: Dictionary) -> void:
@@ -40,6 +42,26 @@ func clear() -> void:
 	pieces = []
 	blocks = []
 	_pellets = []
+	_lines = []
+
+
+# Una riga completa (#427): lampo bianco lungo la riga, poi le schegge colorate volano via
+func on_line(e: Dictionary, now: int) -> void:
+	_lines.append({"x": float(e.x), "y": float(e.y), "width": float(e.get("width", cell)), "at": now})
+
+
+func draw_lines(canvas: CanvasItem, now: int) -> void:
+	_lines = _lines.filter(func(l): return now - int(l.at) < LINE_MS)
+	for l: Dictionary in _lines:
+		var k := (now - int(l.at)) / LINE_MS
+		var h := cell * (1.0 + 2.0 * k)
+		canvas.draw_rect(Rect2(l.x - l.width / 2.0 - 10.0 * k, l.y - h / 2.0, l.width + 20.0 * k, h), Color(1, 1, 1, 0.85 * (1.0 - k)))
+		# Le schegge: un quadretto per cella, coi colori del Tetris, che sale e si spegne
+		var n := int(l.width / cell)
+		for i in n:
+			var kind: String = COLORS.keys()[i % COLORS.size()]
+			var pos := Vector2(l.x - l.width / 2.0 + (i + 0.5) * cell + (i - n / 2.0) * 30.0 * k, l.y - 160.0 * k + 220.0 * k * k)
+			draw_cell(canvas, pos - Vector2(cell, cell) * 0.25, cell * 0.5, color_of(kind), 1.0 - k)
 
 
 static func color_of(kind: String) -> Color:
@@ -74,6 +96,13 @@ func draw_pieces(canvas: CanvasItem, players: Dictionary) -> void:
 	for p: Dictionary in pieces:
 		var col := color_of(str(p.kind))
 		var driver: Variant = players.get(p.ownerId)
+		# L'ombra: dove si poserà, così chi è sotto vede che deve spostarsi
+		var fall := float(p.get("fall", 0))
+		if fall > cell * 0.5:
+			for c: Array in p.cells:
+				var at := Rect2(Vector2(float(c[0]), float(c[1]) + fall) + Vector2(3, 3), Vector2(cell - 6, cell - 6))
+				canvas.draw_rect(at, Color(col, 0.18))
+				canvas.draw_rect(at, Color(col, 0.7), false, 2.0)
 		for c: Array in p.cells:
 			var pos := Vector2(float(c[0]), float(c[1]))
 			canvas.draw_rect(Rect2(pos + Vector2(cell * 0.2, -cell * 0.6), Vector2(cell * 0.6, cell * 0.6)), Color(col, 0.18))

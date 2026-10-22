@@ -157,6 +157,13 @@ function decideSimple(self: Fighter, players: readonly Fighter[], stage: StageSp
     if (!mem.last[key]) input[key] = true;
   };
 
+  // A Tetris (#427) il pezzo compare già sopra l'avversario: lo si fa cadere di colpo, coi tempi del livello
+  if (self.powerup === "tetris") {
+    mem.ticks++;
+    if (mem.ticks % reactionTicks(level) === 0) tap("heavy");
+    return input;
+  }
+
   // Tiene qualcuno (E8): lo lancia verso il bordo più vicino del blocco su cui sta
   if (self.holding !== null) {
     const ground = groundUnder(stage, self.x);
