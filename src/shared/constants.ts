@@ -468,6 +468,7 @@ export const BOT = {
   climbFromPx: 180, // pixel: un bersaglio più in alto di così, sulle torri, si raggiunge arrampicandosi
   climbJumpPx: 70, // pixel: si salta già a questa distanza di lato dal pezzo: tra una scelta e l'altra il bot ne fa ~70 e il bersaglio stretto lo si salterebbe
   climbSidePx: 260, // pixel: e solo se sono così vicini di lato
+  gunnerSweepMs: 1500, // ms: il bombardiere alza la canna per questo tempo, poi la abbassa per altrettanto (#433)
 };
 
 // Livelli di difficoltà dei bot (#20 passo 3): ?bot=facile, ?bot=semplice, ?bot=difficile

@@ -161,9 +161,19 @@ function decideSimple(self: Fighter, players: readonly Fighter[], stage: StageSp
     if (!mem.last[key]) input[key] = true;
   };
 
-  // Alla postazione (#433, anche la gru) i bot non sanno guidarla: ci sono finiti premendo attacco sulla pedana, quindi escono col salto
+  // Alla postazione (#433): il bombardiere resta alla sua bombarda e spara spazzando la mira su e giù, finché un
+  // avversario non gli arriva addosso. Le altre (anche la gru) i bot non le sanno guidare: escono col salto
   if (self.station !== undefined) {
     mem.ticks++;
+    const foe = nearestTarget(self, players);
+    const near = !!foe && Math.abs(foe.x - self.x) <= FIGHTER.width / 2 + ATTACKS.heavy.range && Math.abs(foe.y - self.y) < FIGHTER.height;
+    if (mem.gunner && stage.stations?.[self.station]?.kind === "bombarda" && !near) {
+      const sweep = Math.round(BOT.gunnerSweepMs * TICK_RATE / 1000);
+      if (mem.ticks % (2 * sweep) < sweep) input.up = true;
+      else input.down = true;
+      if (mem.ticks % reactionTicks(level) === 0) tap("light");
+      return input;
+    }
     if (mem.ticks % reactionTicks(level) === 0) tap("jump");
     return input;
   }
