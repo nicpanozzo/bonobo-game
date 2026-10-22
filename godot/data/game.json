@@ -6888,6 +6888,54 @@
               900000
             ]
           ]
+        },
+        {
+          "x": 1150,
+          "y": 1010,
+          "width": 110,
+          "on": [
+            [
+              165000,
+              900000
+            ]
+          ],
+          "forLeader": 1
+        },
+        {
+          "x": 1020,
+          "y": 1120,
+          "width": 110,
+          "on": [
+            [
+              165000,
+              900000
+            ]
+          ],
+          "forLeader": 1
+        },
+        {
+          "x": 1740,
+          "y": 1010,
+          "width": 110,
+          "on": [
+            [
+              165000,
+              900000
+            ]
+          ],
+          "forLeader": 2
+        },
+        {
+          "x": 1870,
+          "y": 1120,
+          "width": 110,
+          "on": [
+            [
+              165000,
+              900000
+            ]
+          ],
+          "forLeader": 2
         }
       ],
       "movers": [
@@ -8383,6 +8431,76 @@
           }
         }
       ],
+      "stations": [
+        {
+          "kind": "bombarda",
+          "x": 635,
+          "y": 1180,
+          "width": 150,
+          "team": 1,
+          "dir": 1,
+          "aimMinDeg": 10,
+          "aimMaxDeg": 60,
+          "ammoMax": 6,
+          "ballSpeedPxS": 800,
+          "autoAmmoMs": 8000,
+          "on": [
+            [
+              45000,
+              150000
+            ]
+          ]
+        },
+        {
+          "kind": "munizioni",
+          "x": 400,
+          "y": 1940,
+          "width": 110,
+          "team": 1,
+          "feeds": 0,
+          "on": [
+            [
+              45000,
+              150000
+            ]
+          ]
+        },
+        {
+          "kind": "bombarda",
+          "x": 1475,
+          "y": 980,
+          "width": 130,
+          "team": 2,
+          "dir": -1,
+          "aimMinDeg": 10,
+          "aimMaxDeg": 60,
+          "ammoMax": 6,
+          "ballSpeedPxS": 800,
+          "autoAmmoMs": 8000,
+          "on": [
+            [
+              45000,
+              165000
+            ]
+          ]
+        },
+        {
+          "kind": "munizioni",
+          "x": 1590,
+          "y": 1940,
+          "width": 110,
+          "team": 2,
+          "feeds": 2,
+          "on": [
+            [
+              45000,
+              165000
+            ]
+          ]
+        }
+      ],
+      "prizeAtMs": 150000,
+      "prizeShowMs": 165000,
       "camera": {
         "minZoom": 0.5,
         "maxZoom": 1.1,

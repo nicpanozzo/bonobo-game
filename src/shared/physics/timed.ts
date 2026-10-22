@@ -9,6 +9,9 @@ export function pieceOn(p: { on?: TimeWindows }, timeMs: number): boolean {
   return !p.on || p.on.some(([from, to]) => timeMs >= from && timeMs < to);
 }
 
+// Un pezzo del premio (forLeader) c'è solo se la squadra in testa congelata a prizeAtMs è la sua; tutti gli altri non ne dipendono
+export const prizeOk = (p: { forLeader?: number }, leader: number) => p.forLeader === undefined || p.forLeader === leader;
+
 // Indice della fase attiva: l'ultima con startMs <= timeMs (le fasi sono in ordine), -1 se non ce ne sono
 export function phaseIndexAt(stage: StageSpec, timeMs: number): number {
   const phases = stage.phases ?? [];
@@ -23,7 +26,7 @@ export function phaseAt(stage: StageSpec, timeMs: number): StagePhase | undefine
 
 // Un'arena cambia nel tempo se ha fasi o blocchi e piattaforme a tempo (trappole e getti si saltano dove si usano)
 export function stageIsTimed(stage: StageSpec): boolean {
-  return !!stage.phases?.length || stage.solids.some((s) => s.on) || stage.platforms.some((p) => p.on);
+  return !!stage.phases?.length || stage.solids.some((s) => s.on || s.forLeader) || stage.platforms.some((p) => p.on || p.forLeader);
 }
 
 interface ViewCache {
@@ -31,6 +34,7 @@ interface ViewCache {
   solids: boolean[]; // quali c'erano nell'ultima vista
   platforms: boolean[];
   phase: number;
+  leader: number; // la squadra del premio con cui è fatta la vista
   view: StageSpec;
 }
 
@@ -44,18 +48,19 @@ export const baseStage = (stage: StageSpec): StageSpec => bases.get(stage) ?? st
 // fase attiva. Trappole, getti e piattaforme mobili restano tutti (gli eventi e i disegni li chiamano per indice).
 // Un'arena che non cambia torna così com'è; le altre fanno una vista nuova solo quando cambia qualcosa.
 // Gli indici dei blocchi cambiano con la vista: chi ne tiene uno (gli spigoli, ledge.ts) lo rimappa (remapLedges)
-export function stageAt(stage: StageSpec, timeMs: number): StageSpec {
+// leader: la squadra in testa congelata a prizeAtMs (0 = nessuna, ancora nessuno o pareggio): fa parte della chiave della vista
+export function stageAt(stage: StageSpec, timeMs: number, leader = 0): StageSpec {
   const base = baseStage(stage);
   let c = caches.get(base);
   if (!c) {
-    c = { timed: stageIsTimed(base), solids: [], platforms: [], phase: -2, view: base };
+    c = { timed: stageIsTimed(base), solids: [], platforms: [], phase: -2, leader: 0, view: base };
     caches.set(base, c);
   }
   if (!c.timed) return base;
   const phase = phaseIndexAt(base, timeMs);
-  let same = phase === c.phase;
-  same = track(base.solids, c.solids, timeMs) && same;
-  same = track(base.platforms, c.platforms, timeMs) && same;
+  let same = phase === c.phase && leader === c.leader;
+  same = track(base.solids, c.solids, timeMs, leader) && same;
+  same = track(base.platforms, c.platforms, timeMs, leader) && same;
   if (same) return c.view;
   const cache = c;
   const p = base.phases?.[phase];
@@ -68,16 +73,17 @@ export function stageAt(stage: StageSpec, timeMs: number): StageSpec {
   };
   bases.set(view, base);
   c.phase = phase;
+  c.leader = leader;
   c.view = view;
   return view;
 }
 
 // Aggiorna chi c'è adesso; true se non è cambiato niente
-function track(pieces: { on?: TimeWindows }[], seen: boolean[], timeMs: number): boolean {
+function track(pieces: { on?: TimeWindows; forLeader?: number }[], seen: boolean[], timeMs: number, leader: number): boolean {
   let same = seen.length === pieces.length;
   seen.length = pieces.length;
   for (let i = 0; i < pieces.length; i++) {
-    const on = pieceOn(pieces[i], timeMs);
+    const on = pieceOn(pieces[i], timeMs) && prizeOk(pieces[i], leader);
     if (seen[i] !== on) {
       seen[i] = on;
       same = false;

@@ -49,6 +49,7 @@ var _hazard_sprites := {} # indice della trappola -> {tex, frames, fps, scale, f
 var _mover_sprites := {} # indice della piattaforma mobile -> come sopra (#273)
 var _pads_pressed: Array = [] # bottoni sonori (#423): stageMs dell'ultima pressione di ognuno, dallo snapshot
 var _t_draw := 0.0 # il tempo dell'arena del frame che si sta disegnando (#378, per i ganci dentro le decorazioni)
+var _prize_team := 0 # premio (#433): la squadra in testa ai punti torre, dallo snapshot; i pezzi con forLeader ci sono solo per lei
 var _piece_alpha := 1.0 # pezzo a tempo (#433) che si sta disegnando: compare e sparisce sfumando
 const TEAM_RING_WIDTH := 0.8 # raggio dell'anello della squadra sotto i piedi, rispetto alla larghezza del lottatore (#409)
 const TEAM_RING_SQUASH := 0.28 # l'anello è un ovale schiacciato: sta per terra
@@ -530,7 +531,7 @@ func _draw_skinned_platform(p: Dictionary, skin: Dictionary) -> void:
 func _draw_rails(front: bool) -> void:
 	for i in stage.platforms.size():
 		var skin := _skin_for("platforms", i)
-		_piece_alpha = StageMotion.piece_alpha(stage.platforms[i], _t_draw) # pezzi a tempo (#433)
+		_piece_alpha = StageMotion.piece_alpha(stage.platforms[i], _t_draw, _prize_team) # pezzi a tempo (#433)
 		if skin.is_empty() or _piece_alpha <= 0.0:
 			continue
 		for r in skin.rails:
@@ -612,6 +613,8 @@ func on_snapshot(snap: Dictionary) -> void:
 	predictor.blocks = _arcade.blocks
 	predictor.puddles = _puddles
 	predictor.stage_ms = float(snap.get("stageMs", 0)) # pezzi a tempo (#433)
+	_prize_team = int(snap.get("prizeTeam", 0)) # premio (#433)
+	predictor.prize_team = _prize_team
 	for p in snap.players:
 		_load_character(_look(p))
 		if p.id == my_id:
@@ -931,7 +934,7 @@ func _draw() -> void:
 	for i in stage.solids.size():
 		var s: Dictionary = stage.solids[i]
 		var skin := _skin_for("solids", i)
-		_piece_alpha = StageMotion.piece_alpha(s, t_stage) # pezzi a tempo (#433): sfumano entrando e uscendo
+		_piece_alpha = StageMotion.piece_alpha(s, t_stage, _prize_team) # pezzi a tempo (#433): sfumano entrando e uscendo
 		if _piece_alpha <= 0.0:
 			continue
 		if skin.is_empty():
@@ -943,7 +946,7 @@ func _draw() -> void:
 	for i in stage.platforms.size():
 		var p: Dictionary = stage.platforms[i]
 		var skin := _skin_for("platforms", i)
-		_piece_alpha = StageMotion.piece_alpha(p, t_stage)
+		_piece_alpha = StageMotion.piece_alpha(p, t_stage, _prize_team)
 		if _piece_alpha <= 0.0:
 			continue
 		if not skin.is_empty():
@@ -1563,10 +1566,10 @@ func _draw_convex(pts: PackedVector2Array, color: Color) -> void:
 func _surface_below(x: float, y: float) -> float:
 	var best := INF
 	for s in stage.solids:
-		if x >= float(s.x) and x <= float(s.x) + float(s.width) and float(s.y) >= y and PredictMovement.piece_on(s, _t_draw):
+		if x >= float(s.x) and x <= float(s.x) + float(s.width) and float(s.y) >= y and PredictMovement.piece_on(s, _t_draw, _prize_team):
 			best = minf(best, float(s.y))
 	for p in stage.platforms:
-		if x >= float(p.x) and x <= float(p.x) + float(p.width) and PredictMovement.piece_on(p, _t_draw):
+		if x >= float(p.x) and x <= float(p.x) + float(p.width) and PredictMovement.piece_on(p, _t_draw, _prize_team):
 			var sy := PredictMovement.surface_y(p, x)
 			if sy >= y:
 				best = minf(best, sy)

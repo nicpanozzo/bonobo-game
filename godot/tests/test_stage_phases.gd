@@ -66,3 +66,13 @@ func test_arena_alta_inquadra_in_verticale() -> void:
 	var spread := Main.framing(STAGE, CAM, GAME, [Vector2(640, 300), Vector2(700, 1600)])
 	runner.check(720.0 / spread.zoom >= 1300.0, "uno in cima e uno in fondo: li vede tutti e due")
 	runner.check(spread.limits.end.y == 2000.0, "la vista resta nelle zone di espulsione")
+
+
+func test_scritta_del_premio() -> void:
+	var stage := {"prizeAtMs": 150000, "prizeShowMs": 165000}
+	runner.check(Phases.prize_banner(stage, 164999.0, 1, 2500.0).is_empty(), "prima della zuffa niente")
+	var b := Phases.prize_banner(stage, 165100.0, 2, 2500.0)
+	runner.check(b.text == "PONTEGGI PER LA SQUADRA 2!" and b.alpha == 1.0, "alla zuffa dice la squadra")
+	runner.check(Phases.prize_banner(stage, 167600.0, 2, 2500.0).is_empty(), "poi sparisce")
+	runner.check(Phases.prize_banner(stage, 165100.0, 0, 2500.0).is_empty(), "in pareggio non c'è")
+	runner.check(Phases.prize_banner({}, 165100.0, 1, 2500.0).is_empty(), "senza premio nell'arena niente")

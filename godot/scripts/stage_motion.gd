@@ -76,7 +76,10 @@ static func mover_on(m: Dictionary, t: float) -> bool:
 # Se c'è o no lo dice piece_on() in predict/movement.gd, come pieceOn() in physics/timed.ts
 const PIECE_FADE_MS := 300.0
 
-static func piece_alpha(p: Dictionary, t: float) -> float:
+# I pezzi del premio (forLeader) di un'altra squadra non si vedono mai
+static func piece_alpha(p: Dictionary, t: float, prize := 0) -> float:
+	if p.get("forLeader") != null and int(p.forLeader) != prize:
+		return 0.0
 	if not (p.get("on") is Array):
 		return 1.0
 	var best := 0.0

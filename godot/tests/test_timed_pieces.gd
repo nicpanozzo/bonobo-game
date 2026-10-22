@@ -37,3 +37,29 @@ func test_la_predizione_cade_quando_la_piattaforma_sparisce() -> void:
 	for i in 5:
 		m.step(s, 1000.0 / 60.0)
 	runner.check(not s.onGround and s.y > 450.0, "sparita: si cade, come sul server (%s)" % [s.y])
+
+
+func test_i_pezzi_del_premio_ci_sono_solo_per_la_squadra_in_testa() -> void:
+	var p := {"x": 0, "y": 400, "width": 200, "on": [[1000, 2000]], "forLeader": 1}
+	runner.check(PredictMovement.piece_on(p, 1500, 1), "la squadra in testa li ha")
+	runner.check(not PredictMovement.piece_on(p, 1500, 2) and not PredictMovement.piece_on(p, 1500), "l'altra e il pareggio no")
+	runner.check(not PredictMovement.piece_on(p, 2500, 1), "e restano nelle loro finestre")
+	runner.check(StageMotion.piece_alpha(p, 1500, 1) == 1.0 and StageMotion.piece_alpha(p, 1500, 2) == 0.0, "nel disegno compaiono solo per lei")
+
+
+func test_la_predizione_usa_i_ponteggi_del_premio() -> void:
+	var game: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/game.json"))
+	var plat := {"x": 400, "y": 450, "width": 300, "forLeader": 2}
+	var m := PredictMovement.new(game, game.characters["default"].stats, [], [plat])
+	var p := {"x": 550.0, "y": 440.0, "vx": 0.0, "vy": 0.0, "onGround": false, "facing": 1, "attack": null}
+	var jumps := {"jumps": 2, "coyote": 0, "rising": false, "drop": 0, "jumpBuffer": 0}
+	var s := PredictMovement.state_from(p, jumps, {})
+	s.prizeTeam = 2
+	for i in 10:
+		m.step(s, 1000.0 / 60.0)
+	runner.check(s.onGround and s.y == 450.0, "con la squadra giusta in testa ci si sta sopra")
+	var q := PredictMovement.state_from(p, jumps, {})
+	q.prizeTeam = 1
+	for i in 10:
+		m.step(q, 1000.0 / 60.0)
+	runner.check(not q.onGround and q.y > 450.0, "con l'altra si cade attraverso")

@@ -34,6 +34,7 @@ export interface StationWorld {
   balls: Ball[];
   nextId: number;
   points: Record<number, number>; // punti torre per squadra
+  prize?: number; // premio: la squadra in testa ai punti torre congelata a prizeAtMs (0 = pareggio o nessun punto); prima, undefined
   reenter: Record<string, number>; // chi -> tempo dell'arena da cui può rientrare in una postazione
 }
 
@@ -55,6 +56,22 @@ function world(ctx: PhysicsContext): StationWorld {
   };
   return ctx.stations;
 }
+
+// Premio (#433): a prizeAtMs si congela la squadra con più punti torre (strettamente: in pareggio nessuno).
+// Si chiama a ogni tick prima di stageAt; la rivincita (resetStations) lo azzera. Torna la squadra del premio, 0 se nessuna
+export function freezePrize(ctx: PhysicsContext): number {
+  const at = ctx.stage.prizeAtMs;
+  if (at === undefined) return 0;
+  const w = world(ctx);
+  if (w.prize === undefined && now(ctx) >= at) {
+    const ranked = Object.entries(w.points).sort((a, b) => b[1] - a[1]);
+    w.prize = ranked.length > 0 && ranked[0][1] > (ranked[1]?.[1] ?? 0) ? Number(ranked[0][0]) : 0;
+  }
+  return w.prize ?? 0;
+}
+
+// La squadra del premio già congelata (senza congelare), 0 se ancora no
+export const prizeLeader = (ctx: PhysicsContext): number => ctx.stations?.prize ?? 0;
 
 // Con i piedi sulla superficie della postazione
 export const standingOn = (f: Fighter, s: Station) =>
@@ -123,7 +140,8 @@ function aimAndFire(f: Fighter, s: Station, slot: Slot, i: number, dtMs: number,
   const b = barrel(s, slot.aim);
   const x = b.x + b.dx * STATION.barrelPx;
   const y = b.y + b.dy * STATION.barrelPx;
-  w.balls.push({ id: w.nextId++, ownerId: f.id, from: i, x, y, vx: b.dx * STATION.ballSpeedPxS, vy: b.dy * STATION.ballSpeedPxS });
+  const speed = s.ballSpeedPxS ?? STATION.ballSpeedPxS;
+  w.balls.push({ id: w.nextId++, ownerId: f.id, from: i, x, y, vx: b.dx * speed, vy: b.dy * speed });
   event(ctx, "fire", i, f.id, x, y);
 }
 
@@ -248,11 +266,12 @@ export function resetStations(fighters: Fighter[], ctx: PhysicsContext): void {
 }
 
 // Quello che va nello snapshot, solo nelle arene con postazioni
-export function stationSnapshot(ctx: PhysicsContext): { stations?: StationState[]; cannonballs?: CannonballState[]; towerPoints?: Record<number, number> } {
+export function stationSnapshot(ctx: PhysicsContext): { stations?: StationState[]; cannonballs?: CannonballState[]; towerPoints?: Record<number, number>; prizeTeam?: number } {
   const list = ctx.stage.stations;
   if (!list?.length) return {};
   const w = world(ctx);
   return {
+    ...(w.prize && { prizeTeam: w.prize }),
     stations: list.map((s, i) => {
       const slot = w.slots[i];
       if (s.kind === "bombarda") return { user: slot.user, aim: Math.round(slot.aim), ammo: slot.ammo, readyAt: Math.round(slot.readyAt) };

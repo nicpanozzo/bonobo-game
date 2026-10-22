@@ -366,8 +366,9 @@ func _collide(s: Dictionary, prev_y: float) -> void:
 	var was_on_ground: bool = s.onGround
 	s.onGround = false
 	var t := float(s.get("stageMs", 0.0)) # pezzi a tempo (#433): come la vista di stageAt() che usa il server
+	var prize := int(s.get("prizeTeam", 0)) # premio (#433): la squadra in testa congelata, per i pezzi con forLeader
 	for b in solids:
-		if not piece_on(b, t):
+		if not piece_on(b, t, prize):
 			continue
 		var bx := float(b.x)
 		var by := float(b.y)
@@ -388,7 +389,7 @@ func _collide(s: Dictionary, prev_y: float) -> void:
 	# Da un blocco pieno si sale camminando su una rampa poco più su dei piedi (#246), come collideWithStage
 	if s.onGround and was_on_ground and s.drop == 0.0:
 		for p in platforms:
-			if not piece_on(p, t) or p.get("y2") == null or not (s.x + half > float(p.x) and s.x - half < float(p.x) + float(p.width)):
+			if not piece_on(p, t, prize) or p.get("y2") == null or not (s.x + half > float(p.x) and s.x - half < float(p.x) + float(p.width)):
 				continue
 			var ry := surface_y(p, s.x)
 			if ry < s.y and s.y - ry <= snap_px(p, fighter):
@@ -396,7 +397,7 @@ func _collide(s: Dictionary, prev_y: float) -> void:
 				break
 	if not s.onGround and s.vy >= 0:
 		for p in platforms:
-			if not piece_on(p, t):
+			if not piece_on(p, t, prize):
 				continue
 			var px := float(p.x)
 			if not (s.x + half > px and s.x - half < px + float(p.width)):
@@ -445,7 +446,10 @@ static func surface_y(p: Dictionary, x: float) -> float:
 
 
 # Come pieceOn() in physics/timed.ts (#433): un pezzo con le finestre "on" c'è solo dentro una [da, a) del tempo dell'arena
-static func piece_on(p: Dictionary, t: float) -> bool:
+# Con forLeader (il premio) c'è solo se prize, la squadra in testa congelata a prizeAtMs, è la sua
+static func piece_on(p: Dictionary, t: float, prize := 0) -> bool:
+	if p.get("forLeader") != null and int(p.forLeader) != prize:
+		return false
 	if not (p.get("on") is Array):
 		return true
 	for w: Array in p.on:

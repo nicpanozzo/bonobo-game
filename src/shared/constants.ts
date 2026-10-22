@@ -790,4 +790,8 @@ export const BOLOGNA = {
   merlonGoneMs: 1000, // ...e poi spariscono per tanto
   lightningPeriodMs: 20000, // un fulmine sul punto più alto ogni tanto
   windPeriodMs: 9000, // una raffica ogni giro, a sinistra e a destra sfasate di mezzo giro
+  aimMinDeg: 10, // gradi sopra l'orizzontale: la mira più bassa delle bombarde (arriva sulla torre avversaria)
+  aimMaxDeg: 60, // gradi sopra l'orizzontale: la mira più alta delle bombarde
+  ballSpeedPxS: 800, // pixel/s di uscita delle palle delle bombarde (a 1050 sorvolano la torre avversaria)
+  autoAmmoMs: 8000, // ms: una palla in più alle bombarde anche senza casse (1 contro 1)
 };
