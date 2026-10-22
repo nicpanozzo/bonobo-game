@@ -149,6 +149,7 @@ Un rettangolo che, quando è acceso, aggiunge percentuale e lancia via chi lo to
 | `knockback`, `knockbackGrowth` | lancio di base (pixel/s) e quanto cresce per ogni punto di percentuale |
 | `angleDeg` | direzione: 90 dritto in alto, meno di 90 in diagonale lontano dal centro della trappola |
 | `periodMs`, `activeMs`, `offsetMs` | se c'è `periodMs`, si accende per `activeMs` a ogni giro |
+| `warnMs` | solo con `periodMs` (#433): negli ultimi `warnMs` prima di ogni finestra accesa **non fa male** (la fisica è quella di sempre) ma Godot disegna un avviso: il rettangolo che lampeggia; per `kind: "fulmine"` una linea tratteggiata dal cielo e il bersaglio che brilla, e quando è acceso una saetta a zig-zag con un lampo. Acqua alta e trappole che viaggiano hanno il loro `warnMs` |
 
 ```ts
 { kind: "fuoco", x: 440, y: 610, width: 400, height: 30, damage: 8, knockback: 600, knockbackGrowth: 4, angleDeg: 80, periodMs: 4000, activeMs: 1500 }
@@ -261,6 +262,22 @@ phases: [
 ```
 
 L'esempio completo è **Bologna** (`bologna` in `stages.ts`, #433): arena a squadre di 2200×2400 con quattro fasi (piazza, torri, crollo della Garisenda, zuffa sull'Asinelli) fatta di pezzi a tempo, trappole che viaggiano, raffiche e polvere che sale; i tempi sono in `BOLOGNA` (`constants.ts`) e `blinkWindows` scrive le finestre dei merli che lampeggiano.
+
+#### La torre che crolla (`art.collapse`, #433)
+
+Solo grafica, tutta da `stageMs`, senza niente in rete: tra i pezzi che spariscono (`on`) e la rampa che appare, Godot disegna una sagoma di torre di mattoni che ruota attorno al suo piede verso destra, con polvere alla base e all'impatto, mattoni che volano e scossa di telecamera. Prima, nell'avviso, compaiono le crepe e la sagoma trema appena.
+
+```ts
+art: { layers: [], collapse: { atMs: BOLOGNA.collapseMs, durationMs: BOLOGNA.collapseFallMs, pivot: { x: 830, y: 1940 }, height: 780, width: 260, toDeg: 62, warnMs: 6000 } }
+```
+
+| Campo | Cosa fa |
+|---|---|
+| `atMs`, `durationMs` | quando comincia la caduta e quanto dura (parte piano e finisce veloce); a `atMs + durationMs` appare la rampa vera |
+| `pivot` | il piede attorno a cui ruota: l'angolo in basso a destra della torre |
+| `width`, `height` | la sagoma: larga alla base, più stretta in cima |
+| `toDeg` | di quanto ruota alla fine (positivo = verso destra, 90 = distesa); la cima deve arrivare dove si appoggia la rampa |
+| `warnMs` | l'avviso prima di `atMs` (6000 se manca) |
 
 ### Postazioni (`stations`): bombarda e munizioni (#433)
 

@@ -95,6 +95,9 @@ export interface Hazard extends Rect {
   periodMs?: number; // se c'è, la trappola si accende e si spegne a ciclo
   activeMs?: number; // per quanto resta accesa in ogni ciclo
   offsetMs?: number;
+  // Solo con periodMs/activeMs (#433): negli ultimi warnMs prima di ogni finestra accesa la trappola NON fa male
+  // (hazardActive non cambia), ma Godot disegna un avviso. Acqua alta e trappole che viaggiano hanno il loro
+  warnMs?: number;
   flood?: HazardFlood; // acqua alta (#228): la superficie sale e scende a ciclo
   travel?: HazardTravel; // trappola che viaggia (#229): passa lungo un percorso, come il ciclista di Padova
 }
@@ -146,6 +149,18 @@ export interface StageLayer {
   parallax: number; // da 0 (fermo con la telecamera, lontanissimo) a 1 (si muove con il palco)
 }
 
+// Una torre che crolla (#433), tutta disegnata da Godot da stageMs: sagoma che ruota attorno al piede verso destra
+// (segno positivo = in senso orario), polvere, mattoni e scossa all'impatto. I pezzi veri li toglie `on`.
+export interface StageCollapse {
+  atMs: number; // quando comincia a cadere (tempo dell'arena)
+  durationMs: number; // quanto dura la caduta, con partenza lenta e arrivo veloce
+  pivot: { x: number; y: number }; // il piede della torre attorno a cui ruota: l'angolo in basso a destra
+  height: number; // altezza della sagoma
+  width: number; // larghezza alla base
+  toDeg: number; // di quanto ruota alla fine: 0 in piedi, 90 distesa a terra
+  warnMs?: number; // avviso prima di atMs: crepe e un leggero tremito (6000 se manca)
+}
+
 // Lo sfondo illustrato di un'arena: senza, si disegna con i colori di colors
 export interface StageArt {
   layers: StageLayer[]; // dal più lontano al più vicino, tutti dietro al palco; centrati sul centro dell'arena
@@ -163,6 +178,7 @@ export interface StageArt {
   platformSkin?: string; // materiale di base delle piattaforme sottili
   pieces?: { solids?: (string | null)[]; platforms?: (string | null)[] }; // eccezioni per indice; null = tinta unita
   props?: StageProp[]; // decorazioni ferme: statue, archi, lampioni
+  collapse?: StageCollapse; // torre che crolla (#433): solo grafica, dal tempo dell'arena
   hazardSprites?: HazardSprite[]; // animazioni disegnate delle trappole (#270), al posto del disegno fatto col codice
   moverSprites?: MoverSprite[]; // animazioni disegnate delle piattaforme mobili (#273)
   life?: StageLife; // sfondo vivo (#260): solo grafica, calcolata nel client dal tempo dell'arena
@@ -1070,7 +1086,7 @@ export const STAGES: Record<string, StageSpec> = {
       })),
       // Il fulmine sul punto più alto dell'Asinelli (da 2:45): un lampo di mezzo secondo ogni 20 s
       { kind: "fulmine", x: 1450, y: 820, width: 120, height: 160, damage: 18, knockback: 800, knockbackGrowth: 6, angleDeg: 90,
-        periodMs: BOLOGNA.lightningPeriodMs, activeMs: 500, offsetMs: 10000, on: BOLOGNA_BRAWL },
+        periodMs: BOLOGNA.lightningPeriodMs, activeMs: 500, offsetMs: 10000, warnMs: BOLOGNA.lightningWarnMs, on: BOLOGNA_BRAWL },
       // La polvere che sale (da 4:30): lenta, resta alta a lungo. Il giro è scritto perché la calma finisca a 4:30 (periodMs - totale)
       { kind: "polvere", x: 0, y: 1500, width: 2200, height: 300, damage: 8, knockback: 600, knockbackGrowth: 3, angleDeg: 88,
         on: [[BOLOGNA.dustMs, BOLOGNA.horizonMs]],
@@ -1096,6 +1112,8 @@ export const STAGES: Record<string, StageSpec> = {
         blastZone: { left: -180, right: 2380, top: 100, bottom: 1650 }, respawn: { x: 1500, y: 740 },
         camera: { minZoom: 0.5, maxZoom: 1.1, floorY: 1350 } },
     ],
+    // La Garisenda che cade verso l'Asinelli (#433): ruota attorno al suo piede destro (la punta arriva a circa x 1520, y 1570) fino ad appoggiarsi all'Asinelli
+    art: { layers: [], collapse: { atMs: BOLOGNA.collapseMs, durationMs: BOLOGNA.collapseFallMs, pivot: { x: 830, y: 1940 }, height: 780, width: 260, toDeg: 62, warnMs: 6000 } },
     camera: { minZoom: 0.5, maxZoom: 1.1, floorY: 2080 },
     blastZone: { left: -180, right: 2380, top: 1300, bottom: 2500 }, // come la prima fase
     // Prime otto partenze: quattro sulla base della Garisenda (squadra 1), quattro su quella dell'Asinelli (squadra 2)

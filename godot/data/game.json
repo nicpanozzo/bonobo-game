@@ -8223,6 +8223,7 @@
           "periodMs": 20000,
           "activeMs": 500,
           "offsetMs": 10000,
+          "warnMs": 1200,
           "on": [
             [
               165000,
@@ -8383,6 +8384,21 @@
           }
         }
       ],
+      "art": {
+        "layers": [],
+        "collapse": {
+          "atMs": 150000,
+          "durationMs": 4000,
+          "pivot": {
+            "x": 830,
+            "y": 1940
+          },
+          "height": 780,
+          "width": 260,
+          "toDeg": 62,
+          "warnMs": 6000
+        }
+      },
       "camera": {
         "minZoom": 0.5,
         "maxZoom": 1.1,
