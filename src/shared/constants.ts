@@ -629,6 +629,8 @@ export const TETRIS = {
   ms: 9000, // ms di partita a Tetris dalla raccolta
   cellPx: 40, // lato di un quadretto, pixel: le colonne sono WORLD.width / cellPx
   spawnY: -40, // pixel: bordo alto del quadretto centrale del pezzo quando compare, appena sopra lo schermo
+  nextPieceMs: 800, // ms tra un pezzo posato (o fatto cadere con K) e il prossimo: senza, sarebbe una pioggia continua
+  spawnRoomPx: 160, // pixel liberi sotto un pezzo nuovo: se la pila è più alta, compare in un'altra colonna
   fallPxS: 240, // pixel/s di caduta
   softPxS: 800, // pixel/s tenendo giù
   dropPxS: 2400, // pixel/s dopo K: cade di colpo
@@ -640,6 +642,13 @@ export const TETRIS = {
   knockback: 480, // pixel/s di lancio
   knockbackGrowth: 5, // pixel/s in più per ogni punto di percentuale del bersaglio
   angleDeg: 50, // angolo di lancio
+  dropDamage: 18, // percentuale se il pezzo cade di colpo con K: più rischio di mancare, più danno
+  dropKnockback: 620, // pixel/s di lancio del pezzo fatto cadere di colpo
+  lineCells: 6, // blocchi posati in fila sulla stessa riga che fanno una riga: esplode come nel Tetris vero
+  lineDamage: 16, // percentuale a chi sta sopra o dentro una riga che esplode
+  lineKnockback: 640, // pixel/s di lancio della riga, quasi in verticale
+  lineAngleDeg: 80, // angolo di lancio della riga
+  lineReachPx: 80, // pixel sopra la riga in cui si viene presi: chi ci sta in piedi sopra vola via
   returnInvulnerableMs: 600, // ms intoccabili quando si torna in partita
 };
 
