@@ -4,9 +4,9 @@
 import { ATTACKS, BOT, BOT_LEVELS, FIGHTER, TICK_RATE } from "../shared/constants";
 import type { Match } from "../shared/match";
 import { specialsFor } from "../shared/characters";
-import { emptyInput, ledgesOf, type Fighter } from "../shared/physics";
+import { emptyInput, ledgesOf, platformSurfaceY, type Fighter } from "../shared/physics";
 import { supremeReach, supremeReady } from "../shared/physics/supreme";
-import type { StageSpec } from "../shared/stages";
+import type { StageSpec, Station } from "../shared/stages";
 import type { InputState } from "../shared/types";
 import type { RoomHooks } from "./Room";
 
@@ -45,6 +45,7 @@ interface BotMemory {
   shieldTicks: number; // tick in cui tenere ancora lo scudo (#109)
   specialTicks: number; // tick prima della prossima speciale (E10)
   threats: number; // pesanti visti arrivare, per alternare schivata e contrattacco
+  gunner: boolean; // il primo bot di una squadra va alla bombarda della sua torre, se l'arena ce l'ha (#433)
 }
 
 // Le risalite dal bordo (#110), nell'ordine in cui il bot le alterna
@@ -74,7 +75,8 @@ export class Bots {
     if (fighter) fighter.dashByTap = false;
     // Per lo stesso motivo il salto corto: un tick di tasto lo accorcerebbe sempre
     if (fighter) fighter.shortHop = false;
-    this.bots.set(id, { kind, ticks: 0, attacks: 0, hold: emptyInput(), last: emptyInput(), ledgeTicks: 0, getups: 0, shieldTicks: 0, specialTicks: 0, threats: 0 });
+    const gunner = !!fighter?.team && ![...this.bots.keys()].some((b) => match.players.find((p) => p.id === b)?.team === fighter.team);
+    this.bots.set(id, { gunner, kind, ticks: 0, attacks: 0, hold: emptyInput(), last: emptyInput(), ledgeTicks: 0, getups: 0, shieldTicks: 0, specialTicks: 0, threats: 0 });
     return id;
   }
 
@@ -159,9 +161,19 @@ function decideSimple(self: Fighter, players: readonly Fighter[], stage: StageSp
     if (!mem.last[key]) input[key] = true;
   };
 
-  // Alla postazione (#433, anche la gru) i bot non sanno guidarla: ci sono finiti premendo attacco sulla pedana, quindi escono col salto
+  // Alla postazione (#433): il bombardiere resta alla sua bombarda e spara spazzando la mira su e giù, finché un
+  // avversario non gli arriva addosso. Le altre (anche la gru) i bot non le sanno guidare: escono col salto
   if (self.station !== undefined) {
     mem.ticks++;
+    const foe = nearestTarget(self, players);
+    const near = !!foe && Math.abs(foe.x - self.x) <= FIGHTER.width / 2 + ATTACKS.heavy.range && Math.abs(foe.y - self.y) < FIGHTER.height;
+    if (mem.gunner && stage.stations?.[self.station]?.kind === "bombarda" && !near) {
+      const sweep = Math.round(BOT.gunnerSweepMs * TICK_RATE / 1000);
+      if (mem.ticks % (2 * sweep) < sweep) input.up = true;
+      else input.down = true;
+      if (mem.ticks % reactionTicks(level) === 0) tap("light");
+      return input;
+    }
     if (mem.ticks % reactionTicks(level) === 0) tap("jump");
     return input;
   }
@@ -248,6 +260,20 @@ function decideSimple(self: Fighter, players: readonly Fighter[], stage: StageSp
 
   const target = nearestTarget(self, players);
   mem.hold = emptyInput();
+  // Il bombardiere della squadra (#433): sale alla sua bombarda, a meno che un avversario non gli sia addosso
+  const gun = mem.gunner ? bombardaOf(self, stage) : null;
+  const close = !!target && Math.abs(target.x - self.x) <= FIGHTER.width / 2 + ATTACKS.heavy.range && Math.abs(target.y - self.y) < FIGHTER.height;
+  if (gun && !close) {
+    const duty = stationDuty(self, stage, gun);
+    mem.hold.left = duty.dir < 0;
+    mem.hold.right = duty.dir > 0;
+    if (duty.jump) tap("jump");
+    if (duty.enter) tap("light");
+    input.left = mem.hold.left;
+    input.right = mem.hold.right;
+    return input;
+  }
+
   if (!target) return input;
 
   const dx = target.x - self.x;
@@ -311,6 +337,12 @@ function decideSimple(self: Fighter, players: readonly Fighter[], stage: StageSp
     tap("special");
     mem.specialTicks = specialEvery;
     return input;
+  } else if (stage.stations?.length && -dy > BOT.climbFromPx) {
+    // Bersaglio in alto su una torre (#433): ci si arrampica come il bombardiere, invece di restargli sotto
+    const duty = climbDuty(self, stage, target.x);
+    mem.hold.left = duty.dir < 0;
+    mem.hold.right = duty.dir > 0;
+    if (duty.jump) tap("jump");
   } else {
     // Si insegue, ma senza buttarsi giù dal palco dietro a chi sta volando via
     const wantX = nearestSolidX(stage, target.x);
@@ -327,6 +359,42 @@ function decideSimple(self: Fighter, players: readonly Fighter[], stage: StageSp
   input.left = mem.hold.left;
   input.right = mem.hold.right;
   return input;
+}
+
+// La bombarda della squadra di self, se in questo momento c'è il pezzo su cui sta
+function bombardaOf(self: Fighter, stage: StageSpec): Station | null {
+  const standsOn = (x: number, y: number) =>
+    stage.solids.some((b) => x >= b.x && x <= b.x + b.width && Math.abs(b.y - y) <= 4) ||
+    stage.platforms.some((p) => x >= p.x && x <= p.x + p.width && Math.abs(platformSurfaceY(p, x) - y) <= 4);
+  return stage.stations?.find((s) => s.kind === "bombarda" && s.team === self.team && standsOn(s.x + s.width / 2, s.y)) ?? null;
+}
+
+// Verso la postazione s: sul pezzo più in alto che si raggiunge da qui con i salti, senza navigazione vera (i pezzi
+// delle torri stanno a un salto l'uno dall'altro). Sulla postazione si entra premendo attacco
+function stationDuty(self: Fighter, stage: StageSpec, s: Station): { dir: number; jump: boolean; enter: boolean } {
+  const goalX = s.x + s.width / 2;
+  if (self.onGround && Math.abs(self.y - s.y) <= 4 && Math.abs(self.x - goalX) <= s.width / 2 - 10) return { dir: 0, jump: false, enter: true };
+  return { ...climbDuty(self, stage, goalX), enter: false };
+}
+
+// Salire verso goalX: il pezzo più in alto che si raggiunge da qui con un salto
+function climbDuty(self: Fighter, stage: StageSpec, goalX: number): { dir: number; jump: boolean } {
+  let best: { x: number; score: number } | null = null;
+  for (const p of stage.platforms) {
+    // Il punto sotto di sé e, per le scale, il capo alto (da sotto un pezzo inclinato si sale da lì)
+    const xs = [Math.max(p.x + 10, Math.min(p.x + p.width - 10, self.x))];
+    if (p.y2 !== undefined) xs.push(p.y < p.y2 ? p.x + 10 : p.x + p.width - 10);
+    for (const x of xs) {
+      const y = platformSurfaceY(p, x);
+      if (y >= self.y - 10 || y < self.y - BOT.climbReachPx || Math.abs(x - self.x) > BOT.climbSidePx) continue;
+      const score = y + Math.abs(x - self.x) / 2;
+      if (!best || score < best.score) best = { x, score };
+    }
+  }
+  const toX = best ? best.x : goalX;
+  const dx = toX - self.x;
+  const jump = !!best && Math.abs(dx) < BOT.climbJumpPx && (self.onGround || (self.vy >= 0 && self.jumpsLeft > 0));
+  return { dir: Math.abs(dx) > 8 ? Math.sign(dx) : 0, jump };
 }
 
 // Quanto resta appeso prima di risalire: il difficile varia, così non si legge

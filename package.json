@@ -13,6 +13,7 @@
     "discord": "node scripts/discord.mjs",
     "bench": "tsx scripts/bench.ts",
     "balance": "tsx scripts/balance.ts",
+    "bologna:bots": "tsx scripts/bologna-bots.ts",
     "audio:check": "tsx scripts/audio-check.ts",
     "bench:godot": "godot --headless --path godot --script res://tools/bench_client.gd",
     "export:godot": "tsx scripts/export-godot.ts",

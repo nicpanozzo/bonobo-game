@@ -1,6 +1,6 @@
 // Contatto con l'arena: blocchi pieni, piattaforme sottili, zone di espulsione, vite e ritorno in gioco.
 
-import { COURSE, FIGHTER, RESPAWN_INVULNERABLE_MS, RESPAWN_MS, SUPREME } from "../constants";
+import { COURSE, FIGHTER, PHASE_LIFT_GAP_PX, RESPAWN_INVULNERABLE_MS, RESPAWN_MS, SUPREME } from "../constants";
 import { arcadeSolids } from "./arcade";
 import { landOnMover } from "./elements";
 import type { Fighter, PhysicsContext } from "./fighter";
@@ -176,4 +176,28 @@ export function respawn(f: Fighter, ctx: PhysicsContext): void {
   f.invulnerableTimer = RESPAWN_INVULNERABLE_MS;
   f.invulnerable = true;
   ctx.events.push({ type: "respawn", id: f.id });
+}
+
+// Quando una fase restringe la zona di espulsione (Bologna: la zuffa porta il fondo da 2500 a 1650, la piazza è a 2000)
+// chi si trova già sotto il nuovo fondo (solo il fondo: i lati e il cielo restano KO normali) non perde una vita: la fase l'ha annunciata ma non è colpa sua. Viene
+// riportato al punto di ritorno della fase, in fila e con l'invulnerabilità di chi rientra. Si chiama quando la vista
+// dell'arena cambia, prima del passo dei lottatori; senza lottatori fuori non fa nulla.
+export function liftOutOfZone(fighters: Fighter[], ctx: PhysicsContext): void {
+  const out = fighters.filter((f) => !f.eliminated && !f.respawning && !f.away && f.y > ctx.stage.blastZone.bottom);
+  out.forEach((f, k) => {
+    f.x = ctx.stage.respawn.x + (k - (out.length - 1) / 2) * PHASE_LIFT_GAP_PX;
+    f.y = ctx.stage.respawn.y;
+    f.vx = 0;
+    f.vy = 0;
+    f.onGround = false;
+    f.ledge = null;
+    f.attack = null;
+    f.attackActive = false;
+    f.hitstun = false;
+    f.hitstunTimer = 0;
+    f.jumpsLeft = FIGHTER.maxJumps;
+    f.invulnerableTimer = RESPAWN_INVULNERABLE_MS;
+    f.invulnerable = true;
+    ctx.events.push({ type: "respawn", id: f.id });
+  });
 }
