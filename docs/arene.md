@@ -45,6 +45,8 @@ fabbrica: {
 }
 ```
 
+Nelle partenze, `team` (facoltativo) dice quale squadra parte lì nelle modalità a squadre (#433): per esempio la squadra 1 a sinistra e la 2 a destra, con `{ x: 200, y: 560, team: 1 }` e `{ x: 1600, y: 560, team: 2 }`. Con più di due squadre su un'arena a due, la 3 parte dove la 1 e la 4 dove la 2. Ogni compagno prende un posto diverso della propria squadra. Senza `team` (o in FFA) la partenza è quella di sempre, per indice.
+
 ### Arene più grandi dello schermo e zoom (`width`, `camera`)
 
 Un'arena può essere più larga dello schermo con `width`, per esempio 1920 per un'arena da 1,5 schermi. Tutti i pezzi devono stare tra 0 e `width`. La telecamera inquadra tutti i lottatori vivi: si avvicina quando sono vicini e si allontana quando si sparpagliano, senza mai mostrare più delle zone di espulsione.

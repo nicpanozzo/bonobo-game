@@ -76,6 +76,7 @@ export class Match {
   addPlayer(id: string, name: string, characterId?: string, skinId?: string, wantedTeam?: number) {
     const index = this.freeIndex();
     const team = isTeamMode(this.rules) ? requestedTeam(this.rules, wantedTeam) || this.smallerTeam() : 0;
+    const teamRank = team ? this.players.filter((p) => p.team === team).length : 0; // #433: posto di partenza tra i compagni
     const fighter = createFighter(
       {
         id,
@@ -85,6 +86,7 @@ export class Match {
         color: team ? this.teamColor(team) : COLORS[index],
         team,
         index,
+        teamRank,
         stocks: this.rules.stocks,
         supremeRate: this.rules.supremeSpeed,
       },
@@ -382,7 +384,10 @@ export class Match {
     this.projectiles.puddles = [];
     this.ctx.arcade = undefined; // via pezzi e blocchi del Tetris (#427)
     this.projectiles.list = []; // gli id continuano: un client non confonde un proiettile vecchio con uno nuovo
-    for (const f of this.fighters.values()) resetForMatch(f, this.slots.get(f.id) ?? 0, this.rules.stocks, this.stage);
+    for (const f of this.fighters.values()) {
+      const teamRank = isTeamMode(this.rules) ? this.teamBySlot(f.team).indexOf(f) : 0; // #433
+      resetForMatch(f, this.slots.get(f.id) ?? 0, this.rules.stocks, this.stage, teamRank);
+    }
     this.assignFlags(); // si riparte dal primo di ogni squadra
     this.ctx.events.push({ type: "matchStart" });
   }
