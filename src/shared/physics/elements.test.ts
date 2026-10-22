@@ -274,6 +274,50 @@ describe("canale di Padova (#253)", () => {
   });
 });
 
+describe("raffiche di vento (#433)", () => {
+  const gust = { x: 400, y: 650, width: 200, height: 400, speed: 700, dir: "right" as const, periodMs: 6000, warnMs: 1000, activeMs: 1000 };
+
+  it("in aria spinge verso dir solo mentre è acceso; a terra meno; niente danno né recupero", () => {
+    const calm = setup(stageWith({ jets: [gust] }), { x: 500, y: 450 });
+    calm.f.onGround = false;
+    calm.ctx.timeMs = 1000; // calma
+    run(calm.f, calm.ctx, 10);
+    assert.ok(Math.abs(calm.f.vx) < 1, `nessuna spinta da spento (vx = ${calm.f.vx})`);
+
+    const air = setup(stageWith({ jets: [gust] }), { x: 500, y: 450 });
+    air.f.onGround = false;
+    air.f.recoveryUsed = true;
+    air.ctx.timeMs = 5050; // acceso
+    run(air.f, air.ctx, 20);
+    assert.ok(air.f.vx > 100, `spinto a destra (vx = ${air.f.vx})`);
+    assert.ok(air.f.vy >= 0, "non sale: la raffica è orizzontale");
+    assert.equal(air.f.percent, 0);
+    assert.equal(air.f.recoveryUsed, true, "il recupero non torna");
+
+    const left = setup(stageWith({ jets: [{ ...gust, dir: "left" as const }] }), { x: 500, y: 450 });
+    left.f.onGround = false;
+    left.ctx.timeMs = 5050;
+    run(left.f, left.ctx, 10);
+    assert.ok(left.f.vx < -100, `spinto a sinistra (vx = ${left.f.vx})`);
+
+    const ground = setup(stageWith({ jets: [gust] }), { x: 500, y: 650 });
+    const ground0 = ground.f.x;
+    ground.ctx.timeMs = 5050;
+    run(ground.f, ground.ctx, 20);
+    const air0 = air.f.x - 500;
+    assert.ok(ground.f.x - ground0 > 0, "anche a terra si sposta");
+    assert.ok(ground.f.x - ground0 < air0, `ma meno che in aria (${ground.f.x - ground0} contro ${air0})`);
+  });
+
+  it("fuori dalla zona non spinge", () => {
+    const far = setup(stageWith({ jets: [gust] }), { x: 900, y: 450 });
+    far.f.onGround = false;
+    far.ctx.timeMs = 5050;
+    run(far.f, far.ctx, 10);
+    assert.ok(Math.abs(far.f.vx) < 1);
+  });
+});
+
 describe("Padova, isola sospesa con la fontana (#288)", () => {
   it("lo zampillo della fontana lancia in alto chi sta sulla vasca, verso lastre e balcone (Padova · il palazzo, #378)", () => {
     const stage = getStage("padova-palazzo");

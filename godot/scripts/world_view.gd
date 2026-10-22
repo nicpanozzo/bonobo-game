@@ -1533,6 +1533,9 @@ func _surface_below(x: float, y: float) -> float:
 # Con idle (#288) è una fontana: a riposo lo zampillo resta basso, con l'avviso cresce, poi sale tutto
 func _draw_jet(j: Dictionary, t: float) -> void:
 	var phase := StageMotion.jet_phase(j, t)
+	if j.has("dir"): # raffica di vento (#433): si disegna di lato, non come colonna d'acqua
+		_draw_gust(j, t, phase)
+		return
 	var idle := float(j.get("idle", 0))
 	if phase == "calm" and idle <= 0.0:
 		return
@@ -1567,6 +1570,33 @@ func _draw_jet(j: Dictionary, t: float) -> void:
 	for i in 5: # schizzi in cima
 		var a := t / 120.0 + i * 1.3
 		draw_circle(Vector2(x0 + w / 2 + cos(a) * w * 0.5, base - h + sin(a * 1.7) * 10), 4.0, Color(0.85, 0.93, 0.92, 0.8))
+
+
+# Raffica di vento (#433, jets con dir): con l'avviso qualche foglia/pulviscolo comincia a scivolare nel verso,
+# poi righe di vento semitrasparenti attraversano la zona. Pochi segmenti, nessun nodo: costa poco
+func _draw_gust(j: Dictionary, t: float, phase: String) -> void:
+	if phase == "calm":
+		return
+	var sign_x: float = -1.0 if str(j.dir) == "left" else 1.0
+	var x0: float = j.x
+	var w: float = j.width
+	var h: float = j.height
+	var top: float = float(j.y) - h
+	if phase == "warn":
+		for i in 6:
+			var k := fposmod(t / 1400.0 + i * 0.173, 1.0) # avanzamento nella zona, da 0 a 1
+			var px := x0 + w * (k if sign_x > 0.0 else 1.0 - k)
+			var py := top + h * fposmod(i * 0.41, 1.0) + sin(t / 260.0 + i) * 6.0
+			draw_circle(Vector2(px, py), 2.0 + (i % 2), Color(0.78, 0.74, 0.55, 0.7 * sin(k * PI)))
+		return
+	for i in 8:
+		var k := fposmod(t / 380.0 + i * 0.131, 1.0)
+		var streak := minf(w * 0.5, 110.0) * (0.6 + 0.4 * fposmod(i * 0.57, 1.0))
+		var head := x0 + (w + streak) * (k if sign_x > 0.0 else 1.0 - k) - (streak if sign_x > 0.0 else 0.0)
+		var py := top + h * (0.08 + 0.84 * fposmod(i * 0.37, 1.0))
+		var a := Vector2(clampf(head, x0, x0 + w), py)
+		var b := Vector2(clampf(head + streak * sign_x * -1.0, x0, x0 + w), py + sin(k * TAU + i) * 4.0)
+		draw_line(a, b, Color(0.9, 0.96, 0.97, 0.45 * sin(k * PI)), 2.0)
 
 
 # Lo zampillo di una fontana (#288): una colonna bianca che si assottiglia, il pennacchio che si apre in cima

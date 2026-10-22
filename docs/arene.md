@@ -215,6 +215,7 @@ Servono a dare un motivo per andare in una zona rischiosa (#253). A Padova la fo
 - **`flood.lowSafe: true`** (nell'acqua alta): l'acqua bassa non fa male, solo quella che sale, resta alta e scende.
 - **Riparo dal ciclista:** la trappola che viaggia colpisce solo chi ha i piedi all'altezza del suo percorso, entro `HAZARD.travelFeetPx`. Chi sta più in basso, per esempio sotto il ponte, è al riparo.
 - **`jets`**, getti d'acqua a tempo: `{ x, y, width, height, speed, periodMs, warnMs, activeMs, offsetMs?, idle? }`.
+  - Con **`dir: "left" | "right"`** (#433) il getto diventa una **raffica di vento**: stessa zona (`x..x+width`, `y-height..y`) e stesso ciclo avviso/acceso, ma spinge di lato. In aria la velocità orizzontale accelera verso `speed` pixel/s (`WIND.accelPxPerS2`), a terra la spinta è solo una frazione (`WIND.groundFactor`). Nessun danno e il recupero non torna. Senza `dir` il getto sale, come sempre. Con l'avviso cominciano a volare foglie, poi righe di vento.
   - Con `idle` (solo grafica, #288) è una fontana: a riposo uno zampillo alto `idle` pixel, con l'avviso cresce e gorgoglia, poi parte il getto alto, che ricade a ventaglio.
   - La colonna parte da `y` e sale per `height`.
   - Dopo la calma ci sono le **bolle** (`warnMs`), poi il **getto** (`activeMs`): chi è nella colonna viene spinto in alto a `speed` pixel/s, senza danno, e può di nuovo usare il recupero.

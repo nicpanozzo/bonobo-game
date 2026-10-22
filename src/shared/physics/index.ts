@@ -169,7 +169,7 @@ export function stepWorld(fighters: Fighter[], dtMs: number, ctx: PhysicsContext
   stepRewinds(fighters, dtMs, ctx); // …COSA? di Marcomunista (#358)
   resolveGrabs(fighters, ctx); // dopo i colpi: un colpo nello stesso tick vince sulla presa
   resolveHazards(fighters, ctx);
-  applyJets(fighters, ctx); // getti d'acqua (#253)
+  applyJets(fighters, ctx, dtMs); // getti d'acqua (#253)
   pressPads(fighters, ctx, firstEvent); // bottoni sonori (#423)
   stepArcade(fighters, dtMs, ctx); // pezzi del Tetris e bocconi di Pac-Man (#427)
 }

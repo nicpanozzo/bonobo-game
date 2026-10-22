@@ -476,6 +476,12 @@ export const HAZARD = {
   travelFeetPx: 12, // la trappola che viaggia (#229) colpisce solo chi ha i piedi entro questo sotto il suo percorso: sotto il ponte si è al riparo (#253)
 };
 
+// Raffiche di vento (#433): i getti con dir spingono di lato, come il vento e non come un muro
+export const WIND = {
+  accelPxPerS2: 3600, // quanto in fretta la velocità orizzontale di chi è in aria va verso ±speed, pixel/s²
+  groundFactor: 0.25, // a terra la spinta è questa frazione di speed (spostamento diretto, i piedi frenano), 0..1
+};
+
 // Arena musicale (#423, src/shared/musicStage.ts): come le note del brano muovono e accendono le piattaforme
 export const MUSIC_STAGE = {
   liftGlideMs: 140, // ms in cui un ascensore va all'altezza della nota nuova
