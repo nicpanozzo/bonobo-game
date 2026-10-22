@@ -37,13 +37,14 @@ export { platformSurfaceY } from "./stage";
 import { burstFire, stepRewinds, supreming, tickSupreme } from "./supreme";
 import { landTech, tickTech } from "./tech";
 import { stageAt } from "./timed";
-import { stepStations, useStation } from "./stations";
+import { freezePrize, stepStations, useStation } from "./stations";
 
 export * from "./fighter";
 export { resolveHits } from "./attacks";
 export { floodPhase, hazardActive, hazardRect, jetPhase, moverHere, moverOn, moverPlace, moverPosition, padFx, travelDirection, travelPhase, type FloodPhase, type JetPhase, type TravelPhase } from "./elements";
 export { ledgesOf } from "./ledge";
 export { baseStage, phaseAt, phaseIndexAt, pieceOn, stageAt, stageIsTimed } from "./timed";
+export { freezePrize, prizeLeader } from "./stations";
 
 // Un passo di simulazione per un lottatore (dtMs = durata del tick)
 export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void {
@@ -167,7 +168,7 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
 export function stepWorld(fighters: Fighter[], dtMs: number, ctx: PhysicsContext, stageMs = dtMs): void {
   ctx.timeMs = (ctx.timeMs ?? 0) + stageMs;
   // Pezzi a tempo e fasi (#433): da qui in poi ctx.stage è l'arena com'è adesso (la stessa, se non cambia)
-  const view = stageAt(ctx.stage, ctx.timeMs);
+  const view = stageAt(ctx.stage, ctx.timeMs, freezePrize(ctx));
   if (view !== ctx.stage) {
     remapLedges(fighters, ctx.stage, view);
     ctx.stage = view;

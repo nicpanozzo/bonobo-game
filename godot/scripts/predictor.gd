@@ -20,6 +20,7 @@ var teleport_distance := 300.0
 var items_present := false # oggetti nell'arena: leggero e pesante li lascia decidere al server
 var puddles: Array = [] # pozze scivolose dell'ultimo snapshot (#13): sopra si scivola, il port non lo sa
 var blocks: Array = [] # blocchi del Tetris dell'ultimo snapshot (#427): il port non li conosce
+var prize_team := 0 # premio (#433): la squadra in testa ai punti torre congelata dal server (0 = nessuna), per i ponteggi
 var stage_ms := 0.0 # tempo dell'arena dell'ultimo snapshot (#433): i pezzi a tempo ci sono o no come sul server
 
 var _game: Dictionary
@@ -112,6 +113,7 @@ func on_server(p: Dictionary, now_ms: float, shown := Vector2(NAN, NAN)) -> void
 	_tick = int(pr.seq) + int(pr.ticks) - 1
 	_state = PredictMovement.state_from(p, pr, input_at(int(pr.seq)))
 	_state.stageMs = stage_ms
+	_state.prizeTeam = prize_team
 	_prev_xy = Vector2(_state.x, _state.y)
 	if local_tick(now_ms) - _tick > max_replay_ticks:
 		_active = false # troppo indietro: meglio lo stato del server che indovinare mezzo secondo

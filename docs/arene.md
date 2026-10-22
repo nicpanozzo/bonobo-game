@@ -303,7 +303,23 @@ stations: [
 ],
 ```
 
+Una bombarda può avere `ballSpeedPxS` (senza, `STATION.ballSpeedPxS`): nella Bologna è più bassa, così le palle non sorvolano la torre avversaria (il test in `bologna.test.ts` controlla che ogni mira ci arrivi).
+
 Nello snapshot ci sono `stations` (chi la usa, mira, palle, carica e casse in salita), `cannonballs` e `towerPoints` (punti torre per squadra, che l'HUD mostra in alto al centro), e `PlayerState.station` dice chi sta dove. Gli eventi `station` (`enter`, `exit`, `fire`, `load`, `ammo`, `boom`) servono a Godot per suoni e scintille. Logica in `physics/stations.ts`, disegno in `godot/scripts/station_view.gd`.
+
+### Premio (`forLeader`, `prizeAtMs`): ponteggi per chi è in testa (#433)
+
+Con le postazioni una squadra può guadagnarsi qualcosa. `prizeAtMs` (campo dell'arena) è il tempo dell'arena a cui il server **congela** la squadra con più punti torre (strettamente più dell'altra: in pareggio, o senza punti, nessuna). Un blocco o una piattaforma con `forLeader: N` esiste, insieme alle sue finestre `on`, solo se a `prizeAtMs` era in testa la squadra N. Prima di `prizeAtMs` e per le altre squadre non c'è. `prizeShowMs` (facoltativo, vale `prizeAtMs`) è quando Godot mostra "PONTEGGI PER LA SQUADRA N!".
+
+- Il server tiene la squadra nello stato delle postazioni (si azzera alla rivincita) e la passa a `stageAt(stage, t, leader)`, che la mette nella chiave della vista. Lo snapshot ha `prizeTeam` (assente se non c'è). Godot disegna e predice i pezzi `forLeader` solo con `prizeTeam` uguale.
+- Il controllo di raggiungibilità (`timedReachProblems`) guarda l'arena con ognuna delle squadre in testa e con nessuna.
+- Aggiungi i pezzi del premio **in fondo** a `platforms`, perché `art.pieces` conta per indice.
+- Bologna: `prizeAtMs` è il crollo (2:30), due ponteggi per squadra ai lati del tetto dell'Asinelli (squadra 1 a sinistra, 2 a destra) nella zuffa.
+
+```ts
+prizeAtMs: 150000,
+platforms: [..., { x: 1150, y: 1010, width: 110, on: [[165000, 900000]], forLeader: 1 }],
+```
 
 ### Musica (`music`)
 

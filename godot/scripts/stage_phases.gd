@@ -64,3 +64,15 @@ static func banner(stage: Dictionary, t: float, banner_ms: float) -> Dictionary:
 		if start > t and warn > 0.0 and t >= start - warn and str(p.get("announce", "")) != "":
 			return {"text": str(p.announce), "alpha": 1.0, "warn": true}
 	return {}
+
+
+# Il premio (#433): "PONTEGGI PER LA SQUADRA N!" per banner_ms da prizeShowMs (senza, prizeAtMs), solo se il server ha
+# congelato una squadra in testa (prize_team > 0). { text, alpha } o vuoto
+static func prize_banner(stage: Dictionary, t: float, prize_team: int, banner_ms: float) -> Dictionary:
+	if prize_team <= 0 or stage.get("prizeAtMs") == null:
+		return {}
+	var start := float(stage.get("prizeShowMs", stage.prizeAtMs))
+	var since := t - start
+	if since < 0.0 or since >= banner_ms:
+		return {}
+	return {"text": "PONTEGGI PER LA SQUADRA %d!" % prize_team, "alpha": clampf((banner_ms - since) / 400.0, 0.0, 1.0)}

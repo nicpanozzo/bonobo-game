@@ -13,6 +13,7 @@ export interface Rect {
   width: number;
   height: number;
   on?: TimeWindows; // pezzo a tempo (#433): c'è solo dentro queste finestre del tempo dell'arena; senza, sempre
+  forLeader?: number; // premio (#433): c'è solo se questa squadra era in testa ai punti torre a prizeAtMs (in pareggio nessuno)
 }
 
 // Finestre [da ms, a ms) del tempo dell'arena (#433): fuori il pezzo non c'è, niente ci sta sopra, fa male o spinge
@@ -25,6 +26,7 @@ export interface ThinPlatform {
   arch?: number; // piattaforma ad arco (#244): pixel di cui sale la superficie al centro, come un ponte
   y2?: number; // piattaforma inclinata (#246): altezza dell'estremità destra (y è la sinistra), come una scala
   on?: TimeWindows; // pezzo a tempo (#433), come quello dei blocchi pieni
+  forLeader?: number; // premio (#433), come quello dei blocchi pieni
 }
 
 // Piattaforma sottile che si muove (ascensore, montacarichi). La posizione dipende solo dal
@@ -70,6 +72,7 @@ export interface Station {
   aimMinDeg?: number; // gradi sopra l'orizzontale
   aimMaxDeg?: number;
   ammoMax?: number;
+  ballSpeedPxS?: number; // pixel/s di uscita della palla; senza, STATION.ballSpeedPxS
   autoAmmoMs?: number; // una palla in più ogni tanti ms anche senza munizioni (1 contro 1); senza, solo dalle casse
   // Munizioni
   feeds?: number; // indice in stations della bombarda che rifornisce
@@ -393,6 +396,8 @@ export interface StageSpec {
   hazards?: Hazard[];
   jets?: Jet[]; // getti d'acqua a tempo che spingono in alto (#253)
   phases?: StagePhase[]; // l'arena cambia a fasi durante la partita (#433), in ordine di startMs
+  prizeAtMs?: number; // premio (#433): a questo tempo dell'arena si congela la squadra in testa ai punti torre; i pezzi con forLeader ci sono solo per lei
+  prizeShowMs?: number; // tempo dell'arena a cui il client annuncia il premio (senza, prizeAtMs)
   itemSpots?: ItemSpot[]; // zone dove gli oggetti cadono più spesso (#253)
   music?: StageMusic; // musica della partita (E12 passo 4)
   song?: StageSong; // arena musicale (#423): il brano registrato a cui sono legate le piattaforme
@@ -479,6 +484,7 @@ const BOLOGNA_FROM_TOWERS: TimeWindows = [[BOLOGNA.towersMs, BOLOGNA.horizonMs]]
 const BOLOGNA_GARISENDA: TimeWindows = [[BOLOGNA.towersMs, BOLOGNA.collapseMs]];
 const BOLOGNA_RAMP: TimeWindows = [[BOLOGNA.rampMs, BOLOGNA.horizonMs]];
 const BOLOGNA_BRAWL: TimeWindows = [[BOLOGNA.brawlMs, BOLOGNA.horizonMs]];
+const BOLOGNA_ASINELLI_STATIONS: TimeWindows = [[BOLOGNA.towersMs, BOLOGNA.brawlMs]]; // le postazioni dell'Asinelli non ci sono nella zuffa
 const BOLOGNA_PIAZZA: TimeWindows = [[0, BOLOGNA.towersMs]];
 
 export const STAGES: Record<string, StageSpec> = {
@@ -1056,6 +1062,12 @@ export const STAGES: Record<string, StageSpec> = {
         width: 70,
         on: blinkWindows(BOLOGNA.brawlMs, BOLOGNA.horizonMs, BOLOGNA.merlonPresentMs, BOLOGNA.merlonGoneMs, i * 2000),
       })),
+      // I ponteggi del premio (da 2:45, solo per la squadra in testa ai punti torre al crollo): due per lato del tetto, la
+      // squadra 1 a sinistra e la 2 a destra, sotto il bordo per risalire più facilmente. In fondo: gli indici sopra non cambiano
+      { x: 1150, y: 1010, width: 110, on: BOLOGNA_BRAWL, forLeader: 1 },
+      { x: 1020, y: 1120, width: 110, on: BOLOGNA_BRAWL, forLeader: 1 },
+      { x: 1740, y: 1010, width: 110, on: BOLOGNA_BRAWL, forLeader: 2 },
+      { x: 1870, y: 1120, width: 110, on: BOLOGNA_BRAWL, forLeader: 2 },
     ],
     movers: [
       // Il ponteggio della Garisenda (0:45-2:30): un ascensore fuori dalla torre, fino alla finestra più alta
@@ -1112,6 +1124,17 @@ export const STAGES: Record<string, StageSpec> = {
         blastZone: { left: -180, right: 2380, top: 100, bottom: 1650 }, respawn: { x: 1500, y: 740 },
         camera: { minZoom: 0.5, maxZoom: 1.1, floorY: 1350 } },
     ],
+    // Postazioni (#433): su ogni torre una bombarda sulla cima e le munizioni in fondo, vicino all'ascensore (le casse
+    // "salgono con l'ascensore"). Ci sono dalla fase 2 fino al crollo (Garisenda) o alla zuffa (Asinelli)
+    stations: [
+      { kind: "bombarda", x: 635, y: 1180, width: 150, team: 1, dir: 1, aimMinDeg: BOLOGNA.aimMinDeg, aimMaxDeg: BOLOGNA.aimMaxDeg, ammoMax: 6, ballSpeedPxS: BOLOGNA.ballSpeedPxS, autoAmmoMs: BOLOGNA.autoAmmoMs, on: BOLOGNA_GARISENDA },
+      { kind: "munizioni", x: 400, y: 1940, width: 110, team: 1, feeds: 0, on: BOLOGNA_GARISENDA },
+      { kind: "bombarda", x: 1475, y: 980, width: 130, team: 2, dir: -1, aimMinDeg: BOLOGNA.aimMinDeg, aimMaxDeg: BOLOGNA.aimMaxDeg, ammoMax: 6, ballSpeedPxS: BOLOGNA.ballSpeedPxS, autoAmmoMs: BOLOGNA.autoAmmoMs, on: BOLOGNA_ASINELLI_STATIONS },
+      { kind: "munizioni", x: 1590, y: 1940, width: 110, team: 2, feeds: 2, on: BOLOGNA_ASINELLI_STATIONS },
+    ],
+    // Il premio: chi ha più punti torre al crollo trova dei ponteggi nella zuffa
+    prizeAtMs: BOLOGNA.collapseMs,
+    prizeShowMs: BOLOGNA.brawlMs,
     // La Garisenda che cade verso l'Asinelli (#433): ruota attorno al suo piede destro (la punta arriva a circa x 1520, y 1570) fino ad appoggiarsi all'Asinelli
     art: { layers: [], collapse: { atMs: BOLOGNA.collapseMs, durationMs: BOLOGNA.collapseFallMs, pivot: { x: 830, y: 1940 }, height: 780, width: 260, toDeg: 62, warnMs: 6000 } },
     camera: { minZoom: 0.5, maxZoom: 1.1, floorY: 2080 },

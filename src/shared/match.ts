@@ -9,7 +9,7 @@ import { createItemWorld, handleItemInput, itemStates, resetItems, stepItems, ty
 import { companionState } from "./physics/companion";
 import { stageAt, stageIsTimed } from "./physics/timed";
 import { tetrisState } from "./physics/arcade";
-import { resetStations, stationSnapshot } from "./physics/stations";
+import { prizeLeader, resetStations, stationSnapshot } from "./physics/stations";
 import { createProjectileWorld, projectileStates, puddleStates, type ProjectileWorld } from "./physics/projectiles";
 import { canHitWithRules, flagWinnerTeam, isTeamMode, lastStanding, leaderOnTime, requestedTeam, sanitizeRules } from "./rules";
 import { COURSE_PREFIX, seedFromCourseId } from "./courseGenerator";
@@ -77,7 +77,7 @@ export class Match {
 
   // L'arena com'è adesso (#433): senza pezzi a tempo è la stessa di stage, con loro solo quelli che ci sono ora
   get currentStage(): StageSpec {
-    return stageAt(this.stage, this.ctx.timeMs ?? 0);
+    return stageAt(this.stage, this.ctx.timeMs ?? 0, prizeLeader(this.ctx));
   }
 
   // team: la squadra chiesta (#409); se non c'è in queste regole si entra in quella con meno giocatori

@@ -35,9 +35,13 @@ export function checkTimes(stage: StageSpec): number[] {
 // Le piattaforme che in qualche istante ci sono ma non si raggiungono con i pezzi presenti in quel momento
 export function timedReachProblems(stage: StageSpec, heightScale = 1): string[] {
   const out: string[] = [];
+  // Con un premio (forLeader) si controlla l'arena con ognuna delle squadre in testa, e con nessuna
+  const leaders = [0, ...new Set([...stage.solids, ...stage.platforms].flatMap((p) => (p.forLeader ? [p.forLeader] : [])))];
   for (const t of checkTimes(stage)) {
-    const now = stageAt(stage, t);
-    for (const p of now.platforms) if (!reachable(now, p, heightScale)) out.push(`a ${t} ms: piattaforma a ${p.x},${p.y} irraggiungibile`);
+    for (const leader of leaders) {
+      const now = stageAt(stage, t, leader);
+      for (const p of now.platforms) if (!reachable(now, p, heightScale)) out.push(`a ${t} ms${leader ? ` (premio squadra ${leader})` : ""}: piattaforma a ${p.x},${p.y} irraggiungibile`);
+    }
   }
   return out;
 }

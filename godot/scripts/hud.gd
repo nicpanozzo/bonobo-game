@@ -162,15 +162,22 @@ func _draw_phase_banner(w: float, h: float) -> void:
 	if not _stage.has("phases") or _snap.winnerId != null:
 		return
 	var b := StagePhases.banner(_stage, float(_snap.get("stageMs", 0.0)), float(game.effects.phaseBannerMs))
+	var prize := StagePhases.prize_banner(_stage, float(_snap.get("stageMs", 0.0)), int(_snap.get("prizeTeam", 0)), float(game.effects.phaseBannerMs))
+	if not prize.is_empty():
+		_draw_banner_line(prize.text, prize.alpha, w, h * 0.28 + Access.px(70), Access.px(36), Color("ffcf4a")) # sotto il nome della fase
 	if b.is_empty():
 		return
-	var size := Access.px(34 if b.warn else 54)
 	var color := Color("e67e22") if b.warn else Color("ffcf4a") # arancio come l'avviso del campanello
-	var tw := _font.get_string_size(b.text, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
-	var pos := Vector2(w / 2 - tw / 2, h * 0.28)
-	color.a = b.alpha
-	draw_string_outline(_font, pos, b.text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, 6, Color(0, 0, 0, b.alpha))
-	draw_string(_font, pos, b.text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, color)
+	_draw_banner_line(b.text, b.alpha, w, h * 0.28, Access.px(34 if b.warn else 54), color)
+
+
+# Una riga di testo grande centrata, con il contorno scuro
+func _draw_banner_line(text: String, alpha: float, w: float, y: float, size: int, color: Color) -> void:
+	var tw := _font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
+	var pos := Vector2(w / 2 - tw / 2, y)
+	color.a = alpha
+	draw_string_outline(_font, pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, 6, Color(0, 0, 0, alpha))
+	draw_string(_font, pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, color)
 
 
 # Una scheda per giocatore in basso, tra band.x e band.y

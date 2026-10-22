@@ -265,6 +265,7 @@ export interface GameSnapshot {
   stations?: StationState[]; // postazioni (#433), solo nelle arene che ne hanno
   cannonballs?: CannonballState[]; // palle di mortadella in volo (#433), con stations
   towerPoints?: Record<number, number>; // punti torre per squadra (#433): colpi di bombarda a segno sugli avversari, con stations
+  prizeTeam?: number; // premio (#433): la squadra in testa ai punti torre congelata a prizeAtMs; assente prima, o se era pareggio
 }
 
 // Eventi Socket.IO tipizzati
