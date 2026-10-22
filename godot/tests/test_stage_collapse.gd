@@ -19,6 +19,17 @@ func test_fasi_del_crollo() -> void:
 	runner.check(Collapse.config({}).is_empty() and Collapse.config({"art": {"collapse": C}}) == C, "la descrizione viene da art.collapse")
 
 
+func test_torre_in_piedi_da_standfromms() -> void:
+	var s := C.duplicate()
+	s["standFromMs"] = 30000
+	runner.check(Collapse.phase(s, 29999.0) == "idle", "prima di standFromMs: niente")
+	runner.check(Collapse.phase(s, 30000.0) == "stand", "da standFromMs è in piedi")
+	runner.check(Collapse.phase(s, 143999.0) == "stand", "fino all'avviso resta in piedi")
+	runner.check(Collapse.phase(s, 144000.0) == "warn", "poi l'avviso")
+	runner.check(is_equal_approx(Collapse.angle_deg(s, 100000.0), 0.0) and Collapse.shake(s, 100000.0) == 0.0, "in piedi: dritta e senza scossa")
+	runner.check(Collapse.phase(C, 100000.0) == "idle", "senza standFromMs resta com'era")
+
+
 func test_angolo_con_partenza_lenta_e_arrivo_veloce() -> void:
 	runner.check(is_equal_approx(Collapse.angle_deg(C, 140000.0), 0.0), "prima dell'avviso è dritta")
 	runner.check(absf(Collapse.angle_deg(C, 147000.0)) <= Collapse.WOBBLE_DEG, "nell'avviso trema poco")

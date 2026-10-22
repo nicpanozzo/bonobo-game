@@ -5,6 +5,7 @@
 extends RefCounted
 
 const WARN_MS := 6000.0 # avviso prima della caduta, se la descrizione non dice warnMs
+const STAND_ALPHA := 0.35 # opacità della torre in piedi (come un fondale, le pedane restano leggibili) e a fine avviso
 const WOBBLE_DEG := 0.7 # ampiezza massima del tremito nell'avviso, gradi
 const BRICK := Color("a24d38") # il rosso dei mattoni di Bologna
 const BRICK_DARK := Color("7a3a2b")
@@ -40,10 +41,10 @@ static func end_ms(c: Dictionary) -> float:
 	return float(c.atMs) + float(c.durationMs)
 
 
-# "idle" (lontano), "warn" (crepe e tremito), "fall" (cade), "after" (a terra, polvere e sfumo)
+# "idle" (lontano), "stand" (in piedi, ferma: solo se c'è standFromMs), "warn" (crepe e tremito), "fall" (cade), "after" (a terra, polvere e sfumo)
 static func phase(c: Dictionary, t: float) -> String:
 	if t < float(c.atMs) - float(c.get("warnMs", WARN_MS)):
-		return "idle"
+		return "stand" if c.has("standFromMs") and t >= float(c.standFromMs) else "idle"
 	if t < float(c.atMs):
 		return "warn"
 	if t < end_ms(c):
@@ -107,15 +108,17 @@ static func draw(ci: CanvasItem, c: Dictionary, t: float, view: Rect2) -> float:
 		return shake(c, t)
 	var alpha := 1.0
 	var wk := warn_k(c, t)
-	if ph == "warn":
-		alpha = 0.35 * wk # nell'avviso la sagoma prende corpo piano piano, dietro ai pezzi veri
+	if ph == "stand":
+		alpha = STAND_ALPHA
+	elif ph == "warn":
+		alpha = STAND_ALPHA if c.has("standFromMs") else STAND_ALPHA * wk # in piedi già dall'inizio: nell'avviso restano solo crepe e tremito; altrimenti la sagoma prende corpo piano piano, dietro ai pezzi veri
 	elif ph == "after":
 		alpha = clampf(1.0 - (t - end_ms(c)) / FADE_MS, 0.0, 1.0)
 	if alpha > 0.0:
 		_draw_tower(ci, c, t, ph, wk, alpha)
 	if ph == "warn":
 		_draw_grit(ci, c, t, wk)
-	else:
+	elif ph != "stand":
 		_draw_dust_and_bricks(ci, c, t)
 	return shake(c, t)
 
@@ -143,6 +146,8 @@ static func _draw_tower(ci: CanvasItem, c: Dictionary, t: float, ph: String, wk:
 	ci.draw_polyline(outline, Color(INK.r, INK.g, INK.b, minf(1.0, alpha * 2.0)), 5.0)
 	# Crepe: una in più a ogni sesto dell'avviso, tutte durante la caduta
 	var shown := CRACKS.size() if ph != "warn" else int(ceil(wk * CRACKS.size()))
+	if ph == "stand":
+		shown = 0
 	for i in shown:
 		var pts := PackedVector2Array()
 		for p: Vector2 in CRACKS[i]:
