@@ -1,7 +1,7 @@
 // Le arene. Aggiungerne una = un blocco qui (e, se ha uno sfondo, una cartella in public/assets/stages/<id>/).
 // La fisica legge solo questi dati, il client li disegna: un'arena non ha codice suo.
 
-import { WORLD } from "./constants";
+import { BOLOGNA, WORLD } from "./constants";
 import { generateCourse, seedFromCourseId } from "./courseGenerator";
 import { generateStage, seedFromStageId } from "./stageGenerator";
 import { SALA_PROVE } from "./music/sala-prove";
@@ -404,7 +404,43 @@ export function fountainCarousel(cx: number, jets: CarouselJet[], periodMs: numb
   }));
 }
 
+// Finestre di un pezzo che lampeggia (#433): c'è per presentMs, sparisce per goneMs, e così via da fromMs a untilMs
+// (tempo dell'arena). offsetMs sfasa il ciclo (da 0 a presentMs + goneMs) per far sparire pezzi vicini in momenti diversi.
+export function blinkWindows(fromMs: number, untilMs: number, presentMs: number, goneMs: number, offsetMs = 0): TimeWindows {
+  const period = presentMs + goneMs;
+  const out: TimeWindows = [];
+  let t = fromMs;
+  while (t < untilMs) {
+    const c = (t - fromMs + offsetMs) % period; // dove siamo nel ciclo
+    if (c < presentMs) {
+      const end = Math.min(untilMs, t + presentMs - c);
+      out.push([t, end]);
+      t = end + goneMs;
+    } else t += period - c; // siamo nella pausa: si aspetta il prossimo ciclo
+  }
+  return out;
+}
+
+// Chiavi di un ascensore che va su e giù fra low e high (#433), per un mover con keys: da fromMs a toMs del tempo
+// dell'arena, un giro ogni cycleMs (salita e discesa a metà ciascuna, con una sosta pauseMs a ogni piano)
+export function liftKeys(x: number, low: number, high: number, fromMs: number, toMs: number, cycleMs: number, pauseMs: number): [number, number, number][] {
+  const keys: [number, number, number][] = [];
+  const leg = (cycleMs - 2 * pauseMs) / 2;
+  for (let t = fromMs; t < toMs; t += cycleMs) {
+    keys.push([t, x, low], [t + pauseMs, x, low], [t + pauseMs + leg, x, high], [t + pauseMs * 2 + leg, x, high]);
+  }
+  return keys;
+}
+
 const MAIN = { x: 240, y: 560, width: 800, height: 80 };
+
+// Bologna (#433): le finestre dei pezzi. La Garisenda c'è dalle torri al crollo, l'Asinelli resta; la rampa e i detriti
+// arrivano dopo il crollo e restano; il tetto dell'Asinelli e i suoi pezzi sono della zuffa
+const BOLOGNA_FROM_TOWERS: TimeWindows = [[BOLOGNA.towersMs, BOLOGNA.horizonMs]];
+const BOLOGNA_GARISENDA: TimeWindows = [[BOLOGNA.towersMs, BOLOGNA.collapseMs]];
+const BOLOGNA_RAMP: TimeWindows = [[BOLOGNA.rampMs, BOLOGNA.horizonMs]];
+const BOLOGNA_BRAWL: TimeWindows = [[BOLOGNA.brawlMs, BOLOGNA.horizonMs]];
+const BOLOGNA_PIAZZA: TimeWindows = [[0, BOLOGNA.towersMs]];
 
 export const STAGES: Record<string, StageSpec> = {
   // L'arena di partenza: un palco principale e tre piattaforme sottili
@@ -919,6 +955,135 @@ export const STAGES: Record<string, StageSpec> = {
     ],
     song: { id: SALA_PROVE.id, lengthMs: SALA_PROVE.lengthMs, bpm: SALA_PROVE.bpm },
     music: { bpm: SALA_PROVE.bpm, chords: ["Am", "F", "C", "G"], lead: "square" }, // se il brano non si carica
+  },
+  // Bologna (#433, nome provvisorio): arena a squadre che cambia col tempo dell'arena. Solo dati e colori semplici, i disegni verranno.
+  // Squadra 1 sulla Garisenda (sinistra), squadra 2 sull'Asinelli (destra), una piazza larga e alta 2400 con il suolo a y 2000
+  // 1) "Sotto le Torri" 0-45 s: piazza, portici e traffico leggero. 2) "Ognuno sulla sua torre" fino a 2:30: l'ingorgo
+  // fa male a terra e ognuno sale sulla sua torre. 3) "Crolla la Garisenda" fino a 2:45: la torre cede, la rampa la appoggia
+  // all'Asinelli. 4) "La grande zuffa": in cima, con merli che lampeggiano, vento, fulmini e dalle 4:30 la polvere che sale.
+  // Le torri sono pari: 8 pezzi utili e 2 postazioni ciascuna, con un salto di 300 px in mezzo. La Garisenda è più larga e
+  // bassa (passi da 95 px, cima a y 1180), l'Asinelli più stretta e alta (passi da 120 px, cima a y 980).
+  bologna: {
+    id: "bologna",
+    name: "Bologna",
+    width: 2200,
+    height: 2400,
+    solids: [
+      { x: 100, y: 2000, width: 2000, height: 400 }, // la piazza (via Rizzoli ci passa in mezzo)
+      { x: 400, y: 1940, width: 600, height: 60 }, // la base della Garisenda: parte la squadra 1
+      { x: 1300, y: 1940, width: 400, height: 60 }, // la base dell'Asinelli: parte la squadra 2
+    ],
+    platforms: [
+      // Portici ai lati: il passaggio coperto (y 1880) e il tetto (y 1760). Restano sempre: al riparo dall'ingorgo
+      { x: 100, y: 1880, width: 180 },
+      { x: 100, y: 1760, width: 180 },
+      { x: 1920, y: 1880, width: 180 },
+      { x: 1920, y: 1760, width: 180 },
+      // Garisenda (da 0:45 a 2:30): scala, balconi di legno, finestre. Pezzi 4-11
+      { x: 790, y: 1845, y2: 1940, width: 190, on: BOLOGNA_GARISENDA }, // scala
+      { x: 570, y: 1750, width: 170, on: BOLOGNA_GARISENDA }, // balcone di legno
+      { x: 410, y: 1655, width: 120, on: BOLOGNA_GARISENDA }, // finestra
+      { x: 550, y: 1560, y2: 1655, width: 220, on: BOLOGNA_GARISENDA }, // scala
+      { x: 810, y: 1465, width: 150, on: BOLOGNA_GARISENDA }, // postazione (A) della Garisenda
+      { x: 590, y: 1370, width: 150, on: BOLOGNA_GARISENDA }, // balcone di legno
+      { x: 410, y: 1275, width: 110, on: BOLOGNA_GARISENDA }, // finestra
+      { x: 630, y: 1180, width: 160, on: BOLOGNA_GARISENDA }, // postazione (B) della Garisenda: la cima
+      // Asinelli (da 0:45): stessi pezzi, più stretti e più alti
+      { x: 1310, y: 1820, y2: 1940, width: 140, on: BOLOGNA_FROM_TOWERS }, // scala
+      { x: 1510, y: 1700, width: 130, on: BOLOGNA_FROM_TOWERS }, // balcone di legno
+      { x: 1370, y: 1580, width: 100, on: BOLOGNA_FROM_TOWERS }, // finestra
+      { x: 1500, y: 1460, y2: 1580, width: 150, on: BOLOGNA_FROM_TOWERS }, // scala
+      { x: 1320, y: 1340, width: 140, on: BOLOGNA_FROM_TOWERS }, // postazione (A) dell'Asinelli
+      { x: 1520, y: 1220, width: 130, on: BOLOGNA_FROM_TOWERS }, // balcone di legno
+      { x: 1370, y: 1100, width: 100, on: BOLOGNA_FROM_TOWERS }, // finestra
+      { x: 1470, y: 980, width: 140, on: BOLOGNA_FROM_TOWERS }, // postazione (B) dell'Asinelli: la cima
+      // La Garisenda caduta appoggiata all'Asinelli (da 2:34): una rampa a quattro tratti, dalla base fino alla finestra a mezza altezza
+      { x: 770, y: 1940, y2: 1850, width: 160, on: BOLOGNA_RAMP },
+      { x: 930, y: 1850, y2: 1760, width: 160, on: BOLOGNA_RAMP },
+      { x: 1090, y: 1760, y2: 1670, width: 160, on: BOLOGNA_RAMP },
+      { x: 1250, y: 1670, y2: 1580, width: 160, on: BOLOGNA_RAMP },
+      // Detriti sospesi (da 2:36): una scala di pezzi di torre dalla rampa fino al tetto
+      { x: 1150, y: 1575, width: 120, on: BOLOGNA_RAMP },
+      { x: 960, y: 1480, width: 110, on: BOLOGNA_RAMP },
+      { x: 790, y: 1385, width: 110, on: BOLOGNA_RAMP },
+      { x: 960, y: 1290, width: 110, on: BOLOGNA_RAMP },
+      { x: 1100, y: 1180, width: 110, on: BOLOGNA_RAMP },
+      { x: 1130, y: 1075, width: 100, on: BOLOGNA_RAMP },
+      // La grande zuffa (da 2:45): il tetto dell'Asinelli e quattro merli che lampeggiano, sfasati di 2 s l'uno dall'altro
+      { x: 1270, y: 980, width: 460, on: BOLOGNA_BRAWL },
+      ...[1280, 1390, 1580, 1680].map((x, i) => ({
+        x,
+        y: 900,
+        width: 70,
+        on: blinkWindows(BOLOGNA.brawlMs, BOLOGNA.horizonMs, BOLOGNA.merlonPresentMs, BOLOGNA.merlonGoneMs, i * 2000),
+      })),
+    ],
+    movers: [
+      // Il ponteggio della Garisenda (0:45-2:30): un ascensore fuori dalla torre, fino alla finestra più alta
+      { width: 90, path: [{ x: 300, y: 1940 }, { x: 300, y: 1275 }], periodMs: BOLOGNA.liftPeriodMs, offsetMs: 0,
+        keys: liftKeys(300, 1940, 1275, BOLOGNA.towersMs, BOLOGNA.collapseMs, 15000, 1500), on: BOLOGNA_GARISENDA },
+      // Il montacarichi dell'Asinelli (da 0:45): pari alla Garisenda, fino alla finestra più alta
+      { width: 90, path: [{ x: 1710, y: 1940 }, { x: 1710, y: 1100 }], periodMs: BOLOGNA.liftPeriodMs,
+        keys: liftKeys(1710, 1940, 1100, BOLOGNA.towersMs, BOLOGNA.horizonMs, 20000, 1500), on: BOLOGNA_FROM_TOWERS },
+    ],
+    hazards: [
+      // Traffico leggero della piazza (0-45 s), alto solo 50 px: chi sta sui portici e sulle basi è al riparo
+      { kind: "ciclista", x: 0, y: 0, width: 80, height: 50, damage: 10, knockback: 600, knockbackGrowth: 5, angleDeg: 35, on: BOLOGNA_PIAZZA,
+        travel: { path: [{ x: -160, y: 1950 }, { x: 2260, y: 1950 }], periodMs: 9000, warnMs: 1200, crossMs: 3600, alternate: true } },
+      { kind: "auto", x: 0, y: 0, width: 150, height: 50, damage: 12, knockback: 650, knockbackGrowth: 5, angleDeg: 35, on: BOLOGNA_PIAZZA,
+        travel: { path: [{ x: 2260, y: 1950 }, { x: -260, y: 1950 }], periodMs: 10000, warnMs: 1200, crossMs: 3000, alternate: true, offsetMs: 4500 } },
+      // L'ingorgo in via Rizzoli (da 0:45 a 2:30): ondate di 3 s con 1 s di pausa, a sinistra e a destra sfasate, che lanciano in alto
+      // (verso le torri). offsetMs fa partire il primo giro a 0:45
+      ...[{ x: 100, offsetMs: 3000 }, { x: 1100, offsetMs: 1000 }].map(({ x, offsetMs }) => ({
+        kind: "ingorgo", x, y: 1944, width: 1000, height: 56, damage: 7, knockback: 650, knockbackGrowth: 4, angleDeg: 85,
+        periodMs: BOLOGNA.jamPeriodMs, activeMs: BOLOGNA.jamActiveMs, offsetMs, on: BOLOGNA_GARISENDA,
+      })),
+      // I mattoni della Garisenda (2:30-2:36): cadono dalla cima sulla sua base. L'ultimo punto un pixel a sinistra per i
+      // pari fa lanciare a sinistra, per i dispari a destra (la trappola che viaggia lancia verso dove va)
+      ...[420, 520, 620, 720, 830].map((x, i) => ({
+        kind: "mattone", x: 0, y: 0, width: 70, height: 70, damage: 9, knockback: 600, knockbackGrowth: 4, angleDeg: 60,
+        on: [[BOLOGNA.collapseMs, BOLOGNA.bricksEndMs]] as TimeWindows,
+        travel: { path: [{ x, y: 1100 }, { x: x + (i % 2 === 0 ? -1 : 1), y: 1930 }], periodMs: 2400, warnMs: 600, crossMs: 1000, offsetMs: (2000 + i * 500) % 2400 },
+      })),
+      // Il fulmine sul punto più alto dell'Asinelli (da 2:45): un lampo di mezzo secondo ogni 20 s
+      { kind: "fulmine", x: 1450, y: 820, width: 120, height: 160, damage: 18, knockback: 800, knockbackGrowth: 6, angleDeg: 90,
+        periodMs: BOLOGNA.lightningPeriodMs, activeMs: 500, offsetMs: 10000, on: BOLOGNA_BRAWL },
+      // La polvere che sale (da 4:30): lenta, resta alta a lungo. Il giro è scritto perché la calma finisca a 4:30 (periodMs - totale)
+      { kind: "polvere", x: 0, y: 1500, width: 2200, height: 300, damage: 8, knockback: 600, knockbackGrowth: 3, angleDeg: 88,
+        on: [[BOLOGNA.dustMs, BOLOGNA.horizonMs]],
+        flood: { highY: 1000, periodMs: BOLOGNA.dustMs + 193000, warnMs: 8000, riseMs: 60000, holdMs: 120000, fallMs: 5000, lowSafe: true } },
+    ],
+    // Le raffiche della cima (da 2:45): una a sinistra e una a destra, sfasate di mezzo giro
+    jets: (["left", "right"] as const).map((dir, i) => ({
+      x: 1130, y: 1040, width: 600, height: 300, speed: 600, dir,
+      periodMs: BOLOGNA.windPeriodMs, warnMs: 1500, activeMs: 2500, offsetMs: i * (BOLOGNA.windPeriodMs / 2), on: BOLOGNA_BRAWL,
+    })),
+    phases: [
+      { id: "piazza", name: "Sotto le Torri", startMs: 0,
+        blastZone: { left: -180, right: 2380, top: 1300, bottom: 2500 }, respawn: { x: 1150, y: 1500 },
+        camera: { minZoom: 0.5, maxZoom: 1.1, floorY: 2080 } },
+      { id: "torri", name: "Ognuno sulla sua torre", startMs: BOLOGNA.towersMs, announce: "INGORGO IN VIA RIZZOLI!", warnMs: 5000,
+        blastZone: { left: -180, right: 2380, top: 300, bottom: 2500 }, respawn: { x: 1150, y: 1100 },
+        camera: { minZoom: 0.45, maxZoom: 1.0, floorY: 2080 } },
+      { id: "crollo", name: "Crolla la Garisenda", startMs: BOLOGNA.collapseMs, announce: "LA GARISENDA CEDE!", warnMs: 6000,
+        blastZone: { left: -180, right: 2380, top: 300, bottom: 2500 }, respawn: { x: 1150, y: 1100 },
+        camera: { minZoom: 0.45, maxZoom: 1.0, floorY: 2080 } },
+      // TODO community: la scritta della zuffa (provvisoria)
+      { id: "zuffa", name: "La grande zuffa", startMs: BOLOGNA.brawlMs, announce: "TUTTI SULL'ASINELLI!", warnMs: 5000,
+        blastZone: { left: -180, right: 2380, top: 100, bottom: 1650 }, respawn: { x: 1500, y: 740 },
+        camera: { minZoom: 0.5, maxZoom: 1.1, floorY: 1350 } },
+    ],
+    camera: { minZoom: 0.5, maxZoom: 1.1, floorY: 2080 },
+    blastZone: { left: -180, right: 2380, top: 1300, bottom: 2500 }, // come la prima fase
+    // Prime otto partenze: quattro sulla base della Garisenda (squadra 1), quattro su quella dell'Asinelli (squadra 2)
+    spawns: [
+      { x: 460, y: 1940, team: 1 }, { x: 570, y: 1940, team: 1 }, { x: 680, y: 1940, team: 1 }, { x: 790, y: 1940, team: 1 },
+      { x: 1360, y: 1940, team: 2 }, { x: 1450, y: 1940, team: 2 }, { x: 1550, y: 1940, team: 2 }, { x: 1640, y: 1940, team: 2 },
+    ],
+    respawn: { x: 1150, y: 1500 },
+    // "La Rossa": mattoni caldi con il bordo chiaro, legno ocra, cielo del tramonto; lontano dai colori dei giocatori (stile-grafico, sez. 7)
+    colors: { sky: 0x3b2634, solid: 0x8a4a35, solidEdge: 0xf0d9b5, platform: 0xc49a5a },
+    music: { bpm: 112, chords: ["Dm", "Bb", "F", "C"], lead: "triangle" },
   },
 };
 

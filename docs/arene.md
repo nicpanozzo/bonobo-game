@@ -260,6 +260,8 @@ phases: [
 ],
 ```
 
+L'esempio completo è **Bologna** (`bologna` in `stages.ts`, #433): arena a squadre di 2200×2400 con quattro fasi (piazza, torri, crollo della Garisenda, zuffa sull'Asinelli) fatta di pezzi a tempo, trappole che viaggiano, raffiche e polvere che sale; i tempi sono in `BOLOGNA` (`constants.ts`) e `blinkWindows` scrive le finestre dei merli che lampeggiano.
+
 ### Musica (`music`)
 
 Facoltativa: senza, in partita si sente la musica di sempre. È un preset per il sintetizzatore del gioco (`audio.gd`), più un brano registrato facoltativo.
