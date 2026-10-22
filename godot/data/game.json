@@ -8502,22 +8502,6 @@
       ],
       "prizeAtMs": 150000,
       "prizeShowMs": 165000,
-      "art": {
-        "layers": [],
-        "collapse": {
-          "atMs": 150000,
-          "durationMs": 4000,
-          "pivot": {
-            "x": 830,
-            "y": 1940
-          },
-          "height": 780,
-          "width": 260,
-          "toDeg": 62,
-          "warnMs": 6000,
-          "standFromMs": 0
-        }
-      },
       "camera": {
         "minZoom": 0.5,
         "maxZoom": 1.1,
@@ -8590,6 +8574,381 @@
           "C"
         ],
         "lead": "triangle"
+      },
+      "art": {
+        "verticalParallax": 1,
+        "scale": 0.5,
+        "collapse": {
+          "atMs": 150000,
+          "durationMs": 4000,
+          "pivot": {
+            "x": 830,
+            "y": 1940
+          },
+          "height": 780,
+          "width": 260,
+          "toDeg": 62,
+          "warnMs": 6000,
+          "standFromMs": 0
+        },
+        "layers": [
+          {
+            "file": "sfondo-0.png",
+            "parallax": 0.1
+          },
+          {
+            "file": "sfondo-1.png",
+            "parallax": 0.4
+          },
+          {
+            "file": "sfondo-2.png",
+            "parallax": 0.85
+          }
+        ],
+        "preview": "anteprima.png",
+        "previewFull": true,
+        "skins": {
+          "piazza": {
+            "file": "piazza.png",
+            "edge": "bordo.png"
+          },
+          "base": {
+            "file": "base.png",
+            "edge": "bordo.png"
+          },
+          "legno": {
+            "file": "legno.png",
+            "edge": "bordo-legno.png",
+            "depth": 14
+          },
+          "davanzale": {
+            "file": "davanzale.png",
+            "edge": "bordo.png",
+            "depth": 12
+          },
+          "portico": {
+            "file": "portico.png",
+            "edge": "bordo.png",
+            "depth": 18
+          },
+          "coppi": {
+            "file": "coppi.png",
+            "edge": "bordo-coppi.png",
+            "depth": 22
+          },
+          "mattoni": {
+            "file": "mattoni.png",
+            "edge": "bordo.png",
+            "depth": 24
+          },
+          "merlo": {
+            "file": "merlo.png",
+            "edge": "bordo.png",
+            "depth": 80
+          }
+        },
+        "solidSkin": "base",
+        "platformSkin": "legno",
+        "pieces": {
+          "solids": [
+            "piazza",
+            "base",
+            "base"
+          ],
+          "platforms": [
+            "portico",
+            "coppi",
+            "portico",
+            "coppi",
+            "legno",
+            "legno",
+            "davanzale",
+            "legno",
+            "legno",
+            "legno",
+            "davanzale",
+            "legno",
+            "legno",
+            "legno",
+            "davanzale",
+            "legno",
+            "legno",
+            "legno",
+            "davanzale",
+            "mattoni",
+            "mattoni",
+            "mattoni",
+            "mattoni",
+            "mattoni",
+            "mattoni",
+            "mattoni",
+            "mattoni",
+            "mattoni",
+            "mattoni",
+            "mattoni",
+            "mattoni",
+            "merlo",
+            "merlo",
+            "merlo",
+            "merlo"
+          ]
+        },
+        "props": [
+          {
+            "file": "portico-casa.png",
+            "x": 45,
+            "y": 2520
+          },
+          {
+            "file": "portico-casa.png",
+            "x": 2155,
+            "y": 2520,
+            "flip": true
+          },
+          {
+            "file": "asinelli.png",
+            "x": 1560,
+            "y": 1945
+          },
+          {
+            "file": "cantiere.png",
+            "x": 700,
+            "y": 1942
+          },
+          {
+            "file": "statua.png",
+            "x": 1150,
+            "y": 2000
+          },
+          {
+            "file": "lampione.png",
+            "x": 330,
+            "y": 2000
+          },
+          {
+            "file": "lampione.png",
+            "x": 1040,
+            "y": 2000
+          },
+          {
+            "file": "lampione.png",
+            "x": 1260,
+            "y": 2000
+          },
+          {
+            "file": "lampione.png",
+            "x": 1860,
+            "y": 2000
+          },
+          {
+            "file": "cartello.png",
+            "x": 1770,
+            "y": 2000
+          }
+        ],
+        "life": {
+          "rain": {
+            "periodMs": 900000,
+            "rainMs": 750000,
+            "offsetMs": 750000
+          },
+          "sheets": {
+            "nuvole": {
+              "file": "nuvole.png",
+              "frames": 4
+            },
+            "gabbiano": {
+              "file": "gabbiano.png",
+              "frames": 8
+            },
+            "rondine": {
+              "file": "rondine.png",
+              "frames": 4
+            },
+            "pipistrello": {
+              "file": "pipistrello.png",
+              "frames": 4
+            },
+            "piccione": {
+              "file": "piccione.png",
+              "frames": 6
+            },
+            "passanti": {
+              "file": "passanti.png",
+              "frames": 8,
+              "rows": 9
+            },
+            "ombrelli": {
+              "file": "ombrelli.png",
+              "frames": 4
+            },
+            "auto": {
+              "file": "auto.png",
+              "frames": 5
+            },
+            "furgone": {
+              "file": "furgone.png",
+              "frames": 1
+            },
+            "vespa": {
+              "file": "vespa.png",
+              "frames": 2
+            },
+            "bici": {
+              "file": "bici.png",
+              "frames": 4
+            },
+            "bus": {
+              "file": "bus.png",
+              "frames": 1
+            }
+          },
+          "birds": {
+            "y": 880,
+            "parallax": 0.2,
+            "everyMs": 16000
+          },
+          "flyers": {
+            "y": 1150,
+            "parallax": 0.6,
+            "count": 6
+          },
+          "pigeons": [
+            {
+              "x": 1152,
+              "y": 1717
+            },
+            {
+              "x": 1302,
+              "y": 982
+            },
+            {
+              "x": 1698,
+              "y": 982
+            },
+            {
+              "x": 130,
+              "y": 1760
+            },
+            {
+              "x": 2070,
+              "y": 1760
+            },
+            {
+              "x": 860,
+              "y": 1858
+            }
+          ],
+          "walkers": {
+            "y": 1778,
+            "parallax": 0.85,
+            "count": 10,
+            "umbrellas": true
+          },
+          "traffic": {
+            "y": 1832,
+            "parallax": 0.85,
+            "everyMs": 2600,
+            "kinds": [
+              "auto",
+              "auto",
+              "bici",
+              "bici",
+              "vespa",
+              "vespa",
+              "bus",
+              "furgone"
+            ]
+          },
+          "daycycle": {
+            "cycleMs": 1000000,
+            "startAt": 0.11,
+            "sky": true,
+            "lamps": [
+              {
+                "x": -90,
+                "y": 1714,
+                "parallax": 0.85
+              },
+              {
+                "x": 330,
+                "y": 1714,
+                "parallax": 0.85
+              },
+              {
+                "x": 700,
+                "y": 1714,
+                "parallax": 0.85
+              },
+              {
+                "x": 1500,
+                "y": 1714,
+                "parallax": 0.85
+              },
+              {
+                "x": 1880,
+                "y": 1714,
+                "parallax": 0.85
+              },
+              {
+                "x": 2290,
+                "y": 1714,
+                "parallax": 0.85
+              }
+            ],
+            "lightLayers": [
+              {
+                "file": "sfondo-0-luci.png",
+                "parallax": 0.1
+              },
+              {
+                "file": "sfondo-1-luci.png",
+                "parallax": 0.4
+              },
+              {
+                "file": "sfondo-2-luci.png",
+                "parallax": 0.85
+              }
+            ],
+            "lightProps": [
+              {
+                "file": "asinelli-luci.png",
+                "x": 1560,
+                "y": 1945
+              },
+              {
+                "file": "portico-casa-luci.png",
+                "x": 45,
+                "y": 2520
+              },
+              {
+                "file": "portico-casa-luci-dx.png",
+                "x": 2155,
+                "y": 2520
+              },
+              {
+                "file": "lampione-luci.png",
+                "x": 330,
+                "y": 2000
+              },
+              {
+                "file": "lampione-luci.png",
+                "x": 1040,
+                "y": 2000
+              },
+              {
+                "file": "lampione-luci.png",
+                "x": 1260,
+                "y": 2000
+              },
+              {
+                "file": "lampione-luci.png",
+                "x": 1860,
+                "y": 2000
+              }
+            ]
+          }
+        }
       }
     }
   },
