@@ -6,6 +6,7 @@ import { FIGHTER, HAZARD, HITSTOP, HITSTUN_PER_KNOCKBACK, PAD, TICK_RATE, WIND }
 import type { Hazard, Jet, MovingPlatform, SoundPad } from "../stages";
 import type { Fighter, PhysicsContext } from "./fighter";
 import { chargeFromHit } from "./supreme";
+import { pieceOn } from "./timed";
 
 const mod = (a: number, b: number) => ((a % b) + b) % b;
 
@@ -220,7 +221,7 @@ export function resolveHazards(fighters: Fighter[], ctx: PhysicsContext): void {
   const t = ctx.timeMs ?? 0;
   const half = FIGHTER.width / 2;
   hazards.forEach((h, index) => {
-    if (!hazardActive(h, t)) return;
+    if (!pieceOn(h, t) || !hazardActive(h, t)) return; // fuori dalle sue finestre la trappola non c'è (#433)
     if (h.travel && travelPhase(h, t).phase !== "cross") return; // fuori scena o durante l'avviso non fa male (#229)
     if (h.flood?.lowSafe && ["calm", "warn"].includes(floodPhase(h, t).phase)) return; // l'acqua bassa non fa male (#253)
     const r = hazardRect(h, t); // con l'acqua alta la superficie cambia nel tempo (#228), il ciclista viaggia (#229)
@@ -281,7 +282,7 @@ export function applyJets(fighters: Fighter[], ctx: PhysicsContext, dtMs = 1000 
   const t = ctx.timeMs ?? 0;
   const half = FIGHTER.width / 2;
   for (const j of jets) {
-    if (jetPhase(j, t) !== "active") continue;
+    if (!pieceOn(j, t) || jetPhase(j, t) !== "active") continue; // getto a tempo (#433)
     for (const f of fighters) {
       if (f.eliminated || f.respawning || f.ledgeIndex >= 0) continue;
       const inside = f.x + half > j.x && f.x - half < j.x + j.width && f.y > j.y - j.height && f.y - FIGHTER.height < j.y;

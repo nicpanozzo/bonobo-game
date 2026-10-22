@@ -34,9 +34,14 @@ func _draw() -> void:
 		draw_texture_rect(preview, Rect2((size.x - ph * 16.0 / 9.0) / 2, (size.y - ph) / 2, ph * 16.0 / 9.0, ph), false)
 		if not draws_pieces(spec):
 			return # l'immagine mostra già il palco (#284): i pezzi in tinta unita la coprirebbero
+	# L'arena com'è all'inizio (#433): i pezzi a tempo che arrivano dopo non si mostrano
 	for s in spec.solids:
+		if not PredictMovement.piece_on(s, 0.0):
+			continue
 		draw_rect(Rect2(o + Vector2(s.x, s.y) * k, Vector2(s.width, s.height) * k), _c(spec.colors.solid))
 	for p in spec.platforms:
+		if not PredictMovement.piece_on(p, 0.0):
+			continue
 		if PredictMovement.curved(p):
 			draw_colored_polygon(StageMotion.arch_polygon(p, 2.0 / k, k, o), _c(spec.colors.platform)) # ponte ad arco (#244) o scala (#246)
 		else:

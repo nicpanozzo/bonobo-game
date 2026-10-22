@@ -12,7 +12,11 @@ export interface Rect {
   y: number; // superficie su cui si cammina
   width: number;
   height: number;
+  on?: TimeWindows; // pezzo a tempo (#433): c'è solo dentro queste finestre del tempo dell'arena; senza, sempre
 }
+
+// Finestre [da ms, a ms) del tempo dell'arena (#433): fuori il pezzo non c'è, niente ci sta sopra, fa male o spinge
+export type TimeWindows = [number, number][];
 
 export interface ThinPlatform {
   x: number; // bordo sinistro
@@ -20,6 +24,7 @@ export interface ThinPlatform {
   width: number;
   arch?: number; // piattaforma ad arco (#244): pixel di cui sale la superficie al centro, come un ponte
   y2?: number; // piattaforma inclinata (#246): altezza dell'estremità destra (y è la sinistra), come una scala
+  on?: TimeWindows; // pezzo a tempo (#433), come quello dei blocchi pieni
 }
 
 // Piattaforma sottile che si muove (ascensore, montacarichi). La posizione dipende solo dal
@@ -304,6 +309,21 @@ export interface Jet {
   activeMs: number; // durata del getto
   offsetMs?: number;
   idle?: number; // solo grafica (#288): pixel dello zampillo a riposo, come una fontana che non si spegne mai
+  on?: TimeWindows; // getto a tempo (#433): fuori dalle finestre non c'è, nemmeno le bolle
+}
+
+// Fase di un'arena che cambia durante la partita (#433). La fase attiva al tempo t è l'ultima con startMs <= t.
+// blastZone e respawn, se ci sono, prendono il posto di quelli dell'arena (la fisica li legge da stageAt in
+// physics/timed.ts); name, announce, warnMs e camera sono solo per il client (scritta della fase, telecamera).
+export interface StagePhase {
+  id: string; // nome stabile per il codice e i test
+  name: string; // nome da mostrare
+  startMs: number; // da quando vale, nel tempo dell'arena; la prima fase parte da 0
+  announce?: string; // la scritta all'arrivo della fase
+  warnMs?: number; // quanto prima di startMs il client avvisa
+  blastZone?: { left: number; right: number; top: number; bottom: number }; // zone di espulsione della fase
+  respawn?: { x: number; y: number }; // dove si ricompare durante la fase
+  camera?: StageCamera; // zoom della telecamera durante la fase
 }
 
 // Zona dove gli oggetti cadono più spesso (#253): una striscia di superficie con un peso. Senza zone, gli oggetti
@@ -334,6 +354,7 @@ export interface StageSpec {
   movers?: MovingPlatform[];
   hazards?: Hazard[];
   jets?: Jet[]; // getti d'acqua a tempo che spingono in alto (#253)
+  phases?: StagePhase[]; // l'arena cambia a fasi durante la partita (#433), in ordine di startMs
   itemSpots?: ItemSpot[]; // zone dove gli oggetti cadono più spesso (#253)
   music?: StageMusic; // musica della partita (E12 passo 4)
   song?: StageSong; // arena musicale (#423): il brano registrato a cui sono legate le piattaforme

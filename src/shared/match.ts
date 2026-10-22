@@ -7,6 +7,7 @@ import { COLORS, FIGHTER, GAME_SPEED, ITEM_AMOUNTS, MATCH_RESTART_MS, MAX_PLAYER
 import { bufferPresses, createFighter, emptyInput, resetForMatch, stepWorld, type Fighter, type PhysicsContext } from "./physics";
 import { createItemWorld, handleItemInput, itemStates, resetItems, stepItems, type ItemWorld } from "./physics/items";
 import { companionState } from "./physics/companion";
+import { stageIsTimed } from "./physics/timed";
 import { tetrisState } from "./physics/arcade";
 import { createProjectileWorld, projectileStates, puddleStates, type ProjectileWorld } from "./physics/projectiles";
 import { canHitWithRules, flagWinnerTeam, isTeamMode, lastStanding, leaderOnTime, requestedTeam, sanitizeRules } from "./rules";
@@ -383,6 +384,7 @@ export class Match {
     if (this.items) resetItems(this.items);
     this.projectiles.puddles = [];
     this.ctx.arcade = undefined; // via pezzi e blocchi del Tetris (#427)
+    if (stageIsTimed(this.stage)) this.ctx.timeMs = 0; // un'arena a fasi (#433) riparte dalla prima; le altre non saltano
     this.projectiles.list = []; // gli id continuano: un client non confonde un proiettile vecchio con uno nuovo
     for (const f of this.fighters.values()) {
       const teamRank = isTeamMode(this.rules) ? this.teamBySlot(f.team).indexOf(f) : 0; // #433

@@ -254,14 +254,14 @@ func on_snapshot(data: Dictionary) -> void:
 		var h: Dictionary = stage_hazards[i]
 		if not h.get("travel") is Dictionary:
 			continue
-		var phase: String = StageMotion.travel_phase(h, stage_ms).phase
+		var phase: String = StageMotion.travel_phase(h, stage_ms).phase if PredictMovement.piece_on(h, stage_ms) else "calm" # #433
 		var cue := travel_cue(str(_travel.get(i, "")), phase)
 		if cue != "":
 			_play(cue, {"x": StageMotion.hazard_rect(h, stage_ms).get_center().x})
 		_travel[i] = phase
 	for i in stage_jets.size():
 		var j: Dictionary = stage_jets[i]
-		var jp: String = StageMotion.jet_phase(j, stage_ms)
+		var jp: String = StageMotion.jet_phase(j, stage_ms) if PredictMovement.piece_on(j, stage_ms) else "calm" # getto a tempo (#433)
 		var before := str(_jets.get(i, ""))
 		if before != "" and before != jp:
 			if jp == "warn":

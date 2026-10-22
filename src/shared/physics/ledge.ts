@@ -81,6 +81,20 @@ export function tryGrabLedge(f: Fighter, fighters: readonly Fighter[], ctx: Phys
   }
 }
 
+// Quando cambiano i blocchi a tempo (#433) cambiano gli spigoli: chi è appeso resta al suo, o cade se non c'è più
+export function remapLedges(fighters: readonly Fighter[], before: StageSpec, after: StageSpec): void {
+  if (!fighters.some((f) => f.ledge)) return;
+  const old = ledgesOf(before);
+  const now = ledgesOf(after);
+  for (const f of fighters) {
+    if (!f.ledge) continue;
+    const l = old[f.ledgeIndex];
+    const i = l ? now.findIndex((n) => n.x === l.x && n.y === l.y && n.side === l.side) : -1;
+    if (i >= 0) f.ledgeIndex = i;
+    else releaseLedge(f);
+  }
+}
+
 export function releaseLedge(f: Fighter): void {
   f.ledge = null;
   f.ledgeIndex = -1;

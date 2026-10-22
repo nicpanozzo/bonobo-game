@@ -71,6 +71,20 @@ static func mover_on(m: Dictionary, t: float) -> bool:
 	return false
 
 
+# Pezzo a tempo (#433), solo per il disegno: 1 mentre c'è, 0 quando non c'è. Compare sfumando negli ultimi
+# PIECE_FADE_MS prima della sua finestra e sparisce sfumando negli ultimi della finestra: si vede che sta cambiando.
+# Se c'è o no lo dice piece_on() in predict/movement.gd, come pieceOn() in physics/timed.ts
+const PIECE_FADE_MS := 300.0
+
+static func piece_alpha(p: Dictionary, t: float) -> float:
+	if not (p.get("on") is Array):
+		return 1.0
+	var best := 0.0
+	for w: Array in p.on:
+		best = maxf(best, clampf(minf(t - float(w[0]) + PIECE_FADE_MS, float(w[1]) - t) / PIECE_FADE_MS, 0.0, 1.0))
+	return best
+
+
 # Bottoni sonori (#423): come padFx() in physics/elements.ts. pressed = snapshot.pads (stageMs delle pressioni)
 static func pad_fx(m: Dictionary, t: float, pads: Array, pressed: Array, ramp_ms: float) -> Dictionary:
 	var fx := {"on": false, "dy": 0.0}
