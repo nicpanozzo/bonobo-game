@@ -61,7 +61,7 @@ export interface SoundPad {
 // Postazione (#433): un pezzo di pavimento da cui si guida qualcosa, come in Lovers in a Dangerous Spacetime. Chi ci sta
 // sopra a terra e preme attacco la usa coi suoi tasti (su e giù, attacco; salto per uscire). Logica in physics/stations.ts
 export interface Station {
-  kind: "bombarda" | "munizioni"; // bombarda: spara palle di mortadella; munizioni: carica le casse per una bombarda
+  kind: "bombarda" | "munizioni" | "gru"; // bombarda: spara palle di mortadella; munizioni: carica le casse per una bombarda; gru: cala pezzi del Tetris
   x: number; // bordo sinistro dell'area su cui si sta
   y: number; // superficie
   width: number;
@@ -79,6 +79,11 @@ export interface Station {
   loadMs?: number; // ms di attacco tenuto per caricare una cassa
   deliveryMs?: number; // ms di salita della cassa (l'ascensore disegnato resta una piattaforma mobile normale)
   crate?: number; // palle in una cassa
+  // Gru (pezzi del Tetris): destra/sinistra spostano il pezzo, attacco leggero o su lo girano, attacco pesante lo lascia cadere
+  fromX?: number; // bordo sinistro del tratto su cui si sposta il pezzo (e dove restano i blocchi): multiplo di TETRIS.cellPx
+  toX?: number; // bordo destro
+  dropY?: number; // altezza del fondo del pezzo appeso
+  landY?: number; // altezza a cui i pezzi si posano (il ripiano): i blocchi che restano sono qui sopra
 }
 
 export interface PadEffect {
@@ -403,7 +408,7 @@ export interface StageSpec {
   music?: StageMusic; // musica della partita (E12 passo 4)
   song?: StageSong; // arena musicale (#423): il brano registrato a cui sono legate le piattaforme
   pads?: SoundPad[]; // bottoni sonori (#423)
-  stations?: Station[]; // postazioni: bombarde e munizioni (#433)
+  stations?: Station[]; // postazioni: bombarde, munizioni e gru (#433)
   art?: StageArt; // sfondo a strati (E12 passo 3)
   // Nascosta (#408): resta nella repo e il server la avvia ancora per id, ma la lobby non la mostra e non può essere
   // l'arena predefinita. Per rimetterla in gioco basta togliere il campo.
@@ -1132,6 +1137,10 @@ export const STAGES: Record<string, StageSpec> = {
       { kind: "munizioni", x: 400, y: 1940, width: 110, team: 1, feeds: 0, on: BOLOGNA_GARISENDA },
       { kind: "bombarda", x: 1475, y: 980, width: 130, team: 2, dir: -1, aimMinDeg: BOLOGNA.aimMinDeg, aimMaxDeg: BOLOGNA.aimMaxDeg, ammoMax: 6, ballSpeedPxS: BOLOGNA.ballSpeedPxS, autoAmmoMs: BOLOGNA.autoAmmoMs, on: BOLOGNA_ASINELLI_STATIONS },
       { kind: "munizioni", x: 1590, y: 1940, width: 110, team: 2, feeds: 2, on: BOLOGNA_ASINELLI_STATIONS },
+      // Le gru (in fondo: gli indici sopra non cambiano): sulla finestra in alto di ogni torre, calano pezzi del Tetris sul ripiano
+      // di y 1280 accanto al tetto dell'Asinelli, dalla propria parte. I blocchi posati restano fino alla fine: piattaforme per la zuffa
+      { kind: "gru", x: 410, y: 1275, width: 110, team: 1, fromX: 1000, toX: 1240, dropY: 1000, landY: 1280, on: BOLOGNA_GARISENDA },
+      { kind: "gru", x: 1370, y: 1100, width: 100, team: 2, fromX: 1760, toX: 2000, dropY: 1000, landY: 1280, on: BOLOGNA_ASINELLI_STATIONS },
     ],
     // Il premio: chi ha più punti torre al crollo trova dei ponteggi nella zuffa
     prizeAtMs: BOLOGNA.collapseMs,

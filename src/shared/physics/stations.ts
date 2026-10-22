@@ -5,7 +5,8 @@
 //   useStation()    dentro stepFighter, al posto dei controlli: entra, mira, spara, carica, esce
 //   stepStations()  alla fine di stepWorld: chi è stato colpito esce, casse e munizioni, palle di mortadella in volo
 // Tipi: "bombarda" spara palle di mortadella ad arco (+1 punto torre alla squadra per ogni avversario preso);
-// "munizioni" carica casse tenendo attacco, che dopo deliveryMs arrivano alla bombarda di `feeds`.
+// "munizioni" carica casse tenendo attacco, che dopo deliveryMs arrivano alla bombarda di `feeds`; "gru" cala pezzi del Tetris
+// (crane.ts): destra/sinistra li spostano, attacco leggero o su li girano, attacco pesante li lascia cadere.
 
 import { STATION } from "../constants";
 import type { Station } from "../stages";
@@ -13,6 +14,7 @@ import type { CannonballState, StationState } from "../types";
 import { arcadeHit, isArcade } from "./arcade";
 import { bodyBox, canBeHit, overlap } from "./attacks";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
+import { hangCells, newHeld, steerCrane, type Held } from "./crane";
 import { pieceOn } from "./timed";
 
 interface Slot {
@@ -23,6 +25,8 @@ interface Slot {
   autoAt: number; // tempo dell'arena della prossima palla automatica (autoAmmoMs)
   loadAt: number | null; // munizioni: quando è pronta la cassa in carica
   crates: number[]; // munizioni: arrivo delle casse in salita
+  held: Held | null; // gru: il pezzo appeso
+  nextAt: number; // gru: tempo dell'arena da cui pende il pezzo nuovo
 }
 
 interface Ball extends CannonballState {
@@ -47,7 +51,7 @@ function world(ctx: PhysicsContext): StationWorld {
   ctx.stations ??= {
     slots: (ctx.stage.stations ?? []).map((s) => {
       const [lo, hi] = aimRange(s);
-      return { user: null, aim: Math.round((lo + hi) / 2), ammo: Math.min(STATION.startAmmo, ammoMax(s)), readyAt: 0, autoAt: t + (s.autoAmmoMs ?? Infinity), loadAt: null, crates: [] };
+      return { user: null, aim: Math.round((lo + hi) / 2), ammo: Math.min(STATION.startAmmo, ammoMax(s)), readyAt: 0, autoAt: t + (s.autoAmmoMs ?? Infinity), loadAt: null, crates: [], held: null, nextAt: 0 };
     }),
     balls: [],
     nextId: 1,
@@ -123,7 +127,12 @@ export function useStation(f: Fighter, dtMs: number, ctx: PhysicsContext): boole
     return true;
   }
   if (s.kind === "bombarda") aimAndFire(f, s, slot, i, dtMs, w, ctx);
-  else loadCrate(f, s, slot, i, list, w, t, ctx);
+  else if (s.kind === "gru") {
+    if (steerCrane(f, s, i, slot.held, dtMs, ctx)) {
+      slot.held = null;
+      slot.nextAt = t + STATION.gruCooldownMs;
+    }
+  } else loadCrate(f, s, slot, i, list, w, t, ctx);
   return true;
 }
 
@@ -210,6 +219,10 @@ export function stepStations(fighters: Fighter[], dtMs: number, ctx: PhysicsCont
         event(ctx, "ammo", s.feeds!, null, fed.x + fed.width / 2, fed.y);
       }
     }
+    if (s.kind === "gru") {
+      if (!pieceOn(s, t)) slot.held = null; // fuori finestra la gru non c'è
+      else if (!slot.held && t >= slot.nextAt) slot.held = newHeld(s, ctx);
+    }
     if (s.kind === "bombarda" && s.autoAmmoMs) {
       if (slot.ammo >= ammoMax(s)) slot.autoAt = t + s.autoAmmoMs; // piena: il conto riparte quando spara
       else if (t >= slot.autoAt) {
@@ -259,7 +272,7 @@ function stepBalls(fighters: Fighter[], dtMs: number, w: StationWorld, ctx: Phys
   w.balls = w.balls.filter((b) => !gone.has(b));
 }
 
-// Rivincita: postazioni libere, munizioni e punti da capo
+// Rivincita: postazioni libere, munizioni, punti e gru da capo (i blocchi della gru stanno in ctx.arcade, che la rivincita azzera)
 export function resetStations(fighters: Fighter[], ctx: PhysicsContext): void {
   ctx.stations = undefined;
   for (const f of fighters) f.station = undefined;
@@ -274,6 +287,7 @@ export function stationSnapshot(ctx: PhysicsContext): { stations?: StationState[
     ...(w.prize && { prizeTeam: w.prize }),
     stations: list.map((s, i) => {
       const slot = w.slots[i];
+      if (s.kind === "gru") return { user: slot.user, readyAt: Math.round(slot.nextAt), ...(slot.held && { piece: { kind: slot.held.kind, cells: hangCells(s, slot.held) } }) };
       if (s.kind === "bombarda") return { user: slot.user, aim: Math.round(slot.aim), ammo: slot.ammo, readyAt: Math.round(slot.readyAt) };
       return { user: slot.user, ...(slot.loadAt !== null && { load: Math.round(slot.loadAt) }), crates: slot.crates.map(Math.round) };
     }),
