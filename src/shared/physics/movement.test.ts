@@ -235,3 +235,22 @@ describe("preparazione al salto e atterraggio, come Smash (#384 A3)", () => {
     assert.equal(f.attack, "light", "il tasto premuto alla fine della pausa parte subito dopo (buffer)");
   });
 });
+
+describe("schivata sullo scudo", () => {
+  it("in aria il tasto scudo schiva, una volta per volo", () => {
+    const { ctx, f } = setup();
+    Object.assign(f, { x: 640, y: 300, vx: 0, vy: 0, onGround: false });
+    press(f, { shield: true });
+    run(f, ctx, 1);
+    assert.ok(f.dodgeTimer > 0 && f.airDodgeUsed, "lo scudo in aria fa partire la schivata");
+    assert.ok(ctx.events.some((e) => e.type === "dodge" && e.air));
+  });
+
+  it("tenerlo premuto non schiva di nuovo", () => {
+    const { ctx, f } = setup();
+    Object.assign(f, { x: 640, y: 200, vx: 0, vy: 0, onGround: false });
+    press(f, { shield: true });
+    run(f, ctx, 40);
+    assert.equal(ctx.events.filter((e) => e.type === "dodge").length, 1);
+  });
+});

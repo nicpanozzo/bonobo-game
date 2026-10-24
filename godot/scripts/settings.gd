@@ -34,10 +34,10 @@ const DEFAULT_BINDINGS := {
 	"light": [KEY_J],
 	"heavy": [KEY_K],
 	"taunt": [KEY_T],
-	"dodge": [KEY_L],
+	"dodge": [], # la schivata è sullo scudo (scudo + direzione, scudo in aria): il tasto a parte resta per chi lo vuole
 	"shield": [KEY_I], # scudo (#109)
 	"special": [KEY_U], # mosse speciali (E10)
-	"supreme": [KEY_O], # suprema con la barra piena (#101): I è già lo scudo
+	"supreme": [KEY_O], # suprema con la barra piena (#101), scorciatoia di Speciale + Pesante insieme: I è già lo scudo
 	"run": [KEY_SHIFT], # tenuto con una direzione si corre; il pesante correndo è l'attacco in corsa
 }
 const MAX_KEYS := 3 # tasti per azione
@@ -55,8 +55,8 @@ const DEFAULT_PAD_BINDINGS := {
 	"heavy": [JOY_BUTTON_B],
 	"taunt": [JOY_BUTTON_BACK],
 	"special": [JOY_BUTTON_Y], # mosse speciali (E10)
-	"supreme": [JOY_BUTTON_LEFT_STICK], # suprema (#101): levetta sinistra premuta, R3 apre il pannello dell'allenamento
-	"dodge": [JOY_BUTTON_LEFT_SHOULDER],
+	"supreme": [], # suprema (#101): Speciale + Pesante insieme (Y + B), niente tasto a parte
+	"dodge": [], # la schivata è sullo scudo, come in Smash
 	"run": [JOY_BUTTON_RIGHT_SHOULDER], # la corsa sul dorsale destro, che prima era una seconda schivata
 	# Lo scudo (#109) sui grilletti, come nei platform fighter
 	"shield": [AXIS_BASE + JOY_AXIS_TRIGGER_LEFT * 2 + 1, AXIS_BASE + JOY_AXIS_TRIGGER_RIGHT * 2 + 1],

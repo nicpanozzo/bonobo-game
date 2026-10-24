@@ -34,7 +34,7 @@ import { cancelSpecial, specialing } from "./specials";
 import { endDash } from "./dash";
 import { collideWithStage, liftOutOfZone, loseStock, outOfBlastZone, respawn } from "./stage";
 export { platformSurfaceY } from "./stage";
-import { burstFire, stepRewinds, supreming, tickSupreme } from "./supreme";
+import { burstFire, stepRewinds, supreming, tickSupreme, tryComboSupreme } from "./supreme";
 import { landTech, tickTech } from "./tech";
 import { stageAt } from "./timed";
 import { freezePrize, stepStations, useStation } from "./stations";
@@ -137,6 +137,7 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
     f.prevInput = f.input;
     return;
   }
+  tryComboSupreme(f, ctx); // Speciale + Pesante con la barra piena: anche sopra la speciale appena partita
   // Durante la presa, sullo scudo o storditi niente controlli né attacchi
   if (!grabbing(f, dtMs, ctx) && !specialing(f, dtMs, ctx) && !stepLag(f, dtMs, ctx) && !holdShield(f, dtMs, ctx)) {
     applyControls(f, dt, ctx);

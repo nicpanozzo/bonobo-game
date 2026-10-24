@@ -18,9 +18,9 @@ const BUTTONS := {
 	"heavy": {"pos": Vector2(1075, 525), "r": 50.0, "label": "Pesante"},
 	"special": {"pos": Vector2(1195, 465), "r": 46.0, "label": "Speciale"},
 	"shield": {"pos": Vector2(940, 560), "r": 42.0, "label": "Scudo"},
-	"dodge": {"pos": Vector2(930, 670), "r": 42.0, "label": "Schiva"},
-	"supreme": {"pos": Vector2(1210, 345), "r": 36.0, "label": "Suprema"},
+	"supreme": {"pos": Vector2(1210, 345), "r": 36.0, "label": "Suprema"}, # si vede solo a barra piena (supreme_ready)
 }
+# La schivata non ha un tasto: scudo + levetta di lato rotola, lo scudo in aria schiva (come in Smash)
 const PAUSE := {"pos": Vector2(1236, 42), "r": 30.0} # in alto a destra, lontano dal tempo e dalla barra della suprema
 const EXTRA_RECT := Rect2(1110, 92, 152, 46) # sotto la pausa: il primo tasto in più (gli altri scendono)
 const STICK_HOME := Vector2(190, 560) # dove si disegna la levetta a riposo
@@ -52,6 +52,11 @@ var _screen := SCREEN # lo schermo in coordinate dei tasti: più largo di SCREEN
 var _prefs := {}
 var _stick_vec := Vector2.ZERO # spostamento del pollice dall'origine, al massimo STICK_RADIUS
 var _fingers: Dictionary = {} # dito -> nome del tasto che tiene
+var supreme_ready := false: # barra piena: compare il tasto Suprema (main.gd lo aggiorna)
+	set(v):
+		if v != supreme_ready:
+			supreme_ready = v
+			queue_redraw()
 var extras: Dictionary = {}: # tasti in più, nome -> scritta (main.gd li mette e li toglie)
 	set(v):
 		if v != extras:
@@ -212,9 +217,16 @@ static func portrait(window: Vector2) -> bool:
 	return window.y > window.x
 
 
+# La suprema compare solo quando si può fare; gli altri tasti ci sono sempre
+func shown(action: String) -> bool:
+	return action != "supreme" or supreme_ready
+
+
 # Il tasto sotto un punto, o "" se non ce n'è
 func button_at(pos: Vector2) -> String:
 	for action in _buttons:
+		if not shown(action):
+			continue
 		var b: Dictionary = _buttons[action]
 		if pos.distance_to(b.pos) <= b.r * 1.15: # un po' di margine: il pollice non è preciso
 			return action
@@ -288,6 +300,8 @@ func _draw() -> void:
 	draw_arc(origin, _stick_radius, 0, TAU, 48, _white(0.35), 3.0, true)
 	draw_circle(origin + _stick_vec, _stick_radius * 0.42, _white(0.45 if held else 0.25))
 	for action in _buttons:
+		if not shown(action):
+			continue
 		var b: Dictionary = _buttons[action]
 		var down := _fingers.values().has(action)
 		draw_circle(b.pos, b.r, _white(0.40 if down else 0.14))

@@ -170,6 +170,7 @@ export const SUPREME = {
   perSecond: 0.3, // carica al secondo stando in gioco: da sola riempie la barra in 5 minuti e mezzo
   keepOnKo: true, // la barra resta quando si perde una vita (proposta in #101, da confermare)
   invulnerableMs: 350, // ms invulnerabili dall'inizio della suprema: nessuno la interrompe durante l'avvio
+  comboMs: 50, // Speciale + Pesante insieme fanno la suprema: ms entro cui la mossa partita col primo tasto si annulla
 };
 
 // Presa (#109, E8 passo 2): quanto si tiene, come ci si libera, i colpetti
