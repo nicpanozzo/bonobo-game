@@ -4,10 +4,11 @@
 
 import { getCharacter, specialsFor, supremeAttackSpec, type BurstSupreme, type DropSupreme, type GrabSupreme, type InfectSupreme, type RewindSupreme, type SpinSupreme } from "../characters";
 import { ATTACKS, FIGHTER, GRAB, MICELIO, SPORE, SUPREME } from "../constants";
-import { canBeHit, startAttack } from "./attacks";
+import { canBeHit, isSpecialKind, startAttack } from "./attacks";
 import type { StageSpec } from "../stages";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
 import { fire } from "./projectiles";
+import { cancelSpecial } from "./specials";
 
 export const supremeReady = (f: Fighter) => f.supreme >= SUPREME.max;
 
@@ -39,6 +40,28 @@ export function tryStartSupreme(f: Fighter, ctx: PhysicsContext): boolean {
   if (!pressed(f, "supreme")) return false;
   consume(f, "supreme");
   if (!supremeReady(f)) return false; // barra non piena: il tasto non fa niente
+  startSupreme(f, ctx);
+  return true;
+}
+
+// Speciale + Pesante tenuti insieme con la barra piena: la suprema, come il suo tasto. Chiamata da stepFighter prima
+// di speciale e attacchi: i due tasti arrivano spesso a un tick di distanza, e la mossa partita col primo si annulla
+// se è appena cominciata (SUPREME.comboMs). La carica della speciale non ha ancora un attacco, conta da sola
+export function tryComboSupreme(f: Fighter, ctx: PhysicsContext): boolean {
+  if (!f.input.special || !f.input.heavy || !supremeReady(f)) return false;
+  if (!pressed(f, "special") && !pressed(f, "heavy")) return false; // uno dei due appena premuto: tenerli non basta
+  if (f.hitstun || f.helpless || f.dodgeTimer > 0 || f.jumpSquatTimer > 0 || f.landingTimer > 0) return false;
+  if (f.stunTimer > 0 || f.shieldStunTimer > 0 || f.shieldTimer > 0) return false; // storditi o sullo scudo: lì Pesante e Speciale fanno altro
+  if (f.attack && !(isSpecialKind(f.attack) || f.attack.startsWith("heavy") || f.attack === "dashAttack")) return false;
+  if (f.attack && f.attackTimer > SUPREME.comboMs) return false;
+  if (f.chargeMs > SUPREME.comboMs) return false;
+  cancelSpecial(f);
+  consume(f, "supreme");
+  startSupreme(f, ctx);
+  return true;
+}
+
+function startSupreme(f: Fighter, ctx: PhysicsContext): void {
   f.supreme = 0;
   startAttack(f, "supreme", ctx);
   const own = supremeAttackSpec(f.characterId);
@@ -54,7 +77,6 @@ export function tryStartSupreme(f: Fighter, ctx: PhysicsContext): boolean {
     f.supremeX = f.x + f.facing * drop.leapDx; // la liana scende un po' davanti
     f.supremeY = groundBelow(ctx.stage, f.supremeX, f.y); // anche partendo in aria, l'orsogufo arriva a terra
   }
-  return true;
 }
 
 const motionMs = (sp: DropSupreme) => sp.leapMs + sp.pullMs + sp.flipMs;

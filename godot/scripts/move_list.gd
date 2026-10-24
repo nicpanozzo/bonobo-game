@@ -41,11 +41,11 @@ static func rows(game: Dictionary, character_id: String, keys: Dictionary) -> Ar
 			continue
 		specials.append([str(s.get("name", "Speciale")), slot[1], "%s, %s" % [SPECIAL_HINTS.get(str(s.get("type", "")), "mossa speciale"), slot[2]]])
 	var supreme: Dictionary = c.get("supreme", {}) if c.get("supreme") is Dictionary else {}
-	specials.append([str(supreme.get("name", "Suprema")), k.call("supreme"), "con la barra piena: il lottatore brilla d'oro"])
+	specials.append([str(supreme.get("name", "Suprema")), plus.call("special", "heavy"), "insieme, con la barra piena: il lottatore brilla d'oro"])
 	var defense := [
 		["Scudo", k.call("shield"), "para i colpi ma si consuma"],
 		["Presa", plus.call("shield", "light"), "afferra chi si ripara; poi una direzione per lanciarlo"],
-		["Schivata", k.call("dodge"), "invulnerabile per un attimo, con una direzione rotola"],
+		["Schivata", plus.call("shield", "left") + " o " + k.call("shield") + " in aria", "invulnerabile per un attimo: a terra rotoli, in aria schivi"],
 		["Rialzata al volo", k.call("shield") + " prima di toccare terra", "dopo un colpo ti rialzi subito, con una direzione rotoli"],
 		["Recupero", plus.call("up", "heavy") + " in aria", "una spinta in su per tornare sul palco"],
 		["Corsa", "%s + %s/%s" % [k.call("run"), k.call("left"), k.call("right")], "tienila con una direzione: scatti e poi corri"],
@@ -70,7 +70,7 @@ static func keys_for(s: Settings, pad: bool, kind := "xbox") -> Dictionary:
 
 # Con i comandi touch: la levetta per le direzioni, i tasti a schermo col loro nome
 static func touch_keys() -> Dictionary:
-	var out := {"left": "sinistra", "right": "destra", "up": "su", "down": "giù", "run": "levetta in fondo", "taunt": "solo da tastiera o pad"}
+	var out := {"left": "sinistra", "right": "destra", "up": "su", "down": "giù", "run": "levetta in fondo", "taunt": "solo da tastiera o pad", "dodge": "Scudo + levetta"}
 	for action in TouchControls.BUTTONS:
 		out[action] = TouchControls.BUTTONS[action].label
 	return out

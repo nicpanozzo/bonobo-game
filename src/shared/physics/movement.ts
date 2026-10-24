@@ -37,7 +37,9 @@ export function applyControls(f: Fighter, dt: number, ctx: PhysicsContext): void
     endDash(f);
     return;
   }
-  if (pressed(f, "dodge") && !f.attack && f.dodgeCooldown === 0 && (f.onGround || !f.airDodgeUsed)) {
+  // In aria lo scudo schiva, come in Smash (a terra scudo + direzione rotola, shield.ts)
+  const airShield = !f.onGround && f.input.shield && !f.prevInput.shield;
+  if ((pressed(f, "dodge") || airShield) && !f.attack && f.dodgeCooldown === 0 && (f.onGround || !f.airDodgeUsed)) {
     consume(f, "dodge");
     f.dodgeTimer = DODGE.durationMs;
     f.dodgeCooldown = DODGE.cooldownMs;

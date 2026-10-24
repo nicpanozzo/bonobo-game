@@ -519,3 +519,44 @@ describe("le Ciacole di Bradipo Giallo (#13)", () => {
     assert.deepEqual(shots(), first);
   });
 });
+
+describe("suprema con Speciale + Pesante", () => {
+  it("premuti insieme con la barra piena partono la suprema", () => {
+    const { ctx, fighters, a } = setup(400);
+    a.supreme = SUPREME.max;
+    press(a, { special: true, heavy: true });
+    run(fighters, ctx, 1);
+    assert.equal(a.attack, "supreme");
+    assert.equal(a.supreme, 0);
+  });
+
+  it("il pesante un tick dopo la speciale annulla la speciale appena partita", () => {
+    const { ctx, fighters, a } = setup(400);
+    a.supreme = SUPREME.max;
+    press(a, { special: true });
+    run(fighters, ctx, 1);
+    assert.equal(a.attack, "specialNeutral");
+    press(a, { special: true, heavy: true });
+    run(fighters, ctx, 1);
+    assert.equal(a.attack, "supreme");
+    assert.equal(a.pendingSpecial, null, "la banana non parte più");
+  });
+
+  it("con la barra non piena resta la speciale", () => {
+    const { ctx, fighters, a } = setup(400);
+    a.supreme = SUPREME.max - 1;
+    press(a, { special: true, heavy: true });
+    run(fighters, ctx, 1);
+    assert.equal(a.attack, "specialNeutral");
+  });
+
+  it("a speciale già avviata il pesante non la cambia più", () => {
+    const { ctx, fighters, a } = setup(400);
+    a.supreme = SUPREME.max;
+    press(a, { special: true });
+    run(fighters, ctx, ticks(SUPREME.comboMs) + 2);
+    press(a, { special: true, heavy: true });
+    run(fighters, ctx, 1);
+    assert.equal(a.attack, "specialNeutral");
+  });
+});

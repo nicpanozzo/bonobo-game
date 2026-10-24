@@ -576,6 +576,7 @@ func _process(_delta: float) -> void:
 	var panel_open: bool = is_instance_valid(gym.training) and gym.training.is_open()
 	touch.visible = playing and touch.active and not is_instance_valid(pause_menu) and not panel_open
 	touch.extras = {"panel": "Pannello"} if is_instance_valid(gym.training) else {}
+	touch.supreme_ready = _my_supreme_ready()
 	_rotate_hint.visible = touch.active and TouchControls.portrait(Vector2(DisplayServer.window_get_size()))
 	if touch.active and playing:
 		hud.rematch_key = "Tocca lo schermo"
@@ -849,6 +850,14 @@ func _send_input() -> void:
 		sent.seq = local_tick(Time.get_ticks_msec(), float(game.get("tickRate", 60)))
 		socket.emit("input", sent)
 		world.predictor.record_input(input, sent.seq)
+
+
+# La barra della suprema del proprio lottatore è piena: sul telefono compare il tasto Suprema
+func _my_supreme_ready() -> bool:
+	for p in hud._snap.get("players", []):
+		if p.get("id") == world.my_id:
+			return preload("res://scripts/fighter_pose.gd").supreme_ready(p, float(game.get("supreme", {}).get("max", 100)))
+	return false
 
 
 # Il secondo giocatore entra solo nelle partite vere: non in palestra, tutorial e sfide
