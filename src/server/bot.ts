@@ -3,7 +3,7 @@
 
 import { ATTACKS, BOT, BOT_LEVELS, FIGHTER, TICK_RATE } from "../shared/constants";
 import type { Match } from "../shared/match";
-import { specialsFor } from "../shared/characters";
+import { getCharacter, specialsFor } from "../shared/characters";
 import { emptyInput, ledgesOf, platformSurfaceY, type Fighter } from "../shared/physics";
 import { supremeReach, supremeReady } from "../shared/physics/supreme";
 import type { StageSpec, Station } from "../shared/stages";
@@ -27,6 +27,12 @@ const BOT_NAMES: Record<BotKind, string> = {
 };
 
 // Il parametro arriva dalla rete: si accettano solo i tipi conosciuti
+// Fin dove arriva il colpo del personaggio davanti al suo centro: le zone seguono il disegno (#243)
+function strikeReach(self: Fighter, kind: "light" | "heavy"): number {
+  const spec = { ...ATTACKS[kind], ...getCharacter(self.characterId).attacks?.[kind] };
+  return (spec.boxX ?? FIGHTER.width / 2) + spec.range;
+}
+
 export function parseBotKind(value: unknown): BotKind | null {
   return typeof value === "string" && Object.hasOwn(BOT_NAMES, value) ? (value as BotKind) : null;
 }
@@ -166,7 +172,7 @@ function decideSimple(self: Fighter, players: readonly Fighter[], stage: StageSp
   if (self.station !== undefined) {
     mem.ticks++;
     const foe = nearestTarget(self, players);
-    const near = !!foe && Math.abs(foe.x - self.x) <= FIGHTER.width / 2 + ATTACKS.heavy.range && Math.abs(foe.y - self.y) < FIGHTER.height;
+    const near = !!foe && Math.abs(foe.x - self.x) <= strikeReach(self, "heavy") && Math.abs(foe.y - self.y) < FIGHTER.height;
     if (mem.gunner && stage.stations?.[self.station]?.kind === "bombarda" && !near) {
       const sweep = Math.round(BOT.gunnerSweepMs * TICK_RATE / 1000);
       if (mem.ticks % (2 * sweep) < sweep) input.up = true;
@@ -251,7 +257,7 @@ function decideSimple(self: Fighter, players: readonly Fighter[], stage: StageSp
     // altrimenti lo supera e se lo ritrova alle spalle
     const ahead = nearestTarget(self, players);
     const dx = ahead ? ahead.x - self.x : 0;
-    const arrived = ahead && Math.sign(dx) === self.facing && Math.abs(dx) <= FIGHTER.width / 2 + ATTACKS.light.range;
+    const arrived = ahead && Math.sign(dx) === self.facing && Math.abs(dx) <= strikeReach(self, "light");
     if (arrived && (dx > 0 ? mem.hold.right : mem.hold.left)) mem.hold = emptyInput();
     input.left = mem.hold.left;
     input.right = mem.hold.right;
@@ -262,7 +268,7 @@ function decideSimple(self: Fighter, players: readonly Fighter[], stage: StageSp
   mem.hold = emptyInput();
   // Il bombardiere della squadra (#433): sale alla sua bombarda, a meno che un avversario non gli sia addosso
   const gun = mem.gunner ? bombardaOf(self, stage) : null;
-  const close = !!target && Math.abs(target.x - self.x) <= FIGHTER.width / 2 + ATTACKS.heavy.range && Math.abs(target.y - self.y) < FIGHTER.height;
+  const close = !!target && Math.abs(target.x - self.x) <= strikeReach(self, "heavy") && Math.abs(target.y - self.y) < FIGHTER.height;
   if (gun && !close) {
     const duty = stationDuty(self, stage, gun);
     mem.hold.left = duty.dir < 0;

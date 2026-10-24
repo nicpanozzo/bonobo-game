@@ -649,6 +649,18 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         supreme: { fps: 24, loop: false, hitFrame: 24 },
       }),
     },
+    // le zone dei colpi dove arriva il disegno (#243, tools/sprite/zone_dei_colpi.py)
+    attacks: {
+      light: { range: 67, height: 30, boxX: 15, boxY: -62 },
+      heavy: { range: 68, height: 44, boxX: 0, boxY: -65 },
+      lightUp: { range: 54, height: 48, boxX: -18, boxY: -134 },
+      lightDown: { range: 78, height: 24, boxX: 3, boxY: -24 },
+      lightAir: { range: 70, height: 50, boxX: 8, boxY: -82 },
+      heavyUp: { range: 80, height: 64, boxX: -30, boxY: -134 },
+      heavyDown: { range: 84, height: 30, boxX: 0, boxY: -30 },
+      heavyAir: { range: 74, height: 60, boxX: 0, boxY: -76 },
+      dashAttack: { range: 68, height: 44, boxX: 0, boxY: -65 },
+    },
   },
 
   // Gatto rasta grassottello col bong, proposto da @MauroGrecchi (#168). Provvisorio: è il suo foglio ritagliato
@@ -686,6 +698,18 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         hit: { fps: 24, loop: false },
         tumble: { fps: 24, loop: true }, // rotola quando vola via
       },
+    },
+    // le zone dei colpi dove arriva il disegno (#243, tools/sprite/zone_dei_colpi.py)
+    attacks: {
+      light: { range: 56, height: 30, boxX: 0, boxY: -64 },
+      heavy: { range: 49, height: 44, boxX: -4, boxY: -48 },
+      lightUp: { range: 54, height: 48, boxX: -22, boxY: -92 },
+      lightDown: { range: 42, height: 24, boxX: -18, boxY: -28 },
+      lightAir: { range: 56, height: 50, boxX: 0, boxY: -74 },
+      heavyUp: { range: 80, height: 64, boxX: -28, boxY: -81 },
+      heavyDown: { range: 62, height: 30, boxX: -18, boxY: -38 },
+      heavyAir: { range: 47, height: 60, boxX: -2, boxY: -72 },
+      dashAttack: { range: 44, height: 44, boxX: 0, boxY: -48 },
     },
   },
 
@@ -725,6 +749,18 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         throw: { fps: 1, loop: false }, // "Throw (forward)"
         supreme: { fps: 1, loop: false }, // "Final Smash"
       },
+    },
+    // le zone dei colpi dove arriva il disegno (#243, tools/sprite/zone_dei_colpi.py)
+    attacks: {
+      light: { range: 48, height: 30, boxX: 0, boxY: -56 },
+      heavy: { range: 78, height: 44, boxX: 0, boxY: -52 },
+      lightUp: { range: 54, height: 48, boxX: 0, boxY: -88 },
+      lightDown: { range: 43, height: 24, boxX: 0, boxY: -26 },
+      lightAir: { range: 38, height: 50, boxX: 0, boxY: -75 },
+      heavyUp: { range: 80, height: 64, boxX: -12, boxY: -93 },
+      heavyDown: { range: 62, height: 30, boxX: -6, boxY: -30 },
+      heavyAir: { range: 64, height: 60, boxX: 0, boxY: -64 },
+      dashAttack: { range: 75, height: 44, boxX: 2, boxY: -52 },
     },
   },
   // Lottatori dalle schede della community (#13), compilate a ottobre 2026 nella cartella Drive del gruppo.
@@ -769,6 +805,18 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       side: { type: "dash", name: "Tuffo", startupMs: 140, durationMs: 300, speed: 880, endLagMs: 380, range: 50, height: 40, damage: 10, baseKnockback: 380, knockbackGrowth: 8, angleDeg: 30, boxY: -50 },
       // si scola una Monster mentre para, e risponde carico
       down: { type: "counter", name: "Monster", startupMs: 60, windowMs: 380, endLagMs: 460, minDamage: 9, multiplier: 1.4, range: 60, height: 60, baseKnockback: 460, knockbackGrowth: 9, angleDeg: 40 },
+    },
+    // le zone dei colpi dove arriva il disegno (#243, tools/sprite/zone_dei_colpi.py)
+    attacks: {
+      light: { range: 58, height: 30, boxX: 0, boxY: -72 },
+      heavy: { range: 51, height: 44, boxX: 0, boxY: -56 },
+      lightUp: { range: 54, height: 48, boxX: -17, boxY: -124 },
+      lightDown: { range: 64, height: 24, boxX: 0, boxY: -34 },
+      lightAir: { range: 54, height: 50, boxX: 0, boxY: -89 },
+      heavyUp: { range: 80, height: 64, boxX: -32, boxY: -128 },
+      heavyDown: { range: 68, height: 30, boxX: 0, boxY: -36 },
+      heavyAir: { range: 52, height: 60, boxX: 0, boxY: -88 },
+      dashAttack: { range: 51, height: 44, boxX: 0, boxY: -56 },
     },
   },
 
@@ -852,6 +900,18 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       side: { type: "projectile", name: "Bassline", startupMs: 240, cooldownMs: 700, speed: 420, gravity: 0, lifeMs: 1000, maxAlive: 1, range: 26, height: 70, damage: 5, baseKnockback: 260, knockbackGrowth: 3, angleDeg: 20, color: 0xb48cff },
       down: { type: "counter", name: "Cambio pannolino", startupMs: 50, windowMs: 400, endLagMs: 450, minDamage: 8, multiplier: 1.3, range: 60, height: 60, baseKnockback: 450, knockbackGrowth: 9, angleDeg: 40 },
     },
+    // le zone dei colpi dove arriva il disegno (#243, tools/sprite/zone_dei_colpi.py)
+    attacks: {
+      light: { range: 51, height: 30, boxX: 0, boxY: -52 },
+      heavy: { range: 78, height: 44, boxX: 0, boxY: -49 },
+      lightUp: { range: 54, height: 48, boxX: -16, boxY: -84 },
+      lightDown: { range: 52, height: 24, boxX: 0, boxY: -28 },
+      lightAir: { range: 44, height: 50, boxX: 0, boxY: -62 },
+      heavyUp: { range: 80, height: 64, boxX: -16, boxY: -87 },
+      heavyDown: { range: 62, height: 30, boxX: -11, boxY: -30 },
+      heavyAir: { range: 62, height: 60, boxX: 0, boxY: -62 },
+      dashAttack: { range: 75, height: 44, boxX: 2, boxY: -49 },
+    },
   },
 
   // Riccardo: spilungone calciatore, bonaccione e svampito, occhiali e capelli a tendina
@@ -870,6 +930,18 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       // TODO community: la scheda non la dice, una scivolata da calciatore
       side: { type: "dash", name: "Scivolata", startupMs: 120, durationMs: 320, speed: 820, endLagMs: 400, range: 56, height: 28, damage: 9, baseKnockback: 340, knockbackGrowth: 8, angleDeg: 60, boxY: -30 },
       down: { type: "counter", name: "RitTURD", startupMs: 60, windowMs: 400, endLagMs: 480, minDamage: 8, multiplier: 1.3, range: 60, height: 60, baseKnockback: 450, knockbackGrowth: 9, angleDeg: 40 },
+    },
+    // le zone dei colpi dove arriva il disegno (#243, tools/sprite/zone_dei_colpi.py)
+    attacks: {
+      light: { range: 58, height: 30, boxX: 0, boxY: -72 },
+      heavy: { range: 51, height: 44, boxX: 0, boxY: -56 },
+      lightUp: { range: 54, height: 48, boxX: -18, boxY: -124 },
+      lightDown: { range: 64, height: 24, boxX: 0, boxY: -34 },
+      lightAir: { range: 54, height: 50, boxX: 0, boxY: -89 },
+      heavyUp: { range: 80, height: 64, boxX: -33, boxY: -128 },
+      heavyDown: { range: 68, height: 30, boxX: 0, boxY: -36 },
+      heavyAir: { range: 52, height: 60, boxX: 0, boxY: -87 },
+      dashAttack: { range: 51, height: 44, boxX: 0, boxY: -56 },
     },
   },
 
@@ -924,6 +996,18 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       // gira una canna mentre para; tiro e scatto restano quelli di base finché la scheda non li dice
       down: { type: "counter", name: "Rolling", startupMs: 60, windowMs: 420, endLagMs: 460, minDamage: 8, multiplier: 1.3, range: 60, height: 60, baseKnockback: 440, knockbackGrowth: 9, angleDeg: 40 },
     },
+    // le zone dei colpi dove arriva il disegno (#243, tools/sprite/zone_dei_colpi.py)
+    attacks: {
+      light: { range: 46, height: 30, boxX: 0, boxY: -71 },
+      heavy: { range: 74, height: 44, boxX: 0, boxY: -66 },
+      lightUp: { range: 54, height: 48, boxX: -33, boxY: -96 },
+      lightDown: { range: 42, height: 24, boxX: -5, boxY: -32 },
+      lightAir: { range: 49, height: 50, boxX: 0, boxY: -86 },
+      heavyUp: { range: 80, height: 64, boxX: -41, boxY: -96 },
+      heavyDown: { range: 62, height: 30, boxX: -22, boxY: -32 },
+      heavyAir: { range: 54, height: 60, boxX: 0, boxY: -68 },
+      dashAttack: { range: 74, height: 44, boxX: 0, boxY: -66 },
+    },
   },
 
   // Michele: magro, un po' emo, iroso e indisposto
@@ -941,6 +1025,18 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       neutral: { type: "projectile", name: "Fai schifo", startupMs: 230, cooldownMs: 600, speed: 540, gravity: 1800, lift: 540, lifeMs: 1400, maxAlive: 1, range: 24, height: 18, damage: 7, baseKnockback: 230, knockbackGrowth: 3.5, angleDeg: 50, color: 0x6b4a2b },
       // si arrabbia e si getta in avanti: forte ma lascia scoperti
       side: { type: "dash", name: "Burnout", startupMs: 180, durationMs: 300, speed: 950, endLagMs: 460, range: 46, height: 50, damage: 12, baseKnockback: 420, knockbackGrowth: 9, angleDeg: 35 },
+    },
+    // le zone dei colpi dove arriva il disegno (#243, tools/sprite/zone_dei_colpi.py)
+    attacks: {
+      light: { range: 58, height: 30, boxX: 0, boxY: -72 },
+      heavy: { range: 51, height: 44, boxX: 0, boxY: -56 },
+      lightUp: { range: 54, height: 48, boxX: -18, boxY: -124 },
+      lightDown: { range: 64, height: 24, boxX: 0, boxY: -34 },
+      lightAir: { range: 54, height: 50, boxX: 0, boxY: -89 },
+      heavyUp: { range: 80, height: 64, boxX: -34, boxY: -128 },
+      heavyDown: { range: 68, height: 30, boxX: 0, boxY: -36 },
+      heavyAir: { range: 52, height: 60, boxX: 0, boxY: -87 },
+      dashAttack: { range: 51, height: 44, boxX: 0, boxY: -56 },
     },
   },
 
@@ -963,6 +1059,18 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       // la scoreggia di spore: la nube colpisce tutto intorno, davanti e dietro (rettangolo centrato su di lui)
       down: { type: "charge", name: "Nube di spore", minMs: 200, maxMs: 1000, maxMultiplier: 1.6, activeMs: 160, endLagMs: 420, range: 130, height: 80, boxX: -65, boxY: -80, damage: 8, baseKnockback: 360, knockbackGrowth: 8, angleDeg: 70 },
     },
+    // le zone dei colpi dove arriva il disegno (#243, tools/sprite/zone_dei_colpi.py)
+    attacks: {
+      light: { range: 58, height: 30, boxX: 0, boxY: -72 },
+      heavy: { range: 59, height: 44, boxX: 0, boxY: -77 },
+      lightUp: { range: 54, height: 48, boxX: -18, boxY: -124 },
+      lightDown: { range: 64, height: 24, boxX: 0, boxY: -34 },
+      lightAir: { range: 54, height: 50, boxX: 0, boxY: -89 },
+      heavyUp: { range: 80, height: 64, boxX: -34, boxY: -128 },
+      heavyDown: { range: 68, height: 30, boxX: 0, boxY: -36 },
+      heavyAir: { range: 52, height: 60, boxX: 0, boxY: -90 },
+      dashAttack: { range: 59, height: 44, boxX: 0, boxY: -77 },
+    },
   },
 
   // Griga (KittySeanKula): l'allenatore con la lavagnetta, le collane d'oro e la tuta verde e gialla
@@ -983,6 +1091,18 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       side: { type: "projectile", name: "Corri!", startupMs: 200, cooldownMs: 560, speed: 820, gravity: 0, lifeMs: 800, maxAlive: 1, range: 26, height: 20, damage: 7, baseKnockback: 260, knockbackGrowth: 4, angleDeg: 30, color: 0x2f6b3a },
       // urla e allontana: risposta debole ma che spinge lontano
       down: { type: "counter", name: "Mahmmoney", startupMs: 60, windowMs: 400, endLagMs: 460, minDamage: 6, multiplier: 1.1, range: 80, height: 70, baseKnockback: 560, knockbackGrowth: 10, angleDeg: 35 },
+    },
+    // le zone dei colpi dove arriva il disegno (#243, tools/sprite/zone_dei_colpi.py)
+    attacks: {
+      light: { range: 58, height: 30, boxX: 0, boxY: -72 },
+      heavy: { range: 51, height: 44, boxX: 0, boxY: -56 },
+      lightUp: { range: 54, height: 48, boxX: -24, boxY: -124 },
+      lightDown: { range: 64, height: 24, boxX: 0, boxY: -34 },
+      lightAir: { range: 54, height: 50, boxX: 0, boxY: -89 },
+      heavyUp: { range: 80, height: 64, boxX: -41, boxY: -130 },
+      heavyDown: { range: 68, height: 30, boxX: 0, boxY: -36 },
+      heavyAir: { range: 52, height: 60, boxX: 0, boxY: -87 },
+      dashAttack: { range: 51, height: 44, boxX: 0, boxY: -56 },
     },
   },
 
@@ -1008,11 +1128,18 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     },
     // pesante e lenta a terra, salta poco ma cade piano: non la sposti facilmente
     stats: { weight: 1.15, speed: 0.85, airSpeed: 0.95, jump: 0.9, gravity: 0.95 },
-    // i colpi normali col mattarello (#384 D2): più lunghi e un po' più lenti di quelli di tutti
+    // i colpi normali col mattarello (#384 D2): più lunghi e un po' più lenti di quelli di tutti;
+    // le zone dove arriva il disegno (#243, tools/sprite/zone_dei_colpi.py)
     attacks: {
-      light: { damage: 6, startupMs: 50, range: 64 }, // botta di punta
-      heavy: { damage: 15, baseKnockback: 450, startupMs: 320, cooldownMs: 860, range: 84, height: 54 }, // mattarellata a due mani
-      heavyDown: { damage: 13, startupMs: 280, range: 104 }, // il mattarello rotolato radente
+      light: { damage: 6, startupMs: 50, range: 67, height: 30, boxX: 12, boxY: -70 }, // botta di punta
+      heavy: { damage: 15, baseKnockback: 450, startupMs: 320, cooldownMs: 860, range: 75, height: 44, boxX: 0, boxY: -62 }, // mattarellata a due mani
+      lightUp: { range: 54, height: 48, boxX: -18, boxY: -144 },
+      lightDown: { range: 78, height: 24, boxX: 5, boxY: -31 },
+      lightAir: { range: 70, height: 50, boxX: 6, boxY: -88 },
+      heavyUp: { range: 80, height: 64, boxX: -28, boxY: -144 },
+      heavyDown: { damage: 13, startupMs: 280, range: 89, height: 30, boxX: 0, boxY: -36 }, // il mattarello rotolato radente
+      heavyAir: { range: 72, height: 60, boxX: 0, boxY: -74 },
+      dashAttack: { range: 75, height: 44, boxX: 0, boxY: -62 },
     },
     // dalla scheda: "Pranzo della domenica", tre bracciate di polpette da tutte e due le parti
     supreme: { type: "burst", name: "Pranzo della domenica", windupMs: 300, waves: 3, waveEveryMs: 260, count: 5, speed: 520, lift: 760, endLagMs: 420 },
