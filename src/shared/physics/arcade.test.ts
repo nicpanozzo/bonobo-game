@@ -67,6 +67,20 @@ describe("power-up Tetris (#427)", () => {
     assert.equal(tetrisState(ctx)!.pieces[0].fall, FLOOR - (piece(ctx).y + C * (1 + Math.max(...pieceCells(piece(ctx).kind, 0, 0, 0).map(([, y]) => y / C)))), "quanto manca alla posa, per l'ombra");
   });
 
+  it("nelle arene più larghe dello schermo il pezzo compare sopra l'avversario anche oltre il primo schermo (Padova)", () => {
+    const { ctx, player, other, list } = setup();
+    ctx.stage = { ...ctx.stage, width: 1920, solids: [{ x: 0, y: FLOOR, width: 1920, height: 100 }] };
+    other.x = 1700;
+    steps(10, list, ctx);
+    assert.ok(Math.abs(piece(ctx).col * C - other.x) < 4 * C, `sopra l'avversario (colonna ${piece(ctx).col}, x ${other.x})`);
+    player.input = { ...emptyInput(), right: true };
+    for (let i = 0; i < 40; i++) {
+      player.input = { ...emptyInput(), right: i % 2 === 0 };
+      steps(1, list, ctx);
+    }
+    assert.ok(Math.max(...pieceCells(piece(ctx).kind, piece(ctx).col, 0, piece(ctx).rot).map(([x]) => x)) + C <= 1920, "resta dentro l'arena");
+  });
+
   it("destra sposta di una colonna, su ruota, la pressione vale una volta sola", () => {
     const { ctx, player, list } = setup();
     steps(1, list, ctx);

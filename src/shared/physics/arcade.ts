@@ -7,7 +7,7 @@
 //   arcadeSolids() i blocchi posati come blocchi pieni per collideWithStage
 
 import { characterStats } from "../characters";
-import { FIGHTER, HITSTOP, HITSTUN_PER_KNOCKBACK, PACMAN, STATION, TETRIS, WORLD } from "../constants";
+import { FIGHTER, HITSTOP, HITSTUN_PER_KNOCKBACK, PACMAN, STATION, TETRIS } from "../constants";
 import { stageHeight, stageWidth, type Rect } from "../stages";
 import { rng } from "../stageGenerator";
 import type { TetrisState } from "../types";
@@ -67,7 +67,8 @@ export interface Pellet {
 }
 
 const C = TETRIS.cellPx;
-const COLS = Math.floor(WORLD.width / C);
+// Colonne del Tetris: tutta la larghezza dell'arena, anche nelle arene larghe come Padova
+const cols = (ctx: PhysicsContext) => Math.floor(stageWidth(ctx.stage) / C);
 
 export function arcadeWorld(ctx: PhysicsContext): ArcadeWorld {
   // Il caso con un seme fisso: la partita resta ripetibile come per gli oggetti
@@ -91,7 +92,7 @@ const boxOverlap = (ax: number, ay: number, aw: number, ah: number, b: { x: numb
 // Un pezzo sta dentro le colonne e non entra in un blocco pieno o in un blocco posato
 function fits(cells: [number, number][], ctx: PhysicsContext): boolean {
   const solids = arcadeSolids(ctx);
-  return cells.every(([x, y]) => x >= 0 && x + C <= COLS * C && !solids.some((s) => boxOverlap(x, y, C, C, s)));
+  return cells.every(([x, y]) => x >= 0 && x + C <= cols(ctx) * C && !solids.some((s) => boxOverlap(x, y, C, C, s)));
 }
 
 // Il pezzo di chi gioca, guidato dai suoi tasti. Quando non ce l'ha, ne fa comparire uno stepArcade
@@ -131,9 +132,10 @@ export function playTetris(f: Fighter, dtMs: number, ctx: PhysicsContext): void 
 // Se lì la pila arriva in cima prova le colonne accanto; se è tutto pieno, come nel Tetris vero, la partita finisce
 function spawnPiece(f: Fighter, fighters: Fighter[], world: ArcadeWorld, ctx: PhysicsContext) {
   const kind = KINDS[Math.floor(world.random() * KINDS.length)];
-  const aim = Math.max(1, Math.min(COLS - 3, Math.floor((nearestTarget(f, fighters, ctx) ?? f).x / C)));
-  const cols = Array.from({ length: COLS - 3 }, (_, i) => i + 1).sort((a, b) => Math.abs(a - aim) - Math.abs(b - aim));
-  for (const col of cols) {
+  const last = cols(ctx) - 3;
+  const aim = Math.max(1, Math.min(last, Math.floor((nearestTarget(f, fighters, ctx) ?? f).x / C)));
+  const tries = Array.from({ length: last }, (_, i) => i + 1).sort((a, b) => Math.abs(a - aim) - Math.abs(b - aim));
+  for (const col of tries) {
     const p: Piece = { id: world.nextId, ownerId: f.id, kind, col, y: TETRIS.spawnY, rot: 0, drop: false, soft: false, repeatMs: 0, hit: [] };
     if (!fits(cellsOf(p), ctx) || fallLeft(p, ctx, world.blocks) < TETRIS.spawnRoomPx) continue;
     world.nextId++;
