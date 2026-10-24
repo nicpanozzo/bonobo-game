@@ -283,6 +283,7 @@ export const STOCKS = 3; // vite per partita
 export const RESPAWN_MS = 1500; // attesa dopo aver perso una vita
 export const RESPAWN_INVULNERABLE_MS = 1500;
 export const PHASE_LIFT_GAP_PX = 70; // px tra chi viene riportato su da una fase che stringe la zona di espulsione (Bologna, zuffa)
+export const PHASE_LIFT_MARGIN_PX = 150; // px sopra il nuovo fondo: chi sta già cadendo lì quando la fase lo stringe viene riportato su anche lui
 export const MATCH_RESTART_MS = 5000; // pausa dopo la vittoria prima della nuova partita
 
 export const COLORS = [0xe74c3c, 0x3498db, 0x2ecc71, 0xf1c40f, 0x9b59b6, 0xe67e22, 0x1abc9c, 0xff6fb5];
