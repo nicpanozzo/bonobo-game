@@ -362,6 +362,10 @@ export const AUDIO = {
   targetLufs: -16, // loudness integrata a cui devono stare i file (npm run audio:check)
   lufsTolerance: 2, // LU di scarto accettati
   maxPeakDb: -1, // picco massimo dei file, dBTP
+  // Sotto questa durata la loudness integrata non si misura (EBU R128 vuole almeno un blocco da 0,4 s e dà -70 LUFS):
+  // per i suoni corti (colpi, clic) audio:check guarda solo il picco, che deve stare tra shortMinPeakDb e maxPeakDb
+  minLoudnessSeconds: 0.4, // secondi
+  shortMinPeakDb: -12, // picco minimo di un suono corto, dBFS: più basso vuol dire file quasi muto
   // Annunciatore (E13 passo 4): public/assets/announcer/<frase>.ogg. Più alta la priorità, prima parla;
   // da announcerInterrupt in su interrompe la frase in corso e svuota la coda
   announcerPriority: { go: 1, tenSeconds: 1, lastLife: 2, game: 3, draw: 3 } as Record<string, number>,

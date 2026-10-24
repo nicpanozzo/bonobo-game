@@ -21,6 +21,7 @@ La guida per chi registra effetti, musica, voci dei personaggi e annunciatore (E
 - **Durata:** voci e frasi sotto i 2 secondi, effetti il più corti possibile. La musica deve chiudersi bene in loop.
 - **Peso:** ogni file sotto i 500 KB.
 - **Volume:** circa -16 LUFS integrati, picco sotto -1 dBTP. `npm run audio:check` (serve ffmpeg) misura ogni file e dice quali sono fuori volume.
+- **Suoni corti** (colpi, clic, sotto 0,4 s): la loudness integrata non si può misurare su così poco suono, quindi conta solo il picco, tra -12 e -1 dB. In Audacity: *Effetti > Normalizza* a -3 dB.
 
 ## Registrare con il telefono
 

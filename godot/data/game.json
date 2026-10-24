@@ -326,6 +326,8 @@
     "targetLufs": -16,
     "lufsTolerance": 2,
     "maxPeakDb": -1,
+    "minLoudnessSeconds": 0.4,
+    "shortMinPeakDb": -12,
     "announcerPriority": {
       "go": 1,
       "tenSeconds": 1,

@@ -1,6 +1,8 @@
 // Controllo del volume dei file audio (E13 passo 5): loudness integrata e picco di ogni file registrato,
 // misurati con ffmpeg (filtro ebur128). Esce con errore se un file è fuori da AUDIO.targetLufs ± AUDIO.lufsTolerance
-// o supera AUDIO.maxPeakDb. Senza file non c'è niente da controllare e passa.
+// o supera AUDIO.maxPeakDb. I file più corti di AUDIO.minLoudnessSeconds (colpi, clic) non hanno una loudness
+// integrata misurabile: per loro conta solo che il picco stia tra AUDIO.shortMinPeakDb e AUDIO.maxPeakDb (#448).
+// Senza file non c'è niente da controllare e passa.
 // Uso: npm run audio:check (serve ffmpeg installato)
 
 import { execFileSync, spawnSync } from "node:child_process";
@@ -33,24 +35,33 @@ try {
 }
 
 // ebur128 stampa alla fine un riassunto con "I: -16.2 LUFS" e "Peak: -1.3 dBFS"
-function measure(path: string): { lufs: number; peak: number } {
+function measure(path: string): { lufs: number; peak: number; seconds: number } {
   const run = spawnSync("ffmpeg", ["-hide_banner", "-nostats", "-i", path, "-af", "ebur128=peak=true", "-f", "null", "-"], { encoding: "utf8" });
   const summary = run.stderr.slice(run.stderr.lastIndexOf("Summary:"));
   const lufs = Number(/I:\s+(-?[\d.]+|-inf) LUFS/.exec(summary)?.[1] ?? NaN);
   const peak = Number(/Peak:\s+(-?[\d.]+|-inf) dBFS/.exec(summary)?.[1] ?? NaN);
-  return { lufs, peak };
+  // ffmpeg scrive la durata letta dal file come "Duration: 00:00:00.29"
+  const [h = 0, m = 0, sec = NaN] = (/Duration:\s+(\d+):(\d+):([\d.]+)/.exec(run.stderr)?.slice(1) ?? []).map(Number);
+  return { lufs, peak, seconds: h * 3600 + m * 60 + sec };
 }
 
 let bad = 0;
-console.log(`Obiettivo ${AUDIO.targetLufs} LUFS ± ${AUDIO.lufsTolerance}, picco sotto ${AUDIO.maxPeakDb} dB\n`);
+console.log(`Obiettivo ${AUDIO.targetLufs} LUFS ± ${AUDIO.lufsTolerance}, picco sotto ${AUDIO.maxPeakDb} dB`);
+console.log(`Sotto ${AUDIO.minLoudnessSeconds} s conta solo il picco, tra ${AUDIO.shortMinPeakDb} e ${AUDIO.maxPeakDb} dB\n`);
 console.log("file".padEnd(48) + "LUFS".padStart(8) + "picco".padStart(8));
 for (const f of files) {
-  const { lufs, peak } = measure(join(assets, f));
+  const { lufs, peak, seconds } = measure(join(assets, f));
+  const short = seconds < AUDIO.minLoudnessSeconds;
   const problems = [];
-  if (!(Math.abs(lufs - AUDIO.targetLufs) <= AUDIO.lufsTolerance)) problems.push(lufs < AUDIO.targetLufs ? "troppo piano" : "troppo forte");
+  if (short) {
+    if (!(peak >= AUDIO.shortMinPeakDb)) problems.push("troppo piano");
+  } else if (!(Math.abs(lufs - AUDIO.targetLufs) <= AUDIO.lufsTolerance)) {
+    problems.push(lufs < AUDIO.targetLufs ? "troppo piano" : "troppo forte");
+  }
   if (!(peak <= AUDIO.maxPeakDb)) problems.push("picco troppo alto");
   if (problems.length) bad++;
-  console.log(f.padEnd(48) + lufs.toFixed(1).padStart(8) + peak.toFixed(1).padStart(8) + (problems.length ? `  ${problems.join(", ")}` : ""));
+  const shown = short ? "corto".padStart(8) : lufs.toFixed(1).padStart(8);
+  console.log(f.padEnd(48) + shown + peak.toFixed(1).padStart(8) + (problems.length ? `  ${problems.join(", ")}` : ""));
 }
 if (bad) {
   console.error(`\n${bad} file da sistemare: normalizzali con Audacity (Effetti → Normalizzazione del volume) o ffmpeg -af loudnorm.`);
