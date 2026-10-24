@@ -1516,6 +1516,9 @@ func _draw_elements(t: float) -> void:
 			var stopped := StageMotion.mover_position(m, t + 50.0).distance_to(StageMotion.mover_position(m, t)) < 0.5
 			BolognaHazards.draw_bus(self, _life, pos, float(m.width), StageMotion.mover_facing(m, t, stage_width()), stopped, t, _stage_light())
 			continue
+		if m.get("kind", "") == "campana": # la campana appesa tra le torri di Bologna (#433)
+			BolognaHazards.draw_bell(self, m, pos, StageMotion.swing_angle(m.swing, t + float(m.get("offsetMs", 0))), t, _stage_light())
+			continue
 		if _mover_sprites.has(mi):
 			_draw_mover_sprite(_mover_sprites[mi], m, pos, t)
 			continue

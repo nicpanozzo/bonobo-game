@@ -235,4 +235,12 @@ func test_tendone_che_lancia() -> void:
 	runner.check(not Audio.awning_launch(j, {"x": 1060, "y": 1500, "vy": -1480}), "già in alto no")
 	var a := _audio()
 	runner.check(a.stream_for("boing") is AudioStreamWAV, "il boing sintetizzato")
+# La campana di Bologna (#433): un rintocco a ogni estremo dell'altalena, cioè ogni mezzo giro
+func test_campana_a_ogni_estremo() -> void:
+	var swing := {"swingMs": 4000}
+	runner.check(Audio.swing_extreme(swing, 900.0) == Audio.swing_extreme(swing, 0.0), "prima del primo estremo niente")
+	runner.check(Audio.swing_extreme(swing, 1100.0) != Audio.swing_extreme(swing, 900.0), "al primo estremo (un quarto di giro) cambia")
+	runner.check(Audio.swing_extreme(swing, 3100.0) != Audio.swing_extreme(swing, 2900.0), "e all'altro, mezzo giro dopo")
+	var a := _audio()
+	runner.check(a.stream_for("dong") is AudioStreamWAV, "il rintocco sintetizzato")
 	a.free()

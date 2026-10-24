@@ -19,6 +19,10 @@ const AWNING_SQUASH_PX := 18.0 # quanto si abbassa sotto chi ci arriva
 const AWNING_REACH_PX := 160.0 # sopra il tendone fin dove si sente il peso di chi è appena stato lanciato
 const BUS_OVERHANG := 1.06 # il bus disegnato è un po' più lungo del suo tetto, che è la piattaforma
 const BUS_ROOF := 0.96 # bus.png: il tetto è a tanto della sua altezza dal basso
+const BRONZE := Color("a8792f")
+const BELL_CABLE_PX := 190.0 # il cavo della campana, da una parte e dall'altra del perno: arriva alle due torri
+# La sagoma della campana, col giogo in (0, 0) sotto il ceppo e la bocca in basso
+const BELL_SHAPE := [Vector2(-10, 0), Vector2(10, 0), Vector2(16, 8), Vector2(18, 30), Vector2(30, 46), Vector2(30, 52), Vector2(-30, 52), Vector2(-30, 46), Vector2(-18, 30), Vector2(-16, 8)]
 
 
 # L'auto che attraversa la piazza (travel): il modello cambia a ogni giro, girata nel verso in cui va
@@ -169,6 +173,38 @@ static func draw_bus(ci: CanvasItem, life: RefCounted, pos: Vector2, w: float, d
 			ci.draw_circle(Vector2(feet.x + side * length * 0.48, feet.y - height * 0.3), 5.0, Color("ffb347"))
 	# Il tetto dove si sta in piedi: una riga chiara, si capisce che ci si sale
 	ci.draw_rect(Rect2(pos.x, pos.y, w, 3.0), Color("f0d9b5") * Color(mod.r, mod.g, mod.b, 0.9))
+
+
+# La campana appesa al cavo tra le torri (mover "campana" con swing): il cavo teso da una torre all'altra, la carrucola,
+# le due funi fino al ceppo di legno su cui si sta (la superficie della fisica) e sotto la campana di bronzo, che
+# dondola un po' più del ceppo e col batacchio in ritardo. angle: l'angolo dell'altalena (StageMotion.swing_angle)
+static func draw_bell(ci: CanvasItem, m: Dictionary, pos: Vector2, angle: float, t: float, mod: Color) -> void:
+	var paint := func(c: Color) -> Color: return Color(c.r * mod.r, c.g * mod.g, c.b * mod.b, c.a)
+	var pivot := Vector2(float(m.swing.pivot.x), float(m.swing.pivot.y))
+	var w := float(m.width)
+	# il cavo teso tra le torri, che cede appena sotto il peso
+	ci.draw_polyline(PackedVector2Array([pivot + Vector2(-BELL_CABLE_PX, -12.0), pivot, pivot + Vector2(BELL_CABLE_PX, -16.0)]), paint.call(INK), 3.0)
+	ci.draw_circle(pivot, 9.0, paint.call(Color("5a4a3a")))
+	ci.draw_circle(pivot, 4.0, paint.call(BRONZE.lightened(0.2)))
+	# le funi fino agli spigoli del ceppo
+	for x in [pos.x + 10.0, pos.x + w - 10.0]:
+		ci.draw_line(pivot, Vector2(x, pos.y), paint.call(Color("b49a6a")), 3.0)
+	# la campana sotto il ceppo, appesa al giogo: oscilla un po' più del ceppo
+	var hang := Vector2(pos.x + w / 2.0, pos.y + 12.0)
+	var tilt := angle * 0.5
+	var xf := Transform2D(tilt, hang)
+	var body := PackedVector2Array()
+	for p: Vector2 in BELL_SHAPE:
+		body.append(xf * p)
+	ci.draw_colored_polygon(body, paint.call(BRONZE))
+	body.append(body[0])
+	ci.draw_polyline(body, paint.call(INK), 2.0)
+	ci.draw_line(xf * Vector2(-22.0, 34.0), xf * Vector2(22.0, 34.0), paint.call(BRONZE.lightened(0.35)), 3.0)
+	ci.draw_circle(xf * Vector2(sin(angle * 2.0 + t / 300.0) * 8.0, 52.0), 6.0, paint.call(INK)) # il batacchio
+	# il ceppo di legno su cui si sta
+	ci.draw_rect(Rect2(pos.x, pos.y, w, 12.0), paint.call(Color("8a5a32")))
+	ci.draw_rect(Rect2(pos.x, pos.y, w, 3.0), paint.call(Color("f0d9b5")))
+	ci.draw_rect(Rect2(pos.x, pos.y, w, 12.0), paint.call(INK), false, 2.0)
 
 
 static func _car(ci: CanvasItem, life: RefCounted, kind: String, model: int, feet: Vector2, length: float, dir: int, mod: Color) -> void:

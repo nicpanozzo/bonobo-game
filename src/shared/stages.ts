@@ -45,6 +45,10 @@ export interface MovingPlatform {
   on?: [number, number][]; // finestre [da ms, a ms) del giro in cui la piattaforma c'è; senza, c'è sempre
   tint?: number; // solo per il disegno: il colore della traccia che la muove
   group?: string; // i bottoni sonori (pads) con questo gruppo la cambiano per un po' (#423)
+  // Altalena (#433), come le piattaforme appese che dondolano nei platform: il centro della superficie sta a length dal
+  // perno (pivot) e l'angolo dalla verticale va da -amplitudeDeg ad amplitudeDeg e ritorno in swingMs (senza keys e path,
+  // che resta per il riquadro). periodMs resta il giro delle finestre on
+  swing?: { pivot: { x: number; y: number }; length: number; amplitudeDeg: number; swingMs: number };
 }
 
 // Bottone sonoro (#423): un pezzo dell'arena che si attiva saltandoci sopra o colpendolo. Suona e per
@@ -1107,6 +1111,11 @@ export const STAGES: Record<string, StageSpec> = {
       // Il bus della piazza (0-45 s), come le piattaforme che portano in giro nei platform: si ferma in mezzo, ci si salta
       // sul tetto e porta da una parte all'altra; chi non scende in tempo esce con lui dalla piazza
       { kind: "bus", width: 400, path: [{ x: -600, y: 1885 }, { x: 2400, y: 1885 }], periodMs: BOLOGNA.liftPeriodMs, keys: BOLOGNA_BUS.keys, on: BOLOGNA_BUS.on },
+      // La campana appesa al cavo teso tra le torri (da 0:45 al crollo), come le piattaforme che dondolano in Donkey Kong
+      // Country: ci si sale sul ceppo e agli estremi si arriva alla postazione (A) dell'altra torre. La strada per
+      // l'assalto: chi ci sta sopra è in mezzo, scoperto ai colpi di tutti e alle palle delle bombarde
+      { kind: "campana", width: 110, path: [{ x: 925, y: 1355 }, { x: 1245, y: 1410 }], periodMs: BOLOGNA.liftPeriodMs, on: BOLOGNA_GARISENDA,
+        swing: { pivot: { x: 1140, y: 1150 }, length: 260, amplitudeDeg: BOLOGNA.bellAmplitudeDeg, swingMs: BOLOGNA.bellSwingMs } },
     ],
     hazards: [
       // Traffico leggero della piazza (0-45 s), alto solo 50 px: chi sta sui portici e sulle basi è al riparo
