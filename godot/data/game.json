@@ -9815,6 +9815,10 @@
           }
         }
       },
+      "hurtbox": {
+        "width": 43,
+        "height": 96
+      },
       "attacks": {
         "light": {
           "range": 67,
@@ -10207,6 +10211,10 @@
           }
         }
       },
+      "hurtbox": {
+        "width": 40,
+        "height": 88
+      },
       "attacks": {
         "light": {
           "range": 56,
@@ -10507,6 +10515,10 @@
             "src": "land"
           }
         }
+      },
+      "hurtbox": {
+        "width": 41,
+        "height": 92
       },
       "attacks": {
         "light": {
@@ -11219,6 +11231,10 @@
           "angleDeg": 40
         }
       },
+      "hurtbox": {
+        "width": 28,
+        "height": 102
+      },
       "attacks": {
         "light": {
           "range": 58,
@@ -11844,6 +11860,10 @@
           "angleDeg": 40
         }
       },
+      "hurtbox": {
+        "width": 44,
+        "height": 90
+      },
       "attacks": {
         "light": {
           "range": 51,
@@ -12279,6 +12299,10 @@
           "angleDeg": 40
         }
       },
+      "hurtbox": {
+        "width": 30,
+        "height": 104
+      },
       "attacks": {
         "light": {
           "range": 58,
@@ -12679,6 +12703,10 @@
           "knockbackGrowth": 9,
           "angleDeg": 40
         }
+      },
+      "hurtbox": {
+        "width": 32,
+        "height": 92
       },
       "attacks": {
         "light": {
@@ -13090,6 +13118,10 @@
           "knockbackGrowth": 9,
           "angleDeg": 40
         }
+      },
+      "hurtbox": {
+        "width": 30,
+        "height": 106
       },
       "attacks": {
         "light": {
@@ -13504,6 +13536,10 @@
           "knockbackGrowth": 8,
           "angleDeg": 70
         }
+      },
+      "hurtbox": {
+        "width": 30,
+        "height": 108
       },
       "attacks": {
         "light": {
@@ -13952,6 +13988,10 @@
           "angleDeg": 35
         }
       },
+      "hurtbox": {
+        "width": 34,
+        "height": 112
+      },
       "attacks": {
         "light": {
           "range": 58,
@@ -14312,6 +14352,10 @@
         "jump": 0.9,
         "weight": 1.15,
         "gravity": 0.95
+      },
+      "hurtbox": {
+        "width": 36,
+        "height": 105
       },
       "attacks": {
         "light": {

@@ -1,6 +1,6 @@
 // Attacchi: inizio, finestra attiva, hitbox e cosa succede a chi viene colpito.
 
-import { characterStats, getCharacter, SPECIAL_KINDS, specialAttackSpec, specialsFor, supremeAttackSpec, type SpecialSlot, type TweakableAttack } from "../characters";
+import { characterStats, getCharacter, hurtboxOf, SPECIAL_KINDS, specialAttackSpec, specialsFor, supremeAttackSpec, type SpecialSlot, type TweakableAttack } from "../characters";
 import { ATTACKS, BIRRA, FIGHTER, HITSTOP, HITSTUN_PER_KNOCKBACK, JAB, MICELIO, POWERUP, SMASH_CHARGE, type AttackSpec } from "../constants";
 import type { AttackKind, SpecialKind } from "../types";
 import { biteBox, biting, chooseBiter, hitPets } from "./companion";
@@ -162,8 +162,10 @@ export function attackBox(f: Fighter): Box {
   return { x, y, w: spec.range, h: spec.height };
 }
 
+// Il corpo che si può colpire: quello misurato sul disegno del personaggio (#243)
 export function bodyBox(f: Fighter): Box {
-  return { x: f.x - FIGHTER.width / 2, y: f.y - FIGHTER.height, w: FIGHTER.width, h: FIGHTER.height };
+  const b = hurtboxOf(f.characterId);
+  return { x: f.x - b.width / 2, y: f.y - b.height, w: b.width, h: b.height };
 }
 
 export function overlap(a: Box, b: Box): boolean {

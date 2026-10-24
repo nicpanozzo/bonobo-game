@@ -1993,7 +1993,8 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 
 	# Allenamento: il corpo che si può colpire, lo stesso rettangolo della fisica
 	if show_hitboxes:
-		draw_rect(Rect2(p.x - fw / 2, p.y - fh, fw, fh), Color(0.3, 1, 0.5, 0.9), false, 2.0)
+		var hb: Dictionary = game.characters.get(p.characterId, {}).get("hurtbox", {"width": fw, "height": fh})
+		draw_rect(Rect2(p.x - hb.width / 2, p.y - hb.height, hb.width, hb.height), Color(0.3, 1, 0.5, 0.9), false, 2.0)
 
 	# Colpo in corso: la stessa hitbox di attackBox() in src/shared/physics/attacks.ts,
 	# spostata da boxX/boxY per le varianti direzionali (#2)

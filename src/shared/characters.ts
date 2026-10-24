@@ -374,6 +374,7 @@ export interface CharacterSpec {
   strikeColor?: string; // colore della scia dei suoi colpi, "#rrggbb" (#384 B2); senza, bianca o arancio per i pesanti
   // I suoi colpi normali (#384 D2): ritocchi di ATTACKS, tempi e zone entro ATTACK_TWEAK (lo controlla characters.test.ts)
   attacks?: Partial<Record<TweakableAttack, Partial<AttackSpec>>>;
+  hurtbox?: { width: number; height: number }; // il corpo che si può colpire (#243), in pixel; senza, FIGHTER. Muoversi usa sempre FIGHTER
 }
 
 // Gli attacchi normali che un personaggio può ritoccare: non le speciali, la suprema, il recupero, presa e lanci
@@ -649,6 +650,8 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         supreme: { fps: 24, loop: false, hitFrame: 24 },
       }),
     },
+    // il corpo che si può colpire, misurato sulla sagoma del fermo (#243)
+    hurtbox: { width: 43, height: 96 },
     // le zone dei colpi dove arriva il disegno (#243, tools/sprite/zone_dei_colpi.py)
     attacks: {
       light: { range: 67, height: 30, boxX: 15, boxY: -62 },
@@ -699,6 +702,8 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         tumble: { fps: 24, loop: true }, // rotola quando vola via
       },
     },
+    // il corpo che si può colpire, misurato sulla sagoma del fermo (#243)
+    hurtbox: { width: 40, height: 88 },
     // le zone dei colpi dove arriva il disegno (#243, tools/sprite/zone_dei_colpi.py)
     attacks: {
       light: { range: 56, height: 30, boxX: 0, boxY: -64 },
@@ -750,6 +755,8 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         supreme: { fps: 1, loop: false }, // "Final Smash"
       },
     },
+    // il corpo che si può colpire, misurato sulla sagoma del fermo (#243)
+    hurtbox: { width: 41, height: 92 },
     // le zone dei colpi dove arriva il disegno (#243, tools/sprite/zone_dei_colpi.py)
     attacks: {
       light: { range: 48, height: 30, boxX: 0, boxY: -56 },
@@ -806,6 +813,8 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       // si scola una Monster mentre para, e risponde carico
       down: { type: "counter", name: "Monster", startupMs: 60, windowMs: 380, endLagMs: 460, minDamage: 9, multiplier: 1.4, range: 60, height: 60, baseKnockback: 460, knockbackGrowth: 9, angleDeg: 40 },
     },
+    // il corpo che si può colpire, misurato sulla sagoma del fermo (#243)
+    hurtbox: { width: 28, height: 102 },
     // le zone dei colpi dove arriva il disegno (#243, tools/sprite/zone_dei_colpi.py)
     attacks: {
       light: { range: 58, height: 30, boxX: 0, boxY: -72 },
@@ -900,6 +909,8 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       side: { type: "projectile", name: "Bassline", startupMs: 240, cooldownMs: 700, speed: 420, gravity: 0, lifeMs: 1000, maxAlive: 1, range: 26, height: 70, damage: 5, baseKnockback: 260, knockbackGrowth: 3, angleDeg: 20, color: 0xb48cff },
       down: { type: "counter", name: "Cambio pannolino", startupMs: 50, windowMs: 400, endLagMs: 450, minDamage: 8, multiplier: 1.3, range: 60, height: 60, baseKnockback: 450, knockbackGrowth: 9, angleDeg: 40 },
     },
+    // il corpo che si può colpire, misurato sulla sagoma del fermo (#243)
+    hurtbox: { width: 44, height: 90 },
     // le zone dei colpi dove arriva il disegno (#243, tools/sprite/zone_dei_colpi.py)
     attacks: {
       light: { range: 51, height: 30, boxX: 0, boxY: -52 },
@@ -931,6 +942,8 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       side: { type: "dash", name: "Scivolata", startupMs: 120, durationMs: 320, speed: 820, endLagMs: 400, range: 56, height: 28, damage: 9, baseKnockback: 340, knockbackGrowth: 8, angleDeg: 60, boxY: -30 },
       down: { type: "counter", name: "RitTURD", startupMs: 60, windowMs: 400, endLagMs: 480, minDamage: 8, multiplier: 1.3, range: 60, height: 60, baseKnockback: 450, knockbackGrowth: 9, angleDeg: 40 },
     },
+    // il corpo che si può colpire, misurato sulla sagoma del fermo (#243)
+    hurtbox: { width: 30, height: 104 },
     // le zone dei colpi dove arriva il disegno (#243, tools/sprite/zone_dei_colpi.py)
     attacks: {
       light: { range: 58, height: 30, boxX: 0, boxY: -72 },
@@ -996,6 +1009,8 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       // gira una canna mentre para; tiro e scatto restano quelli di base finché la scheda non li dice
       down: { type: "counter", name: "Rolling", startupMs: 60, windowMs: 420, endLagMs: 460, minDamage: 8, multiplier: 1.3, range: 60, height: 60, baseKnockback: 440, knockbackGrowth: 9, angleDeg: 40 },
     },
+    // il corpo che si può colpire, misurato sulla sagoma del fermo (#243)
+    hurtbox: { width: 32, height: 92 },
     // le zone dei colpi dove arriva il disegno (#243, tools/sprite/zone_dei_colpi.py)
     attacks: {
       light: { range: 46, height: 30, boxX: 0, boxY: -71 },
@@ -1026,6 +1041,8 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       // si arrabbia e si getta in avanti: forte ma lascia scoperti
       side: { type: "dash", name: "Burnout", startupMs: 180, durationMs: 300, speed: 950, endLagMs: 460, range: 46, height: 50, damage: 12, baseKnockback: 420, knockbackGrowth: 9, angleDeg: 35 },
     },
+    // il corpo che si può colpire, misurato sulla sagoma del fermo (#243)
+    hurtbox: { width: 30, height: 106 },
     // le zone dei colpi dove arriva il disegno (#243, tools/sprite/zone_dei_colpi.py)
     attacks: {
       light: { range: 58, height: 30, boxX: 0, boxY: -72 },
@@ -1059,6 +1076,8 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       // la scoreggia di spore: la nube colpisce tutto intorno, davanti e dietro (rettangolo centrato su di lui)
       down: { type: "charge", name: "Nube di spore", minMs: 200, maxMs: 1000, maxMultiplier: 1.6, activeMs: 160, endLagMs: 420, range: 130, height: 80, boxX: -65, boxY: -80, damage: 8, baseKnockback: 360, knockbackGrowth: 8, angleDeg: 70 },
     },
+    // il corpo che si può colpire, misurato sulla sagoma del fermo (#243)
+    hurtbox: { width: 30, height: 108 },
     // le zone dei colpi dove arriva il disegno (#243, tools/sprite/zone_dei_colpi.py)
     attacks: {
       light: { range: 58, height: 30, boxX: 0, boxY: -72 },
@@ -1092,6 +1111,8 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       // urla e allontana: risposta debole ma che spinge lontano
       down: { type: "counter", name: "Mahmmoney", startupMs: 60, windowMs: 400, endLagMs: 460, minDamage: 6, multiplier: 1.1, range: 80, height: 70, baseKnockback: 560, knockbackGrowth: 10, angleDeg: 35 },
     },
+    // il corpo che si può colpire, misurato sulla sagoma del fermo (#243)
+    hurtbox: { width: 34, height: 112 },
     // le zone dei colpi dove arriva il disegno (#243, tools/sprite/zone_dei_colpi.py)
     attacks: {
       light: { range: 58, height: 30, boxX: 0, boxY: -72 },
@@ -1128,6 +1149,8 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     },
     // pesante e lenta a terra, salta poco ma cade piano: non la sposti facilmente
     stats: { weight: 1.15, speed: 0.85, airSpeed: 0.95, jump: 0.9, gravity: 0.95 },
+    // il corpo che si può colpire, misurato sulla sagoma del fermo (#243)
+    hurtbox: { width: 36, height: 105 },
     // i colpi normali col mattarello (#384 D2): più lunghi e un po' più lenti di quelli di tutti;
     // le zone dove arriva il disegno (#243, tools/sprite/zone_dei_colpi.py)
     attacks: {
@@ -1157,6 +1180,11 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
 // Un id sconosciuto (o mancante) diventa il personaggio base
 export function getCharacter(id: string | undefined): CharacterSpec {
   return (id && Object.hasOwn(CHARACTERS, id) && CHARACTERS[id]) || CHARACTERS[DEFAULT_CHARACTER_ID];
+}
+
+// Il corpo che si può colpire (#243): misurato sul disegno del personaggio, o quello di tutti
+export function hurtboxOf(id: string | undefined): { width: number; height: number } {
+  return getCharacter(id).hurtbox ?? FIGHTER;
 }
 
 // La skin chiesta, se quel lottatore ce l'ha; altrimenti nessuna (l'aspetto base). Arriva dalla rete: non ci si fida
