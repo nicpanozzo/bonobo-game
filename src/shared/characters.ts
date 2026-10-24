@@ -780,6 +780,48 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     crews: ["lolhardcore"],
     // la Bassline col basso a tracolla: tools/sprite/bradipo_bassline.py
     sprite: sheetSprite("bradipo", 298, 200, 185, { specialSide: { fps: 1, loop: false } }),
+    skins: {
+      // Dal video di tutte le mosse fatto da Nicola con Google Flow (tools/sprite/bradipo_dal_video.py): la Bassline col
+      // basso e DEMACIAAA che gira in piedi come la E di Garen, brandendo il basso
+      bassista: {
+        name: "Bassista",
+        sprite: {
+          dir: "assets/characters/bradipo/skins/bassista",
+          frameWidth: 320, // largo: la scia del basso nella suprema esce di lato
+          frameHeight: 250,
+          footY: 232,
+          scale: 0.5, // alto come le pose del foglio
+          animations: {
+            idle: { fps: 8, loop: true },
+            walk: { fps: 14, loop: true },
+            dash: { fps: 14, loop: true },
+            jump: { fps: 18, loop: false },
+            fall: { fps: 10, loop: true },
+            doubleJump: { fps: 24, loop: false }, // la capriola
+            tumble: { fps: 18, loop: true },
+            land: { fps: 24, loop: false },
+            hit: { fps: 16, loop: false },
+            taunt: { fps: 12, loop: false }, // il riff a testa bassa
+            shield: { fps: 8, loop: true },
+            light: { fps: 24, loop: false, hitFrame: 3 },
+            heavy: { fps: 24, loop: false, hitFrame: 5 },
+            lightUp: { fps: 24, loop: false, hitFrame: 2 },
+            heavyUp: { fps: 24, loop: false, hitFrame: 3 },
+            lightDown: { fps: 24, loop: false, hitFrame: 2 },
+            heavyDown: { fps: 24, loop: false, hitFrame: 3 },
+            lightAir: { fps: 24, loop: false, hitFrame: 1 },
+            heavyAir: { fps: 24, loop: false, hitFrame: 1 },
+            recovery: { fps: 24, loop: false, hitFrame: 0 },
+            grab: { fps: 24, loop: false, hitFrame: 5 },
+            throw: { fps: 24, loop: false, hitFrame: 0 },
+            specialNeutral: { fps: 24, loop: false, hitFrame: 3 }, // Ciacole: le mani alla bocca
+            specialSide: { fps: 24, loop: false, hitFrame: 5 }, // Bassline: il riff
+            specialDown: { fps: 24, loop: false, hitFrame: 1 }, // Cambio pannolino: si copre
+            supreme: { fps: 12, loop: false, hitFrame: 4 }, // DEMACIAAA: 22 fotogrammi, quasi quanto dura il giro
+          },
+        },
+      },
+    },
     // dalla scheda: "DEMACIAAA", gira come Garen e fa danno a chi tocca (#358). Nel foglio è la palla della Final Smash
     supreme: {
       type: "spin",
