@@ -1095,7 +1095,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
   // Griga (KittySeanKula): l'allenatore con la lavagnetta, le collane d'oro e la tuta verde e gialla
   coachcartier: {
     id: "coachcartier",
-    name: "Coach Cartier",
+    name: "Electronmaster",
     quotes: { taunt: "Va bene perdere se sei ricco!" },
     crews: ["cuamm", "cologna"], // dal LORE
     sprite: communitySprite("coachcartier"),
