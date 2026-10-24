@@ -4,7 +4,7 @@ import { FIGHTER, PACMAN, TETRIS, TICK_RATE, WORLD } from "../constants";
 import { ITEMS, DROPPABLE_ITEMS } from "../items";
 import type { StageSpec } from "../stages";
 import { emptyInput, createFighter, stepWorld, type PhysicsContext } from "./index";
-import { pieceCells, startArcade, tetrisState } from "./arcade";
+import { pacmanSpeedMul, pelletsFor, pieceCells, startArcade, tetrisState } from "./arcade";
 import { tickPowerup } from "./items";
 
 const DT = 1000 / TICK_RATE;
@@ -200,6 +200,38 @@ describe("power-up Pac-Man (#427)", () => {
     steps(3, list, ctx);
     assert.ok(player.x > WORLD.width - 30, `rientrato da destra (x = ${player.x})`);
     assert.ok(!ctx.events.some((e) => e.type === "ko"), "niente KO");
+  });
+
+  it("nelle arene più larghe dello schermo rientra dai bordi dell'arena, non dello schermo (Padova)", () => {
+    const { ctx, player, list } = pacSetup();
+    ctx.stage = { ...ctx.stage, width: 1920 };
+    player.x = WORLD.width - 20;
+    steps(6, list, ctx);
+    assert.ok(player.x > WORLD.width, `continua oltre il primo schermo (x = ${player.x})`);
+    player.x = 1910;
+    steps(3, list, ctx);
+    assert.ok(player.x < 30, `rientrato da sinistra dopo il bordo dell'arena (x = ${player.x})`);
+  });
+
+  it("ogni pallina mangiata lo fa andare più veloce, fino a un tetto, e riparte da zero alla forma dopo", () => {
+    const { ctx, player, list } = pacSetup();
+    const pellets = pelletsFor(ctx.stage);
+    const first = pellets[0];
+    player.pacDir = { x: 0, y: 0 };
+    player.x = first.x;
+    player.y = first.y + FIGHTER.height / 2;
+    steps(1, list, ctx);
+    assert.ok((player.pacPellets ?? 0) >= 1, "mangiata");
+    assert.ok(!ctx.arcade?.pellets?.some((q) => q.x === first.x && q.y === first.y), "sparita");
+    assert.ok(pacmanSpeedMul(player) > 1);
+    player.pacPellets = 10_000;
+    assert.equal(pacmanSpeedMul(player), PACMAN.maxSpeedMul);
+    player.pacDir = { x: 1, y: 0 };
+    const x = player.x;
+    steps(1, list, ctx);
+    assert.ok(player.x - x > (PACMAN.speedPxS / TICK_RATE) * 1.5, "va più veloce");
+    startArcade(player);
+    assert.equal(pacmanSpeedMul(player), 1);
   });
 
   it("mangia chi tocca, una volta ogni tanto", () => {

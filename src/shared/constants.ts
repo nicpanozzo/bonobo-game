@@ -709,6 +709,12 @@ export const PACMAN = {
   knockbackGrowth: 6, // pixel/s in più per ogni punto di percentuale del bersaglio
   angleDeg: 45, // angolo di lancio
   eatAgainMs: 1200, // ms prima di poter mangiare di nuovo lo stesso lottatore
+  pelletStepPx: 40, // pixel tra due palline sulle superfici (Godot le disegna negli stessi posti, arcade_view.gd)
+  pelletAbovePx: 40, // pixel sopra la superficie a cui stanno le palline
+  bigPelletEvery: 8, // una pallina grande ogni tante
+  speedPerPellet: 0.012, // velocità in più per ogni pallina mangiata, frazione di speedPxS (Nicola, 24 ottobre 2026)
+  bigPelletValue: 5, // una pallina grande vale come tante piccole
+  maxSpeedMul: 1.8, // la velocità non supera speedPxS per questo
 };
 
 // Limiti della rete (#105): il server non si fida di quello che riceve

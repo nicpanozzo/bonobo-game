@@ -748,7 +748,13 @@
     "knockback": 560,
     "knockbackGrowth": 6,
     "angleDeg": 45,
-    "eatAgainMs": 1200
+    "eatAgainMs": 1200,
+    "pelletStepPx": 40,
+    "pelletAbovePx": 40,
+    "bigPelletEvery": 8,
+    "speedPerPellet": 0.012,
+    "bigPelletValue": 5,
+    "maxSpeedMul": 1.8
   },
   "effects": {
     "phaseBannerMs": 2500,

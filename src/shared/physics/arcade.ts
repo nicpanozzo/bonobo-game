@@ -8,7 +8,7 @@
 
 import { characterStats } from "../characters";
 import { FIGHTER, HITSTOP, HITSTUN_PER_KNOCKBACK, PACMAN, STATION, TETRIS, WORLD } from "../constants";
-import type { Rect } from "../stages";
+import { stageHeight, stageWidth, type Rect } from "../stages";
 import { rng } from "../stageGenerator";
 import type { TetrisState } from "../types";
 import { bodyBox } from "./attacks";
@@ -57,6 +57,13 @@ export interface ArcadeWorld {
   random: () => number;
   eaten?: Record<string, number>; // Pac-Man: "chi/chi è stato mangiato" -> tempo dell'arena del boccone
   nextPieceMs?: Record<string, number>; // Tetris: chi gioca -> tempo dell'arena da cui può comparire il suo pezzo nuovo
+  pellets?: Pellet[]; // Pac-Man: le palline ancora da mangiare, finché c'è un Pac-Man; finite, ricominciano
+}
+
+export interface Pellet {
+  x: number;
+  y: number;
+  big: boolean;
 }
 
 const C = TETRIS.cellPx;
@@ -171,25 +178,63 @@ function room(x: number, bottom: number, fall: number, ctx: PhysicsContext, bloc
 const PAC_KEYS: [keyof Fighter["input"], number, number][] = [["left", -1, 0], ["right", 1, 0], ["up", 0, -1], ["jump", 0, -1], ["down", 0, 1]];
 
 // Da Pac-Man si va sempre dritti: una freccia appena premuta cambia direzione. Si passa attraverso tutto
-// e chi esce da un lato dello schermo rientra dall'altro
-export function playPacman(f: Fighter, dtMs: number): void {
+// e chi esce da un lato dell'arena rientra dall'altro (le arene larghe come Padova non finiscono allo schermo)
+export function playPacman(f: Fighter, dtMs: number, ctx: PhysicsContext): void {
   const turn = PAC_KEYS.find(([k]) => f.input[k] && !f.prevInput[k]);
   if (turn) f.pacDir = { x: turn[1], y: turn[2] };
   const dir = f.pacDir ?? { x: f.facing, y: 0 };
-  f.vx = dir.x * PACMAN.speedPxS;
-  f.vy = dir.y * PACMAN.speedPxS;
+  const speed = PACMAN.speedPxS * pacmanSpeedMul(f);
+  f.vx = dir.x * speed;
+  f.vy = dir.y * speed;
   if (dir.x !== 0) f.facing = dir.x as 1 | -1;
-  f.x = wrap(f.x + (f.vx * dtMs) / 1000, WORLD.width);
-  f.y = wrap(f.y + (f.vy * dtMs) / 1000, WORLD.height);
+  f.x = wrap(f.x + (f.vx * dtMs) / 1000, stageWidth(ctx.stage));
+  f.y = wrap(f.y + (f.vy * dtMs) / 1000, stageHeight(ctx.stage));
   f.onGround = false;
   f.riding = -1;
 }
 
 const wrap = (v: number, size: number) => ((v % size) + size) % size;
 
+// Ogni pallina mangiata fa andare Pac-Man un po' più veloce, fino a un tetto (Nicola, 24 ottobre 2026)
+export const pacmanSpeedMul = (f: Fighter) => Math.min(1 + (f.pacPellets ?? 0) * PACMAN.speedPerPellet, PACMAN.maxSpeedMul);
+
+// Le palline sulle superfici dell'arena, come le disegna Godot (pellets_for in arcade_view.gd): una ogni pelletStepPx
+export function pelletsFor(stage: PhysicsContext["stage"]): Pellet[] {
+  const out: Pellet[] = [];
+  const width = stageWidth(stage);
+  const step = PACMAN.pelletStepPx;
+  for (const t of [...stage.solids, ...stage.platforms]) {
+    const end = Math.min(t.x + t.width, width) - step / 2;
+    for (let x = Math.max(t.x, 0) + step / 2, i = 0; x <= end; x += step, i++) {
+      out.push({ x, y: t.y - PACMAN.pelletAbovePx, big: i % PACMAN.bigPelletEvery === PACMAN.bigPelletEvery / 2 });
+    }
+  }
+  return out;
+}
+
+// Pac-Man si mangia le palline che gli passano in bocca: ognuna lo accelera
+function eatPellets(pacmen: Fighter[], ctx: PhysicsContext) {
+  if (pacmen.length === 0) {
+    if (ctx.arcade) ctx.arcade.pellets = undefined;
+    return;
+  }
+  const world = arcadeWorld(ctx);
+  if (!world.pellets?.length) world.pellets = pelletsFor(ctx.stage);
+  for (const pac of pacmen) {
+    const cx = pac.x;
+    const cy = pac.y - FIGHTER.height / 2;
+    world.pellets = world.pellets.filter((q) => {
+      if ((q.x - cx) ** 2 + (q.y - cy) ** 2 > PACMAN.radiusPx ** 2) return true;
+      pac.pacPellets = (pac.pacPellets ?? 0) + (q.big ? PACMAN.bigPelletValue : 1);
+      return false;
+    });
+  }
+}
+
 // Chi entra nella bocca di Pac-Man viene mangiato: vola via, e per un po' non si rimangia
 function eatWithPacman(fighters: Fighter[], ctx: PhysicsContext) {
   const pacmen = fighters.filter((f) => f.powerup === "pacman" && !f.eliminated && !f.respawning);
+  eatPellets(pacmen, ctx);
   if (pacmen.length === 0) return;
   const world = arcadeWorld(ctx);
   const eaten = (world.eaten ??= {});
@@ -348,6 +393,7 @@ export function startArcade(f: Fighter): void {
   f.vx = 0;
   f.vy = 0;
   f.pacDir = { x: f.facing, y: 0 };
+  f.pacPellets = 0;
 }
 
 // Si torna in partita: dove si era, coi salti e un attimo intoccabili
