@@ -10,7 +10,7 @@ var _out := "user://screenshots"
 var _game: Dictionary
 var _world: Node2D # nella partita finta: riceve uno snapshot a ogni frame
 var _hud: Control
-const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre", "lobby_regole", "musica", "tetris", "pacman", "bologna_piazza", "bologna_torri", "bologna_crollo", "bologna_zuffa"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
+const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre", "lobby_regole", "musica", "tetris", "pacman", "bologna_piazza", "bologna_torri", "bologna_crollo", "bologna_zuffa", "oggetti"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
 var _index := -1
 var _frame := 0
 var _failed := false
@@ -18,6 +18,7 @@ var _teams := false # la partita finta a tre squadre (#409)
 var _music := false # la partita finta nell'arena musicale, durante la Meraviglia (#423)
 var _tetris_on := false # la partita finta con uno che gioca a Tetris (#427)
 var _pacman_on := false # la partita finta con un Pac-Man e i fantasmini (#427)
+var _items_on := false # la partita finta con tutti gli oggetti in fila a terra
 var _bologna: Dictionary = {} # le fasi di Bologna (#433): {ms, cam, zoom, spots}, vuoto nelle altre partite
 # Bologna in quattro momenti: l'auto in piazza, l'ingorgo sotto le torri, la Garisenda che cade coi mattoni, la polvere
 const BOLOGNA_SHOTS := {
@@ -151,6 +152,13 @@ func _bologna_zuffa() -> void:
 	_partita()
 
 
+# Tutti gli oggetti che cadono, in fila a terra, per vedere come sono disegnati
+func _oggetti() -> void:
+	_bologna = {}
+	_items_on = true
+	_partita()
+
+
 func _partita() -> void:
 	var world: Node2D = load("res://scripts/world_view.gd").new()
 	root.add_child(world)
@@ -210,6 +218,13 @@ func _snapshot(frame: int) -> Dictionary:
 				{"x": 18 * c, "y": 480, "kind": "O", "ms": 900}, {"x": 19 * c, "y": 480, "kind": "O", "ms": 900}, {"x": 18 * c, "y": 440, "kind": "O", "ms": 900}, {"x": 19 * c, "y": 440, "kind": "O", "ms": 900}],
 		}
 		snap.items = [{"id": 9, "kind": "tetris", "x": 640, "y": 560, "vx": 0, "vy": 0, "heldBy": null, "thrown": false}]
+	if _items_on:
+		snap.projectiles = []
+		var kinds: Array = _game.droppableItems
+		for i in kinds.size():
+			snap.items.append({"id": 20 + i, "kind": kinds[i], "x": 380 + i * 75, "y": 560, "vx": 0, "vy": 0, "heldBy": null, "thrown": false})
+		for p in players:
+			p.y = 300
 	return snap
 
 

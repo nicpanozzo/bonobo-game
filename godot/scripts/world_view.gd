@@ -1123,10 +1123,43 @@ func _draw_items(now: int) -> void:
 		# Il funghetto piantato (#302): chi l'ha piantato lo vede, gli altri appena appena
 		var owner: Variant = it.get("owner")
 		var alpha := 1.0 if owner == null or owner == my_id else 0.13
-		_draw_item(it.kind, pos, spin, float(it.get("load", -1.0)), alpha)
+		# A terra l'oggetto ondeggia sopra la sua ombra e ogni tanto luccica: si capisce che si raccoglie
+		var lying: bool = holder == null and not it.thrown and absf(float(it.get("vy", 0.0))) < 1.0 and it.kind != "fungo"
+		var bob := 0.0
+		if lying:
+			bob = -ITEM_BOB_PX * (0.5 + 0.5 * sin(now / 380.0 + float(it.id)))
+			_draw_item_shadow(it.kind, pos, bob)
+		_draw_item(it.kind, pos + Vector2(0, bob), spin, float(it.get("load", -1.0)), alpha)
+		if lying and not Access.calm:
+			_draw_item_glint(it.kind, pos + Vector2(0, bob), now + int(it.id) * 977)
 	for id in _item_pos.keys():
 		if not seen.has(id):
 			_item_pos.erase(id)
+
+
+# L'ombra a terra: un'ovale scura che si stringe quando l'oggetto sale
+func _draw_item_shadow(kind: String, base: Vector2, bob: float) -> void:
+	var w: float = float(game.items.get(kind, {"width": 24}).width) * ITEM_SCALE
+	var k := 1.0 + bob / (ITEM_BOB_PX * 4.0)
+	var pts := PackedVector2Array()
+	for i in 16:
+		var a := TAU * i / 16.0
+		pts.append(base + Vector2(cos(a) * w * 0.55 * k, sin(a) * 3.5 * k))
+	draw_colored_polygon(pts, Color(0, 0, 0, 0.28 * k))
+
+
+# Il luccichio: una stellina a quattro punte che passa su un angolo dell'oggetto ogni ~2,5 s
+func _draw_item_glint(kind: String, base: Vector2, now: int) -> void:
+	var t := fmod(now / 2500.0, 1.0)
+	if t > 0.16:
+		return
+	var spec: Dictionary = game.items.get(kind, {"width": 24, "height": 16})
+	var life := sin(t / 0.16 * PI)
+	var c := base + Vector2(float(spec.width) * 0.35, -float(spec.height) * 0.95) * ITEM_SCALE
+	var r := 7.0 * life
+	var col := Color(1, 1, 0.92, 0.95 * life)
+	draw_colored_polygon(PackedVector2Array([c + Vector2(0, -r), c + Vector2(r * 0.22, -r * 0.22), c + Vector2(r, 0), c + Vector2(r * 0.22, r * 0.22),
+		c + Vector2(0, r), c + Vector2(-r * 0.22, r * 0.22), c + Vector2(-r, 0), c + Vector2(-r * 0.22, -r * 0.22)]), col)
 
 
 # Le pozze dell'IRA (#13): una macchia marrone schiacciata a terra, lucida, con due grumi
@@ -1145,51 +1178,104 @@ func _draw_puddles(now: int) -> void:
 		draw_line(c + Vector2(-w * 0.3, -1), c + Vector2(w * 0.05, -1), Color(1, 0.9, 0.7, shine), 2.0)
 
 
-# La banana è una mezzaluna gialla con le punte scure; gli altri oggetti, finché non hanno
-# un disegno, sono un rettangolo del loro colore
+# Gli oggetti sono disegnati come i lottatori: contorno scuro a inchiostro, colore pieno, una luce e un'ombra.
+# Più grandi della loro scatola di gioco (ITEM_SCALE), così si riconoscono anche da lontano
 func _draw_item(kind: String, base: Vector2, spin: float, load: float = -1.0, alpha: float = 1.0) -> void:
 	var spec: Dictionary = game.items.get(kind, {"width": 24, "height": 16, "color": 0xffffff})
 	var w: float = spec.width
 	var h: float = spec.height
-	var center := base - Vector2(0, h / 2)
-	draw_set_transform(center, spin, Vector2.ONE)
+	var center := base - Vector2(0, h / 2) * ITEM_SCALE
+	draw_set_transform(center, spin, Vector2.ONE * ITEM_SCALE)
+	var now := Time.get_ticks_msec()
 	if kind == "banana":
-		draw_arc(Vector2(0, -h * 0.9), h * 1.25, PI * 0.2, PI * 0.8, 12, _color(spec.color), h * 0.55)
-		draw_circle(Vector2(-w * 0.42, -h * 0.25), 2.5, Color("5a3a1a"))
-		draw_circle(Vector2(w * 0.42, -h * 0.25), 2.5, Color("5a3a1a"))
+		_draw_banana(w, h)
 	elif kind == "fiore":
 		# Un alone che respira, così a terra si nota anche da lontano
-		var glow := 0.5 + 0.5 * sin(Time.get_ticks_msec() / 260.0)
+		var glow := 0.5 + 0.5 * sin(now / 260.0)
 		draw_circle(Vector2(0, -h * 0.05), h * (0.8 + 0.12 * glow), Color(FLOWER_GREEN.lightened(0.4), 0.25 + 0.15 * glow))
 		draw_leaf(self, Vector2(0, h / 2), h * 1.3, FLOWER_GREEN.lightened(0.1))
 	elif kind == "pacman":
-		# Pac-Man (#427): la bocca che mastica, con una pallina davanti
-		var chew := 0.08 + 0.25 * absf(sin(Time.get_ticks_msec() / 120.0))
-		var pts := PackedVector2Array([Vector2.ZERO])
+		# Pac-Man (#427): raggi arcade che girano dietro, la bocca che mastica, l'occhio e una pallina davanti
+		_draw_arcade_rays(w, ArcadeView.PAC_YELLOW, now)
+		var chew := 0.08 + 0.25 * absf(sin(now / 120.0))
+		var pts := PackedVector2Array([Vector2(-w * 0.08, 0)])
 		for k in 17:
 			pts.append(Vector2.from_angle(chew * PI + (TAU - 2.0 * chew * PI) * k / 16.0) * w / 2.0)
 		draw_colored_polygon(pts, ArcadeView.PAC_YELLOW)
-		draw_circle(Vector2(w * 0.55, 0), 3.0, ArcadeView.PELLET)
+		var shade := PackedVector2Array()
+		for k in 9:
+			shade.append(Vector2.from_angle(PI * 0.35 + PI * 0.55 * k / 8.0) * w * 0.46)
+		draw_polyline(shade, ArcadeView.PAC_YELLOW.darkened(0.25), 3.0)
+		_ink_outline(pts)
+		draw_circle(Vector2(w * 0.04, -w * 0.27), 2.6, ArcadeView.INK)
+		draw_circle(Vector2(w * 0.68, 0), 3.5, ArcadeView.INK)
+		draw_circle(Vector2(w * 0.68, 0), 2.5, ArcadeView.PELLET)
 	elif kind == "tetris":
-		# Il Tetris (#427): un pezzo a T che brilla, con i quadretti in rilievo
-		var glow := 0.5 + 0.5 * sin(Time.get_ticks_msec() / 220.0)
-		draw_circle(Vector2.ZERO, w * (0.85 + 0.1 * glow), Color(0.3, 0.85, 1.0, 0.18 + 0.12 * glow))
+		# Il Tetris (#427): raggi arcade e un pezzo a T che brilla, con i quadretti in rilievo
+		_draw_arcade_rays(w, Color(0.3, 0.85, 1.0), now)
 		var q := w / 3.0
 		for c: Vector2 in [Vector2(-1.5, -0.5), Vector2(-0.5, -0.5), Vector2(0.5, -0.5), Vector2(-0.5, 0.5)]:
 			_arcade.draw_cell(self, c * q, q, Color("b04df0"))
+		_ink_outline(PackedVector2Array([Vector2(-1.5, -0.5) * q, Vector2(1.5, -0.5) * q, Vector2(1.5, 0.5) * q, Vector2(0.5, 0.5) * q,
+			Vector2(0.5, 1.5) * q, Vector2(-0.5, 1.5) * q, Vector2(-0.5, 0.5) * q, Vector2(-1.5, 0.5) * q]), 2.5)
 	elif kind == "bong":
 		_draw_bong(spec, h, load)
 	elif kind == "fungo":
 		_draw_mushroom(w, h, alpha)
 	elif kind == "funghetti":
-		# Il sacchetto: viola chiuso col laccio, e tre cappelli che spuntano
-		draw_circle(Vector2(0, h * 0.1), w * 0.45, Color(0.45, 0.25, 0.55))
-		draw_line(Vector2(-w * 0.25, -h * 0.25), Vector2(w * 0.25, -h * 0.25), Color(0.9, 0.8, 0.5), 2.0)
-		for k in 3:
-			_draw_mushroom(w * 0.45, h * 0.45, 1.0, Vector2((k - 1) * w * 0.28, -h * 0.3))
+		_draw_mushroom_bag(w, h)
 	else:
 		draw_rect(Rect2(-w / 2, -h / 2, w, h), _color(spec.color))
+		draw_rect(Rect2(-w / 2, -h / 2, w, h), ArcadeView.INK, false, 2.0)
 	draw_set_transform(Vector2.ZERO)
+
+
+# Il contorno a inchiostro di un poligono chiuso
+func _ink_outline(pts: PackedVector2Array, width := 2.0, alpha := 1.0) -> void:
+	draw_polyline(pts + PackedVector2Array([pts[0]]), Color(ArcadeView.INK, alpha), width, true)
+
+
+# Dietro ai power-up arcade (#427): un sole di raggi che gira piano, come nei cabinati
+func _draw_arcade_rays(w: float, col: Color, now: int) -> void:
+	if Access.calm:
+		return
+	var turn := now / 2400.0
+	var pulse := 0.5 + 0.5 * sin(now / 220.0)
+	draw_circle(Vector2.ZERO, w * (0.8 + 0.08 * pulse), Color(col, 0.16 + 0.1 * pulse))
+	for k in 8:
+		var a := turn + TAU * k / 8.0
+		draw_colored_polygon(PackedVector2Array([Vector2.from_angle(a - 0.13) * w * 0.45, Vector2.from_angle(a) * w * (1.05 + 0.1 * pulse), Vector2.from_angle(a + 0.13) * w * 0.45]), Color(col.lightened(0.3), 0.3))
+
+
+# La banana: una mezzaluna piena che si assottiglia verso le punte, col picciolo, le punte scure e una luce
+func _draw_banana(w: float, h: float) -> void:
+	var hub := Vector2(0, -h * 0.95)
+	var radius := h * 1.3
+	var thick := h * 0.78
+	var outer := PackedVector2Array()
+	var inner := PackedVector2Array()
+	for k in 15:
+		var u := k / 14.0
+		var a := lerpf(PI * 0.2, PI * 0.8, u)
+		var t := thick * (0.3 + 0.7 * sin(PI * u))
+		outer.append(hub + Vector2.from_angle(a) * (radius + t * 0.5))
+		inner.append(hub + Vector2.from_angle(a) * (radius - t * 0.5))
+	inner.reverse()
+	var body := outer + inner
+	draw_colored_polygon(body, Color("f4c81c"))
+	# L'ombra sotto e la luce sopra, due strisce che seguono la curva
+	var under := PackedVector2Array()
+	var shine := PackedVector2Array()
+	for k in 9:
+		var a := lerpf(PI * 0.3, PI * 0.7, k / 8.0)
+		under.append(hub + Vector2.from_angle(a) * (radius + thick * 0.28))
+		shine.append(hub + Vector2.from_angle(a) * (radius - thick * 0.12))
+	draw_polyline(under, Color("d99a12"), 3.5, true)
+	draw_polyline(shine, Color(1, 0.97, 0.75), 2.0, true)
+	_ink_outline(body, 1.5)
+	draw_circle(outer[0].lerp(inner[inner.size() - 1], 0.5), 2.8, Color("4a2e14"))
+	var tip := outer[outer.size() - 1].lerp(inner[0], 0.5)
+	draw_line(tip, tip + Vector2(-2, -6), Color("6b4a1e"), 3.5)
 
 
 # Il bong (#302): tubo di vetro con l'acqua, il fornelletto di lato e il boccaglio in alto.
@@ -1197,17 +1283,24 @@ func _draw_item(kind: String, base: Vector2, spin: float, load: float = -1.0, al
 func _draw_bong(spec: Dictionary, h: float, load: float) -> void:
 	var w: float = spec.width
 	var glass := Color(0.75, 0.95, 0.9, 0.55)
-	var rim := Color(0.85, 1, 0.95, 0.9)
 	var base := Rect2(-w / 2, h * 0.12, w, h * 0.38)
-	draw_rect(base, glass)
+	var neck := Rect2(-w * 0.22, -h / 2, w * 0.44, h * 0.64)
+	# Il fornelletto, inclinato verso l'esterno, dietro al vetro
+	draw_line(Vector2(w * 0.3, h * 0.32), Vector2(w * 0.85, h * 0.02), ArcadeView.INK, 5.5)
+	draw_line(Vector2(w * 0.3, h * 0.32), Vector2(w * 0.85, h * 0.02), Color(0.85, 1, 0.95), 2.5)
+	draw_circle(Vector2(w * 0.88, 0), 4.5, ArcadeView.INK)
+	draw_circle(Vector2(w * 0.88, 0), 3.2, Color("8a5a32"))
+	var body := PackedVector2Array([neck.position, Vector2(neck.end.x, neck.position.y), Vector2(neck.end.x, base.position.y), Vector2(base.end.x, base.position.y + 4),
+		base.end, Vector2(base.position.x, base.end.y), Vector2(base.position.x, base.position.y + 4), Vector2(neck.position.x, base.position.y)])
+	draw_colored_polygon(body, glass)
 	var water := Color(0.35, 0.75, 0.6, 0.85)
 	draw_rect(Rect2(base.position.x + 2, base.position.y + base.size.y * 0.35, base.size.x - 4, base.size.y * 0.6), water)
-	draw_rect(Rect2(-w * 0.22, -h / 2, w * 0.44, h * 0.64), glass)
-	draw_rect(Rect2(-w / 2, -h / 2, w, h), rim, false, 1.5)
-	draw_line(Vector2(-w * 0.22, -h / 2), Vector2(w * 0.22, -h / 2), rim, 3.0)
-	# Il fornelletto, inclinato verso l'esterno
-	draw_line(Vector2(w * 0.4, h * 0.3), Vector2(w * 0.85, h * 0.02), rim, 3.0)
-	draw_circle(Vector2(w * 0.88, 0), 4.0, Color("6b4a2a"))
+	draw_line(Vector2(base.position.x + 2, base.position.y + base.size.y * 0.35), Vector2(base.end.x - 2, base.position.y + base.size.y * 0.35), water.lightened(0.4), 1.5)
+	# Il riflesso sul vetro, una riga chiara a sinistra
+	draw_line(neck.position + Vector2(3, 4), Vector2(neck.position.x + 3, base.position.y - 2), Color(1, 1, 1, 0.75), 2.0)
+	draw_line(Vector2(base.position.x + 3, base.position.y + 6), Vector2(base.position.x + 3, base.end.y - 4), Color(1, 1, 1, 0.6), 2.0)
+	_ink_outline(body)
+	draw_line(neck.position + Vector2(-2, 0), Vector2(neck.end.x + 2, neck.position.y), ArcadeView.INK, 3.0)
 	if load >= 0.0:
 		var now := Time.get_ticks_msec() / 1000.0
 		for k in 4:
@@ -1226,14 +1319,37 @@ func _draw_bong(spec: Dictionary, h: float, load: float) -> void:
 # Un funghetto di Teemo (#302): cappello rosso a pallini su un gambo chiaro, base in basso al centro
 func _draw_mushroom(w: float, h: float, alpha: float, offset := Vector2.ZERO) -> void:
 	var base := offset + Vector2(0, h / 2)
-	draw_rect(Rect2(base + Vector2(-w * 0.15, -h * 0.55), Vector2(w * 0.3, h * 0.55)), Color(0.95, 0.9, 0.8, alpha))
+	var stem := PackedVector2Array([base + Vector2(-w * 0.17, 0), base + Vector2(-w * 0.13, -h * 0.55), base + Vector2(w * 0.13, -h * 0.55), base + Vector2(w * 0.17, 0)])
+	draw_colored_polygon(stem, Color(0.95, 0.9, 0.8, alpha))
+	_ink_outline(stem, 1.5, alpha)
 	var cap := PackedVector2Array()
 	for k in 13:
 		var a := PI + PI * k / 12.0
 		cap.append(base + Vector2(0, -h * 0.5) + Vector2(cos(a) * w * 0.5, sin(a) * h * 0.55))
 	draw_colored_polygon(cap, Color(0.8, 0.15, 0.2, alpha))
+	draw_line(base + Vector2(-w * 0.42, -h * 0.55), base + Vector2(w * 0.42, -h * 0.55), Color(0.55, 0.08, 0.12, alpha), 2.0)
 	for d in [Vector2(-0.22, -0.72), Vector2(0.15, -0.85), Vector2(0.3, -0.62)]:
 		draw_circle(base + Vector2(d.x * w, d.y * h), maxf(1.5, w * 0.08), Color(1, 1, 1, alpha))
+	_ink_outline(cap, 1.5, alpha)
+
+
+# Il sacchetto dei funghetti: tela viola chiusa col laccio dorato, e tre cappelli che spuntano dalla bocca
+func _draw_mushroom_bag(w: float, h: float) -> void:
+	for k in 3:
+		_draw_mushroom(w * 0.5, h * 0.55, 1.0, Vector2((k - 1) * w * 0.24, -h * 0.62 + absf(k - 1) * h * 0.08))
+	var cloth := Color(0.45, 0.25, 0.55)
+	var neck := PackedVector2Array([Vector2(-w * 0.36, -h * 0.36), Vector2(w * 0.36, -h * 0.36), Vector2(w * 0.2, -h * 0.12), Vector2(-w * 0.2, -h * 0.12)])
+	draw_colored_polygon(neck, cloth.lightened(0.1))
+	_ink_outline(neck, 1.5)
+	var bag := PackedVector2Array()
+	for k in 20:
+		var a := TAU * k / 20.0
+		bag.append(Vector2(0, h * 0.14) + Vector2(cos(a) * w * 0.5, sin(a) * h * 0.38))
+	draw_colored_polygon(bag, cloth)
+	draw_arc(Vector2(-w * 0.1, h * 0.12), w * 0.26, PI * 0.95, PI * 1.45, 8, cloth.lightened(0.3), 2.5)
+	_ink_outline(bag)
+	draw_line(Vector2(-w * 0.24, -h * 0.17), Vector2(w * 0.24, -h * 0.17), Color(0.95, 0.8, 0.35), 2.5)
+	draw_circle(Vector2(w * 0.26, -h * 0.13), 2.2, Color(0.95, 0.8, 0.35))
 
 
 # La nuvola soffiata (#302): sbuffi che si allargano davanti, grigio-verdi, più grandi se fa più danno
@@ -1265,6 +1381,8 @@ func _update_high_overlay() -> void:
 
 
 const CLOUD_MS := 700.0 # ms di vita della nuvola nel client
+const ITEM_SCALE := 1.3 # gli oggetti si disegnano un po' più grandi della loro scatola di gioco, per vederli bene
+const ITEM_BOB_PX := 4.0 # pixel di ondeggiamento di un oggetto a terra
 const SMOKE_GREY := Color(0.82, 0.86, 0.8)
 
 
