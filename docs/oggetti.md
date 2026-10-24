@@ -11,6 +11,20 @@ fiore) danno subito un potenziamento. Logica in `src/shared/physics/items.ts`, c
 
 Tutti i nomi sono provvisori: `// TODO community` finché il canale non li sceglie.
 
+## Quanto spesso cadono
+
+Ogni oggetto ha una **classe di frequenza** proporzionata a quanto cambia la partita (Nicola, 24 ottobre
+2026): più è forte, più è raro. Il campo `rarity` in `src/shared/items.ts` è obbligatorio, i pesi sono in
+`ITEM_RARITY` (`constants.ts`).
+
+| Classe | Peso | Per cosa | Oggetti |
+| --- | --- | --- | --- |
+| comune | 8 | piccolo vantaggio, da lanciare | Banana |
+| normale | 4 | vantaggio a tempo o con un rischio | Funghetti, Bong |
+| raro | 2 | cambia uno scontro | Fiore, Chiama Bassanese |
+| rarissimo | 1 | cambia la partita per diversi secondi | Tetris, Pac-Man |
+| mai | 0 | non cade dal cielo | Funghetto piantato |
+
 ## Già nel gioco
 
 | Oggetto | Cosa fa |
@@ -70,6 +84,7 @@ Isaac (tre oggetti dello stesso gruppo cambiano il personaggio):
 - La logica è sul server (`physics/items.ts`), deterministica: niente `Math.random`, si usa il
   generatore con seme di `ItemWorld`.
 - Numeri in `constants.ts` (un blocco per oggetto, come `BONG`), forma e colore in `items.ts`.
+- Ogni oggetto nuovo sceglie la sua classe di frequenza (`rarity`) in base al suo impatto: vedi sopra.
 - Un evento nuovo o un campo nuovo dello snapshot è un cambio di protocollo: titolo `Protocollo: ...`.
 - Il predittore del client (E17) torna allo stato del server quando c'è un potenziamento: un effetto
   che cambia il movimento va bene, ma va scritto in `predictor.gd` se cambia anche senza potenziamento.

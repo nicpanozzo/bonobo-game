@@ -2,8 +2,8 @@
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { BONG, FIGHTER, FUNGHI, ITEM_RULES, POWERUP, TICK_RATE } from "../constants";
-import { DROPPABLE_ITEMS, ITEMS } from "../items";
+import { BONG, FIGHTER, FUNGHI, ITEM_RARITY, ITEM_RULES, POWERUP, TICK_RATE } from "../constants";
+import { DROPPABLE_ITEMS, ITEMS, itemWeight } from "../items";
 import { getStage } from "../stages";
 import type { GameEvent, InputState } from "../types";
 import { createFighter, emptyInput, stepWorld, type Fighter, type PhysicsContext } from "./index";
@@ -171,15 +171,13 @@ describe("oggetti scelti nelle regole della stanza", () => {
 describe("il fiore, oggetto da consumare (#231)", () => {
   const fiore = (x: number, y: number): Item => ({ ...banana(x, y), kind: "fiore" });
 
-  it("compare una volta ogni tre banane (e due bong, due sacchetti di funghetti #302; un Tetris e un Pac-Man, #427)", () => {
-    const n = 100 * DROPPABLE_ITEMS.reduce((sum, k) => sum + (ITEMS[k].weight ?? 1), 0); // 100 estrazioni per ogni punto di peso
+  it("cade secondo la sua classe di frequenza: più cambia la partita, più è raro", () => {
+    const n = 100 * DROPPABLE_ITEMS.reduce((sum, k) => sum + itemWeight(k), 0); // 100 estrazioni per ogni punto di peso
     const kinds = Array.from({ length: n }, (_, i) => pickKind(i / n));
-    assert.equal(kinds.filter((k) => k === "fiore").length, 100);
-    assert.equal(kinds.filter((k) => k === "banana").length, 300);
-    assert.equal(kinds.filter((k) => k === "bong").length, 200);
-    assert.equal(kinds.filter((k) => k === "funghetti").length, 200);
-    assert.equal(kinds.filter((k) => k === "tetris").length, 100);
-    assert.equal(kinds.filter((k) => k === "pacman").length, 100);
+    const count = (kind: string) => kinds.filter((k) => k === kind).length;
+    for (const k of DROPPABLE_ITEMS) assert.equal(count(k), 100 * ITEM_RARITY[ITEMS[k].rarity], k);
+    assert.ok(count("banana") > count("bong") && count("bong") > count("fiore") && count("fiore") > count("tetris"));
+    assert.equal(count("tetris"), count("pacman"));
     assert.equal(kinds.filter((k) => k === "fungo").length, 0, "i funghetti piantati non cadono dal cielo");
   });
 
