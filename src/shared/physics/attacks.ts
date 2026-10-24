@@ -1,7 +1,7 @@
 // Attacchi: inizio, finestra attiva, hitbox e cosa succede a chi viene colpito.
 
 import { characterStats, getCharacter, hurtboxOf, SPECIAL_KINDS, specialAttackSpec, specialsFor, supremeAttackSpec, type SpecialSlot, type TweakableAttack } from "../characters";
-import { ATTACKS, BIRRA, FIGHTER, HITSTOP, HITSTUN_PER_KNOCKBACK, JAB, MICELIO, POWERUP, SMASH_CHARGE, type AttackSpec } from "../constants";
+import { ATTACKS, FIGHTER, HITSTOP, HITSTUN_PER_KNOCKBACK, JAB, MICELIO, POWERUP, SMASH_CHARGE, type AttackSpec } from "../constants";
 import type { AttackKind, SpecialKind } from "../types";
 import { biteBox, biting, chooseBiter, hitPets } from "./companion";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
@@ -224,8 +224,7 @@ export function resolveHits(fighters: Fighter[], ctx: PhysicsContext): void {
 export function launch(target: Fighter, attacker: Fighter, kind: AttackKind, x: number, y: number, ctx: PhysicsContext, damage?: number): void {
   const base = damage === undefined ? attackSpecFor(attacker, kind) : { ...attackSpecFor(attacker, kind), damage };
   // Potenziati dal fiore (#231) i colpi fanno più danno; il volo cresce già con la percentuale
-  // La birra (#302) picchia ancora più forte
-  const mult = attacker.powerup === "fiore" ? POWERUP.damageMult : attacker.powerup === "birra" ? BIRRA.damageMult : attacker.powerup === "micelio" ? MICELIO.damageMult : 1; // il micelio di Dr. Micelium (#358)
+  const mult = attacker.powerup === "fiore" ? POWERUP.damageMult : attacker.powerup === "micelio" ? MICELIO.damageMult : 1; // il micelio di Dr. Micelium (#358)
   const spec = mult !== 1 ? { ...base, damage: Math.round(base.damage * mult * 10) / 10 } : base;
   // Stile Smash/Brawlhalla: il danno non toglie vita, fa volare più lontano
   target.percent = Math.min(999, target.percent + spec.damage);

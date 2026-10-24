@@ -360,6 +360,7 @@ export interface Jet {
   activeMs: number; // durata del getto
   offsetMs?: number;
   idle?: number; // solo grafica (#288): pixel dello zampillo a riposo, come una fontana che non si spegne mai
+  kind?: string; // solo grafica e suoni (#433): "tenda" è il tendone di una bancarella che fa da molla, sempre acceso
   on?: TimeWindows; // getto a tempo (#433): fuori dalle finestre non c'è, nemmeno le bolle
 }
 
@@ -486,6 +487,25 @@ export function liftKeys(x: number, low: number, high: number, fromMs: number, t
   return keys;
 }
 
+// Bologna (#433): il bus della piazza, una piattaforma mobile lunga width. Da fromMs a toMs ne parte uno ogni everyMs, una
+// volta da sinistra e una da destra: entra da fuori, si ferma stopMs con il centro a midX e riesce dall'altra parte. Torna
+// le chiavi (tempo, x, y) e le finestre in cui c'è: fuori dalle corse non c'è, così non resta un tetto nel vuoto
+export function busRuns(y: number, width: number, midX: number, outsideX: [number, number], fromMs: number, toMs: number, everyMs: number, stopMs: number, speedPxS: number): { keys: [number, number, number][]; on: TimeWindows } {
+  const keys: [number, number, number][] = [];
+  const on: TimeWindows = [];
+  const stopX = midX - width / 2;
+  for (let t = fromMs, i = 0; ; t += everyMs, i++) {
+    const [from, to] = i % 2 === 0 ? outsideX : [outsideX[1], outsideX[0]];
+    const inMs = (Math.abs(stopX - from) / speedPxS) * 1000;
+    const outMs = (Math.abs(to - stopX) / speedPxS) * 1000;
+    const end = t + inMs + stopMs + outMs;
+    if (end > toMs) break;
+    keys.push([t, from, y], [t + inMs, stopX, y], [t + inMs + stopMs, stopX, y], [end, to, y]);
+    on.push([t, end]);
+  }
+  return { keys, on };
+}
+
 const MAIN = { x: 240, y: 560, width: 800, height: 80 };
 
 // Bologna (#433): le finestre dei pezzi. La Garisenda c'è dalle torri al crollo, l'Asinelli resta; la rampa e i detriti
@@ -496,6 +516,8 @@ const BOLOGNA_RAMP: TimeWindows = [[BOLOGNA.rampMs, BOLOGNA.horizonMs]];
 const BOLOGNA_BRAWL: TimeWindows = [[BOLOGNA.brawlMs, BOLOGNA.horizonMs]];
 const BOLOGNA_ASINELLI_STATIONS: TimeWindows = [[BOLOGNA.towersMs, BOLOGNA.brawlMs]]; // le postazioni dell'Asinelli non ci sono nella zuffa
 const BOLOGNA_PIAZZA: TimeWindows = [[0, BOLOGNA.towersMs]];
+// Il bus: il tetto a y 1885 (il bus dipinto è alto 120 sul selciato a 2000), entra ed esce del tutto fuori dalla piazza
+const BOLOGNA_BUS = busRuns(1885, 400, 1100, [-600, 2400], BOLOGNA.busFirstMs, BOLOGNA.towersMs, BOLOGNA.busEveryMs, BOLOGNA.busStopMs, BOLOGNA.busSpeedPxS);
 
 export const STAGES: Record<string, StageSpec> = {
   // L'arena di partenza: un palco principale e tre piattaforme sottili
@@ -1086,6 +1108,9 @@ export const STAGES: Record<string, StageSpec> = {
       // Il montacarichi dell'Asinelli (da 0:45): pari alla Garisenda, fino alla finestra più alta
       { width: 90, path: [{ x: 1710, y: 1940 }, { x: 1710, y: 1100 }], periodMs: BOLOGNA.liftPeriodMs,
         keys: liftKeys(1710, 1940, 1100, BOLOGNA.towersMs, BOLOGNA.horizonMs, 20000, 1500), on: BOLOGNA_FROM_TOWERS },
+      // Il bus della piazza (0-45 s), come le piattaforme che portano in giro nei platform: si ferma in mezzo, ci si salta
+      // sul tetto e porta da una parte all'altra; chi non scende in tempo esce con lui dalla piazza
+      { kind: "bus", width: 400, path: [{ x: -600, y: 1885 }, { x: 2400, y: 1885 }], periodMs: BOLOGNA.liftPeriodMs, keys: BOLOGNA_BUS.keys, on: BOLOGNA_BUS.on },
       // La campana appesa al cavo teso tra le torri (da 0:45 al crollo), come le piattaforme che dondolano in Donkey Kong
       // Country: ci si sale sul ceppo e agli estremi si arriva alla postazione (A) dell'altra torre. La strada per
       // l'assalto: chi ci sta sopra è in mezzo, scoperto ai colpi di tutti e alle palle delle bombarde
@@ -1120,10 +1145,18 @@ export const STAGES: Record<string, StageSpec> = {
         flood: { highY: 1000, periodMs: BOLOGNA.dustMs + 193000, warnMs: 8000, riseMs: 60000, holdMs: 120000, fallMs: 5000, lowSafe: true } },
     ],
     // Le raffiche della cima (da 2:45): una a sinistra e una a destra, sfasate di mezzo giro
-    jets: (["left", "right"] as const).map((dir, i) => ({
-      x: 1130, y: 1040, width: 600, height: 300, speed: 600, dir,
-      periodMs: BOLOGNA.windPeriodMs, warnMs: 1500, activeMs: 2500, offsetMs: i * (BOLOGNA.windPeriodMs / 2), on: BOLOGNA_BRAWL,
-    })),
+    jets: [
+      ...(["left", "right"] as const).map((dir, i) => ({
+        x: 1130, y: 1040, width: 600, height: 300, speed: 600, dir,
+        periodMs: BOLOGNA.windPeriodMs, warnMs: 1500, activeMs: 2500, offsetMs: i * (BOLOGNA.windPeriodMs / 2), on: BOLOGNA_BRAWL,
+      })),
+      // Le bancarelle ai piedi di San Petronio (fino al crollo): il tendone fa da molla, come le molle di Sonic e Mario.
+      // Chi ci finisce sopra (anche camminando) vola su di circa 480 px: fuori dall'ingorgo, fino ai pezzi a metà torre
+      ...[1020, 1200].map((x) => ({
+        kind: "tenda", x, y: 2000, width: BOLOGNA.awningWidthPx, height: BOLOGNA.awningHeightPx, speed: BOLOGNA.awningSpeedPxS,
+        periodMs: 1000, warnMs: 0, activeMs: 1000, on: [[0, BOLOGNA.collapseMs]] as TimeWindows,
+      })),
+    ],
     phases: [
       { id: "piazza", name: "Sotto le Torri", startMs: 0,
         blastZone: { left: -180, right: 2380, top: 1300, bottom: 2500 }, respawn: { x: 1150, y: 1500 },

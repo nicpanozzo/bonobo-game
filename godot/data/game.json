@@ -855,20 +855,6 @@
       "weight": 0,
       "planted": true
     },
-    "birra": {
-      "id": "birra",
-      "name": "Birra",
-      "damage": 0,
-      "knockback": 0,
-      "width": 22,
-      "height": 30,
-      "color": 15773744,
-      "weight": 2,
-      "consume": {
-        "powerup": "birra",
-        "ms": 8000
-      }
-    },
     "bong": {
       "id": "bong",
       "name": "Bong",
@@ -954,7 +940,6 @@
   ],
   "droppableItems": [
     "banana",
-    "birra",
     "bong",
     "fiore",
     "funghetti",
@@ -1016,13 +1001,6 @@
     "ms": 6000,
     "damageMult": 1.3,
     "attackSpeedMult": 1.25
-  },
-  "birra": {
-    "ms": 8000,
-    "damageMult": 1.4,
-    "speedMult": 1.1,
-    "swayPxS": 110,
-    "swayPeriodMs": 900
   },
   "colors": [
     15158332,
@@ -8063,6 +8041,97 @@
           ]
         },
         {
+          "kind": "bus",
+          "width": 400,
+          "path": [
+            {
+              "x": -600,
+              "y": 1885
+            },
+            {
+              "x": 2400,
+              "y": 1885
+            }
+          ],
+          "periodMs": 3600000,
+          "keys": [
+            [
+              3000,
+              -600,
+              1885
+            ],
+            [
+              6750,
+              900,
+              1885
+            ],
+            [
+              9750,
+              900,
+              1885
+            ],
+            [
+              13500,
+              2400,
+              1885
+            ],
+            [
+              17000,
+              2400,
+              1885
+            ],
+            [
+              20750,
+              900,
+              1885
+            ],
+            [
+              23750,
+              900,
+              1885
+            ],
+            [
+              27500,
+              -600,
+              1885
+            ],
+            [
+              31000,
+              -600,
+              1885
+            ],
+            [
+              34750,
+              900,
+              1885
+            ],
+            [
+              37750,
+              900,
+              1885
+            ],
+            [
+              41500,
+              2400,
+              1885
+            ]
+          ],
+          "on": [
+            [
+              3000,
+              13500
+            ],
+            [
+              17000,
+              27500
+            ],
+            [
+              31000,
+              41500
+            ]
+          ]
+        },
+        {
           "kind": "campana",
           "width": 110,
           "path": [
@@ -8448,6 +8517,40 @@
             [
               165000,
               900000
+            ]
+          ]
+        },
+        {
+          "kind": "tenda",
+          "x": 1020,
+          "y": 2000,
+          "width": 80,
+          "height": 80,
+          "speed": 1480,
+          "periodMs": 1000,
+          "warnMs": 0,
+          "activeMs": 1000,
+          "on": [
+            [
+              0,
+              150000
+            ]
+          ]
+        },
+        {
+          "kind": "tenda",
+          "x": 1200,
+          "y": 2000,
+          "width": 80,
+          "height": 80,
+          "speed": 1480,
+          "periodMs": 1000,
+          "warnMs": 0,
+          "activeMs": 1000,
+          "on": [
+            [
+              0,
+              150000
             ]
           ]
         }
@@ -13688,7 +13791,7 @@
     },
     "coachcartier": {
       "id": "coachcartier",
-      "name": "Coach Cartier",
+      "name": "Electronmaster",
       "quotes": {
         "taunt": "Va bene perdere se sei ricco!"
       },

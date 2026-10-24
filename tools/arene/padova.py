@@ -2170,9 +2170,12 @@ def ansa(name):
     walk_m = q.minus(q.ellipse(q.mask(), cx - rx - WALK, cy - ry - 6, cx + rx + WALK, cy + ry + 6), water)
     walk_m = q.intersect(walk_m, area)
     lawn_m = q.minus(q.minus(area, water), walk_m)
-    near_m = q.intersect(lawn_m, q.poly(q.mask(), [(x0, 470), (x0 + w, 470), (x0 + w, split), (x0, split)]))
-    far_m = q.minus(lawn_m, near_m)
-    paint_grass(q, near_m, 3787, 470, split, density=0.15)
+    # l'erba vicina ai lati e il prato lontano dietro passano dall'uno all'altro senza stacco (#378, Riccardo):
+    # l'erba sotto dappertutto, poi il prato lontano dipinto a parte e sfumato in basso, tra y 446 e 492
+    paint_grass(q, lawn_m, 3787, 470, split, density=0.15)
+    near_q = q
+    q = Quadro(w, h, origin=(x0, y0), scale=2, ss=1)
+    far_m = lawn_m
     # il prato del parco visto da lontano (#378, Riccardo: era un colore strano): velato e più chiaro in fondo, con le
     # strisce del taglio sempre più strette verso l'orizzonte, le ombre a chiazze degli alberi, qualche cespuglio
     # e la grana, senza i fili d'erba che da lì non si vedono
@@ -2202,6 +2205,13 @@ def ansa(name):
     q.fill(bush, far((70, 98, 56, 255), 0.25)[:3])
     q.fill(q.inner_shadow(bush, -1, -1, 0.6), far((50, 72, 44, 255), 0.25)[:3], 0.8)
     q.fill(q.grain(far_m, 0.4, 3791, 1.6), far((112, 136, 80, 255), 0.22)[:3], 0.25)
+    fade_far = Image.new("L", q.size, 0)
+    for py in range(q.size[1]):
+        y = y0 + py / q.k
+        fade_far.paste(int(255 * min(1.0, max(0.0, (492 - y) / 46))), (0, py, q.size[0], py + 1))
+    q.img.putalpha(ImageChops.multiply(q.img.getchannel("A"), fade_far))
+    near_q.img.alpha_composite(q.img)
+    q = near_q
     paint_gravel(q, walk_m, 3788, cy - ry - 6, split, density=0.3)
     q.fill(q.intersect(q.soften(q.ellipse(q.mask(), cx - rx - 2, cy - ry - 3, cx + rx + 2, cy + ry + 3), 1.5), walk_m), (120, 112, 96), 0.35)  # il cordolo in ombra
     t.img.alpha_composite(q.img)

@@ -617,7 +617,6 @@ export const FUNGHI = {
   popVy: 520, // pixel/s verso l'alto: il funghetto che scoppia fa saltellare
 };
 
-// La birra (#302, idea di Nicola): cappello da tirolese, si barcolla ma si picchia più forte
 // Il filo di Kirschner di Dr. Micelium (#358): chi è infettato dalle spore va più piano, lui picchia più forte.
 // Sono potenziamenti come quelli degli oggetti (powerup "spore" e "micelio"), così il client li vede nello snapshot
 export const SPORE = {
@@ -660,14 +659,6 @@ export const SLICK = {
   max: 10, // pozze insieme in tutta l'arena: oltre, sparisce la più vecchia
   landSlackPx: 30, // pixel sotto il bordo del blocco entro cui il proiettile conta come caduto sopra
   accel: 450, // pixel/s²: quanto in fretta si cambia velocità sopra una pozza (a terra di solito è subito)
-};
-
-export const BIRRA = {
-  ms: 8000, // ms di effetto dalla raccolta
-  damageMult: 1.4, // danno dei colpi dati da ubriachi
-  speedMult: 1.1, // frazione della velocità orizzontale: si va un po' più svelti
-  swayPxS: 110, // pixel/s di barcollamento a terra, avanti e indietro
-  swayPeriodMs: 900, // ms di un'oscillazione completa del barcollamento
 };
 
 // Il power-up Tetris (#427): chi lo prende si assenta (fermo e intoccabile) e guida pezzi che cadono dall'alto
@@ -816,6 +807,13 @@ export const BOLOGNA = {
   aimMaxDeg: 60, // gradi sopra l'orizzontale: la mira più alta delle bombarde
   ballSpeedPxS: 800, // pixel/s di uscita delle palle delle bombarde (a 1050 sorvolano la torre avversaria)
   autoAmmoMs: 8000, // ms: una palla in più alle bombarde anche senza casse (1 contro 1)
+  awningWidthPx: 80, // le bancarelle col tendone che fa da molla, larghe tanto...
+  awningHeightPx: 80, // ...e alte tanto: chi ha i piedi sotto il tendone viene lanciato (Godot lo disegna lì)
+  awningSpeedPxS: 1480, // pixel/s verso l'alto: con la gravità di 2300 si sale di circa 480 px (il salto ne fa 160)
+  busFirstMs: 3000, // il primo bus in piazza: si sale sul tetto e porta da una parte all'altra (piattaforma mobile)
+  busEveryMs: 14000, // ogni quanto ne parte uno, alternando il verso, finché c'è la piazza (0:45)
+  busStopMs: 3000, // la sosta alla fermata in mezzo alla piazza: il momento per salire
+  busSpeedPxS: 400, // pixel/s mentre entra ed esce
   bellSwingMs: 4400, // l'altalena della campana tra le torri: un'andata e ritorno completa...
   bellAmplitudeDeg: 38, // ...fino a tanti gradi dalla verticale per parte: agli estremi sfiora la postazione (A) di ogni torre
 };

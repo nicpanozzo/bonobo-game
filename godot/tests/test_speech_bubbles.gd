@@ -13,7 +13,7 @@ func _game() -> Dictionary:
 
 func test_la_frase_dalla_scheda() -> void:
 	var game := _game()
-	runner.check(SpeechBubbles.quote(game.characters.coachcartier, "taunt") == "Va bene perdere se sei ricco!", "Coach Cartier provoca")
+	runner.check(SpeechBubbles.quote(game.characters.coachcartier, "taunt") == "Va bene perdere se sei ricco!", "Electronmaster provoca")
 	runner.check(SpeechBubbles.quote(game.characters.lampione, "ko") != "", "Lampione urla al KO")
 	runner.check(SpeechBubbles.quote(game.characters["default"], "taunt") == "", "chi non ha battute non dice niente")
 
