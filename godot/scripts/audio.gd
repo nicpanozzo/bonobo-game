@@ -43,6 +43,8 @@ var _duck: Tween
 var stage_hazards: Array = [] # trappole dell'arena della partita: il ciclista (#229) suona da solo, senza eventi
 var _travel := {} # indice della trappola che viaggia -> fase dell'ultimo snapshot
 var stage_jets: Array = [] # getti d'acqua dell'arena (#253): bolle e spruzzo, dal tempo dell'arena
+var stage_movers: Array = [] # piattaforme mobili dell'arena: la campana di Bologna (#433) suona a ogni estremo
+var _swings := {} # indice della piattaforma -> ultimo estremo dell'altalena sentito
 var stage_pads: Array = [] # bottoni sonori dell'arena (#423): servono per sentire quando arriva la Meraviglia
 var _wonder_on := false
 const WAKA_MS := 270
@@ -278,6 +280,16 @@ func on_snapshot(data: Dictionary) -> void:
 		if jam and _jams.has(i) and not _jams[i]:
 			_play("horn", {"volume": 0.5, "x": float(h.x) + float(h.width) / 2.0})
 		_jams[i] = jam
+	# La campana che dondola tra le torri (#433): "dong" a ogni estremo dell'altalena
+	for i in stage_movers.size():
+		var m: Dictionary = stage_movers[i]
+		if not (m.get("swing") is Dictionary) or not StageMotion.mover_on(m, stage_ms):
+			_swings.erase(i)
+			continue
+		var n := swing_extreme(m.swing, stage_ms + float(m.get("offsetMs", 0)))
+		if _swings.has(i) and int(_swings[i]) != n and str(m.get("kind", "")) == "campana":
+			_play("dong", {"x": float(m.swing.pivot.x)})
+		_swings[i] = n
 	# Le bancarelle che fanno da molla a Bologna (#433) non hanno eventi: "boing" quando uno ci viene lanciato su
 	var bouncing := {}
 	for i in stage_jets.size():
@@ -349,6 +361,10 @@ static func awning_launch(j: Dictionary, p: Dictionary) -> bool:
 	var y := float(p.get("y", 0.0))
 	var inside := x > float(j.x) - 22.0 and x < float(j.x) + float(j.width) + 22.0 and y > float(j.y) - float(j.height) - 30.0 and y <= float(j.y) + 4.0
 	return inside and float(p.get("vy", 0.0)) <= -0.9 * float(j.speed)
+# Quanti estremi ha toccato l'altalena fino al tempo t: cambia a ogni estremo (il primo a un quarto di giro)
+static func swing_extreme(swing: Dictionary, t: float) -> int:
+	var half := float(swing.swingMs) / 2.0
+	return int(floor((t - half / 2.0) / half))
 
 
 static func jet_cue(phase: String, wind: bool) -> String:
@@ -902,6 +918,12 @@ func _build_sounds() -> void:
 		s.tone(0, "sine", 520, 180, 0.12, 0.45)
 		s.tone(0.1, "sine", 180, 700, 0.35, 0.35)
 		s.tone(0.1, "triangle", 360, 1400, 0.3, 0.12))
+	# La campana tra le torri (#433): un rintocco grave con gli armonici che si spengono lenti
+	_sounds.dong = make.call(1.8, func(s):
+		s.tone(0, "sine", 196, 194, 1.7, 0.4)
+		s.tone(0, "sine", 392, 390, 1.2, 0.2)
+		s.tone(0, "sine", 588, 585, 0.8, 0.12)
+		s.tone(0, "triangle", 1170, 1160, 0.15, 0.1))
 	# La raffica (#433): un soffio che monta e cala, senza toni
 	_sounds.wind = make.call(1.6, func(s):
 		s.noise(0, "bandpass", 300, 900, 0.8, 0.35)
