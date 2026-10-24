@@ -155,6 +155,11 @@ func on_event(e: Dictionary) -> void:
 				"fire": _play("cannonFire", {"x": e.x})
 				"boom": _play("tetrisLand", {"volume": 0.7, "x": e.x, "pitch": 0.7})
 				"load", "ammo": _play("tetrisMove", {"volume": 0.4, "x": e.x, "pitch": 0.5})
+		# Chiama Bassanese: il telefono che squilla e il brindisi quando trova la grappa
+		"bassanese":
+			match str(e.phase):
+				"call": _play("phoneRing", {"volume": 0.7, "x": e.x})
+				"found": _play("cheers", {"volume": 0.7, "x": e.x})
 		# Il Tetris (#427): i rumori del Game Boy per il pezzo, un tonfo quando si posa
 		"tetris":
 			match str(e.phase):
@@ -843,6 +848,17 @@ func _build_sounds() -> void:
 	_sounds.cannonFire = make.call(0.7, func(s):
 		s.tone(0, "sine", 110, 40, 0.5, 0.6)
 		s.noise(0, "lowpass", 2500, 120, 0.6, 0.8))
+	# Chiama Bassanese: due trilli del telefono, e un tintinnio di bicchieri che sale per il brindisi
+	_sounds.phoneRing = make.call(1.3, func(s):
+		for burst in 2:
+			for i in 8:
+				var f := 1320.0 if i % 2 == 0 else 1760.0
+				s.tone(burst * 0.7 + i * 0.05, "square", f, f, 0.05, 0.08))
+	_sounds.cheers = make.call(0.7, func(s):
+		var notes := [784.0, 988.0, 1175.0, 1568.0]
+		for i in notes.size():
+			s.tone(i * 0.1, "triangle", notes[i], notes[i], 0.25, 0.2)
+		s.tone(0.42, "sine", 2637.0, 2637.0, 0.25, 0.12))
 	_sounds.tetrisMove = make.call(0.05, func(s): s.tone(0, "square", 900, 900, 0.03, 0.08))
 	_sounds.tetrisRotate = make.call(0.08, func(s): s.tone(0, "square", 600, 1200, 0.06, 0.1))
 	_sounds.tetrisDrop = make.call(0.2, func(s): s.tone(0, "square", 1200, 200, 0.16, 0.1))

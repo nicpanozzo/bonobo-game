@@ -43,3 +43,16 @@ func test_vicino_ai_blocchi_decide_il_server() -> void:
 	var blocks := [{"x": 600, "y": 520, "kind": "O", "ms": 5000}]
 	runner.check(Predictor.near_blocks({"x": 620, "y": 520}, blocks), "sopra il blocco")
 	runner.check(not Predictor.near_blocks({"x": 100, "y": 560}, blocks), "lontano")
+
+
+# Chiama Bassanese: il telefono nei dati, il Bassanese letto dallo snapshot e la testa per il fumetto
+func test_bassanese() -> void:
+	var game: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/game.json"))
+	runner.check(game.items.has("bassanese") and game.items.bassanese.get("call", false), "il telefono di Chiama Bassanese")
+	runner.check("bassanese" in game.droppableItems and game.get("bassanese") is Dictionary, "si sceglie nelle regole e ha i suoi numeri")
+	var view: RefCounted = preload("res://scripts/bassanese_view.gd").new()
+	runner.check(view.head() == null, "senza Bassanese niente fumetto")
+	view.on_snapshot({"bassanese": [{"id": 1, "ownerId": "p0", "x": 300, "y": 560, "facing": 1, "phase": "walk", "grappa": [900, 420]}]})
+	runner.check(view.list.size() == 1 and view.head() is Vector2, "letto dallo snapshot, con la testa sopra i piedi")
+	view.on_snapshot({})
+	runner.check(view.list.is_empty(), "se ne va")

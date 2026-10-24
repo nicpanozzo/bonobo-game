@@ -151,6 +151,18 @@ export interface TetrisState {
   blocks: { x: number; y: number; kind: string; ms: number; keep?: true }[]; // ms: quanto resta prima che il blocco sparisca; keep: posato da una gru (#433), resta per tutta la partita
 }
 
+// Il Bassanese chiamato col telefono (Chiama Bassanese): x e y sono i piedi. phase: cammina, salta, si guarda in giro
+// o brinda con la grappa appena trovata; grappa è dove sta la grappa che cerca, finché non l'ha trovata
+export interface BassaneseState {
+  id: number;
+  ownerId: string; // chi l'ha chiamato: lui e i compagni non vengono colpiti
+  x: number;
+  y: number;
+  facing: 1 | -1;
+  phase: "walk" | "jump" | "look" | "found";
+  grappa?: [number, number];
+}
+
 // Una postazione dell'arena (#433), nello stesso ordine di stage.stations. I tempi sono stageMs
 export interface StationState {
   user: string | null; // chi la sta usando
@@ -232,6 +244,7 @@ export type GameEvent =
   | { type: "itemThrow"; itemId: number; id: string; x: number; y: number }
   | { type: "powerUp"; itemId: number; id: string; kind: string; x: number; y: number } // id consuma l'oggetto e si potenzia (#231)
   | { type: "powerEnd"; id: string; kind: string } // il potenziamento di id finisce
+  | { type: "bassanese"; phase: "call" | "found" | "leave"; id: string; x: number; y: number } // Chiama Bassanese: id ha chiamato; found: x e y della grappa
   | { type: "tetris"; phase: "spawn" | "move" | "rotate" | "drop" | "land" | "line"; id: string; x: number; y: number; width?: number } // il pezzo di Tetris di id (#427); line: esplode una riga larga width pixel, x e y al centro
   // Il bong (#302): load = comincia a caricarlo, smoke = soffia la nuvola (centro x,y, verso dir, danno), stun = troppo fatto, crolla
   | { type: "bong"; phase: "load" | "smoke" | "stun"; id: string; x: number; y: number; dir?: 1 | -1; damage?: number }
@@ -263,6 +276,7 @@ export interface GameSnapshot {
   stageMs: number; // tempo dell'arena: da qui il client calcola dove sono ascensori e trappole (#14)
   pads?: (number | null)[]; // bottoni sonori (#423): stageMs dell'ultima pressione di ognuno, null se mai premuto
   tetris?: TetrisState; // pezzi e blocchi del power-up Tetris (#427), solo quando ce ne sono
+  bassanese?: BassaneseState[]; // i Bassanesi chiamati col telefono, solo quando ce n'è uno in giro
   stations?: StationState[]; // postazioni (#433), solo nelle arene che ne hanno
   cannonballs?: CannonballState[]; // palle di mortadella in volo (#433), con stations
   towerPoints?: Record<number, number>; // punti torre per squadra (#433): colpi di bombarda a segno sugli avversari, con stations

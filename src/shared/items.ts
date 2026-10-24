@@ -16,6 +16,7 @@ export interface ItemSpec {
   consume?: { powerup: string; ms: number };
   mushrooms?: boolean; // il sacchetto dei funghetti di Teemo (#302): giù + J ne pianta uno, senza giù si lancia
   planted?: boolean; // un funghetto piantato: non si raccoglie, scatta su chi lo calpesta
+  call?: boolean; // il telefono di Chiama Bassanese: raccolto sparisce e fa entrare il Bassanese (physics/bassanese.ts)
   bong?: boolean; // si tiene in mano e si fuma in tre fasi (#302): J carica, K lancia come gli altri
 }
 
@@ -31,6 +32,8 @@ export const ITEMS: Record<string, ItemSpec> = {
   bong: { id: "bong", name: "Bong", damage: 10, knockback: 380, width: 22, height: 40, color: 0x7fd8c4, weight: 2, bong: true },
   // Pac-Man (#427): si diventa Pac-Man e si mangiano gli altri (PACMAN)
   pacman: { id: "pacman", name: "Pac-Man", damage: 0, knockback: 0, width: 28, height: 28, color: 0xffeb3b, weight: 1, consume: { powerup: "pacman", ms: PACMAN.ms } },
+  // TODO community: il nome nel gioco. Il telefono: raccolto chiama il Bassanese, che gira l'arena e colpisce gli altri (BASSANESE)
+  bassanese: { id: "bassanese", name: "Chiama Bassanese", damage: 0, knockback: 0, width: 18, height: 30, color: 0x2c3e50, weight: 1, call: true },
   // Il Tetris (#427): ci si assenta e si guidano i pezzi che cadono dall'alto (TETRIS)
   tetris: { id: "tetris", name: "Tetris", damage: 0, knockback: 0, width: 28, height: 28, color: 0x00bcd4, weight: 1, consume: { powerup: "tetris", ms: TETRIS.ms } },
 };

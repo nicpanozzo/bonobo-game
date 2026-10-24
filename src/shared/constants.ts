@@ -709,6 +709,29 @@ export const PACMAN = {
   maxSpeedMul: 1.8, // la velocità non supera speedPxS per questo
 };
 
+// Chiama Bassanese (idea di Nicola, 24 ottobre 2026): un telefono che, raccolto, fa entrare il Bassanese.
+// Gira tutta l'arena di superficie in superficie in cerca della grappa e fa male a chi tocca, tranne a chi l'ha chiamato
+export const BASSANESE = {
+  walkPxS: 300, // pixel/s camminando su una superficie
+  jumpPxS: 420, // pixel/s in orizzontale nei salti da una superficie all'altra
+  jumpMinMs: 380, // ms minimi di un salto, anche corto
+  hopPx: 70, // pixel sopra il punto più alto del salto
+  lookMs: 260, // ms fermo a guardarsi in giro arrivando su una superficie
+  endInsetPx: 26, // pixel dal bordo di una superficie dove si ferma
+  minSurfacePx: 60, // le superfici più strette non le visita
+  maxSurfaces: 10, // superfici visitate al massimo: nelle arene piene ne sceglie alcune sparse da un lato all'altro
+  maxMs: 15000, // ms massimi del giro: nelle arene grandi cammina più svelto
+  enterPx: 80, // pixel fuori dall'arena da cui entra e verso cui se ne va
+  width: 54, // pixel del corpo che colpisce
+  height: 104,
+  damage: 11, // percentuale a chi tocca
+  knockback: 520, // pixel/s di lancio
+  knockbackGrowth: 5, // pixel/s in più per ogni punto di percentuale del bersaglio
+  angleDeg: 40, // angolo di lancio, verso dove cammina
+  hitAgainMs: 1100, // ms prima di poter colpire di nuovo lo stesso lottatore
+  foundMs: 900, // ms fermo a brindare quando trova la grappa
+};
+
 // Limiti della rete (#105): il server non si fida di quello che riceve
 export const NET_LIMITS = {
   maxMessageBytes: 16_384, // byte massimi di un messaggio Socket.IO (il predefinito è 1 MB)
