@@ -52,6 +52,8 @@ var _song_ms := 0.0 # quanto dura un giro del brano
 var _stage_track := "" # brano registrato dell'arena (StageSpec.music.track): una traccia di _music_files, o ""
 const SONG_DRIFT_S := 0.08 # il brano si rimette a tempo con l'arena se si sposta più di così (secondi)
 var _jets := {} # indice del getto -> fase dell'ultimo snapshot
+const TRAVEL_CUES := {"ciclista": ["bell", "bikeRattle"], "auto": ["horn", "carPass"], "mattone": ["", "brickFall"]} # avviso, passaggio
+var _jams := {} # indice dell'ingorgo (#433) -> se all'ultimo snapshot spingeva
 var _announcer := AudioStreamPlayer.new() # la voce dell'annunciatore, sul bus Voci
 var _phrases := {} # frase -> Array[AudioStream] (game.audioFiles.announcer)
 var _queue: AnnouncerQueue
@@ -262,19 +264,27 @@ func on_snapshot(data: Dictionary) -> void:
 		if not h.get("travel") is Dictionary:
 			continue
 		var phase: String = StageMotion.travel_phase(h, stage_ms).phase if PredictMovement.piece_on(h, stage_ms) else "calm" # #433
-		var cue := travel_cue(str(_travel.get(i, "")), phase)
+		var cue := travel_cue(str(_travel.get(i, "")), phase, str(h.get("kind", "")))
 		if cue != "":
 			_play(cue, {"x": StageMotion.hazard_rect(h, stage_ms).get_center().x})
 		_travel[i] = phase
+	# L'ingorgo di Bologna (#433) non viaggia: suona il clacson quando riparte a spingere
+	for i in stage_hazards.size():
+		var h: Dictionary = stage_hazards[i]
+		if h.get("kind", "") != "ingorgo":
+			continue
+		var jam := PredictMovement.piece_on(h, stage_ms) and StageMotion.hazard_active(h, stage_ms)
+		if jam and _jams.has(i) and not _jams[i]:
+			_play("horn", {"volume": 0.5, "x": float(h.x) + float(h.width) / 2.0})
+		_jams[i] = jam
 	for i in stage_jets.size():
 		var j: Dictionary = stage_jets[i]
 		var jp: String = StageMotion.jet_phase(j, stage_ms) if PredictMovement.piece_on(j, stage_ms) else "calm" # getto a tempo (#433)
 		var before := str(_jets.get(i, ""))
 		if before != "" and before != jp:
-			if jp == "warn":
-				_play("bubbles", {"x": float(j.x) + float(j.width) / 2.0})
-			elif jp == "active":
-				_play("splash", {"x": float(j.x) + float(j.width) / 2.0})
+			var cue := jet_cue(jp, j.has("dir"))
+			if cue != "":
+				_play(cue, {"x": float(j.x) + float(j.width) / 2.0})
 		_jets[i] = jp
 	# La Meraviglia dell'arena musicale (#423): i tre bottoni attivi insieme, un arpeggio che sale quando comincia
 	var wonder_now: bool = WonderStage.wonder(stage_ms, stage_pads, data.get("pads", []) if data.get("pads") is Array else [])[0] > 0.0
@@ -302,14 +312,26 @@ func on_snapshot(data: Dictionary) -> void:
 		_supremes[p.id] = full
 
 
-# Il ciclista (#229): "bell" quando comincia l'avviso, "bikeRattle" quando entra, "" altrimenti
-static func travel_cue(before: String, now: String) -> String:
+# Le trappole che viaggiano: il ciclista (#229) "bell" quando comincia l'avviso e "bikeRattle" quando entra; l'auto di
+# Bologna (#433) il clacson e il motore; il mattone niente nell'avviso e il crollo quando cade. "" altrimenti
+static func travel_cue(before: String, now: String, kind := "ciclista") -> String:
 	if before == "" or before == now:
 		return "" # al primo snapshot non suona niente: la partita è appena partita o ci si è ricollegati
+	var cues: Array = TRAVEL_CUES.get(kind, TRAVEL_CUES.ciclista)
 	if now == "warn":
-		return "bell"
+		return cues[0]
 	if now == "cross":
-		return "bikeRattle"
+		return cues[1]
+	return ""
+
+
+# Il getto (#253): bolle nell'avviso e spruzzo quando parte. La raffica di vento di Bologna (#433) ha "dir": niente
+# nell'avviso e un soffio quando parte, non l'acqua
+static func jet_cue(phase: String, wind: bool) -> String:
+	if phase == "warn":
+		return "" if wind else "bubbles"
+	if phase == "active":
+		return "wind" if wind else "splash"
 	return ""
 
 
@@ -841,6 +863,26 @@ func _build_sounds() -> void:
 		for k in 2:
 			s.tone(k * 0.22, "triangle", 2350, 2300, 0.2, 0.28)
 			s.tone(k * 0.22, "sine", 3520, 3480, 0.12, 0.12))
+	# Il clacson delle macchine di Bologna (#433): due colpi bassi un po' stonati
+	_sounds.horn = make.call(0.6, func(s):
+		for k in 2:
+			s.tone(k * 0.26, "square", 392, 388, 0.2, 0.16)
+			s.tone(k * 0.26, "square", 494, 490, 0.2, 0.12))
+	# L'auto che passa: il motore che sale e poi si allontana
+	_sounds.carPass = make.call(1.4, func(s):
+		s.tone(0, "sawtooth", 70, 110, 0.7, 0.18)
+		s.tone(0.7, "sawtooth", 110, 60, 0.7, 0.18)
+		s.noise(0, "lowpass", 900, 300, 1.3, 0.3))
+	# La raffica (#433): un soffio che monta e cala, senza toni
+	_sounds.wind = make.call(1.6, func(s):
+		s.noise(0, "bandpass", 300, 900, 0.8, 0.35)
+		s.noise(0.8, "bandpass", 900, 250, 0.8, 0.3))
+	# Il mattone che si stacca: calcinacci che scivolano e un tonfo
+	_sounds.brickFall = make.call(0.9, func(s):
+		for k in 5:
+			s.noise(k * 0.08, "bandpass", 2200, 900, 0.06, 0.25)
+		s.noise(0.5, "lowpass", 1200, 150, 0.35, 0.7)
+		s.tone(0.5, "sine", 120, 50, 0.3, 0.4))
 	# La bici scassata che passa: sferragliare di catena e un cigolio
 	_sounds.bikeRattle = make.call(1.2, func(s):
 		for k in 8:
