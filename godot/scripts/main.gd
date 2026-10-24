@@ -527,7 +527,7 @@ func _on_event(name: String, data: Variant) -> void:
 			else:
 				world.set_stage(data.stageId)
 			hud.on_welcome(data, world.stage)
-			audio.set_stage_music(world.stage.get("music")) # la musica dell'arena, se ne ha una (E12)
+			audio.set_stage_music(world.stage.get("music"), str(world.stage.get("id", ""))) # la musica dell'arena, se ne ha una (E12)
 			audio.set_stage_song(world.stage.get("song")) # il brano dell'arena musicale (#423)
 			audio.stage_hazards = world.stage.get("hazards", []) if world.stage.get("hazards") is Array else [] # il ciclista (#229)
 			audio.stage_jets = world.stage.get("jets", []) if world.stage.get("jets") is Array else [] # i getti d'acqua (#253)
