@@ -2,7 +2,7 @@
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { BIRRA, BONG, FIGHTER, FUNGHI, ITEM_RULES, POWERUP, TICK_RATE } from "../constants";
+import { BONG, FIGHTER, FUNGHI, ITEM_RULES, POWERUP, TICK_RATE } from "../constants";
 import { DROPPABLE_ITEMS, ITEMS } from "../items";
 import { getStage } from "../stages";
 import type { GameEvent, InputState } from "../types";
@@ -155,11 +155,11 @@ describe("zone degli oggetti (#253)", () => {
 describe("oggetti scelti nelle regole della stanza", () => {
   it("cadono solo i tipi scelti, e quanti se ne scelgono", () => {
     const ctx: PhysicsContext = { stage, events: [] };
-    const world = createItemWorld(7, { everyMs: 500, maxOnStage: 3, kinds: ["birra"] });
+    const world = createItemWorld(7, { everyMs: 500, maxOnStage: 3, kinds: ["bong"] });
     run(world, [], ctx, Math.round(10000 / DT));
     const spawns = ofType(ctx.events, "itemSpawn");
     assert.ok(spawns.length >= 3, `ne sono caduti ${spawns.length}`);
-    assert.ok(spawns.every((e) => e.kind === "birra"));
+    assert.ok(spawns.every((e) => e.kind === "bong"));
     assert.ok(world.items.length <= 3);
   });
 
@@ -171,10 +171,9 @@ describe("oggetti scelti nelle regole della stanza", () => {
 describe("il fiore, oggetto da consumare (#231)", () => {
   const fiore = (x: number, y: number): Item => ({ ...banana(x, y), kind: "fiore" });
 
-  it("compare una volta ogni tre banane (e due bong, due sacchetti di funghetti e due birre, #302; un Tetris e un Pac-Man, #427)", () => {
+  it("compare una volta ogni tre banane (e due bong, due sacchetti di funghetti #302; un Tetris e un Pac-Man, #427)", () => {
     const n = 100 * DROPPABLE_ITEMS.reduce((sum, k) => sum + (ITEMS[k].weight ?? 1), 0); // 100 estrazioni per ogni punto di peso
     const kinds = Array.from({ length: n }, (_, i) => pickKind(i / n));
-    assert.equal(kinds.filter((k) => k === "birra").length, 200);
     assert.equal(kinds.filter((k) => k === "fiore").length, 100);
     assert.equal(kinds.filter((k) => k === "banana").length, 300);
     assert.equal(kinds.filter((k) => k === "bong").length, 200);
@@ -469,28 +468,3 @@ describe("i funghetti di Teemo (#302)", () => {
   });
 });
 
-describe("la birra (#302)", () => {
-  it("raccolta dà il cappello: colpi ×1,4, si barcolla ma si resta colpibili", () => {
-    const { ctx, fighters, world } = setup();
-    const [a, b] = fighters;
-    world.items.push({ ...banana(a.x + 10, a.y), kind: "birra" });
-    press(a, { light: true });
-    run(world, fighters, ctx, 1);
-    assert.equal(a.powerup, "birra");
-    assert.equal(a.invulnerable, false);
-    launch(b, a, "light", 0, 0, ctx);
-    const drunk = b.percent;
-    b.percent = 0;
-    a.powerup = null;
-    launch(b, a, "light", 0, 0, ctx);
-    assert.equal(drunk, Math.round(b.percent * BIRRA.damageMult * 10) / 10);
-    a.powerup = "birra";
-    press(a, {});
-    const xs: number[] = [];
-    for (let i = 0; i < 40; i++) {
-      run(world, fighters, ctx, 1);
-      xs.push(a.vx);
-    }
-    assert.ok(Math.max(...xs) > 20 && Math.min(...xs) < -20, "da fermi si barcolla avanti e indietro");
-  });
-});

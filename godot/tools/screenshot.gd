@@ -91,7 +91,7 @@ func _lobby_squadre() -> void:
 func _lobby_regole() -> void:
 	var lobby: Control = load("res://scripts/lobby.gd").new()
 	root.add_child(lobby)
-	lobby.setup(_game, {"name": "CI", "room": "ci", "server": "http://localhost:3000", "kind": "create", "rules": {"supremeSpeed": 2, "itemAmount": 3, "itemKinds": ["banana", "birra", "fiore"]}}, func(r): return "http://x/?room=" + r, "create")
+	lobby.setup(_game, {"name": "CI", "room": "ci", "server": "http://localhost:3000", "kind": "create", "rules": {"supremeSpeed": 2, "itemAmount": 3, "itemKinds": ["banana", "bong", "fiore"]}}, func(r): return "http://x/?room=" + r, "create")
 	var scroll: ScrollContainer = lobby.find_children("*", "ScrollContainer", true, false)[0]
 	_scroll_down.call_deferred(scroll)
 

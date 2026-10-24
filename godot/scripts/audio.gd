@@ -53,6 +53,7 @@ var _song_ms := 0.0 # quanto dura un giro del brano
 var _stage_track := "" # brano registrato dell'arena (StageSpec.music.track): una traccia di _music_files, o ""
 const SONG_DRIFT_S := 0.08 # il brano si rimette a tempo con l'arena se si sposta più di così (secondi)
 var _jets := {} # indice del getto -> fase dell'ultimo snapshot
+var _bouncing := {} # "getto:id" di chi stava venendo lanciato da un tendone nell'ultimo snapshot (#433)
 const TRAVEL_CUES := {"ciclista": ["bell", "bikeRattle"], "auto": ["horn", "carPass"], "mattone": ["", "brickFall"]} # avviso, passaggio
 var _jams := {} # indice dell'ingorgo (#433) -> se all'ultimo snapshot spingeva
 var _announcer := AudioStreamPlayer.new() # la voce dell'annunciatore, sul bus Voci
@@ -225,7 +226,7 @@ func on_event(e: Dictionary) -> void:
 			if power_kind == "pacman":
 				_play("pacStart", {"volume": 0.7}) # #427
 				return
-			_play("dizzy" if power_kind == "trip" else ("burp" if power_kind == "birra" else "inhale"), {"x": e.x}) # funghetti e birra (#302)
+			_play("dizzy" if power_kind == "trip" else "inhale", {"x": e.x}) # funghetti (#302)
 		"powerEnd":
 			_play("exhale", {"volume": 0.6})
 		# Il bong (#302): gorgoglio quando si carica, colpo di tosse con la nuvola, giramento di testa nel crollo
@@ -280,8 +281,23 @@ func on_snapshot(data: Dictionary) -> void:
 		if jam and _jams.has(i) and not _jams[i]:
 			_play("horn", {"volume": 0.5, "x": float(h.x) + float(h.width) / 2.0})
 		_jams[i] = jam
+	# Le bancarelle che fanno da molla a Bologna (#433) non hanno eventi: "boing" quando uno ci viene lanciato su
+	var bouncing := {}
 	for i in stage_jets.size():
 		var j: Dictionary = stage_jets[i]
+		if j.get("kind", "") != "tenda" or not PredictMovement.piece_on(j, stage_ms):
+			continue
+		for p in data.get("players", []):
+			if awning_launch(j, p):
+				var key := "%d:%s" % [i, p.id]
+				bouncing[key] = true
+				if not _bouncing.has(key):
+					_play("boing", {"x": float(p.x)})
+	_bouncing = bouncing
+	for i in stage_jets.size():
+		var j: Dictionary = stage_jets[i]
+		if j.get("kind", "") == "tenda":
+			continue
 		var jp: String = StageMotion.jet_phase(j, stage_ms) if PredictMovement.piece_on(j, stage_ms) else "calm" # getto a tempo (#433)
 		var before := str(_jets.get(i, ""))
 		if before != "" and before != jp:
@@ -330,6 +346,14 @@ static func travel_cue(before: String, now: String, kind := "ciclista") -> Strin
 
 # Il getto (#253): bolle nell'avviso e spruzzo quando parte. La raffica di vento di Bologna (#433) ha "dir": niente
 # nell'avviso e un soffio quando parte, non l'acqua
+# Uno è appena stato lanciato dal tendone j: i piedi nella fascia del getto e la velocità verso l'alto del getto
+static func awning_launch(j: Dictionary, p: Dictionary) -> bool:
+	var x := float(p.get("x", 0.0))
+	var y := float(p.get("y", 0.0))
+	var inside := x > float(j.x) - 22.0 and x < float(j.x) + float(j.width) + 22.0 and y > float(j.y) - float(j.height) - 30.0 and y <= float(j.y) + 4.0
+	return inside and float(p.get("vy", 0.0)) <= -0.9 * float(j.speed)
+
+
 static func jet_cue(phase: String, wind: bool) -> String:
 	if phase == "warn":
 		return "" if wind else "bubbles"
@@ -881,6 +905,11 @@ func _build_sounds() -> void:
 		for k in 3:
 			s.noise(k * 0.19 + (0.04 if k == 1 else 0.0), "highpass", 6000, 3000, 0.03, 0.4)
 			s.noise(k * 0.19 + 0.05, "bandpass", 2500, 1800, 0.04, 0.25))
+	# Il tendone che fa da molla (#433): "boing", un tono che scende e risale tremolando
+	_sounds.boing = make.call(0.5, func(s):
+		s.tone(0, "sine", 520, 180, 0.12, 0.45)
+		s.tone(0.1, "sine", 180, 700, 0.35, 0.35)
+		s.tone(0.1, "triangle", 360, 1400, 0.3, 0.12))
 	# La raffica (#433): un soffio che monta e cala, senza toni
 	_sounds.wind = make.call(1.6, func(s):
 		s.noise(0, "bandpass", 300, 900, 0.8, 0.35)
@@ -917,10 +946,6 @@ func _build_sounds() -> void:
 		s.noise(0, "bandpass", 900, 400, 0.35, 0.7)
 		s.noise(0.38, "bandpass", 1300, 500, 0.14, 0.55)
 		s.noise(0.6, "bandpass", 1200, 450, 0.16, 0.5))
-	# La birra (#302): un rutto basso che vibra
-	_sounds.burp = make.call(0.6, func(s):
-		s.tone(0, "square", 110, 70, 0.5, 0.25)
-		s.noise(0, "lowpass", 400, 150, 0.45, 0.4))
 	# Troppo fatto: note che scendono e ondeggiano
 	_sounds.dizzy = make.call(1.2, func(s):
 		for k in 5:
