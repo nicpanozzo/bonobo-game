@@ -102,7 +102,7 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
   }
   // Da Pac-Man (#427) niente controlli né gravità: si va dritti attraverso tutto
   if (f.powerup === "pacman") {
-    playPacman(f, dtMs);
+    playPacman(f, dtMs, ctx);
     f.prevInput = f.input;
     return;
   }

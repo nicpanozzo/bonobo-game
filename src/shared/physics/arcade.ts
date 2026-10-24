@@ -8,7 +8,7 @@
 
 import { characterStats } from "../characters";
 import { FIGHTER, HITSTOP, HITSTUN_PER_KNOCKBACK, PACMAN, STATION, TETRIS, WORLD } from "../constants";
-import type { Rect } from "../stages";
+import { stageHeight, stageWidth, type Rect } from "../stages";
 import { rng } from "../stageGenerator";
 import type { TetrisState } from "../types";
 import { bodyBox } from "./attacks";
@@ -171,16 +171,16 @@ function room(x: number, bottom: number, fall: number, ctx: PhysicsContext, bloc
 const PAC_KEYS: [keyof Fighter["input"], number, number][] = [["left", -1, 0], ["right", 1, 0], ["up", 0, -1], ["jump", 0, -1], ["down", 0, 1]];
 
 // Da Pac-Man si va sempre dritti: una freccia appena premuta cambia direzione. Si passa attraverso tutto
-// e chi esce da un lato dello schermo rientra dall'altro
-export function playPacman(f: Fighter, dtMs: number): void {
+// e chi esce da un lato dell'arena rientra dall'altro (le arene larghe come Padova non finiscono allo schermo)
+export function playPacman(f: Fighter, dtMs: number, ctx: PhysicsContext): void {
   const turn = PAC_KEYS.find(([k]) => f.input[k] && !f.prevInput[k]);
   if (turn) f.pacDir = { x: turn[1], y: turn[2] };
   const dir = f.pacDir ?? { x: f.facing, y: 0 };
   f.vx = dir.x * PACMAN.speedPxS;
   f.vy = dir.y * PACMAN.speedPxS;
   if (dir.x !== 0) f.facing = dir.x as 1 | -1;
-  f.x = wrap(f.x + (f.vx * dtMs) / 1000, WORLD.width);
-  f.y = wrap(f.y + (f.vy * dtMs) / 1000, WORLD.height);
+  f.x = wrap(f.x + (f.vx * dtMs) / 1000, stageWidth(ctx.stage));
+  f.y = wrap(f.y + (f.vy * dtMs) / 1000, stageHeight(ctx.stage));
   f.onGround = false;
   f.riding = -1;
 }

@@ -202,6 +202,17 @@ describe("power-up Pac-Man (#427)", () => {
     assert.ok(!ctx.events.some((e) => e.type === "ko"), "niente KO");
   });
 
+  it("nelle arene più larghe dello schermo rientra dai bordi dell'arena, non dello schermo (Padova)", () => {
+    const { ctx, player, list } = pacSetup();
+    ctx.stage = { ...ctx.stage, width: 1920 };
+    player.x = WORLD.width - 20;
+    steps(6, list, ctx);
+    assert.ok(player.x > WORLD.width, `continua oltre il primo schermo (x = ${player.x})`);
+    player.x = 1910;
+    steps(3, list, ctx);
+    assert.ok(player.x < 30, `rientrato da sinistra dopo il bordo dell'arena (x = ${player.x})`);
+  });
+
   it("mangia chi tocca, una volta ogni tanto", () => {
     const { ctx, player, other, list } = pacSetup();
     player.pacDir = { x: 0, y: 0 };
