@@ -70,7 +70,7 @@ static func keys_for(s: Settings, pad: bool, kind := "xbox") -> Dictionary:
 
 # Con i comandi touch: la levetta per le direzioni, i tasti a schermo col loro nome
 static func touch_keys() -> Dictionary:
-	var out := {"left": "sinistra", "right": "destra", "up": "su", "down": "giù", "run": "levetta in fondo", "taunt": "solo da tastiera o pad"}
+	var out := {"left": "sinistra", "right": "destra", "up": "su", "down": "giù", "run": "levetta in fondo", "taunt": "solo da tastiera o pad", "dodge": "Scudo + levetta"}
 	for action in TouchControls.BUTTONS:
 		out[action] = TouchControls.BUTTONS[action].label
 	return out
