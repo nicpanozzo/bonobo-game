@@ -167,6 +167,19 @@ func test_arena_col_brano_registrato() -> void:
 	b.free()
 
 
+func test_server_vecchio_senza_brano() -> void:
+	var a := _audio({"music": {"massima-tackenza": ["assets/music/massima-tackenza.ogg"]}})
+	var old := {"bpm": 116, "chords": ["F", "Am", "Bb", "C"], "lead": "triangle"} # Padova da un server di prima del brano
+	a.set_stage_music(old, "padova")
+	a.play_music("match")
+	runner.check(a._music.stream == a._music_files["massima-tackenza"], "il brano si prende dall'arena di questa versione")
+	a.set_stage_music(old, "isole")
+	runner.check(a._stage_track == "", "le Isole non hanno un brano: resta il preset")
+	a.set_stage_music(old)
+	runner.check(a._stage_track == "", "senza id resta il preset")
+	a.free()
+
+
 func test_voce_del_personaggio_o_di_quello_base() -> void:
 	var a := AudioStreamWAV.new()
 	var b := AudioStreamWAV.new()

@@ -555,9 +555,14 @@ func play_music(track: String) -> void:
 
 # La musica dell'arena della partita (E12 passo 4): il preset di StageSpec.music, o null per quella di sempre.
 # Si calcola un pezzo per frame; finché non è pronta continua quella che suona
-func set_stage_music(preset: Variant) -> void:
+func set_stage_music(preset: Variant, stage_id := "") -> void:
 	_stage_key = ""
 	_stage_track = ""
+	# L'arena arriva dal server: uno di una versione vecchia non conosce il brano registrato (music.track),
+	# che allora si prende dall'arena con lo stesso id di questa versione del gioco
+	var local: Variant = game.get("stages", {}).get(stage_id, {}).get("music") if stage_id != "" else null
+	if preset is Dictionary and not preset.has("track") and local is Dictionary and local.has("track"):
+		preset = (preset as Dictionary).merged({"track": local.track})
 	# Con un brano registrato (music.track) non si calcola niente; se il file manca resta il preset
 	if preset is Dictionary and _music_files.has(str(preset.get("track", ""))):
 		_stage_track = str(preset.track)
