@@ -13,7 +13,7 @@ const fighter = (characterId: string) =>
 
 describe("attackSpecFor", () => {
   it("senza ritocchi è ATTACKS, anche senza attacco in corso", () => {
-    const f = fighter("bonobot");
+    const f = fighter("orsoblu");
     assert.equal(attackSpecFor(f, "heavyUp"), ATTACKS.heavyUp);
     assert.equal(attackSpecFor(f), ATTACKS.light);
   });

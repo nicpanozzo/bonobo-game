@@ -226,6 +226,6 @@ describe("colpi normali propri (#384 D2)", () => {
     const gina = { characterId: "nonnagina", attack: "heavy", chargeMultiplier: 1, jabStep: 0 } as Parameters<typeof attackSpecFor>[0];
     assert.equal(attackSpecFor(gina, "heavy").startupMs, CHARACTERS.nonnagina.attacks!.heavy!.startupMs);
     assert.equal(attackSpecFor(gina, "heavy").activeMs, ATTACKS.heavy.activeMs);
-    assert.deepEqual(attackSpecFor({ ...gina, characterId: "bonobot" }, "heavy"), ATTACKS.heavy);
+    assert.deepEqual(attackSpecFor({ ...gina, characterId: "orsoblu" }, "heavy"), ATTACKS.heavy);
   });
 });

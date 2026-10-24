@@ -9815,6 +9815,62 @@
           }
         }
       },
+      "attacks": {
+        "light": {
+          "range": 67,
+          "height": 30,
+          "boxX": 15,
+          "boxY": -62
+        },
+        "heavy": {
+          "range": 68,
+          "height": 44,
+          "boxX": 0,
+          "boxY": -65
+        },
+        "lightUp": {
+          "range": 54,
+          "height": 48,
+          "boxX": -18,
+          "boxY": -134
+        },
+        "lightDown": {
+          "range": 78,
+          "height": 24,
+          "boxX": 3,
+          "boxY": -24
+        },
+        "lightAir": {
+          "range": 70,
+          "height": 50,
+          "boxX": 8,
+          "boxY": -82
+        },
+        "heavyUp": {
+          "range": 80,
+          "height": 64,
+          "boxX": -30,
+          "boxY": -134
+        },
+        "heavyDown": {
+          "range": 84,
+          "height": 30,
+          "boxX": 0,
+          "boxY": -30
+        },
+        "heavyAir": {
+          "range": 74,
+          "height": 60,
+          "boxX": 0,
+          "boxY": -76
+        },
+        "dashAttack": {
+          "range": 68,
+          "height": 44,
+          "boxX": 0,
+          "boxY": -65
+        }
+      },
       "stats": {
         "speed": 1,
         "airSpeed": 1,
@@ -10151,6 +10207,62 @@
           }
         }
       },
+      "attacks": {
+        "light": {
+          "range": 56,
+          "height": 30,
+          "boxX": 0,
+          "boxY": -64
+        },
+        "heavy": {
+          "range": 49,
+          "height": 44,
+          "boxX": -4,
+          "boxY": -48
+        },
+        "lightUp": {
+          "range": 54,
+          "height": 48,
+          "boxX": -22,
+          "boxY": -92
+        },
+        "lightDown": {
+          "range": 42,
+          "height": 24,
+          "boxX": -18,
+          "boxY": -28
+        },
+        "lightAir": {
+          "range": 56,
+          "height": 50,
+          "boxX": 0,
+          "boxY": -74
+        },
+        "heavyUp": {
+          "range": 80,
+          "height": 64,
+          "boxX": -28,
+          "boxY": -81
+        },
+        "heavyDown": {
+          "range": 62,
+          "height": 30,
+          "boxX": -18,
+          "boxY": -38
+        },
+        "heavyAir": {
+          "range": 47,
+          "height": 60,
+          "boxX": -2,
+          "boxY": -72
+        },
+        "dashAttack": {
+          "range": 44,
+          "height": 44,
+          "boxX": 0,
+          "boxY": -48
+        }
+      },
       "specialAttacks": {
         "specialNeutral": {
           "baseKnockback": 150,
@@ -10394,6 +10506,62 @@
             "frames": 1,
             "src": "land"
           }
+        }
+      },
+      "attacks": {
+        "light": {
+          "range": 48,
+          "height": 30,
+          "boxX": 0,
+          "boxY": -56
+        },
+        "heavy": {
+          "range": 78,
+          "height": 44,
+          "boxX": 0,
+          "boxY": -52
+        },
+        "lightUp": {
+          "range": 54,
+          "height": 48,
+          "boxX": 0,
+          "boxY": -88
+        },
+        "lightDown": {
+          "range": 43,
+          "height": 24,
+          "boxX": 0,
+          "boxY": -26
+        },
+        "lightAir": {
+          "range": 38,
+          "height": 50,
+          "boxX": 0,
+          "boxY": -75
+        },
+        "heavyUp": {
+          "range": 80,
+          "height": 64,
+          "boxX": -12,
+          "boxY": -93
+        },
+        "heavyDown": {
+          "range": 62,
+          "height": 30,
+          "boxX": -6,
+          "boxY": -30
+        },
+        "heavyAir": {
+          "range": 64,
+          "height": 60,
+          "boxX": 0,
+          "boxY": -64
+        },
+        "dashAttack": {
+          "range": 75,
+          "height": 44,
+          "boxX": 2,
+          "boxY": -52
         }
       },
       "stats": {
@@ -11051,6 +11219,62 @@
           "angleDeg": 40
         }
       },
+      "attacks": {
+        "light": {
+          "range": 58,
+          "height": 30,
+          "boxX": 0,
+          "boxY": -72
+        },
+        "heavy": {
+          "range": 51,
+          "height": 44,
+          "boxX": 0,
+          "boxY": -56
+        },
+        "lightUp": {
+          "range": 54,
+          "height": 48,
+          "boxX": -17,
+          "boxY": -124
+        },
+        "lightDown": {
+          "range": 64,
+          "height": 24,
+          "boxX": 0,
+          "boxY": -34
+        },
+        "lightAir": {
+          "range": 54,
+          "height": 50,
+          "boxX": 0,
+          "boxY": -89
+        },
+        "heavyUp": {
+          "range": 80,
+          "height": 64,
+          "boxX": -32,
+          "boxY": -128
+        },
+        "heavyDown": {
+          "range": 68,
+          "height": 30,
+          "boxX": 0,
+          "boxY": -36
+        },
+        "heavyAir": {
+          "range": 52,
+          "height": 60,
+          "boxX": 0,
+          "boxY": -88
+        },
+        "dashAttack": {
+          "range": 51,
+          "height": 44,
+          "boxX": 0,
+          "boxY": -56
+        }
+      },
       "portrait": "assets/characters/lampione/portrait.png",
       "specialAttacks": {
         "specialNeutral": {
@@ -11620,6 +11844,62 @@
           "angleDeg": 40
         }
       },
+      "attacks": {
+        "light": {
+          "range": 51,
+          "height": 30,
+          "boxX": 0,
+          "boxY": -52
+        },
+        "heavy": {
+          "range": 78,
+          "height": 44,
+          "boxX": 0,
+          "boxY": -49
+        },
+        "lightUp": {
+          "range": 54,
+          "height": 48,
+          "boxX": -16,
+          "boxY": -84
+        },
+        "lightDown": {
+          "range": 52,
+          "height": 24,
+          "boxX": 0,
+          "boxY": -28
+        },
+        "lightAir": {
+          "range": 44,
+          "height": 50,
+          "boxX": 0,
+          "boxY": -62
+        },
+        "heavyUp": {
+          "range": 80,
+          "height": 64,
+          "boxX": -16,
+          "boxY": -87
+        },
+        "heavyDown": {
+          "range": 62,
+          "height": 30,
+          "boxX": -11,
+          "boxY": -30
+        },
+        "heavyAir": {
+          "range": 62,
+          "height": 60,
+          "boxX": 0,
+          "boxY": -62
+        },
+        "dashAttack": {
+          "range": 75,
+          "height": 44,
+          "boxX": 2,
+          "boxY": -49
+        }
+      },
       "portrait": "assets/characters/bradipo/portrait.png",
       "specialAttacks": {
         "specialNeutral": {
@@ -11999,6 +12279,62 @@
           "angleDeg": 40
         }
       },
+      "attacks": {
+        "light": {
+          "range": 58,
+          "height": 30,
+          "boxX": 0,
+          "boxY": -72
+        },
+        "heavy": {
+          "range": 51,
+          "height": 44,
+          "boxX": 0,
+          "boxY": -56
+        },
+        "lightUp": {
+          "range": 54,
+          "height": 48,
+          "boxX": -18,
+          "boxY": -124
+        },
+        "lightDown": {
+          "range": 64,
+          "height": 24,
+          "boxX": 0,
+          "boxY": -34
+        },
+        "lightAir": {
+          "range": 54,
+          "height": 50,
+          "boxX": 0,
+          "boxY": -89
+        },
+        "heavyUp": {
+          "range": 80,
+          "height": 64,
+          "boxX": -33,
+          "boxY": -128
+        },
+        "heavyDown": {
+          "range": 68,
+          "height": 30,
+          "boxX": 0,
+          "boxY": -36
+        },
+        "heavyAir": {
+          "range": 52,
+          "height": 60,
+          "boxX": 0,
+          "boxY": -87
+        },
+        "dashAttack": {
+          "range": 51,
+          "height": 44,
+          "boxX": 0,
+          "boxY": -56
+        }
+      },
       "portrait": "assets/characters/giovannifrana/portrait.png",
       "specialAttacks": {
         "specialNeutral": {
@@ -12342,6 +12678,62 @@
           "baseKnockback": 440,
           "knockbackGrowth": 9,
           "angleDeg": 40
+        }
+      },
+      "attacks": {
+        "light": {
+          "range": 46,
+          "height": 30,
+          "boxX": 0,
+          "boxY": -71
+        },
+        "heavy": {
+          "range": 74,
+          "height": 44,
+          "boxX": 0,
+          "boxY": -66
+        },
+        "lightUp": {
+          "range": 54,
+          "height": 48,
+          "boxX": -33,
+          "boxY": -96
+        },
+        "lightDown": {
+          "range": 42,
+          "height": 24,
+          "boxX": -5,
+          "boxY": -32
+        },
+        "lightAir": {
+          "range": 49,
+          "height": 50,
+          "boxX": 0,
+          "boxY": -86
+        },
+        "heavyUp": {
+          "range": 80,
+          "height": 64,
+          "boxX": -41,
+          "boxY": -96
+        },
+        "heavyDown": {
+          "range": 62,
+          "height": 30,
+          "boxX": -22,
+          "boxY": -32
+        },
+        "heavyAir": {
+          "range": 54,
+          "height": 60,
+          "boxX": 0,
+          "boxY": -68
+        },
+        "dashAttack": {
+          "range": 74,
+          "height": 44,
+          "boxX": 0,
+          "boxY": -66
         }
       },
       "portrait": "assets/characters/marcomunista/portrait.png",
@@ -12697,6 +13089,62 @@
           "baseKnockback": 450,
           "knockbackGrowth": 9,
           "angleDeg": 40
+        }
+      },
+      "attacks": {
+        "light": {
+          "range": 58,
+          "height": 30,
+          "boxX": 0,
+          "boxY": -72
+        },
+        "heavy": {
+          "range": 51,
+          "height": 44,
+          "boxX": 0,
+          "boxY": -56
+        },
+        "lightUp": {
+          "range": 54,
+          "height": 48,
+          "boxX": -18,
+          "boxY": -124
+        },
+        "lightDown": {
+          "range": 64,
+          "height": 24,
+          "boxX": 0,
+          "boxY": -34
+        },
+        "lightAir": {
+          "range": 54,
+          "height": 50,
+          "boxX": 0,
+          "boxY": -89
+        },
+        "heavyUp": {
+          "range": 80,
+          "height": 64,
+          "boxX": -34,
+          "boxY": -128
+        },
+        "heavyDown": {
+          "range": 68,
+          "height": 30,
+          "boxX": 0,
+          "boxY": -36
+        },
+        "heavyAir": {
+          "range": 52,
+          "height": 60,
+          "boxX": 0,
+          "boxY": -87
+        },
+        "dashAttack": {
+          "range": 51,
+          "height": 44,
+          "boxX": 0,
+          "boxY": -56
         }
       },
       "portrait": "assets/characters/lendmar/portrait.png",
@@ -13055,6 +13503,62 @@
           "baseKnockback": 360,
           "knockbackGrowth": 8,
           "angleDeg": 70
+        }
+      },
+      "attacks": {
+        "light": {
+          "range": 58,
+          "height": 30,
+          "boxX": 0,
+          "boxY": -72
+        },
+        "heavy": {
+          "range": 59,
+          "height": 44,
+          "boxX": 0,
+          "boxY": -77
+        },
+        "lightUp": {
+          "range": 54,
+          "height": 48,
+          "boxX": -18,
+          "boxY": -124
+        },
+        "lightDown": {
+          "range": 64,
+          "height": 24,
+          "boxX": 0,
+          "boxY": -34
+        },
+        "lightAir": {
+          "range": 54,
+          "height": 50,
+          "boxX": 0,
+          "boxY": -89
+        },
+        "heavyUp": {
+          "range": 80,
+          "height": 64,
+          "boxX": -34,
+          "boxY": -128
+        },
+        "heavyDown": {
+          "range": 68,
+          "height": 30,
+          "boxX": 0,
+          "boxY": -36
+        },
+        "heavyAir": {
+          "range": 52,
+          "height": 60,
+          "boxX": 0,
+          "boxY": -90
+        },
+        "dashAttack": {
+          "range": 59,
+          "height": 44,
+          "boxX": 0,
+          "boxY": -77
         }
       },
       "stats": {
@@ -13448,6 +13952,62 @@
           "angleDeg": 35
         }
       },
+      "attacks": {
+        "light": {
+          "range": 58,
+          "height": 30,
+          "boxX": 0,
+          "boxY": -72
+        },
+        "heavy": {
+          "range": 51,
+          "height": 44,
+          "boxX": 0,
+          "boxY": -56
+        },
+        "lightUp": {
+          "range": 54,
+          "height": 48,
+          "boxX": -24,
+          "boxY": -124
+        },
+        "lightDown": {
+          "range": 64,
+          "height": 24,
+          "boxX": 0,
+          "boxY": -34
+        },
+        "lightAir": {
+          "range": 54,
+          "height": 50,
+          "boxX": 0,
+          "boxY": -89
+        },
+        "heavyUp": {
+          "range": 80,
+          "height": 64,
+          "boxX": -41,
+          "boxY": -130
+        },
+        "heavyDown": {
+          "range": 68,
+          "height": 30,
+          "boxX": 0,
+          "boxY": -36
+        },
+        "heavyAir": {
+          "range": 52,
+          "height": 60,
+          "boxX": 0,
+          "boxY": -87
+        },
+        "dashAttack": {
+          "range": 51,
+          "height": 44,
+          "boxX": 0,
+          "boxY": -56
+        }
+      },
       "portrait": "assets/characters/coachcartier/portrait.png",
       "specialAttacks": {
         "specialNeutral": {
@@ -13757,20 +14317,64 @@
         "light": {
           "damage": 6,
           "startupMs": 50,
-          "range": 64
+          "range": 67,
+          "height": 30,
+          "boxX": 12,
+          "boxY": -70
         },
         "heavy": {
           "damage": 15,
           "baseKnockback": 450,
           "startupMs": 320,
           "cooldownMs": 860,
-          "range": 84,
-          "height": 54
+          "range": 75,
+          "height": 44,
+          "boxX": 0,
+          "boxY": -62
+        },
+        "lightUp": {
+          "range": 54,
+          "height": 48,
+          "boxX": -18,
+          "boxY": -144
+        },
+        "lightDown": {
+          "range": 78,
+          "height": 24,
+          "boxX": 5,
+          "boxY": -31
+        },
+        "lightAir": {
+          "range": 70,
+          "height": 50,
+          "boxX": 6,
+          "boxY": -88
+        },
+        "heavyUp": {
+          "range": 80,
+          "height": 64,
+          "boxX": -28,
+          "boxY": -144
         },
         "heavyDown": {
           "damage": 13,
           "startupMs": 280,
-          "range": 104
+          "range": 89,
+          "height": 30,
+          "boxX": 0,
+          "boxY": -36
+        },
+        "heavyAir": {
+          "range": 72,
+          "height": 60,
+          "boxX": 0,
+          "boxY": -74
+        },
+        "dashAttack": {
+          "range": 75,
+          "height": 44,
+          "boxX": 0,
+          "boxY": -62
         }
       },
       "supreme": {

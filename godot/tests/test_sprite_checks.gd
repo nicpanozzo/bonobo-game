@@ -1,6 +1,7 @@
 # Controlli automatici sugli sprite dei lottatori (#384 C1 e C2), su tutti i personaggi e le skin:
 # - C1: il primo fotogramma mostrato di ogni azione da tasto cambia già la sagoma rispetto al fermo;
-# - C2: nel fotogramma d'impatto di ogni colpo qualcosa del disegno sta nella zona del colpo.
+# - C2: nel fotogramma d'impatto di ogni colpo qualcosa del disegno sta nella zona del colpo;
+# - #243: nel disegno base la zona finisce dove arriva la punta del colpo (né nel vuoto né più corta).
 extends RefCounted
 
 var runner
@@ -16,9 +17,26 @@ const MIN_CHANGE := 0.05 # frazione della sagoma del fermo che deve cambiare
 const STEP := 4 # pixel del PNG tra un campione e l'altro: basta per la sagoma e il test resta veloce
 # Colpi che oggi non arrivano nella zona, da ridisegnare con chi ha fatto il foglio (#384 B5). Un colpo nuovo
 # fuori zona fa fallire il test; quando uno di questi viene sistemato, lo si toglie da qui
-const KNOWN_OFF := {
-	"bradipo": ["lightUp"], # la posa del foglio di Marco non alza il braccio sopra la testa
-}
+const KNOWN_OFF := {}
+const UP := ["lightUp", "heavyUp"]
+const TIP_TOLERANCE := 12.0 # pixel di mondo tra la punta del disegno e il bordo della zona (tools/sprite/zone_dei_colpi.py)
+const MIN_RUN := 3 # pixel opachi in una colonna o riga perché conti come punta, non un capello
+
+
+# La punta del colpo nella zona, in pixel del PNG: la riga più alta per i colpi in su, sennò la colonna più avanti.
+# -1 se nella fascia della zona non c'è niente
+func _tip(img: Image, zone: Rect2i, up: bool) -> int:
+	var outer := img.get_height() if up else img.get_width()
+	var inner_from := zone.position.x if up else zone.position.y
+	var inner_to := zone.end.x if up else zone.end.y
+	for i in outer:
+		var line := i if up else outer - 1 - i
+		var n := 0
+		for j in range(maxi(0, inner_from), mini(inner_to, img.get_width() if up else img.get_height())):
+			n += int(_solid(img, j, line) if up else _solid(img, line, j))
+		if n >= MIN_RUN:
+			return line
+	return -1
 
 
 func _game() -> Dictionary:
@@ -103,3 +121,13 @@ func test_il_colpo_arriva_nella_zona() -> void:
 				for x in range(zone.position.x, zone.end.x, 2):
 					inside += int(_solid(img, x, y))
 			runner.check(inside >= 4, "%s, %s: nel fotogramma %d niente del disegno nella zona del colpo %s" % [look[0], state, hit, zone])
+			if look[0] != look[1]:
+				continue # le skin usano le zone del disegno base: cambiano solo l'aspetto
+			# La zona intera, anche fuori dal fotogramma: il bordo è quello che la fisica usa
+			var full := Rect2(x0, y0, float(spec.range) / scale, float(spec.height) / scale)
+			var up: bool = state in UP
+			var tip := _tip(img, Rect2i(full), up)
+			# di quanto la zona va oltre la punta, in pixel di mondo: poco oltre va bene, tanto è colpire nel vuoto
+			var gap := (float(tip) - full.position.y if up else full.end.x - float(tip)) * scale
+			runner.check(tip >= 0 and gap >= -TIP_TOLERANCE and gap <= 2 * TIP_TOLERANCE,
+				"%s, %s: la zona finisce a %d pixel dalla punta del disegno (rilancia tools/sprite/zone_dei_colpi.py)" % [look[0], state, roundi(gap)])
