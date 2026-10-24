@@ -756,6 +756,26 @@
     "bigPelletValue": 5,
     "maxSpeedMul": 1.8
   },
+  "bassanese": {
+    "walkPxS": 300,
+    "jumpPxS": 420,
+    "jumpMinMs": 380,
+    "hopPx": 70,
+    "lookMs": 260,
+    "endInsetPx": 26,
+    "minSurfacePx": 60,
+    "maxSurfaces": 10,
+    "maxMs": 15000,
+    "enterPx": 80,
+    "width": 54,
+    "height": 104,
+    "damage": 10,
+    "knockback": 520,
+    "knockbackGrowth": 5,
+    "angleDeg": 40,
+    "hitAgainMs": 1100,
+    "foundMs": 900
+  },
   "effects": {
     "phaseBannerMs": 2500,
     "hitSparkMs": 220,
@@ -880,6 +900,17 @@
         "ms": 8000
       }
     },
+    "bassanese": {
+      "id": "bassanese",
+      "name": "Chiama Bassanese",
+      "damage": 0,
+      "knockback": 0,
+      "width": 18,
+      "height": 30,
+      "color": 2899536,
+      "weight": 1,
+      "call": true
+    },
     "tetris": {
       "id": "tetris",
       "name": "Tetris",
@@ -940,6 +971,7 @@
   ],
   "droppableItems": [
     "banana",
+    "bassanese",
     "bong",
     "fiore",
     "funghetti",

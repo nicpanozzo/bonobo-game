@@ -69,6 +69,8 @@ var _crowd: RefCounted = StageCrowd.new() # i flash dei turisti a ogni KO (#433)
 var _water: RefCounted = preload("res://scripts/stage_water.gd").new() # getti, fontane e vento (#325)
 var _wonder: RefCounted = preload("res://scripts/wonder_stage.gd").new() # l'arena musicale che balla a tempo (#423)
 var _arcade: RefCounted = preload("res://scripts/arcade_view.gd").new() # pezzi e blocchi del power-up Tetris (#427)
+var _bassanese: RefCounted = preload("res://scripts/bassanese_view.gd").new() # Chiama Bassanese
+const BassaneseView := preload("res://scripts/bassanese_view.gd")
 var _stations: RefCounted = preload("res://scripts/station_view.gd").new() # postazioni e palle di mortadella (#433)
 var _ambient := Color.WHITE # luce del momento del giorno (#267): moltiplica strati e decorazioni, un po' il palco
 var _textures := {} # id personaggio -> Texture2D dello spritesheet (nel formato cartella, quella di idle)
@@ -115,6 +117,8 @@ func setup(game_data: Dictionary) -> void:
 	add_child(_supreme_view)
 	_speech = SpeechBubbles.new()
 	_speech.where = func(id: String) -> Variant:
+		if id == "bassanese":
+			return _bassanese.head()
 		var p: Variant = buffer.sample(id, Time.get_ticks_msec())
 		return Vector2(p.x, float(p.y) - float(game.fighter.height) * 1.15) if p != null and not p.eliminated else null
 	add_child(_speech)
@@ -259,6 +263,7 @@ func reset() -> void:
 	_puddles = []
 	_companions.clear()
 	_arcade.clear()
+	_bassanese.clear()
 	_stations.clear()
 	_item_pos = {}
 	_dust = []
@@ -619,6 +624,7 @@ func on_snapshot(snap: Dictionary) -> void:
 	_pads_pressed = snap.get("pads", []) if snap.get("pads") is Array else [] # bottoni sonori (#423)
 	_companions.on_snapshot(snap.players, game.characters)
 	_arcade.on_snapshot(snap) # #427
+	_bassanese.on_snapshot(snap)
 	_stations.on_snapshot(snap, Time.get_ticks_msec()) # #433
 	predictor.blocks = _arcade.blocks
 	predictor.puddles = _puddles
@@ -673,6 +679,13 @@ func on_event(e: Dictionary) -> void:
 			_sparks.append({"x": e.x, "y": float(e.y) - 10.0, "age": 0.0, "size": 34.0, "color": _color(PAD_COLORS.get(str(e.get("sound", "")), 0xff4fd8))})
 			_shake = maxf(_shake, 4.0)
 			_wonder.on_pad(e, Time.get_ticks_msec()) # il fiore più vicino commenta (#423)
+		"bassanese":
+			# Chiama Bassanese: cosa dice entrando e quando trova la grappa (TODO community: le frasi)
+			if e.phase == "call":
+				_speech.say("bassanese", "Pronto? Arrivo! Ma dov'è la grappa?")
+			elif e.phase == "found":
+				_speech.say("bassanese", "Eccola! Alla salute!")
+				_shake = maxf(_shake, 4.0)
 		"tetris":
 			# Una riga del Tetris che esplode (#427): lampo lungo la riga e scossa
 			if e.phase == "line":
@@ -1012,6 +1025,7 @@ func _draw() -> void:
 	_speech.view_rect = view_rect
 	_draw_puddles(now)
 	_draw_items(now)
+	_bassanese.draw(self, now) # il Bassanese chiamato col telefono e la grappa che cerca
 	_draw_projectiles()
 	_arcade.draw_pieces(self, _sampled) # i pezzi del Tetris che cadono (#427)
 	_stations.draw_balls(self, Time.get_ticks_msec()) # le palle di mortadella (#433)
@@ -1221,6 +1235,8 @@ func _draw_item(kind: String, base: Vector2, spin: float, load: float = -1.0, al
 		draw_circle(Vector2(w * 0.04, -w * 0.27), 2.6, ArcadeView.INK)
 		draw_circle(Vector2(w * 0.68, 0), 3.5, ArcadeView.INK)
 		draw_circle(Vector2(w * 0.68, 0), 2.5, ArcadeView.PELLET)
+	elif kind == "bassanese":
+		BassaneseView.draw_phone(self, w, h, Time.get_ticks_msec()) # Chiama Bassanese: il telefono che squilla
 	elif kind == "tetris":
 		# Il Tetris (#427): raggi arcade e un pezzo a T che brilla, con i quadretti in rilievo
 		_draw_arcade_rays(w, Color(0.3, 0.85, 1.0), now)

@@ -11,7 +11,7 @@ import { CHARACTERS, CREWS, DEFAULT_CHARACTER_ID, isSpriteFolder, resolvedAnimat
 import { ATTACKS, AUDIO, BONG, CAMERA, FUNGHI, COLORS, EFFECTS, FIGHTER, INPUT, ITEM_AMOUNTS, ITEM_RULES, LEDGE, MICELIO, NET, PAD, POWERUP, PROTOCOL_VERSION, RUMBLE, SHIELD, SPORE, SUPREME_SPEEDS, TEAM_COLORS, TEAM_NAMES, WORLD } from "../src/shared/constants";
 import { RECONNECT, RECONNECT_HOLD_MS } from "../src/shared/constants";
 import { COLORS_COLORBLIND, MAX_TEAMS, TEAM_COLORS_COLORBLIND } from "../src/shared/constants";
-import { PACMAN, TETRIS, TRAINING } from "../src/shared/constants";
+import { BASSANESE, PACMAN, TETRIS, TRAINING } from "../src/shared/constants";
 import { STATION } from "../src/shared/constants";
 import { DASH, DODGE, GAME_SPEED, RECOVERY, TICK_RATE } from "../src/shared/constants";
 import { predictionTraces } from "../src/shared/predictionTraces";
@@ -243,6 +243,7 @@ const data = {
   tetris: TETRIS, // il power-up Tetris (#427)
   station: STATION, // postazioni: bombarda e munizioni (#433)
   pacman: PACMAN, // il power-up Pac-Man (#427)
+  bassanese: BASSANESE, // Chiama Bassanese
   effects: EFFECTS,
   items: ITEMS,
   itemRules: ITEM_RULES,

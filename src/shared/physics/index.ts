@@ -17,9 +17,11 @@
 //   arcade.ts    power-up Tetris e Pac-Man (#427)
 //   timed.ts     pezzi a tempo e fasi dell'arena (#433)
 //   stations.ts  postazioni: bombarda e munizioni (#433)
+//   bassanese.ts il Bassanese chiamato col telefono
 
 import { isArcade, playPacman, playTetris, stepArcade } from "./arcade";
 import { resolveHits, tryStartAttack, updateAttack } from "./attacks";
+import { stepBassanese } from "./bassanese";
 import { stepCompanion } from "./companion";
 import { applyJets, carryRider, resolveHazards } from "./elements";
 import { pressPads } from "./pads";
@@ -193,5 +195,6 @@ export function stepWorld(fighters: Fighter[], dtMs: number, ctx: PhysicsContext
   applyJets(fighters, ctx, dtMs); // getti d'acqua (#253)
   pressPads(fighters, ctx, firstEvent); // bottoni sonori (#423)
   stepArcade(fighters, dtMs, ctx); // pezzi del Tetris e bocconi di Pac-Man (#427)
+  stepBassanese(fighters, dtMs, ctx); // il Bassanese chiamato col telefono
   stepStations(fighters, dtMs, ctx, firstEvent); // postazioni e palle di mortadella (#433), dopo colpi e prese
 }

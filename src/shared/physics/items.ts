@@ -11,6 +11,7 @@ import { rng } from "../stageGenerator";
 import type { ItemState } from "../types";
 import { endArcade, isArcade, startArcade } from "./arcade";
 import { bodyBox } from "./attacks";
+import { callBassanese } from "./bassanese";
 import { moverHere, moverPlace } from "./elements";
 import { chargeFromHit } from "./supreme";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
@@ -106,7 +107,11 @@ export function handleItemInput(world: ItemWorld, fighters: Fighter[], ctx: Phys
     const near = world.items.find(
       (i) => !i.heldBy && !i.thrown && !ITEMS[i.kind].planted && Math.abs(i.x - f.x) < ITEM_RULES.pickRange && i.y > f.y - FIGHTER.height && i.y < f.y + 12,
     );
-    if (near && ITEMS[near.kind].consume) {
+    if (near && ITEMS[near.kind].call) {
+      world.items = world.items.filter((i) => i !== near); // Chiama Bassanese: il telefono sparisce, arriva lui
+      callBassanese(f, ctx);
+      consumeAttackKeys(f);
+    } else if (near && ITEMS[near.kind].consume) {
       powerUp(world, near, f, ctx);
       consumeAttackKeys(f);
     } else if (near) {
