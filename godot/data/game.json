@@ -11296,6 +11296,230 @@
           }
         }
       },
+      "skins": {
+        "bassista": {
+          "name": "Bassista",
+          "sprite": {
+            "dir": "assets/characters/bradipo/skins/bassista",
+            "frameWidth": 320,
+            "frameHeight": 250,
+            "footY": 232,
+            "scale": 0.5,
+            "animations": {
+              "idle": {
+                "fps": 8,
+                "loop": true,
+                "frames": 15,
+                "src": "idle"
+              },
+              "walk": {
+                "fps": 14,
+                "loop": true,
+                "frames": 14,
+                "src": "walk"
+              },
+              "jump": {
+                "fps": 18,
+                "loop": false,
+                "frames": 4,
+                "src": "jump"
+              },
+              "fall": {
+                "fps": 10,
+                "loop": true,
+                "frames": 4,
+                "src": "fall"
+              },
+              "light": {
+                "fps": 24,
+                "loop": false,
+                "hitFrame": 3,
+                "frames": 8,
+                "src": "light"
+              },
+              "heavy": {
+                "fps": 24,
+                "loop": false,
+                "hitFrame": 5,
+                "frames": 10,
+                "src": "heavy"
+              },
+              "hit": {
+                "fps": 16,
+                "loop": false,
+                "frames": 8,
+                "src": "hit"
+              },
+              "doubleJump": {
+                "fps": 24,
+                "loop": false,
+                "frames": 8,
+                "src": "doubleJump"
+              },
+              "tumble": {
+                "fps": 18,
+                "loop": true,
+                "frames": 6,
+                "src": "tumble"
+              },
+              "ledge": {
+                "fps": 18,
+                "loop": false,
+                "frames": 4,
+                "src": "jump"
+              },
+              "climb": {
+                "fps": 18,
+                "loop": false,
+                "frames": 4,
+                "src": "jump"
+              },
+              "land": {
+                "fps": 24,
+                "loop": false,
+                "frames": 2,
+                "src": "land"
+              },
+              "lightUp": {
+                "fps": 24,
+                "loop": false,
+                "hitFrame": 2,
+                "frames": 6,
+                "src": "lightUp"
+              },
+              "lightDown": {
+                "fps": 24,
+                "loop": false,
+                "hitFrame": 2,
+                "frames": 6,
+                "src": "lightDown"
+              },
+              "lightAir": {
+                "fps": 24,
+                "loop": false,
+                "hitFrame": 1,
+                "frames": 5,
+                "src": "lightAir"
+              },
+              "heavyUp": {
+                "fps": 24,
+                "loop": false,
+                "hitFrame": 3,
+                "frames": 9,
+                "src": "heavyUp"
+              },
+              "heavyDown": {
+                "fps": 24,
+                "loop": false,
+                "hitFrame": 3,
+                "frames": 10,
+                "src": "heavyDown"
+              },
+              "heavyAir": {
+                "fps": 24,
+                "loop": false,
+                "hitFrame": 1,
+                "frames": 4,
+                "src": "heavyAir"
+              },
+              "recovery": {
+                "fps": 24,
+                "loop": false,
+                "hitFrame": 0,
+                "frames": 5,
+                "src": "recovery"
+              },
+              "taunt": {
+                "fps": 12,
+                "loop": false,
+                "frames": 14,
+                "src": "taunt"
+              },
+              "shield": {
+                "fps": 8,
+                "loop": true,
+                "frames": 6,
+                "src": "shield"
+              },
+              "grab": {
+                "fps": 24,
+                "loop": false,
+                "hitFrame": 5,
+                "frames": 9,
+                "src": "grab"
+              },
+              "throw": {
+                "fps": 24,
+                "loop": false,
+                "hitFrame": 0,
+                "frames": 7,
+                "src": "throw"
+              },
+              "grabbed": {
+                "fps": 16,
+                "loop": false,
+                "frames": 8,
+                "src": "hit"
+              },
+              "special": {
+                "fps": 24,
+                "loop": false,
+                "hitFrame": 5,
+                "frames": 10,
+                "src": "heavy"
+              },
+              "dash": {
+                "fps": 14,
+                "loop": true,
+                "frames": 6,
+                "src": "dash"
+              },
+              "supreme": {
+                "fps": 12,
+                "loop": false,
+                "hitFrame": 4,
+                "frames": 22,
+                "src": "supreme"
+              },
+              "specialNeutral": {
+                "fps": 24,
+                "loop": false,
+                "hitFrame": 3,
+                "frames": 8,
+                "src": "specialNeutral"
+              },
+              "specialSide": {
+                "fps": 24,
+                "loop": false,
+                "hitFrame": 5,
+                "frames": 15,
+                "src": "specialSide"
+              },
+              "specialDown": {
+                "fps": 24,
+                "loop": false,
+                "hitFrame": 1,
+                "frames": 8,
+                "src": "specialDown"
+              },
+              "dashAttack": {
+                "fps": 24,
+                "loop": false,
+                "hitFrame": 5,
+                "frames": 10,
+                "src": "heavy"
+              },
+              "jumpSquat": {
+                "fps": 24,
+                "loop": false,
+                "frames": 2,
+                "src": "land"
+              }
+            }
+          },
+          "portrait": "assets/characters/bradipo/skins/bassista/portrait.png"
+        }
+      },
       "supreme": {
         "type": "spin",
         "name": "DEMACIAAA",
@@ -11425,8 +11649,7 @@
         "boxX": -65,
         "boxY": -92,
         "outward": true
-      },
-      "skins": {}
+      }
     },
     "giovannifrana": {
       "id": "giovannifrana",
