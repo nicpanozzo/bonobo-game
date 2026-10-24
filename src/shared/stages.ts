@@ -213,6 +213,8 @@ export interface StageLife {
   planes?: { y: number; everyMs: number }; // un aereo lontanissimo ogni tanto, con la scia di giorno e le luci di notte
   // Tavolini di un bar (#278): da x verso destra ogni spacing pixel, gente seduta che beve e brinda, il cameriere, le lucine la sera
   bar?: { x: number; y: number; parallax: number; tables: number; spacing: number };
+  // Il pubblico (#433): da questi punti del mondo i turisti scattano foto col flash a ogni KO e ai colpi forti
+  crowd?: { flashes: { x: number; y: number }[] };
   // Giorno e notte: un giro in cycleMs dall'inizio della partita; startAt da 0 a 1 (0 mezzogiorno, 0,25 tramonto,
   // 0,5 mezzanotte, 0,75 alba). Di notte le stelle; i lampioni si accendono al tramonto e si spengono all'alba
   // Acqua intorno all'arena (#264): da y in giù, davanti a chi cade (splash). Con flood (indice di una trappola con
@@ -1276,6 +1278,14 @@ export const STAGES: Record<string, StageSpec> = {
         pigeons: [{ x: 1152, y: 1717 }, { x: 1302, y: 982 }, { x: 1698, y: 982 }, { x: 130, y: 1760 }, { x: 2070, y: 1760 }, { x: 860, y: 1858 }],
         // sotto i portici dello strato vicino (NEAR_BASE in bologna.py) e sulla strada davanti (ROAD_Y)
         walkers: { y: 1778, parallax: 0.85, count: 10, umbrellas: true },
+        // i turisti che fotografano la zuffa: sotto i portici, dalle finestre dei palazzi, al cantiere e alla base delle torri
+        crowd: {
+          flashes: [
+            { x: 60, y: 1840 }, { x: 150, y: 1830 }, { x: 240, y: 1845 }, { x: 120, y: 1700 }, { x: 220, y: 1690 },
+            { x: 1960, y: 1845 }, { x: 2050, y: 1830 }, { x: 2140, y: 1840 }, { x: 1980, y: 1690 }, { x: 2080, y: 1700 },
+            { x: 650, y: 1905 }, { x: 760, y: 1900 }, { x: 1380, y: 1905 }, { x: 1620, y: 1900 }, { x: 1120, y: 1950 },
+          ],
+        },
         traffic: { y: 1832, parallax: 0.85, everyMs: 2600, kinds: ["auto", "auto", "bici", "bici", "vespa", "vespa", "bus", "furgone"] },
         daycycle: {
           // un giorno in 1000 s da metà pomeriggio: il sole tramonta poco prima del crollo (2:30), la zuffa è all'imbrunire
