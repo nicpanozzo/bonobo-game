@@ -2,6 +2,7 @@
 # ogni colpo normale e sposta la zona sulla punta del colpo (mano, piede, arma), dentro ATTACK_TWEAK.
 # Uso: python3 tools/sprite/zone_dei_colpi.py [id ...]   (dopo npm run export:godot; serve Pillow)
 # Stampa le zone (range, height, boxX, boxY) dei colpi di `attacks:` da copiare nel personaggio in src/shared/characters.ts. Danni e tempi non li tocca.
+# Stampa anche `hurtbox:`, il corpo che si può colpire, misurato sulla sagoma del fermo.
 # Lo stesso conto lo rifà test_sprite_checks.gd: se un disegno cambia e la punta esce dalla zona, il test lo dice.
 import json
 import math
@@ -67,12 +68,26 @@ def fit(points, kind):
     return {"range": rng, "height": h, "boxX": round(end - rng), "boxY": round(min(-h, cy - h / 2))}
 
 
+def hurtbox(sprite):
+    w, h = sprite["frameWidth"], sprite["frameHeight"]
+    a = sprite["animations"]["idle"]
+    img = Image.open("godot/data/%s/%s.png" % (sprite["dir"], a.get("src", "idle"))).convert("RGBA")
+    alpha = img.crop((0, 0, w, h)).getchannel("A").load()
+    s = float(sprite.get("scale", 1.0))
+    cols = [sum(alpha[x, y] > 128 for y in range(h)) for x in range(w)]
+    rows = [y for y in range(h) if sum(alpha[x, y] > 128 for x in range(w)) >= MIN_RUN]
+    # le colonne con poco disegno (coda, capelli, fumo) non fanno corpo
+    wide = [x for x in range(w) if cols[x] >= 0.25 * max(cols)]
+    return round((max(wide) - min(wide)) * s), round((float(sprite.get("footY", h)) - min(rows)) * s)
+
+
 def main(only):
     for cid, c in game["characters"].items():
         sprite = c.get("sprite")
         if not isinstance(sprite, dict) or "dir" not in sprite or (only and cid not in only):
             continue
         print("  // %s" % cid)
+        print("    hurtbox: { width: %d, height: %d }," % hurtbox(sprite))
         print("    attacks: {")
         for kind in STRIKES:
             if kind not in sprite["animations"]:
