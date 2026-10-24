@@ -1,7 +1,7 @@
 // Corsa, controllo in aria, salti, caduta veloce e gravità.
 
 import { characterStats } from "../characters";
-import { ATTACKS, BIRRA, BONG, DASH, DODGE, FIGHTER, FLAG, HITSTUN_AIR_DRAG, POWERUP, RECOVERY, SLICK, SPORE } from "../constants";
+import { ATTACKS, BONG, DASH, DODGE, FIGHTER, FLAG, HITSTUN_AIR_DRAG, POWERUP, RECOVERY, SLICK, SPORE } from "../constants";
 import { attackSpecFor, startAttack } from "./attacks";
 import { endDash, stepDash } from "./dash";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
@@ -53,7 +53,7 @@ export function applyControls(f: Fighter, dt: number, ctx: PhysicsContext): void
     return;
   }
   const stats = characterStats(f.characterId);
-  const speed = (f.carrier ? FLAG.carrierSpeed : 1) * (f.powerup === "fiore" ? POWERUP.speedMult : f.powerup === "birra" ? BIRRA.speedMult : f.powerup === "spore" ? SPORE.speedMult : 1); // la bandiera pesa, il fiore rilassa (#231), la birra spinge (#302), le spore rallentano (#358)
+  const speed = (f.carrier ? FLAG.carrierSpeed : 1) * (f.powerup === "fiore" ? POWERUP.speedMult : f.powerup === "spore" ? SPORE.speedMult : 1); // la bandiera pesa, il fiore rilassa (#231), le spore rallentano (#358)
   // Durante un attacco da terra si resta fermi, in aria si mantiene lo slancio
   const dashSpeed = stepDash(f, dir, dt * 1000, ctx); // scatto e corsa (#199)
   if (f.onGround && dashSpeed !== null) {
@@ -66,8 +66,6 @@ export function applyControls(f: Fighter, dt: number, ctx: PhysicsContext): void
     // sopra una pozza dell'IRA (#13) non si frena né si parte di colpo: si scivola
     const slip = SLICK.accel * dt;
     f.vx = onPuddle(f, ctx) ? f.vx + Math.max(-slip, Math.min(slip, want - f.vx)) : want;
-    // Ubriachi (#302): a terra si barcolla avanti e indietro, anche da fermi
-    if (f.powerup === "birra" && !f.attack) f.vx += BIRRA.swayPxS * Math.sin((2 * Math.PI * f.powerupMs) / BIRRA.swayPeriodMs);
   } else if (dir !== 0) {
     f.vx += dir * FIGHTER.airAccel * dt;
     const max = FIGHTER.airSpeed * stats.airSpeed * speed;

@@ -617,7 +617,6 @@ export const FUNGHI = {
   popVy: 520, // pixel/s verso l'alto: il funghetto che scoppia fa saltellare
 };
 
-// La birra (#302, idea di Nicola): cappello da tirolese, si barcolla ma si picchia più forte
 // Il filo di Kirschner di Dr. Micelium (#358): chi è infettato dalle spore va più piano, lui picchia più forte.
 // Sono potenziamenti come quelli degli oggetti (powerup "spore" e "micelio"), così il client li vede nello snapshot
 export const SPORE = {
@@ -660,14 +659,6 @@ export const SLICK = {
   max: 10, // pozze insieme in tutta l'arena: oltre, sparisce la più vecchia
   landSlackPx: 30, // pixel sotto il bordo del blocco entro cui il proiettile conta come caduto sopra
   accel: 450, // pixel/s²: quanto in fretta si cambia velocità sopra una pozza (a terra di solito è subito)
-};
-
-export const BIRRA = {
-  ms: 8000, // ms di effetto dalla raccolta
-  damageMult: 1.4, // danno dei colpi dati da ubriachi
-  speedMult: 1.1, // frazione della velocità orizzontale: si va un po' più svelti
-  swayPxS: 110, // pixel/s di barcollamento a terra, avanti e indietro
-  swayPeriodMs: 900, // ms di un'oscillazione completa del barcollamento
 };
 
 // Il power-up Tetris (#427): chi lo prende si assenta (fermo e intoccabile) e guida pezzi che cadono dall'alto

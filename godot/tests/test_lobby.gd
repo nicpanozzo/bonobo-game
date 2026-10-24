@@ -211,7 +211,7 @@ func test_torna_dalla_partita_sulla_stessa_stanza() -> void:
 func test_suprema_e_oggetti() -> void:
 	var lobby := _lobby(false, {"rules": {"mode": "ffa", "supremeSpeed": 2, "itemAmount": 0, "itemKinds": ["banana"]}})
 	runner.check(lobby._items_box.visible, "in tutti contro tutti si scelgono gli oggetti")
-	runner.check(lobby._item_checks.size() >= 2 and lobby._item_checks["banana"].button_pressed and not lobby._item_checks["birra"].button_pressed, "tornano quelli scelti")
+	runner.check(lobby._item_checks.size() >= 2 and lobby._item_checks["banana"].button_pressed and not lobby._item_checks["bong"].button_pressed, "tornano quelli scelti")
 	runner.check(lobby._item_checks["banana"].disabled, "con Nessuno i tipi non si scelgono")
 	var c := _last_choice(lobby, lobby._submit)
 	runner.check(is_equal_approx(float(c.rules.supremeSpeed), 2.0) and c.rules.itemAmount == 0 and c.rules.itemKinds == ["banana"], "nella scelta: %s" % [c.rules])
