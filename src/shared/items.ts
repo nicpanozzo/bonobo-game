@@ -1,4 +1,4 @@
-import { BIRRA, PACMAN, POWERUP, TETRIS } from "./constants";
+import { PACMAN, POWERUP, TETRIS } from "./constants";
 
 // Oggetti che cadono nell'arena (#17 passo 3). Caduta, raccolta e lancio sono in
 // src/shared/physics/items.ts, i numeri comuni in ITEM_RULES (constants.ts).
@@ -28,8 +28,6 @@ export const ITEMS: Record<string, ItemSpec> = {
   // TODO community: il nome nel gioco (#302). Teemo di LoL: trappole quasi invisibili che fanno "viaggiare" (FUNGHI)
   funghetti: { id: "funghetti", name: "Funghetti", damage: 4, knockback: 250, width: 24, height: 20, color: 0x9b59b6, weight: 2, mushrooms: true },
   fungo: { id: "fungo", name: "Funghetto", damage: 0, knockback: 0, width: 20, height: 16, color: 0xc0392b, weight: 0, planted: true },
-  // TODO community: il nome nel gioco (#302). Cappello tirolese, colpi più forti, si barcolla (BIRRA)
-  birra: { id: "birra", name: "Birra", damage: 0, knockback: 0, width: 22, height: 30, color: 0xf0b030, weight: 2, consume: { powerup: "birra", ms: BIRRA.ms } },
   bong: { id: "bong", name: "Bong", damage: 10, knockback: 380, width: 22, height: 40, color: 0x7fd8c4, weight: 2, bong: true },
   // Pac-Man (#427): si diventa Pac-Man e si mangiano gli altri (PACMAN)
   pacman: { id: "pacman", name: "Pac-Man", damage: 0, knockback: 0, width: 28, height: 28, color: 0xffeb3b, weight: 1, consume: { powerup: "pacman", ms: PACMAN.ms } },

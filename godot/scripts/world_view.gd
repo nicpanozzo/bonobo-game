@@ -712,7 +712,7 @@ func on_event(e: Dictionary) -> void:
 				_sparks.append({"x": e.x, "y": e.y, "age": 0.0, "size": 18.0, "color": Color.WHITE}) # anche due proiettili che si annullano
 		"powerUp":
 			# Il fiore (#231): uno sbuffo verde dove lo si prende, più grande di una scintilla. Il bong (#302): una boccata grigia
-			var col: Color = Color(0.66, 0.77, 0.42) if e.kind in ["spore", "micelio"] else SMOKE_GREY if e.kind == "bong" else (Color(0.75, 0.4, 0.95) if e.kind == "trip" else (Color(1, 0.75, 0.2) if e.kind == "birra" else FLOWER_GREEN.lightened(0.3)))
+			var col: Color = Color(0.66, 0.77, 0.42) if e.kind in ["spore", "micelio"] else SMOKE_GREY if e.kind == "bong" else (Color(0.75, 0.4, 0.95) if e.kind == "trip" else FLOWER_GREEN.lightened(0.3))
 			_sparks.append({"x": e.x, "y": float(e.y) - float(game.fighter.height) * 0.5, "age": 0.0, "size": 50.0, "color": col})
 			_puff(e.x, e.y)
 		"bong":
@@ -1157,13 +1157,6 @@ func _draw_item(kind: String, base: Vector2, spin: float, load: float = -1.0, al
 		draw_arc(Vector2(0, -h * 0.9), h * 1.25, PI * 0.2, PI * 0.8, 12, _color(spec.color), h * 0.55)
 		draw_circle(Vector2(-w * 0.42, -h * 0.25), 2.5, Color("5a3a1a"))
 		draw_circle(Vector2(w * 0.42, -h * 0.25), 2.5, Color("5a3a1a"))
-	elif kind == "birra":
-		# Il boccale (#302): vetro dorato, schiuma in cima e il manico di lato
-		draw_rect(Rect2(-w / 2, -h / 2 + 5, w * 0.8, h - 5), Color(0.95, 0.68, 0.18))
-		draw_rect(Rect2(-w / 2, -h / 2 + 5, w * 0.8, h - 5), Color(1, 0.95, 0.8), false, 1.5)
-		draw_arc(Vector2(w * 0.32, 0), h * 0.22, -PI / 2, PI / 2, 10, Color(1, 0.95, 0.8), 3.0)
-		for k in 3:
-			draw_circle(Vector2(-w / 2 + w * (0.15 + 0.25 * k), -h / 2 + 5), w * 0.17, Color.WHITE)
 	elif kind == "fiore":
 		# Un alone che respira, così a terra si nota anche da lontano
 		var glow := 0.5 + 0.5 * sin(Time.get_ticks_msec() / 260.0)
@@ -1343,18 +1336,6 @@ func _draw_supreme_ready(p: Dictionary, now: float, height: float) -> void:
 		return
 	for f in FighterPose.supreme_flames(str(p.id), now, height):
 		draw_circle(Vector2(p.x, p.y) + f.pos, f.r, Color(SUPREME_GOLD.lightened(0.3), 0.8 * float(f.a)))
-
-
-# La birra (#302): cappello da tirolese verde con la piuma, che dondola col barcollamento
-func _draw_tyrolean_hat(top: Vector2, facing: float, now: float) -> void:
-	var tilt := sin(now / 143.0) * 0.18 # come BIRRA.swayPeriodMs, a occhio
-	draw_set_transform(top + Vector2(0, -2), tilt, Vector2.ONE)
-	var green := Color(0.2, 0.42, 0.22)
-	draw_rect(Rect2(-24, -4, 48, 6), green.darkened(0.2)) # tesa
-	draw_colored_polygon(PackedVector2Array([Vector2(-15, -4), Vector2(-11, -22), Vector2(11, -22), Vector2(15, -4)]), green)
-	draw_rect(Rect2(-15, -9, 30, 4), Color(0.75, 0.15, 0.15)) # nastro
-	draw_line(Vector2(facing * 8, -10), Vector2(facing * 22, -32), Color(0.95, 0.95, 0.9), 3.0) # piuma
-	draw_set_transform(Vector2.ZERO)
 
 
 # Il fumo: sbuffi grigio-verdi che salgono lenti dalla testa e si allargano, sempre gli stessi per lo stesso istante
@@ -1941,8 +1922,6 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 		draw_set_transform(Vector2.ZERO)
 	if powered or high:
 		_draw_power_smoke(p, now, fh)
-	if p.get("powerup") == "birra" and not away:
-		_draw_tyrolean_hat(Vector2(p.x, p.y - fh), float(p.facing), now)
 	if p.get("powerup") == "spore" and not away:
 		# Infettati dal filo di Kirschner (#358): spore verdi che salgono intorno al corpo
 		for k in 6:

@@ -339,10 +339,6 @@ func _draw_supreme(r: Rect2, value: float) -> void:
 # una barra verde che si accorcia col tempo che resta
 # Col bong (#302) la barra invece si riempie, dal giallo al rosso: piena si crolla
 func _draw_powerup(card: Rect2, ms_left: float, kind: String = "fiore") -> void:
-	if kind == "birra":
-		# La birra (#302): barra dorata che si accorcia
-		draw_rect(Rect2(card.position, Vector2(card.size.x * clampf(ms_left / float(game.get("birra", {}).get("ms", 8000)), 0.0, 1.0), 4)), Color(1, 0.75, 0.2))
-		return
 	if kind in ["spore", "micelio"]:
 		# Il filo di Kirschner (#358): barra verde muschio che si accorcia
 		draw_rect(Rect2(card.position, Vector2(card.size.x * clampf(ms_left / float(game.get(kind, {}).get("ms", 4000)), 0.0, 1.0), 4)), Color(0.66, 0.77, 0.42))
