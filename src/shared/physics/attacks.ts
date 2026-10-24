@@ -60,7 +60,13 @@ export function attackSpecFor(f: Fighter, kind: AttackKind | null = f.attack): A
     const spec = specialSpecFor(f.characterId, kind);
     return kind === f.attack && f.chargeMultiplier !== 1 ? charged(spec, f.chargeMultiplier) : spec;
   }
-  if (kind === "supreme") return supremeAttackSpec(f.characterId) ?? ATTACKS.supreme; // #102: la sua, se ce l'ha
+  if (kind === "supreme") {
+    const own = supremeAttackSpec(f.characterId); // #102: la sua, se ce l'ha
+    const sp = getCharacter(f.characterId).supreme;
+    // l'ultimo giro della "spin" chiude come un pesante caricato (DEMACIAAA, Nicola 2026-10-24)
+    if (own && sp?.type === "spin" && sp.finisher && kind === f.attack && f.attackTimer > sp.windupMs + sp.durationMs - sp.hitEveryMs) return { ...own, ...sp.finisher };
+    return own ?? ATTACKS.supreme;
+  }
   const base = kind === "light" && kind === f.attack && f.jabStep > 0 ? JAB.steps[f.jabStep - 1] : ATTACKS[kind ?? "light"];
   const character = getCharacter(f.characterId);
   // il recupero ha i suoi numeri; gli altri colpi i ritocchi del personaggio (#384 D2), non nei colpi della combo

@@ -11541,7 +11541,13 @@
         "damage": 4,
         "baseKnockback": 200,
         "knockbackGrowth": 1.6,
-        "angleDeg": 60
+        "angleDeg": 60,
+        "finisher": {
+          "damage": 18,
+          "baseKnockback": 590,
+          "knockbackGrowth": 15,
+          "angleDeg": 42
+        }
       },
       "stats": {
         "speed": 1.1,

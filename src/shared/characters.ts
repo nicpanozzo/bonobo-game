@@ -269,6 +269,7 @@ export interface SpinSupreme {
   baseKnockback: number;
   knockbackGrowth: number;
   angleDeg: number; // verso l'alto e lontano dal centro
+  finisher?: Pick<AttackSpec, "damage" | "baseKnockback" | "knockbackGrowth" | "angleDeg">; // l'ultimo giro, più forte
 }
 // Suprema "grab" (#358), snaack di Lampione: dopo windupMs il braccio si allunga davanti fino a reach pixel per
 // reachMs; chi tocca viene tirato davanti a chi lo fa e scaraventato giù (angleDeg negativo). A terra
@@ -839,6 +840,8 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       baseKnockback: 200,
       knockbackGrowth: 1.6,
       angleDeg: 60,
+      // l'ultimo giro come un pesante caricato al massimo: heavy di ATTACKS x SMASH_CHARGE.maxMultiplier (1.4)
+      finisher: { damage: 18, baseKnockback: 590, knockbackGrowth: 15, angleDeg: 42 },
     },
     // piccolo e leggero, veloce a terra e in aria, salta tanto
     stats: { weight: 0.95, speed: 1.1, airSpeed: 1.1, jump: 1.1 },
