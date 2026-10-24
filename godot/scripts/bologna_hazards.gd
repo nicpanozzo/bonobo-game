@@ -12,6 +12,8 @@ const BRICK := Color("9a4f38")
 const MORTAR := Color("d9c4a0")
 const INK := Color("2a2622")
 const DUST := Color(0.62, 0.55, 0.45)
+const BUS_OVERHANG := 1.06 # il bus disegnato è un po' più lungo del suo tetto, che è la piattaforma
+const BUS_ROOF := 0.96 # bus.png: il tetto è a tanto della sua altezza dal basso
 
 
 # L'auto che attraversa la piazza (travel): il modello cambia a ogni giro, girata nel verso in cui va
@@ -101,6 +103,22 @@ static func draw_dust(ci: CanvasItem, r: Rect2, phase: String, k: float, t: floa
 		var gx: float = r.position.x + fposmod(g * 97.0 + t / 25.0, r.size.x)
 		var gy: float = top + 30.0 + fposmod(g * 53.0 - t / 40.0, maxf(1.0, r.end.y - top - 30.0))
 		ci.draw_circle(Vector2(gx, gy), 3.0, Color(0.85, 0.78, 0.64, alpha * 0.8))
+
+
+# Il bus su cui si sale (#433): una piattaforma mobile col tetto alla superficie pos.y. Il foglio dipinto del bus ha il
+# tetto a BUS_ROOF della sua altezza dal basso; alla fermata accende le quattro frecce
+static func draw_bus(ci: CanvasItem, life: RefCounted, pos: Vector2, w: float, dir: int, stopped: bool, t: float, mod: Color) -> void:
+	var length := w * BUS_OVERHANG
+	var sh: Dictionary = life.sheet("bus") if life != null else {}
+	var height := _car_height("bus") + 8.0 if sh.is_empty() else length * float(sh.fh) / float(sh.fw)
+	var feet := Vector2(pos.x + w / 2.0, pos.y + height * (1.0 if sh.is_empty() else BUS_ROOF)) # senza foglio, il tetto del disegno col codice
+	_car(ci, life, "bus", 0, feet, length, dir, Color(mod.r, mod.g, mod.b, 1.0))
+	# Le quattro frecce alla fermata: si capisce che è il momento di salire
+	if stopped and fposmod(t / 350.0, 2.0) < 1.0:
+		for side in [-1, 1]:
+			ci.draw_circle(Vector2(feet.x + side * length * 0.48, feet.y - height * 0.3), 5.0, Color("ffb347"))
+	# Il tetto dove si sta in piedi: una riga chiara, si capisce che ci si sale
+	ci.draw_rect(Rect2(pos.x, pos.y, w, 3.0), Color("f0d9b5") * Color(mod.r, mod.g, mod.b, 0.9))
 
 
 static func _car(ci: CanvasItem, life: RefCounted, kind: String, model: int, feet: Vector2, length: float, dir: int, mod: Color) -> void:
