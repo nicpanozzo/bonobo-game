@@ -1423,7 +1423,11 @@ func _draw_elements(t: float) -> void:
 		_draw_rain(rain, t)
 	var jets: Array = stage.get("jets") if stage.get("jets") is Array else []
 	for j in jets:
-		if PredictMovement.piece_on(j, t): # getto a tempo (#433)
+		if not PredictMovement.piece_on(j, t): # getto a tempo (#433)
+			continue
+		if j.get("kind", "") == "tenda": # la bancarella col tendone che fa da molla (#433): si schiaccia sotto chi ci arriva
+			BolognaHazards.draw_awning(self, j, BolognaHazards.awning_squash(j, positions.values()), t, _stage_light())
+		else:
 			_water.draw_jet(self, _stage_light(), j, t)
 
 

@@ -8489,6 +8489,40 @@
               900000
             ]
           ]
+        },
+        {
+          "kind": "tenda",
+          "x": 1020,
+          "y": 2000,
+          "width": 80,
+          "height": 80,
+          "speed": 1480,
+          "periodMs": 1000,
+          "warnMs": 0,
+          "activeMs": 1000,
+          "on": [
+            [
+              0,
+              150000
+            ]
+          ]
+        },
+        {
+          "kind": "tenda",
+          "x": 1200,
+          "y": 2000,
+          "width": 80,
+          "height": 80,
+          "speed": 1480,
+          "periodMs": 1000,
+          "warnMs": 0,
+          "activeMs": 1000,
+          "on": [
+            [
+              0,
+              150000
+            ]
+          ]
         }
       ],
       "phases": [

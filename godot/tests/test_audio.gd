@@ -224,3 +224,15 @@ func test_campanello_e_sferragliare_del_ciclista() -> void:
 	runner.check(Audio.travel_cue("warn", "cross", "mattone") == "brickFall", "e cade col crollo")
 	runner.check(Audio.jet_cue("warn", false) == "bubbles" and Audio.jet_cue("active", false) == "splash", "il getto d'acqua resta com'era")
 	runner.check(Audio.jet_cue("warn", true) == "" and Audio.jet_cue("active", true) == "wind", "la raffica di vento soffia, non spruzza (#433)")
+
+
+# Le bancarelle di Bologna (#433): "boing" solo per chi il tendone sta lanciando, non per chi ci passa accanto
+func test_tendone_che_lancia() -> void:
+	var j := {"kind": "tenda", "x": 1020, "y": 2000, "width": 80, "height": 80, "speed": 1480}
+	runner.check(Audio.awning_launch(j, {"x": 1060, "y": 1990, "vy": -1480}), "lanciato dal tendone")
+	runner.check(not Audio.awning_launch(j, {"x": 1060, "y": 2000, "vy": 0}), "fermo sul selciato no (il server lo lancia al tick dopo)")
+	runner.check(not Audio.awning_launch(j, {"x": 1400, "y": 1990, "vy": -1480}), "lontano no")
+	runner.check(not Audio.awning_launch(j, {"x": 1060, "y": 1500, "vy": -1480}), "già in alto no")
+	var a := _audio()
+	runner.check(a.stream_for("boing") is AudioStreamWAV, "il boing sintetizzato")
+	a.free()
