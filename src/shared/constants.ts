@@ -724,7 +724,7 @@ export const BASSANESE = {
   enterPx: 80, // pixel fuori dall'arena da cui entra e verso cui se ne va
   width: 54, // pixel del corpo che colpisce
   height: 104,
-  damage: 11, // percentuale a chi tocca
+  damage: 10, // percentuale a chi tocca
   knockback: 520, // pixel/s di lancio
   knockbackGrowth: 5, // pixel/s in più per ogni punto di percentuale del bersaglio
   angleDeg: 40, // angolo di lancio, verso dove cammina

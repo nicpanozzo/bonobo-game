@@ -769,7 +769,7 @@
     "enterPx": 80,
     "width": 54,
     "height": 104,
-    "damage": 11,
+    "damage": 10,
     "knockback": 520,
     "knockbackGrowth": 5,
     "angleDeg": 40,
