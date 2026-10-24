@@ -51,6 +51,7 @@ var _pads_pressed: Array = [] # bottoni sonori (#423): stageMs dell'ultima press
 const StageCollapse := preload("res://scripts/stage_collapse.gd")
 const HazardFx := preload("res://scripts/hazard_fx.gd")
 const BolognaHazards := preload("res://scripts/bologna_hazards.gd") # auto, ingorgo, mattoni e polvere di Bologna (#433)
+const StageCrowd := preload("res://scripts/stage_crowd.gd")
 var _t_draw := 0.0 # il tempo dell'arena del frame che si sta disegnando (#378, per i ganci dentro le decorazioni)
 var _prize_team := 0 # premio (#433): la squadra in testa ai punti torre, dallo snapshot; i pezzi con forLeader ci sono solo per lei
 var _collapse := {} # la torre che crolla dell'arena (#433), art.collapse, o vuoto
@@ -64,6 +65,7 @@ const SHADOW_STEP_ALPHA := 0.17 # quanto scurisce ognuno: al centro si arriva a 
 var _light_layers := {} # parallasse -> [Texture2D, Rect2]: i vetri accesi di quello strato (#288), ritagliati; Rect2 in frazioni dello strato
 var _light_props: Array = [] # [texture, decorazione] con i vetri accesi, sopra le decorazioni (#288)
 var _life: RefCounted = preload("res://scripts/stage_life.gd").new() # sfondo vivo (#260)
+var _crowd: RefCounted = StageCrowd.new() # i flash dei turisti a ogni KO (#433)
 var _water: RefCounted = preload("res://scripts/stage_water.gd").new() # getti, fontane e vento (#325)
 var _wonder: RefCounted = preload("res://scripts/wonder_stage.gd").new() # l'arena musicale che balla a tempo (#423)
 var _arcade: RefCounted = preload("res://scripts/arcade_view.gd").new() # pezzi e blocchi del power-up Tetris (#427)
@@ -299,6 +301,7 @@ func set_stage_spec(spec: Dictionary) -> void:
 	_collapse = StageCollapse.config(spec) # la caduta si disegna da stageMs (#433)
 	_load_stage_dressing(art.get("dir", spec.id), art)
 	_life.setup(spec, stage_width(), world_height())
+	_crowd.setup(spec)
 	_water.life = _life
 	_wonder.setup(spec)
 	_arcade.setup(game)
@@ -639,6 +642,8 @@ func on_snapshot(snap: Dictionary) -> void:
 
 
 func on_event(e: Dictionary) -> void:
+	if not _crowd.is_empty(): # il pubblico fotografa i KO e i colpi forti (#433)
+		_crowd.flash(StageCrowd.flashes_for(e, float(game.effects.get("shakeFromKnockback", INF))), Time.get_ticks_msec())
 	match e.type:
 		"matchStart":
 			_reached = 0
@@ -778,6 +783,11 @@ func on_event(e: Dictionary) -> void:
 			# L'urlo di chi va KO, dove è uscito ma dentro l'inquadratura
 			var at := Vector2(clampf(e.x, view_rect.position.x + 60, view_rect.end.x - 60), clampf(e.y, view_rect.position.y + 90, view_rect.end.y - 40))
 			_speech.say(e.id, SpeechBubbles.quote(_character_of(e.id), "ko"), at)
+
+
+# L'arena ha il pubblico che fotografa i KO (#433): l'audio ci aggiunge gli scatti
+func has_crowd() -> bool:
+	return not _crowd.is_empty()
 
 
 # Il blocco del personaggio di un giocatore in game.json, vuoto se non si sa
@@ -975,6 +985,7 @@ func _draw() -> void:
 		_life.draw_pigeons(self, t_stage, Time.get_ticks_msec(), positions.values(), _threats(t_stage))
 
 	_draw_elements(t_stage) # lo stesso istante di tutto il resto del frame
+	_crowd.draw(self, Time.get_ticks_msec()) # i flash dei turisti, dietro ai lottatori (#433)
 	_draw_course()
 
 	var now := Time.get_ticks_msec()
