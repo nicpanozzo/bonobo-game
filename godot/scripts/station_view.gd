@@ -9,6 +9,7 @@ const MORTADELLA := Color("f2a7b0")
 const BRONZE := Color("8a6a3a")
 const WOOD := Color("a0703c")
 const ArcadeView := preload("res://scripts/arcade_view.gd")
+const StageMotion := preload("res://scripts/stage_motion.gd")
 
 var stations: Array = [] # stage.stations
 var states: Array = [] # snapshot.stations, stesso ordine
@@ -59,8 +60,10 @@ func draw(canvas: CanvasItem, t: float) -> void:
 	for i in stations.size():
 		var s: Dictionary = stations[i]
 		var st: Dictionary = states[i] if i < states.size() else {}
-		var on := PredictMovement.piece_on(s, t)
-		var alpha := 1.0 if on else 0.3
+		# Fuori dalla sua finestra non c'è, come i pezzi a tempo: niente bombarda fantasma in cielo dopo il crollo della Garisenda
+		var alpha := alpha_at(s, t)
+		if alpha <= 0.0:
+			continue
 		var tint := Access.team_color(game, int(s.team)) if s.get("team") != null else Color("d8c8a0")
 		# La pedana: si capisce dove mettersi, del colore della squadra; più chiara se c'è qualcuno sopra
 		var used: bool = st.get("user") != null
@@ -71,6 +74,11 @@ func draw(canvas: CanvasItem, t: float) -> void:
 			_draw_crane(canvas, s, st, t, alpha, tint)
 		else:
 			_draw_crates(canvas, s, st, t, alpha)
+
+
+# Quanto si vede una postazione al tempo t dell'arena: come un pezzo a tempo (StageMotion.piece_alpha), sfuma entrando e uscendo
+static func alpha_at(s: Dictionary, t: float) -> float:
+	return StageMotion.piece_alpha(s, t)
 
 
 func _draw_cannon(canvas: CanvasItem, s: Dictionary, st: Dictionary, t: float, alpha: float) -> void:

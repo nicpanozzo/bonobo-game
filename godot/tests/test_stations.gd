@@ -61,3 +61,12 @@ func test_gru_dallo_snapshot() -> void:
 	arcade.setup(game)
 	arcade.on_snapshot({"tetris": {"pieces": [], "blocks": [{"x": 400, "y": 560, "kind": "O", "ms": 100, "keep": true}]}})
 	runner.check(arcade.blocks.size() == 1 and arcade.blocks[0].get("keep", false), "il blocco della gru resta")
+
+
+# Una postazione fuori dalla sua finestra non si vede (prima restava una bombarda fantasma dove c'era la Garisenda)
+func test_postazione_spenta_non_si_vede() -> void:
+	var s := {"kind": "bombarda", "x": 100, "y": 650, "width": 80, "on": [[1000, 5000]]}
+	runner.check(StationView.alpha_at(s, 3000.0) == 1.0, "dentro la finestra si vede tutta")
+	runner.check(StationView.alpha_at(s, 6000.0) == 0.0, "dopo la finestra sparisce")
+	runner.check(StationView.alpha_at(s, 0.0) == 0.0, "prima della finestra non c'è")
+	runner.check(StationView.alpha_at({"kind": "munizioni", "x": 0, "y": 0, "width": 80}, 0.0) == 1.0, "senza finestre c'è sempre")
