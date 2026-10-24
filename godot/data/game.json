@@ -8523,6 +8523,23 @@
               150000
             ]
           ]
+        },
+        {
+          "kind": "corrente",
+          "x": 875,
+          "y": 1700,
+          "width": 90,
+          "height": 600,
+          "speed": 420,
+          "periodMs": 1000,
+          "warnMs": 0,
+          "activeMs": 1000,
+          "on": [
+            [
+              154000,
+              900000
+            ]
+          ]
         }
       ],
       "phases": [

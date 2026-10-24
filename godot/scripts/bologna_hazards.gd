@@ -19,6 +19,8 @@ const AWNING_SQUASH_PX := 18.0 # quanto si abbassa sotto chi ci arriva
 const AWNING_REACH_PX := 160.0 # sopra il tendone fin dove si sente il peso di chi è appena stato lanciato
 const BUS_OVERHANG := 1.06 # il bus disegnato è un po' più lungo del suo tetto, che è la piattaforma
 const BUS_ROOF := 0.96 # bus.png: il tetto è a tanto della sua altezza dal basso
+const EMBER := Color("ff9a3c")
+const UPDRAFT_BITS := 14 # tra braci, foglie e pezzi di carta che salgono nella corrente
 
 
 # L'auto che attraversa la piazza (travel): il modello cambia a ogni giro, girata nel verso in cui va
@@ -205,3 +207,47 @@ static func _ellipse(ci: CanvasItem, c: Vector2, rx: float, ry: float, col: Colo
 		var a := TAU * i / 16.0
 		pts.append(c + Vector2(cos(a) * rx, sin(a) * ry))
 	ci.draw_colored_polygon(pts, col)
+
+
+# La corrente calda delle macerie (jet "corrente"): sotto le braci della torre caduta che fumano, sopra l'aria che trema
+# (linee chiare ondulate) e su per la colonna braci, foglie e pezzi di carta che salgono, così si vede dove porta.
+# La spinta vera è il getto della fisica, sempre acceso
+static func draw_updraft(ci: CanvasItem, j: Dictionary, t: float, mod: Color) -> void:
+	var x0 := float(j.x)
+	var w := float(j.width)
+	var base := float(j.y)
+	var h := float(j.height)
+	var paint := func(c: Color) -> Color: return Color(c.r * mod.r, c.g * mod.g, c.b * mod.b, c.a)
+	# il bagliore e le braci in fondo
+	var glow := 0.5 + 0.2 * sin(t / 180.0)
+	ci.draw_colored_polygon(PackedVector2Array([Vector2(x0 - 10.0, base + 14.0), Vector2(x0 + w + 10.0, base + 14.0),
+		Vector2(x0 + w, base - 60.0), Vector2(x0, base - 60.0)]), Color(EMBER.r, EMBER.g * 0.8, EMBER.b, 0.16 * glow))
+	for k in 5:
+		ci.draw_circle(Vector2(x0 + 10.0 + k * (w - 20.0) / 4.0, base + 8.0), 9.0 - (k % 2) * 3.0, paint.call(BRICK.darkened(0.3)))
+		ci.draw_circle(Vector2(x0 + 10.0 + k * (w - 20.0) / 4.0, base + 4.0), 3.0, Color(EMBER.r, EMBER.g, EMBER.b, glow))
+	# l'aria che trema: tre linee ondulate che salgono, più chiare in basso
+	for k in 3:
+		var pts := PackedVector2Array()
+		var lx := x0 + w * (k + 0.5) / 3.0
+		for s in 13:
+			var y := base - h * s / 12.0
+			pts.append(Vector2(lx + 7.0 * sin(y / 38.0 + t / 160.0 + k * 2.1), y))
+		ci.draw_polyline(pts, Color(1.0, 0.95, 0.85, 0.16), 2.0)
+	# braci, foglie e carta: salgono alla velocità della corrente e ricominciano dal fondo
+	var speed := float(j.speed) / 1000.0
+	for k in UPDRAFT_BITS:
+		var rise := fposmod(t * speed * (0.7 + 0.05 * (k % 6)) + k * 97.0, h)
+		var p := Vector2(x0 + fposmod(k * 37.0, w) + 10.0 * sin(t / 230.0 + k), base - rise)
+		var fade := 1.0 - rise / h
+		match k % 3:
+			0:
+				ci.draw_circle(p, 2.5, Color(EMBER.r, EMBER.g, EMBER.b, 0.9 * fade))
+			1:
+				ci.draw_set_transform(p, t / 300.0 + k, Vector2.ONE)
+				ci.draw_rect(Rect2(-5.0, -3.5, 10.0, 7.0), paint.call(Color(0.95, 0.92, 0.84, 0.85 * fade)))
+				ci.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+			_:
+				ci.draw_set_transform(p, sin(t / 200.0 + k), Vector2.ONE)
+				ci.draw_colored_polygon(PackedVector2Array([Vector2(-6, 0), Vector2(0, -3), Vector2(6, 0), Vector2(0, 3)]),
+					paint.call(Color(0.78, 0.55, 0.2, 0.85 * fade)))
+				ci.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
