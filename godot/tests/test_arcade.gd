@@ -52,7 +52,11 @@ func test_bassanese() -> void:
 	runner.check("bassanese" in game.droppableItems and game.get("bassanese") is Dictionary, "si sceglie nelle regole e ha i suoi numeri")
 	var view: RefCounted = preload("res://scripts/bassanese_view.gd").new()
 	runner.check(view.head() == null, "senza Bassanese niente fumetto")
-	view.on_snapshot({"bassanese": [{"id": 1, "ownerId": "p0", "x": 300, "y": 560, "facing": 1, "phase": "walk", "grappa": [900, 420]}]})
+	view.on_snapshot({"bassanese": [{"id": 1, "ownerId": "p0", "x": 300, "y": 560, "facing": 1, "phase": "walk"}]})
 	runner.check(view.list.size() == 1 and view.head() is Vector2, "letto dallo snapshot, con la testa sopra i piedi")
+	var said: Array = []
+	view.say = func(text: String): said.append(text)
+	view.on_snapshot({"bassanese": [{"id": 1, "ownerId": "p0", "x": 300, "y": 560, "facing": 1, "phase": "look"}]})
+	runner.check(said.size() == 1, "si guarda in giro e dice qualcosa: cerca qualcosa")
 	view.on_snapshot({})
 	runner.check(view.list.is_empty(), "se ne va")

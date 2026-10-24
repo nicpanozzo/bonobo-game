@@ -1,26 +1,25 @@
 // Chiama Bassanese (idea di Nicola, 24 ottobre 2026). Chi raccoglie il telefono chiama il Bassanese: entra da un lato
-// dell'arena e la gira tutta, di superficie in superficie, in cerca della grappa. Chi tocca vola via, tranne chi l'ha
-// chiamato e i suoi compagni. Trovata la grappa brinda e se ne va saltando fuori dall'arena.
+// dell'arena e la attraversa tutta, di superficie in superficie, guardandosi in giro come chi cerca qualcosa, poi se ne
+// va dall'altra parte. Chi tocca vola via, tranne chi l'ha chiamato e i suoi compagni.
 //   callBassanese()  dalla raccolta del telefono (items.ts): prepara il giro
 //   stepBassanese()  alla fine di stepWorld: avanza lungo il giro e colpisce
 // Il giro si decide tutto alla chiamata, con le superfici dell'arena di quel momento, così il client non deve indovinarlo.
 
 import { BASSANESE } from "../constants";
 import { stageHeight, stageWidth, type Rect } from "../stages";
-import { rng } from "../stageGenerator";
 import type { BassaneseState } from "../types";
 import { arcadeHit } from "./arcade";
 import { bodyBox } from "./attacks";
 import type { Fighter, PhysicsContext } from "./fighter";
 
-// Un tratto del giro: camminata, salto, sguardo in giro o brindisi. y sono i piedi
+// Un tratto del giro: camminata, salto o occhiata in giro. y sono i piedi
 interface Leg {
   x0: number;
   y0: number;
   x1: number;
   y1: number;
   ms: number;
-  kind: "walk" | "jump" | "look" | "found";
+  kind: "walk" | "jump" | "look";
   hop?: number; // salto: pixel sopra il punto più alto
 }
 
@@ -30,8 +29,6 @@ export interface Bassanese {
   legs: Leg[];
   leg: number; // il tratto in corso
   legMs: number; // ms passati nel tratto
-  grappa: { x: number; y: number }; // dove sta la grappa che cerca
-  found: boolean;
   hitAt: Record<string, number>; // chi ha colpito -> tempo dell'arena
   x: number;
   y: number;
@@ -41,12 +38,10 @@ export interface Bassanese {
 export interface BassaneseWorld {
   list: Bassanese[];
   nextId: number;
-  random: () => number;
 }
 
 function bassaneseWorld(ctx: PhysicsContext): BassaneseWorld {
-  // Il caso con un seme fisso, come per gli oggetti: la partita resta ripetibile
-  ctx.bassanese ??= { list: [], nextId: 1, random: rng(2410).next };
+  ctx.bassanese ??= { list: [], nextId: 1 };
   return ctx.bassanese;
 }
 
@@ -76,23 +71,21 @@ const jumpLeg = (x0: number, y0: number, x1: number, y1: number, speed: number):
 });
 
 // Il giro: entra da un lato, passa tutte le superfici in ordine da quel lato all'altro (ogni superficie da un capo
-// all'altro, con un'occhiata appena arriva) fino a quella con la grappa, brinda e salta fuori dall'altra parte
-function route(dir: 1 | -1, tops: Rect[], grappaAt: number, grappaX: number, ctx: PhysicsContext, speed: number): Leg[] {
+// all'altro, con un'occhiata in giro appena arriva) e salta fuori dall'altra parte
+function route(dir: 1 | -1, tops: Rect[], ctx: PhysicsContext, speed: number): Leg[] {
   const width = stageWidth(ctx.stage);
   const legs: Leg[] = [];
   const first = tops[0];
   let x = dir > 0 ? -BASSANESE.enterPx : width + BASSANESE.enterPx;
   let y = first.y - BASSANESE.hopPx;
-  for (let i = 0; i <= grappaAt; i++) {
-    const s = tops[i];
+  for (const s of tops) {
     const near = dir > 0 ? s.x + BASSANESE.endInsetPx : s.x + s.width - BASSANESE.endInsetPx;
-    const far = i === grappaAt ? grappaX : dir > 0 ? s.x + s.width - BASSANESE.endInsetPx : s.x + BASSANESE.endInsetPx;
+    const far = dir > 0 ? s.x + s.width - BASSANESE.endInsetPx : s.x + BASSANESE.endInsetPx;
     legs.push(jumpLeg(x, y, near, s.y, speed));
     legs.push({ x0: near, y0: s.y, x1: near, y1: s.y, ms: BASSANESE.lookMs / speed, kind: "look" });
     legs.push({ x0: near, y0: s.y, x1: far, y1: s.y, ms: (Math.abs(far - near) / (BASSANESE.walkPxS * speed)) * 1000, kind: "walk" });
     [x, y] = [far, s.y];
   }
-  legs.push({ x0: x, y0: y, x1: x, y1: y, ms: BASSANESE.foundMs, kind: "found" });
   const out = dir > 0 ? width + BASSANESE.enterPx : -BASSANESE.enterPx;
   legs.push({ ...jumpLeg(x, y, out, y - BASSANESE.hopPx * 3, speed * 1.5), hop: BASSANESE.hopPx * 2 });
   return legs;
@@ -110,19 +103,14 @@ export function callBassanese(f: Fighter, ctx: PhysicsContext): void {
   // Nelle arene piene di superfici (Bologna) ne visita alcune, sparse da un capo all'altro
   const n = Math.min(all.length, BASSANESE.maxSurfaces);
   const tops = n === all.length ? all : Array.from({ length: n }, (_, i) => all[Math.round((i * (all.length - 1)) / (n - 1))]);
-  // La grappa sta in una superficie dell'ultimo terzo del giro, in un punto a caso: si cerca per quasi tutta l'arena
-  const from = Math.floor((tops.length * 2) / 3);
-  const grappaAt = Math.min(tops.length - 1, from + Math.floor(world.random() * (tops.length - from)));
-  const g = tops[grappaAt];
-  const grappaX = Math.round(g.x + BASSANESE.endInsetPx + world.random() * Math.max(0, g.width - 2 * BASSANESE.endInsetPx));
   // Nelle arene grandi il giro starebbe troppo: si cammina più svelti (i salti corti non accelerano del tutto, si riprova)
   let speed = 1;
-  let legs = route(dir, tops, grappaAt, grappaX, ctx, speed);
+  let legs = route(dir, tops, ctx, speed);
   for (let i = 0; i < 3 && totalMs(legs) > BASSANESE.maxMs; i++) {
     speed *= totalMs(legs) / BASSANESE.maxMs;
-    legs = route(dir, tops, grappaAt, grappaX, ctx, speed);
+    legs = route(dir, tops, ctx, speed);
   }
-  const b: Bassanese = { id: world.nextId++, ownerId: f.id, legs, leg: 0, legMs: 0, grappa: { x: grappaX, y: g.y }, found: false, hitAt: {}, x: legs[0].x0, y: legs[0].y0, facing: dir };
+  const b: Bassanese = { id: world.nextId++, ownerId: f.id, legs, leg: 0, legMs: 0, hitAt: {}, x: legs[0].x0, y: legs[0].y0, facing: dir };
   world.list.push(b);
   ctx.events.push({ type: "bassanese", phase: "call", id: f.id, x: Math.round(f.x), y: Math.round(f.y) });
 }
@@ -144,10 +132,6 @@ export function stepBassanese(fighters: Fighter[], dtMs: number, ctx: PhysicsCon
     while (b.leg < b.legs.length && b.legMs >= b.legs[b.leg].ms) {
       b.legMs -= b.legs[b.leg].ms;
       b.leg++;
-      if (b.leg < b.legs.length && b.legs[b.leg].kind === "found" && !b.found) {
-        b.found = true;
-        ctx.events.push({ type: "bassanese", phase: "found", id: b.ownerId, x: Math.round(b.grappa.x), y: Math.round(b.grappa.y) });
-      }
     }
     if (b.leg >= b.legs.length) {
       ctx.events.push({ type: "bassanese", phase: "leave", id: b.ownerId, x: Math.round(b.x), y: Math.round(b.y) });
@@ -187,6 +171,5 @@ export function bassaneseState(ctx: PhysicsContext): BassaneseState[] | undefine
     y: Math.round(b.y),
     facing: b.facing,
     phase: b.legs[b.leg].kind,
-    ...(!b.found && { grappa: [Math.round(b.grappa.x), Math.round(b.grappa.y)] as [number, number] }),
   }));
 }

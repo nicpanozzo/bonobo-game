@@ -122,6 +122,7 @@ func setup(game_data: Dictionary) -> void:
 		var p: Variant = buffer.sample(id, Time.get_ticks_msec())
 		return Vector2(p.x, float(p.y) - float(game.fighter.height) * 1.15) if p != null and not p.eliminated else null
 	add_child(_speech)
+	_bassanese.say = func(text: String): _speech.say("bassanese", text) # Chiama Bassanese: cosa dice mentre cerca
 	_spin_view = preload("res://scripts/supreme_spin_view.gd").new()
 	_spin_view.where = func(id: String) -> Variant:
 		var p: Variant = buffer.sample(id, Time.get_ticks_msec())
@@ -680,12 +681,11 @@ func on_event(e: Dictionary) -> void:
 			_shake = maxf(_shake, 4.0)
 			_wonder.on_pad(e, Time.get_ticks_msec()) # il fiore più vicino commenta (#423)
 		"bassanese":
-			# Chiama Bassanese: cosa dice entrando e quando trova la grappa (TODO community: le frasi)
+			# Chiama Bassanese: cosa dice entrando e uscendo; mentre cerca parla da bassanese_view (TODO community: le frasi)
 			if e.phase == "call":
-				_speech.say("bassanese", "Pronto? Arrivo! Ma dov'è la grappa?")
-			elif e.phase == "found":
-				_speech.say("bassanese", "Eccola! Alla salute!")
-				_shake = maxf(_shake, 4.0)
+				_speech.say("bassanese", "Pronto? Sì, arrivo... ma dove l'avrò messo?")
+			elif e.phase == "leave":
+				_speech.say("bassanese", BassaneseView.LEAVE_LINE, _bassanese.last_head)
 		"tetris":
 			# Una riga del Tetris che esplode (#427): lampo lungo la riga e scossa
 			if e.phase == "line":
@@ -1025,7 +1025,7 @@ func _draw() -> void:
 	_speech.view_rect = view_rect
 	_draw_puddles(now)
 	_draw_items(now)
-	_bassanese.draw(self, now) # il Bassanese chiamato col telefono e la grappa che cerca
+	_bassanese.draw(self, now) # il Bassanese chiamato col telefono
 	_draw_projectiles()
 	_arcade.draw_pieces(self, _sampled) # i pezzi del Tetris che cadono (#427)
 	_stations.draw_balls(self, Time.get_ticks_msec()) # le palle di mortadella (#433)

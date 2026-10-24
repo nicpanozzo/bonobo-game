@@ -151,16 +151,14 @@ export interface TetrisState {
   blocks: { x: number; y: number; kind: string; ms: number; keep?: true }[]; // ms: quanto resta prima che il blocco sparisca; keep: posato da una gru (#433), resta per tutta la partita
 }
 
-// Il Bassanese chiamato col telefono (Chiama Bassanese): x e y sono i piedi. phase: cammina, salta, si guarda in giro
-// o brinda con la grappa appena trovata; grappa è dove sta la grappa che cerca, finché non l'ha trovata
+// Il Bassanese chiamato col telefono (Chiama Bassanese): x e y sono i piedi. phase: cammina, salta o si guarda in giro (cerca qualcosa)
 export interface BassaneseState {
   id: number;
   ownerId: string; // chi l'ha chiamato: lui e i compagni non vengono colpiti
   x: number;
   y: number;
   facing: 1 | -1;
-  phase: "walk" | "jump" | "look" | "found";
-  grappa?: [number, number];
+  phase: "walk" | "jump" | "look";
 }
 
 // Una postazione dell'arena (#433), nello stesso ordine di stage.stations. I tempi sono stageMs
@@ -244,7 +242,7 @@ export type GameEvent =
   | { type: "itemThrow"; itemId: number; id: string; x: number; y: number }
   | { type: "powerUp"; itemId: number; id: string; kind: string; x: number; y: number } // id consuma l'oggetto e si potenzia (#231)
   | { type: "powerEnd"; id: string; kind: string } // il potenziamento di id finisce
-  | { type: "bassanese"; phase: "call" | "found" | "leave"; id: string; x: number; y: number } // Chiama Bassanese: id ha chiamato; found: x e y della grappa
+  | { type: "bassanese"; phase: "call" | "leave"; id: string; x: number; y: number } // Chiama Bassanese: id ha chiamato
   | { type: "tetris"; phase: "spawn" | "move" | "rotate" | "drop" | "land" | "line"; id: string; x: number; y: number; width?: number } // il pezzo di Tetris di id (#427); line: esplode una riga larga width pixel, x e y al centro
   // Il bong (#302): load = comincia a caricarlo, smoke = soffia la nuvola (centro x,y, verso dir, danno), stun = troppo fatto, crolla
   | { type: "bong"; phase: "load" | "smoke" | "stun"; id: string; x: number; y: number; dir?: 1 | -1; damage?: number }
