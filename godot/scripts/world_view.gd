@@ -2000,6 +2000,11 @@ func _draw_cyclist(h: Dictionary, r: Rect2, t: float, index := -1) -> void:
 			var mouth := Vector2(r.get_center().x + dir * (float(shout.x) - float(spr.footX)) * k, r.end.y - (float(spr.footY) - float(shout.y)) * k)
 			_draw_shout(str(shout.text), mouth, dir, tp.k, t)
 		return
+	if _life.has_sheet("bici"):
+		# Senza Cancaro Man ma con la bici dipinta dello sfondo vivo (Bologna, #433): quella, larga quanto la trappola
+		var sh: Dictionary = _life.sheet("bici")
+		_life.draw_frame(self, "bici", int(t / 110.0), Vector2(r.get_center().x, r.end.y), r.size.x / (float(sh.fw) * float(sh.scale)), dir < 0, _stage_light(), true)
+		return
 	var w := r.size.x
 	var hh := r.size.y
 	var fx := func(x: float) -> float: return r.position.x + (x if dir > 0 else w - x) # disegnato verso destra, girato se va a sinistra
