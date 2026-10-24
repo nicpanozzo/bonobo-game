@@ -218,3 +218,7 @@ func test_campanello_e_sferragliare_del_ciclista() -> void:
 	runner.check(Audio.travel_cue("cross", "calm") == "", "quando esce non suona niente")
 	runner.check(Audio.travel_cue("warn", "warn") == "", "una volta sola")
 	runner.check(Audio.travel_cue("", "warn") == "", "al primo snapshot niente")
+	runner.check(Audio.travel_cue("calm", "warn", "auto") == "horn", "l'auto di Bologna suona il clacson, non il campanello (#433)")
+	runner.check(Audio.travel_cue("warn", "cross", "auto") == "carPass", "e passa col motore")
+	runner.check(Audio.travel_cue("calm", "warn", "mattone") == "", "il mattone nell'avviso non suona")
+	runner.check(Audio.travel_cue("warn", "cross", "mattone") == "brickFall", "e cade col crollo")
