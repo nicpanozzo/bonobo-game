@@ -19,7 +19,7 @@ var _music := false # la partita finta nell'arena musicale, durante la Meravigli
 var _tetris_on := false # la partita finta con uno che gioca a Tetris (#427)
 var _pacman_on := false # la partita finta con un Pac-Man e i fantasmini (#427)
 var _items_on := false # la partita finta con tutti gli oggetti in fila a terra
-var _bassanese_on := false # la partita finta col Bassanese in giro, la grappa e un telefono a terra
+var _bassanese_on := false # la partita finta col Bassanese che si guarda in giro e un telefono a terra
 var _bologna: Dictionary = {} # le fasi di Bologna (#433): {ms, cam, zoom, spots}, vuoto nelle altre partite
 # Bologna in quattro momenti: l'auto in piazza, l'ingorgo sotto le torri, la Garisenda che cade coi mattoni, la polvere
 const BOLOGNA_SHOTS := {
@@ -132,7 +132,7 @@ func _pacman() -> void:
 	_partita()
 
 
-# Chiama Bassanese: il Bassanese col telefono all'orecchio che va verso la grappa, e un altro telefono a terra
+# Chiama Bassanese: il Bassanese col telefono all'orecchio che si guarda in giro, e un altro telefono a terra
 func _bassanese() -> void:
 	_pacman_on = false
 	_bassanese_on = true
@@ -217,7 +217,7 @@ func _snapshot(frame: int) -> Dictionary:
 		players[1].vx = 380
 		snap.items = [{"id": 9, "kind": "pacman", "x": 680, "y": 560, "vx": 0, "vy": 0, "heldBy": null, "thrown": false}]
 	if _bassanese_on:
-		snap.bassanese = [{"id": 1, "ownerId": "p0", "x": 680, "y": 560, "facing": 1, "phase": "walk", "grappa": [900, 560]}]
+		snap.bassanese = [{"id": 1, "ownerId": "p0", "x": 680, "y": 560, "facing": 1, "phase": "look"}]
 		snap.items = [{"id": 9, "kind": "bassanese", "x": 480, "y": 560, "vx": 0, "vy": 0, "heldBy": null, "thrown": false}]
 		if frame < 3:
 			snap.events = [{"type": "bassanese", "phase": "call", "id": "p0", "x": 420, "y": 560}]

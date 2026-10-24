@@ -51,18 +51,16 @@ describe("Chiama Bassanese", () => {
     assert.ok(DROPPABLE_ITEMS.includes("bassanese"));
   });
 
-  it("entra dal lato lontano da chi chiama, gira tutta l'arena e se ne va dopo aver trovato la grappa", () => {
+  it("entra dal lato lontano da chi chiama, attraversa tutta l'arena e se ne va", () => {
     const { ctx, caller, list } = setup();
     caller.x = 100; // a sinistra: il Bassanese arriva da destra
     callBassanese(caller, ctx);
     assert.ok(ctx.events.some((e) => e.type === "bassanese" && e.phase === "call"));
     const start = bassaneseState(ctx)![0];
     assert.ok(start.x > WORLD.width, `entra da destra (x ${start.x})`);
-    assert.ok(start.grappa, "all'inizio cerca la grappa");
     const xs = run(ctx, list);
     assert.equal(ctx.bassanese!.list.length, 0, "alla fine se ne va");
     assert.ok(Math.min(...xs) < 200 && Math.max(...xs) > WORLD.width - 100, "percorre tutta l'arena");
-    assert.ok(ctx.events.some((e) => e.type === "bassanese" && e.phase === "found"));
     assert.ok(ctx.events.some((e) => e.type === "bassanese" && e.phase === "leave"));
   });
 
