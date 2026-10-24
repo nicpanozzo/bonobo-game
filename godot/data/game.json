@@ -825,7 +825,18 @@
     "speedLinesLength": 70,
     "hitShakeHz": 30,
     "impactLines": 8,
-    "impactLinesKnockback": 700
+    "impactLinesKnockback": 700,
+    "particleMax": 600,
+    "heavyLandSpeed": 1100,
+    "heavyLandPower": 2.2,
+    "smokeEveryMs": 22,
+    "brakeSpeed": 140,
+    "brakeDecel": 1500,
+    "brakeEveryMs": 30,
+    "turnSpeed": 120,
+    "airRingMs": 380,
+    "impactStarMs": 240,
+    "impactStarKoMs": 380
   },
   "items": {
     "banana": {

@@ -40,5 +40,6 @@
 | `sfx/land_*.ogg` (atterraggio: impactSoft_medium 000-003) | Kenney ([kenney.nl](https://kenney.nl)); normalizzati da Claude Code per Riccardo (GiovannifRana), #448 | [Kenney: Impact Sounds](https://kenney.nl/assets/impact-sounds) | CC0 |
 | `sfx/shield_*.ogg` (scudo colpito: impactGlass_light 000-002) | Kenney ([kenney.nl](https://kenney.nl)); normalizzati da Claude Code per Riccardo (GiovannifRana), #448 | [Kenney: Impact Sounds](https://kenney.nl/assets/impact-sounds) | CC0 |
 | `sfx/shieldBreak_*.ogg` (scudo rotto: impactGlass_heavy 000, 001, 004) | Kenney ([kenney.nl](https://kenney.nl)); normalizzati da Claude Code per Riccardo (GiovannifRana), #448 | [Kenney: Impact Sounds](https://kenney.nl/assets/impact-sounds) | CC0 |
+| `godot/assets/fx/` (texture delle particelle degli effetti: sbuffi e fiamme a tre toni, alone, #470) | Claude Code per Riccardo (GiovannifRana), generate col codice da `tools/fx/texture_particelle.py` | fatto da noi | CC0 |
 | `godot/assets/fonts/Nunito.ttf` (font dei menu e dell'HUD) | The Nunito Project Authors | [google/fonts](https://github.com/google/fonts/tree/main/ofl/nunito) | SIL Open Font License 1.1 (`godot/assets/fonts/OFL.txt`) |
 | `godot/assets/icon/` (icona dell'app, tre bonobo) | Claude Code per Nicola, disegnata a mano in SVG (`icon.svg`), `icon.png` esportata a 1024 px | fatto da noi | CC0 |

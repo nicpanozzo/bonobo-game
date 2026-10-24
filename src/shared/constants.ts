@@ -454,6 +454,18 @@ export const EFFECTS = {
   hitShakeHz: 30, // tremolii al secondo nel fermo
   impactLines: 8, // linee a raggiera attorno ai colpi forti
   impactLinesKnockback: 700, // px/s: da qui in su il colpo ha le linee a raggiera
+  // Effetti a particelle (#470 passo 1, godot/scripts/particle_fx.gd e particle_view.gd), solo nel client
+  particleMax: 600, // particelle vive al massimo: oltre, spariscono i gruppi più vecchi (prestazioni con 4 giocatori)
+  heavyLandSpeed: 1100, // px/s di caduta: da qui in su l'atterraggio solleva la polvere pesante (caduta veloce o lancio)
+  heavyLandPower: 2.2, // quanto è più grande la polvere dell'atterraggio pesante (1 = normale)
+  smokeEveryMs: 22, // ogni quanti ms chi vola via forte lascia uno sbuffo di fumo
+  brakeSpeed: 140, // px/s: sopra questa velocità a terra, rallentando forte si lascia la scia di frenata
+  brakeDecel: 1500, // px/s²: da questo rallentamento in su è una frenata
+  brakeEveryMs: 30, // ogni quanti ms nasce uno sbuffetto della frenata
+  turnSpeed: 120, // px/s: girandosi a terra più veloci di così si alza uno sbuffo
+  airRingMs: 380, // durata dell'anello d'aria del salto in aria
+  impactStarMs: 240, // durata della stella d'impatto
+  impactStarKoMs: 380, // durata della stella d'impatto di un colpo da KO
 };
 
 // Bot del server (#20, src/server/bot.ts): quanto è svelto e quando attacca
