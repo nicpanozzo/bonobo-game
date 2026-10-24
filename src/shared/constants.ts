@@ -816,4 +816,6 @@ export const BOLOGNA = {
   aimMaxDeg: 60, // gradi sopra l'orizzontale: la mira più alta delle bombarde
   ballSpeedPxS: 800, // pixel/s di uscita delle palle delle bombarde (a 1050 sorvolano la torre avversaria)
   autoAmmoMs: 8000, // ms: una palla in più alle bombarde anche senza casse (1 contro 1)
+  bellSwingMs: 4400, // l'altalena della campana tra le torri: un'andata e ritorno completa...
+  bellAmplitudeDeg: 38, // ...fino a tanti gradi dalla verticale per parte: agli estremi sfiora la postazione (A) di ogni torre
 };

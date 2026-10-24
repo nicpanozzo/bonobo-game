@@ -224,3 +224,14 @@ func test_campanello_e_sferragliare_del_ciclista() -> void:
 	runner.check(Audio.travel_cue("warn", "cross", "mattone") == "brickFall", "e cade col crollo")
 	runner.check(Audio.jet_cue("warn", false) == "bubbles" and Audio.jet_cue("active", false) == "splash", "il getto d'acqua resta com'era")
 	runner.check(Audio.jet_cue("warn", true) == "" and Audio.jet_cue("active", true) == "wind", "la raffica di vento soffia, non spruzza (#433)")
+
+
+# La campana di Bologna (#433): un rintocco a ogni estremo dell'altalena, cioè ogni mezzo giro
+func test_campana_a_ogni_estremo() -> void:
+	var swing := {"swingMs": 4000}
+	runner.check(Audio.swing_extreme(swing, 900.0) == Audio.swing_extreme(swing, 0.0), "prima del primo estremo niente")
+	runner.check(Audio.swing_extreme(swing, 1100.0) != Audio.swing_extreme(swing, 900.0), "al primo estremo (un quarto di giro) cambia")
+	runner.check(Audio.swing_extreme(swing, 3100.0) != Audio.swing_extreme(swing, 2900.0), "e all'altro, mezzo giro dopo")
+	var a := _audio()
+	runner.check(a.stream_for("dong") is AudioStreamWAV, "il rintocco sintetizzato")
+	a.free()

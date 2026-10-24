@@ -45,6 +45,10 @@ export interface MovingPlatform {
   on?: [number, number][]; // finestre [da ms, a ms) del giro in cui la piattaforma c'è; senza, c'è sempre
   tint?: number; // solo per il disegno: il colore della traccia che la muove
   group?: string; // i bottoni sonori (pads) con questo gruppo la cambiano per un po' (#423)
+  // Altalena (#433), come le piattaforme appese che dondolano nei platform: il centro della superficie sta a length dal
+  // perno (pivot) e l'angolo dalla verticale va da -amplitudeDeg ad amplitudeDeg e ritorno in swingMs (senza keys e path,
+  // che resta per il riquadro). periodMs resta il giro delle finestre on
+  swing?: { pivot: { x: number; y: number }; length: number; amplitudeDeg: number; swingMs: number };
 }
 
 // Bottone sonoro (#423): un pezzo dell'arena che si attiva saltandoci sopra o colpendolo. Suona e per
@@ -1082,6 +1086,11 @@ export const STAGES: Record<string, StageSpec> = {
       // Il montacarichi dell'Asinelli (da 0:45): pari alla Garisenda, fino alla finestra più alta
       { width: 90, path: [{ x: 1710, y: 1940 }, { x: 1710, y: 1100 }], periodMs: BOLOGNA.liftPeriodMs,
         keys: liftKeys(1710, 1940, 1100, BOLOGNA.towersMs, BOLOGNA.horizonMs, 20000, 1500), on: BOLOGNA_FROM_TOWERS },
+      // La campana appesa al cavo teso tra le torri (da 0:45 al crollo), come le piattaforme che dondolano in Donkey Kong
+      // Country: ci si sale sul ceppo e agli estremi si arriva alla postazione (A) dell'altra torre. La strada per
+      // l'assalto: chi ci sta sopra è in mezzo, scoperto ai colpi di tutti e alle palle delle bombarde
+      { kind: "campana", width: 110, path: [{ x: 925, y: 1355 }, { x: 1245, y: 1410 }], periodMs: BOLOGNA.liftPeriodMs, on: BOLOGNA_GARISENDA,
+        swing: { pivot: { x: 1140, y: 1150 }, length: 260, amplitudeDeg: BOLOGNA.bellAmplitudeDeg, swingMs: BOLOGNA.bellSwingMs } },
     ],
     hazards: [
       // Traffico leggero della piazza (0-45 s), alto solo 50 px: chi sta sui portici e sulle basi è al riparo

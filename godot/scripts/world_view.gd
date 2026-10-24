@@ -1411,6 +1411,10 @@ func _draw_elements(t: float) -> void:
 		if m.get("kind", "") == "nota":
 			_draw_note_platform(m, pos, t, fx.on)
 			continue
+		if m.get("kind", "") == "campana": # la campana appesa tra le torri di Bologna (#433)
+			if StageMotion.mover_on(m, t):
+				BolognaHazards.draw_bell(self, m, pos, StageMotion.swing_angle(m.swing, t + float(m.get("offsetMs", 0))), t, _stage_light())
+			continue
 		if _mover_sprites.has(mi):
 			_draw_mover_sprite(_mover_sprites[mi], m, pos, t)
 			continue
