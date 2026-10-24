@@ -854,7 +854,7 @@ func _send_input() -> void:
 func _my_supreme_ready() -> bool:
 	for p in hud._snap.get("players", []):
 		if p.get("id") == world.my_id:
-			return FighterPose.supreme_ready(p, float(game.get("supreme", {}).get("max", 100)))
+			return preload("res://scripts/fighter_pose.gd").supreme_ready(p, float(game.get("supreme", {}).get("max", 100)))
 	return false
 
 
