@@ -829,13 +829,13 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       type: "spin",
       name: "DEMACIAAA",
       windupMs: 150,
-      durationMs: 1800,
-      hitEveryMs: 150, // 12 colpi: gira più veloce (Nicola, 2026-10-24)
+      durationMs: 4000, // più del doppio di prima (Nicola, 2026-10-24)
+      hitEveryMs: 150, // 26 colpi: gira veloce (Nicola, 2026-10-24)
       endLagMs: 300,
       moveSpeed: 0.9, // si sposta quasi di corsa mentre gira
       width: 130,
       height: 100,
-      damage: 4, // per colpo, 48% in tutto se li prende tutti
+      damage: 4, // per colpo; chi resta dentro tutto il giro ne prende molti, ma il colpo lo spinge via
       baseKnockback: 200,
       knockbackGrowth: 1.6,
       angleDeg: 60,
