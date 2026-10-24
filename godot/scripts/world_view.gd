@@ -50,6 +50,7 @@ var _mover_sprites := {} # indice della piattaforma mobile -> come sopra (#273)
 var _pads_pressed: Array = [] # bottoni sonori (#423): stageMs dell'ultima pressione di ognuno, dallo snapshot
 const StageCollapse := preload("res://scripts/stage_collapse.gd")
 const HazardFx := preload("res://scripts/hazard_fx.gd")
+const BolognaHazards := preload("res://scripts/bologna_hazards.gd") # auto, ingorgo, mattoni e polvere di Bologna (#433)
 var _t_draw := 0.0 # il tempo dell'arena del frame che si sta disegnando (#378, per i ganci dentro le decorazioni)
 var _prize_team := 0 # premio (#433): la squadra in testa ai punti torre, dallo snapshot; i pezzi con forLeader ci sono solo per lei
 var _collapse := {} # la torre che crolla dell'arena (#433), art.collapse, o vuoto
@@ -1447,6 +1448,23 @@ func _draw_hazard(h: Dictionary, on: bool, t: float, index := -1) -> void:
 	match h.kind:
 		"ciclista":
 			_draw_cyclist(h, r, t, index)
+		"auto":
+			# L'auto della piazza di Bologna (#433): come il ciclista, il clacson prima e poi passa
+			var tp := StageMotion.travel_phase(h, t)
+			var dir := StageMotion.travel_direction(h, t)
+			if tp.phase == "warn":
+				_draw_bell_warning(r, dir, t, "PIII PIII!")
+			elif tp.phase == "cross":
+				var lap := int(floorf((t + float(h.travel.get("offsetMs", 0))) / float(h.travel.periodMs)))
+				BolognaHazards.draw_car(self, _life, r, dir, lap, _stage_light())
+		"ingorgo":
+			BolognaHazards.draw_jam(self, _life, h, r, on, t, _stage_light())
+		"mattone":
+			var tp := StageMotion.travel_phase(h, t)
+			BolognaHazards.draw_brick(self, h, r, tp.phase, tp.k, t, _stage_light())
+		"polvere":
+			var fp := StageMotion.flood_phase(h, t)
+			BolognaHazards.draw_dust(self, r, fp.phase, fp.k, t, _stage_light())
 		"fulmine":
 			if on:
 				HazardFx.draw_lightning(self, r, t, fposmod(t + float(h.get("offsetMs", 0)), float(h.get("periodMs", 1))), view_rect, Access.calm)
@@ -1761,6 +1779,11 @@ func _draw_cyclist(h: Dictionary, r: Rect2, t: float, index := -1) -> void:
 			var mouth := Vector2(r.get_center().x + dir * (float(shout.x) - float(spr.footX)) * k, r.end.y - (float(spr.footY) - float(shout.y)) * k)
 			_draw_shout(str(shout.text), mouth, dir, tp.k, t)
 		return
+	if _life.has_sheet("bici"):
+		# Senza Cancaro Man ma con la bici dipinta dello sfondo vivo (Bologna, #433): quella, larga quanto la trappola
+		var sh: Dictionary = _life.sheet("bici")
+		_life.draw_frame(self, "bici", int(t / 110.0), Vector2(r.get_center().x, r.end.y), r.size.x / (float(sh.fw) * float(sh.scale)), dir < 0, _stage_light(), true)
+		return
 	var w := r.size.x
 	var hh := r.size.y
 	var fx := func(x: float) -> float: return r.position.x + (x if dir > 0 else w - x) # disegnato verso destra, girato se va a sinistra
@@ -1802,7 +1825,7 @@ func _draw_cyclist(h: Dictionary, r: Rect2, t: float, index := -1) -> void:
 	draw_polyline(links, Color("9aa0a6"), 2.5)
 
 
-func _draw_bell_warning(r: Rect2, dir: int, t: float) -> void:
+func _draw_bell_warning(r: Rect2, dir: int, t: float, text := "DRIN DRIN!") -> void:
 	# Il segnale sta sul bordo della vista da cui entrerà, all'altezza del percorso
 	var s := view_rect.size.x / float(game.world.width)
 	var y := clampf(r.get_center().y, view_rect.position.y + 40 * s, view_rect.end.y - 40 * s)
@@ -1815,7 +1838,6 @@ func _draw_bell_warning(r: Rect2, dir: int, t: float) -> void:
 	draw_arc(Vector2(x, y), 22 * s * pulse, 0, TAU, 24, col, 3 * s)
 	var font := ThemeDB.fallback_font
 	var size := int(16 * s)
-	var text := "DRIN DRIN!"
 	var tw := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
 	draw_string(font, Vector2(x - tw / 2, y - 30 * s), text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, col)
 	draw_string(font, Vector2(x - 4 * s, y + 6 * s), "!", HORIZONTAL_ALIGNMENT_LEFT, -1, int(20 * s), col)

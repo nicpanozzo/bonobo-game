@@ -10,7 +10,7 @@ var _out := "user://screenshots"
 var _game: Dictionary
 var _world: Node2D # nella partita finta: riceve uno snapshot a ogni frame
 var _hud: Control
-const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre", "lobby_regole", "musica", "tetris", "pacman"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
+const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre", "lobby_regole", "musica", "tetris", "pacman", "bologna_piazza", "bologna_torri", "bologna_crollo", "bologna_zuffa"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
 var _index := -1
 var _frame := 0
 var _failed := false
@@ -18,6 +18,14 @@ var _teams := false # la partita finta a tre squadre (#409)
 var _music := false # la partita finta nell'arena musicale, durante la Meraviglia (#423)
 var _tetris_on := false # la partita finta con uno che gioca a Tetris (#427)
 var _pacman_on := false # la partita finta con un Pac-Man e i fantasmini (#427)
+var _bologna: Dictionary = {} # le fasi di Bologna (#433): {ms, cam, zoom, spots}, vuoto nelle altre partite
+# Bologna in quattro momenti: l'auto in piazza, l'ingorgo sotto le torri, la Garisenda che cade coi mattoni, la polvere
+const BOLOGNA_SHOTS := {
+	"piazza": {"ms": 22000, "cam": Vector2(1100, 1760), "zoom": 0.62, "y": [1940, 1940, 1880, 1940, 1760], "x": [420, 700, 1000, 1500, 1900]},
+	"torri": {"ms": 100000, "cam": Vector2(1100, 1520), "zoom": 0.5, "y": [1180, 1940, 1640, 980, 1940], "x": [700, 500, 1500, 1500, 1600]},
+	"crollo": {"ms": 151300, "cam": Vector2(1100, 1520), "zoom": 0.5, "y": [980, 1940, 1640, 980, 1940], "x": [1400, 600, 1500, 1600, 1700]},
+	"zuffa": {"ms": 308000, "cam": Vector2(1500, 1150), "zoom": 0.6, "y": [980, 980, 980, 980, 980], "x": [1320, 1420, 1520, 1620, 1700]},
+}
 
 
 func _initialize() -> void:
@@ -122,15 +130,36 @@ func _pacman() -> void:
 	_partita()
 
 
+func _bologna_piazza() -> void:
+	_pacman_on = false
+	_bologna = BOLOGNA_SHOTS.piazza
+	_partita()
+
+
+func _bologna_torri() -> void:
+	_bologna = BOLOGNA_SHOTS.torri
+	_partita()
+
+
+func _bologna_crollo() -> void:
+	_bologna = BOLOGNA_SHOTS.crollo
+	_partita()
+
+
+func _bologna_zuffa() -> void:
+	_bologna = BOLOGNA_SHOTS.zuffa
+	_partita()
+
+
 func _partita() -> void:
 	var world: Node2D = load("res://scripts/world_view.gd").new()
 	root.add_child(world)
 	world.setup(_game)
-	world.set_stage("musica" if _music else _game.defaultStageId)
+	world.set_stage("bologna" if not _bologna.is_empty() else ("musica" if _music else _game.defaultStageId))
 	world.my_id = "p0"
 	var cam := Camera2D.new()
-	cam.position = Vector2(640, 430)
-	cam.zoom = Vector2(1.4, 1.4)
+	cam.position = _bologna.cam if not _bologna.is_empty() else Vector2(640, 430)
+	cam.zoom = Vector2.ONE * (float(_bologna.zoom) if not _bologna.is_empty() else 1.4)
 	root.add_child(cam)
 	cam.make_current()
 	_hud = load("res://scripts/hud.gd").new()
@@ -153,12 +182,12 @@ func _snapshot(frame: int) -> Dictionary:
 		var color: int = int(_game.teamColors[str(team)][0 if i < 3 else 1]) if _teams else spots[i][2]
 		players.append({
 			"id": "p%d" % i, "name": "P%d" % (i + 1), "characterId": spots[i][1], "color": color, "team": team,
-			"x": spots[i][0], "y": 560, "vx": 0, "vy": 0, "facing": 1 if i < 2 else -1, "percent": i * 37, "stocks": 3,
+			"x": _bologna.x[i] if not _bologna.is_empty() else spots[i][0], "y": _bologna.y[i] if not _bologna.is_empty() else 560, "vx": 0, "vy": 0, "facing": 1 if i < 2 else -1, "percent": i * 37, "stocks": 3,
 			"onGround": true, "attack": null, "attackActive": false, "hitstun": false, "respawning": false,
 			"invulnerable": false, "eliminated": false, "carrier": false, "ledge": null, "away": false,
 			"shielding": i == 3, "shieldHp": 40, "stunned": false, "grabbedBy": null, "charge": spots[i][3],
 		})
-	var stage_ms := frame * 16 + (9000 if _music else 0)
+	var stage_ms := frame * 16 + (9000 if _music else 0) + (int(_bologna.ms) if not _bologna.is_empty() else 0)
 	var snap := {"t": frame * 16, "players": players, "items": [], "events": [], "stageMs": stage_ms, "winnerId": null, "timeLeftMs": 90000, "teamScores": null,
 		"projectiles": [{"id": 1, "ownerId": "p0", "kind": "specialNeutral", "characterId": "default", "x": 500, "y": 470, "vx": 560, "vy": -120}]}
 	if _music:
