@@ -282,10 +282,9 @@ func on_snapshot(data: Dictionary) -> void:
 		var jp: String = StageMotion.jet_phase(j, stage_ms) if PredictMovement.piece_on(j, stage_ms) else "calm" # getto a tempo (#433)
 		var before := str(_jets.get(i, ""))
 		if before != "" and before != jp:
-			if jp == "warn":
-				_play("bubbles", {"x": float(j.x) + float(j.width) / 2.0})
-			elif jp == "active":
-				_play("splash", {"x": float(j.x) + float(j.width) / 2.0})
+			var cue := jet_cue(jp, j.has("dir"))
+			if cue != "":
+				_play(cue, {"x": float(j.x) + float(j.width) / 2.0})
 		_jets[i] = jp
 	# La Meraviglia dell'arena musicale (#423): i tre bottoni attivi insieme, un arpeggio che sale quando comincia
 	var wonder_now: bool = WonderStage.wonder(stage_ms, stage_pads, data.get("pads", []) if data.get("pads") is Array else [])[0] > 0.0
@@ -323,6 +322,16 @@ static func travel_cue(before: String, now: String, kind := "ciclista") -> Strin
 		return cues[0]
 	if now == "cross":
 		return cues[1]
+	return ""
+
+
+# Il getto (#253): bolle nell'avviso e spruzzo quando parte. La raffica di vento di Bologna (#433) ha "dir": niente
+# nell'avviso e un soffio quando parte, non l'acqua
+static func jet_cue(phase: String, wind: bool) -> String:
+	if phase == "warn":
+		return "" if wind else "bubbles"
+	if phase == "active":
+		return "wind" if wind else "splash"
 	return ""
 
 
@@ -864,6 +873,10 @@ func _build_sounds() -> void:
 		s.tone(0, "sawtooth", 70, 110, 0.7, 0.18)
 		s.tone(0.7, "sawtooth", 110, 60, 0.7, 0.18)
 		s.noise(0, "lowpass", 900, 300, 1.3, 0.3))
+	# La raffica (#433): un soffio che monta e cala, senza toni
+	_sounds.wind = make.call(1.6, func(s):
+		s.noise(0, "bandpass", 300, 900, 0.8, 0.35)
+		s.noise(0.8, "bandpass", 900, 250, 0.8, 0.3))
 	# Il mattone che si stacca: calcinacci che scivolano e un tonfo
 	_sounds.brickFall = make.call(0.9, func(s):
 		for k in 5:

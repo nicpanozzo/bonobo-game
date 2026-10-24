@@ -222,3 +222,5 @@ func test_campanello_e_sferragliare_del_ciclista() -> void:
 	runner.check(Audio.travel_cue("warn", "cross", "auto") == "carPass", "e passa col motore")
 	runner.check(Audio.travel_cue("calm", "warn", "mattone") == "", "il mattone nell'avviso non suona")
 	runner.check(Audio.travel_cue("warn", "cross", "mattone") == "brickFall", "e cade col crollo")
+	runner.check(Audio.jet_cue("warn", false) == "bubbles" and Audio.jet_cue("active", false) == "splash", "il getto d'acqua resta com'era")
+	runner.check(Audio.jet_cue("warn", true) == "" and Audio.jet_cue("active", true) == "wind", "la raffica di vento soffia, non spruzza (#433)")
