@@ -411,7 +411,13 @@
       ]
     },
     "announcer": {},
-    "voices": {}
+    "voices": {
+      "bradipo": {
+        "supreme": [
+          "assets/characters/bradipo/voice/supreme.ogg"
+        ]
+      }
+    }
   },
   "input": {
     "stickDeadzone": 0.35,
@@ -11092,6 +11098,9 @@
       "id": "bradipo",
       "strikeColor": "#ffd84a",
       "name": "Bradipo Giallo",
+      "quotes": {
+        "supreme": "DEMACIAA!"
+      },
       "crews": [
         "lolhardcore"
       ],
@@ -11475,10 +11484,9 @@
                 "src": "dash"
               },
               "supreme": {
-                "fps": 12,
-                "loop": false,
-                "hitFrame": 4,
-                "frames": 22,
+                "fps": 24,
+                "loop": true,
+                "frames": 16,
                 "src": "supreme"
               },
               "specialNeutral": {
@@ -11525,12 +11533,12 @@
         "name": "DEMACIAAA",
         "windupMs": 150,
         "durationMs": 1800,
-        "hitEveryMs": 225,
+        "hitEveryMs": 150,
         "endLagMs": 300,
-        "moveSpeed": 0.55,
+        "moveSpeed": 0.9,
         "width": 130,
         "height": 100,
-        "damage": 3,
+        "damage": 4,
         "baseKnockback": 200,
         "knockbackGrowth": 1.6,
         "angleDeg": 60
@@ -11637,7 +11645,7 @@
         }
       },
       "supremeAttack": {
-        "damage": 3,
+        "damage": 4,
         "baseKnockback": 200,
         "knockbackGrowth": 1.6,
         "angleDeg": 60,

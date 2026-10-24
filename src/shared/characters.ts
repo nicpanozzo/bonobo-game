@@ -383,6 +383,7 @@ export interface CharacterQuotes {
   taunt?: string; // la provocazione, quando provoca
   ko?: string; // l'urlo quando va KO
   victory?: string; // nella schermata finale, quando vince (senza, la provocazione)
+  supreme?: string; // quando parte la suprema
 }
 
 export const DEFAULT_CHARACTER_ID = "default";
@@ -777,6 +778,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     id: "bradipo",
     strikeColor: "#ffd84a", // scia dei colpi: giallo come il bradipo (#384)
     name: "Bradipo Giallo",
+    quotes: { supreme: "DEMACIAA!" }, // il fumetto della suprema, con la sua voce (voice/supreme.ogg)
     crews: ["lolhardcore"],
     // la Bassline col basso a tracolla: tools/sprite/bradipo_bassline.py
     sprite: sheetSprite("bradipo", 298, 200, 185, { specialSide: { fps: 1, loop: false } }),
@@ -817,7 +819,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
             specialNeutral: { fps: 24, loop: false, hitFrame: 3 }, // Ciacole: le mani alla bocca
             specialSide: { fps: 24, loop: false, hitFrame: 5 }, // Bassline: il riff
             specialDown: { fps: 24, loop: false, hitFrame: 1 }, // Cambio pannolino: si copre
-            supreme: { fps: 12, loop: false, hitFrame: 4 }, // DEMACIAAA: 22 fotogrammi, quasi quanto dura il giro
+            supreme: { fps: 24, loop: true }, // DEMACIAAA: due giri col basso, ripetuti finché gira
           },
         },
       },
@@ -828,12 +830,12 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       name: "DEMACIAAA",
       windupMs: 150,
       durationMs: 1800,
-      hitEveryMs: 225, // 8 colpi
+      hitEveryMs: 150, // 12 colpi: gira più veloce (Nicola, 2026-10-24)
       endLagMs: 300,
-      moveSpeed: 0.55,
+      moveSpeed: 0.9, // si sposta quasi di corsa mentre gira
       width: 130,
       height: 100,
-      damage: 3,
+      damage: 4, // per colpo, 48% in tutto se li prende tutti
       baseKnockback: 200,
       knockbackGrowth: 1.6,
       angleDeg: 60,

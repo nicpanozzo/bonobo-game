@@ -15,6 +15,8 @@ func test_bradipo_gira_gli_altri_no() -> void:
 	var game := _game()
 	var sp: Dictionary = game.characters.bradipo.supreme
 	runner.check(str(sp.type) == "spin" and str(sp.name) == "DEMACIAAA", "Bradipo Giallo ha DEMACIAAA")
+	runner.check(str(game.characters.bradipo.quotes.get("supreme", "")) == "DEMACIAA!", "e la grida in un fumetto")
+	runner.check(not game.audioFiles.voices.bradipo.get("supreme", []).is_empty(), "con la sua voce")
 	var v := SpinView.new()
 	v.fixed_now = 1000.0
 	v.start("b", game.characters.bradipo)

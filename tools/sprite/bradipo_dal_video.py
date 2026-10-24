@@ -46,7 +46,7 @@ PLAN = {
     "specialNeutral": dict(frames=R(115, 130, 2), mode="world"),  # Ciacole: le mani alla bocca, urla
     "specialSide": dict(frames=R(131, 159, 2), mode="world"),  # Bassline: il riff col basso
     "taunt": dict(frames=R(139, 152), mode="world"),  # il riff, a testa bassa
-    "supreme": dict(frames=R(160, 181), mode="world"),  # DEMACIAAA: gira come Garen col basso a spada
+    "supreme": dict(frames=R(164, 179), mode="world"),  # DEMACIAAA: due giri come Garen col basso a spada, in loop
     "specialDown": dict(frames=R(182, 189), mode="world"),  # Cambio pannolino: si copre e para
     "shield": dict(frames=R(184, 189), mode="world"),
     "hit": dict(frames=R(190, 197), mode="world"),  # colpito, scatta all'indietro
