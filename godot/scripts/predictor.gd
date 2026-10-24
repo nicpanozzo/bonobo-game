@@ -11,6 +11,8 @@ extends RefCounted
 const ACTION_KEYS := ["shield", "special", "supreme"] # mosse che il port non fa
 const ITEM_KEYS := ["light", "heavy"] # con un oggetto vicino raccolgono o lanciano invece di attaccare (#17)
 # Gli attacchi che il port sa fare (E17 passo 5): leggeri, pesanti e recupero
+const StageMotion := preload("res://scripts/stage_motion.gd")
+const MOVER_SOON_MS := 1000.0 # una piattaforma spenta che si accende entro tanto conta già: il port non la conosce
 const PREDICTED_ATTACKS := ["light", "heavy", "lightUp", "lightDown", "lightAir", "heavyUp", "heavyDown", "heavyAir", "recovery", "dashAttack"]
 
 var enabled := true # opzione "Predizione" (video.predict) e velocità normale nell'allenamento
@@ -100,7 +102,7 @@ func on_server(p: Dictionary, now_ms: float, shown := Vector2(NAN, NAN)) -> void
 		_advance(now_ms)
 		before = _position(now_ms) + _decayed_error(now_ms)
 	_server = p
-	_active = enabled and predictable(p, _stage) and not near_puddle(p, puddles) and not near_blocks(p, blocks) and not _pressed_action_since(int(p.predict.seq) if p.get("predict") is Dictionary else 0)
+	_active = enabled and predictable(p, _stage, stage_ms) and not near_puddle(p, puddles) and not near_blocks(p, blocks) and not _pressed_action_since(int(p.predict.seq) if p.get("predict") is Dictionary else 0)
 	if not _active:
 		return
 	var key := "%s/%s" % [_stage.get("id", ""), p.characterId]
@@ -180,11 +182,14 @@ func is_active() -> bool:
 
 
 # Dove il port sa fare quello che fa il server
-static func predictable(p: Dictionary, stage: Dictionary) -> bool:
+# t: il tempo dell'arena; una piattaforma a tempo spenta adesso e per un po' non conta (il bus di Bologna c'è solo in piazza)
+static func predictable(p: Dictionary, stage: Dictionary, t := -1.0) -> bool:
 	if not (p.get("predict") is Dictionary):
 		return false
 	# Le piattaforme mobili il port non le conosce: si torna allo stato del server solo vicino al loro percorso (#264)
 	for m in stage.get("movers", []) if stage.get("movers") is Array else []:
+		if t >= 0.0 and not StageMotion.mover_on(m, t) and not StageMotion.mover_on(m, t + MOVER_SOON_MS):
+			continue
 		var box := Rect2(m.path[0].x, m.path[0].y, 0, 0)
 		for pt in m.path:
 			box = box.expand(Vector2(pt.x, pt.y))

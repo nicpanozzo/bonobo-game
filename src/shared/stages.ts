@@ -482,6 +482,25 @@ export function liftKeys(x: number, low: number, high: number, fromMs: number, t
   return keys;
 }
 
+// Bologna (#433): il bus della piazza, una piattaforma mobile lunga width. Da fromMs a toMs ne parte uno ogni everyMs, una
+// volta da sinistra e una da destra: entra da fuori, si ferma stopMs con il centro a midX e riesce dall'altra parte. Torna
+// le chiavi (tempo, x, y) e le finestre in cui c'è: fuori dalle corse non c'è, così non resta un tetto nel vuoto
+export function busRuns(y: number, width: number, midX: number, outsideX: [number, number], fromMs: number, toMs: number, everyMs: number, stopMs: number, speedPxS: number): { keys: [number, number, number][]; on: TimeWindows } {
+  const keys: [number, number, number][] = [];
+  const on: TimeWindows = [];
+  const stopX = midX - width / 2;
+  for (let t = fromMs, i = 0; ; t += everyMs, i++) {
+    const [from, to] = i % 2 === 0 ? outsideX : [outsideX[1], outsideX[0]];
+    const inMs = (Math.abs(stopX - from) / speedPxS) * 1000;
+    const outMs = (Math.abs(to - stopX) / speedPxS) * 1000;
+    const end = t + inMs + stopMs + outMs;
+    if (end > toMs) break;
+    keys.push([t, from, y], [t + inMs, stopX, y], [t + inMs + stopMs, stopX, y], [end, to, y]);
+    on.push([t, end]);
+  }
+  return { keys, on };
+}
+
 const MAIN = { x: 240, y: 560, width: 800, height: 80 };
 
 // Bologna (#433): le finestre dei pezzi. La Garisenda c'è dalle torri al crollo, l'Asinelli resta; la rampa e i detriti
@@ -492,6 +511,8 @@ const BOLOGNA_RAMP: TimeWindows = [[BOLOGNA.rampMs, BOLOGNA.horizonMs]];
 const BOLOGNA_BRAWL: TimeWindows = [[BOLOGNA.brawlMs, BOLOGNA.horizonMs]];
 const BOLOGNA_ASINELLI_STATIONS: TimeWindows = [[BOLOGNA.towersMs, BOLOGNA.brawlMs]]; // le postazioni dell'Asinelli non ci sono nella zuffa
 const BOLOGNA_PIAZZA: TimeWindows = [[0, BOLOGNA.towersMs]];
+// Il bus: il tetto a y 1885 (il bus dipinto è alto 120 sul selciato a 2000), entra ed esce del tutto fuori dalla piazza
+const BOLOGNA_BUS = busRuns(1885, 400, 1100, [-600, 2400], BOLOGNA.busFirstMs, BOLOGNA.towersMs, BOLOGNA.busEveryMs, BOLOGNA.busStopMs, BOLOGNA.busSpeedPxS);
 
 export const STAGES: Record<string, StageSpec> = {
   // L'arena di partenza: un palco principale e tre piattaforme sottili
@@ -1082,6 +1103,9 @@ export const STAGES: Record<string, StageSpec> = {
       // Il montacarichi dell'Asinelli (da 0:45): pari alla Garisenda, fino alla finestra più alta
       { width: 90, path: [{ x: 1710, y: 1940 }, { x: 1710, y: 1100 }], periodMs: BOLOGNA.liftPeriodMs,
         keys: liftKeys(1710, 1940, 1100, BOLOGNA.towersMs, BOLOGNA.horizonMs, 20000, 1500), on: BOLOGNA_FROM_TOWERS },
+      // Il bus della piazza (0-45 s), come le piattaforme che portano in giro nei platform: si ferma in mezzo, ci si salta
+      // sul tetto e porta da una parte all'altra; chi non scende in tempo esce con lui dalla piazza
+      { kind: "bus", width: 400, path: [{ x: -600, y: 1885 }, { x: 2400, y: 1885 }], periodMs: BOLOGNA.liftPeriodMs, keys: BOLOGNA_BUS.keys, on: BOLOGNA_BUS.on },
     ],
     hazards: [
       // Traffico leggero della piazza (0-45 s), alto solo 50 px: chi sta sui portici e sulle basi è al riparo
