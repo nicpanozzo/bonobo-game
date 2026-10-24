@@ -30,6 +30,26 @@ describe("Bologna: fase della zuffa (#433)", () => {
     assert.equal(new Set(fighters.map((f) => Math.round(f.x))).size, 3, "in fila, non uno sull'altro");
   });
 
+  it("chi sta già cadendo poco sopra il nuovo fondo viene alzato anche lui, chi sale no", () => {
+    const ctx: PhysicsContext = { stage: bologna, events: [], timeMs: BOLOGNA.brawlMs - DT };
+    const [falling, rising] = [0, 1].map((i) => createFighter({ id: `p${i}`, name: `P${i}`, characterId: "default", color: 0, team: i + 1, index: i, stocks: 3 }, bologna));
+    falling.x = 150; // come un bot buttato giù a sinistra proprio allo scoccare della zuffa
+    falling.y = 1600;
+    falling.vy = 950;
+    falling.onGround = false;
+    rising.x = 2050;
+    rising.y = 1600;
+    rising.vy = -700; // sta risalendo col salto: lo lascia fare
+    rising.onGround = false;
+    stepWorld([falling, rising], DT, ctx);
+    stepWorld([falling, rising], DT, ctx);
+    assert.ok(ctx.timeMs! >= BOLOGNA.brawlMs);
+    assert.ok(falling.y < 1500, "chi cadeva è stato riportato su");
+    assert.ok(rising.y > 1500, "chi saliva resta dov'era");
+    for (let i = 0; i < 10; i++) stepWorld([falling, rising], DT, ctx);
+    assert.equal(ctx.events.filter((e) => e.type === "ko" && e.id === falling.id).length, 0, "nessun KO per chi cadeva");
+  });
+
   it("durante la zuffa chi esce dai lati perde la vita lo stesso", () => {
     const ctx: PhysicsContext = { stage: bologna, events: [], timeMs: BOLOGNA.brawlMs + 5000 };
     const f = createFighter({ id: "p0", name: "P0", characterId: "default", color: 0, team: 1, index: 0, stocks: 3 }, bologna);
