@@ -12,6 +12,11 @@ const BRICK := Color("9a4f38")
 const MORTAR := Color("d9c4a0")
 const INK := Color("2a2622")
 const DUST := Color(0.62, 0.55, 0.45)
+const AWNING_RED := Color("c0392b")
+const AWNING_WHITE := Color("f3e6cc")
+const FRUIT := [Color("e67e22"), Color("c0392b"), Color("27ae60"), Color("f1c40f")]
+const AWNING_SQUASH_PX := 18.0 # quanto si abbassa sotto chi ci arriva
+const AWNING_REACH_PX := 160.0 # sopra il tendone fin dove si sente il peso di chi è appena stato lanciato
 
 
 # L'auto che attraversa la piazza (travel): il modello cambia a ogni giro, girata nel verso in cui va
@@ -101,6 +106,51 @@ static func draw_dust(ci: CanvasItem, r: Rect2, phase: String, k: float, t: floa
 		var gx: float = r.position.x + fposmod(g * 97.0 + t / 25.0, r.size.x)
 		var gy: float = top + 30.0 + fposmod(g * 53.0 - t / 40.0, maxf(1.0, r.end.y - top - 30.0))
 		ci.draw_circle(Vector2(gx, gy), 3.0, Color(0.85, 0.78, 0.64, alpha * 0.8))
+
+
+# La bancarella col tendone a strisce che fa da molla (jet "tenda"): il banco sul selciato, i pali e il tendone, che si
+# schiaccia sotto chi ci arriva (squash da 0 a 1) e rimbalza. La molla vera è il getto della fisica, sempre acceso
+static func draw_awning(ci: CanvasItem, j: Dictionary, squash: float, t: float, mod: Color) -> void:
+	var x0 := float(j.x)
+	var w := float(j.width)
+	var ground := float(j.y)
+	var top := ground - float(j.height) + AWNING_SQUASH_PX * squash # il tendone è in cima alla fascia che lancia
+	var paint := func(c: Color) -> Color: return Color(c.r * mod.r, c.g * mod.g, c.b * mod.b, c.a)
+	# il banco con la frutta e i pali
+	ci.draw_rect(Rect2(x0 + 6.0, ground - 34.0, w - 12.0, 34.0), paint.call(Color("6b4a2e")))
+	for k in 4:
+		ci.draw_circle(Vector2(x0 + 16.0 + k * (w - 32.0) / 3.0, ground - 38.0), 7.0, paint.call(FRUIT[k % FRUIT.size()]))
+	for side in [x0 + 4.0, x0 + w - 4.0]:
+		ci.draw_line(Vector2(side, ground - 34.0), Vector2(side, top + 6.0), paint.call(INK), 3.0)
+	# il tendone: un trapezio a strisce, più largo del banco, con la frangia a onde
+	var spread := 14.0 + 6.0 * squash
+	var stripes := 6
+	for k in stripes:
+		var a := float(k) / stripes
+		var b := float(k + 1) / stripes
+		var poly := PackedVector2Array([
+			Vector2(x0 + w * a, top - 12.0 + 6.0 * squash), Vector2(x0 + w * b, top - 12.0 + 6.0 * squash),
+			Vector2(x0 - spread + (w + 2.0 * spread) * b, top + 10.0), Vector2(x0 - spread + (w + 2.0 * spread) * a, top + 10.0)])
+		ci.draw_colored_polygon(poly, paint.call(AWNING_RED if k % 2 == 0 else AWNING_WHITE))
+	for k in stripes:
+		var cx := x0 - spread + (w + 2.0 * spread) * (k + 0.5) / stripes
+		ci.draw_circle(Vector2(cx, top + 10.0), (w + 2.0 * spread) / stripes / 2.0, paint.call(AWNING_RED if k % 2 == 0 else AWNING_WHITE))
+	ci.draw_line(Vector2(x0 - spread, top + 10.0), Vector2(x0 + w + spread, top + 10.0), paint.call(INK), 2.0)
+	# a riposo il tendone ondeggia appena col vento della piazza
+	if squash <= 0.0:
+		ci.draw_line(Vector2(x0, top - 12.0 + sin(t / 400.0)), Vector2(x0 + w, top - 12.0 - sin(t / 400.0)), paint.call(INK), 2.0)
+
+
+# Quanto è schiacciato il tendone: 1 con qualcuno sopra, poi torna su mentre chi è stato lanciato sale
+static func awning_squash(j: Dictionary, feet: Array) -> float:
+	var best := 0.0
+	for p: Vector2 in feet:
+		if p.x < float(j.x) - 20.0 or p.x > float(j.x) + float(j.width) + 20.0:
+			continue
+		var above := float(j.y) - p.y
+		if above >= -4.0 and above < AWNING_REACH_PX:
+			best = maxf(best, 1.0 - clampf(above / AWNING_REACH_PX, 0.0, 1.0))
+	return best
 
 
 static func _car(ci: CanvasItem, life: RefCounted, kind: String, model: int, feet: Vector2, length: float, dir: int, mod: Color) -> void:

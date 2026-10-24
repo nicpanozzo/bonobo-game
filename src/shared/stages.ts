@@ -356,6 +356,7 @@ export interface Jet {
   activeMs: number; // durata del getto
   offsetMs?: number;
   idle?: number; // solo grafica (#288): pixel dello zampillo a riposo, come una fontana che non si spegne mai
+  kind?: string; // solo grafica e suoni (#433): "tenda" è il tendone di una bancarella che fa da molla, sempre acceso
   on?: TimeWindows; // getto a tempo (#433): fuori dalle finestre non c'è, nemmeno le bolle
 }
 
@@ -1111,10 +1112,18 @@ export const STAGES: Record<string, StageSpec> = {
         flood: { highY: 1000, periodMs: BOLOGNA.dustMs + 193000, warnMs: 8000, riseMs: 60000, holdMs: 120000, fallMs: 5000, lowSafe: true } },
     ],
     // Le raffiche della cima (da 2:45): una a sinistra e una a destra, sfasate di mezzo giro
-    jets: (["left", "right"] as const).map((dir, i) => ({
-      x: 1130, y: 1040, width: 600, height: 300, speed: 600, dir,
-      periodMs: BOLOGNA.windPeriodMs, warnMs: 1500, activeMs: 2500, offsetMs: i * (BOLOGNA.windPeriodMs / 2), on: BOLOGNA_BRAWL,
-    })),
+    jets: [
+      ...(["left", "right"] as const).map((dir, i) => ({
+        x: 1130, y: 1040, width: 600, height: 300, speed: 600, dir,
+        periodMs: BOLOGNA.windPeriodMs, warnMs: 1500, activeMs: 2500, offsetMs: i * (BOLOGNA.windPeriodMs / 2), on: BOLOGNA_BRAWL,
+      })),
+      // Le bancarelle ai piedi di San Petronio (fino al crollo): il tendone fa da molla, come le molle di Sonic e Mario.
+      // Chi ci finisce sopra (anche camminando) vola su di circa 480 px: fuori dall'ingorgo, fino ai pezzi a metà torre
+      ...[1020, 1200].map((x) => ({
+        kind: "tenda", x, y: 2000, width: BOLOGNA.awningWidthPx, height: BOLOGNA.awningHeightPx, speed: BOLOGNA.awningSpeedPxS,
+        periodMs: 1000, warnMs: 0, activeMs: 1000, on: [[0, BOLOGNA.collapseMs]] as TimeWindows,
+      })),
+    ],
     phases: [
       { id: "piazza", name: "Sotto le Torri", startMs: 0,
         blastZone: { left: -180, right: 2380, top: 1300, bottom: 2500 }, respawn: { x: 1150, y: 1500 },
