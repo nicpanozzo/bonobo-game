@@ -340,7 +340,68 @@
     "announcerTimeWarningMs": 10000
   },
   "audioFiles": {
-    "sfx": {},
+    "sfx": {
+      "grab": [
+        "assets/sfx/grab_1.ogg",
+        "assets/sfx/grab_2.ogg",
+        "assets/sfx/grab_3.ogg"
+      ],
+      "heavy": [
+        "assets/sfx/heavy_1.ogg",
+        "assets/sfx/heavy_2.ogg",
+        "assets/sfx/heavy_3.ogg",
+        "assets/sfx/heavy_4.ogg"
+      ],
+      "hitHeavy": [
+        "assets/sfx/hitHeavy_1.ogg",
+        "assets/sfx/hitHeavy_2.ogg",
+        "assets/sfx/hitHeavy_3.ogg",
+        "assets/sfx/hitHeavy_4.ogg"
+      ],
+      "hitLight": [
+        "assets/sfx/hitLight_1.ogg",
+        "assets/sfx/hitLight_2.ogg",
+        "assets/sfx/hitLight_3.ogg",
+        "assets/sfx/hitLight_4.ogg"
+      ],
+      "ko": [
+        "assets/sfx/ko_1.ogg",
+        "assets/sfx/ko_2.ogg",
+        "assets/sfx/ko_3.ogg"
+      ],
+      "land": [
+        "assets/sfx/land_1.ogg",
+        "assets/sfx/land_2.ogg",
+        "assets/sfx/land_3.ogg",
+        "assets/sfx/land_4.ogg"
+      ],
+      "ledge": [
+        "assets/sfx/ledge_1.ogg",
+        "assets/sfx/ledge_2.ogg",
+        "assets/sfx/ledge_3.ogg"
+      ],
+      "light": [
+        "assets/sfx/light_1.ogg",
+        "assets/sfx/light_2.ogg",
+        "assets/sfx/light_3.ogg",
+        "assets/sfx/light_4.ogg"
+      ],
+      "shieldBreak": [
+        "assets/sfx/shieldBreak_1.ogg",
+        "assets/sfx/shieldBreak_2.ogg",
+        "assets/sfx/shieldBreak_3.ogg"
+      ],
+      "shield": [
+        "assets/sfx/shield_1.ogg",
+        "assets/sfx/shield_2.ogg",
+        "assets/sfx/shield_3.ogg"
+      ],
+      "throw": [
+        "assets/sfx/throw_1.ogg",
+        "assets/sfx/throw_2.ogg",
+        "assets/sfx/throw_3.ogg"
+      ]
+    },
     "music": {
       "massima-tackenza": [
         "assets/music/massima-tackenza.ogg"
