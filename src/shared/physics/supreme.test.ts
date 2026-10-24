@@ -266,7 +266,10 @@ describe("suprema che gira, DEMACIAAA di Bradipo Giallo (#358)", () => {
     const hits = ofType(ctx.events, "hit").filter((h) => h.targetId === b.id);
     const turns = Math.floor(spin.durationMs / spin.hitEveryMs);
     assert.ok(hits.length >= turns - 1 && hits.length <= turns + 1, `${hits.length} colpi su ${turns} giri`);
-    assert.ok(hits.every((h) => h.kind === "supreme" && h.damage === spin.damage));
+    assert.ok(hits.every((h) => h.kind === "supreme"));
+    // tutti i giri col danno della spin, l'ultimo come un pesante caricato
+    assert.ok(hits.slice(0, -1).every((h) => h.damage === spin.damage));
+    assert.equal(hits.at(-1)?.damage, spin.finisher?.damage);
   });
 
   it("mentre gira si muove piano, poi torna fermo come negli altri attacchi", () => {
