@@ -802,13 +802,13 @@ export const STAGES: Record<string, StageSpec> = {
         // Sulle punte delle lastre delle statue
         pigeons: [{ x: 485, y: 330 }, { x: 1435, y: 330 }, { x: 235, y: 380 }, { x: 1685, y: 380 }],
         // Lo sfondo è salito per stare dietro il piano dell'isola (#300 e #378, LIFT in padova.py): prato e bar 96 px, strada 82
-        walkers: { y: 414, parallax: 0.75, count: 14, umbrellas: true },
+        walkers: { y: 414, parallax: 0.74, count: 14, umbrellas: true }, // appena dietro lo strato del prato: le statue della seconda fila li coprono (#378)
         // Il tram e il traffico passano sulla strada davanti ai portici (#278): più giù le piazze li coprirebbero
         vehicles: { y: 406, parallax: 0.5, everyMs: 23000, kind: "tram" },
         traffic: { y: 406, parallax: 0.5, everyMs: 2600, kinds: ["auto", "auto", "auto", "vespa", "vespa", "furgone", "bici", "bus"] },
         flyers: { y: 90, parallax: 0.6, count: 7 }, // rondini sul Prato, di notte i pipistrelli
         planes: { y: -60, everyMs: 75000 },
-        bar: { x: 120, y: 414, parallax: 0.8, tables: 3, spacing: 72 }, // il chiosco dello spritz sul prato: a terra come panchine e passanti (#378)
+        bar: { x: 120, y: 414, parallax: 0.74, tables: 3, spacing: 72 }, // il chiosco dello spritz sul prato: a terra come panchine e passanti (#378)
         daycycle: {
           cycleMs: 240000, // un giorno intero in 4 minuti: alba, giorno, tramonto e notte
           startAt: 0.8, // si parte poco dopo l'alba

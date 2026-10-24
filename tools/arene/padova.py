@@ -3055,12 +3055,7 @@ def lawn(t):
         y = base - 6 + rng_w.uniform(0, 1) ** 1.3 * 120
         t.line([(x, y), (x + rng_w.uniform(8, 30), y)], fill=(156, 182, 176, 255), width=0.6 + rng_w.random() * 0.6)
     # memmia_vista() non serve più: il canale dietro l'isola con le statue e i ponticelli ora sta davanti a questo strato
-    # la seconda fila di statue sul prato (la fascia chiara della canaletta non c'è più: Riccardo, #378)
-    for sx in range(-240, 2200, 120):
-        if abs(sx - 960) < 50:
-            rng.random()  # davanti al ponticello niente statua, ma la serie del caso resta la stessa
-            continue
-        small_statue(t, sx, base - 36, rng)
+    statue_rng = rand(11)  # le statue si disegnano alla fine (vedi sotto), con la loro serie del caso
     # platani, poi il vialetto, le panchine e i lampioni davanti
     for tx in range(-230, 2200, 160):  # più fitti dal #288
         x, r = tx + rng.randint(-40, 40), rng.randint(48, 70)
@@ -3081,6 +3076,13 @@ def lawn(t):
     px = -170 + 300 * 4
     t.rect(px + 3, base - 122, px + 10, base - 104, fill=(214, 206, 182, 255), ink=True, width=0.6, ink_col=(60, 56, 50, 255))
     t.line([(px + 2, base - 113), (px + 11, base - 113)], fill=(150, 60, 56, 255), width=1.4)
+    # la seconda fila di statue sul prato, per ultima (#378, Riccardo): stanno davanti al vialetto, ai lampioni e
+    # alle panchine, quindi li coprono e non ne sono coperte
+    for sx in range(-240, 2200, 120):
+        if abs(sx - 960) < 50:
+            statue_rng.random()  # davanti al ponticello niente statua, ma la serie del caso resta la stessa
+            continue
+        small_statue(t, sx, base - 49, statue_rng)  # sul vialetto, come lampioni e panchine: sotto c'è il prato dell'ansa
 
 
 PLAN = (960, 520, 880, 50)  # la pianta dell'isola (#378, chiesto da Riccardo): mezzo ovale dietro il bordo dritto
