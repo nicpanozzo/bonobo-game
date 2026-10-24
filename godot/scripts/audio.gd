@@ -43,6 +43,7 @@ var _duck: Tween
 var stage_hazards: Array = [] # trappole dell'arena della partita: il ciclista (#229) suona da solo, senza eventi
 var _travel := {} # indice della trappola che viaggia -> fase dell'ultimo snapshot
 var stage_jets: Array = [] # getti d'acqua dell'arena (#253): bolle e spruzzo, dal tempo dell'arena
+var stage_crowd := false # l'arena ha il pubblico (#433): a ogni KO gli scatti delle macchine fotografiche
 var stage_movers: Array = [] # piattaforme mobili dell'arena: la campana di Bologna (#433) suona a ogni estremo
 var _swings := {} # indice della piattaforma -> ultimo estremo dell'altalena sentito
 var stage_pads: Array = [] # bottoni sonori dell'arena (#423): servono per sentire quando arriva la Meraviglia
@@ -199,6 +200,8 @@ func on_event(e: Dictionary) -> void:
 			_play("roll", {"volume": 0.4, "pitch": 1.2})
 		"ko":
 			_play("ko", {"x": e.x})
+			if stage_crowd:
+				_play("shutter", {"volume": 0.6, "x": e.x})
 			voice(str(e.get("id", "")), "ko", e.x)
 			duck()
 			if int(e.get("stocksLeft", 0)) == 1:
@@ -913,6 +916,11 @@ func _build_sounds() -> void:
 		s.tone(0, "sawtooth", 70, 110, 0.7, 0.18)
 		s.tone(0.7, "sawtooth", 110, 60, 0.7, 0.18)
 		s.noise(0, "lowpass", 900, 300, 1.3, 0.3))
+	# Gli scatti dei turisti (#433): tre clic di otturatore un po' sparsi
+	_sounds.shutter = make.call(0.7, func(s):
+		for k in 3:
+			s.noise(k * 0.19 + (0.04 if k == 1 else 0.0), "highpass", 6000, 3000, 0.03, 0.4)
+			s.noise(k * 0.19 + 0.05, "bandpass", 2500, 1800, 0.04, 0.25))
 	# Il tendone che fa da molla (#433): "boing", un tono che scende e risale tremolando
 	_sounds.boing = make.call(0.5, func(s):
 		s.tone(0, "sine", 520, 180, 0.12, 0.45)
