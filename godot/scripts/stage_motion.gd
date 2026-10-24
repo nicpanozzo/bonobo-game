@@ -6,6 +6,9 @@ extends RefCounted
 static func mover_position(m: Dictionary, t: float) -> Vector2:
 	if m.get("keys") is Array and not (m.keys as Array).is_empty():
 		return keyed_position(m.keys, float(m.periodMs), t + float(m.get("offsetMs", 0)))
+	if m.get("swing") is Dictionary: # altalena (#433), come in physics/elements.ts
+		var a := swing_angle(m.swing, t + float(m.get("offsetMs", 0)))
+		return Vector2(float(m.swing.pivot.x) + sin(a) * float(m.swing.length) - float(m.width) / 2.0, float(m.swing.pivot.y) + cos(a) * float(m.swing.length))
 	var pts: Array = m.path
 	if pts.size() < 2:
 		return Vector2(pts[0].x, pts[0].y)
@@ -58,6 +61,11 @@ static func keyed_position(keys: Array, period: float, time: float) -> Vector2:
 	var tb: float = float(b[0]) if lo + 1 < n else float(b[0]) + period
 	var k := (t - ta) / (tb - ta) if tb > ta else 0.0
 	return Vector2(float(a[1]), float(a[2])).lerp(Vector2(float(b[1]), float(b[2])), k)
+
+
+# Come swingAngle() in physics/elements.ts: l'angolo dell'altalena dalla verticale, in radianti
+static func swing_angle(swing: Dictionary, t: float) -> float:
+	return deg_to_rad(float(swing.amplitudeDeg)) * sin(TAU * t / float(swing.swingMs))
 
 
 # Come moverOn() in physics/elements.ts: la piattaforma c'è (senza finestre "on" sempre)

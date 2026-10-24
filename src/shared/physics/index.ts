@@ -42,6 +42,7 @@ import { freezePrize, stepStations, useStation } from "./stations";
 export * from "./fighter";
 export { resolveHits } from "./attacks";
 export { floodPhase, hazardActive, hazardRect, jetPhase, moverHere, moverOn, moverPlace, moverPosition, padFx, travelDirection, travelPhase, type FloodPhase, type JetPhase, type TravelPhase } from "./elements";
+export { swingAngle } from "./elements";
 export { ledgesOf } from "./ledge";
 export { baseStage, phaseAt, phaseIndexAt, pieceOn, stageAt, stageIsTimed } from "./timed";
 export { freezePrize, prizeLeader } from "./stations";

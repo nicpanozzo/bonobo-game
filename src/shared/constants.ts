@@ -814,4 +814,6 @@ export const BOLOGNA = {
   busEveryMs: 14000, // ogni quanto ne parte uno, alternando il verso, finché c'è la piazza (0:45)
   busStopMs: 3000, // la sosta alla fermata in mezzo alla piazza: il momento per salire
   busSpeedPxS: 400, // pixel/s mentre entra ed esce
+  bellSwingMs: 4400, // l'altalena della campana tra le torri: un'andata e ritorno completa...
+  bellAmplitudeDeg: 38, // ...fino a tanti gradi dalla verticale per parte: agli estremi sfiora la postazione (A) di ogni torre
 };

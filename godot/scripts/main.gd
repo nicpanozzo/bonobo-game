@@ -533,6 +533,7 @@ func _on_event(name: String, data: Variant) -> void:
 			audio.stage_jets = world.stage.get("jets", []) if world.stage.get("jets") is Array else [] # i getti d'acqua (#253)
 			audio.stage_pads = world.stage.get("pads", []) if world.stage.get("pads") is Array else [] # la Meraviglia (#423)
 			audio.stage_crowd = world.has_crowd() # il pubblico che fotografa i KO (#433)
+			audio.stage_movers = world.stage.get("movers", []) if world.stage.get("movers") is Array else [] # la campana che dondola (#433)
 			gym.on_welcome(data)
 			_check_server_version(str(data.get("serverVersion", "")))
 			camera.position = Vector2.ZERO

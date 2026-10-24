@@ -14,6 +14,10 @@ const mod = (a: number, b: number) => ((a % b) + b) % b;
 // Il giro dura periodMs: a ogni punto c'è la sosta, il resto si divide tra i tratti in base alla lunghezza.
 export function moverPosition(m: MovingPlatform, timeMs: number): { x: number; y: number } {
   if (m.keys?.length) return keyedPosition(m.keys, m.periodMs, timeMs + (m.offsetMs ?? 0));
+  if (m.swing) {
+    const a = swingAngle(m.swing, timeMs + (m.offsetMs ?? 0));
+    return { x: m.swing.pivot.x + Math.sin(a) * m.swing.length - m.width / 2, y: m.swing.pivot.y + Math.cos(a) * m.swing.length };
+  }
   const pts = m.path;
   if (pts.length < 2) return pts[0] ?? { x: 0, y: 0 };
   const route = m.loop ? [...pts, pts[0]] : [...pts, ...pts.slice(0, -1).reverse()];
@@ -34,6 +38,11 @@ export function moverPosition(m: MovingPlatform, timeMs: number): { x: number; y
     t -= segMs;
   }
   return route[segments];
+}
+
+// L'angolo dell'altalena dalla verticale, in radianti (positivo verso destra): un seno, lento agli estremi come un pendolo
+export function swingAngle(swing: NonNullable<MovingPlatform["swing"]>, timeMs: number): number {
+  return ((swing.amplitudeDeg * Math.PI) / 180) * Math.sin((2 * Math.PI * timeMs) / swing.swingMs);
 }
 
 // Arena musicale (#423): la posizione tra le due chiavi a cavallo di t; dopo l'ultima si va verso la prima del giro dopo
