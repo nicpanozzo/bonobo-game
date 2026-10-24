@@ -837,7 +837,7 @@
       "width": 24,
       "height": 16,
       "color": 15844367,
-      "weight": 3
+      "rarity": "comune"
     },
     "fiore": {
       "id": "fiore",
@@ -847,7 +847,7 @@
       "width": 26,
       "height": 26,
       "color": 5025616,
-      "weight": 1,
+      "rarity": "raro",
       "consume": {
         "powerup": "fiore",
         "ms": 8000
@@ -861,7 +861,7 @@
       "width": 24,
       "height": 20,
       "color": 10181046,
-      "weight": 2,
+      "rarity": "normale",
       "mushrooms": true
     },
     "fungo": {
@@ -872,7 +872,7 @@
       "width": 20,
       "height": 16,
       "color": 12597547,
-      "weight": 0,
+      "rarity": "mai",
       "planted": true
     },
     "bong": {
@@ -883,7 +883,7 @@
       "width": 22,
       "height": 40,
       "color": 8378564,
-      "weight": 2,
+      "rarity": "normale",
       "bong": true
     },
     "pacman": {
@@ -894,7 +894,7 @@
       "width": 28,
       "height": 28,
       "color": 16771899,
-      "weight": 1,
+      "rarity": "rarissimo",
       "consume": {
         "powerup": "pacman",
         "ms": 8000
@@ -908,7 +908,7 @@
       "width": 18,
       "height": 30,
       "color": 2899536,
-      "weight": 1,
+      "rarity": "raro",
       "call": true
     },
     "tetris": {
@@ -919,7 +919,7 @@
       "width": 28,
       "height": 28,
       "color": 48340,
-      "weight": 1,
+      "rarity": "rarissimo",
       "consume": {
         "powerup": "tetris",
         "ms": 9000

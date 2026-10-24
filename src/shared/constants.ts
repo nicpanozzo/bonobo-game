@@ -548,6 +548,17 @@ export const LEADERBOARD = {
 };
 
 // Oggetti (#17): cadono dal cielo, si raccolgono con J o K e si lanciano con J o K
+// Classi di frequenza degli oggetti che cadono (Nicola, 24 ottobre 2026): ogni oggetto ne ha una, proporzionata a quanto
+// cambia la partita. Il numero è il peso nell'estrazione: un comune cade otto volte più spesso di un rarissimo
+export const ITEM_RARITY = {
+  comune: 8, // piccolo vantaggio, da lanciare (banana)
+  normale: 4, // vantaggio a tempo o con un rischio (funghetti, bong)
+  raro: 2, // cambia uno scontro: intoccabili, un aiuto che gira l'arena (fiore, Bassanese)
+  rarissimo: 1, // cambia la partita per diversi secondi (Tetris, Pac-Man)
+  mai: 0, // non cade dal cielo (il funghetto piantato)
+};
+export type ItemRarity = keyof typeof ITEM_RARITY;
+
 export const ITEM_RULES = {
   firstSpawnMs: 6000, // il primo oggetto cade dopo un po' dall'inizio
   spawnEveryMs: 11000, // poi uno ogni tanto

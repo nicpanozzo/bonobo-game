@@ -5,7 +5,7 @@
 
 import { characterStats } from "../characters";
 import { BONG, FIGHTER, FUNGHI, HITSTOP, HITSTUN_PER_KNOCKBACK, ITEM_RULES } from "../constants";
-import { DROPPABLE_ITEMS, ITEMS } from "../items";
+import { DROPPABLE_ITEMS, ITEMS, itemWeight } from "../items";
 import type { ItemSpot } from "../stages";
 import { rng } from "../stageGenerator";
 import type { ItemState } from "../types";
@@ -354,9 +354,9 @@ function spawn(world: ItemWorld, ctx: PhysicsContext) {
   ctx.events.push({ type: "itemSpawn", itemId: item.id, kind, x, y });
 }
 
-// Quale oggetto cade: a caso pesando ITEMS[k].weight (#231), con un solo numero casuale
+// Quale oggetto cade: a caso pesando la classe di frequenza di ognuno (#231, ITEM_RARITY), con un solo numero casuale
 export function pickKind(r: number, kinds: readonly string[] = DROPPABLE_ITEMS): string {
-  const weight = (k: string) => ITEMS[k].weight ?? 1;
+  const weight = itemWeight;
   let left = r * kinds.reduce((sum, k) => sum + weight(k), 0);
   for (const k of kinds) {
     if (left < weight(k)) return k;
