@@ -127,6 +127,7 @@ func on_event(e: Dictionary) -> void:
 				_play("throw") # lancio dalla presa (#109)
 			elif kind == "supreme":
 				_play("heavy", {"volume": 1.0, "pitch": 0.7}) # la suprema (#101): il pesante, più grave e pieno
+				voice(e.id, "supreme") # e il grido del personaggio, se ce l'ha (DEMACIAA di Bradipo)
 			elif kind == "grab":
 				_play("light", {"volume": 0.4, "pitch": 0.8}) # la mano che parte: un fruscio corto
 			else:

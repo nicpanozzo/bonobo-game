@@ -1,18 +1,15 @@
-# Suprema "spin" (#358), DEMACIAAA di Bradipo Giallo: mentre gira, vortici intorno a lui che seguono dove va e il
-# nome della mossa gridato sopra. Solo disegno: parte dall'evento attack con kind "supreme" e segue i tempi del
+# Suprema "spin" (#358), DEMACIAAA di Bradipo Giallo: mentre gira, vortici d'aria intorno a lui che seguono dove va
+# (il grido è il fumetto delle battute, quotes.supreme, con la sua voce). Solo disegno: parte dall'evento attack con kind "supreme" e segue i tempi del
 # personaggio in game.json (characters.<id>.supreme). I colpi veri li decide il server.
 extends Node2D
 
 const ARCS := 3 # vortici intorno
-const TURN_MS := 260.0 # un giro dei vortici
-const SHOUT_MS := 700.0 # quanto resta il nome gridato, dall'inizio del giro
-const WIND := Color(1, 0.95, 0.7)
-const WIND_SH := Color(0.95, 0.75, 0.25)
+const TURN_MS := 140.0 # un giro dei vortici: veloce, come la E di Garen
+const WIND := Color(1, 1, 1) # aria bianca, niente contorno giallo (Nicola, 2026-10-24)
 
 var where: Callable # id giocatore -> Vector2 dei piedi, o null; lo imposta world_view
 var fixed_now := -1.0 # per i test: se >= 0 è l'orologio in ms al posto di quello vero
 var _runs: Array = [] # [{ id, sp, t0 }]
-var _font: Font = ThemeDB.fallback_font
 
 
 func _now() -> float:
@@ -73,14 +70,4 @@ func _draw_spin(sp: Dictionary, ms: float, feet: Vector2) -> void:
 		for k in 9:
 			var a := a0 + k * 0.16
 			pts.append(c + Vector2(cos(a) * r.x, sin(a) * r.y))
-		draw_polyline(pts, Color(WIND_SH, 0.8 * alpha), 9.0, true)
-		draw_polyline(pts, Color(WIND, 0.9 * alpha), 4.0, true)
-	if spin_ms < SHOUT_MS:
-		var k := spin_ms / SHOUT_MS
-		var px := Access.px(26)
-		var text := "%s!" % str(sp.name)
-		var size := _font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, px)
-		var at := Vector2(c.x - size.x / 2, c.y - r.y - 40.0 - 20.0 * k)
-		var a := 1.0 - k * k
-		draw_string_outline(_font, at, text, HORIZONTAL_ALIGNMENT_LEFT, -1, px, 6, Color(0, 0, 0, 0.7 * a))
-		draw_string(_font, at, text, HORIZONTAL_ALIGNMENT_LEFT, -1, px, Color(1, 0.85, 0.2, a))
+		draw_polyline(pts, Color(WIND, 0.55 * alpha), 4.0, true)

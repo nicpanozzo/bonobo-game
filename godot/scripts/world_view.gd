@@ -752,6 +752,7 @@ func on_event(e: Dictionary) -> void:
 					_grab_view.start(e.id, game.characters.get(p.characterId, {}))
 					_burst_view.start(e.id, game.characters.get(p.characterId, {}))
 					_rewind_view.start(e.id, game.characters.get(p.characterId, {}))
+					_speech.say(e.id, SpeechBubbles.quote(game.characters.get(p.characterId, {}), "supreme"))
 		"dash":
 			# Scatto (#199): uno sbuffo di polvere dove parte e uno un po' indietro
 			_puff(e.x, e.y)
@@ -2092,7 +2093,8 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 	# Col fiore (#231) si è intoccabili per 8 s: invece di lampeggiare si ha l'alone verde
 	var powered: bool = p.get("powerup") == "fiore" and not away
 	var high: bool = p.get("powerup") == "bong" and not away # col bong (#302) si fuma ma si resta colpibili
-	var blink: bool = p.invulnerable and not away and not powered and not _supreme_view.holds(p.id, now)
+	# chi fa la suprema è intoccabile ma non lampeggia: la sta facendo lui (DEMACIAAA dura quasi 2 s)
+	var blink: bool = p.invulnerable and not away and not powered and not _supreme_view.holds(p.id, now) and p.get("attack") != "supreme"
 	if p.respawning or (blink and int(now / 100) % 2 == 0):
 		return
 	var character := _look(p)
