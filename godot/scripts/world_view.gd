@@ -21,6 +21,10 @@ var _strikes := {} # id -> il colpo di cui si disegna la scia e da quando è att
 var _punch := {} # lo zoom sui colpi da KO (#384): quando è partito e dove, vuoto se non c'è
 var _dust: Array = [] # [{ x, y, dx, age }] sbuffi di polvere
 var _trails := {} # id -> Array[Vector2] delle ultime posizioni, per la scia di chi vola
+var _particles: Node2D # effetti a particelle (#470): polvere, anello d'aria, impatti, fumo del lancio
+var _fx_seed := 0 # ogni gruppo di particelle ha la sua variante
+var _fx_last := {} # id -> { vx, facing, ms, smoke, brake }: quello che serve per frenata, inversione e fumo del lancio
+var _fall_vy := {} # id -> velocità di caduta all'ultimo frame in aria, per l'atterraggio pesante
 var _clouds: Array = [] # [{ x, y, dir, age, damage }] nuvole soffiate col bong (#302)
 var _high_overlay: ColorRect # lo schermo distorto di chi è fatto col bong (#302)
 var effects := true # scie e polvere (opzioni → Video), main.gd lo legge dalle preferenze
@@ -96,6 +100,8 @@ const FighterPose := preload("res://scripts/fighter_pose.gd")
 const HitReaction := preload("res://scripts/hit_reaction.gd") # il corpo si piega dove è colpito (#305)
 const MotionFeel := preload("res://scripts/motion_feel.gd") # squash & stretch di salto, atterraggio e corsa
 const StrikeFx := preload("res://scripts/strike_fx.gd") # scia dei colpi e linee di velocità (#384)
+const ParticleFx := preload("res://scripts/particle_fx.gd") # effetti a particelle (#470)
+const ParticleView := preload("res://scripts/particle_view.gd")
 const SunLight := preload("res://scripts/sun_light.gd") # luce e ombre del sole e della luna (#288)
 static var _screen_px_per_world := 0.0 # pixel dello schermo per pixel di mondo alla telecamera più vicina; 0 = non si sa (headless)
 var _character_sprites := {} # id personaggio -> true quando i suoi sprite sono caricati
@@ -149,6 +155,9 @@ func setup(game_data: Dictionary) -> void:
 	_high_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_high_overlay.visible = false
 	add_child(_high_overlay)
+	_particles = ParticleView.new()
+	_particles.max_particles = int(game.effects.get("particleMax", 600))
+	add_child(_particles)
 	predictor.setup(game)
 	reset()
 	if material == null:
@@ -240,6 +249,10 @@ static func _sprite_texture(path: String, filter: String, world_scale := 0.0) ->
 
 # Si torna alla lobby: via i giocatori della stanza di prima
 func reset() -> void:
+	if _particles:
+		_particles.clear()
+	_fx_last = {}
+	_fall_vy = {}
 	buffer = SnapshotBuffer.new()
 	buffer.delay_ms = game.net.interpolationDelayMs
 	buffer.teleport_distance = game.net.teleportDistance
@@ -665,7 +678,10 @@ func on_event(e: Dictionary) -> void:
 			var lines: int = int(fx.get("impactLines", 0)) if kb >= float(fx.get("impactLinesKnockback", INF)) else 0
 			# più grande coi colpi che lanciano più lontano (#384 B2)
 			var size := (34.0 if big else 20.0) + float(e.get("damage", 0)) + kb * float(fx.get("sparkPerKnockback", 0.0))
-			_sparks.append({"x": e.x, "y": e.y, "age": 0.0, "size": size, "color": Color(1, 0.85, 0.3) if big else Color.WHITE, "lines": lines})
+			if effects and _particles: # #470: stella con alone e onda, scintille dalla parte del colpo, fumo sui colpi forti
+				_impact(e, big, kb >= float(fx.get("koZoomKnockback", INF)))
+			else:
+				_sparks.append({"x": e.x, "y": e.y, "age": 0.0, "size": size, "color": Color(1, 0.85, 0.3) if big else Color.WHITE, "lines": lines})
 			# Più il colpo lancia lontano, più lo schermo trema; i colpi enormi fanno anche un lampo
 			if kb > fx.shakeFromKnockback:
 				_shake = maxf(_shake, minf(fx.shakeMax, (kb - fx.shakeFromKnockback) * fx.shakePerKnockback))
@@ -703,7 +719,7 @@ func on_event(e: Dictionary) -> void:
 			_sparks.append({"x": e.x, "y": e.y, "age": 0.0, "size": 30.0, "color": Color(1, 0.55, 0.15)})
 			_shake = maxf(_shake, minf(game.effects.shakeMax, float(e.knockback) * game.effects.shakePerKnockback))
 		"land":
-			_puff(e.x, e.y)
+			_land_dust(e)
 			_bounces[e.id] = MotionFeel.start(game.effects, "land", Time.get_ticks_msec())
 		"shield":
 			# Colpo parato (#109): scintilla piccola del colore di chi para e bolla che si illumina
@@ -786,6 +802,9 @@ func on_event(e: Dictionary) -> void:
 				_puff(e.x, e.y)
 			else:
 				_air_jumps[e.id] = Time.get_ticks_msec()
+				if effects and _particles: # #470: anello d'aria e sbuffetti spinti giù dal salto
+					_particles.add(ParticleFx.air_burst(_next_fx_seed(), e.x, e.y))
+					_particles.mark({"kind": "ring", "x": float(e.x), "y": float(e.y), "r0": 16.0, "r1": 76.0, "squash": 0.3, "width": 6.0, "life_ms": float(game.effects.airRingMs)})
 		"ko":
 			_shake = game.effects.shakeKo
 			_sparks.append({"x": clampf(e.x, 0, stage_width()), "y": clampf(e.y, 0, game.world.height), "age": 0.0, "size": 90.0, "color": Color(1, 0.4, 0.3)})
@@ -871,12 +890,72 @@ func _motion_transform(p: Dictionary, now: float) -> Transform2D:
 
 
 func _puff(x: float, y: float) -> void:
-	if not effects:
+	if not effects or _particles == null:
 		return
-	var n := int(game.effects.dustPuffs)
-	for i in n:
-		var dx := (float(i) / maxf(1, n - 1) - 0.5) * 2.0 # da -1 a 1
-		_dust.append({"x": x, "y": y, "dx": dx, "age": 0.0})
+	_particles.add(ParticleFx.dust_burst(_next_fx_seed(), x, y)) # #470: sbuffi e sassolini al posto dei cerchietti
+
+
+func _next_fx_seed() -> int:
+	_fx_seed += 1
+	return _fx_seed
+
+
+# Atterraggio (#470): dopo una caduta veloce o un lancio la polvere è più grande, con un pennacchio
+func _land_dust(e: Dictionary) -> void:
+	var fx: Dictionary = game.effects
+	if effects and _particles and float(_fall_vy.get(e.id, 0.0)) >= float(fx.get("heavyLandSpeed", INF)):
+		_particles.add(ParticleFx.dust_burst(_next_fx_seed(), e.x, e.y, float(fx.heavyLandPower)))
+	else:
+		_puff(e.x, e.y)
+	_fall_vy.erase(e.id)
+
+
+# Impatto (#470): la stella la disegna particle_view, le scintille schizzano dalla parte verso cui spinge il colpo
+func _impact(e: Dictionary, heavy: bool, ko: bool) -> void:
+	var fx: Dictionary = game.effects
+	var damage := float(e.get("damage", 0))
+	var target: Vector2 = positions.get(e.get("targetId", ""), Vector2(e.x, e.y))
+	var from: Vector2 = positions.get(e.get("attackerId", ""), Vector2(e.x, e.y))
+	var face := 1.0 if target.x >= from.x else -1.0
+	var key := _next_fx_seed()
+	_particles.add(ParticleFx.impact_burst(key, e.x, e.y, damage, heavy, ko, face))
+	_particles.mark({"kind": "star", "x": float(e.x), "y": float(e.y), "size": ((60.0 if ko else 44.0 if heavy else 30.0) + damage * 1.2),
+		"ko": ko, "heavy": heavy, "seed": key, "life_ms": float(fx.impactStarKoMs if ko else fx.impactStarMs),
+		"col": Color(1.0, 0.47, 0.24) if ko else Color(1.0, 0.9, 0.6)})
+
+
+# Particelle che nascono dallo stato e non da un evento (#470): fumo di chi vola via, frenata e inversione a terra.
+# Si chiama dal disegno, una volta per lottatore a ogni frame, come la scia di _draw_trail
+func _feed_particles(id: String, p: Dictionary) -> void:
+	if not effects or _particles == null or p.respawning:
+		_fx_last.erase(id)
+		return
+	var fx: Dictionary = game.effects
+	var now := Time.get_ticks_msec()
+	var vx: float = p.vx
+	var vy: float = p.vy
+	var last: Dictionary = _fx_last.get(id, {})
+	if not p.onGround:
+		_fall_vy[id] = vy
+	var speed := Vector2(vx, vy).length()
+	var trail: float = fx.trailSpeed
+	if p.hitstun and not p.onGround and speed > trail and now - int(last.get("smoke", 0)) >= int(fx.smokeEveryMs):
+		last.smoke = now
+		var center := Vector2(p.x, float(p.y) - float(game.fighter.height) / 2.0)
+		_particles.add([ParticleFx.smoke_puff(_next_fx_seed(), center.x, center.y, -vx * 0.06, -vy * 0.06, (speed - trail) / trail)])
+	if p.onGround and last.has("vx"):
+		var dt := maxf(0.001, (now - int(last.ms)) / 1000.0)
+		var last_vx: float = last.vx
+		if int(p.facing) != int(last.facing) and absf(vx) > float(fx.turnSpeed):
+			_particles.add(ParticleFx.dust_burst(_next_fx_seed(), p.x, p.y, 0.9, 0, -25.0 * float(p.facing)))
+		elif absf(vx) > float(fx.brakeSpeed) and (absf(last_vx) - absf(vx)) / dt > float(fx.brakeDecel) and now - int(last.get("brake", 0)) >= int(fx.brakeEveryMs):
+			last.brake = now
+			var dir := signf(vx)
+			_particles.add(ParticleFx.brake_puff(_next_fx_seed(), float(p.x) + dir * float(game.fighter.width) * 0.3, p.y, dir))
+	last.vx = vx
+	last.facing = p.facing
+	last.ms = now
+	_fx_last[id] = last
 
 
 func _process(delta: float) -> void:
@@ -1016,6 +1095,7 @@ func _draw() -> void:
 			_facings[id] = p.facing
 			if not p.eliminated:
 				_alive.append(id)
+				_feed_particles(id, p)
 				_draw_trail(id, p)
 				_draw_speed_lines(p)
 				_draw_fighter(p, now)
