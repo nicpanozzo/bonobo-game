@@ -2688,7 +2688,7 @@
           ],
           "walkers": {
             "y": 414,
-            "parallax": 0.75,
+            "parallax": 0.74,
             "count": 14,
             "umbrellas": true
           },
@@ -2725,7 +2725,7 @@
           "bar": {
             "x": 120,
             "y": 414,
-            "parallax": 0.8,
+            "parallax": 0.74,
             "tables": 3,
             "spacing": 72
           },
