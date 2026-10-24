@@ -819,4 +819,8 @@ export const BOLOGNA = {
   awningWidthPx: 80, // le bancarelle col tendone che fa da molla, larghe tanto...
   awningHeightPx: 80, // ...e alte tanto: chi ha i piedi sotto il tendone viene lanciato (Godot lo disegna lì)
   awningSpeedPxS: 1480, // pixel/s verso l'alto: con la gravità di 2300 si sale di circa 480 px (il salto ne fa 160)
+  busFirstMs: 3000, // il primo bus in piazza: si sale sul tetto e porta da una parte all'altra (piattaforma mobile)
+  busEveryMs: 14000, // ogni quanto ne parte uno, alternando il verso, finché c'è la piazza (0:45)
+  busStopMs: 3000, // la sosta alla fermata in mezzo alla piazza: il momento per salire
+  busSpeedPxS: 400, // pixel/s mentre entra ed esce
 };

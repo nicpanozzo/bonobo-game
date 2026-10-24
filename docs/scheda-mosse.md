@@ -76,4 +76,4 @@ Peso: leggero / medio / pesante  ·  Scia del colpo: <colore o forma, es. "fisch
 
 | Stato | Cosa fa | Come si distingue |
 |---|---|---|
-| heavy (pesante) | Coach Cartier carica il fischietto e soffia: onda d'urto davanti | più lento di tutti (+30% avvio), zona più lunga, la scia è un cerchio giallo |
+| heavy (pesante) | Electronmaster carica il fischietto e soffia: onda d'urto davanti | più lento di tutti (+30% avvio), zona più lunga, la scia è un cerchio giallo |

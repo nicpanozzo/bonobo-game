@@ -3,7 +3,7 @@
 # Omar (bonobot/omar): quello che cade appeso alla liana, quello che resta a terra e chi scappa dopo il puff.
 # Disegnati a 2x (scale 0.5 in characters.ts), a 2 toni con l'inchiostro come gli altri provvisori.
 #   ramarro: la suprema di Giovanni fRana, un ramarro gigante appeso per la coda
-#   mvp: la suprema di Coach Cartier, il trofeo di MVP; dopo il puff scappa una moneta d'oro (il cashback)
+#   mvp: la suprema di Electronmaster, il trofeo di MVP; dopo il puff scappa una moneta d'oro (il cashback)
 import math, os, sys
 
 from PIL import Image, ImageDraw, ImageFont

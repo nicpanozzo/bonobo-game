@@ -1411,6 +1411,12 @@ func _draw_elements(t: float) -> void:
 		if m.get("kind", "") == "nota":
 			_draw_note_platform(m, pos, t, fx.on)
 			continue
+		if not StageMotion.mover_on(m, t): # fuori dalle sue finestre non c'è: l'ascensore della Garisenda dopo il crollo (#433)
+			continue
+		if m.get("kind", "") == "bus": # il bus di Bologna su cui si sale (#433)
+			var stopped := StageMotion.mover_position(m, t + 50.0).distance_to(StageMotion.mover_position(m, t)) < 0.5
+			BolognaHazards.draw_bus(self, _life, pos, float(m.width), StageMotion.mover_facing(m, t, stage_width()), stopped, t, _stage_light())
+			continue
 		if _mover_sprites.has(mi):
 			_draw_mover_sprite(_mover_sprites[mi], m, pos, t)
 			continue

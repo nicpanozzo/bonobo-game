@@ -217,6 +217,12 @@ func test_piattaforme_mobili_solo_vicino() -> void:
 	p.x = -100.0
 	p.y = 760.0
 	runner.check(not Predictor.predictable(p, stage), "vicino alla barca no")
+	# Una piattaforma a tempo spenta non conta (#433): il bus di Bologna c'è solo nelle sue corse
+	stage.movers[0].periodMs = 100000
+	stage.movers[0].on = [[0, 5000]]
+	runner.check(not Predictor.predictable(p, stage, 1000.0), "vicino al bus che c'è no")
+	runner.check(Predictor.predictable(p, stage, 50000.0), "vicino al bus che non c'è si predice")
+	runner.check(not Predictor.predictable(p, stage, 99500.0), "vicino al bus che sta per arrivare no")
 
 
 # Col fiore (#231) si va più piano e il port non lo sa: si torna allo stato del server finché dura
