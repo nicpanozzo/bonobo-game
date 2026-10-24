@@ -1559,6 +1559,8 @@ func _draw_elements(t: float) -> void:
 			continue
 		if j.get("kind", "") == "tenda": # la bancarella col tendone che fa da molla (#433): si schiaccia sotto chi ci arriva
 			BolognaHazards.draw_awning(self, j, BolognaHazards.awning_squash(j, positions.values()), t, _stage_light())
+		elif j.get("kind", "") == "corrente": # la corrente calda delle macerie (#433): braci, foglie e carta che salgono
+			BolognaHazards.draw_updraft(self, j, t, _stage_light())
 		else:
 			_water.draw_jet(self, _stage_light(), j, t)
 

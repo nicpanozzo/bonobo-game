@@ -362,7 +362,7 @@ export interface Jet {
   activeMs: number; // durata del getto
   offsetMs?: number;
   idle?: number; // solo grafica (#288): pixel dello zampillo a riposo, come una fontana che non si spegne mai
-  kind?: string; // solo grafica e suoni (#433): "tenda" è il tendone di una bancarella che fa da molla, sempre acceso
+  kind?: string; // solo grafica e suoni (#433): "tenda" è il tendone di una bancarella che fa da molla, "corrente" l'aria calda che sale, sempre accesi
   on?: TimeWindows; // getto a tempo (#433): fuori dalle finestre non c'è, nemmeno le bolle
 }
 
@@ -1158,6 +1158,10 @@ export const STAGES: Record<string, StageSpec> = {
         kind: "tenda", x, y: 2000, width: BOLOGNA.awningWidthPx, height: BOLOGNA.awningHeightPx, speed: BOLOGNA.awningSpeedPxS,
         periodMs: 1000, warnMs: 0, activeMs: 1000, on: [[0, BOLOGNA.collapseMs]] as TimeWindows,
       })),
+      // La corrente calda delle macerie (da 2:34): sale dalla torre caduta fino ai detriti in cima, sempre accesa, come
+      // le correnti d'aria di Celeste e Kirby. Chi cade dal tetto ci rientra e torna su, col recupero di nuovo pronto
+      { kind: "corrente", x: BOLOGNA.updraftX, y: BOLOGNA.updraftBaseY, width: BOLOGNA.updraftWidthPx, height: BOLOGNA.updraftHeightPx,
+        speed: BOLOGNA.updraftSpeedPxS, periodMs: 1000, warnMs: 0, activeMs: 1000, on: BOLOGNA_RAMP },
     ],
     phases: [
       { id: "piazza", name: "Sotto le Torri", startMs: 0,

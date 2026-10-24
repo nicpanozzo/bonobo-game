@@ -308,7 +308,7 @@ func on_snapshot(data: Dictionary) -> void:
 	_bouncing = bouncing
 	for i in stage_jets.size():
 		var j: Dictionary = stage_jets[i]
-		if j.get("kind", "") == "tenda":
+		if j.get("kind", "") in ["tenda", "corrente"]: # sempre accesi: niente bolle né spruzzi
 			continue
 		var jp: String = StageMotion.jet_phase(j, stage_ms) if PredictMovement.piece_on(j, stage_ms) else "calm" # getto a tempo (#433)
 		var before := str(_jets.get(i, ""))
