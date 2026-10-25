@@ -5,7 +5,7 @@ import { describe, it } from "node:test";
 import { CHARACTERS, hurtboxOf } from "../characters";
 import { ATTACKS, FIGHTER } from "../constants";
 import { getStage } from "../stages";
-import { attackSpecFor, bodyBox } from "./attacks";
+import { attackBox, attackSpecFor, bodyBox, resolveHits } from "./attacks";
 import { createFighter } from "./index";
 
 const fighter = (characterId: string) =>
@@ -47,6 +47,22 @@ describe("corpo che si può colpire (#243)", () => {
       if (!c.hurtbox) continue;
       assert.ok(c.hurtbox.width >= 24 && c.hurtbox.width <= 64, `${c.id}: larghezza ${c.hurtbox.width}`);
       assert.ok(c.hurtbox.height >= 70 && c.hurtbox.height <= 130, `${c.id}: altezza ${c.hurtbox.height}`);
+    }
+  });
+});
+
+describe("pesante in giù dai due lati, come lo smash in giù di Smash", () => {
+  it("colpisce anche chi sta dietro e lo lancia all'indietro", () => {
+    for (const characterId of ["default", "orsoblu", "nonnagina"]) {
+      const a = fighter(characterId);
+      const b = createFighter({ id: "p1", name: "P1", characterId: "default", color: 0, team: 1, index: 1, stocks: 3 }, getStage(undefined));
+      Object.assign(a, { x: 600, facing: 1, attack: "heavyDown", attackActive: true });
+      Object.assign(b, { x: 600 - 50, y: a.y, onGround: true });
+      const box = attackBox(a);
+      assert.ok(Math.abs(box.x + box.w / 2 - a.x) < 1e-9, `${characterId}: centrata sul personaggio`);
+      resolveHits([a, b], { stage: getStage(undefined), events: [] });
+      assert.ok(b.percent > 0, `${characterId}: colpito dietro`);
+      assert.ok(b.vx < 0, `${characterId}: vola dalla parte opposta a dove guarda chi colpisce`);
     }
   });
 });

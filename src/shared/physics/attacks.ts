@@ -157,8 +157,9 @@ export function attackBox(f: Fighter): Box {
   if (biting(f)) return biteBox(f, spec.range, spec.height); // morde il beagle di Lampione (#369)
   const o = hitOrigin(f); // la suprema di Bonobot colpisce sulla liana, non dove sta lui (#102)
   const front = spec.boxX ?? FIGHTER.width / 2;
-  const x = f.facing === 1 ? o.x + front : o.x - front - spec.range;
   const y = o.y + (spec.boxY ?? -FIGHTER.height * 0.7);
+  if (spec.bothSides) return { x: o.x - front - spec.range, y, w: 2 * (front + spec.range), h: spec.height }; // davanti e dietro
+  const x = f.facing === 1 ? o.x + front : o.x - front - spec.range;
   return { x, y, w: spec.range, h: spec.height };
 }
 

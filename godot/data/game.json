@@ -21,6 +21,7 @@
     "maxFallSpeed": 950,
     "fastFallSpeed": 1500,
     "dropThroughMs": 200,
+    "dropHoldMs": 133,
     "coyoteMs": 80,
     "shortHopCut": 0.45,
     "hitstunDriftAccel": 700,
@@ -132,7 +133,9 @@
       "height": 30,
       "angleDeg": 25,
       "boxX": 8,
-      "boxY": -30
+      "boxY": -30,
+      "bothSides": true,
+      "outward": true
     },
     "heavyAir": {
       "damage": 12,

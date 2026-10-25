@@ -46,6 +46,7 @@ interface BotMemory {
   attacks: number; // attacchi fatti, per alternare leggero e pesante
   hold: InputState; // tasti di movimento tenuti fino alla prossima decisione
   last: InputState; // tasti del tick precedente: un tasto "premuto" deve prima essere rilasciato
+  dropping: boolean; // vuole scendere dalla sottile: giù resta tenuto anche tra un giro di decisioni e l'altro
   ledgeTicks: number; // tick passati appesi al bordo
   getups: number; // risalite fatte, per cambiarle a rotazione
   shieldTicks: number; // tick in cui tenere ancora lo scudo (#109)
@@ -83,7 +84,7 @@ export class Bots {
     // Per lo stesso motivo il salto corto: un tick di tasto lo accorcerebbe sempre
     if (fighter) fighter.shortHop = false;
     const gunner = !!fighter?.team && ![...this.bots.keys()].some((b) => match.players.find((p) => p.id === b)?.team === fighter.team);
-    this.bots.set(id, { gunner, kind, ticks: 0, attacks: 0, hold: emptyInput(), last: emptyInput(), ledgeTicks: 0, getups: 0, shieldTicks: 0, specialTicks: 0, threats: 0 });
+    this.bots.set(id, { gunner, kind, ticks: 0, attacks: 0, hold: emptyInput(), last: emptyInput(), dropping: false, ledgeTicks: 0, getups: 0, shieldTicks: 0, specialTicks: 0, threats: 0 });
     return id;
   }
 
@@ -101,6 +102,16 @@ export class Bots {
       match.setInput(f.id, input);
     }
   }
+}
+
+// Giù per scendere dalla sottile va tenuto FIGHTER.dropHoldMs, anche tra un giro di decisioni e l'altro.
+// Bloccato (si è attaccato o si è atterrati con giù tenuto) lo si lascia un tick, poi si torna a tenerlo
+function onThin(self: Fighter, stage: StageSpec): boolean {
+  return stage.platforms.some((p) => self.x >= p.x && self.x <= p.x + p.width && Math.abs(platformSurfaceY(p, self.x) - self.y) <= 4);
+}
+
+function holdDown(self: Fighter, mem: BotMemory): boolean {
+  return mem.dropping && self.onGround && !self.attack && self.dropHold >= 0;
 }
 
 // Il più vicino tra quelli che si possono colpire (niente compagni di squadra)
@@ -262,6 +273,7 @@ function decideSimple(self: Fighter, players: readonly Fighter[], stage: StageSp
     if (arrived && (dx > 0 ? mem.hold.right : mem.hold.left)) mem.hold = emptyInput();
     input.left = mem.hold.left;
     input.right = mem.hold.right;
+    input.down = holdDown(self, mem);
     return input;
   }
 
@@ -359,9 +371,10 @@ function decideSimple(self: Fighter, players: readonly Fighter[], stage: StageSp
     }
   }
   // Bersaglio su una piattaforma: si salta, e se non basta si usa il secondo salto mentre si ricade.
-  // Bersaglio sotto: giù fa scendere dalla piattaforma sottile
+  // Bersaglio sotto: giù tenuto (FIGHTER.dropHoldMs) fa scendere dalla piattaforma sottile
   if (-dy > BOT.jumpAtHeight && Math.abs(dx) < 200 && (self.onGround || (self.vy >= 0 && self.jumpsLeft > 0))) tap("jump");
-  if (dy > BOT.jumpAtHeight && Math.abs(dx) < 200 && self.onGround) tap("down");
+  mem.dropping = dy > BOT.jumpAtHeight && Math.abs(dx) < 200 && self.onGround && onThin(self, stage);
+  input.down = holdDown(self, mem);
 
   input.left = mem.hold.left;
   input.right = mem.hold.right;

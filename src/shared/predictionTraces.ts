@@ -52,6 +52,7 @@ export interface TraceState {
   coyote: number;
   rising: boolean;
   drop: number;
+  dropHold: number; // ms di giù tenuto a terra, -1 bloccato finché non si lascia
   jumpBuffer: number;
   dashing: boolean;
   dash: number;
@@ -100,6 +101,7 @@ function stateOf(f: Fighter): TraceState {
     coyote: round(f.coyoteTimer),
     rising: f.jumpRising,
     drop: round(f.dropTimer),
+    dropHold: round(f.dropHold),
     jumpBuffer: round(f.buffer.jump),
     dashing: f.dashing,
     dash: round(f.dashTimer),

@@ -17,6 +17,7 @@ export interface Fighter extends PlayerState {
   jumpsLeft: number;
   dropTimer: number; // ms in cui si ignorano le piattaforme sottili
   dropFromY: number; // piedi quando si è premuto giù: una rampa o un arco più in basso di così ti prende (#246)
+  dropHold: number; // ms di giù tenuto a terra senza attaccare; -1 finché non si lascia giù (si è attaccato o si veniva dall'aria)
   attackTimer: number; // ms dall'inizio dell'attacco in corso
   cooldownTimer: number; // ms prima di poter attaccare ancora
   hitstunTimer: number;
@@ -192,6 +193,7 @@ export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
     jumpsLeft: FIGHTER.maxJumps,
     dropTimer: 0,
     dropFromY: 0,
+    dropHold: 0,
     attackTimer: 0,
     cooldownTimer: 0,
     hitstunTimer: 0,

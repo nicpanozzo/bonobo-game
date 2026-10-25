@@ -104,14 +104,43 @@ export function applyControls(f: Fighter, dt: number, ctx: PhysicsContext): void
     f.jumpRising = true;
   }
 
-  // Giù: attraversa le piattaforme sottili, in aria cade più veloce
-  if (pressed(f, "down")) {
-    f.dropTimer = FIGHTER.dropThroughMs;
-    f.dropFromY = f.y;
-  }
 
   // Provocazione: solo da fermi a terra, la usano voci e animazioni (#16)
   if (pressed(f, "taunt") && f.onGround && !f.attack) ctx.events.push({ type: "taunt", id: f.id });
+}
+
+// Giù attraversa le piattaforme sottili (in aria cade anche più veloce, applyGravity). In aria basta premerlo;
+// a terra bisogna tenerlo dropHoldMs senza attacchi, così giù + attacco su una sottile fa la mossa e non scende.
+// Si chiama dopo tryStartAttack: un attacco appena partito blocca la discesa. busy: scudo, presa, speciale o pausa
+export function stepDrop(f: Fighter, dtMs: number, busy = false): void {
+  if (!f.input.down) {
+    f.dropHold = 0;
+    return;
+  }
+  if (busy) {
+    f.dropHold = -1;
+    return;
+  }
+  if (!f.onGround) {
+    if (pressed(f, "down")) startDrop(f);
+    f.dropHold = -1; // atterrando con giù tenuto si resta sopra, finché non lo si ripreme
+    return;
+  }
+  if (f.dropHold < 0) return;
+  if (f.attack) {
+    f.dropHold = -1;
+    return;
+  }
+  f.dropHold += dtMs;
+  if (f.dropHold >= FIGHTER.dropHoldMs) {
+    startDrop(f);
+    f.dropHold = -1;
+  }
+}
+
+function startDrop(f: Fighter): void {
+  f.dropTimer = FIGHTER.dropThroughMs;
+  f.dropFromY = f.y;
 }
 
 // Preparazione al salto e pausa all'atterraggio (#384 A3), come Smash. true se in questo tick non si comanda
