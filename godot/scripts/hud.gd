@@ -356,6 +356,11 @@ func _draw_powerup(card: Rect2, ms_left: float, kind: String = "fiore") -> void:
 		for i in cells:
 			draw_rect(Rect2(card.position + Vector2(card.size.x * i / 10.0, 0), Vector2(card.size.x / 10.0 - 1, 5)), colors[i % colors.size()])
 		return
+	if kind == "veleno":
+		# Il veleno del fungo di Teemo (#419): barra che si accorcia e passa dal verde al viola
+		var left := clampf(ms_left / float(game.get("fungo", {}).get("poisonMs", 6000)), 0.0, 1.0)
+		draw_rect(Rect2(card.position, Vector2(card.size.x * left, 4)), Color(0.45, 0.85, 0.25).lerp(Color(0.6, 0.35, 0.85), 1.0 - left))
+		return
 	if kind == "trip":
 		# I funghetti (#302): barra viola che si accorcia
 		draw_rect(Rect2(card.position, Vector2(card.size.x * clampf(ms_left / float(game.get("funghi", {}).get("tripMs", 3000)), 0.0, 1.0), 4)), Color(0.75, 0.4, 0.95))

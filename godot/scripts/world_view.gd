@@ -31,6 +31,9 @@ var _neg_overlay: ColorRect # la scena in negativo nel colpo che chiude la parti
 var _moment: Node2D # sopra a tutto: la scritta GAME!
 var _respawn_clouds := {} # id -> { at, x, y, col }: la nuvoletta della rinascita (#470), da quando scende e dove arriva
 var _clouds: Array = [] # [{ x, y, dir, age, damage }] nuvole soffiate col bong (#302)
+var _poison_clouds: Array = [] # [{ x, y, age }] nubi di veleno del fungo di Teemo che scoppia (#419)
+var _blasted := {} # id del fungo di Teemo già scoppiato: una nube sola anche se avvelena più lottatori
+var _shrooms := {} # id oggetto -> { since, popped }: da quando il fungo di Teemo è piazzato, per farlo sparire
 var _high_overlay: ColorRect # lo schermo distorto di chi è fatto col bong (#302)
 var effects := true # scie e polvere (opzioni → Video), main.gd lo legge dalle preferenze
 var _beams: Array = [] # [{ x, y, age, color }] raggi dei KO, dal punto di uscita verso il centro
@@ -295,6 +298,9 @@ func reset() -> void:
 	_taunts = {}
 	_sparks = []
 	_clouds = []
+	_poison_clouds = []
+	_blasted = {}
+	_shrooms = {}
 	_beams = []
 	_shards = []
 	_shield_hits = {}
@@ -776,7 +782,12 @@ func on_event(e: Dictionary) -> void:
 				_sparks.append({"x": e.x, "y": e.y, "age": 0.0, "size": 18.0, "color": Color.WHITE}) # anche due proiettili che si annullano
 		"powerUp":
 			# Il fiore (#231): uno sbuffo verde dove lo si prende, più grande di una scintilla. Il bong (#302): una boccata grigia
-			var col: Color = Color(0.66, 0.77, 0.42) if e.kind in ["spore", "micelio"] else SMOKE_GREY if e.kind == "bong" else (Color(0.75, 0.4, 0.95) if e.kind == "trip" else FLOWER_GREEN.lightened(0.3))
+			var col: Color = Color(0.66, 0.77, 0.42) if e.kind in ["spore", "micelio"] else SMOKE_GREY if e.kind == "bong" else (Color(0.75, 0.4, 0.95) if e.kind == "trip" else (POISON_GREEN if e.kind == "veleno" else FLOWER_GREEN.lightened(0.3)))
+			if e.kind == "veleno" and not _blasted.has(e.itemId):
+				# Il fungo di Teemo scoppia (#419): una nube sola dove stava il fungo, e lo schermo trema un po'
+				_blasted[e.itemId] = true
+				_poison_clouds.append({"x": float(e.x), "y": float(e.y), "age": 0.0})
+				_shake = maxf(_shake, 5.0)
 			_sparks.append({"x": e.x, "y": float(e.y) - float(game.fighter.height) * 0.5, "age": 0.0, "size": 50.0, "color": col})
 			_puff(e.x, e.y)
 		"bong":
@@ -1160,6 +1171,7 @@ func _process(delta: float) -> void:
 		s.vy += 900.0 * delta # le schegge ricadono
 	_shards = _aged(_shards, dt_ms, fx.shardMs)
 	_clouds = _aged(_clouds, dt_ms, CLOUD_MS)
+	_poison_clouds = _aged(_poison_clouds, dt_ms, POISON_CLOUD_MS)
 	_update_high_overlay()
 	for id in _shield_hits.keys():
 		_shield_hits[id] += delta * 1000.0
@@ -1327,6 +1339,8 @@ func _draw() -> void:
 
 	for c in _clouds:
 		_draw_cloud(c)
+	for c in _poison_clouds:
+		_draw_poison_cloud(c)
 
 	for b in _beams:
 		_draw_beam(b)
@@ -1418,8 +1432,11 @@ func _draw_items(now: int) -> void:
 		# Il funghetto piantato (#302): chi l'ha piantato lo vede, gli altri appena appena
 		var owner: Variant = it.get("owner")
 		var alpha := 1.0 if owner == null or owner == my_id else 0.13
+		if it.kind == "fungoTeemo" and owner != null:
+			alpha = _teemo_alpha(it, str(owner), now)
+			pos += Vector2(0, 3.0 * clampf(float(now - int(_shrooms[it.id].since)) / float(game.get("fungo", {}).get("armMs", 1000)), 0.0, 1.0)) # si arma e affonda un po'
 		# A terra l'oggetto ondeggia sopra la sua ombra e ogni tanto luccica: si capisce che si raccoglie
-		var lying: bool = holder == null and not it.thrown and absf(float(it.get("vy", 0.0))) < 1.0 and it.kind != "fungo"
+		var lying: bool = holder == null and not it.thrown and absf(float(it.get("vy", 0.0))) < 1.0 and it.kind != "fungo" and not (it.kind == "fungoTeemo" and owner != null)
 		var bob := 0.0
 		if lying:
 			bob = -ITEM_BOB_PX * (0.5 + 0.5 * sin(now / 380.0 + float(it.id)))
@@ -1430,6 +1447,40 @@ func _draw_items(now: int) -> void:
 	for id in _item_pos.keys():
 		if not seen.has(id):
 			_item_pos.erase(id)
+			_shrooms.erase(id)
+
+
+# Il fungo di Teemo piazzato (#419): da quando è a terra, quanto lo vede chi guarda. Chi l'ha lanciato e la sua squadra
+# sempre, trasparente; gli altri finché non si arma, poi sfuma e sparisce come in LoL. Armato, "pop" solo per chi l'ha lanciato
+func _teemo_alpha(it: Dictionary, owner: String, now: int) -> float:
+	if not _shrooms.has(it.id):
+		_shrooms[it.id] = {"since": now, "popped": false}
+	var cfg: Dictionary = game.get("fungo", {})
+	var since := float(now - int(_shrooms[it.id].since))
+	var mine := _is_ally(owner)
+	if mine and since >= float(cfg.get("armMs", 1000)) and not _shrooms[it.id].popped:
+		_shrooms[it.id].popped = true
+		_sparks.append({"x": float(it.x), "y": float(it.y) - 10.0, "age": 0.0, "size": 16.0, "color": SHROOM_GREEN.lightened(0.4)})
+	return shroom_alpha(mine, since, float(cfg.get("armMs", 1000)), float(cfg.get("stealthMs", 1800)), now)
+
+
+# Quanto si vede il fungo di Teemo since_ms dopo che si è piazzato. Agli avversari: pieno finché non si arma, poi
+# sfuma fino a sparire a stealth_ms. A chi l'ha lanciato: sempre più trasparente fino a metà, e da armato respira piano
+static func shroom_alpha(mine: bool, since_ms: float, arm_ms: float, stealth_ms: float, now_ms: float) -> float:
+	var arm_t := clampf(since_ms / maxf(arm_ms, 1.0), 0.0, 1.0)
+	if mine:
+		var breath := 0.08 * sin(now_ms / 400.0) if arm_t >= 1.0 else 0.0
+		return lerpf(1.0, 0.5, arm_t) + breath
+	return 1.0 - clampf((since_ms - arm_ms) / maxf(stealth_ms - arm_ms, 1.0), 0.0, 1.0)
+
+
+# Il lottatore id è io o della mia squadra (a squadre): vede i funghi di Teemo che ha lanciato
+func _is_ally(id: String) -> bool:
+	if id == my_id:
+		return true
+	var me: Variant = _sampled.get(my_id)
+	var them: Variant = _sampled.get(id)
+	return me is Dictionary and them is Dictionary and int(me.team) > 0 and int(me.team) == int(them.team)
 
 
 # L'ombra a terra: un'ovale scura che si stringe quando l'oggetto sale
@@ -1521,6 +1572,8 @@ func _draw_item(kind: String, base: Vector2, spin: float, load: float = -1.0, al
 		_draw_mushroom(w, h, alpha)
 	elif kind == "funghetti":
 		_draw_mushroom_bag(w, h)
+	elif kind == "fungoTeemo":
+		_draw_teemo(w, h, alpha)
 	else:
 		draw_rect(Rect2(-w / 2, -h / 2, w, h), _color(spec.color))
 		draw_rect(Rect2(-w / 2, -h / 2, w, h), ArcadeView.INK, false, 2.0)
@@ -1649,6 +1702,122 @@ func _draw_mushroom_bag(w: float, h: float) -> void:
 	draw_circle(Vector2(w * 0.26, -h * 0.13), 2.2, Color(0.95, 0.8, 0.35))
 
 
+# Il fungo di Teemo (#419, foto di Riccardo): cappello verde acceso a cupola con macchie viola tonde, gambo panna corto e largo,
+# contorno scuro come il resto del gioco. La base è in basso al centro, alla quota dei piedi
+func _draw_teemo(w: float, h: float, alpha: float, offset := Vector2.ZERO) -> void:
+	if alpha <= 0.01:
+		return
+	var base := offset + Vector2(0, h / 2)
+	var ink := Color(0.12, 0.2, 0.1, alpha)
+	# Il gambo: un trapezio panna che si allarga verso terra, con l'ombra del cappello in cima
+	var stem := PackedVector2Array([base + Vector2(-w * 0.2, -h * 0.5), base + Vector2(w * 0.2, -h * 0.5), base + Vector2(w * 0.26, 0), base + Vector2(-w * 0.26, 0)])
+	draw_colored_polygon(stem, Color(SHROOM_STEM, alpha))
+	draw_polyline(stem + PackedVector2Array([stem[0]]), ink, 1.5)
+	draw_rect(Rect2(base + Vector2(-w * 0.2, -h * 0.5), Vector2(w * 0.4, h * 0.08)), Color(SHROOM_STEM.darkened(0.25), alpha))
+	# Il cappello: una cupola larga quanto il fungo, con un bordo un po' rientrato sotto
+	var top := base + Vector2(0, -h * 0.42)
+	var cap := PackedVector2Array()
+	for k in 17:
+		var a := PI + PI * k / 16.0
+		cap.append(top + Vector2(cos(a) * w * 0.5, sin(a) * h * 0.58))
+	cap.append(top + Vector2(w * 0.36, h * 0.06))
+	cap.append(top + Vector2(-w * 0.36, h * 0.06))
+	draw_colored_polygon(cap, Color(SHROOM_GREEN, alpha))
+	# Luce in alto a sinistra, come le altre cose del palco
+	draw_circle(top + Vector2(-w * 0.18, -h * 0.36), w * 0.12, Color(SHROOM_GREEN.lightened(0.35), alpha * 0.8))
+	for d in [Vector2(-0.3, -0.18), Vector2(-0.05, -0.42), Vector2(0.24, -0.3), Vector2(0.38, -0.08), Vector2(0.08, -0.12), Vector2(-0.42, -0.02)]:
+		var spot := top + Vector2(d.x * w, d.y * h)
+		var r := maxf(1.5, w * (0.09 if absf(d.x) < 0.3 else 0.065))
+		var oval := PackedVector2Array() # niente draw_set_transform: chi chiama ne ha già una (in mano, in volo)
+		for j in 10:
+			oval.append(spot + Vector2(cos(TAU * j / 10.0) * r, sin(TAU * j / 10.0) * r * 0.8))
+		draw_colored_polygon(oval, Color(SHROOM_PURPLE, alpha))
+	draw_polyline(cap + PackedVector2Array([cap[0]]), ink, 2.0)
+
+
+# La nube del fungo di Teemo, in quattro tempi come in LoL: il cappello si gonfia e scoppia, la nube
+# verde-viola si allarga a cupola fino a blastRadius, ribolle, poi si dissolve dal basso verso l'alto.
+# Intanto qualche spora viola schizza fuori e ricade
+func _draw_poison_cloud(c: Dictionary) -> void:
+	var age: float = c.age
+	var spec: Dictionary = game.items.get("fungoTeemo", {"width": 36, "height": 34})
+	var w: float = spec.width
+	var h: float = spec.height
+	var base := Vector2(c.x, c.y)
+	if age < SHROOM_POP_MS:
+		# 1. Il cappello si gonfia (e sbianca un po') prima di scoppiare
+		var swell := age / SHROOM_POP_MS
+		draw_set_transform(base - Vector2(0, h / 2), 0.0, Vector2(1.0 + 0.5 * swell, 1.0 + 0.35 * swell))
+		_draw_teemo(w, h, 1.0)
+		draw_circle(Vector2(0, -h * 0.2), w * 0.5, Color(1, 1, 1, 0.35 * swell))
+		draw_set_transform(Vector2.ZERO)
+	var t := age - SHROOM_POP_MS * 0.6
+	if t < 0.0:
+		return
+	var k := t / (POISON_CLOUD_MS - SHROOM_POP_MS * 0.6)
+	var radius := float(game.get("fungo", {}).get("blastRadius", 70))
+	# 2. Si allarga in fretta e frena (ease-out) in circa 200 ms
+	var grow := 1.0 - pow(1.0 - clampf(t / 200.0, 0.0, 1.0), 3.0)
+	var r := radius * (0.3 + 0.7 * grow)
+	# 4. Da metà vita si dissolve: il fronte sale da terra verso la cima
+	var fade := clampf((k - 0.5) / 0.5, 0.0, 1.0)
+	var center := base - Vector2(0, r * 0.35)
+	# Il bordo: sbuffi scuri sulla cupola. Il centro: sbuffi più chiari, davanti
+	for layer in 2:
+		var n := 12 if layer == 0 else 7
+		var spread := 0.62 if layer == 0 else 0.3
+		var col := POISON_PURPLE.lerp(POISON_GREEN, 0.35) if layer == 0 else POISON_GREEN.lightened(0.25)
+		for i in n:
+			var a := PI * 0.95 + PI * 1.1 * i / float(n - 1)
+			var wob := Vector2(sin(age / 170.0 + i * 1.7), cos(age / 210.0 + i * 2.3)) * r * 0.05
+			var pos := center + Vector2(cos(a) * r * spread * 1.15, sin(a) * r * spread) + wob
+			pos.y = minf(pos.y, base.y - 4.0) # la nube sta sopra il terreno
+			var low := clampf((pos.y - (base.y - r)) / r, 0.0, 1.0) # 1 = a terra
+			var alpha := clampf(1.0 - fade * (1.0 + low * 1.5), 0.0, 1.0) * (0.75 if layer == 0 else 0.6)
+			if alpha <= 0.0:
+				continue
+			draw_circle(pos, r * (0.34 if layer == 0 else 0.3) * (0.9 + 0.1 * sin(i * 2.1 + age / 120.0)), Color(col, alpha))
+	# 3. Ribolle: bolle che salgono dentro la nube e scoppiano con un anellino in cima
+	for i in 9:
+		var bt := fmod(age / 650.0 + i * 0.137, 1.0)
+		var bx := base.x + (fmod(i * 0.618, 1.0) - 0.5) * r * 1.3
+		var by := base.y - 6.0 - bt * r * 0.95
+		var balpha := (1.0 - fade) * 0.9
+		if bt < 0.85:
+			draw_circle(Vector2(bx, by), 2.0 + 3.0 * bt, Color(POISON_GREEN.lightened(0.45), balpha * 0.8))
+		else:
+			draw_arc(Vector2(bx, by), 5.0 + 20.0 * (bt - 0.85), 0, TAU, 10, Color(POISON_GREEN.lightened(0.5), balpha), 1.5)
+	# Le spore: schizzano fuori a ventaglio verso l'alto e ricadono a terra, dove si spengono
+	var ts := age / 1000.0
+	for i in 8:
+		var a := PI * (0.15 + 0.7 * i / 7.0)
+		var speed := 170.0 + 70.0 * fmod(i * 0.37, 1.0)
+		var pos := base + Vector2(cos(a) * speed * ts, -sin(a) * speed * ts + 0.5 * 700.0 * ts * ts) - Vector2(0, h * 0.5)
+		pos.y = minf(pos.y, base.y - 2.0)
+		draw_circle(pos, 2.5, Color(SHROOM_PURPLE.lightened(0.2), clampf(1.0 - k, 0.0, 1.0)))
+
+
+# Chi è avvelenato dal fungo: una tinta verde sul corpo che pulsa a ogni scatto di danno, bolle verdi che
+# salgono dalla testa (più fitte nei primi secondi, quando si è anche rallentati) e una nuvoletta che lo segue
+func _draw_poison(p: Dictionary, now: float, fw: float, fh: float) -> void:
+	var cfg: Dictionary = game.get("fungo", {})
+	var poison_ms := float(cfg.get("poisonMs", 6000))
+	var left := float(p.get("powerupMs", 0))
+	var pulse := FighterPose.poison_pulse(left, poison_ms, float(cfg.get("poisonTickMs", 500)))
+	var slowed := poison_ms - left < float(cfg.get("slowMs", 2000))
+	draw_set_transform(Vector2(p.x, p.y - fh * 0.5), 0.0, Vector2(1.0, fh / fw * 0.85))
+	draw_circle(Vector2.ZERO, fw * 0.62, Color(POISON_GREEN, 0.14 + 0.3 * pulse))
+	draw_set_transform(Vector2.ZERO)
+	var n := 8 if slowed else 5
+	for k in n:
+		var t := fmod(now / 900.0 + k / float(n), 1.0)
+		var b := Vector2(p.x + sin(k * 2.3 + now / 400.0) * fw * 0.35, p.y - fh - 4.0 - t * 34.0)
+		draw_circle(b, 2.0 + 2.5 * (1.0 - t), Color(POISON_GREEN.lightened(0.3), 0.85 * (1.0 - t)))
+	for k in 3:
+		var puff := Vector2(p.x - float(p.facing) * fw * 0.15 + (k - 1) * 9.0, p.y - fh - 14.0 + sin(now / 300.0 + k) * 2.0)
+		draw_circle(puff, 7.0 - absf(k - 1) * 2.0, Color(POISON_PURPLE, 0.45))
+
+
 # La nuvola soffiata (#302): sbuffi che si allargano davanti, grigio-verdi, più grandi se fa più danno
 func _draw_cloud(c: Dictionary) -> void:
 	var k: float = c.age / CLOUD_MS
@@ -1678,6 +1847,13 @@ func _update_high_overlay() -> void:
 
 
 const CLOUD_MS := 700.0 # ms di vita della nuvola nel client
+const POISON_CLOUD_MS := 1100.0 # ms di vita della nube del fungo di Teemo nel client (#419)
+const SHROOM_POP_MS := 120.0 # ms in cui il cappello del fungo di Teemo si gonfia prima di scoppiare
+const SHROOM_GREEN := Color("3fd14a") # il fungo di Teemo (foto di Riccardo): cappello verde acceso
+const SHROOM_PURPLE := Color("9466d8") # le macchie viola
+const SHROOM_STEM := Color("f1ead6") # il gambo panna
+const POISON_GREEN := Color(0.45, 0.85, 0.25) # la nube e il veleno
+const POISON_PURPLE := Color(0.5, 0.3, 0.72)
 const ITEM_SCALE := 1.3 # gli oggetti si disegnano un po' più grandi della loro scatola di gioco, per vederli bene
 const ITEM_BOB_PX := 4.0 # pixel di ondeggiamento di un oggetto a terra
 const SMOKE_GREY := Color(0.82, 0.86, 0.8)
@@ -2354,6 +2530,8 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 	if p.get("powerup") == "micelio" and not away:
 		# Dr. Micelium più forte (#358): un alone di micelio che pulsa
 		draw_arc(Vector2(p.x, p.y - fh * 0.5), fh * (0.62 + 0.04 * sin(now / 160.0)), 0, TAU, 32, Color(0.66, 0.77, 0.42, 0.55), 4.0)
+	if p.get("powerup") == "veleno" and not away:
+		_draw_poison(p, now, fw, fh) # avvelenati dal fungo di Teemo (#419)
 	if p.get("powerup") == "trip" and not away:
 		# In viaggio coi funghetti (#302): tre spirali colorate che girano sopra la testa
 		for k in 3:
