@@ -29,6 +29,8 @@ var _warp := {} # il rallentatore solo grafico (#470 passo 2b, time_warp.gd): vu
 var _game_text := {} # { at }: la scritta GAME! dall'evento matchEnd (#470), vuoto se non c'è
 var _neg_overlay: ColorRect # la scena in negativo nel colpo che chiude la partita (#470)
 var _moment: Node2D # sopra a tutto: la scritta GAME!
+var _dodges := {} # id -> ms d'inizio della schivata: per la sagoma chiara (#470 passo 3)
+var _dizzy := {} # id -> fino a quando (ms) girano le stelline dopo uno schianto a terra (#470 passo 3)
 var _respawn_clouds := {} # id -> { at, x, y, col }: la nuvoletta della rinascita (#470), da quando scende e dove arriva
 var _clouds: Array = [] # [{ x, y, dir, age, damage }] nuvole soffiate col bong (#302)
 var _poison_clouds: Array = [] # [{ x, y, age }] nubi di veleno del fungo di Teemo che scoppia (#419)
@@ -287,6 +289,8 @@ func reset() -> void:
 	_fx_last = {}
 	_fall_vy = {}
 	_respawn_clouds = {}
+	_dodges = {}
+	_dizzy = {}
 	_warp = {}
 	_game_text = {}
 	buffer = SnapshotBuffer.new()
@@ -850,6 +854,24 @@ func on_event(e: Dictionary) -> void:
 				if effects and _particles: # #470: anello d'aria e sbuffetti spinti giù dal salto
 					_particles.add(ParticleFx.air_burst(_next_fx_seed(), e.x, e.y))
 					_particles.mark({"kind": "ring", "x": float(e.x), "y": float(e.y), "r0": 16.0, "r1": 76.0, "squash": 0.3, "width": 6.0, "life_ms": float(game.effects.airRingMs)})
+		"dodge":
+			if effects: # #470: per la durata della schivata il lottatore si disegna chiaro e trasparente
+				_dodges[e.id] = Time.get_ticks_msec()
+		"itemSpawn":
+			if effects and _particles: # #470: stelline e uno sbuffo d'aria dove compare l'oggetto
+				_particles.add(ParticleFx.item_puff(_next_fx_seed(), e.x, e.y))
+				for i in 5:
+					var a := i * 1.26 + 0.4
+					_particles.mark({"kind": "sparkle", "x": float(e.x) + cos(a) * 16.0, "y": float(e.y) + sin(a) * 16.0,
+						"x1": float(e.x) + cos(a) * 52.0, "y1": float(e.y) + sin(a) * 40.0, "size": 10.0, "life_ms": float(game.effects.itemSparkleMs)})
+		"itemPick":
+			var picker: Variant = positions.get(e.get("id", ""))
+			if effects and _particles and picker != null: # #470: stelline che si stringono su chi lo raccoglie
+				var c: Vector2 = picker + Vector2(0, -float(game.fighter.height) * 0.5)
+				for i in 7:
+					var a := i * 0.9
+					_particles.mark({"kind": "sparkle", "x": c.x + cos(a) * 44.0, "y": c.y + sin(a) * 36.0, "x1": c.x, "y1": c.y,
+						"size": 9.0, "life_ms": float(game.effects.itemPickMs), "col": Color("fff3b0")})
 		"matchEnd":
 			if effects: # #470: GAME! arriva con la voce dell'annunciatore (audio.gd), sopra il rallentatore
 				_game_text = {"at": Time.get_ticks_msec()}
@@ -965,9 +987,26 @@ func _next_fx_seed() -> int:
 
 
 # Atterraggio (#470): dopo una caduta veloce o un lancio la polvere è più grande, con un pennacchio
+# La schivata (#470 passo 3): x = quanto è bianco (il lampo dello shader dello sprite), y = quanto è opaco.
+# Entra e esce morbida lungo la schivata; fuori dalla schivata (0, 1), cioè com'è sempre
+func _dodge_look(id: String, now: float) -> Vector2:
+	if not effects or not _dodges.has(id):
+		return Vector2(0.0, 1.0)
+	var k := (now - float(_dodges[id])) / float(game.get("dodge", {}).get("durationMs", 260))
+	if k < 0.0 or k >= 1.0:
+		return Vector2(0.0, 1.0)
+	var a := sin(k * PI)
+	return Vector2(0.8 * a, 1.0 - 0.55 * a)
+
+
 func _land_dust(e: Dictionary) -> void:
 	var fx: Dictionary = game.effects
-	if effects and _particles and float(_fall_vy.get(e.id, 0.0)) >= float(fx.get("heavyLandSpeed", INF)):
+	var crash: bool = (_fx_last.get(e.id, {}) as Dictionary).get("stun_air", false)
+	if effects and _particles and crash: # #470 passo 3: schianto da storditi, sbuffo grande e stelline sopra la testa
+		_particles.add(ParticleFx.dust_burst(_next_fx_seed(), e.x, e.y, float(fx.crashPower)))
+		_dizzy[e.id] = Time.get_ticks_msec() + float(fx.crashStarsMs)
+		(_fx_last[e.id] as Dictionary).stun_air = false
+	elif effects and _particles and float(_fall_vy.get(e.id, 0.0)) >= float(fx.get("heavyLandSpeed", INF)):
 		_particles.add(ParticleFx.dust_burst(_next_fx_seed(), e.x, e.y, float(fx.heavyLandPower)))
 	else:
 		_puff(e.x, e.y)
@@ -1135,6 +1174,16 @@ func _feed_particles(id: String, p: Dictionary) -> void:
 	var last: Dictionary = _fx_last.get(id, {})
 	if not p.onGround:
 		_fall_vy[id] = vy
+		last.stun_air = p.hitstun # in aria da stordito: se tocca terra così è uno schianto (#470 passo 3)
+		var ff_at := float(game.fighter.maxFallSpeed) + 50.0
+		if not p.hitstun and vy > ff_at and float(last.get("vy", 0.0)) <= ff_at: # inizio della caduta veloce: il brillio
+			_particles.mark({"kind": "sparkle", "x": float(p.x) + 12.0 * float(p.facing), "y": float(p.y) - float(game.fighter.height) - 6.0,
+				"size": 24.0, "life_ms": float(fx.fastFallGlintMs), "spin": 1.2})
+	last.vy = vy
+	var heat := ParticleFx.heat(float(p.percent), float(fx.steamFromPercent), float(fx.steamFullPercent))
+	if heat > 0.0 and now - int(last.get("steam", 0)) >= ParticleFx.steam_every_ms(heat): # vapore a danno alto
+		last.steam = now
+		_particles.add([ParticleFx.steam_puff(_next_fx_seed(), p.x, float(p.y) - float(game.fighter.height) * 0.9, heat)])
 	var speed := Vector2(vx, vy).length()
 	var trail: float = fx.trailSpeed
 	if p.hitstun and not p.onGround and speed > trail and now - int(last.get("smoke", 0)) >= int(fx.smokeEveryMs):
@@ -2582,7 +2631,7 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 	var powered: bool = p.get("powerup") == "fiore" and not away
 	var high: bool = p.get("powerup") == "bong" and not away # col bong (#302) si fuma ma si resta colpibili
 	# chi fa la suprema è intoccabile ma non lampeggia: la sta facendo lui (DEMACIAAA dura quasi 2 s)
-	var blink: bool = p.invulnerable and not away and not powered and not _supreme_view.holds(p.id, now) and p.get("attack") != "supreme"
+	var blink: bool = p.invulnerable and not away and not powered and not _supreme_view.holds(p.id, now) and p.get("attack") != "supreme" and _dodge_look(p.id, now).y >= 1.0
 	if p.respawning or (blink and int(now / 100) % 2 == 0):
 		return
 	var character := _look(p)
@@ -2672,7 +2721,7 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 		draw_arc(center, r, 0, TAU, 40, bubble, 3.0)
 
 	# Stordito dopo la rottura dello scudo: stelline che girano sopra la testa
-	if p.get("stunned", false):
+	if p.get("stunned", false) or float(_dizzy.get(p.id, 0.0)) > now: # anche dopo uno schianto a terra (#470)
 		for i in int(game.effects.stunStars):
 			var a := now / 300.0 + TAU * i / float(game.effects.stunStars)
 			var star := Vector2(p.x + cos(a) * fw * 0.6, p.y - head - 18 - Access.px(16) + sin(a) * 6) # sopra il nome
@@ -2849,7 +2898,8 @@ func _draw_sprite(p: Dictionary, character: Dictionary, now: float, react := Tra
 	state["attacking"] = p.attack != null
 	var a: Dictionary = anims[name]
 	var attack := FighterPose.attack_spec(game, p.characterId, str(state.get("kind", "")))
-	var tint := FighterPose.sprite_modulate(int(_variants.get(p.id, 0)), FighterPose.away_alpha(p), maxf(FighterPose.charge_flash(p, now, Access.calm), _hit_flash(p.id, now)))
+	var dodge := _dodge_look(p.id, now) # #470: la schivata, sagoma chiara e trasparente
+	var tint := FighterPose.sprite_modulate(int(_variants.get(p.id, 0)), FighterPose.away_alpha(p) * dodge.y, maxf(maxf(FighterPose.charge_flash(p, now, Access.calm), _hit_flash(p.id, now)), dodge.x))
 	var rig: RefCounted = _rigs.get(character.id) if use_rigs else null
 	if rig != null and rig.has_state(str(a.src)):
 		# a pezzi (#403): stessi stati e stessi tempi, ma la posa si interpola invece di saltare di fotogramma in fotogramma

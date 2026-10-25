@@ -152,3 +152,20 @@ func test_sbuffo_della_nuvoletta() -> void:
 	var list := ParticleFx.cloud_puff(2, 400, 520, col)
 	runner.check(not list.is_empty(), "c'è lo sbuffo")
 	runner.check(list.all(func(p): return p.get("kind", "tex") == "tex" and p.ramp[0] == "tint"), "solo sbuffi del colore del giocatore")
+
+
+# Vapore a danno alto (#470 passo 3): niente sotto la soglia, più fitto e più grosso salendo
+func test_vapore() -> void:
+	runner.check(ParticleFx.heat(40, 60, 150) == 0.0, "sotto il 60% niente vapore")
+	runner.check(ParticleFx.heat(150, 60, 150) == 1.0 and ParticleFx.heat(300, 60, 150) == 1.0, "dal 150% al massimo")
+	runner.check(ParticleFx.steam_every_ms(1.0) < ParticleFx.steam_every_ms(0.1), "più scotta, più è fitto")
+	var low := ParticleFx.steam_puff(3, 0, 0, 0.1)
+	var high := ParticleFx.steam_puff(3, 0, 0, 1.0)
+	runner.check(float(high.s1) > float(low.s1) and float(high.alpha) > float(low.alpha), "più scotta, più è grosso e visibile")
+	runner.check(ParticleFx.at(high, 1.0).y < 0.0, "il vapore sale")
+
+
+# Lo sbuffo di un oggetto che compare: solo aria, niente sassolini, non cade
+func test_sbuffo_degli_oggetti() -> void:
+	var list := ParticleFx.item_puff(5, 300, 200)
+	runner.check(not list.is_empty() and list.all(func(p): return p.get("kind", "tex") == "tex" and p.ramp[0] == "air" and float(p.gy) == 0.0), "solo sbuffi d'aria che non cadono")

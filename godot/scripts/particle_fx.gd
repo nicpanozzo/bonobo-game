@@ -281,3 +281,35 @@ static func cloud_puff(key: int, x: float, y: float, col: Color) -> Array:
 			p.tint = col.lightened(0.35)
 			out.append(p)
 	return out
+
+
+# Vapore a danno alto (#470 passo 3): un filo che sale dalla testa. heat da 0 a 1: più è alto, più è grosso e fitto
+static func steam_puff(key: int, x: float, y: float, heat: float) -> Dictionary:
+	var r := _rng(key)
+	var h := clampf(heat, 0.0, 1.0)
+	return {"x": x, "ox": r.randf_range(-8, 8), "y": y, "oy": -r.randf_range(0, 4), "vx": r.randf_range(-5, 5),
+		"vy": -r.randf_range(20, 35), "drag": 1.0, "gy": -12.0, "s0": 3.0, "s1": r.randf_range(7, 12) + h * 4.0,
+		"life": 1.1, "rot": r.randf() * TAU, "spin": r.randf_range(-0.5, 0.5), "v": key % VARIANTS, "ramp": ["smoke"],
+		"alpha": 0.35 + h * 0.35, "fade": "late"}
+
+
+# Ogni quanti ms nasce un filo di vapore: dai 160 ms appena sopra la soglia ai 50 ms al massimo
+static func steam_every_ms(heat: float) -> float:
+	return lerpf(160.0, 50.0, clampf(heat, 0.0, 1.0))
+
+
+# Quanto "scotta" un lottatore: 0 sotto from, 1 da full in su (percentuale)
+static func heat(percent: float, from: float, full: float) -> float:
+	return clampf((percent - from) / maxf(1.0, full - from), 0.0, 1.0)
+
+
+# Un oggetto che compare (#470 passo 3): uno sbuffo d'aria leggero attorno, senza sassolini
+static func item_puff(key: int, x: float, y: float) -> Array:
+	var out: Array = []
+	for p in dust_burst(key, x, y, 0.6):
+		if p.get("kind", "tex") == "tex":
+			p.ramp = ["air"]
+			p.gy = 0.0
+			p.vy = float(p.vy) * 0.5
+			out.append(p)
+	return out
