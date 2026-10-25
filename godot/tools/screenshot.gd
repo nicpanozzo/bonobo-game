@@ -10,7 +10,7 @@ var _out := "user://screenshots"
 var _game: Dictionary
 var _world: Node2D # nella partita finta: riceve uno snapshot a ogni frame
 var _hud: Control
-const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre", "lobby_regole", "musica", "tetris", "pacman", "bassanese", "bologna_piazza", "bologna_torri", "bologna_crollo", "bologna_zuffa", "oggetti"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
+const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre", "lobby_regole", "musica", "tetris", "pacman", "bassanese", "bologna_piazza", "bologna_torri", "bologna_crollo", "bologna_zuffa", "oggetti", "prepartita_attesa", "prepartita_vs", "prepartita_conto"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
 var _index := -1
 var _frame := 0
 var _failed := false
@@ -20,6 +20,9 @@ var _tetris_on := false # la partita finta con uno che gioca a Tetris (#427)
 var _pacman_on := false # la partita finta con un Pac-Man e i fantasmini (#427)
 var _items_on := false # la partita finta con tutti gli oggetti in fila a terra
 var _bassanese_on := false # la partita finta col Bassanese che si guarda in giro e un telefono a terra
+var _pre: Dictionary = {} # pre-partita: lo stato messo in snapshot.prematch, vuoto nelle altre partite
+var _pre_fighters := 0 # quanti lottatori nella partita finta del pre-partita (0 = tutti)
+var _pre_view: Control
 var _bologna: Dictionary = {} # le fasi di Bologna (#433): {ms, cam, zoom, spots}, vuoto nelle altre partite
 # Bologna in quattro momenti: l'auto in piazza, l'ingorgo sotto le torri, la Garisenda che cade coi mattoni, la polvere
 const BOLOGNA_SHOTS := {
@@ -46,6 +49,8 @@ func _process(_delta: float) -> bool:
 		var snap := _snapshot(_frame)
 		_world.on_snapshot(snap)
 		_hud.on_snapshot(snap)
+		if _pre_view != null:
+			_pre_view.on_snapshot(snap)
 	if _frame < SHOT_FRAME:
 		return false
 	var name: String = SHOTS[_index]
@@ -71,6 +76,7 @@ func _next() -> void:
 	_frame = 0
 	_world = null
 	_hud = null
+	_pre_view = null
 	if _index < SHOTS.size():
 		call("_" + SHOTS[_index])
 
@@ -168,6 +174,38 @@ func _oggetti() -> void:
 	_partita()
 
 
+# Pre-partita: l'attesa dei Pronto, la presentazione col VS, il 2 del conto alla rovescia
+func _prepartita_attesa() -> void:
+	_items_on = false
+	_pre = {"phase": "waiting", "leftMs": 0, "ready": ["p0", "p2", "p3"], "autoStartMs": 41000}
+	_pre_fighters = 0
+	_partita()
+	_add_prematch()
+
+
+func _prepartita_vs() -> void:
+	_pre = {"phase": "starting", "leftMs": 3700, "ready": [], "autoStartMs": null}
+	_pre_fighters = 2
+	_partita()
+	_add_prematch()
+
+
+func _prepartita_conto() -> void:
+	_pre = {"phase": "starting", "leftMs": 1750, "ready": [], "autoStartMs": null}
+	_pre_fighters = 2
+	_partita()
+	_add_prematch()
+
+
+func _add_prematch() -> void:
+	_pre_view = load("res://scripts/prematch_view.gd").new()
+	_pre_view.game = _game
+	_pre_view.my_id = "p0"
+	_pre_view.portrait_of = _hud._portrait
+	_hud.get_parent().add_child(_pre_view)
+	_pre_view.size = Vector2(_game.world.width, _game.world.height)
+
+
 func _partita() -> void:
 	var world: Node2D = load("res://scripts/world_view.gd").new()
 	root.add_child(world)
@@ -204,9 +242,15 @@ func _snapshot(frame: int) -> Dictionary:
 			"invulnerable": false, "eliminated": false, "carrier": false, "ledge": null, "away": false,
 			"shielding": i == 3, "shieldHp": 40, "stunned": false, "grabbedBy": null, "charge": spots[i][3],
 		})
+	if _pre_fighters > 0:
+		players = players.slice(0, _pre_fighters)
+		players[0].name = "Nicola"
+		players[1].name = "Riccardo"
 	var stage_ms := frame * 16 + (9000 if _music else 0) + (int(_bologna.ms) if not _bologna.is_empty() else 0)
 	var snap := {"t": frame * 16, "players": players, "items": [], "events": [], "stageMs": stage_ms, "winnerId": null, "timeLeftMs": 90000, "teamScores": null,
 		"projectiles": [{"id": 1, "ownerId": "p0", "kind": "specialNeutral", "characterId": "default", "x": 500, "y": 470, "vx": 560, "vy": -120}]}
+	if not _pre.is_empty():
+		snap.prematch = _pre
 	if _music:
 		snap.pads = [8800, 8800, 8800] # tutti e tre premuti da poco: la Meraviglia
 	if _pacman_on:

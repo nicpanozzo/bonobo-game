@@ -294,6 +294,17 @@ func _match_page(params: Dictionary) -> Control:
 	join.add_child(_room)
 	_room_hint = UI.note("Chiedi il link a chi ha creato la stanza: lo stesso link porta tutti nella stessa partita.")
 	join.add_child(_room_hint)
+	# Dal browser a chi ha l'app: il link copiato, aprendo l'app, diventa la scheda "Entra nella stanza"
+	if OS.has_feature("web") and not Phone.active:
+		var app_note := UI.note("")
+		app_note.visible = false
+		var to_app := UI.small_button("Ho l'app: gioco da lì", func():
+			UI.copy(room_link.call(_clean_room(_room.text)))
+			app_note.text = "Link copiato: apri l'app Bonobo e premi «Entra nella stanza»"
+			app_note.show())
+		to_app.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		join.add_child(to_app)
+		join.add_child(app_note)
 	# Avanzate: l'indirizzo del server, chiuso finché non serve
 	_advanced_button = UI.small_button("Avanzate ▸", func(): _set_advanced(not _advanced.visible))
 	_advanced_button.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
@@ -1179,15 +1190,13 @@ func _apply_link(text: String) -> void:
 		_server.caret_column = _server_len
 
 
+# Il link si trova anche dentro un messaggio copiato dal Discord ("Venite? https://...?room=amici&server=...")
 static func parse_link(text: String) -> Dictionary:
 	var found := {}
-	var at := text.find("?")
-	if at < 0:
-		return found
-	for pair in text.substr(at + 1).strip_edges().split("&", false):
-		var kv := pair.split("=", true, 1)
-		if kv.size() == 2 and kv[1] != "" and kv[0] in ["room", "server"]:
-			found[kv[0]] = kv[1].uri_decode()
+	var re := RegEx.create_from_string("[?&](room|server)=([^&\\s<>()\"']+)")
+	for m in re.search_all(text):
+		if not found.has(m.get_string(1)):
+			found[m.get_string(1)] = m.get_string(2).uri_decode()
 	return found
 
 
