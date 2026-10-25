@@ -14,6 +14,7 @@ La guida per chi disegna lottatori e arene. Serve a far uscire ogni personaggio 
 ## 2. Linea, ombre e colori
 
 - **Contorno a inchiostro** scuro (quasi nero, non nero puro) attorno a ogni pezzo, di spessore costante: circa 3 px nel disegno a 2x.
+- **Gli oggetti a terra** (banana, bong, funghi, ...) fanno parte dell'arena (#498): contorno **sottile nella loro tinta scura**, non l'inchiostro, i colori prendono la luce dell'arena (sole e luna, #288) e stanno posati e fermi con la loro ombra. Il contorno chiaro compare solo quando si è abbastanza vicini da raccoglierli.
 - **Ombre piatte a 2 toni:** un tono base e un'ombra, con il bordo netto. Niente sfumature, niente texture, niente luce realistica. La luce viene da davanti in alto: l'ombra cade sul dorso e sotto.
 - **Colori alla Hades:** pochi accenti saturi su una base più quieta. Ogni personaggio ha **2-3 colori propri**, riconoscibili da lontano.
 - **Leggibilità sui fondali scuri:** un personaggio molto scuro (come il pelo di Bonobot) prende un sottile **contorno luminoso** sulla sagoma, oppure un *chroma* più chiaro da scegliere in selezione. Prova: lo screenshot in scala di grigi deve mostrare la sagoma staccata dal fondale.
