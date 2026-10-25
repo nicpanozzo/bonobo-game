@@ -22,9 +22,9 @@ void fragment() {
 	vec2 d = SCREEN_UV - center;
 	d.x *= aspect;
 	float sector = floor((atan(d.y, d.x) + 3.14159) / 6.28318 * 72.0);
-	float on = step(0.82, hash(sector + floor(t * 14.0) * 7.0));
+	float spoke = step(0.82, hash(sector + floor(t * 14.0) * 7.0));
 	float r = length(d);
-	on *= smoothstep(0.1, 0.22, r);
-	neg = mix(neg, vec3(0.84, 0.27, 0.17), on * 0.65);
+	spoke *= smoothstep(0.1, 0.22, r);
+	neg = mix(neg, vec3(0.84, 0.27, 0.17), spoke * 0.65);
 	COLOR = vec4(mix(c, neg, amount), 1.0);
 }
