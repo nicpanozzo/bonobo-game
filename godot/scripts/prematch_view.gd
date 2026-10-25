@@ -275,6 +275,11 @@ func _draw_card(p: Dictionary, r: Rect2, variant: int, alpha: float) -> void:
 		var area := Rect2(r.position + Vector2(14, 14), Vector2(r.size.x - 28, r.size.y - 92))
 		var fit: Rect2 = Hud.fit_rect(src[1].size, area)
 		draw_texture_rect_region(src[0], fit, src[1], FighterPose.sprite_modulate(variant, alpha))
+	else:
+		# Personaggio senza immagine (es. il bonobo disegnato col codice): l'iniziale gigante, così la scheda non resta vuota
+		var who: Dictionary = game.get("characters", {}).get(str(p.get("characterId", "")), {})
+		var initial := str(who.get("name", p.get("name", "?"))).left(1).to_upper()
+		_centered(initial, Vector2(r.get_center().x, r.position.y + (r.size.y - 78) * 0.62), int(r.size.y * 0.45), Color(color.lightened(0.2), 0.85 * alpha))
 	var name_px := 26 if r.size.x > 180 else 20
 	_centered(str(p.get("name", "?")), Vector2(r.get_center().x, r.end.y - 46), name_px, Color(1, 1, 1, alpha))
 	var character: Dictionary = game.get("characters", {}).get(str(p.get("characterId", "")), {})
