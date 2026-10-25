@@ -434,7 +434,40 @@
         "assets/music/sala-prove.ogg"
       ]
     },
-    "announcer": {},
+    "announcer": {
+      "draw": [
+        "assets/announcer/draw_1.ogg"
+      ],
+      "game": [
+        "assets/announcer/game_1.ogg",
+        "assets/announcer/game_2.ogg"
+      ],
+      "go": [
+        "assets/announcer/go_1.ogg",
+        "assets/announcer/go_2.ogg"
+      ],
+      "intro": [
+        "assets/announcer/intro_1.ogg",
+        "assets/announcer/intro_2.ogg",
+        "assets/announcer/intro_3.ogg"
+      ],
+      "lastLife": [
+        "assets/announcer/lastLife_1.ogg",
+        "assets/announcer/lastLife_2.ogg"
+      ],
+      "one": [
+        "assets/announcer/one_1.ogg"
+      ],
+      "tenSeconds": [
+        "assets/announcer/tenSeconds_1.ogg"
+      ],
+      "three": [
+        "assets/announcer/three_1.ogg"
+      ],
+      "two": [
+        "assets/announcer/two_1.ogg"
+      ]
+    },
     "voices": {
       "bradipo": {
         "supreme": [
