@@ -153,8 +153,8 @@ func test_numeri_delle_speciali_dal_personaggio() -> void:
 
 func test_colore_dei_proiettili_e_alone_della_carica() -> void:
 	var game: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/game.json"))
-	var tiro := FighterPose.projectile_color(game, "egiainuso", "specialNeutral")
-	runner.check(tiro.is_equal_approx(Color.hex(0xffd84aff)), "il Tiro è giallo: %s" % tiro)
+	var sputo := FighterPose.projectile_color(game, "egiainuso", "specialNeutral")
+	runner.check(sputo.is_equal_approx(Color.hex(0xd6ecd2ff)), "lo Sputo di Egiainuso è color saliva: %s" % sputo)
 	var fumo := FighterPose.projectile_color(game, "bonobot", "specialNeutral")
 	runner.check(fumo.is_equal_approx(Color.hex(0xd9d3c7ff)), "l'Anello di fumo di Bonobot è grigio: %s" % fumo)
 	runner.check(FighterPose.projectile_color(game, "sconosciuto", "specialNeutral").is_equal_approx(FighterPose.projectile_color(game, "default", "specialNeutral")), "personaggio sconosciuto: quello di Bonobo")
