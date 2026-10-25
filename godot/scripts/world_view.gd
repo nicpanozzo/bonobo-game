@@ -25,6 +25,7 @@ var _particles: Node2D # effetti a particelle (#470): polvere, anello d'aria, im
 var _fx_seed := 0 # ogni gruppo di particelle ha la sua variante
 var _fx_last := {} # id -> { vx, facing, ms, smoke, brake }: quello che serve per frenata, inversione e fumo del lancio
 var _fall_vy := {} # id -> velocità di caduta all'ultimo frame in aria, per l'atterraggio pesante
+var _finish_candidate := {} # { target, point, kb, at }: un colpo che forse chiude la partita, da verificare (#470)
 var _warp := {} # il rallentatore solo grafico (#470 passo 2b, time_warp.gd): vuoto se non c'è
 var _game_text := {} # { at }: la scritta GAME! dall'evento matchEnd (#470), vuoto se non c'è
 var _neg_overlay: ColorRect # la scena in negativo nel colpo che chiude la partita (#470)
@@ -296,6 +297,7 @@ func reset() -> void:
 	_dodges = {}
 	_dizzy = {}
 	_warp = {}
+	_finish_candidate = {}
 	_game_text = {}
 	buffer = SnapshotBuffer.new()
 	buffer.delay_ms = game.net.interpolationDelayMs
@@ -685,6 +687,7 @@ func stage_width() -> float:
 func on_snapshot(snap: Dictionary) -> void:
 	buffer.own_id = my_id # il proprio lottatore senza ritardo d'interpolazione (E17)
 	buffer.push(snap.t, Time.get_ticks_msec(), snap.players, float(snap.get("stageMs", 0)))
+	_check_finish(snap) # il colpo che chiude la partita (#470): ora si sa con che velocità vola il bersaglio
 	predictor.items_present = not snap.get("items", []).is_empty()
 	_puddles = snap.get("puddles", [])
 	_pads_pressed = snap.get("pads", []) if snap.get("pads") is Array else [] # bottoni sonori (#423)
@@ -1059,26 +1062,61 @@ func _impact(e: Dictionary, heavy: bool, ko: bool) -> void:
 
 # Particelle che nascono dallo stato e non da un evento (#470): fumo di chi vola via, frenata e inversione a terra.
 # Si chiama dal disegno, una volta per lottatore a ogni frame, come la scia di _draw_trail
-# Il colpo che chiude la partita (#470 passo 2b, come il Finish Zoom di Smash): un colpo da KO a chi è all'ultima vita,
-# quando in gioco ne restano due (o due squadre). Come in Smash è una previsione: se chi è colpito si salva, la scena si
-# rimette in pari e basta. Non nei percorsi e non se un rallentatore è già in corso
+# Il colpo che chiude la partita (#470 passo 2b, come il Finish Zoom di Smash). Un colpo a chi è all'ultima vita, se il
+# suo KO chiude la partita, diventa un candidato; la decisione arriva in on_snapshot, con lo snapshot dello stesso
+# istante, dove il bersaglio ha già la velocità del lancio: parte solo se il volo previsto esce dalla zona di espulsione
+# anche difendendosi (TimeWarp.predicts_ko). Non nei percorsi e non se un rallentatore è già in corso
 func _maybe_finish(e: Dictionary, kb: float) -> void:
 	if not effects or not _warp.is_empty() or stage.get("goal") != null:
 		return
-	if kb < float(game.effects.get("koZoomKnockback", INF)) or e.get("attackerId") == e.get("targetId"):
+	if kb < float(game.effects.finishMinKnockback) or e.get("attackerId") == e.get("targetId"):
 		return
-	var target: Variant = _sampled.get(str(e.get("targetId", "")))
-	if target == null or int(target.get("stocks", 0)) != 1:
+	var id := str(e.get("targetId", ""))
+	var target: Variant = _sampled.get(id)
+	if target == null or int(target.get("stocks", 0)) != 1 or not _would_end_match(id):
 		return
-	var alive := 0
+	_finish_candidate = {"target": id, "point": Vector2(e.x, e.y), "kb": kb, "at": Time.get_ticks_msec()}
+
+
+# Se esce lui, la partita finisce? Resta in gioco un solo altro lottatore, o solo i compagni di un'altra squadra
+func _would_end_match(out_id: String) -> bool:
+	var others := 0
 	var teams := {}
 	for id in _sampled:
 		var p: Dictionary = _sampled[id]
-		if not p.get("eliminated", false):
-			alive += 1
-			teams[int(p.get("team", 0))] = true
-	if alive == 2 or (teams.size() == 2 and not teams.has(0)):
-		_warp = TimeWarp.finish(Time.get_ticks_msec(), Vector2(e.x, e.y), str(e.targetId), game.effects)
+		if id == out_id or p.get("eliminated", false):
+			continue
+		others += 1
+		teams[int(p.get("team", 0))] = true
+	return others == 1 or (others > 1 and teams.size() == 1 and not teams.has(0))
+
+
+# La decisione sul candidato (#470): si simula il volo con le regole del server (gravità del personaggio, freno da
+# storditi, terreno, velocità del combattimento) e si fa partire il rallentatore solo se esce
+func _check_finish(snap: Dictionary) -> void:
+	if _finish_candidate.is_empty():
+		return
+	var c := _finish_candidate
+	_finish_candidate = {}
+	if Time.get_ticks_msec() - int(c.at) > 250 or not _warp.is_empty() or not (stage.get("blastZone") is Dictionary):
+		return
+	for p in snap.get("players", []):
+		if str(p.id) != str(c.target):
+			continue
+		var stats: Dictionary = game.characters.get(str(p.get("characterId", "")), {}).get("stats", {})
+		var phys := {
+			"gravity": float(game.fighter.gravity) * float(stats.get("gravity", 1.0)),
+			"drag": float(game.hitstun.airDrag),
+			"dt": float(game.get("gameSpeed", 1.0)) / float(game.get("tickRate", 60)),
+			"hitstun_ms": float(c.kb) * float(game.hitstun.perKnockback),
+			"drift": float(game.fighter.hitstunDriftAccel),
+			"air_friction": float(game.fighter.airFriction),
+			"max_fall": float(game.fighter.maxFallSpeed),
+			"extra_ms": float(game.effects.finishExtraMs),
+		}
+		if TimeWarp.predicts_ko(Vector2(p.x, p.y), Vector2(p.vx, p.vy), stage.blastZone, stage.get("solids", []), stage.get("platforms", []), phys):
+			_warp = TimeWarp.finish(Time.get_ticks_msec(), c.point, str(c.target), game.effects)
+		return
 
 
 # È il KO che chiude la partita? Chi è uscito non ha più vite e resta al massimo uno in gioco, o una squadra sola
