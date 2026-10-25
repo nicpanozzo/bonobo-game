@@ -116,6 +116,8 @@ const MotionFeel := preload("res://scripts/motion_feel.gd") # squash & stretch d
 const StrikeFx := preload("res://scripts/strike_fx.gd") # scia dei colpi e linee di velocità (#384)
 const ParticleFx := preload("res://scripts/particle_fx.gd") # effetti a particelle (#470)
 const ParticleView := preload("res://scripts/particle_view.gd")
+const TerrainFx := preload("res://scripts/terrain_fx.gd") # la polvere presa dalla superficie sotto ai piedi
+const FighterFx := preload("res://scripts/fighter_fx.gd") # l'accento del lottatore negli effetti di movimento
 const TimeWarp := preload("res://scripts/time_warp.gd") # rallentatore solo grafico (#470 passo 2b)
 
 
@@ -824,7 +826,7 @@ func on_event(e: Dictionary) -> void:
 			if e.option == "roll":
 				var p: Variant = buffer.sample(e.id, Time.get_ticks_msec())
 				if p != null:
-					_puff(p.x, p.y - float(game.ledge.hangOffsetY)) # polvere sullo spigolo, da dove parte la rotolata
+					_puff(p.x, p.y - float(game.ledge.hangOffsetY), e.id) # polvere sullo spigolo, da dove parte la rotolata
 		"taunt":
 			_taunts[e.id] = Time.get_ticks_msec()
 			_speech.say(e.id, SpeechBubbles.quote(_character_of(e.id), "taunt"))
@@ -841,19 +843,23 @@ func on_event(e: Dictionary) -> void:
 					_speech.say(e.id, SpeechBubbles.quote(game.characters.get(p.characterId, {}), "supreme"))
 		"dash":
 			# Scatto (#199): uno sbuffo di polvere dove parte e uno un po' indietro
-			_puff(e.x, e.y)
+			_puff(e.x, e.y, e.id)
 			var p: Variant = buffer.sample(e.id, Time.get_ticks_msec())
 			if p != null:
 				_puff(float(e.x) - float(p.facing) * 26.0, float(e.y))
 		"jump":
 			_bounces[e.id] = MotionFeel.start(game.effects, "jump", Time.get_ticks_msec())
 			if not e.get("air", false):
-				_puff(e.x, e.y)
+				_puff(e.x, e.y, e.id)
 			else:
 				_air_jumps[e.id] = Time.get_ticks_msec()
 				if effects and _particles: # #470: anello d'aria e sbuffetti spinti giù dal salto
 					_particles.add(ParticleFx.air_burst(_next_fx_seed(), e.x, e.y))
 					_particles.mark({"kind": "ring", "x": float(e.x), "y": float(e.y), "r0": 16.0, "r1": 76.0, "squash": 0.3, "width": 6.0, "life_ms": float(game.effects.airRingMs)})
+					var style := FighterFx.style_of(str(_character_of(e.id).get("id", ""))) # il doppio salto nello stile del lottatore
+					_particles.add(FighterFx.air_jump(style, _next_fx_seed(), e.x, e.y))
+					for m in FighterFx.air_jump_marks(style, e.x, e.y, float(game.effects.airRingMs)):
+						_particles.mark(m)
 		"dodge":
 			if effects: # #470: per la durata della schivata il lottatore si disegna chiaro e trasparente
 				_dodges[e.id] = Time.get_ticks_msec()
@@ -975,10 +981,27 @@ func _motion_transform(p: Dictionary, now: float) -> Transform2D:
 	return MotionFeel.transform(Vector2(p.x, p.y), sq, angle)
 
 
-func _puff(x: float, y: float) -> void:
+func _puff(x: float, y: float, id := "") -> void:
+	_ground_burst(x, y, 1.0, id) # #470: sbuffi e sassolini al posto dei cerchietti
+
+
+# Polvere a terra (#470) presa dalla superficie sotto ai piedi (terrain_fx.gd): chi pesa di più ne alza di più, e il
+# lottatore id ci aggiunge il suo accento (fighter_fx.gd). id vuoto = solo la superficie
+func _ground_burst(x: float, y: float, power := 1.0, id := "", side := 0, kick := 0.0) -> void:
 	if not effects or _particles == null:
 		return
-	_particles.add(ParticleFx.dust_burst(_next_fx_seed(), x, y)) # #470: sbuffi e sassolini al posto dei cerchietti
+	var material := TerrainFx.material_at(stage, x, y)
+	var spec: Dictionary = _character_of(id) if id != "" else {}
+	var weight: float = (spec.get("stats", {}) as Dictionary).get("weight", 1.0)
+	var pw := power * pow(clampf(weight, 0.6, 1.6), 1.5)
+	var key := _next_fx_seed()
+	_particles.add(TerrainFx.restyle(ParticleFx.dust_burst(key, x, y, pw, side, kick), material))
+	_particles.add(TerrainFx.extra(material, key, x, y, pw))
+	var style := FighterFx.style_of(str(spec.get("id", "")))
+	if style != "":
+		_particles.add(FighterFx.ground(style, key, x, y, power, kick))
+		for m in FighterFx.ground_marks(style, x, y, power):
+			_particles.mark(m)
 
 
 func _next_fx_seed() -> int:
@@ -1003,13 +1026,13 @@ func _land_dust(e: Dictionary) -> void:
 	var fx: Dictionary = game.effects
 	var crash: bool = (_fx_last.get(e.id, {}) as Dictionary).get("stun_air", false)
 	if effects and _particles and crash: # #470 passo 3: schianto da storditi, sbuffo grande e stelline sopra la testa
-		_particles.add(ParticleFx.dust_burst(_next_fx_seed(), e.x, e.y, float(fx.crashPower)))
+		_ground_burst(e.x, e.y, float(fx.crashPower), e.id)
 		_dizzy[e.id] = Time.get_ticks_msec() + float(fx.crashStarsMs)
 		(_fx_last[e.id] as Dictionary).stun_air = false
 	elif effects and _particles and float(_fall_vy.get(e.id, 0.0)) >= float(fx.get("heavyLandSpeed", INF)):
-		_particles.add(ParticleFx.dust_burst(_next_fx_seed(), e.x, e.y, float(fx.heavyLandPower)))
+		_ground_burst(e.x, e.y, float(fx.heavyLandPower), e.id)
 	else:
-		_puff(e.x, e.y)
+		_puff(e.x, e.y, e.id)
 	_fall_vy.erase(e.id)
 
 
@@ -1194,11 +1217,16 @@ func _feed_particles(id: String, p: Dictionary) -> void:
 		var dt := maxf(0.001, (now - int(last.ms)) / 1000.0)
 		var last_vx: float = last.vx
 		if int(p.facing) != int(last.facing) and absf(vx) > float(fx.turnSpeed):
-			_particles.add(ParticleFx.dust_burst(_next_fx_seed(), p.x, p.y, 0.9, 0, -25.0 * float(p.facing)))
+			_ground_burst(p.x, p.y, 0.9, id, 0, -25.0 * float(p.facing))
 		elif absf(vx) > float(fx.brakeSpeed) and (absf(last_vx) - absf(vx)) / dt > float(fx.brakeDecel) and now - int(last.get("brake", 0)) >= int(fx.brakeEveryMs):
 			last.brake = now
 			var dir := signf(vx)
-			_particles.add(ParticleFx.brake_puff(_next_fx_seed(), float(p.x) + dir * float(game.fighter.width) * 0.3, p.y, dir))
+			var bx := float(p.x) + dir * float(game.fighter.width) * 0.3
+			_particles.add(TerrainFx.restyle(ParticleFx.brake_puff(_next_fx_seed(), bx, p.y, dir), TerrainFx.material_at(stage, bx, p.y)))
+		var style := FighterFx.style_of(str(p.get("characterId", "")))
+		if style != "" and absf(vx) > float(game.dash.runSpeed) * 0.85 and now - int(last.get("step", 0)) >= int(fx.styleStepMs):
+			last.step = now # di corsa: un pizzico del suo stile dietro ai piedi
+			_particles.add(FighterFx.run_step(style, _next_fx_seed(), p.x, p.y, signf(vx)))
 	last.vx = vx
 	last.facing = p.facing
 	last.ms = now
