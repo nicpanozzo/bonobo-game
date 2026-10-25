@@ -13,6 +13,7 @@ signal training_requested # palestra col manichino e il pannello dell'allenament
 signal challenges_requested # sfide con medaglie (E15)
 signal invite_requested(invite: Dictionary) # entra nella stanza del link copiato: {room, server?}
 
+const Lobby := preload("res://scripts/lobby.gd")
 const BLINK_S := 0.6 # mezzo giro del lampeggio di "Premi un tasto"
 const CARD_SIZE := Vector2(460, 76) # schede del menu, pixel
 const PHONE_CARD_SIZE := Vector2(460, 64) # sul telefono un po' più basse: il sottomenu "Da solo" ne ha quattro
@@ -24,7 +25,8 @@ var _solo := VBoxContainer.new() # il sottomenu "Da solo"
 var _first: Button
 var _solo_first: Button
 var _blink := 0.0
-var _invite_card: Button # "Entra nella partita" quando negli appunti c'è il link di una serata
+var _invite_box: Control # il riquadro dell'invito quando negli appunti c'è il link di una serata
+var _invite_card: Button # il suo "Entra"
 var _invite := {}
 var _own_room := "" # la stanza che si sta ospitando: il proprio link non è un invito
 
@@ -162,44 +164,54 @@ func _show_invite(found: Dictionary) -> void:
 		return
 	_invite = found
 	var had_focus := _invite_card != null and _invite_card.has_focus()
-	if _invite_card != null:
-		_invite_card.queue_free()
+	if _invite_box != null:
+		_invite_box.queue_free()
+		_invite_box = null
 		_invite_card = null
 	if found.is_empty():
 		if had_focus:
 			_first.grab_focus()
 		return
-	_invite_card = _card(_menu, "Entra nella stanza «%s»" % found.room, invite_detail(found), func(): invite_requested.emit(_invite), true)
-	_menu.move_child(_invite_card, 0)
+	# Un riquadro col bordo giallo sopra il menu, non un'altra scheda grande: si legge dove si entra
+	# e si preme Entra; chi vuole fare altro ha il menu di sempre sotto
+	_invite_box = PanelContainer.new()
+	_invite_box.add_theme_stylebox_override("panel", UI._box(UI.CARD, UI.ACCENT, UI.RADIUS_CARD, UI.GAP_L))
+	_invite_box.custom_minimum_size.x = (PHONE_CARD_SIZE if Phone.active else CARD_SIZE).x
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", UI.GAP_L)
+	_invite_box.add_child(row)
+	var words := VBoxContainer.new()
+	words.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	words.add_theme_constant_override("separation", 0)
+	row.add_child(words)
+	var what := UI.label("Ti hanno invitato nella stanza «%s»" % found.room, UI.SIZE_BODY)
+	what.add_theme_font_override("font", UI.font(UI.WEIGHT_BOLD))
+	words.add_child(what)
+	words.add_child(UI.note("Dal link che hai copiato · " + invite_detail(found)))
+	_invite_card = UI.button("Entra ▸", func(): invite_requested.emit(_invite))
+	UI.set_primary(_invite_card)
+	_invite_card.custom_minimum_size = Vector2(110, 0)
+	row.add_child(_invite_card)
+	_menu.add_child(_invite_box)
+	_menu.move_child(_invite_box, 0)
 	if had_focus or _menu.visible:
 		_invite_card.grab_focus.call_deferred()
 
 
 # Il link copiato vale come invito se porta una stanza e non è quello appena copiato dal gioco stesso
 static func invite_from(text: String, own_room := "") -> Dictionary:
-	if text.length() > 2000 or text == UI.last_copied:
+	# Solo un link vero: un testo qualsiasi negli appunti ("ciao") non è un invito
+	if text.length() > 2000 or text == UI.last_copied or not text.contains("room="):
 		return {}
-	var found: Dictionary = preload("res://scripts/lobby.gd").parse_link(text)
-	var room: String = preload("res://scripts/lobby.gd")._clean_room(str(found.get("room", "")))
-	if room == "" or (own_room != "" and room == own_room):
+	var found: Dictionary = Lobby.read_invite(text)
+	if not found.has("room") or (own_room != "" and found.room == own_room):
 		return {}
-	found.room = room
-	# Il link della pagina servita dal server di gioco non scrive il server: è lo stesso indirizzo
-	var page := RegEx.create_from_string("(https?://[^/\\s?#]+)[^\\s]*[?&]room=").search(text)
-	if not found.has("server") and page != null and not page.get_string(1).ends_with("github.io"):
-		found.server = page.get_string(1)
 	return found
 
 
 # Dove si gioca: in casa (stesso Wi-Fi), sul computer di un amico (tunnel) o sul server di sempre
 static func invite_detail(found: Dictionary) -> String:
-	var server := str(found.get("server", ""))
-	var host := server.trim_prefix("https://").trim_prefix("http://").get_slice(":", 0).get_slice("/", 0)
-	if host.begins_with("192.168.") or host.begins_with("10.") or host.begins_with("172.") or host.ends_with(".local"):
-		return "Dal link che hai copiato · in casa, sullo stesso Wi-Fi"
-	if host.ends_with("trycloudflare.com"):
-		return "Dal link che hai copiato · sul computer di chi ospita"
-	return "Dal link che hai copiato: un clic e scegli il lottatore"
+	return Lobby.where_text(str(found.get("server", "")))
 
 
 func _notification(what: int) -> void:

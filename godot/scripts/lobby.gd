@@ -44,6 +44,7 @@ const PAGE_W := 1010.0 # larghezza del contenuto delle pagine, pixel
 const PAGE_TOP := 16 # spazio sopra il titolo della pagina, pixel
 const BIG_STAGE := Vector2(560, 315) # anteprima grande dell'arena (16:9), pixel
 const BIG_FACE := Vector2(300, 224) # anteprima grande del lottatore, pixel
+const ROOM_HINT := "Incolla il link che ti hanno mandato: server e stanza si mettono da soli."
 const PHONE_MARGIN := 20.0 # sul telefono (Phone) le pagine arrivano fino a qui dai bordi, pixel
 const PHONE_FACE := Vector2(250, 150) # sul telefono l'anteprima del lottatore è più bassa: la griglia resta in vista
 const PHONE_CARD_W := 270.0 # sul telefono la scheda del lottatore scelto, più stretta
@@ -286,20 +287,21 @@ func _match_page(params: Dictionary) -> Control:
 	join.add_theme_constant_override("separation", UI.GAP_S)
 	join.add_child(UI.heading("Stanza o link"))
 	_room.text = params.get("room", "")
-	_room.placeholder_text = "amici, oppure incolla il link della serata"
+	_room.placeholder_text = "incolla il link della serata, oppure scrivi la stanza"
 	_room.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_room_len = _room.text.length()
 	_room.text_changed.connect(_on_room_text)
 	_room.text_submitted.connect(func(_t): _forward())
 	join.add_child(_room)
-	_room_hint = UI.note("Chiedi il link a chi ha creato la stanza: lo stesso link porta tutti nella stessa partita.")
+	_room_hint = UI.note(ROOM_HINT)
+	_room_hint.autowrap_mode = TextServer.AUTOWRAP_WORD
 	join.add_child(_room_hint)
 	# Dal browser a chi ha l'app: il link copiato, aprendo l'app, diventa la scheda "Entra nella stanza"
 	if OS.has_feature("web") and not Phone.active:
 		var app_note := UI.note("")
 		app_note.visible = false
 		var to_app := UI.small_button("Ho l'app: gioco da lì", func():
-			UI.copy(room_link.call(_clean_room(_room.text)))
+			UI.copy(room_link.call(str(read_invite(_room.text).get("room", ""))))
 			app_note.text = "Link copiato: apri l'app Bonobo e premi «Entra nella stanza»"
 			app_note.show())
 		to_app.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
@@ -313,13 +315,14 @@ func _match_page(params: Dictionary) -> Control:
 	advanced.add_theme_constant_override("separation", UI.GAP_S)
 	advanced.add_child(UI.heading("Server"))
 	_server.text = params.server
-	_server.placeholder_text = "https://... (o incolla qui il link della serata)"
+	_server.placeholder_text = "bonobo-game.onrender.com (https lo mette il gioco)"
 	_server_len = _server.text.length()
 	_server.text_changed.connect(_on_server_text)
 	advanced.add_child(_server)
 	_advanced = advanced
 	join.add_child(advanced)
 	_set_advanced(false)
+	_update_target()
 	_kind_boxes.join = join
 	page.add_child(join)
 
@@ -944,8 +947,8 @@ func _forward() -> void:
 	var i := steps.find(_page)
 	if _page == "match" and _kind == "join":
 		_apply_link(_room.text) # link incollato a mano o scritto senza incollarlo
-		if _clean_room(_room.text) == "":
-			_room_hint.text = "Scrivi il nome della stanza o incolla il link che ti hanno mandato."
+		if not read_invite(_room.text).has("room"):
+			_room_hint.text = "Incolla il link che ti hanno mandato, o scrivi il nome della stanza."
 			_room_hint.add_theme_color_override("font_color", UI.WARN)
 			if is_inside_tree():
 				_room.grab_focus()
@@ -1017,7 +1020,8 @@ func _update_summary() -> void:
 		"create":
 			parts.append("Stanza " + _clean_room(_new_room.text))
 		"join":
-			parts.append("Entri in " + _clean_room(_room.text) if _clean_room(_room.text) != "" else "Entri in una stanza")
+			var target := str(read_invite(_room.text).get("room", ""))
+			parts.append("Entri in " + target if target != "" else "Entri in una stanza")
 		"bot":
 			parts.append("Contro: " + str(BOTS[_bot.selected][1]) if _bot.selected > 0 else "Contro un bot")
 	if _kind != "join":
@@ -1138,7 +1142,7 @@ func _choice(bot: String) -> Dictionary:
 		"create":
 			room = _clean_room(_new_room.text)
 		"join":
-			room = _clean_room(_room.text)
+			room = str(read_invite(_room.text).get("room", ""))
 	if is_inside_tree():
 		get_viewport().gui_release_focus() # così i tasti tornano alla partita
 	return {
@@ -1152,7 +1156,7 @@ func _choice(bot: String) -> Dictionary:
 		"stage": _new_id("corsa-") if mode == "race" else _stage,
 		"rules": {"mode": mode, "stocks": _stocks.selected + 1, "timeLimitSec": TIMES[_time.selected][0], "friendlyFire": _ff.button_pressed, "teamCount": _team_count.selected + 2, "supremeSpeed": _supreme_mult(), "itemAmount": _item_amount.selected, "itemKinds": _item_checks.keys().filter(func(k): return _item_checks[k].button_pressed)},
 		"team": _team_picker.selected if _team_box.visible else 0, # la squadra chiesta (#409), 0 = automatica
-		"server": _server.text.strip_edges(),
+		"server": normalize_server(_server.text),
 		"bot": "manichino" if mode == "training" and bot == "" else bot, # conta solo se la stanza è nuova
 		"kind": _kind, # per tornare alla stessa scheda dopo la partita
 		"host": _hosting_new(), # ricordato per la prossima volta; il server vero lo mette _host_and_join
@@ -1166,18 +1170,23 @@ func _on_server_text(text: String) -> void:
 	_server_len = text.length()
 	if pasted:
 		_apply_link(text)
+	_update_target()
 
 
 # Nel campo della stanza si incolla anche il link intero: restano la stanza e il server
 func _on_room_text(text: String) -> void:
 	var pasted := text.length() - _room_len > 1
 	_room_len = text.length()
-	if pasted and text.contains("?"):
+	if pasted:
 		_apply_link(text)
+	_update_target()
 
 
 func _apply_link(text: String) -> void:
-	var found := parse_link(text)
+	var t := text.strip_edges()
+	if t == "" or not (t.contains("/") or t.contains(".") or t.contains(":") or t.contains("=")):
+		return # solo il nome della stanza: resta com'è
+	var found := read_invite(t)
 	if found.has("room"):
 		_room.text = found.room
 		_room_len = _room.text.length()
@@ -1188,9 +1197,27 @@ func _apply_link(text: String) -> void:
 		_server.text = found.server
 		_server_len = _server.text.length()
 		_server.caret_column = _server_len
+	_update_target()
 
 
-# Il link si trova anche dentro un messaggio copiato dal Discord ("Venite? https://...?room=amici&server=...")
+# Sotto il campo si legge dove si entra, mentre si scrive: niente sorprese su server e stanza
+func _update_target() -> void:
+	if _room_hint == null:
+		return
+	_update_summary()
+	var found := read_invite(_room.text)
+	_room_hint.remove_theme_color_override("font_color")
+	if found.has("room"):
+		_room_hint.text = "Entri in «%s» · %s" % [found.room, where_text(str(found.get("server", _server.text)))]
+		_room_hint.add_theme_color_override("font_color", UI.OK)
+	elif found.has("server"):
+		_room_hint.text = "Server trovato (%s): manca il nome della stanza, scrivilo dopo la barra" % where_text(found.server)
+		_room_hint.add_theme_color_override("font_color", UI.WARN)
+	else:
+		_room_hint.text = ROOM_HINT
+
+
+# Il link della serata si trova anche dentro un messaggio copiato dal Discord ("Venite? https://...?room=amici&server=...")
 static func parse_link(text: String) -> Dictionary:
 	var found := {}
 	var re := RegEx.create_from_string("[?&](room|server)=([^&\\s<>()\"']+)")
@@ -1198,6 +1225,61 @@ static func parse_link(text: String) -> Dictionary:
 		if not found.has(m.get_string(1)):
 			found[m.get_string(1)] = m.get_string(2).uri_decode()
 	return found
+
+
+# Quello che si scrive o incolla per entrare: il link intero (anche dentro un messaggio),
+# "parole-del-tunnel/stanza", "192.168.1.5:3000/stanza", un indirizzo con la stanza dopo la barra,
+# o solo il nome della stanza. Dà {room?, server?} già puliti: niente %3A, https messo da sé
+static func read_invite(text: String) -> Dictionary:
+	var t := text.strip_edges()
+	var found := parse_link(t)
+	if not found.is_empty():
+		# La pagina servita dal server di gioco non scrive il server nel link: è lo stesso indirizzo
+		var page := RegEx.create_from_string("(https?://[^/\\s?#]+)[^\\s]*[?&]room=").search(t)
+		if not found.has("server") and page != null and not page.get_string(1).ends_with("github.io"):
+			found.server = page.get_string(1)
+	elif t.contains("/") or t.contains(".") or t.contains(":"):
+		var scheme := t.get_slice("://", 0) + "://" if t.contains("://") else ""
+		var parts := t.trim_prefix(scheme).trim_suffix("/").split("/")
+		found.server = scheme + parts[0]
+		if parts.size() == 2:
+			found.room = parts[1]
+	elif t != "":
+		found.room = t
+	if found.has("server"):
+		found.server = normalize_server(found.server)
+	if found.has("room"):
+		found.room = _clean_room(found.room)
+		if found.room == "":
+			found.erase("room")
+	return found
+
+
+# Un server scritto a mano: https:// (o http:// in casa) e il tunnel con le sole parole
+static func normalize_server(text: String) -> String:
+	var s := text.strip_edges().trim_suffix("/")
+	if s == "" or s.contains("://"):
+		return s
+	var host := s.get_slice(":", 0)
+	if host == "localhost" or host.ends_with(".local") or host.is_valid_ip_address():
+		return "http://" + s
+	if not host.contains("."): # "parole-del-tunnel": l'indirizzo che dà Cloudflare a chi ospita
+		return "https://" + s + ".trycloudflare.com"
+	return "https://" + s
+
+
+# Dove si gioca, a parole: in casa, sul computer di chi ospita, sul server online o all'indirizzo scritto
+static func where_text(server: String) -> String:
+	var host := server.strip_edges().get_slice("://", 1 if server.contains("://") else 0).get_slice("/", 0).get_slice(":", 0)
+	if host == "" or host.ends_with("onrender.com"):
+		return "sul server online"
+	if host.begins_with("192.168.") or host.begins_with("10.") or host.begins_with("172.") or host.ends_with(".local"):
+		return "in casa, sullo stesso Wi-Fi"
+	if host.ends_with("trycloudflare.com"):
+		return "sul computer di chi ospita"
+	if host == "localhost" or host == "127.0.0.1":
+		return "su questo computer"
+	return "su " + host
 
 
 static func _clean_room(text: String) -> String:

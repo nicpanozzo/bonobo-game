@@ -126,7 +126,7 @@ func test_entra_con_il_link_incollato() -> void:
 	lobby._room.text = "https://bonobo.example/godot/?room=Amici&server=https%3A%2F%2Fsrv.example"
 	lobby._on_room_text(lobby._room.text)
 	runner.check(not lobby._creating, "il link porta su Entra")
-	runner.check(lobby._room.text == "Amici", "resta la stanza: %s" % lobby._room.text)
+	runner.check(lobby._room.text == "amici", "resta la stanza, già pulita: %s" % lobby._room.text)
 	runner.check(lobby._server.text == "https://srv.example", "e il server: %s" % lobby._server.text)
 	var c := _last_choice(lobby, lobby._submit)
 	runner.check(c.room == "amici" and c.bot == "", "entra in amici senza bot: %s" % [c])

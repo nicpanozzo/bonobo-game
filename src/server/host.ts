@@ -68,7 +68,8 @@ function lanAddress(): string | undefined {
 }
 
 function roomLink(server: string): string {
-  return `${PAGES_URL}?room=${encodeURIComponent(room)}&server=${encodeURIComponent(server)}`;
+  // Il server in chiaro (":" e "/" vanno bene in una query): niente %3A%2F da correggere a mano
+  return `${PAGES_URL}?room=${encodeURIComponent(room)}&server=${server}`;
 }
 
 // Lo stato per l'app: "ready" con l'indirizzo del tunnel, "lan" solo in casa, "error" se il server non parte
