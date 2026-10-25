@@ -244,3 +244,10 @@ func test_campana_a_ogni_estremo() -> void:
 	var a := _audio()
 	runner.check(a.stream_for("dong") is AudioStreamWAV, "il rintocco sintetizzato")
 	a.free()
+
+
+func test_il_pubblico_non_reagisce_sopra_se_stesso() -> void:
+	runner.check(Audio.crowd_may_react(-1, 100, 1200, false), "la prima volta reagisce")
+	runner.check(not Audio.crowd_may_react(100, 600, 1200, false), "un altro ooh subito dopo no")
+	runner.check(Audio.crowd_may_react(100, 600, 1200, true), "un KO passa sopra")
+	runner.check(Audio.crowd_may_react(100, 1400, 1200, false), "passato il tempo, sì")

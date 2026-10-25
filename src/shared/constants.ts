@@ -361,6 +361,10 @@ export const AUDIO = {
   musicBpmMin: 70, // limiti alla velocità della musica di un'arena (E12, StageSpec.music)
   musicBpmMax: 190,
   hitLoudPercent: 120, // da questa percentuale in su i colpi suonano al massimo
+  // Il pubblico (sfx/crowdOoh_*, crowdCheer_*): "ooh" sui colpi enormi, urla sui KO e sulla vittoria
+  crowdHitDamage: 15, // danno di un colpo da cui il pubblico fa "ooh", punti percentuale
+  crowdHitKnockback: 1500, // o spinta da cui fa "ooh", pixel/s
+  crowdCooldownMs: 1200, // tra una reazione e l'altra del pubblico, ms (un KO o la vittoria passano sopra)
   voices: 0.8, // volume di partenza delle voci (E13): personaggi e annunciatore
   tauntVoiceCooldownMs: 1500, // attesa minima tra due voci di provocazione dello stesso giocatore (E13 passo 3)
   musicFadeMs: 1500, // dissolvenza tra la musica della lobby e quella della partita
