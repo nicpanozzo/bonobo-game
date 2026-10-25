@@ -5,6 +5,8 @@ extends Control
 signal ready_changed(ready: bool)
 signal cue(name: String) # un momento da sottolineare con un suono o una voce: intro, card, vs, 3, 2, 1, go
 
+const FighterPose := preload("res://scripts/fighter_pose.gd")
+const Hud := preload("res://scripts/hud.gd")
 const GO_MS := 900.0 # quanto resta il VIA! dopo matchStart, ms
 const PANEL_W := 560.0 # larghezza del pannello dell'attesa, pixel
 const PANEL_Y := 96.0 # dove comincia il pannello, pixel dall'alto
@@ -238,7 +240,7 @@ func _draw_intro(w: float, h: float, t: float) -> void:
 	var slide := (1.0 - minf(t * 4.0, 1.0)) * w
 	draw_colored_polygon(PackedVector2Array([Vector2(-slide, h * 0.2), Vector2(w - slide, h * 0.08), Vector2(w - slide, h * 0.16), Vector2(-slide, h * 0.28)]), band)
 	draw_colored_polygon(PackedVector2Array([Vector2(slide, h * 0.78), Vector2(w + slide, h * 0.66), Vector2(w + slide, h * 0.74), Vector2(slide, h * 0.86)]), band)
-	var variants := FighterPose.variant_ranks(_players)
+	var variants: Dictionary = FighterPose.variant_ranks(_players)
 	var n := _players.size()
 	for i in n:
 		var k := card_in(t, i)
@@ -264,11 +266,11 @@ func _draw_card(p: Dictionary, r: Rect2, variant: int, alpha: float) -> void:
 	box.set_corner_radius_all(16)
 	box.skew = Vector2(-0.12, 0)
 	draw_style_box(box, r)
-	var look := FighterPose.look(game, str(p.get("characterId", "")), FighterPose.skin_of(p))
+	var look: Dictionary = FighterPose.look(game, str(p.get("characterId", "")), FighterPose.skin_of(p))
 	var src: Array = portrait_of.call(look) if portrait_of.is_valid() else []
 	if not src.is_empty():
 		var area := Rect2(r.position + Vector2(14, 14), Vector2(r.size.x - 28, r.size.y - 92))
-		var fit := preload("res://scripts/hud.gd").fit_rect(src[1].size, area)
+		var fit: Rect2 = Hud.fit_rect(src[1].size, area)
 		draw_texture_rect_region(src[0], fit, src[1], FighterPose.sprite_modulate(variant, alpha))
 	var name_px := 26 if r.size.x > 180 else 20
 	_centered(str(p.get("name", "?")), Vector2(r.get_center().x, r.end.y - 46), name_px, Color(1, 1, 1, alpha))
