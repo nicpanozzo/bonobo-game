@@ -377,7 +377,7 @@ export const AUDIO = {
   shortMinPeakDb: -12, // picco minimo di un suono corto, dBFS: più basso vuol dire file quasi muto
   // Annunciatore (E13 passo 4): public/assets/announcer/<frase>.ogg. Più alta la priorità, prima parla;
   // da announcerInterrupt in su interrompe la frase in corso e svuota la coda
-  announcerPriority: { go: 1, tenSeconds: 1, lastLife: 2, game: 3, draw: 3 } as Record<string, number>,
+  announcerPriority: { intro: 1, go: 3, three: 3, two: 3, one: 3, tenSeconds: 1, lastLife: 2, game: 3, draw: 3 } as Record<string, number>, // pre-partita: 3, 2, 1 e VIA si tagliano a vicenda, mai in coda
   announcerInterrupt: 3,
   announcerMaxWaitMs: 1500, // una frase rimasta in coda più di così non si dice più: sarebbe fuori tempo
   announcerTimeWarningMs: 10000, // "Dieci secondi!" quando il tempo rimasto scende sotto questa soglia, ms

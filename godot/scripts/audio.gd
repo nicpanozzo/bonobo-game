@@ -70,6 +70,7 @@ var _voice_players := {} # id giocatore -> AudioStreamPlayer2D: una voce per gio
 var _taunted := {} # id giocatore -> ms dell'ultima voce di provocazione
 
 const AnnouncerQueue := preload("res://scripts/announcer_queue.gd")
+const COUNT_PHRASES := {"3": "three", "2": "two", "1": "one"} # numeri del conto alla rovescia -> frasi dell'annunciatore
 
 
 func setup(game_data: Dictionary) -> void:
@@ -258,6 +259,23 @@ func on_event(e: Dictionary) -> void:
 				voice(e.winnerId, "victory")
 			# Il server oggi decide sempre un vincitore; "draw" è pronta per quando ci sarà il pareggio
 			announce("game" if e.get("winnerId") != null else "draw")
+
+
+# Pre-partita (prematch_view.gd): presentazione, schede, VS, 3, 2, 1, VIA. La voce c'è solo se il file è registrato
+func on_prematch_cue(cue: String) -> void:
+	match cue:
+		"intro":
+			_play("introRise")
+			announce("intro")
+		"card":
+			_play("whoosh", {"pitch": randf_range(0.9, 1.15)})
+		"vs":
+			_play("slam")
+		"3", "2", "1":
+			_play("countBeat", {"pitch": 1.0 + (3 - int(cue)) * 0.12})
+			announce(COUNT_PHRASES[cue])
+		"go":
+			_play("goBlast")
 
 
 # Dallo snapshot l'annunciatore sente solo il tempo: "Dieci secondi!" quando scende sotto la soglia
@@ -1012,6 +1030,27 @@ func _build_sounds() -> void:
 	_sounds.taunt = make.call(0.35, func(s):
 		s.tone(0, "triangle", 660, 640, 0.12, 0.2)
 		s.tone(0.13, "triangle", 880, 860, 0.18, 0.2))
+	# Pre-partita: un rombo che sale sotto la presentazione, il fruscio delle schede, il VS che sbatte
+	_sounds.introRise = make.call(2.2, func(s):
+		s.noise(0, "bandpass", 200, 2400, 2.0, 0.35)
+		s.tone(0, "sawtooth", 55, 110, 2.0, 0.25)
+		s.tone(0, "sine", 40, 80, 2.0, 0.4))
+	_sounds.whoosh = make.call(0.32, func(s): s.noise(0, "bandpass", 500, 3500, 0.28, 0.7))
+	_sounds.slam = make.call(0.9, func(s):
+		s.noise(0, "lowpass", 6000, 120, 0.5, 1.0)
+		s.tone(0, "sine", 110, 32, 0.8, 0.9)
+		s.tone(0, "square", 220, 55, 0.25, 0.3))
+	# 3, 2, 1: un colpo di tamburo grosso; VIA: botto, accordo che squilla e piatto
+	_sounds.countBeat = make.call(0.6, func(s):
+		s.tone(0, "sine", 150, 48, 0.5, 1.0)
+		s.noise(0, "lowpass", 2500, 150, 0.12, 0.6)
+		s.tone(0, "triangle", 300, 290, 0.25, 0.25))
+	_sounds.goBlast = make.call(1.4, func(s):
+		s.tone(0, "sine", 120, 30, 0.9, 1.0)
+		s.noise(0, "lowpass", 8000, 200, 0.4, 0.9)
+		for f in [261.6, 329.6, 392.0, 523.3]:
+			s.tone(0.03, "sawtooth", f, f, 0.9, 0.12)
+		s.noise(0.03, "highpass", 9000, 6000, 1.2, 0.3))
 	_sounds.start = make.call(0.45, func(s):
 		for i in 4:
 			var f: float = [392, 523, 659, 784][i]

@@ -41,3 +41,32 @@ func test_pronto_si_vede_subito_e_poi_decide_il_server() -> void:
 	v.on_snapshot({"players": players, "events": [{"type": "matchStart"}]})
 	runner.check(not v.frozen() and not v.waiting(), "VIA: partita in corso")
 	v.free()
+
+
+func test_presentazione_schede_in_fila_e_in_arrivo() -> void:
+	runner.check(is_equal_approx(View.intro_t(5500, 3000, 2500), 0.0), "comincia a 0")
+	runner.check(is_equal_approx(View.intro_t(3000, 3000, 2500), 1.0), "finisce al 3")
+	var a: Rect2 = View.card_rect(0, 2, 1280, 720)
+	var b: Rect2 = View.card_rect(1, 2, 1280, 720)
+	runner.check(a.end.x < b.position.x, "una accanto all'altra")
+	runner.check(absf((a.position.x + b.end.x) / 2.0 - 640.0) < 1.0, "centrate")
+	var many: Rect2 = View.card_rect(7, 8, 1280, 720)
+	runner.check(many.end.x <= 1280.0 - 39.0, "in otto stanno nello schermo")
+	runner.check(View.card_in(0.0, 0) <= 0.0, "all'inizio fuori")
+	runner.check(is_equal_approx(View.card_in(1.0, 3), 1.0), "alla fine al suo posto")
+
+
+func test_suoni_della_presentazione_una_volta_sola() -> void:
+	var v: Control = View.new()
+	v.game = {"world": {"width": 1280, "height": 720}, "prematch": {"countdownMs": 3000, "introMs": 2500}}
+	runner.root.add_child(v)
+	var heard := []
+	v.cue.connect(func(c: String): heard.append(c))
+	var players := [{"id": "a", "name": "Anna"}, {"id": "b", "name": "Bruno"}]
+	for left in [5500, 5000, 4000, 3500, 3000, 2500, 1500, 500]:
+		v.on_snapshot({"players": players, "events": [], "prematch": {"phase": "starting", "leftMs": left, "ready": [], "autoStartMs": null}})
+		v._process(0.0)
+		v._process(0.0)
+	v.on_snapshot({"players": players, "events": [{"type": "matchStart"}]})
+	runner.check(heard == ["intro", "card", "card", "vs", "3", "2", "1", "go"], "in ordine e senza doppioni: %s" % [heard])
+	v.free()
