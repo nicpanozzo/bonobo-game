@@ -726,6 +726,10 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     name: "Egiainuso",
     crews: ["lolhardcore"],
     // TODO community: statistiche e mosse speciali di base, da decidere con @Marcomunista
+    specials: {
+      // al posto del tiro di base sputa (Nicola, 25 ottobre 2026): i numeri del Tiro, più piccolo e del colore della saliva
+      neutral: { type: "projectile", name: "Sputo", startupMs: 216, cooldownMs: 550, speed: 700, gravity: 0, lifeMs: 1200, maxAlive: 1, range: 18, height: 14, damage: 6, baseKnockback: 220, knockbackGrowth: 3.5, angleDeg: 30, color: 0xd6ecd2 },
+    },
     sprite: {
       dir: "assets/characters/egiainuso",
       frameWidth: 318,
