@@ -24,6 +24,7 @@ import { stageCheckData } from "../src/shared/stageCheck";
 import { RANDOM_STAGE_ART } from "../src/shared/stageGenerator";
 import { characterStats } from "../src/shared/characters";
 import { CHARACTER_STATS, PERF_BUDGET } from "../src/shared/constants";
+import { RESPAWN_MS } from "../src/shared/constants"; // la nuvoletta della rinascita (#470)
 
 // La versione del gioco ha una fonte sola, package.json (E2, #106)
 const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")) as { version: string };
@@ -223,6 +224,7 @@ const data = {
   dodge: DODGE, // schivata (#3), per la predizione (E17)
   attacks: ATTACKS,
   hitstop: HITSTOP, // fermo dei colpi (#15): chi è colpito trema per tanto
+  respawnMs: RESPAWN_MS, // attesa dopo un KO prima di ricomparire: la nuvoletta della rinascita (#470) arriva in tempo
   smashCharge: SMASH_CHARGE, // colpi caricati: il pesante a terra tenuto, per la predizione (E17)
   recovery: RECOVERY, // spinta del recupero (#11), per la predizione (E17)
   ledge: { hangOffsetY: LEDGE.hangOffsetY }, // bordo del palco (#110): dove sta la mano di chi è appeso

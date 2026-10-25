@@ -25,6 +25,7 @@ var _particles: Node2D # effetti a particelle (#470): polvere, anello d'aria, im
 var _fx_seed := 0 # ogni gruppo di particelle ha la sua variante
 var _fx_last := {} # id -> { vx, facing, ms, smoke, brake }: quello che serve per frenata, inversione e fumo del lancio
 var _fall_vy := {} # id -> velocità di caduta all'ultimo frame in aria, per l'atterraggio pesante
+var _respawn_clouds := {} # id -> { at, x, y, col }: la nuvoletta della rinascita (#470), da quando scende e dove arriva
 var _clouds: Array = [] # [{ x, y, dir, age, damage }] nuvole soffiate col bong (#302)
 var _high_overlay: ColorRect # lo schermo distorto di chi è fatto col bong (#302)
 var effects := true # scie e polvere (opzioni → Video), main.gd lo legge dalle preferenze
@@ -254,6 +255,7 @@ func reset() -> void:
 		_particles.clear()
 	_fx_last = {}
 	_fall_vy = {}
+	_respawn_clouds = {}
 	buffer = SnapshotBuffer.new()
 	buffer.delay_ms = game.net.interpolationDelayMs
 	buffer.teleport_distance = game.net.teleportDistance
@@ -807,11 +809,19 @@ func on_event(e: Dictionary) -> void:
 					_particles.mark({"kind": "ring", "x": float(e.x), "y": float(e.y), "r0": 16.0, "r1": 76.0, "squash": 0.3, "width": 6.0, "life_ms": float(game.effects.airRingMs)})
 		"ko":
 			_shake = game.effects.shakeKo
-			_sparks.append({"x": clampf(e.x, 0, stage_width()), "y": clampf(e.y, 0, game.world.height), "age": 0.0, "size": 90.0, "color": Color(1, 0.4, 0.3)})
 			# Il raggio prende il colore di chi è uscito, come in Smash
 			var p: Variant = buffer.sample(e.id, Time.get_ticks_msec())
 			var col: Color = Access.color(p.color) if p != null else Color(1, 0.4, 0.3)
-			_beams.append({"x": e.x, "y": e.y, "age": 0.0, "color": col})
+			if effects and _particles: # #470: una colonna di fuoco del suo colore che entra dal punto d'uscita
+				_ko_column(e, col)
+			else:
+				_sparks.append({"x": clampf(e.x, 0, stage_width()), "y": clampf(e.y, 0, game.world.height), "age": 0.0, "size": 90.0, "color": Color(1, 0.4, 0.3)})
+				_beams.append({"x": e.x, "y": e.y, "age": 0.0, "color": col})
+			# La nuvoletta della rinascita (#470) parte in tempo per arrivare quando si ricompare; non nei percorsi
+			var spawn: Variant = stage.get("respawn")
+			if effects and int(e.get("stocksLeft", 0)) > 0 and spawn is Dictionary and stage.get("goal") == null:
+				_respawn_clouds[e.id] = {"at": Time.get_ticks_msec() + float(game.get("respawnMs", 1500)) - float(game.effects.cloudDescentMs),
+					"x": float(spawn.x), "y": float(spawn.y), "col": col}
 			# L'urlo di chi va KO, dove è uscito ma dentro l'inquadratura
 			var at := Vector2(clampf(e.x, view_rect.position.x + 60, view_rect.end.x - 60), clampf(e.y, view_rect.position.y + 90, view_rect.end.y - 40))
 			_speech.say(e.id, SpeechBubbles.quote(_character_of(e.id), "ko"), at)
@@ -926,7 +936,54 @@ func _impact(e: Dictionary, heavy: bool, ko: bool) -> void:
 
 # Particelle che nascono dallo stato e non da un evento (#470): fumo di chi vola via, frenata e inversione a terra.
 # Si chiama dal disegno, una volta per lottatore a ogni frame, come la scia di _draw_trail
+# Esplosione del KO a colonna (#470): parte dal bordo dell'inquadratura più vicino al punto d'uscita e punta verso
+# il centro, nel colore di chi è uscito, con un bagliore dove entra
+func _ko_column(e: Dictionary, col: Color) -> void:
+	var inset: float = game.effects.koColumnInset
+	var inner := view_rect.grow(-inset)
+	var from := Vector2(clampf(e.x, inner.position.x, inner.end.x), clampf(e.y, inner.position.y, inner.end.y))
+	var dir := (view_rect.get_center() - from).normalized()
+	if dir == Vector2.ZERO:
+		dir = Vector2.UP
+	_particles.add(ParticleFx.ko_column(_next_fx_seed(), from.x, from.y, dir, col))
+	var glow_col := col.lightened(0.6)
+	_particles.mark({"kind": "glow", "x": from.x, "y": from.y, "size": 220.0, "col": glow_col, "alpha": 0.9, "life_ms": 260.0})
+
+
+# La nuvoletta della rinascita (#470): mentre si è fuori scende dall'alto fino al punto di ritorno, poi sta sotto i
+# piedi di chi scende e si dissolve in uno sbuffo del suo colore quando tocca terra, risale (salto) o non è più
+# invulnerabile. Solo disegno: la fisica non la vede
+func _feed_cloud(id: String, p: Dictionary) -> void:
+	var c: Dictionary = _respawn_clouds[id]
+	var now := Time.get_ticks_msec()
+	var col: Color = c.col
+	if p.respawning:
+		var k := (now - float(c.at)) / float(game.effects.cloudDescentMs)
+		if k < 0.0:
+			_particles.drop_cloud(id)
+			return
+		var top := view_rect.position.y - 60.0
+		var y := lerpf(top, float(c.y) + 10.0, 1.0 - pow(1.0 - minf(k, 1.0), 2.0))
+		_particles.set_cloud(id, Vector2(float(c.x), y), col)
+		c.descended = true
+		return
+	if not c.get("descended", false): # subito dopo il KO lo snapshot disegnato può non essere ancora "fuori": si aspetta
+		if now > float(c.at) + float(game.effects.cloudDescentMs) + 3000.0:
+			_respawn_clouds.erase(id)
+		return
+	if p.onGround or not p.invulnerable or float(p.vy) < -50.0 or not effects:
+		if _particles.has_cloud(id):
+			_particles.drop_cloud(id)
+			if effects:
+				_particles.add(ParticleFx.cloud_puff(_next_fx_seed(), p.x, float(p.y) + 4.0, col))
+		_respawn_clouds.erase(id)
+		return
+	_particles.set_cloud(id, Vector2(p.x, float(p.y) + 10.0), col)
+
+
 func _feed_particles(id: String, p: Dictionary) -> void:
+	if _respawn_clouds.has(id) and _particles:
+		_feed_cloud(id, p)
 	if not effects or _particles == null or p.respawning:
 		_fx_last.erase(id)
 		return
