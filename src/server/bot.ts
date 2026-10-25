@@ -76,6 +76,7 @@ export class Bots {
     if (match.isFull) return null;
     const id = `bot-${kind}-${++this.count}`;
     match.addPlayer(id, BOT_NAMES[kind], characterId);
+    match.setReady(id, true); // il bot non fa aspettare nessuno nel pre-partita
     // Lo scatto col doppio tocco (#199) i bot non lo usano: i loro tocchi brevi lo farebbero partire per sbaglio
     const fighter = match.players.find((p) => p.id === id);
     if (fighter) fighter.dashByTap = false;

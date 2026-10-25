@@ -309,6 +309,12 @@
     "snapshotSilenceMs": 3000,
     "holdMs": 20000
   },
+  "prematch": {
+    "introMs": 2500,
+    "countdownMs": 3000,
+    "autoStartMs": 60000,
+    "minFighters": 2
+  },
   "audio": {
     "master": 0.8,
     "sfx": 0.7,

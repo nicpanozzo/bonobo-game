@@ -68,6 +68,7 @@ func _on_event(name: String, data: Variant) -> void:
 	match name:
 		"welcome":
 			id = str(data.get("id", ""))
+			_socket.emit("ready", {"ready": true}) # chi entra col pad premendo Start è già pronto
 		"roomFull":
 			stop("Stanza piena: il giocatore 2 non entra")
 		"refused":

@@ -33,6 +33,7 @@ var camera := Camera2D.new()
 var audio: Node2D
 var rumble: Rumble
 var hud: Control
+var prematch: Control # pre-partita: attesa dei Pronto e 3, 2, 1 (prematch_view.gd)
 var touch: TouchControls # levetta e tasti a schermo per il telefono (E18)
 var _rotate_hint: Label # "gira il telefono", sopra tutto, quando si tiene il telefono in verticale (E18)
 var _fullscreen_asked := false
@@ -100,6 +101,11 @@ func _ready() -> void:
 	hud.set_anchors_preset(Control.PRESET_FULL_RECT)
 	hud.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(hud)
+	prematch = preload("res://scripts/prematch_view.gd").new()
+	prematch.game = game
+	layer.add_child(prematch)
+	prematch.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	prematch.ready_changed.connect(func(on: bool): socket.emit("ready", {"ready": on}))
 	# In alto a sinistra, sotto la riga della stanza: il link per gli amici a portata di clic (#308)
 	_link_button = UI.small_button("Copia link", func():
 		UI.copy(room_link(params.room))
@@ -314,6 +320,7 @@ func _leave(page := "match") -> void:
 	socket.close()
 	world.reset()
 	hud.reset()
+	prematch.reset()
 	gym.close_all()
 	camera.position = Vector2.ZERO
 	_cam_zoom = 1.0
@@ -334,7 +341,7 @@ func _flash_status(text: String) -> void:
 
 # Predizione (E17): accesa dall'opzione, e solo a velocità normale (l'allenamento rallentato fa meno tick)
 func _apply_prediction() -> void:
-	world.predictor.enabled = bool(settings.video.get("predict", true)) and gym.speed == 1.0
+	world.predictor.enabled = bool(settings.video.get("predict", true)) and gym.speed == 1.0 and not (prematch != null and prematch.frozen())
 
 
 func _apply_volumes() -> void:
@@ -520,6 +527,11 @@ func _on_event(name: String, data: Variant) -> void:
 				_try_hint = ""
 			world.my_id = data.id
 			hud.my_id = data.id
+			prematch.reset()
+			prematch.my_id = data.id
+			# Da solo contro un bot non c'è nessuno da aspettare: si va dritti al 3, 2, 1
+			if str(params.get("bot", "")) != "" and str(params.get("kind", "")) != "create":
+				socket.emit("ready", {"ready": true})
 			rumble.my_id = data.id
 			# Server vecchi non mandano l'arena intera: allora si cerca tra quelle fisse per id
 			if data.get("stage") is Dictionary:
@@ -549,6 +561,8 @@ func _on_event(name: String, data: Variant) -> void:
 				gym.on_event(e)
 			world.on_snapshot(data)
 			hud.on_snapshot(data)
+			prematch.on_snapshot(data)
+			_apply_prediction() # al 3, 2, 1 si sta fermi: niente predizione
 			audio.on_snapshot(data)
 			gym.on_snapshot(data)
 		"roomFull":
@@ -719,6 +733,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		settings.save()
 	elif key.keycode == KEY_ESCAPE and not is_instance_valid(pause_menu):
 		_open_pause()
+	elif (key.keycode == KEY_ENTER or key.keycode == KEY_KP_ENTER) and prematch.waiting():
+		prematch.set_ready(not prematch.is_ready()) # pre-partita: Invio dice Pronto (e lo ritira)
 
 
 # Un pad collegato o staccato si annuncia per un attimo, sopra lobby, menu e partita
@@ -843,6 +859,9 @@ func _send_input() -> void:
 		input[action] = not off and (settings.is_pressed(action) or touch.pressed(action))
 	input.jump = not off and (settings.jump_pressed() or touch.pressed("jump"))
 	# Come il client web: si manda l'input solo quando cambia (== confronta i contenuti)
+	# Pre-partita: la provocazione dice Pronto (tastiera, pad e telefono)
+	if input.get("taunt", false) and not _last_input.get("taunt", false) and prematch.waiting():
+		prematch.set_ready(true)
 	if input != _last_input and socket.is_joined():
 		_last_input = input
 		# E17: il numero dell'input è il tick locale, così lo snapshot dice da dove rigiocare il proprio movimento

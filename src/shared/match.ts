@@ -16,6 +16,7 @@ import { canHitWithRules, flagWinnerTeam, isTeamMode, lastStanding, leaderOnTime
 import { COURSE_PREFIX, seedFromCourseId } from "./courseGenerator";
 import { seedFromStageId } from "./stageGenerator";
 import { getStage, type StageSpec } from "./stages";
+import { Prematch } from "./prematch";
 import type { GameEvent, GameSnapshot, InputState, MatchRules, PlayerState, PredictionState } from "./types";
 
 export interface MatchOptions {
@@ -23,6 +24,7 @@ export interface MatchOptions {
   stage?: StageSpec; // arena già pronta, per i test (es. i pezzi a tempo, #433): ha la precedenza su stageId
   rules?: Partial<MatchRules>;
   items?: boolean; // false = niente oggetti anche dove ci sarebbero (es. i test di bilanciamento dei personaggi, #302)
+  prematch?: boolean; // true = prima si aspetta che tutti siano pronti, poi 3, 2, 1 (il server; mai in Allenamento)
 }
 
 export type MatchEndEvent = Extract<GameEvent, { type: "matchEnd" }>;
@@ -47,6 +49,7 @@ export class Match {
   private pendingTeams = new Map<string, number>(); // cambi di squadra chiesti a partita in corso (#409)
   private items: ItemWorld | null; // oggetti (#17): solo in Tutti contro tutti e Squadre
   private projectiles: ProjectileWorld = createProjectileWorld(); // proiettili delle speciali (E10)
+  private prematch: Prematch | null; // attesa e conto alla rovescia prima di ogni partita, null = si comincia subito
 
   constructor(options: MatchOptions = {}) {
     this.rules = sanitizeRules(options.rules);
@@ -61,6 +64,7 @@ export class Match {
     };
     const amount = ITEM_AMOUNTS[rules.itemAmount];
     const withItems = options.items !== false && (rules.mode === "ffa" || rules.mode === "teams") && amount.maxOnStage > 0 && rules.itemKinds.length > 0;
+    this.prematch = options.prematch && rules.mode !== "training" ? new Prematch() : null;
     this.items = withItems ? createItemWorld(seedOf(this.stage.id), { everyMs: amount.everyMs, maxOnStage: amount.maxOnStage, kinds: rules.itemKinds }) : null;
   }
 
@@ -134,6 +138,7 @@ export class Match {
   }
 
   removePlayer(id: string) {
+    this.prematch?.forget(id);
     this.pendingTeams.delete(id);
     this.fighters.delete(id);
     this.slots.delete(id);
@@ -188,7 +193,17 @@ export class Match {
 
   // A fine partita chiunque può ricominciare subito, senza aspettare il conto alla rovescia
   requestRematch() {
-    if (this.winnerId) this.restartMatch();
+    if (this.winnerId) this.nextMatch();
+  }
+
+  // Pre-partita: id è pronto (o non più). I bot lo sono da quando entrano
+  setReady(id: string, ready: boolean) {
+    if (this.fighters.has(id)) this.prematch?.setReady(id, ready);
+  }
+
+  // In attesa o al conto alla rovescia: la partita vera non è ancora cominciata
+  get started(): boolean {
+    return !this.prematch?.phase;
   }
 
   // Allenamento (#113): la percentuale di un lottatore, scelta dal pannello (fuori dalla fisica)
@@ -205,16 +220,33 @@ export class Match {
   // Un passo di simulazione; restituisce gli eventi nati da allora (anche fuori dal passo, es. la rivincita)
   step(dtMs: number): GameEvent[] {
     const list = this.players as Fighter[];
-    // Gli oggetti cadono solo quando c'è qualcuno con cui litigarseli e la partita non è finita
-    const items = this.items && list.length >= 2 && !this.winnerId ? this.items : null;
+    const pre = this.prematch?.step(dtMs, list.length, list.filter((f) => !f.away).map((f) => f.id));
+    if (pre === "begin") this.restartMatch(false); // tutti al loro posto, da capo, per la presentazione
+    if (pre === "go") this.ctx.events.push({ type: "matchStart" });
+    const phase = this.prematch?.phase;
+    // Gli oggetti cadono solo quando c'è qualcuno con cui litigarseli e la partita è in corso
+    const items = this.items && list.length >= 2 && !this.winnerId && !phase ? this.items : null;
     if (items) handleItemInput(items, list, this.ctx);
     const fightMs = dtMs * GAME_SPEED; // il combattimento va un po' più piano dell'orologio (#384 A4)
+    // Al 3, 2, 1 i lottatori stanno fermi: i tasti tenuti restano, e valgono dal VIA
+    const held = phase === "starting" ? list.map((f) => f.input) : null;
+    if (held) for (const f of list) f.input = emptyInput();
+    // Nell'attesa ci si scalda: chi esce torna senza perdere vite
+    const unlimited = this.ctx.unlimitedStocks;
+    if (phase === "waiting") this.ctx.unlimitedStocks = true;
     stepWorld(list, fightMs, this.ctx, dtMs);
+    this.ctx.unlimitedStocks = unlimited;
+    if (held) list.forEach((f, i) => (f.input = held[i]));
     for (const f of list) f.inputTicks++; // E17: il client rigioca da qui il proprio movimento
     if (items) stepItems(items, list, fightMs, this.ctx);
+    if (phase) return this.flushEvents();
     if (this.rules.mode === "flag" && !this.winnerId) this.scoreFlags();
     if (this.rules.mode === "race" && !this.winnerId) this.updateCheckpoints(list);
     this.updateMatch(list, dtMs);
+    return this.flushEvents();
+  }
+
+  private flushEvents(): GameEvent[] {
     const events = this.ctx.events;
     this.ctx.events = [];
     return events;
@@ -272,7 +304,8 @@ export class Match {
     const pads = this.ctx.padsMs ? [...this.ctx.padsMs] : undefined; // bottoni sonori (#423)
     const tetris = tetrisState(this.ctx); // #427
     const bassanese = bassaneseState(this.ctx);
-    return { t, players, winnerId: this.winnerId, timeLeftMs: this.timeLeftMs(), teamScores, items, projectiles, puddles, events, stageMs, ...(pads && { pads }), ...(tetris && { tetris }), ...(bassanese && { bassanese }), ...stationSnapshot(this.ctx) };
+    const prematch = this.prematch?.state(players.map((p) => p.id));
+    return { t, players, winnerId: this.winnerId, timeLeftMs: this.timeLeftMs(), teamScores, items, projectiles, puddles, events, stageMs, ...(pads && { pads }), ...(tetris && { tetris }), ...(bassanese && { bassanese }), ...stationSnapshot(this.ctx), ...(prematch && { prematch }) };
   }
 
   // Si entra nella squadra con meno giocatori (a parità, quella col numero più basso: prima la Rossa)
@@ -332,7 +365,7 @@ export class Match {
   private updateMatch(list: Fighter[], dt: number) {
     if (this.winnerId) {
       this.restartTimer -= dt;
-      if (this.restartTimer <= 0) this.restartMatch();
+      if (this.restartTimer <= 0) this.nextMatch();
       return;
     }
     if (list.length >= 2) this.matchTimeMs += dt; // il tempo corre solo quando c'è qualcuno contro cui giocare
@@ -348,7 +381,7 @@ export class Match {
       this.restartTimer = MATCH_RESTART_MS;
       this.ctx.events.push({ type: "matchEnd", winnerId: winner.id, winnerTeam: winner.team, durationMs: Math.round(this.matchTimeMs) });
     } else if (list.length > 0 && list.every((f) => f.eliminated)) {
-      this.restartMatch(); // chi gioca da solo e finisce le vite riparte subito
+      this.nextMatch(); // chi gioca da solo e finisce le vite riparte subito
     }
   }
 
@@ -382,7 +415,15 @@ export class Match {
     return members.find((f) => f.carrier) ?? members[0];
   }
 
-  private restartMatch() {
+  // La partita dopo: col pre-partita prima il 3, 2, 1 (matchStart arriva al VIA), senza si riparte subito
+  private nextMatch() {
+    if (!this.prematch) return this.restartMatch();
+    this.restartMatch(false);
+    this.prematch.countdown();
+  }
+
+  // announce = false: matchStart lo manda il pre-partita al VIA
+  private restartMatch(announce = true) {
     for (const [id, team] of this.pendingTeams) {
       const f = this.fighters.get(id);
       if (f) this.moveToTeam(f, team);
@@ -403,7 +444,7 @@ export class Match {
       resetForMatch(f, this.slots.get(f.id) ?? 0, this.rules.stocks, this.stage, teamRank);
     }
     this.assignFlags(); // si riparte dal primo di ogni squadra
-    this.ctx.events.push({ type: "matchStart" });
+    if (announce) this.ctx.events.push({ type: "matchStart" });
   }
 
   private timeLeftMs(): number | null {

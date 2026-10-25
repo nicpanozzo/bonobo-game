@@ -39,6 +39,7 @@ scripts/world_view.gd  arena, lottatori e sprite animati, scintille e scossa sui
   fighter_pose.gd      posa, fotogramma e colori di un lottatore dallo snapshot (funzioni pure)
   stage_life.gd        sfondo vivo: passanti, traffico, uccelli, bar; stage_sky.gd giorno, notte e cielo
 scripts/hud.gd         schede con percentuale e vite, tempo, punti, vincitore e classifica
+scripts/prematch_view.gd  pre-partita: attesa dei Pronto, presentazione, 3, 2, 1, VIA!
 scripts/lobby.gd       nome, stanza, lottatore, arena (stage_preview.gd), regole, server
 scripts/audio.gd       quale suono per quale evento, musica; synth.gd li calcola, niente file audio
 scripts/options.gd     volumi e tasti; settings.gd li salva in user://bonobo.cfg
