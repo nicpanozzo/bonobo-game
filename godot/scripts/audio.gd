@@ -70,6 +70,7 @@ var _voice_players := {} # id giocatore -> AudioStreamPlayer2D: una voce per gio
 var _taunted := {} # id giocatore -> ms dell'ultima voce di provocazione
 
 const AnnouncerQueue := preload("res://scripts/announcer_queue.gd")
+var _crowd_at := -1 # ms dell'ultima reazione del pubblico
 const COUNT_PHRASES := {"3": "three", "2": "two", "1": "one"} # numeri del conto alla rovescia -> frasi dell'annunciatore
 
 
@@ -135,6 +136,7 @@ func on_event(e: Dictionary) -> void:
 			elif kind == "supreme":
 				_play("heavy", {"volume": 1.0, "pitch": 0.7}) # la suprema (#101): il pesante, più grave e pieno
 				voice(e.id, "supreme") # e il grido del personaggio, se ce l'ha (DEMACIAA di Bradipo)
+				crowd("crowdOoh", 0.9, false)
 			elif kind == "grab":
 				_play("light", {"volume": 0.4, "pitch": 0.8}) # la mano che parte: un fruscio corto
 			else:
@@ -149,6 +151,8 @@ func on_event(e: Dictionary) -> void:
 			# Più alta la percentuale del bersaglio, più forte e più grave il colpo
 			var strength := minf(1.0, e.percent / game.audio.hitLoudPercent)
 			_play("hitHeavy" if str(e.kind).begins_with("heavy") else "hitLight", {"volume": 0.6 + 0.4 * strength, "x": e.x, "pitch": 1.1 - 0.3 * strength})
+			if float(e.damage) >= float(game.audio.get("crowdHitDamage", 15)) or float(e.get("knockback", 0)) >= float(game.audio.get("crowdHitKnockback", 1500)):
+				crowd("crowdOoh", 0.8, false) # un colpo enorme: il pubblico fa "ooh"
 		"hazard":
 			_play("hitHeavy", {"volume": 0.8, "x": e.x, "pitch": 0.8})
 		# Postazioni (#433): il colpo della bombarda, il tonfo della palla di mortadella, le casse
@@ -208,6 +212,7 @@ func on_event(e: Dictionary) -> void:
 			if stage_crowd:
 				_play("shutter", {"volume": 0.6, "x": e.x})
 			voice(str(e.get("id", "")), "ko", e.x)
+			crowd("crowdCheer", 0.85, true) # il pubblico esplode
 			if e.get("byId") != null and e.byId != e.id:
 				voice(str(e.byId), "kill", e.x) # chi l'ha buttato fuori esulta, se ha la battuta
 			duck()
@@ -255,6 +260,7 @@ func on_event(e: Dictionary) -> void:
 			announce("go")
 		"matchEnd":
 			_play("victory")
+			crowd("crowdCheer", 1.0, true)
 			if e.get("winnerId") != null:
 				voice(e.winnerId, "victory")
 			# Il server oggi decide sempre un vincitore; "draw" è pronta per quando ci sarà il pareggio
@@ -488,6 +494,19 @@ func _on_phrase_finished() -> void:
 	var next := _queue.finished(Time.get_ticks_msec())
 	if next != "":
 		_say(next)
+
+
+# Il pubblico reagisce, ma non sopra se stesso: entro crowdCooldownMs solo una reazione forte (KO, vittoria) passa
+func crowd(sound: String, volume: float, strong: bool) -> void:
+	var now := Time.get_ticks_msec()
+	if not crowd_may_react(_crowd_at, now, int(game.audio.get("crowdCooldownMs", 1200)), strong):
+		return
+	_crowd_at = now
+	_play(sound, {"volume": volume, "pitch": randf_range(0.95, 1.05)})
+
+
+static func crowd_may_react(last: int, now: int, cooldown: int, strong: bool) -> bool:
+	return strong or last < 0 or now - last >= cooldown
 
 
 func _play(name: String, opts := {}) -> void:
@@ -1051,6 +1070,13 @@ func _build_sounds() -> void:
 		for f in [261.6, 329.6, 392.0, 523.3]:
 			s.tone(0.03, "sawtooth", f, f, 0.9, 0.12)
 		s.noise(0.03, "highpass", 9000, 6000, 1.2, 0.3))
+	# Il pubblico senza i file registrati: un boato di rumore, più breve per "ooh"
+	_sounds.crowdOoh = make.call(1.2, func(s):
+		s.noise(0, "bandpass", 500, 350, 1.1, 0.5)
+		s.tone(0, "sine", 220, 180, 1.0, 0.1))
+	_sounds.crowdCheer = make.call(1.8, func(s):
+		s.noise(0, "bandpass", 700, 1100, 1.7, 0.6)
+		s.noise(0.1, "highpass", 3000, 2500, 1.4, 0.15))
 	_sounds.start = make.call(0.45, func(s):
 		for i in 4:
 			var f: float = [392, 523, 659, 784][i]

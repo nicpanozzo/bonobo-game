@@ -323,6 +323,9 @@
     "musicBpmMin": 70,
     "musicBpmMax": 190,
     "hitLoudPercent": 120,
+    "crowdHitDamage": 15,
+    "crowdHitKnockback": 1500,
+    "crowdCooldownMs": 1200,
     "voices": 0.8,
     "tauntVoiceCooldownMs": 1500,
     "musicFadeMs": 1500,
@@ -352,6 +355,16 @@
   },
   "audioFiles": {
     "sfx": {
+      "crowdCheer": [
+        "assets/sfx/crowdCheer_1.ogg",
+        "assets/sfx/crowdCheer_2.ogg",
+        "assets/sfx/crowdCheer_3.ogg"
+      ],
+      "crowdOoh": [
+        "assets/sfx/crowdOoh_1.ogg",
+        "assets/sfx/crowdOoh_2.ogg",
+        "assets/sfx/crowdOoh_3.ogg"
+      ],
       "grab": [
         "assets/sfx/grab_1.ogg",
         "assets/sfx/grab_2.ogg",
