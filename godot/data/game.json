@@ -886,7 +886,7 @@
       "width": 24,
       "height": 20,
       "color": 10181046,
-      "rarity": "normale",
+      "rarity": "mai",
       "mushrooms": true
     },
     "fungo": {
@@ -899,6 +899,17 @@
       "color": 12597547,
       "rarity": "mai",
       "planted": true
+    },
+    "fungoTeemo": {
+      "id": "fungoTeemo",
+      "name": "Fungo di Teemo",
+      "damage": 4,
+      "knockback": 260,
+      "width": 36,
+      "height": 34,
+      "color": 4182346,
+      "rarity": "normale",
+      "shroom": true
     },
     "bong": {
       "id": "bong",
@@ -999,7 +1010,7 @@
     "bassanese",
     "bong",
     "fiore",
-    "funghetti",
+    "fungoTeemo",
     "pacman",
     "tetris"
   ],
@@ -1052,6 +1063,24 @@
     "throwSpeed": 650,
     "throwLift": 380,
     "throwUpSpeed": 900
+  },
+  "fungo": {
+    "thrownDamage": 4,
+    "throwSpeed": 520,
+    "throwLift": 560,
+    "throwUpSpeed": 900,
+    "gravityMult": 1.35,
+    "armMs": 1000,
+    "stealthMs": 1800,
+    "lifeMs": 25000,
+    "damage": 8,
+    "blastRadius": 70,
+    "poisonMs": 6000,
+    "poisonTickMs": 500,
+    "poisonPerSec": 2,
+    "slowMult": 0.65,
+    "bounceVx": 260,
+    "bounceVy": 420
   },
   "spore": {
     "ms": 4000,

@@ -297,3 +297,24 @@ func test_quanto_si_e_fatti_col_bong() -> void:
 	var late := FighterPose.high_level({"powerup": "bong", "powerupMs": 500}, 7000.0)
 	runner.check(FighterPose.high_level({"powerup": "trip", "powerupMs": 2000}, 7000.0) > 0.0, "i funghetti distorcono un po'")
 	runner.check(soon > 0.0 and soon < late and late <= 1.0, "cresce col tempo: %s → %s" % [soon, late])
+
+
+# Il fungo di Teemo (#419): agli avversari sparisce dopo che si è armato; chi l'ha lanciato lo vede sempre, più trasparente
+func test_fungo_di_teemo_invisibile_agli_avversari() -> void:
+	runner.check(WorldView.shroom_alpha(false, 0.0, 1000.0, 1800.0, 0.0) == 1.0, "appena piazzato lo vedono tutti")
+	runner.check(WorldView.shroom_alpha(false, 900.0, 1000.0, 1800.0, 0.0) == 1.0, "finché si arma si vede ancora")
+	var fading := WorldView.shroom_alpha(false, 1400.0, 1000.0, 1800.0, 0.0)
+	runner.check(fading > 0.0 and fading < 1.0, "poi sfuma: %s" % fading)
+	runner.check(WorldView.shroom_alpha(false, 1800.0, 1000.0, 1800.0, 0.0) == 0.0, "sparito agli avversari")
+	runner.check(WorldView.shroom_alpha(false, 9000.0, 1000.0, 1800.0, 0.0) == 0.0, "e non torna visibile col tempo")
+	for now in [0.0, 300.0, 900.0, 2000.0]:
+		var a := WorldView.shroom_alpha(true, 5000.0, 1000.0, 1800.0, now)
+		runner.check(a > 0.3 and a < 0.7, "chi l'ha lanciato lo vede trasparente: %s" % a)
+
+
+# Il veleno del fungo di Teemo (#419): la tinta si accende a ogni scatto (ogni 500 ms dall'inizio) e si spegne in fretta
+func test_veleno_pulsa_a_ogni_scatto() -> void:
+	runner.check(FighterPose.poison_pulse(6000.0, 6000.0, 500.0) == 1.0, "allo scoppio è accesa")
+	runner.check(FighterPose.poison_pulse(5700.0, 6000.0, 500.0) == 0.0, "tra uno scatto e l'altro è spenta")
+	runner.check(FighterPose.poison_pulse(5500.0, 6000.0, 500.0) == 1.0, "al secondo scatto si riaccende")
+	runner.check(FighterPose.poison_pulse(0.0, 6000.0, 500.0) == 0.0, "finito il veleno niente")
