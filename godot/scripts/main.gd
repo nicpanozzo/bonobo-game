@@ -372,6 +372,7 @@ func _apply_volumes() -> void:
 	audio.set_volumes(settings.master, settings.sfx, settings.music, settings.music_on, settings.voices)
 	rumble.level = settings.rumble
 	world.effects = settings.video.effects
+	world.outlines = settings.video.post
 	if post_fx != null:
 		post_fx.enabled = settings.video.post
 	world.attack_boxes = settings.video.hitboxes

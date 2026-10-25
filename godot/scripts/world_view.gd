@@ -42,6 +42,8 @@ var _light := Color.WHITE # la luce dell'arena sugli oggetti (#498): moltiplica 
 var _sun := {} # la luce del sole o della luna di questo frame (#288), vuota nelle arene senza ciclo del giorno
 var _high_overlay: ColorRect # lo schermo distorto di chi è fatto col bong (#302)
 var effects := true # scie e polvere (opzioni → Video), main.gd lo legge dalle preferenze
+var outlines := true # contorno uniforme dei lottatori (opzioni → Video → Luce e colori dell'arena, come post_fx.gd)
+const OUTLINE_PX := 2.5 # spessore del contorno dei lottatori, in pixel di mondo: uguale per tutti gli sprite
 var _beams: Array = [] # [{ x, y, age, color }] raggi dei KO, dal punto di uscita verso il centro
 var _shards: Array = [] # [{ x, y, vx, vy, age, color }] schegge di uno scudo rotto (#109)
 var _shield_hits := {} # id giocatore -> ms da quando lo scudo ha parato un colpo
@@ -2957,8 +2959,19 @@ func _draw_sprite(p: Dictionary, character: Dictionary, now: float, react := Tra
 	var scale: float = sheet.get("scale", 1.0) # 0.5 per i disegni fatti a 2x
 	draw_set_transform_matrix(react * Transform2D(0.0, Vector2(p.facing * scale, scale), 0.0, Vector2(p.x, p.y)))
 	var foot_y: float = sheet.get("footY", fh) # dove stanno i piedi nel fotogramma: sotto c'è chi è appeso al bordo
+	if outlines:
+		tint.b = outline_tint(OUTLINE_PX, fw * scale, src.size.x)
 	draw_texture_rect_region(texture, Rect2(-fw / 2, -foot_y, fw, fh), src, tint)
 	draw_set_transform(Vector2.ZERO)
+
+
+# Il blu del modulate che chiede a palette.gdshader il contorno: 2 + spessore in texel / 8. Lo spessore è in pixel
+# di mondo, così uno sprite disegnato grande e rimpicciolito ha lo stesso tratto di uno piccolo.
+# drawn: quanto è largo il fotogramma nel mondo; texels: quanto è largo nella texture caricata
+static func outline_tint(px: float, drawn: float, texels: float) -> float:
+	if drawn <= 0.0 or texels <= 0.0:
+		return 1.0
+	return 2.0 + clampf(px * texels / drawn, 0.5, 7.9) / 8.0
 
 
 # Quello che il movimento secondario del rig (rig_motion.gd) sa del giocatore: lo stato, quanto corre, chi ha vicino
