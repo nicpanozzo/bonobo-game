@@ -10,7 +10,7 @@ var _out := "user://screenshots"
 var _game: Dictionary
 var _world: Node2D # nella partita finta: riceve uno snapshot a ogni frame
 var _hud: Control
-const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre", "lobby_regole", "musica", "tetris", "pacman", "bassanese", "bologna_piazza", "bologna_torri", "bologna_crollo", "bologna_zuffa", "oggetti", "prepartita_attesa", "prepartita_vs", "prepartita_conto"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
+const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre", "lobby_regole", "musica", "tetris", "pacman", "bassanese", "bologna_piazza", "bologna_torri", "bologna_crollo", "bologna_zuffa", "oggetti", "prepartita_attesa", "prepartita_vs", "prepartita_conto", "fine_partita"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
 var _index := -1
 var _frame := 0
 var _failed := false
@@ -23,6 +23,8 @@ var _bassanese_on := false # la partita finta col Bassanese che si guarda in gir
 var _pre: Dictionary = {} # pre-partita: lo stato messo in snapshot.prematch, vuoto nelle altre partite
 var _pre_fighters := 0 # quanti lottatori nella partita finta del pre-partita (0 = tutti)
 var _pre_view: Control
+var _end_on := false # la partita finta finita: GAME!, vincitore e classifica coi premi (results_view.gd)
+var _results: Control
 var _bologna: Dictionary = {} # le fasi di Bologna (#433): {ms, cam, zoom, spots}, vuoto nelle altre partite
 # Bologna in quattro momenti: l'auto in piazza, l'ingorgo sotto le torri, la Garisenda che cade coi mattoni, la polvere
 const BOLOGNA_SHOTS := {
@@ -51,6 +53,8 @@ func _process(_delta: float) -> bool:
 		_hud.on_snapshot(snap)
 		if _pre_view != null:
 			_pre_view.on_snapshot(snap)
+		if _results != null:
+			_results.on_snapshot(snap)
 	if _frame < SHOT_FRAME:
 		return false
 	var name: String = SHOTS[_index]
@@ -77,6 +81,7 @@ func _next() -> void:
 	_world = null
 	_hud = null
 	_pre_view = null
+	_results = null
 	if _index < SHOTS.size():
 		call("_" + SHOTS[_index])
 
@@ -204,6 +209,21 @@ func _add_prematch() -> void:
 	_pre_view.portrait_of = _hud._portrait
 	_hud.get_parent().add_child(_pre_view)
 	_pre_view.size = Vector2(_game.world.width, _game.world.height)
+# Fine partita: la classifica è già entrata tutta, coi premi; il vincitore sotto il riflettore
+func _fine_partita() -> void:
+	_items_on = false
+	_pre = {}
+	_pre_fighters = 0
+	_end_on = true
+	_partita()
+	_results = load("res://scripts/results_view.gd").new()
+	_results.game = _game
+	_results.hud = _hud
+	_results.size = _hud.size
+	_hud.get_parent().add_child(_results)
+	_hud.get_parent().move_child(_results, 0) # sotto l'HUD, come in main.gd
+	_results.on_snapshot({"players": [], "winnerId": "p1", "events": [{"type": "matchEnd", "winnerId": "p1", "winnerTeam": 0, "durationMs": 133000}]})
+	_results._since = Time.get_ticks_msec() - 3500
 
 
 func _partita() -> void:
@@ -283,6 +303,17 @@ func _snapshot(frame: int) -> Dictionary:
 			snap.items.append({"id": 20 + i, "kind": kinds[i], "x": 380 + i * 75, "y": 560, "vx": 0, "vy": 0, "heldBy": null, "thrown": false})
 		for p in players:
 			p.y = 300
+	if _end_on:
+		snap.winnerId = "p1"
+		snap.timeLeftMs = 0
+		if frame == 1: # i numeri della classifica
+			snap.events = [
+				{"type": "hit", "attackerId": "p1", "targetId": "p0", "damage": 22}, {"type": "hit", "attackerId": "p1", "targetId": "p2", "damage": 130},
+				{"type": "hit", "attackerId": "p0", "targetId": "p1", "damage": 95}, {"type": "hit", "attackerId": "p2", "targetId": "p3", "damage": 60},
+				{"type": "hit", "attackerId": "p4", "targetId": "p1", "damage": 31},
+				{"type": "ko", "id": "p0", "byId": "p1"}, {"type": "ko", "id": "p2", "byId": "p1"}, {"type": "ko", "id": "p3", "byId": "p1"},
+				{"type": "ko", "id": "p3", "byId": "p2"}, {"type": "ko", "id": "p4", "byId": "p0"}, {"type": "ko", "id": "p2", "byId": null},
+			]
 	return snap
 
 

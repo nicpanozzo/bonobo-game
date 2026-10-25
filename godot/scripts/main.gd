@@ -34,6 +34,7 @@ var audio: Node2D
 var rumble: Rumble
 var hud: Control
 var prematch: Control # pre-partita: attesa dei Pronto e 3, 2, 1 (prematch_view.gd)
+var results: Control # fine partita: GAME!, vincitore, classifica e premi (results_view.gd)
 var touch: TouchControls # levetta e tasti a schermo per il telefono (E18)
 var _rotate_hint: Label # "gira il telefono", sopra tutto, quando si tiene il telefono in verticale (E18)
 var _fullscreen_asked := false
@@ -101,6 +102,12 @@ func _ready() -> void:
 	hud.game = game
 	hud.set_anchors_preset(Control.PRESET_FULL_RECT)
 	hud.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# Sotto l'HUD: la fine partita scurisce l'arena, tempo e schede restano sopra
+	results = preload("res://scripts/results_view.gd").new()
+	results.game = game
+	results.hud = hud
+	layer.add_child(results)
+	results.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	layer.add_child(hud)
 	prematch = preload("res://scripts/prematch_view.gd").new()
 	prematch.game = game
@@ -331,6 +338,7 @@ func _leave(page := "match") -> void:
 	world.reset()
 	hud.reset()
 	prematch.reset()
+	results.reset()
 	gym.close_all()
 	camera.position = Vector2.ZERO
 	_cam_zoom = 1.0
@@ -577,6 +585,7 @@ func _on_event(name: String, data: Variant) -> void:
 				world.on_snapshot(data)
 				hud.on_snapshot(data)
 				prematch.on_snapshot(data)
+				results.on_snapshot(data)
 				_apply_prediction() # al 3, 2, 1 si sta fermi: niente predizione
 				audio.on_snapshot(data)
 				gym.on_snapshot(data)
@@ -599,6 +608,7 @@ func _release_held() -> void:
 			gym.on_event(e)
 		hud.on_snapshot(data)
 		prematch.on_snapshot(data)
+		results.on_snapshot(data)
 		audio.on_snapshot(data)
 		gym.on_snapshot(data)
 
@@ -628,6 +638,7 @@ func _process(_delta: float) -> void:
 		hud.rematch_key = "Tocca lo schermo"
 	# A fine partita i pulsanti Rivincita e Cambia lottatore; spariscono quando la rivincita comincia
 	var over: bool = playing and hud._snap.get("winnerId") != null and not gym.hides_results()
+	results.visible = not gym.hides_results() # sfide e tutorial hanno la loro fine
 	if over and not is_instance_valid(results_bar) and not is_instance_valid(pause_menu):
 		_show_results()
 	elif not over and is_instance_valid(results_bar):
