@@ -660,6 +660,27 @@ export const FUNGHI = {
   throwUpSpeed: 900, // pixel/s del lancio con J + su
 };
 
+// Il fungo di Teemo (idea di Riccardo, #419): si lancia a pallonetto, si piazza dove atterra e dopo un po' gli avversari
+// non lo vedono più. Chi ci passa sopra lo fa scoppiare in una nube che avvelena e rallenta tutti gli avversari vicini
+export const FUNGO = {
+  thrownDamage: 4, // percentuale a chi viene preso dal fungo in volo (poi cade e si piazza lo stesso)
+  throwSpeed: 520, // pixel/s in avanti: un pallonetto, più lento della banana (ITEM_RULES.throwSpeed)
+  throwLift: 560, // pixel/s verso l'alto del pallonetto
+  throwUpSpeed: 900, // pixel/s tenendo su
+  gravityMult: 1.35, // il fungo è pesante: in volo cade più in fretta degli altri oggetti
+  armMs: 1000, // ms dopo l'atterraggio prima che si armi
+  stealthMs: 1800, // ms dopo l'atterraggio in cui è sparito del tutto agli avversari (sfuma da armMs)
+  lifeMs: 25000, // ms prima che un fungo piazzato sparisca
+  damage: 8, // percentuale dello scoppio
+  blastRadius: 70, // pixel: raggio della nube, dal centro del fungo al punto più vicino del corpo
+  poisonMs: 6000, // ms di veleno
+  poisonTickMs: 500, // ms tra uno scatto di veleno e l'altro
+  poisonPerSec: 2, // percentuale al secondo del veleno (12% in tutto con 6 s)
+  slowMult: 0.65, // frazione della velocità orizzontale finché dura il veleno, come il rallentamento di Teemo
+  bounceVx: 260, // pixel/s in avanti: un fungo che cade su un altro rimbalza nella direzione del lancio
+  bounceVy: 420, // pixel/s verso l'alto del rimbalzo
+};
+
 // Il filo di Kirschner di Dr. Micelium (#358): chi è infettato dalle spore va più piano, lui picchia più forte.
 // Sono potenziamenti come quelli degli oggetti (powerup "spore" e "micelio"), così il client li vede nello snapshot
 export const SPORE = {

@@ -4,7 +4,7 @@
 //   stepItems() dopo stepWorld: comparsa, caduta, oggetti in mano e colpi di quelli lanciati
 
 import { characterStats } from "../characters";
-import { BONG, FIGHTER, FUNGHI, HITSTOP, HITSTUN_PER_KNOCKBACK, ITEM_RULES } from "../constants";
+import { BONG, FIGHTER, FUNGHI, FUNGO, HITSTOP, HITSTUN_PER_KNOCKBACK, ITEM_RULES } from "../constants";
 import { DROPPABLE_ITEMS, ITEMS, itemWeight } from "../items";
 import type { ItemSpot } from "../stages";
 import { rng } from "../stageGenerator";
@@ -27,6 +27,8 @@ export interface Item extends ItemState {
   uses?: number; // il sacchetto dei funghetti: quanti ne restano
   armMs?: number; // il funghetto piantato: ms prima che scatti
   loadMs?: number; // il bong (#302): ms di carica tenendo J, assente o -1 se non lo si carica
+  plantBy?: string; // il fungo di Teemo lanciato o posato (#419): chi lo piazzerà quando tocca terra
+  plantDir?: 1 | -1; // il fungo di Teemo lanciato: verso dove rimbalza se cade su un altro fungo
 }
 
 export interface ItemWorld {
@@ -65,6 +67,10 @@ export function resetItems(world: ItemWorld): void {
   world.items = [];
   world.spawnTimer = Math.min(ITEM_RULES.firstSpawnMs, world.everyMs);
 }
+
+// Un funghetto piantato o un fungo di Teemo piazzato (ha un proprietario): non si raccoglie, scatta sugli avversari
+// e non conta tra gli oggetti che cadono
+const isPlanted = (i: Item) => !!ITEMS[i.kind].planted || (!!ITEMS[i.kind].shroom && i.ownerId !== undefined);
 
 // Non si raccoglie né si lancia mentre si è occupati: colpiti, in attacco, in schivata o inermi dopo il recupero
 const busy = (f: Fighter) =>
@@ -107,7 +113,7 @@ export function handleItemInput(world: ItemWorld, fighters: Fighter[], ctx: Phys
       continue;
     }
     const near = world.items.find(
-      (i) => !i.heldBy && !i.thrown && !ITEMS[i.kind].planted && Math.abs(i.x - f.x) < ITEM_RULES.pickRange && i.y > f.y - FIGHTER.height && i.y < f.y + 12,
+      (i) => !i.heldBy && !i.thrown && !isPlanted(i) && Math.abs(i.x - f.x) < ITEM_RULES.pickRange && i.y > f.y - FIGHTER.height && i.y < f.y + 12,
     );
     if (near && ITEMS[near.kind].call) {
       world.items = world.items.filter((i) => i !== near); // Chiama Bassanese: il telefono sparisce, arriva lui
@@ -188,10 +194,72 @@ export function swapTripInput(fighters: Fighter[]): Fighter[] {
   return tripping;
 }
 
+// Il fungo di Teemo (#419) lanciato o posato tocca terra: se c'è già un fungo piazzato lì sotto rimbalza in avanti
+// (come in LoL), altrimenti si piazza e comincia ad armarsi
+function settleShroom(world: ItemWorld, item: Item) {
+  const half = ITEMS[item.kind].width / 2;
+  const onShroom = world.items.some((o) => o !== item && isPlanted(o) && ITEMS[o.kind].shroom && Math.abs(o.x - item.x) < half * 2 && Math.abs(o.y - item.y) < 8);
+  if (onShroom) {
+    item.vx = (item.plantDir ?? 1) * FUNGO.bounceVx;
+    item.vy = -FUNGO.bounceVy;
+    item.onGround = false;
+    return;
+  }
+  item.ownerId = item.plantBy;
+  item.plantBy = undefined;
+  item.plantDir = undefined;
+  item.armMs = FUNGO.armMs;
+  item.lifeMs = FUNGO.lifeMs;
+  item.vx = 0;
+}
+
+// Un avversario tocca il fungo di Teemo armato: scoppia in una nube che avvelena tutti gli avversari dentro blastRadius
+function triggerShroom(item: Item, fighters: Fighter[], ctx: PhysicsContext) {
+  if ((item.armMs ?? 0) > 0) return;
+  const owner = fighters.find((f) => f.id === item.ownerId);
+  const foes = fighters.filter(
+    (t) => t.id !== item.ownerId && !t.eliminated && !t.respawning && !t.invulnerable && !(owner && ctx.canHit && !ctx.canHit(owner, t)),
+  );
+  const spec = ITEMS[item.kind];
+  const half = spec.width / 2;
+  const stepped = foes.some((t) => {
+    const body = bodyBox(t);
+    return item.x + half > body.x && item.x - half < body.x + body.w && item.y > body.y && item.y - spec.height < body.y + body.h;
+  });
+  if (!stepped) return;
+  item.lifeMs = 0;
+  const cx = item.x;
+  const cy = item.y - spec.height / 2;
+  for (const target of foes) {
+    const body = bodyBox(target);
+    const nx = Math.max(body.x, Math.min(cx, body.x + body.w));
+    const ny = Math.max(body.y, Math.min(cy, body.y + body.h));
+    if ((nx - cx) ** 2 + (ny - cy) ** 2 > FUNGO.blastRadius ** 2) continue;
+    target.percent = Math.min(999, target.percent + FUNGO.damage);
+    target.lastHitById = item.ownerId ?? null;
+    // Il veleno prende il posto di bong e viaggio; il fiore e gli arcade rendono intoccabili, quindi qui non arrivano
+    target.powerup = "veleno";
+    target.powerupMs = FUNGO.poisonMs;
+    ctx.events.push({ type: "powerUp", itemId: item.id, id: target.id, kind: "veleno", x: Math.round(item.x), y: Math.round(item.y) });
+  }
+}
+
+// Il veleno del fungo di Teemo: la percentuale sale a scatti di poisonTickMs mentre il tempo scorre (l'ultimo a tempo finito)
+function poisonTick(f: Fighter, beforeMs: number, afterMs: number) {
+  const ticks = Math.ceil(beforeMs / FUNGO.poisonTickMs) - Math.ceil(afterMs / FUNGO.poisonTickMs);
+  if (ticks <= 0) return;
+  f.percent = Math.min(999, f.percent + (ticks * FUNGO.poisonPerSec * FUNGO.poisonTickMs) / 1000);
+}
+
+// Da avvelenati si va più piano finché dura il veleno (movement.ts), come col fungo di Teemo
+export const poisonSlowed = (f: Fighter) => f.powerup === "veleno" && f.powerupMs > 0;
+
 // Il tempo del potenziamento scorre come gli altri timer del lottatore (fermo nell'hitstop)
 export function tickPowerup(f: Fighter, dtMs: number, ctx: PhysicsContext): void {
   if (!f.powerup) return;
+  const beforeMs = f.powerupMs;
   f.powerupMs = Math.max(0, f.powerupMs - dtMs);
+  if (f.powerup === "veleno") poisonTick(f, beforeMs, f.powerupMs);
   if (f.powerupMs > 0) return;
   ctx.events.push({ type: "powerEnd", id: f.id, kind: f.powerup });
   if (isArcade(f)) endArcade(f); // si torna in partita (#427)
@@ -289,17 +357,23 @@ function dropItem(item: Item) {
 }
 
 function throwItem(item: Item, f: Fighter, ctx: PhysicsContext) {
+  const shroom = ITEMS[item.kind].shroom;
+  if (shroom) {
+    item.plantBy = f.id; // il fungo di Teemo, lanciato o posato ai piedi, si piazza dove tocca terra
+    item.plantDir = f.facing;
+  }
   if (f.input.down && !f.input.up) return dropItem(item);
   item.heldBy = null;
   item.loadMs = -1;
   item.thrown = true;
   item.thrownBy = f.id;
+  const speeds = shroom ? FUNGO : ITEM_RULES; // il fungo vola a pallonetto, più lento e più alto
   if (f.input.up) {
     item.vx = f.vx * 0.3;
-    item.vy = -ITEM_RULES.throwUpSpeed;
+    item.vy = -speeds.throwUpSpeed;
   } else {
-    item.vx = f.facing * ITEM_RULES.throwSpeed;
-    item.vy = -ITEM_RULES.throwLift;
+    item.vx = f.facing * speeds.throwSpeed;
+    item.vy = -speeds.throwLift;
   }
   ctx.events.push({ type: "itemThrow", itemId: item.id, id: f.id, x: Math.round(item.x), y: Math.round(item.y) });
 }
@@ -311,7 +385,7 @@ export function stepItems(world: ItemWorld, fighters: Fighter[], dtMs: number, c
   world.spawnTimer -= dtMs;
   if (world.spawnTimer <= 0) {
     world.spawnTimer = world.everyMs;
-    if (world.items.filter((i) => !ITEMS[i.kind].planted).length < world.maxOnStage) spawn(world, ctx);
+    if (world.items.filter((i) => !isPlanted(i)).length < world.maxOnStage) spawn(world, ctx);
   }
 
   for (const item of world.items) {
@@ -334,7 +408,7 @@ export function stepItems(world: ItemWorld, fighters: Fighter[], dtMs: number, c
     }
 
     carry(item, dtMs, ctx);
-    item.vy = Math.min(FIGHTER.maxFallSpeed, item.vy + FIGHTER.gravity * dt);
+    item.vy = Math.min(FIGHTER.maxFallSpeed, item.vy + FIGHTER.gravity * dt * (spec.shroom ? FUNGO.gravityMult : 1)); // il fungo è pesante
     if (item.onGround) item.vx = Math.sign(item.vx) * Math.max(0, Math.abs(item.vx) - ITEM_RULES.groundFriction * dt);
     const prevY = item.y;
     item.x += item.vx * dt;
@@ -342,10 +416,15 @@ export function stepItems(world: ItemWorld, fighters: Fighter[], dtMs: number, c
     land(item, prevY, spec.width / 2, dtMs, ctx);
 
     if (item.thrown) hitWithItem(item, fighters, ctx);
+    if (spec.shroom && item.onGround && item.plantBy) settleShroom(world, item);
     if (spec.planted) {
       item.armMs = Math.max(0, (item.armMs ?? 0) - dtMs);
       triggerMushroom(item, fighters, ctx);
       if (!item.onGround) item.lifeMs -= dtMs; // anche se cade nel vuoto prima o poi sparisce
+    } else if (spec.shroom && item.ownerId !== undefined) {
+      item.armMs = Math.max(0, (item.armMs ?? 0) - dtMs);
+      triggerShroom(item, fighters, ctx);
+      if (!item.onGround) item.lifeMs -= dtMs;
     }
     if (item.onGround) item.lifeMs -= dtMs;
   }
@@ -453,7 +532,9 @@ function hitWithItem(item: Item, fighters: Fighter[], ctx: PhysicsContext) {
     if (!(box.x < body.x + body.w && box.x + box.w > body.x && box.y < body.y + body.h && box.y + box.h > body.y)) continue;
 
     const dir = item.vx !== 0 ? (Math.sign(item.vx) as 1 | -1) : target.x >= item.x ? 1 : -1;
-    item.lifeMs = 0; // sparisce al prossimo filtro
+    // Sparisce al prossimo filtro; il fungo di Teemo invece cade dritto e si piazza lo stesso
+    if (spec.shroom) item.vx = 0;
+    else item.lifeMs = 0;
     // Lo scudo para anche gli oggetti lanciati (#109): l'oggetto si consuma lo stesso
     if (target.shielding) {
       hitShield(target, item.thrownBy ?? "", spec.damage, dir, Math.round(item.x), Math.round(item.y - spec.height / 2), ctx);
