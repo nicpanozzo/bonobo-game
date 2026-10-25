@@ -93,9 +93,11 @@ export function handleItemInput(world: ItemWorld, fighters: Fighter[], ctx: Phys
       consumeAttackKeys(f);
       continue;
     }
-    // Il sacchetto dei funghetti (#302): giù + J ne pianta uno ai piedi, finiti sparisce. Senza giù si lancia come gli altri
-    if (held && ITEMS[held.kind].mushrooms && pressed(f, "light") && f.input.down && f.onGround) {
-      plantMushroom(world, held, f, ctx);
+    // Il sacchetto dei funghetti (#302, comandi di Nicola): J ne pianta uno ai piedi, J + direzione lo lancia e si pianta
+    // dove cade, K molla il sacchetto lì. Finiti i funghetti il sacchetto sparisce
+    if (held && ITEMS[held.kind].mushrooms) {
+      if (pressed(f, "light")) plantMushroom(world, held, f, ctx);
+      else dropItem(held);
       consumeAttackKeys(f);
       continue;
     }
@@ -134,10 +136,16 @@ function powerUp(world: ItemWorld, item: Item, f: Fighter, ctx: PhysicsContext) 
   ctx.events.push({ type: "powerUp", itemId: item.id, id: f.id, kind: use.powerup, x: Math.round(f.x), y: Math.round(f.y) });
 }
 
+// Senza direzione (o con giù) il funghetto resta ai piedi; con destra, sinistra o su vola via e si pianta dove cade.
+// Non è un oggetto lanciato: scatta solo come un funghetto, anche se tocca qualcuno in volo una volta armato
 function plantMushroom(world: ItemWorld, bag: Item, f: Fighter, ctx: PhysicsContext) {
+  const side = f.input.right === f.input.left ? 0 : f.input.right ? 1 : -1;
+  const up = f.input.up && !f.input.down;
+  const vx = side * FUNGHI.throwSpeed + (up ? f.vx * 0.3 : 0);
+  const vy = up ? -FUNGHI.throwUpSpeed : side !== 0 ? -FUNGHI.throwLift : 0;
   const x = Math.round(f.x);
-  const y = Math.round(f.y);
-  const item: Item = { id: world.nextId++, kind: "fungo", x, y, vx: 0, vy: 0, heldBy: null, thrown: false, onGround: false, riding: -1, thrownBy: null, lifeMs: FUNGHI.lifeMs, ownerId: f.id, armMs: FUNGHI.armMs };
+  const y = Math.round(vy < 0 ? f.y - ITEM_RULES.holdOffsetY : f.y);
+  const item: Item = { id: world.nextId++, kind: "fungo", x, y, vx, vy, heldBy: null, thrown: false, onGround: false, riding: -1, thrownBy: null, lifeMs: FUNGHI.lifeMs, ownerId: f.id, armMs: FUNGHI.armMs };
   world.items.push(item);
   ctx.events.push({ type: "itemSpawn", itemId: item.id, kind: "fungo", x, y });
   bag.uses = (bag.uses ?? FUNGHI.uses) - 1;
@@ -272,14 +280,18 @@ function blowCloud(f: Fighter, fighters: Fighter[], ctx: PhysicsContext) {
 }
 
 // Avanti con un arco, tenendo su verso l'alto, tenendo giù lo si posa e basta
-function throwItem(item: Item, f: Fighter, ctx: PhysicsContext) {
+// Posato dove si sta, senza lanciarlo
+function dropItem(item: Item) {
   item.heldBy = null;
   item.loadMs = -1;
-  if (f.input.down && !f.input.up) {
-    item.vx = 0;
-    item.vy = 0;
-    return;
-  }
+  item.vx = 0;
+  item.vy = 0;
+}
+
+function throwItem(item: Item, f: Fighter, ctx: PhysicsContext) {
+  if (f.input.down && !f.input.up) return dropItem(item);
+  item.heldBy = null;
+  item.loadMs = -1;
   item.thrown = true;
   item.thrownBy = f.id;
   if (f.input.up) {

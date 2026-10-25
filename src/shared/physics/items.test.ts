@@ -407,14 +407,14 @@ describe("i funghetti di Teemo (#302)", () => {
     a.x = 500;
     b.x = 900;
     s.world.items.push(bag(a.x + 10, a.y));
-    for (const keys of [{ light: true }, {}, { light: true, down: true }, {}]) {
+    for (const keys of [{ light: true }, {}, { light: true }, {}]) {
       press(a, keys);
       run(s.world, s.fighters, s.ctx, 1);
     }
     return s;
   }
 
-  it("giù + J pianta un funghetto ai piedi, senza attaccare; tre e il sacchetto è finito", () => {
+  it("J pianta un funghetto ai piedi, senza attaccare; tre e il sacchetto è finito", () => {
     const { ctx, world, fighters } = plant();
     const [a] = fighters;
     const planted = world.items.filter((i) => i.kind === "fungo");
@@ -424,7 +424,7 @@ describe("i funghetti di Teemo (#302)", () => {
     assert.equal(ofType(ctx.events, "attack").length, 0);
     for (let k = 0; k < 2; k++) {
       a.x += 60;
-      for (const keys of [{ light: true, down: true }, {}]) {
+      for (const keys of [{ light: true }, {}]) {
         press(a, keys);
         run(world, fighters, ctx, 1);
       }
@@ -456,6 +456,32 @@ describe("i funghetti di Teemo (#302)", () => {
     press(b, { right: true });
     run(world, fighters, ctx, 3);
     assert.ok(b.vx > 0, "finito il viaggio si torna normali");
+  });
+
+  it("J + direzione lancia un funghetto che si pianta dove cade; K molla il sacchetto", () => {
+    const s = setup();
+    const [a, b] = s.fighters;
+    a.x = 500;
+    b.x = 900;
+    s.world.items.push(bag(a.x + 10, a.y));
+    for (const keys of [{ light: true }, {}, { light: true, right: true }, {}]) {
+      press(a, keys);
+      run(s.world, s.fighters, s.ctx, 1);
+    }
+    const fungo = s.world.items.find((i) => i.kind === "fungo")!;
+    assert.ok(fungo.vx > 0 && fungo.vy < 0, "vola in avanti ad arco");
+    assert.equal(fungo.thrown, false, "non colpisce come un oggetto lanciato");
+    run(s.world, s.fighters, s.ctx, Math.ceil(1500 / DT));
+    assert.ok(fungo.onGround && fungo.x > a.x + 150, `piantato lontano, a ${fungo.x}`);
+    assert.equal(ofType(s.ctx.events, "attack").length, 0);
+    const sack = s.world.items.find((i) => i.kind === "funghetti")!;
+    assert.equal(sack.uses, FUNGHI.uses - 1);
+    press(a, { heavy: true });
+    run(s.world, s.fighters, s.ctx, 1);
+    assert.equal(sack.heldBy, null, "K lo molla");
+    assert.equal(sack.thrown, false, "senza lanciarlo");
+    assert.equal(sack.vx, 0);
+    assert.equal(s.world.items.filter((i) => i.kind === "fungo").length, 1, "K non pianta");
   });
 
   it("i funghetti piantati non tolgono posto agli oggetti che cadono", () => {

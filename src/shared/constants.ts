@@ -639,6 +639,9 @@ export const FUNGHI = {
   damage: 6, // percentuale a chi lo calpesta
   tripMs: 3000, // ms con destra e sinistra invertite
   popVy: 520, // pixel/s verso l'alto: il funghetto che scoppia fa saltellare
+  throwSpeed: 650, // pixel/s di un funghetto lanciato con J + destra/sinistra: vola ad arco e si pianta dove cade
+  throwLift: 380, // pixel/s verso l'alto del lancio in avanti
+  throwUpSpeed: 900, // pixel/s del lancio con J + su
 };
 
 // Il filo di Kirschner di Dr. Micelium (#358): chi è infettato dalle spore va più piano, lui picchia più forte.

@@ -1033,7 +1033,10 @@
     "lifeMs": 20000,
     "damage": 6,
     "tripMs": 3000,
-    "popVy": 520
+    "popVy": 520,
+    "throwSpeed": 650,
+    "throwLift": 380,
+    "throwUpSpeed": 900
   },
   "spore": {
     "ms": 4000,
