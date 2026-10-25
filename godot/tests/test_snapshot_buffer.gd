@@ -126,3 +126,19 @@ func test_atterraggio_senza_rallentare() -> void:
 	runner.check(absf(s.y - 589.5) < 0.01, "a 10 ms si cade a 950 px/s, y attesa 589,5: %s" % [s.y])
 	s = b.sample("a", 1050 + b.delay_ms) # ora del server 1030
 	runner.check(s.y == 600.0, "toccato il suolo si resta lì: %s" % [s.y])
+
+
+# Rallentatore solo grafico (#470 passo 2b): il ritardo in più disegna il passato, anche per il proprio lottatore
+func test_ritardo_in_piu() -> void:
+	var b := SnapshotBuffer.new()
+	b.own_id = "a"
+	b.push(1000, 1020, _players(0))
+	b.push(1100, 1120, _players(100))
+	b.push(1200, 1220, _players(200))
+	var now := 1170.0 + b.delay_ms
+	runner.check(float(b.sample("a", now).x) >= 200.0, "senza ritardo il mio lottatore segue l'ultimo snapshot (o va avanti)")
+	b.extra_delay_ms = 100.0
+	runner.check(absf(float(b.sample("a", now).x) - 50.0) < 0.01, "con 100 ms in più si vede a metà tra i primi due: %s" % [b.sample("a", now).x])
+	runner.check(b.reached(1100, now) and not b.reached(1200, now), "gli eventi aspettano che il disegno arrivi al loro istante")
+	b.extra_delay_ms = 0.0
+	runner.check(b.reached(1200, 1220), "senza ritardo un evento appena arrivato parte subito")
