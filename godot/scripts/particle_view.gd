@@ -5,6 +5,7 @@
 extends Node2D
 
 const ParticleFx := preload("res://scripts/particle_fx.gd")
+const FighterFx := preload("res://scripts/fighter_fx.gd")
 const TONES := ["dust", "smoke", "dark", "air", "core", "yellow", "orange", "red"]
 
 var max_particles := 600 # oltre, i gruppi più vecchi spariscono (EFFECTS.particleMax)
@@ -103,6 +104,10 @@ func _draw() -> void:
 				_draw_tex(self, p, ap)
 			elif kind == "grit":
 				_draw_grit(p, ap)
+			elif kind == "pixel":
+				_draw_pixel(p, ap)
+			elif kind == "star5":
+				_draw_star5(p, ap)
 	for id in _clouds:
 		_draw_cloud(_clouds[id])
 	for m in _marks:
@@ -237,8 +242,31 @@ func _draw_grit(p: Dictionary, a: float) -> void:
 	var col: Color = p.col
 	col.a = 1.0 if k < 0.7 else (1.0 - k) / 0.3
 	var z: float = float(p.s) * ParticleFx.SCALE
-	draw_set_transform(pos, float(p.spin) * a)
+	draw_set_transform(pos, float(p.spin) * a, Vector2(float(p.get("stretch", 1.0)), 1.0)) # stretch: filo d'erba, scheggia
 	draw_colored_polygon(PackedVector2Array([Vector2(-z, -z * 0.6), Vector2(z * 0.8, -z), Vector2(z, z * 0.5), Vector2(-z * 0.4, z)]), col)
+
+
+# Quadratino di pixel (Egiainuso, fighter_fx.gd): fermo sulla griglia, si muove a scatti e sfarfalla
+func _draw_pixel(p: Dictionary, a: float) -> void:
+	if not FighterFx.pixel_visible(p, a):
+		return
+	var z: float = float(p.s) * ParticleFx.SCALE
+	draw_set_transform(Vector2.ZERO)
+	draw_rect(Rect2(FighterFx.pixel_at(p, a) - Vector2(z, z) * 0.5, Vector2(z, z)), p.col)
+
+
+# Stellina a cinque punte che salta e ricade (Marcomunista, fighter_fx.gd)
+func _draw_star5(p: Dictionary, a: float) -> void:
+	var k := a / float(p.life)
+	if k >= 1.0:
+		return
+	var pos := ParticleFx.at(p, a)
+	var floor_y: float = p.get("floor", INF)
+	pos.y = minf(pos.y, floor_y)
+	var col: Color = p.col
+	col.a = 1.0 if k < 0.7 else (1.0 - k) / 0.3
+	draw_set_transform(pos, float(p.spin) * a)
+	draw_colored_polygon(ParticleFx.star_points(Vector2.ZERO, float(p.s) * ParticleFx.SCALE, 5, 0.45, 0, 0.0), col)
 
 
 # Scintilla: un tratto dalla posizione di un attimo prima a quella di adesso, che si assottiglia e si spegne

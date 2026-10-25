@@ -475,6 +475,7 @@ export const EFFECTS = {
   brakeSpeed: 140, // px/s: sopra questa velocità a terra, rallentando forte si lascia la scia di frenata
   brakeDecel: 1500, // px/s²: da questo rallentamento in su è una frenata
   brakeEveryMs: 30, // ogni quanti ms nasce uno sbuffetto della frenata
+  styleStepMs: 130, // di corsa, ogni quanti ms Marcomunista, Egiainuso e OrsoBlu lasciano un pizzico del loro stile (fighter_fx.gd)
   turnSpeed: 120, // px/s: girandosi a terra più veloci di così si alza uno sbuffo
   airRingMs: 380, // durata dell'anello d'aria del salto in aria
   impactStarMs: 240, // durata della stella d'impatto

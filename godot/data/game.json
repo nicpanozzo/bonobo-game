@@ -914,6 +914,7 @@
     "brakeSpeed": 140,
     "brakeDecel": 1500,
     "brakeEveryMs": 30,
+    "styleStepMs": 130,
     "turnSpeed": 120,
     "airRingMs": 380,
     "impactStarMs": 240,
