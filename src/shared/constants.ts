@@ -476,6 +476,19 @@ export const EFFECTS = {
   // Esplosione del KO a colonna e nuvoletta della rinascita (#470 passo 2a)
   koColumnInset: 30, // pixel: la colonna del KO parte così dentro il bordo dell'inquadratura
   cloudDescentMs: 900, // la nuvoletta scende dall'alto per tanto e arriva al punto di ritorno quando si ricompare
+  // Rallentatore solo grafico (#470 passo 2b, godot/scripts/time_warp.gd): il disegno resta indietro, il server no
+  finishSlowFactor: 0.12, // velocità della scena nel colpo che chiude la partita (1 = normale)
+  finishSlowMs: 750, // ms reali del colpo decisivo al rallentatore, in negativo e con lo zoom sul colpo
+  finishFollowFactor: 0.3, // velocità della scena mentre la telecamera segue chi vola via
+  finishFollowMs: 1200, // ms reali in cui si segue chi vola via; se non esce, la scena si rimette in pari
+  finishZoom: 0.45, // frazione: quanto stringe la telecamera sul colpo decisivo
+  gameSlowFactor: 0.25, // velocità della scena sull'ultimo KO
+  gameSlowMs: 1400, // ms reali dell'ultimo KO al rallentatore
+  gameZoom: 0.35, // frazione: quanto stringe la telecamera dove esce l'ultimo KO
+  gameTextMs: 2000, // durata della scritta GAME!
+  warpCatchUp: 1.6, // velocità con cui la scena si rimette in pari dopo il rallentatore
+  warpMaxDelayMs: 2400, // ms: il disegno non resta indietro più di così
+  warpBufferFrames: 200, // snapshot tenuti in memoria (a 60 al secondo, più di warpMaxDelayMs)
 };
 
 // Bot del server (#20, src/server/bot.ts): quanto è svelto e quando attacca
@@ -652,6 +665,27 @@ export const FUNGHI = {
   throwSpeed: 650, // pixel/s di un funghetto lanciato con J + destra/sinistra: vola ad arco e si pianta dove cade
   throwLift: 380, // pixel/s verso l'alto del lancio in avanti
   throwUpSpeed: 900, // pixel/s del lancio con J + su
+};
+
+// Il fungo di Teemo (idea di Riccardo, #419): si lancia a pallonetto, si piazza dove atterra e dopo un po' gli avversari
+// non lo vedono più. Chi ci passa sopra lo fa scoppiare in una nube che avvelena e rallenta tutti gli avversari vicini
+export const FUNGO = {
+  thrownDamage: 4, // percentuale a chi viene preso dal fungo in volo (poi cade e si piazza lo stesso)
+  throwSpeed: 520, // pixel/s in avanti: un pallonetto, più lento della banana (ITEM_RULES.throwSpeed)
+  throwLift: 560, // pixel/s verso l'alto del pallonetto
+  throwUpSpeed: 900, // pixel/s tenendo su
+  gravityMult: 1.35, // il fungo è pesante: in volo cade più in fretta degli altri oggetti
+  armMs: 1000, // ms dopo l'atterraggio prima che si armi
+  stealthMs: 1800, // ms dopo l'atterraggio in cui è sparito del tutto agli avversari (sfuma da armMs)
+  lifeMs: 25000, // ms prima che un fungo piazzato sparisca
+  damage: 8, // percentuale dello scoppio
+  blastRadius: 70, // pixel: raggio della nube, dal centro del fungo al punto più vicino del corpo
+  poisonMs: 6000, // ms di veleno
+  poisonTickMs: 500, // ms tra uno scatto di veleno e l'altro
+  poisonPerSec: 2, // percentuale al secondo del veleno (12% in tutto con 6 s)
+  slowMult: 0.65, // frazione della velocità orizzontale finché dura il veleno, come il rallentamento di Teemo
+  bounceVx: 260, // pixel/s in avanti: un fungo che cade su un altro rimbalza nella direzione del lancio
+  bounceVy: 420, // pixel/s verso l'alto del rimbalzo
 };
 
 // Il filo di Kirschner di Dr. Micelium (#358): chi è infettato dalle spore va più piano, lui picchia più forte.

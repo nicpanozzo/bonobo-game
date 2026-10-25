@@ -9,6 +9,9 @@ var teleport_distance := 300.0
 var size := 30
 var own_id := "" # il proprio lottatore (E17): niente ritardo d'interpolazione, segue l'ultimo snapshot
 var own_extrapolate_ms := 50.0
+# Rallentatore solo grafico (#470 passo 2b): ritardo in più sul disegno. Cresce mentre la scena va piano e torna a zero
+# quando si rimette in pari (time_warp.gd); la partita sul server non cambia. A zero tutto resta com'era
+var extra_delay_ms := 0.0
 
 var _frames: Array = [] # [{ t: ora del server, stage_ms: tempo dell'arena, players: { id: PlayerState } }]
 var _offset := NAN # ora locale - ora del server, stimata
@@ -39,14 +42,15 @@ func sample_all(ids: Array, now: float) -> Dictionary:
 	var out := {}
 	if is_nan(_offset) or _frames.is_empty():
 		return out
-	var render_time := now - _offset - delay_ms
+	var render_time := now - _offset - delay_ms - extra_delay_ms
 	var i := _frames.size() - 1
 	while i > 0 and _frames[i].t > render_time:
 		i -= 1
 	var a: Dictionary = _frames[i]
 	var b: Dictionary = _frames[i + 1] if i + 1 < _frames.size() and render_time > a.t else {}
 	for id in ids:
-		var p: Variant = latest_now(id, now) if id == own_id else _interpolate(id, a, b, render_time)
+		# al rallentatore anche il proprio lottatore va piano con gli altri: niente scorciatoia sull'ultimo snapshot
+		var p: Variant = latest_now(id, now) if id == own_id and extra_delay_ms <= 0.0 else _interpolate(id, a, b, render_time)
 		if p != null:
 			out[id] = p
 	return out
@@ -115,7 +119,7 @@ func _latest(id: String) -> Variant:
 func sample_stage_ms(now: float) -> float:
 	if is_nan(_offset) or _frames.is_empty():
 		return 0.0
-	var render_time := now - _offset - delay_ms
+	var render_time := now - _offset - delay_ms - extra_delay_ms
 	var i := _frames.size() - 1
 	while i > 0 and _frames[i].t > render_time:
 		i -= 1
@@ -125,3 +129,10 @@ func sample_stage_ms(now: float) -> float:
 		return a.stage_ms + maxf(0.0, render_time - a.t)
 	var b: Dictionary = _frames[i + 1]
 	return lerpf(a.stage_ms, b.stage_ms, (render_time - a.t) / (b.t - a.t))
+
+
+# Il disegno è arrivato all'istante del server server_t? (#470 passo 2b) Gli eventi di uno snapshot trattenuto durante
+# il rallentatore partono quando il disegno lo raggiunge, con lo stesso anticipo di sempre (delay_ms): senza
+# rallentatore è sempre vero, e gli eventi partono subito come prima
+func reached(server_t: float, now: float) -> bool:
+	return is_nan(_offset) or server_t <= now - _offset - extra_delay_ms

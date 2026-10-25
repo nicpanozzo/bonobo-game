@@ -20,10 +20,10 @@ Ogni oggetto ha una **classe di frequenza** proporzionata a quanto cambia la par
 | Classe | Peso | Per cosa | Oggetti |
 | --- | --- | --- | --- |
 | comune | 8 | piccolo vantaggio, da lanciare | Banana |
-| normale | 4 | vantaggio a tempo o con un rischio | Funghetti, Bong |
+| normale | 4 | vantaggio a tempo o con un rischio | Fungo di Teemo, Bong |
 | raro | 2 | cambia uno scontro | Fiore, Chiama Bassanese |
 | rarissimo | 1 | cambia la partita per diversi secondi | Tetris, Pac-Man |
-| mai | 0 | non cade dal cielo | Funghetto piantato |
+| mai | 0 | non cade dal cielo | Funghetto piantato, Funghetti (messi da parte, #419) |
 
 ## Già nel gioco
 
@@ -32,10 +32,33 @@ Ogni oggetto ha una **classe di frequenza** proporzionata a quanto cambia la par
 | Banana | Si lancia, colpisce chi tocca. |
 | Fiore (#231) | Si consuma: 8 s intoccabili, colpi ×1,3, passo lento. |
 | **Bong** (#303) | Tre fasi, sotto. |
-| Funghetti di Teemo (#317) | Col sacchetto in mano J pianta un funghetto quasi invisibile ai piedi, J + direzione lo lancia e si pianta dove cade, K molla il sacchetto. Chi li calpesta ha i comandi invertiti per 3 s. |
+| **Fungo di Teemo** (#419, idea di Riccardo) | Sotto. Ha preso il posto dei Funghetti nel cielo. |
+| Funghetti di Teemo (#317), **messi da parte** | Non cadono più (#419): il codice resta, per riaverli basta `rarity: "normale"` in `items.ts`. Col sacchetto in mano J pianta un funghetto quasi invisibile ai piedi, J + direzione lo lancia e si pianta dove cade, K molla il sacchetto. Chi li calpesta ha i comandi invertiti per 3 s. |
 | **Tetris** (#427, idea di Nicola) | Ci si assenta per 9 s in un cabinato, fermi e intoccabili: i tasti guidano pezzi che cadono dall'alto (destra/sinistra spostano, su/salto/J ruotano, giù accelera, K li fa cadere di colpo). Il pezzo compare sopra l'avversario più vicino, con l'ombra di dove si poserà, e attraversa le piattaforme sottili. Colpisce chi tocca (12%, 18% se fatto cadere con K); posato, diventa blocchi solidi per 10 s. Sei blocchi in fila alla stessa altezza fanno una **riga**: esplode e lancia in alto chi ci sta sopra (16%). Tra un pezzo e il prossimo passano 0,8 s. Logica in `physics/arcade.ts`. |
 | **Pac-Man** (#427, idea di Nicola) | Per 8 s si è Pac-Man: niente gravità, si va sempre dritti nella direzione dell'ultima freccia premuta, attraverso muri e pavimenti, e chi esce da un lato dell'arena rientra dall'altro. Intoccabili; chi si tocca viene mangiato (14% e lancio, poi 1,2 s di respiro). Gli altri diventano fantasmini e compaiono le palline: ognuna mangiata fa andare un po' più veloce (+1,2%, le grandi valgono 5, fino a 1,8 volte) finché si resta Pac-Man. |
 | **Chiama Bassanese** (idea di Nicola) | Un telefono che squilla: chi lo raccoglie chiama il Bassanese, che entra dal lato dell'arena più lontano e la attraversa tutta, di superficie in superficie, col telefono all'orecchio. Su ogni superficie si guarda in giro con un "?" e borbotta ("Dove l'ho messo...?"): cerca qualcosa, ma non si sa cosa. Chi tocca vola via (11%), tranne chi l'ha chiamato e i compagni; arrivato in fondo se ne va. Il giro dura al massimo 15 s: nelle arene grandi cammina più svelto, in quelle piene (Bologna) visita 10 superfici sparse. Logica in `physics/bassanese.ts`, disegno in `bassanese_view.gd`. |
+
+## Il Fungo di Teemo (idea di Riccardo, #419)
+
+Un fungo solo, grande, disegnato come la Trappola velenosa di Teemo in League of Legends: cappello
+bulboso quasi a palla, verde oliva puntinato e più scuro sotto, macchie grandi e irregolari magenta, gambo
+corto marrone-grigio. Numeri in `FUNGO` (`constants.ts`), oggetto `fungoTeemo` in `items.ts`.
+
+1. **Lancio a pallonetto.** Si raccoglie con J o K e si lancia con K come gli altri (su = in alto, giù =
+   posalo ai piedi), ma è pesante: parte più lento e più alto della banana e ricade prima. In volo
+   colpisce come la banana (4%), poi cade dritto e si piazza lo stesso.
+2. **Si piazza dove atterra** e in 1 s si arma: affonda un po' e **sfuma fino a sparire agli avversari**
+   (del tutto dopo 1,8 s). Chi l'ha lanciato (e la sua squadra) lo vede trasparente. Resta 25 s.
+3. **Rimbalzo.** Se cade su un fungo già piazzato rimbalza e si posa più avanti, nella direzione del lancio.
+4. **Scoppio.** Un avversario che lo tocca lo fa scoppiare in una nube che prende **tutti gli avversari
+   vicini**: 8% subito, poi **veleno** per 6 s (+1% ogni mezzo secondo, 12% in tutto) e **rallentati**
+   finché dura, come in LoL. Il veleno prende il posto di bong e viaggio; col fiore si è intoccabili.
+5. **Grafica.** Il cappello si gonfia e scoppia, la nube verde-viola si allarga a cupola, ribolle e si
+   dissolve dal basso; le spore viola schizzano fuori. Chi è avvelenato ha una tinta verde che pulsa a
+   ogni scatto, bolle sopra la testa e una nuvoletta che lo segue; nell'HUD una barra verde-viola.
+
+La chiave `fungoTeemo` sta, in ordine alfabetico, dove stava `funghetti`: con lo stesso peso la sequenza
+degli oggetti che cadono resta quella di prima, e non cambia i test che contano sul caso (i bot).
 
 ## Il Bong (idea di Nicola)
 

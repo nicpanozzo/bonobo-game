@@ -54,6 +54,7 @@ var _last_snapshot := 0 # ms dell'ultimo snapshot: in partita il silenzio dice c
 var gym := GymFlow.new(self) # palestra, tutorial e sfide (E15): pannelli e stanze tutte proprie
 var results_bar: Control # Rivincita e Cambia lottatore a fine partita (#250), null durante la partita
 var _last_players: Array = [] # giocatori dell'ultimo snapshot, per il tasto Segnala (#214)
+var _held: Array = [] # snapshot trattenuti durante il rallentatore (#470): eventi, HUD e audio partono quando il disegno li raggiunge
 var p2: SecondPlayer # il secondo giocatore sullo stesso schermo, col suo pad; null se non c'è
 var _p1_pad := -1 # l'ultimo pad usato dal primo giocatore: Start da un altro pad fa entrare il secondo
 var _p2_hint: Label
@@ -318,6 +319,7 @@ func _leave(page := "match") -> void:
 	_join_since = -1
 	_last_snapshot = 0
 	socket.close()
+	_held = []
 	world.reset()
 	hud.reset()
 	prematch.reset()
@@ -554,17 +556,22 @@ func _on_event(name: String, data: Variant) -> void:
 		"snapshot":
 			_last_snapshot = Time.get_ticks_msec()
 			_last_players = data.get("players", [])
-			for e in data.events:
-				world.on_event(e)
-				audio.on_event(e)
-				rumble.on_event(e)
-				gym.on_event(e)
-			world.on_snapshot(data)
-			hud.on_snapshot(data)
-			prematch.on_snapshot(data)
-			_apply_prediction() # al 3, 2, 1 si sta fermi: niente predizione
-			audio.on_snapshot(data)
-			gym.on_snapshot(data)
+			if world.holding() or not _held.is_empty():
+				# Rallentatore (#470): lo snapshot entra subito nel buffer, il resto aspetta che il disegno lo raggiunga
+				world.on_snapshot(data)
+				_held.append(data)
+			else:
+				for e in data.events:
+					world.on_event(e)
+					audio.on_event(e)
+					rumble.on_event(e)
+					gym.on_event(e)
+				world.on_snapshot(data)
+				hud.on_snapshot(data)
+				prematch.on_snapshot(data)
+				_apply_prediction() # al 3, 2, 1 si sta fermi: niente predizione
+				audio.on_snapshot(data)
+				gym.on_snapshot(data)
 		"roomFull":
 			_show_connecting("Stanza piena!", "Prova con un'altra stanza: Annulla torna alla lobby.")
 		"refused": # il server non ci fa entrare e dice perché (E2): si torna alla lobby con il messaggio
@@ -572,8 +579,25 @@ func _on_event(name: String, data: Variant) -> void:
 			add_child(UI.banner(str(data.get("message", "Il server non ti fa entrare")), "", Callable(), 15.0))
 
 
+# Gli snapshot trattenuti dal rallentatore (#470) partono in ordine, quando il disegno arriva al loro istante:
+# esplosioni, suoni, voce di GAME! e classifica arrivano quando si vedono
+func _release_held() -> void:
+	while not _held.is_empty() and world.reached(float(_held[0].get("t", 0.0))):
+		var data: Dictionary = _held.pop_front()
+		for e in data.events:
+			world.on_event(e)
+			audio.on_event(e)
+			rumble.on_event(e)
+			gym.on_event(e)
+		hud.on_snapshot(data)
+		prematch.on_snapshot(data)
+		audio.on_snapshot(data)
+		gym.on_snapshot(data)
+
+
 func _process(_delta: float) -> void:
 	socket.poll()
+	_release_held()
 	if _retry_at > 0 and Time.get_ticks_msec() >= _retry_at:
 		_retry_at = -1
 		_connect()

@@ -25,8 +25,15 @@ var _particles: Node2D # effetti a particelle (#470): polvere, anello d'aria, im
 var _fx_seed := 0 # ogni gruppo di particelle ha la sua variante
 var _fx_last := {} # id -> { vx, facing, ms, smoke, brake }: quello che serve per frenata, inversione e fumo del lancio
 var _fall_vy := {} # id -> velocità di caduta all'ultimo frame in aria, per l'atterraggio pesante
+var _warp := {} # il rallentatore solo grafico (#470 passo 2b, time_warp.gd): vuoto se non c'è
+var _game_text := {} # { at }: la scritta GAME! dall'evento matchEnd (#470), vuoto se non c'è
+var _neg_overlay: ColorRect # la scena in negativo nel colpo che chiude la partita (#470)
+var _moment: Node2D # sopra a tutto: la scritta GAME!
 var _respawn_clouds := {} # id -> { at, x, y, col }: la nuvoletta della rinascita (#470), da quando scende e dove arriva
 var _clouds: Array = [] # [{ x, y, dir, age, damage }] nuvole soffiate col bong (#302)
+var _poison_clouds: Array = [] # [{ x, y, age }] nubi di veleno del fungo di Teemo che scoppia (#419)
+var _blasted := {} # id del fungo di Teemo già scoppiato: una nube sola anche se avvelena più lottatori
+var _shrooms := {} # id oggetto -> { since, popped }: da quando il fungo di Teemo è piazzato, per farlo sparire
 var _high_overlay: ColorRect # lo schermo distorto di chi è fatto col bong (#302)
 var effects := true # scie e polvere (opzioni → Video), main.gd lo legge dalle preferenze
 var _beams: Array = [] # [{ x, y, age, color }] raggi dei KO, dal punto di uscita verso il centro
@@ -103,6 +110,16 @@ const MotionFeel := preload("res://scripts/motion_feel.gd") # squash & stretch d
 const StrikeFx := preload("res://scripts/strike_fx.gd") # scia dei colpi e linee di velocità (#384)
 const ParticleFx := preload("res://scripts/particle_fx.gd") # effetti a particelle (#470)
 const ParticleView := preload("res://scripts/particle_view.gd")
+const TimeWarp := preload("res://scripts/time_warp.gd") # rallentatore solo grafico (#470 passo 2b)
+
+
+# Il livello della scritta GAME!: chiede a world_view di disegnarci sopra (sopra il negativo e le particelle)
+class MomentLayer extends Node2D:
+	var view # world_view.gd, senza tipo: la chiamata si risolve a runtime
+
+	func _draw() -> void:
+		view.draw_moment(self)
+
 const SunLight := preload("res://scripts/sun_light.gd") # luce e ombre del sole e della luna (#288)
 static var _screen_px_per_world := 0.0 # pixel dello schermo per pixel di mondo alla telecamera più vicina; 0 = non si sa (headless)
 var _character_sprites := {} # id personaggio -> true quando i suoi sprite sono caricati
@@ -160,6 +177,16 @@ func setup(game_data: Dictionary) -> void:
 	_particles = ParticleView.new()
 	_particles.max_particles = int(game.effects.get("particleMax", 600))
 	add_child(_particles)
+	_neg_overlay = ColorRect.new()
+	var negativo := ShaderMaterial.new()
+	negativo.shader = load("res://shaders/negativo.gdshader")
+	_neg_overlay.material = negativo
+	_neg_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_neg_overlay.visible = false
+	add_child(_neg_overlay)
+	_moment = MomentLayer.new()
+	_moment.view = self
+	add_child(_moment)
 	predictor.setup(game)
 	reset()
 	if material == null:
@@ -256,10 +283,13 @@ func reset() -> void:
 	_fx_last = {}
 	_fall_vy = {}
 	_respawn_clouds = {}
+	_warp = {}
+	_game_text = {}
 	buffer = SnapshotBuffer.new()
 	buffer.delay_ms = game.net.interpolationDelayMs
 	buffer.teleport_distance = game.net.teleportDistance
 	buffer.size = int(game.net.bufferSize)
+	buffer.size = maxi(buffer.size, int(game.effects.get("warpBufferFrames", 0))) # il rallentatore disegna fino a 2 s indietro (#470)
 	buffer.own_extrapolate_ms = float(game.net.get("ownExtrapolateMaxMs", 0.0))
 	player_ids = []
 	positions = {}
@@ -268,6 +298,9 @@ func reset() -> void:
 	_taunts = {}
 	_sparks = []
 	_clouds = []
+	_poison_clouds = []
+	_blasted = {}
+	_shrooms = {}
 	_beams = []
 	_shards = []
 	_shield_hits = {}
@@ -692,6 +725,7 @@ func on_event(e: Dictionary) -> void:
 				_flash = fx.flashMs
 			if kb >= float(fx.get("koZoomKnockback", INF)):
 				_punch = {"at": Time.get_ticks_msec(), "x": float(e.x), "y": float(e.y)}
+			_maybe_finish(e, kb)
 			_react(e)
 		"pad":
 			# Bottone sonoro (#423): uno sbuffo di scintille del colore del bottone e una scossa leggera
@@ -748,7 +782,12 @@ func on_event(e: Dictionary) -> void:
 				_sparks.append({"x": e.x, "y": e.y, "age": 0.0, "size": 18.0, "color": Color.WHITE}) # anche due proiettili che si annullano
 		"powerUp":
 			# Il fiore (#231): uno sbuffo verde dove lo si prende, più grande di una scintilla. Il bong (#302): una boccata grigia
-			var col: Color = Color(0.66, 0.77, 0.42) if e.kind in ["spore", "micelio"] else SMOKE_GREY if e.kind == "bong" else (Color(0.75, 0.4, 0.95) if e.kind == "trip" else FLOWER_GREEN.lightened(0.3))
+			var col: Color = Color(0.66, 0.77, 0.42) if e.kind in ["spore", "micelio"] else SMOKE_GREY if e.kind == "bong" else (Color(0.75, 0.4, 0.95) if e.kind == "trip" else (POISON_GREEN if e.kind == "veleno" else FLOWER_GREEN.lightened(0.3)))
+			if e.kind == "veleno" and not _blasted.has(e.itemId):
+				# Il fungo di Teemo scoppia (#419): una nube sola dove stava il fungo, e lo schermo trema un po'
+				_blasted[e.itemId] = true
+				_poison_clouds.append({"x": float(e.x), "y": float(e.y), "age": 0.0})
+				_shake = maxf(_shake, 5.0)
 			_sparks.append({"x": e.x, "y": float(e.y) - float(game.fighter.height) * 0.5, "age": 0.0, "size": 50.0, "color": col})
 			_puff(e.x, e.y)
 		"bong":
@@ -807,13 +846,19 @@ func on_event(e: Dictionary) -> void:
 				if effects and _particles: # #470: anello d'aria e sbuffetti spinti giù dal salto
 					_particles.add(ParticleFx.air_burst(_next_fx_seed(), e.x, e.y))
 					_particles.mark({"kind": "ring", "x": float(e.x), "y": float(e.y), "r0": 16.0, "r1": 76.0, "squash": 0.3, "width": 6.0, "life_ms": float(game.effects.airRingMs)})
+		"matchEnd":
+			if effects: # #470: GAME! arriva con la voce dell'annunciatore (audio.gd), sopra il rallentatore
+				_game_text = {"at": Time.get_ticks_msec()}
 		"ko":
 			_shake = game.effects.shakeKo
 			# Il raggio prende il colore di chi è uscito, come in Smash
 			var p: Variant = buffer.sample(e.id, Time.get_ticks_msec())
 			var col: Color = Access.color(p.color) if p != null else Color(1, 0.4, 0.3)
+			var ko_at := Vector2(clampf(e.x, view_rect.position.x, view_rect.end.x), clampf(e.y, view_rect.position.y, view_rect.end.y))
 			if effects and _particles: # #470: una colonna di fuoco del suo colore che entra dal punto d'uscita
-				_ko_column(e, col)
+				ko_at = _ko_column(e, col)
+			if effects and _is_final_ko(e): # #470: l'ultimo KO al rallentatore, con lo zoom dove è uscito
+				_warp = TimeWarp.game(Time.get_ticks_msec(), ko_at, game.effects)
 			else:
 				_sparks.append({"x": clampf(e.x, 0, stage_width()), "y": clampf(e.y, 0, game.world.height), "age": 0.0, "size": 90.0, "color": Color(1, 0.4, 0.3)})
 				_beams.append({"x": e.x, "y": e.y, "age": 0.0, "color": col})
@@ -860,6 +905,9 @@ func _hit_flash(id: String, now: float) -> float:
 # Lo zoom breve della telecamera sui colpi da KO (#384): 1 quando non c'è, poco più di 1 al culmine.
 # point è dove avvicinarsi. main.gd lo applica sopra l'inquadratura, senza cambiarla
 func punch_zoom(now: float) -> float:
+	var wz := TimeWarp.zoom(_warp, now) if effects else 1.0
+	if wz > 1.0:
+		return wz
 	if _punch.is_empty() or not effects or Access.calm:
 		return 1.0
 	var t := (now - float(_punch.at)) / float(game.effects.koZoomMs)
@@ -870,6 +918,8 @@ func punch_zoom(now: float) -> float:
 
 
 func punch_point() -> Vector2:
+	if not _warp.is_empty() and effects: # #470: nel colpo decisivo il colpo, poi chi vola via; a GAME! dove è uscito
+		return positions.get(_warp.target, _warp.point) if _warp.phase == "follow" else _warp.point
 	return Vector2(float(_punch.x), float(_punch.y)) if not _punch.is_empty() else Vector2.ZERO
 
 
@@ -936,9 +986,95 @@ func _impact(e: Dictionary, heavy: bool, ko: bool) -> void:
 
 # Particelle che nascono dallo stato e non da un evento (#470): fumo di chi vola via, frenata e inversione a terra.
 # Si chiama dal disegno, una volta per lottatore a ogni frame, come la scia di _draw_trail
+# Il colpo che chiude la partita (#470 passo 2b, come il Finish Zoom di Smash): un colpo da KO a chi è all'ultima vita,
+# quando in gioco ne restano due (o due squadre). Come in Smash è una previsione: se chi è colpito si salva, la scena si
+# rimette in pari e basta. Non nei percorsi e non se un rallentatore è già in corso
+func _maybe_finish(e: Dictionary, kb: float) -> void:
+	if not effects or not _warp.is_empty() or stage.get("goal") != null:
+		return
+	if kb < float(game.effects.get("koZoomKnockback", INF)) or e.get("attackerId") == e.get("targetId"):
+		return
+	var target: Variant = _sampled.get(str(e.get("targetId", "")))
+	if target == null or int(target.get("stocks", 0)) != 1:
+		return
+	var alive := 0
+	var teams := {}
+	for id in _sampled:
+		var p: Dictionary = _sampled[id]
+		if not p.get("eliminated", false):
+			alive += 1
+			teams[int(p.get("team", 0))] = true
+	if alive == 2 or (teams.size() == 2 and not teams.has(0)):
+		_warp = TimeWarp.finish(Time.get_ticks_msec(), Vector2(e.x, e.y), str(e.targetId), game.effects)
+
+
+# È il KO che chiude la partita? Chi è uscito non ha più vite e resta al massimo uno in gioco, o una squadra sola
+func _is_final_ko(e: Dictionary) -> bool:
+	if int(e.get("stocksLeft", 1)) > 0 or stage.get("goal") != null:
+		return false
+	var others := 0
+	var teams := {}
+	for id in _sampled:
+		var p: Dictionary = _sampled[id]
+		if id == e.id or p.get("eliminated", false):
+			continue
+		others += 1
+		teams[int(p.get("team", 0))] = true
+	return others <= 1 or (teams.size() == 1 and not teams.has(0))
+
+
+# La scena in negativo del colpo decisivo (#470): un ColorRect con lo shader che legge lo schermo, come lo schermo
+# distorto del bong. Niente negativo con "meno scossa e lampi"
+func _update_neg_overlay() -> void:
+	if _neg_overlay == null:
+		return
+	var amount := 0.0 if Access.calm or not effects else TimeWarp.negative(_warp, Time.get_ticks_msec())
+	_neg_overlay.visible = amount > 0.0
+	if amount <= 0.0 or view_rect.size.y <= 0.0:
+		return
+	_neg_overlay.position = view_rect.position - position
+	_neg_overlay.size = view_rect.size
+	var mat: ShaderMaterial = _neg_overlay.material
+	var point: Vector2 = _warp.point
+	mat.set_shader_parameter("amount", amount)
+	mat.set_shader_parameter("center", (point - view_rect.position) / view_rect.size)
+	mat.set_shader_parameter("aspect", view_rect.size.x / view_rect.size.y)
+	mat.set_shader_parameter("t", Time.get_ticks_msec() / 1000.0)
+
+
+# La scritta GAME! (#470): al centro dell'inquadratura, entra grande e scatta al suo posto, con il contorno scuro
+func draw_moment(ci: CanvasItem) -> void:
+	if _game_text.is_empty():
+		return
+	var k := (Time.get_ticks_msec() - float(_game_text.at)) / float(game.effects.gameTextMs)
+	var sc := TimeWarp.game_text_scale(k)
+	if sc <= 0.0:
+		if k >= 1.0:
+			_game_text = {}
+		return
+	var font := UI.font(900)
+	var size := int(view_rect.size.y * 0.16)
+	var w := font.get_string_size("GAME!", HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
+	var alpha := minf(1.0, k / 0.03) * (1.0 if k < 0.9 else (1.0 - k) / 0.1)
+	ci.draw_set_transform(view_rect.get_center() - position, -0.06, Vector2(sc, sc))
+	var at := Vector2(-w / 2.0, size * 0.35)
+	ci.draw_string_outline(font, at, "GAME!", HORIZONTAL_ALIGNMENT_LEFT, -1, size, maxi(4, int(size * 0.16)), Color(0.13, 0.11, 0.15, alpha))
+	ci.draw_string(font, at, "GAME!", HORIZONTAL_ALIGNMENT_LEFT, -1, size, Color(1, 1, 1, alpha))
+	ci.draw_set_transform(Vector2.ZERO)
+
+
+# Rallentatore (#470): main.gd trattiene eventi, HUD e audio mentre il disegno è indietro, e li rilascia quando li raggiunge
+func holding() -> bool:
+	return buffer.extra_delay_ms > 0.0 or not _warp.is_empty()
+
+
+func reached(server_t: float) -> bool:
+	return buffer.reached(server_t, Time.get_ticks_msec())
+
+
 # Esplosione del KO a colonna (#470): parte dal bordo dell'inquadratura più vicino al punto d'uscita e punta verso
 # il centro, nel colore di chi è uscito, con un bagliore dove entra
-func _ko_column(e: Dictionary, col: Color) -> void:
+func _ko_column(e: Dictionary, col: Color) -> Vector2:
 	var inset: float = game.effects.koColumnInset
 	var inner := view_rect.grow(-inset)
 	var from := Vector2(clampf(e.x, inner.position.x, inner.end.x), clampf(e.y, inner.position.y, inner.end.y))
@@ -948,6 +1084,7 @@ func _ko_column(e: Dictionary, col: Color) -> void:
 	_particles.add(ParticleFx.ko_column(_next_fx_seed(), from.x, from.y, dir, col))
 	var glow_col := col.lightened(0.6)
 	_particles.mark({"kind": "glow", "x": from.x, "y": from.y, "size": 220.0, "col": glow_col, "alpha": 0.9, "life_ms": 260.0})
+	return from
 
 
 # La nuvoletta della rinascita (#470): mentre si è fuori scende dall'alto fino al punto di ritorno, poi sta sotto i
@@ -1018,6 +1155,13 @@ func _feed_particles(id: String, p: Dictionary) -> void:
 func _process(delta: float) -> void:
 	var fx: Dictionary = game.effects
 	var dt_ms := delta * 1000.0
+	if not _warp.is_empty(): # il rallentatore (#470): il disegno resta indietro e poi si rimette in pari
+		var r: Dictionary = TimeWarp.step(_warp, buffer.extra_delay_ms, dt_ms, Time.get_ticks_msec(), fx)
+		_warp = r.warp
+		buffer.extra_delay_ms = r.extra
+	_update_neg_overlay()
+	if _moment:
+		_moment.queue_redraw()
 	_sparks = _aged(_sparks, dt_ms, fx.hitSparkMs)
 	_dust = _aged(_dust, dt_ms, fx.dustMs)
 	_beams = _aged(_beams, dt_ms, fx.koBeamMs)
@@ -1027,6 +1171,7 @@ func _process(delta: float) -> void:
 		s.vy += 900.0 * delta # le schegge ricadono
 	_shards = _aged(_shards, dt_ms, fx.shardMs)
 	_clouds = _aged(_clouds, dt_ms, CLOUD_MS)
+	_poison_clouds = _aged(_poison_clouds, dt_ms, POISON_CLOUD_MS)
 	_update_high_overlay()
 	for id in _shield_hits.keys():
 		_shield_hits[id] += delta * 1000.0
@@ -1140,7 +1285,7 @@ func _draw() -> void:
 	var now := Time.get_ticks_msec()
 	_alive = []
 	_sampled = buffer.sample_all(player_ids, now)
-	var mine: Variant = predictor.sample(now, _sampled.get(my_id))
+	var mine: Variant = predictor.sample(now, _sampled.get(my_id)) if buffer.extra_delay_ms <= 0.0 else null # al rallentatore niente predizione (#470)
 	if mine != null:
 		_sampled[my_id] = mine
 	_draw_sun_light(t_stage) # ombre a terra e luce dal lato del sole o della luna (#288), sotto i lottatori
@@ -1194,6 +1339,8 @@ func _draw() -> void:
 
 	for c in _clouds:
 		_draw_cloud(c)
+	for c in _poison_clouds:
+		_draw_poison_cloud(c)
 
 	for b in _beams:
 		_draw_beam(b)
@@ -1285,8 +1432,11 @@ func _draw_items(now: int) -> void:
 		# Il funghetto piantato (#302): chi l'ha piantato lo vede, gli altri appena appena
 		var owner: Variant = it.get("owner")
 		var alpha := 1.0 if owner == null or owner == my_id else 0.13
+		if it.kind == "fungoTeemo" and owner != null:
+			alpha = _teemo_alpha(it, str(owner), now)
+			pos += Vector2(0, 3.0 * clampf(float(now - int(_shrooms[it.id].since)) / float(game.get("fungo", {}).get("armMs", 1000)), 0.0, 1.0)) # si arma e affonda un po'
 		# A terra l'oggetto ondeggia sopra la sua ombra e ogni tanto luccica: si capisce che si raccoglie
-		var lying: bool = holder == null and not it.thrown and absf(float(it.get("vy", 0.0))) < 1.0 and it.kind != "fungo"
+		var lying: bool = holder == null and not it.thrown and absf(float(it.get("vy", 0.0))) < 1.0 and it.kind != "fungo" and not (it.kind == "fungoTeemo" and owner != null)
 		var bob := 0.0
 		if lying:
 			bob = -ITEM_BOB_PX * (0.5 + 0.5 * sin(now / 380.0 + float(it.id)))
@@ -1297,6 +1447,40 @@ func _draw_items(now: int) -> void:
 	for id in _item_pos.keys():
 		if not seen.has(id):
 			_item_pos.erase(id)
+			_shrooms.erase(id)
+
+
+# Il fungo di Teemo piazzato (#419): da quando è a terra, quanto lo vede chi guarda. Chi l'ha lanciato e la sua squadra
+# sempre, trasparente; gli altri finché non si arma, poi sfuma e sparisce come in LoL. Armato, "pop" solo per chi l'ha lanciato
+func _teemo_alpha(it: Dictionary, owner: String, now: int) -> float:
+	if not _shrooms.has(it.id):
+		_shrooms[it.id] = {"since": now, "popped": false}
+	var cfg: Dictionary = game.get("fungo", {})
+	var since := float(now - int(_shrooms[it.id].since))
+	var mine := _is_ally(owner)
+	if mine and since >= float(cfg.get("armMs", 1000)) and not _shrooms[it.id].popped:
+		_shrooms[it.id].popped = true
+		_sparks.append({"x": float(it.x), "y": float(it.y) - 10.0, "age": 0.0, "size": 16.0, "color": SHROOM_GREEN.lightened(0.4)})
+	return shroom_alpha(mine, since, float(cfg.get("armMs", 1000)), float(cfg.get("stealthMs", 1800)), now)
+
+
+# Quanto si vede il fungo di Teemo since_ms dopo che si è piazzato. Agli avversari: pieno finché non si arma, poi
+# sfuma fino a sparire a stealth_ms. A chi l'ha lanciato: sempre più trasparente fino a metà, e da armato respira piano
+static func shroom_alpha(mine: bool, since_ms: float, arm_ms: float, stealth_ms: float, now_ms: float) -> float:
+	var arm_t := clampf(since_ms / maxf(arm_ms, 1.0), 0.0, 1.0)
+	if mine:
+		var breath := 0.08 * sin(now_ms / 400.0) if arm_t >= 1.0 else 0.0
+		return lerpf(1.0, 0.5, arm_t) + breath
+	return 1.0 - clampf((since_ms - arm_ms) / maxf(stealth_ms - arm_ms, 1.0), 0.0, 1.0)
+
+
+# Il lottatore id è io o della mia squadra (a squadre): vede i funghi di Teemo che ha lanciato
+func _is_ally(id: String) -> bool:
+	if id == my_id:
+		return true
+	var me: Variant = _sampled.get(my_id)
+	var them: Variant = _sampled.get(id)
+	return me is Dictionary and them is Dictionary and int(me.team) > 0 and int(me.team) == int(them.team)
 
 
 # L'ombra a terra: un'ovale scura che si stringe quando l'oggetto sale
@@ -1388,6 +1572,8 @@ func _draw_item(kind: String, base: Vector2, spin: float, load: float = -1.0, al
 		_draw_mushroom(w, h, alpha)
 	elif kind == "funghetti":
 		_draw_mushroom_bag(w, h)
+	elif kind == "fungoTeemo":
+		_draw_teemo(w, h, alpha)
 	else:
 		draw_rect(Rect2(-w / 2, -h / 2, w, h), _color(spec.color))
 		draw_rect(Rect2(-w / 2, -h / 2, w, h), ArcadeView.INK, false, 2.0)
@@ -1516,6 +1702,141 @@ func _draw_mushroom_bag(w: float, h: float) -> void:
 	draw_circle(Vector2(w * 0.26, -h * 0.13), 2.2, Color(0.95, 0.8, 0.35))
 
 
+# Il fungo di Teemo (#419), ricalcato sulla Trappola velenosa di LoL: cappello bulboso, quasi una palla, verde oliva
+# puntinato e più scuro sotto, macchie grandi e irregolari magenta bordate di scuro, gambo corto marrone-grigio
+# quasi nascosto. Contorno a inchiostro come il resto del gioco. La base è in basso al centro, alla quota dei piedi.
+# Niente draw_set_transform: chi chiama ne ha già una (in mano, in volo, mentre si gonfia)
+func _draw_teemo(w: float, h: float, alpha: float, offset := Vector2.ZERO) -> void:
+	if alpha <= 0.01:
+		return
+	var base := offset + Vector2(0, h / 2)
+	# Il gambo: corto, si stringe verso il cappello, che ne copre la cima
+	var stem := PackedVector2Array([base + Vector2(-w * 0.12, -h * 0.42), base + Vector2(w * 0.1, -h * 0.42), base + Vector2(w * 0.14, 0), base + Vector2(-w * 0.13, 0)])
+	draw_colored_polygon(stem, Color(SHROOM_STEM, alpha))
+	_ink_outline(stem, 1.5, alpha)
+	# Il cappello: quasi una palla, col fondo che rientra sotto (la metà bassa dell'ellisse è schiacciata)
+	var c := base + Vector2(0, -h * 0.5)
+	var rx := w * 0.5
+	var ry := h * 0.55
+	var cap := PackedVector2Array()
+	for k in 32:
+		var a := TAU * k / 32.0
+		var y := sin(a) * ry
+		cap.append(c + Vector2(cos(a) * rx, y * (0.42 if y > 0.0 else 1.0)))
+	draw_colored_polygon(cap, Color(SHROOM_GREEN.darkened(0.35), alpha))
+	# Sopra il bordo scuro di sotto, la parte in luce
+	var lit := PackedVector2Array()
+	for k in 32:
+		var a := TAU * k / 32.0
+		var y := sin(a) * ry * 0.92
+		lit.append(c + Vector2(cos(a) * rx * 0.93, y * (0.12 if y > 0.0 else 1.0) - h * 0.02))
+	draw_colored_polygon(lit, Color(SHROOM_GREEN, alpha))
+	# Riflesso in alto a sinistra e puntini più chiari, la pelle ruvida del fungo
+	draw_circle(c + Vector2(-rx * 0.38, -ry * 0.58), w * 0.12, Color(SHROOM_GREEN.lightened(0.18), alpha * 0.8))
+	for k in 12:
+		var u := fmod(k * 0.618, 1.0) * 1.6 - 0.8
+		var v := fmod(k * 0.381 + 0.2, 1.0) * -0.85
+		draw_circle(c + Vector2(u * rx, v * ry), maxf(0.8, w * 0.018), Color(SHROOM_GREEN.lightened(0.3), alpha * 0.8))
+	# Le macchie: (u, v) sul cappello in unità del raggio, e la grandezza. Verso i bordi si schiacciano, come su una palla
+	for d in [Vector3(-0.5, -0.38, 0.15), Vector3(0.08, -0.78, 0.12), Vector3(0.5, -0.4, 0.13), Vector3(-0.12, -0.1, 0.11), Vector3(0.74, -0.02, 0.08), Vector3(-0.8, -0.06, 0.07), Vector3(0.32, -0.04, 0.06)]:
+		var spot := c + Vector2(d.x * rx, d.y * ry)
+		var r: float = d.z * w
+		var qx := sqrt(maxf(0.25, 1.0 - d.x * d.x))
+		var qy := sqrt(maxf(0.35, 1.0 - d.y * d.y))
+		var blob := PackedVector2Array()
+		for j in 16:
+			var a := TAU * j / 16.0
+			var wobble := 1.0 + 0.12 * sin(j * 1.9 + d.x * 9.0)
+			blob.append(spot + Vector2(cos(a) * r * qx * wobble, sin(a) * r * qy * wobble))
+		draw_colored_polygon(blob, Color(SHROOM_PURPLE, alpha))
+		_ink_outline(blob, 1.0, alpha * 0.6)
+		draw_circle(spot + Vector2(-r * 0.3 * qx, -r * 0.3 * qy), r * 0.22, Color(SHROOM_PURPLE.lightened(0.3), alpha * 0.8))
+	_ink_outline(cap, 2.0, alpha)
+
+
+# La nube del fungo di Teemo, in quattro tempi come in LoL: il cappello si gonfia e scoppia, la nube
+# verde-viola si allarga a cupola fino a blastRadius, ribolle, poi si dissolve dal basso verso l'alto.
+# Intanto qualche spora viola schizza fuori e ricade
+func _draw_poison_cloud(c: Dictionary) -> void:
+	var age: float = c.age
+	var spec: Dictionary = game.items.get("fungoTeemo", {"width": 36, "height": 34})
+	var w: float = spec.width
+	var h: float = spec.height
+	var base := Vector2(c.x, c.y)
+	if age < SHROOM_POP_MS:
+		# 1. Il cappello si gonfia (e sbianca un po') prima di scoppiare
+		var swell := age / SHROOM_POP_MS
+		draw_set_transform(base - Vector2(0, h / 2), 0.0, Vector2(1.0 + 0.5 * swell, 1.0 + 0.35 * swell))
+		_draw_teemo(w, h, 1.0)
+		draw_circle(Vector2(0, -h * 0.2), w * 0.5, Color(1, 1, 1, 0.35 * swell))
+		draw_set_transform(Vector2.ZERO)
+	var t := age - SHROOM_POP_MS * 0.6
+	if t < 0.0:
+		return
+	var k := t / (POISON_CLOUD_MS - SHROOM_POP_MS * 0.6)
+	var radius := float(game.get("fungo", {}).get("blastRadius", 70))
+	# 2. Si allarga in fretta e frena (ease-out) in circa 200 ms
+	var grow := 1.0 - pow(1.0 - clampf(t / 200.0, 0.0, 1.0), 3.0)
+	var r := radius * (0.3 + 0.7 * grow)
+	# 4. Da metà vita si dissolve: il fronte sale da terra verso la cima
+	var fade := clampf((k - 0.5) / 0.5, 0.0, 1.0)
+	var center := base - Vector2(0, r * 0.35)
+	# Il bordo: sbuffi scuri sulla cupola. Il centro: sbuffi più chiari, davanti
+	for layer in 2:
+		var n := 12 if layer == 0 else 7
+		var spread := 0.62 if layer == 0 else 0.3
+		var col := POISON_PURPLE.lerp(POISON_GREEN, 0.35) if layer == 0 else POISON_GREEN.lightened(0.25)
+		for i in n:
+			var a := PI * 0.95 + PI * 1.1 * i / float(n - 1)
+			var wob := Vector2(sin(age / 170.0 + i * 1.7), cos(age / 210.0 + i * 2.3)) * r * 0.05
+			var pos := center + Vector2(cos(a) * r * spread * 1.15, sin(a) * r * spread) + wob
+			pos.y = minf(pos.y, base.y - 4.0) # la nube sta sopra il terreno
+			var low := clampf((pos.y - (base.y - r)) / r, 0.0, 1.0) # 1 = a terra
+			var alpha := clampf(1.0 - fade * (1.0 + low * 1.5), 0.0, 1.0) * (0.75 if layer == 0 else 0.6)
+			if alpha <= 0.0:
+				continue
+			draw_circle(pos, r * (0.34 if layer == 0 else 0.3) * (0.9 + 0.1 * sin(i * 2.1 + age / 120.0)), Color(col, alpha))
+	# 3. Ribolle: bolle che salgono dentro la nube e scoppiano con un anellino in cima
+	for i in 9:
+		var bt := fmod(age / 650.0 + i * 0.137, 1.0)
+		var bx := base.x + (fmod(i * 0.618, 1.0) - 0.5) * r * 1.3
+		var by := base.y - 6.0 - bt * r * 0.95
+		var balpha := (1.0 - fade) * 0.9
+		if bt < 0.85:
+			draw_circle(Vector2(bx, by), 2.0 + 3.0 * bt, Color(POISON_GREEN.lightened(0.45), balpha * 0.8))
+		else:
+			draw_arc(Vector2(bx, by), 5.0 + 20.0 * (bt - 0.85), 0, TAU, 10, Color(POISON_GREEN.lightened(0.5), balpha), 1.5)
+	# Le spore: schizzano fuori a ventaglio verso l'alto e ricadono a terra, dove si spengono
+	var ts := age / 1000.0
+	for i in 8:
+		var a := PI * (0.15 + 0.7 * i / 7.0)
+		var speed := 170.0 + 70.0 * fmod(i * 0.37, 1.0)
+		var pos := base + Vector2(cos(a) * speed * ts, -sin(a) * speed * ts + 0.5 * 700.0 * ts * ts) - Vector2(0, h * 0.5)
+		pos.y = minf(pos.y, base.y - 2.0)
+		draw_circle(pos, 2.5, Color(SHROOM_PURPLE.lightened(0.2), clampf(1.0 - k, 0.0, 1.0)))
+
+
+# Chi è avvelenato dal fungo: una tinta verde sul corpo che pulsa a ogni scatto di danno, bolle verdi che
+# salgono dalla testa (più fitte nei primi secondi, quando si è anche rallentati) e una nuvoletta che lo segue
+func _draw_poison(p: Dictionary, now: float, fw: float, fh: float) -> void:
+	var cfg: Dictionary = game.get("fungo", {})
+	var poison_ms := float(cfg.get("poisonMs", 6000))
+	var left := float(p.get("powerupMs", 0))
+	var pulse := FighterPose.poison_pulse(left, poison_ms, float(cfg.get("poisonTickMs", 500)))
+	var slowed := poison_ms - left < float(cfg.get("slowMs", 2000))
+	draw_set_transform(Vector2(p.x, p.y - fh * 0.5), 0.0, Vector2(1.0, fh / fw * 0.85))
+	draw_circle(Vector2.ZERO, fw * 0.62, Color(POISON_GREEN, 0.14 + 0.3 * pulse))
+	draw_set_transform(Vector2.ZERO)
+	var n := 8 if slowed else 5
+	for k in n:
+		var t := fmod(now / 900.0 + k / float(n), 1.0)
+		var b := Vector2(p.x + sin(k * 2.3 + now / 400.0) * fw * 0.35, p.y - fh - 4.0 - t * 34.0)
+		draw_circle(b, 2.0 + 2.5 * (1.0 - t), Color(POISON_GREEN.lightened(0.3), 0.85 * (1.0 - t)))
+	for k in 3:
+		var puff := Vector2(p.x - float(p.facing) * fw * 0.15 + (k - 1) * 9.0, p.y - fh - 14.0 + sin(now / 300.0 + k) * 2.0)
+		draw_circle(puff, 7.0 - absf(k - 1) * 2.0, Color(POISON_PURPLE, 0.45))
+
+
 # La nuvola soffiata (#302): sbuffi che si allargano davanti, grigio-verdi, più grandi se fa più danno
 func _draw_cloud(c: Dictionary) -> void:
 	var k: float = c.age / CLOUD_MS
@@ -1545,6 +1866,13 @@ func _update_high_overlay() -> void:
 
 
 const CLOUD_MS := 700.0 # ms di vita della nuvola nel client
+const POISON_CLOUD_MS := 1100.0 # ms di vita della nube del fungo di Teemo nel client (#419)
+const SHROOM_POP_MS := 120.0 # ms in cui il cappello del fungo di Teemo si gonfia prima di scoppiare
+const SHROOM_GREEN := Color("5a7631") # il fungo di Teemo, come la Trappola velenosa di LoL: cappello verde oliva
+const SHROOM_PURPLE := Color("b03a74") # le macchie magenta
+const SHROOM_STEM := Color("6f604c") # il gambo marrone-grigio
+const POISON_GREEN := Color(0.62, 0.9, 0.22) # la nube e il veleno: verde tossico che tira al giallo
+const POISON_PURPLE := Color(0.55, 0.25, 0.65)
 const ITEM_SCALE := 1.3 # gli oggetti si disegnano un po' più grandi della loro scatola di gioco, per vederli bene
 const ITEM_BOB_PX := 4.0 # pixel di ondeggiamento di un oggetto a terra
 const SMOKE_GREY := Color(0.82, 0.86, 0.8)
@@ -2221,6 +2549,8 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 	if p.get("powerup") == "micelio" and not away:
 		# Dr. Micelium più forte (#358): un alone di micelio che pulsa
 		draw_arc(Vector2(p.x, p.y - fh * 0.5), fh * (0.62 + 0.04 * sin(now / 160.0)), 0, TAU, 32, Color(0.66, 0.77, 0.42, 0.55), 4.0)
+	if p.get("powerup") == "veleno" and not away:
+		_draw_poison(p, now, fw, fh) # avvelenati dal fungo di Teemo (#419)
 	if p.get("powerup") == "trip" and not away:
 		# In viaggio coi funghetti (#302): tre spirali colorate che girano sopra la testa
 		for k in 3:

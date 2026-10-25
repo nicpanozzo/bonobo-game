@@ -246,6 +246,15 @@ static func high_level(p: Variant, high_ms: float) -> float:
 	return 0.25 + 0.75 * clampf(1.0 - float(p.get("powerupMs", 0)) / high_ms, 0.0, 1.0)
 
 
+# Il veleno del fungo di Teemo (#419): quanto si accende la tinta verde, 1 subito dopo uno scatto di danno e giù
+# in 180 ms. Gli scatti cadono ogni tick_ms dall'inizio del veleno, come in physics/items.ts
+static func poison_pulse(ms_left: float, poison_ms: float, tick_ms: float) -> float:
+	if ms_left <= 0.0 or tick_ms <= 0.0:
+		return 0.0
+	var since_tick := fmod(maxf(0.0, poison_ms - ms_left), tick_ms)
+	return 1.0 - clampf(since_tick / 180.0, 0.0, 1.0)
+
+
 # La suprema è pronta (#101): barra piena e in gioco. Il lottatore si accende come in Smash con la Final Smash
 static func supreme_ready(p: Dictionary, supreme_max: float) -> bool:
 	return not p.get("eliminated", false) and not p.get("respawning", false) and float(p.get("supreme", 0)) >= supreme_max

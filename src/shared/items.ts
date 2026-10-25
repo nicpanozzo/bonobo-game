@@ -1,4 +1,4 @@
-import { ITEM_RARITY, PACMAN, POWERUP, TETRIS, type ItemRarity } from "./constants";
+import { FUNGO, ITEM_RARITY, PACMAN, POWERUP, TETRIS, type ItemRarity } from "./constants";
 
 // Oggetti che cadono nell'arena (#17 passo 3). Caduta, raccolta e lancio sono in
 // src/shared/physics/items.ts, i numeri comuni in ITEM_RULES (constants.ts).
@@ -19,6 +19,7 @@ export interface ItemSpec {
   planted?: boolean; // un funghetto piantato: non si raccoglie, scatta su chi lo calpesta
   call?: boolean; // il telefono di Chiama Bassanese: raccolto sparisce e fa entrare il Bassanese (physics/bassanese.ts)
   bong?: boolean; // si tiene in mano e si fuma in tre fasi (#302): J carica, K lancia come gli altri
+  shroom?: boolean; // il fungo di Teemo (#419): lanciato o posato si piazza dove atterra, armato scoppia sugli avversari (FUNGO)
 }
 
 // TODO community: oggetti ispirati ai meme del canale, uno per issue
@@ -28,8 +29,11 @@ export const ITEMS: Record<string, ItemSpec> = {
   fiore: { id: "fiore", name: "Fiore", damage: 0, knockback: 0, width: 26, height: 26, color: 0x4caf50, rarity: "raro", consume: { powerup: "fiore", ms: POWERUP.flowerMs } },
   // TODO community: il nome nel gioco (#302). Carica, fatto, nuvola di fumo (BONG)
   // TODO community: il nome nel gioco (#302). Teemo di LoL: trappole quasi invisibili che fanno "viaggiare" (FUNGHI)
-  funghetti: { id: "funghetti", name: "Funghetti", damage: 4, knockback: 250, width: 24, height: 20, color: 0x9b59b6, rarity: "normale", mushrooms: true },
+  // Messi da parte per il fungo di Teemo (#419): il codice resta, ma non cadono più. Per riaverli: rarity "normale"
+  funghetti: { id: "funghetti", name: "Funghetti", damage: 4, knockback: 250, width: 24, height: 20, color: 0x9b59b6, rarity: "mai", mushrooms: true },
   fungo: { id: "fungo", name: "Funghetto", damage: 0, knockback: 0, width: 20, height: 16, color: 0xc0392b, rarity: "mai", planted: true },
+  // TODO community: il nome nel gioco (#419). Teemo di LoL: un fungo grande, invisibile da armato, scoppia in una nube di veleno (FUNGO)
+  fungoTeemo: { id: "fungoTeemo", name: "Fungo di Teemo", damage: FUNGO.thrownDamage, knockback: 260, width: 36, height: 34, color: 0x3fd14a, rarity: "normale", shroom: true },
   bong: { id: "bong", name: "Bong", damage: 10, knockback: 380, width: 22, height: 40, color: 0x7fd8c4, rarity: "normale", bong: true },
   // Pac-Man (#427): si diventa Pac-Man e si mangiano gli altri (PACMAN)
   pacman: { id: "pacman", name: "Pac-Man", damage: 0, knockback: 0, width: 28, height: 28, color: 0xffeb3b, rarity: "rarissimo", consume: { powerup: "pacman", ms: PACMAN.ms } },
@@ -39,7 +43,7 @@ export const ITEMS: Record<string, ItemSpec> = {
   tetris: { id: "tetris", name: "Tetris", damage: 0, knockback: 0, width: 28, height: 28, color: 0x00bcd4, rarity: "rarissimo", consume: { powerup: "tetris", ms: TETRIS.ms } },
 };
 
-// Gli oggetti che possono cadere dal cielo (i funghetti piantati no), in ordine: si scelgono nelle regole della stanza
+// Gli oggetti che possono cadere dal cielo (rarity "mai" no), in ordine: si scelgono nelle regole della stanza
 export const DROPPABLE_ITEMS: readonly string[] = Object.keys(ITEMS).filter((k) => itemWeight(k) > 0).sort();
 
 // Quanto spesso cade un oggetto rispetto agli altri, dalla sua classe di frequenza
