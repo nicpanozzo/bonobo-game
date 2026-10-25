@@ -1149,8 +1149,8 @@ export const STAGES: Record<string, StageSpec> = {
     // Le raffiche della cima (da 2:45): una a sinistra e una a destra, sfasate di mezzo giro
     jets: [
       ...(["left", "right"] as const).map((dir, i) => ({
-        x: 1130, y: 1040, width: 600, height: 300, speed: 600, dir,
-        periodMs: BOLOGNA.windPeriodMs, warnMs: 1500, activeMs: 2500, offsetMs: i * (BOLOGNA.windPeriodMs / 2), on: BOLOGNA_BRAWL,
+        x: 1130, y: 1040, width: 600, height: 300, speed: BOLOGNA.windSpeedPxS, dir,
+        periodMs: BOLOGNA.windPeriodMs, warnMs: 1500, activeMs: BOLOGNA.windActiveMs, offsetMs: i * (BOLOGNA.windPeriodMs / 2), on: BOLOGNA_BRAWL,
       })),
       // Le bancarelle ai piedi di San Petronio (fino al crollo): il tendone fa da molla, come le molle di Sonic e Mario.
       // Chi ci finisce sopra (anche camminando) vola su di circa 480 px: fuori dall'ingorgo, fino ai pezzi a metà torre

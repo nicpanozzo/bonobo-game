@@ -848,7 +848,9 @@ export const BOLOGNA = {
   merlonGoneMs: 1000, // ...e poi spariscono per tanto
   lightningPeriodMs: 20000, // un fulmine sul punto più alto ogni tanto
   lightningWarnMs: 1200, // l'avviso prima del fulmine: la linea tratteggiata dal cielo e il bersaglio che si accende
-  windPeriodMs: 9000, // una raffica ogni giro, a sinistra e a destra sfasate di mezzo giro
+  windPeriodMs: 16000, // una raffica ogni giro, a sinistra e a destra sfasate di mezzo giro: una ogni 8 s (era 9 s, una ogni 4,5)
+  windSpeedPxS: 380, // pixel/s verso cui spinge la raffica chi è in aria (era 600: troppo invadente nella zuffa, Nicola)
+  windActiveMs: 1800, // ms di soffio di ogni raffica (era 2500)
   aimMinDeg: 10, // gradi sopra l'orizzontale: la mira più bassa delle bombarde (arriva sulla torre avversaria)
   aimMaxDeg: 60, // gradi sopra l'orizzontale: la mira più alta delle bombarde
   ballSpeedPxS: 800, // pixel/s di uscita delle palle delle bombarde (a 1050 sorvolano la torre avversaria)

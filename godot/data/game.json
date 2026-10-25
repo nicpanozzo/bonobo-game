@@ -8531,11 +8531,11 @@
           "y": 1040,
           "width": 600,
           "height": 300,
-          "speed": 600,
+          "speed": 380,
           "dir": "left",
-          "periodMs": 9000,
+          "periodMs": 16000,
           "warnMs": 1500,
-          "activeMs": 2500,
+          "activeMs": 1800,
           "offsetMs": 0,
           "on": [
             [
@@ -8549,12 +8549,12 @@
           "y": 1040,
           "width": 600,
           "height": 300,
-          "speed": 600,
+          "speed": 380,
           "dir": "right",
-          "periodMs": 9000,
+          "periodMs": 16000,
           "warnMs": 1500,
-          "activeMs": 2500,
-          "offsetMs": 4500,
+          "activeMs": 1800,
+          "offsetMs": 8000,
           "on": [
             [
               165000,
