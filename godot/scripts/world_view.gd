@@ -1702,37 +1702,56 @@ func _draw_mushroom_bag(w: float, h: float) -> void:
 	draw_circle(Vector2(w * 0.26, -h * 0.13), 2.2, Color(0.95, 0.8, 0.35))
 
 
-# Il fungo di Teemo (#419, foto di Riccardo): cappello verde acceso a cupola con macchie viola tonde, gambo panna corto e largo,
-# contorno scuro come il resto del gioco. La base è in basso al centro, alla quota dei piedi
+# Il fungo di Teemo (#419), ricalcato sulla Trappola velenosa di LoL: cappello bulboso, quasi una palla, verde oliva
+# puntinato e più scuro sotto, macchie grandi e irregolari magenta bordate di scuro, gambo corto marrone-grigio
+# quasi nascosto. Contorno a inchiostro come il resto del gioco. La base è in basso al centro, alla quota dei piedi.
+# Niente draw_set_transform: chi chiama ne ha già una (in mano, in volo, mentre si gonfia)
 func _draw_teemo(w: float, h: float, alpha: float, offset := Vector2.ZERO) -> void:
 	if alpha <= 0.01:
 		return
 	var base := offset + Vector2(0, h / 2)
-	var ink := Color(0.12, 0.2, 0.1, alpha)
-	# Il gambo: un trapezio panna che si allarga verso terra, con l'ombra del cappello in cima
-	var stem := PackedVector2Array([base + Vector2(-w * 0.2, -h * 0.5), base + Vector2(w * 0.2, -h * 0.5), base + Vector2(w * 0.26, 0), base + Vector2(-w * 0.26, 0)])
+	# Il gambo: corto, si stringe verso il cappello, che ne copre la cima
+	var stem := PackedVector2Array([base + Vector2(-w * 0.12, -h * 0.42), base + Vector2(w * 0.1, -h * 0.42), base + Vector2(w * 0.14, 0), base + Vector2(-w * 0.13, 0)])
 	draw_colored_polygon(stem, Color(SHROOM_STEM, alpha))
-	draw_polyline(stem + PackedVector2Array([stem[0]]), ink, 1.5)
-	draw_rect(Rect2(base + Vector2(-w * 0.2, -h * 0.5), Vector2(w * 0.4, h * 0.08)), Color(SHROOM_STEM.darkened(0.25), alpha))
-	# Il cappello: una cupola larga quanto il fungo, con un bordo un po' rientrato sotto
-	var top := base + Vector2(0, -h * 0.42)
+	_ink_outline(stem, 1.5, alpha)
+	# Il cappello: quasi una palla, col fondo che rientra sotto (la metà bassa dell'ellisse è schiacciata)
+	var c := base + Vector2(0, -h * 0.5)
+	var rx := w * 0.5
+	var ry := h * 0.55
 	var cap := PackedVector2Array()
-	for k in 17:
-		var a := PI + PI * k / 16.0
-		cap.append(top + Vector2(cos(a) * w * 0.5, sin(a) * h * 0.58))
-	cap.append(top + Vector2(w * 0.36, h * 0.06))
-	cap.append(top + Vector2(-w * 0.36, h * 0.06))
-	draw_colored_polygon(cap, Color(SHROOM_GREEN, alpha))
-	# Luce in alto a sinistra, come le altre cose del palco
-	draw_circle(top + Vector2(-w * 0.18, -h * 0.36), w * 0.12, Color(SHROOM_GREEN.lightened(0.35), alpha * 0.8))
-	for d in [Vector2(-0.3, -0.18), Vector2(-0.05, -0.42), Vector2(0.24, -0.3), Vector2(0.38, -0.08), Vector2(0.08, -0.12), Vector2(-0.42, -0.02)]:
-		var spot := top + Vector2(d.x * w, d.y * h)
-		var r := maxf(1.5, w * (0.09 if absf(d.x) < 0.3 else 0.065))
-		var oval := PackedVector2Array() # niente draw_set_transform: chi chiama ne ha già una (in mano, in volo)
-		for j in 10:
-			oval.append(spot + Vector2(cos(TAU * j / 10.0) * r, sin(TAU * j / 10.0) * r * 0.8))
-		draw_colored_polygon(oval, Color(SHROOM_PURPLE, alpha))
-	draw_polyline(cap + PackedVector2Array([cap[0]]), ink, 2.0)
+	for k in 32:
+		var a := TAU * k / 32.0
+		var y := sin(a) * ry
+		cap.append(c + Vector2(cos(a) * rx, y * (0.42 if y > 0.0 else 1.0)))
+	draw_colored_polygon(cap, Color(SHROOM_GREEN.darkened(0.35), alpha))
+	# Sopra il bordo scuro di sotto, la parte in luce
+	var lit := PackedVector2Array()
+	for k in 32:
+		var a := TAU * k / 32.0
+		var y := sin(a) * ry * 0.92
+		lit.append(c + Vector2(cos(a) * rx * 0.93, y * (0.12 if y > 0.0 else 1.0) - h * 0.02))
+	draw_colored_polygon(lit, Color(SHROOM_GREEN, alpha))
+	# Riflesso in alto a sinistra e puntini più chiari, la pelle ruvida del fungo
+	draw_circle(c + Vector2(-rx * 0.38, -ry * 0.58), w * 0.12, Color(SHROOM_GREEN.lightened(0.18), alpha * 0.8))
+	for k in 12:
+		var u := fmod(k * 0.618, 1.0) * 1.6 - 0.8
+		var v := fmod(k * 0.381 + 0.2, 1.0) * -0.85
+		draw_circle(c + Vector2(u * rx, v * ry), maxf(0.8, w * 0.018), Color(SHROOM_GREEN.lightened(0.3), alpha * 0.8))
+	# Le macchie: (u, v) sul cappello in unità del raggio, e la grandezza. Verso i bordi si schiacciano, come su una palla
+	for d in [Vector3(-0.5, -0.38, 0.15), Vector3(0.08, -0.78, 0.12), Vector3(0.5, -0.4, 0.13), Vector3(-0.12, -0.1, 0.11), Vector3(0.74, -0.02, 0.08), Vector3(-0.8, -0.06, 0.07), Vector3(0.32, -0.04, 0.06)]:
+		var spot := c + Vector2(d.x * rx, d.y * ry)
+		var r: float = d.z * w
+		var qx := sqrt(maxf(0.25, 1.0 - d.x * d.x))
+		var qy := sqrt(maxf(0.35, 1.0 - d.y * d.y))
+		var blob := PackedVector2Array()
+		for j in 16:
+			var a := TAU * j / 16.0
+			var wobble := 1.0 + 0.12 * sin(j * 1.9 + d.x * 9.0)
+			blob.append(spot + Vector2(cos(a) * r * qx * wobble, sin(a) * r * qy * wobble))
+		draw_colored_polygon(blob, Color(SHROOM_PURPLE, alpha))
+		_ink_outline(blob, 1.0, alpha * 0.6)
+		draw_circle(spot + Vector2(-r * 0.3 * qx, -r * 0.3 * qy), r * 0.22, Color(SHROOM_PURPLE.lightened(0.3), alpha * 0.8))
+	_ink_outline(cap, 2.0, alpha)
 
 
 # La nube del fungo di Teemo, in quattro tempi come in LoL: il cappello si gonfia e scoppia, la nube
@@ -1849,11 +1868,11 @@ func _update_high_overlay() -> void:
 const CLOUD_MS := 700.0 # ms di vita della nuvola nel client
 const POISON_CLOUD_MS := 1100.0 # ms di vita della nube del fungo di Teemo nel client (#419)
 const SHROOM_POP_MS := 120.0 # ms in cui il cappello del fungo di Teemo si gonfia prima di scoppiare
-const SHROOM_GREEN := Color("3fd14a") # il fungo di Teemo (foto di Riccardo): cappello verde acceso
-const SHROOM_PURPLE := Color("9466d8") # le macchie viola
-const SHROOM_STEM := Color("f1ead6") # il gambo panna
-const POISON_GREEN := Color(0.45, 0.85, 0.25) # la nube e il veleno
-const POISON_PURPLE := Color(0.5, 0.3, 0.72)
+const SHROOM_GREEN := Color("5a7631") # il fungo di Teemo, come la Trappola velenosa di LoL: cappello verde oliva
+const SHROOM_PURPLE := Color("b03a74") # le macchie magenta
+const SHROOM_STEM := Color("6f604c") # il gambo marrone-grigio
+const POISON_GREEN := Color(0.62, 0.9, 0.22) # la nube e il veleno: verde tossico che tira al giallo
+const POISON_PURPLE := Color(0.55, 0.25, 0.65)
 const ITEM_SCALE := 1.3 # gli oggetti si disegnano un po' più grandi della loro scatola di gioco, per vederli bene
 const ITEM_BOB_PX := 4.0 # pixel di ondeggiamento di un oggetto a terra
 const SMOKE_GREY := Color(0.82, 0.86, 0.8)

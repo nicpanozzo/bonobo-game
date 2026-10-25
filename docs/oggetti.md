@@ -40,8 +40,9 @@ Ogni oggetto ha una **classe di frequenza** proporzionata a quanto cambia la par
 
 ## Il Fungo di Teemo (idea di Riccardo, #419)
 
-Un fungo solo, grande, come quello di Teemo in League of Legends: cappello verde acceso a cupola con
-macchie viola, gambo panna. Numeri in `FUNGO` (`constants.ts`), oggetto `fungoTeemo` in `items.ts`.
+Un fungo solo, grande, disegnato come la Trappola velenosa di Teemo in League of Legends: cappello
+bulboso quasi a palla, verde oliva puntinato e più scuro sotto, macchie grandi e irregolari magenta, gambo
+corto marrone-grigio. Numeri in `FUNGO` (`constants.ts`), oggetto `fungoTeemo` in `items.ts`.
 
 1. **Lancio a pallonetto.** Si raccoglie con J o K e si lancia con K come gli altri (su = in alto, giù =
    posalo ai piedi), ma è pesante: parte più lento e più alto della banana e ricade prima. In volo
