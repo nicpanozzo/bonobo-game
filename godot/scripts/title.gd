@@ -11,6 +11,7 @@ signal credits_requested
 signal tutorial_requested # tutorial a tappe con lo sparring (E15)
 signal training_requested # palestra col manichino e il pannello dell'allenamento (E15)
 signal challenges_requested # sfide con medaglie (E15)
+signal invite_requested(invite: Dictionary) # entra nella stanza del link copiato: {room, server?}
 
 const BLINK_S := 0.6 # mezzo giro del lampeggio di "Premi un tasto"
 const CARD_SIZE := Vector2(460, 76) # schede del menu, pixel
@@ -23,10 +24,14 @@ var _solo := VBoxContainer.new() # il sottomenu "Da solo"
 var _first: Button
 var _solo_first: Button
 var _blink := 0.0
+var _invite_card: Button # "Entra nella partita" quando negli appunti c'è il link di una serata
+var _invite := {}
+var _own_room := "" # la stanza che si sta ospitando: il proprio link non è un invito
 
 
-func setup(game_data: Dictionary, skip_press := false) -> void:
+func setup(game_data: Dictionary, skip_press := false, own_room := "") -> void:
 	game = game_data
+	_own_room = own_room
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var bg := ColorRect.new()
 	bg.color = UI.BG
@@ -96,7 +101,8 @@ func setup(game_data: Dictionary, skip_press := false) -> void:
 	version.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	version.position -= Vector2(UI.GAP_L, UI.GAP_L)
 	add_child(version)
-	if skip_press:
+	_refresh_invite()
+	if skip_press or _invite_card != null: # col link negli appunti niente "Premi un tasto": si entra
 		_open_menu()
 
 
@@ -139,7 +145,67 @@ func _process(delta: float) -> void:
 func _open_menu() -> void:
 	_press.visible = false
 	_menu.visible = true
-	_first.grab_focus.call_deferred()
+	_refresh_invite()
+	(_invite_card if _invite_card != null else _first).grab_focus.call_deferred()
+
+
+# Nell'app il link della serata si copia dal Discord e basta aprire il gioco: la prima scheda porta lì.
+# Nel browser no: gli appunti non si leggono senza chiedere, e il link aperto porta già nella stanza
+func _refresh_invite() -> void:
+	if OS.has_feature("web") or not DisplayServer.has_feature(DisplayServer.FEATURE_CLIPBOARD):
+		return
+	_show_invite(invite_from(DisplayServer.clipboard_get(), _own_room))
+
+
+func _show_invite(found: Dictionary) -> void:
+	if found == _invite:
+		return
+	_invite = found
+	var had_focus := _invite_card != null and _invite_card.has_focus()
+	if _invite_card != null:
+		_invite_card.queue_free()
+		_invite_card = null
+	if found.is_empty():
+		if had_focus:
+			_first.grab_focus()
+		return
+	_invite_card = _card(_menu, "Entra nella stanza «%s»" % found.room, invite_detail(found), func(): invite_requested.emit(_invite), true)
+	_menu.move_child(_invite_card, 0)
+	if had_focus or _menu.visible:
+		_invite_card.grab_focus.call_deferred()
+
+
+# Il link copiato vale come invito se porta una stanza e non è quello appena copiato dal gioco stesso
+static func invite_from(text: String, own_room := "") -> Dictionary:
+	if text.length() > 2000 or text == UI.last_copied:
+		return {}
+	var found: Dictionary = preload("res://scripts/lobby.gd").parse_link(text)
+	var room: String = preload("res://scripts/lobby.gd")._clean_room(str(found.get("room", "")))
+	if room == "" or (own_room != "" and room == own_room):
+		return {}
+	found.room = room
+	# Il link della pagina servita dal server di gioco non scrive il server: è lo stesso indirizzo
+	var page := RegEx.create_from_string("(https?://[^/\\s?#]+)[^\\s]*[?&]room=").search(text)
+	if not found.has("server") and page != null and not page.get_string(1).ends_with("github.io"):
+		found.server = page.get_string(1)
+	return found
+
+
+# Dove si gioca: in casa (stesso Wi-Fi), sul computer di un amico (tunnel) o sul server di sempre
+static func invite_detail(found: Dictionary) -> String:
+	var server := str(found.get("server", ""))
+	var host := server.trim_prefix("https://").trim_prefix("http://").get_slice(":", 0).get_slice("/", 0)
+	if host.begins_with("192.168.") or host.begins_with("10.") or host.begins_with("172.") or host.ends_with(".local"):
+		return "Dal link che hai copiato · in casa, sullo stesso Wi-Fi"
+	if host.ends_with("trycloudflare.com"):
+		return "Dal link che hai copiato · sul computer di chi ospita"
+	return "Dal link che hai copiato: un clic e scegli il lottatore"
+
+
+func _notification(what: int) -> void:
+	# Si torna al gioco dopo aver copiato il link dal Discord: la scheda compare senza riaprirlo
+	if what == NOTIFICATION_APPLICATION_FOCUS_IN and _menu.visible:
+		_refresh_invite()
 
 
 # Il clic se lo prendono i controlli della schermata e a _unhandled_input non arriva: risale fin qui
@@ -168,6 +234,6 @@ func _unhandled_input(event: InputEvent) -> void:
 # Torna il fuoco al menu quando si chiudono opzioni, crediti o sfide
 func restore_focus() -> void:
 	if _menu.visible:
-		_first.grab_focus()
+		(_invite_card if _invite_card != null else _first).grab_focus()
 	elif _solo.visible:
 		_solo_first.grab_focus()

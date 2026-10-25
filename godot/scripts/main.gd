@@ -110,7 +110,7 @@ func _ready() -> void:
 	# In alto a sinistra, sotto la riga della stanza: il link per gli amici a portata di clic (#308)
 	_link_button = UI.small_button("Copia link", func():
 		UI.copy(room_link(params.room))
-		UI.toast(ui_layer, "Link copiato: incollalo sul Discord"))
+		UI.toast(ui_layer, "Link copiato: incollalo sul Discord. Chi ha l'app lo copia e apre il gioco"))
 	_link_button.focus_mode = Control.FOCUS_NONE # niente fuoco: spazio e invio restano ai comandi
 	_link_button.visible = false
 	var link_row := HBoxContainer.new()
@@ -121,7 +121,7 @@ func _ready() -> void:
 	# Chi ospita (#308) ha anche il link per chi è sulla stessa rete: niente tunnel, niente lag
 	_lan_link_button = UI.small_button("Copia link di casa", func():
 		UI.copy(PAGES_URL + "?room=" + str(params.room).uri_encode() + "&server=" + str(HostServer.instance(get_tree()).info.get("lanServer", "")).uri_encode())
-		UI.toast(ui_layer, "Link di casa copiato: per chi è sul tuo stesso Wi-Fi"))
+		UI.toast(ui_layer, "Link di casa copiato: chi è sul tuo Wi-Fi lo copia e apre l'app (nel browser non va)"))
 	_lan_link_button.focus_mode = Control.FOCUS_NONE
 	_lan_link_button.visible = false
 	link_row.add_child(_lan_link_button)
@@ -218,8 +218,14 @@ func _show_title(skip_press := false) -> void:
 	title = preload("res://scripts/title.gd").new()
 	title.theme = UI.theme()
 	ui_layer.add_child(title)
-	title.setup(game, skip_press)
+	# Chi sta ospitando ha negli appunti il link della sua stanza: non è un invito da proporgli
+	title.setup(game, skip_press, str(params.get("room", "")) if get_tree().root.has_node("HostServer") else "")
 	UI.fade_in(title)
+	title.invite_requested.connect(func(invite: Dictionary):
+		title.queue_free()
+		params.room = invite.room
+		params.server = str(invite.get("server", _default_server()))
+		_show_lobby("join"))
 	title.play_requested.connect(func():
 		title.queue_free()
 		_show_lobby())

@@ -319,8 +319,12 @@ static func keep_focus(menu: Control, first: Control) -> void:
 	menu.tree_exiting.connect(func(): viewport.gui_focus_changed.disconnect(back))
 
 
+static var last_copied := "" # l'ultimo testo copiato dal gioco: il proprio link non è un invito (title.gd)
+
+
 # Copia negli appunti (nel browser passa da navigator.clipboard)
 static func copy(text: String) -> void:
+	last_copied = text
 	DisplayServer.clipboard_set(text)
 
 
