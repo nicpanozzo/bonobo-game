@@ -34,7 +34,8 @@ var portrait_of: Callable # personaggio (look) -> [Texture2D, Rect2] o []: lo st
 var _cued := {} # i momenti già suonati in questa presentazione o conto alla rovescia
 
 
-func _ready() -> void:
+# Tutto in _init: i test lo usano anche senza che entri nell'albero
+func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# Lo shader dei lottatori: il ritratto ha i colori alternativi di chi ha lo stesso personaggio
 	var palette := ShaderMaterial.new()
@@ -227,6 +228,8 @@ static func card_rect(i: int, n: int, w: float, h: float) -> Rect2:
 # Da 0 (fuori schermo) a 1 (al suo posto) per la scheda i, con un piccolo rimbalzo all'arrivo
 static func card_in(t: float, i: int) -> float:
 	var k := clampf((t - CARD_FIRST - i * CARD_GAP) / CARD_SLIDE, 0.0, 1.0)
+	if k <= 0.0:
+		return 0.0
 	var c := 1.70158 # ease-out back
 	return 1.0 + (c + 1.0) * pow(k - 1.0, 3) + c * pow(k - 1.0, 2)
 
