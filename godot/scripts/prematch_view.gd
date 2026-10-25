@@ -3,7 +3,10 @@
 extends Control
 
 signal ready_changed(ready: bool)
+signal cue(name: String) # un momento da sottolineare con un suono o una voce: intro, card, vs, 3, 2, 1, go
 
+const FighterPose := preload("res://scripts/fighter_pose.gd")
+const Hud := preload("res://scripts/hud.gd")
 const GO_MS := 900.0 # quanto resta il VIA! dopo matchStart, ms
 const PANEL_W := 560.0 # larghezza del pannello dell'attesa, pixel
 const PANEL_Y := 96.0 # dove comincia il pannello, pixel dall'alto
@@ -11,6 +14,11 @@ const ROW_H := 34.0 # una riga per lottatore, pixel
 const COUNT_COLORS := ["ffcf4a", "ff9a3c", "ff5a4a"] # 1, 2, 3: più si avvicina il VIA più è caldo
 const GO_COLOR := Color("7dff6a")
 const SYNC_MS := 1000 # dopo quanto, se il server non è d'accordo sul Pronto, vince lui, ms
+const CARD_FIRST := 0.08 # presentazione (da 0 a 1): quando arriva la prima scheda
+const CARD_GAP := 0.12 # tra una scheda e la successiva
+const CARD_SLIDE := 0.16 # quanto ci mette una scheda ad arrivare
+const CARD_MAX_W := 250.0 # larghezza massima di una scheda della presentazione, pixel
+const FLASH_MS := 260.0 # lampo bianco al VIA!, ms
 
 var game: Dictionary
 var my_id := ""
@@ -22,10 +30,17 @@ var _asked := false # Pronto chiesto da qui: si vede subito, senza aspettare lo 
 var _asked_at := 0 # ms dell'ultimo Pronto chiesto
 var _font: Font = UI.font()
 var _button: Button
+var portrait_of: Callable # personaggio (look) -> [Texture2D, Rect2] o []: lo stesso dell'HUD, con la sua cache
+var _cued := {} # i momenti già suonati in questa presentazione o conto alla rovescia
 
 
-func _ready() -> void:
+# Tutto in _init: i test lo usano anche senza che entri nell'albero
+func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# Lo shader dei lottatori: il ritratto ha i colori alternativi di chi ha lo stesso personaggio
+	var palette := ShaderMaterial.new()
+	palette.shader = load("res://shaders/palette.gdshader")
+	material = palette
 	_button = UI.button("Sono pronto!", func(): set_ready(not is_ready()), true)
 	_button.focus_mode = Control.FOCUS_NONE # niente fuoco: i tasti restano al lottatore
 	_button.custom_minimum_size = Vector2(240, 0)
@@ -40,6 +55,7 @@ func reset() -> void:
 	_left_ms = 0.0
 	_go_ms = 0.0
 	_asked = false
+	_cued = {}
 	_button.visible = false
 	queue_redraw()
 
@@ -52,6 +68,8 @@ func on_snapshot(snap: Dictionary) -> void:
 	for e in snap.get("events", []):
 		if e.type == "matchStart" and was_on:
 			_go_ms = GO_MS
+			_cue("go")
+			_cued = {}
 	if not _pre.is_empty():
 		_left_ms = float(_pre.get("leftMs", 0))
 		# Il server ha l'ultima parola, ma il Pronto appena chiesto ha il tempo di arrivargli
@@ -92,6 +110,7 @@ func _process(delta: float) -> void:
 		_button.position = Vector2((size.x - _button.size.x) / 2, PANEL_Y + _panel_h() + 12)
 	if frozen():
 		_left_ms = maxf(0.0, _left_ms - delta * 1000.0)
+		_cue_timeline()
 	if _go_ms > 0:
 		_go_ms -= delta * 1000.0
 	if not _pre.is_empty() or _go_ms > 0:
@@ -106,7 +125,7 @@ func _draw() -> void:
 	elif frozen():
 		_draw_countdown(w, h)
 	elif _go_ms > 0:
-		_draw_big("VIA!", Vector2(w / 2, h * 0.42), 200, GO_COLOR, 1.0 - _go_ms / GO_MS)
+		_draw_go(w, h, 1.0 - _go_ms / GO_MS)
 
 
 func _panel_h() -> float:
@@ -158,7 +177,7 @@ func _draw_countdown(w: float, h: float) -> void:
 	var countdown: float = float(game.get("prematch", {}).get("countdownMs", 3000))
 	var label := count_label(_left_ms, countdown)
 	if label == "":
-		_draw_big("PREPARATEVI!", Vector2(w / 2, h * 0.42), 96, Color("ffcf4a"), 0.0)
+		_draw_intro(w, h, intro_t(_left_ms, countdown, _intro_ms()))
 		return
 	var n := int(label)
 	var into := 1.0 - fmod(_left_ms, 1000.0) / 1000.0 # da 0 a 1 dentro il secondo di questo numero
@@ -166,9 +185,9 @@ func _draw_countdown(w: float, h: float) -> void:
 
 
 # Testo enorme che arriva grande e si assesta, poi sfuma: t da 0 (appena comparso) a 1
-func _draw_big(text: String, center: Vector2, px: int, color: Color, t: float) -> void:
+func _draw_big(text: String, center: Vector2, px: int, color: Color, t: float, alpha := 1.0) -> void:
 	var pop := 1.0 + 0.7 * pow(1.0 - clampf(t * 3.0, 0.0, 1.0), 3.0)
-	color.a = 1.0 - smoothstep(0.75, 1.0, t)
+	color.a = (1.0 - smoothstep(0.75, 1.0, t)) * alpha
 	var s := _font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, px)
 	draw_set_transform(center, 0.0, Vector2(pop, pop))
 	var at := Vector2(-s.x / 2, s.y * 0.3)
@@ -186,3 +205,116 @@ func _outlined(text: String, pos: Vector2, size_px: int, color: Color) -> void:
 	size_px = Access.px(size_px)
 	draw_string_outline(_font, pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, size_px, 4, Color.BLACK)
 	draw_string(_font, pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, size_px, color)
+
+
+func _intro_ms() -> float:
+	return float(game.get("prematch", {}).get("introMs", 2500))
+
+
+# Quanto è andata avanti la presentazione, da 0 a 1 (1 = comincia il 3, 2, 1)
+static func intro_t(left_ms: float, countdown_ms: float, intro_ms: float) -> float:
+	return clampf(1.0 - (left_ms - countdown_ms) / maxf(intro_ms, 1.0), 0.0, 1.0)
+
+
+# Dove sta la scheda i di n alla fine della presentazione: in fila al centro dello schermo
+static func card_rect(i: int, n: int, w: float, h: float) -> Rect2:
+	var gap := 28.0
+	var cw := minf(CARD_MAX_W, (w - 80.0 - gap * (n - 1)) / maxf(n, 1))
+	var ch := cw * 1.3
+	var total := cw * n + gap * (n - 1)
+	return Rect2(w / 2 - total / 2 + i * (cw + gap), h * 0.44 - ch / 2, cw, ch)
+
+
+# Da 0 (fuori schermo) a 1 (al suo posto) per la scheda i, con un piccolo rimbalzo all'arrivo
+static func card_in(t: float, i: int) -> float:
+	var k := clampf((t - CARD_FIRST - i * CARD_GAP) / CARD_SLIDE, 0.0, 1.0)
+	if k <= 0.0:
+		return 0.0
+	var c := 1.70158 # ease-out back
+	return 1.0 + (c + 1.0) * pow(k - 1.0, 3) + c * pow(k - 1.0, 2)
+
+
+# Le schede dei lottatori arrivano una dopo l'altra, alternando dall'alto e dal basso, poi il VS sbatte in mezzo
+func _draw_intro(w: float, h: float, t: float) -> void:
+	var fade := 1.0 - smoothstep(0.9, 1.0, t)
+	draw_rect(Rect2(0, 0, w, h), Color(0.02, 0.01, 0.05, 0.6 * minf(t * 6.0, 1.0) * fade))
+	# Due fasce diagonali che attraversano lo schermo
+	var band := Color(1.0, 0.81, 0.29, 0.18 * fade)
+	var slide := (1.0 - minf(t * 4.0, 1.0)) * w
+	draw_colored_polygon(PackedVector2Array([Vector2(-slide, h * 0.2), Vector2(w - slide, h * 0.08), Vector2(w - slide, h * 0.16), Vector2(-slide, h * 0.28)]), band)
+	draw_colored_polygon(PackedVector2Array([Vector2(slide, h * 0.78), Vector2(w + slide, h * 0.66), Vector2(w + slide, h * 0.74), Vector2(slide, h * 0.86)]), band)
+	var variants: Dictionary = FighterPose.variant_ranks(_players)
+	var n := _players.size()
+	for i in n:
+		var k := card_in(t, i)
+		if k <= 0.0:
+			continue
+		var r := card_rect(i, n, w, h)
+		var from_y := -r.size.y - 40.0 if i % 2 == 0 else h + 40.0
+		r.position.y = lerpf(from_y, r.position.y, k)
+		_draw_card(_players[i], r, int(variants.get(_players[i].id, 0)), fade)
+	var vs_t := CARD_FIRST + n * CARD_GAP + 0.04
+	if n >= 2 and t >= vs_t:
+		var label := "VS" if n == 2 else "RISSA!"
+		_draw_big(label, Vector2(w / 2, h * 0.44 + (0.0 if n == 2 else card_rect(0, n, w, h).size.y * 0.5 + 60.0)), 120 if n == 2 else 90, Color("ff5a4a"), (t - vs_t) * 0.5, fade)
+	_centered("PREPARATEVI!", Vector2(w / 2, h * 0.14), 40, Color(1.0, 0.81, 0.29, fade))
+
+
+func _draw_card(p: Dictionary, r: Rect2, variant: int, alpha: float) -> void:
+	var color := Color.hex((int(p.get("color", 0xffffff)) << 8) | 0xff)
+	var box := StyleBoxFlat.new()
+	box.bg_color = Color(color.darkened(0.7), 0.92 * alpha)
+	box.border_color = Color(color, alpha)
+	box.set_border_width_all(5)
+	box.set_corner_radius_all(16)
+	box.skew = Vector2(-0.12, 0)
+	draw_style_box(box, r)
+	var look: Dictionary = FighterPose.look(game, str(p.get("characterId", "")), FighterPose.skin_of(p))
+	var src: Array = portrait_of.call(look) if portrait_of.is_valid() else []
+	if not src.is_empty():
+		var area := Rect2(r.position + Vector2(14, 14), Vector2(r.size.x - 28, r.size.y - 92))
+		var fit: Rect2 = Hud.fit_rect(src[1].size, area)
+		draw_texture_rect_region(src[0], fit, src[1], FighterPose.sprite_modulate(variant, alpha))
+	var name_px := 26 if r.size.x > 180 else 20
+	_centered(str(p.get("name", "?")), Vector2(r.get_center().x, r.end.y - 46), name_px, Color(1, 1, 1, alpha))
+	var character: Dictionary = game.get("characters", {}).get(str(p.get("characterId", "")), {})
+	_centered(str(character.get("name", "")).to_upper(), Vector2(r.get_center().x, r.end.y - 18), 16, Color(color.lightened(0.3), alpha))
+
+
+# VIA!: lampo bianco, raggi che partono dal centro e la scritta che esplode
+func _draw_go(w: float, h: float, t: float) -> void:
+	var flash := 1.0 - minf(t * GO_MS / FLASH_MS, 1.0)
+	if flash > 0.0:
+		draw_rect(Rect2(0, 0, w, h), Color(1, 1, 1, 0.45 * flash))
+	var center := Vector2(w / 2, h * 0.42)
+	var rays := 18
+	for i in rays:
+		var a := TAU * i / rays + 0.15
+		var inner := 120.0 + t * 500.0
+		var outer := inner + 80.0 + 200.0 * (1.0 - t)
+		var dir := Vector2.from_angle(a)
+		draw_line(center + dir * inner, center + dir * outer, Color(1.0, 0.95, 0.6, 0.8 * (1.0 - t)), 6.0 * (1.0 - t) + 1.0)
+	_draw_big("VIA!", center, 200, GO_COLOR, t)
+
+
+# Suoni e voci nei momenti giusti: ognuno una volta sola, anche se lo snapshot arriva in ritardo
+func _cue_timeline() -> void:
+	var countdown: float = float(game.get("prematch", {}).get("countdownMs", 3000))
+	var label := count_label(_left_ms, countdown)
+	if label != "":
+		_cue(label)
+		return
+	var t := intro_t(_left_ms, countdown, _intro_ms())
+	_cue("intro")
+	for i in _players.size():
+		if card_in(t, i) > 0.0:
+			_cue("card%d" % i)
+	if _players.size() >= 2 and t >= CARD_FIRST + _players.size() * CARD_GAP + 0.04:
+		_cue("vs")
+
+
+func _cue(key: String) -> void:
+	if _cued.has(key):
+		return
+	_cued[key] = true
+	cue.emit("card" if key.begins_with("card") else key)

@@ -336,7 +336,11 @@
     "minLoudnessSeconds": 0.5,
     "shortMinPeakDb": -12,
     "announcerPriority": {
-      "go": 1,
+      "intro": 1,
+      "go": 3,
+      "three": 3,
+      "two": 3,
+      "one": 3,
       "tenSeconds": 1,
       "lastLife": 2,
       "game": 3,

@@ -107,6 +107,8 @@ func _ready() -> void:
 	layer.add_child(prematch)
 	prematch.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	prematch.ready_changed.connect(func(on: bool): socket.emit("ready", {"ready": on}))
+	prematch.portrait_of = hud._portrait
+	prematch.cue.connect(audio.on_prematch_cue)
 	# In alto a sinistra, sotto la riga della stanza: il link per gli amici a portata di clic (#308)
 	_link_button = UI.small_button("Copia link", func():
 		UI.copy(room_link(params.room))
