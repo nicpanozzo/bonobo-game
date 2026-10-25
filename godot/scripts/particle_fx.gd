@@ -242,3 +242,42 @@ static func star_points(c: Vector2, radius: float, spikes: int, inner: float, ke
 		var rr := radius * inner if i % 2 == 1 else radius * (1.0 + (r.randf() - 0.5) * wobble)
 		pts.append(c + Vector2(cos(a), sin(a)) * rr)
 	return pts
+
+
+# Esplosione del KO a colonna (#470 passo 2a): una lingua di fuoco nel colore di chi esce, che entra nello schermo da
+# (x, y) lungo dir (versore, verso il centro dell'inquadratura). Le lingue sono allungate nella direzione della colonna;
+# il tono "tint" è il fumo colorato con col (particle_view.gd), il nucleo chiaro si somma alla luce
+static func ko_column(key: int, x: float, y: float, dir: Vector2, col: Color) -> Array:
+	var r := _rng(key)
+	var out: Array = []
+	var light := col.lightened(0.55)
+	for i in 60:
+		var f := r.randf()
+		var sp := 180.0 + f * 520.0
+		var d := dir.rotated(r.randf_range(-0.16, 0.16))
+		out.append({"x": x, "y": y, "vx": d.x * sp, "vy": d.y * sp, "drag": 2.2, "s0": r.randf_range(7, 13),
+			"s1": r.randf_range(12, 22) - f * 5.0, "life": r.randf_range(0.4, 0.8), "rot": d.angle() + PI / 2, "stretch": 1.8 + f,
+			"v": i % VARIANTS, "ramp": ["core", "tint", "tint", "smoke"], "tint": col, "grow": 1.3, "delay": f * 0.1})
+	for i in 14:
+		var f := r.randf()
+		var sp := 120.0 + f * 380.0
+		out.append({"x": x, "y": y, "vx": dir.x * sp, "vy": dir.y * sp, "drag": 2.5, "s0": 6.0, "s1": 9.0,
+			"life": r.randf_range(0.3, 0.5), "rot": dir.angle() + PI / 2, "stretch": 2.4, "v": i % VARIANTS, "ramp": ["core"],
+			"add": true, "alpha": 0.8, "delay": f * 0.06})
+	for i in 22:
+		var d := dir.rotated(r.randf_range(-0.35, 0.35))
+		var sp := r.randf_range(300, 800)
+		out.append({"kind": "spark", "x": x, "y": y, "vx": d.x * sp, "vy": d.y * sp, "drag": 3.0, "gy": 60.0,
+			"life": r.randf_range(0.4, 0.8), "w": r.randf_range(1.4, 2.4), "col": Color.WHITE if r.randf() > 0.5 else light})
+	return out
+
+
+# La nuvoletta della rinascita che si dissolve (#470 passo 2a): uno sbuffo del colore del giocatore ai piedi
+static func cloud_puff(key: int, x: float, y: float, col: Color) -> Array:
+	var out: Array = []
+	for p in dust_burst(key, x, y, 1.3):
+		if p.get("kind", "tex") == "tex":
+			p.ramp = ["tint", "air"]
+			p.tint = col.lightened(0.35)
+			out.append(p)
+	return out

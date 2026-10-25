@@ -122,3 +122,33 @@ func test_tetto_delle_particelle() -> void:
 	view.clear()
 	runner.check(view.particle_count() == 0, "clear svuota")
 	view.free()
+
+
+# La colonna del KO (#470 passo 2a): va verso il centro, ha il colore di chi esce, e il nucleo chiaro si somma alla luce
+func test_colonna_del_ko() -> void:
+	var dir := Vector2(-0.92, 0.39).normalized()
+	var col := Color("3498db")
+	var list := ParticleFx.ko_column(4, 1280, 120, dir, col)
+	var along := 0
+	var tinted := 0
+	var tex := 0
+	for p in list:
+		if Vector2(float(p.vx), float(p.vy)).normalized().dot(dir) > 0.9:
+			along += 1
+		if p.get("kind", "tex") == "tex":
+			tex += 1
+			if (p.ramp as Array).has("tint") and p.tint == col:
+				tinted += 1
+	runner.check(along >= list.size() * 0.9, "la colonna entra verso il centro (%d su %d)" % [along, list.size()])
+	runner.check(tinted >= 60, "le lingue hanno il colore di chi esce (%d)" % tinted)
+	runner.check(list.any(func(p): return p.get("add", false)), "c'è il nucleo che si somma alla luce")
+	var s := ParticleFx.sample(list[0], float(list[0].life) * 0.5)
+	runner.check(not s.is_empty() and s.tone0 == "tint", "a metà vita si vede il colore del giocatore")
+
+
+# Lo sbuffo della nuvoletta: solo sbuffi colorati, niente sassolini
+func test_sbuffo_della_nuvoletta() -> void:
+	var col := Color("e74c3c")
+	var list := ParticleFx.cloud_puff(2, 400, 520, col)
+	runner.check(not list.is_empty(), "c'è lo sbuffo")
+	runner.check(list.all(func(p): return p.get("kind", "tex") == "tex" and p.ramp[0] == "tint"), "solo sbuffi del colore del giocatore")

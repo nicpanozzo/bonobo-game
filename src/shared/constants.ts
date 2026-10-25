@@ -466,6 +466,9 @@ export const EFFECTS = {
   airRingMs: 380, // durata dell'anello d'aria del salto in aria
   impactStarMs: 240, // durata della stella d'impatto
   impactStarKoMs: 380, // durata della stella d'impatto di un colpo da KO
+  // Esplosione del KO a colonna e nuvoletta della rinascita (#470 passo 2a)
+  koColumnInset: 30, // pixel: la colonna del KO parte così dentro il bordo dell'inquadratura
+  cloudDescentMs: 900, // la nuvoletta scende dall'alto per tanto e arriva al punto di ritorno quando si ricompare
 };
 
 // Bot del server (#20, src/server/bot.ts): quanto è svelto e quando attacca

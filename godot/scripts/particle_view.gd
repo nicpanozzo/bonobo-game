@@ -15,6 +15,7 @@ var _now := 0.0 # ms, l'orologio degli effetti
 var _tex := {} # "tono_forma" -> Array[Texture2D] (le varianti); manca se i file non ci sono
 var _glow: Texture2D
 var _add: Node2D
+var _clouds := {} # id -> { pos, col }: le nuvolette della rinascita (#470 passo 2a), le muove world_view.gd
 
 
 # Il livello additivo: chiede a chi lo possiede di disegnarci sopra
@@ -63,6 +64,7 @@ func mark(m: Dictionary) -> void:
 
 
 func clear() -> void:
+	_clouds = {}
 	_groups = []
 	_marks = []
 	_count = 0
@@ -101,6 +103,8 @@ func _draw() -> void:
 				_draw_tex(self, p, ap)
 			elif kind == "grit":
 				_draw_grit(p, ap)
+	for id in _clouds:
+		_draw_cloud(_clouds[id])
 	for m in _marks:
 		_draw_mark(m)
 	draw_set_transform(Vector2.ZERO)
@@ -108,6 +112,13 @@ func _draw() -> void:
 
 # Il livello additivo: scintille, particelle "add" e bagliori
 func draw_additive(ci: CanvasItem) -> void:
+	if _glow: # il bagliore delle nuvolette della rinascita
+		for id in _clouds:
+			var c: Dictionary = _clouds[id]
+			var gc: Color = (c.col as Color).lightened(0.5)
+			gc.a = 0.45
+			ci.draw_set_transform(c.pos)
+			ci.draw_texture_rect(_glow, Rect2(-80, -60, 160, 120), false, gc)
 	for g in _groups:
 		var a := (_now - float(g.t0)) / 1000.0
 		for p in g.list:
@@ -132,7 +143,36 @@ func draw_additive(ci: CanvasItem) -> void:
 	ci.draw_set_transform(Vector2.ZERO)
 
 
+# La nuvoletta della rinascita di un giocatore: dove sta (i piedi ci poggiano sopra) e di che colore è
+func set_cloud(id: String, pos: Vector2, col: Color) -> void:
+	_clouds[id] = {"pos": pos, "col": col}
+
+
+func drop_cloud(id: String) -> void:
+	_clouds.erase(id)
+
+
+func has_cloud(id: String) -> bool:
+	return _clouds.has(id)
+
+
+# Tre sbuffi del fumo colorati col colore del giocatore, schiariti: una nuvoletta morbida, con un bagliore additivo
+func _draw_cloud(c: Dictionary) -> void:
+	var tex := _texture("smoke", "puff", 0)
+	if tex == null:
+		return
+	var pos: Vector2 = c.pos
+	var col: Color = (c.col as Color).lightened(0.45)
+	draw_set_transform(Vector2.ZERO)
+	for b in [[-22.0, 6.0, 20.0, 1], [0.0, 0.0, 26.0, 2], [24.0, 5.0, 22.0, 3]]:
+		var r: float = b[2]
+		var t2 := _texture("smoke", "puff", int(b[3]))
+		draw_texture_rect(t2 if t2 else tex, Rect2(pos.x + float(b[0]) - r, pos.y + float(b[1]) - r, r * 2.0, r * 2.0), false, col)
+
+
 func _texture(tone: String, shape: String, v: int) -> Texture2D:
+	if tone == "tint": # il tono del giocatore: la texture del fumo, colorata da modulate in _draw_tex
+		tone = "smoke"
 	var list: Array = _tex.get("%s_%s" % [tone, shape], _tex.get("%s_puff" % tone, []))
 	return list[v % list.size()] if not list.is_empty() else null
 
@@ -150,11 +190,18 @@ func _draw_tex(ci: CanvasItem, p: Dictionary, a: float) -> void:
 	ci.draw_set_transform(s.pos, s.rot, Vector2(1.0 / sqrt(stretch), stretch))
 	var t0 := _texture(s.tone0, shape, v)
 	if t0:
-		ci.draw_texture_rect(t0, rect, false, Color(1, 1, 1, float(s.alpha) * (1.0 - f)))
+		ci.draw_texture_rect(t0, rect, false, _modulate(s.tone0, p, float(s.alpha) * (1.0 - f)))
 	if f > 0.02:
 		var t1 := _texture(s.tone1, shape, v)
 		if t1:
-			ci.draw_texture_rect(t1, rect, false, Color(1, 1, 1, float(s.alpha) * f))
+			ci.draw_texture_rect(t1, rect, false, _modulate(s.tone1, p, float(s.alpha) * f))
+
+
+# Il colore con cui si disegna un tono: bianco (la texture com'è), o il colore del giocatore per "tint"
+static func _modulate(tone: String, p: Dictionary, alpha: float) -> Color:
+	var c: Color = p.get("tint", Color.WHITE) if tone == "tint" else Color.WHITE
+	c.a = alpha
+	return c
 
 
 # Granello: un quadrilatero storto che gira, ricade e saltella sul terreno

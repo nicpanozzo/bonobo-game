@@ -263,6 +263,7 @@
     "perDamageMs": 11,
     "maxMs": 500
   },
+  "respawnMs": 1500,
   "smashCharge": {
     "maxMs": 1000,
     "maxMultiplier": 1.4,
@@ -836,7 +837,9 @@
     "turnSpeed": 120,
     "airRingMs": 380,
     "impactStarMs": 240,
-    "impactStarKoMs": 380
+    "impactStarKoMs": 380,
+    "koColumnInset": 30,
+    "cloudDescentMs": 900
   },
   "items": {
     "banana": {
