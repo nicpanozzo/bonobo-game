@@ -242,6 +242,9 @@ func _partita() -> void:
 	_hud.size = Vector2(_game.world.width, _game.world.height)
 	var layer := CanvasLayer.new()
 	root.add_child(layer)
+	var post: Node = load("res://scripts/post_fx.gd").new() # come in main.gd: sotto l'HUD
+	post.world = world
+	layer.add_child(post)
 	layer.add_child(_hud)
 	_hud.on_welcome({"id": "p0", "room": "ci", "stageId": _game.defaultStageId, "rules": {"mode": "ffa", "stocks": 3}}, world.stage)
 	world.player_ids = ["p0", "p1", "p2", "p3", "p4"]

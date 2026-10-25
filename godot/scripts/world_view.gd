@@ -341,6 +341,11 @@ func reset() -> void:
 	set_stage(game.defaultStageId)
 
 
+# La luce del sole o della luna di questo frame (#288), vuota nelle arene senza ciclo del giorno: la usa post_fx.gd
+func sun_light() -> Dictionary:
+	return _sun
+
+
 func set_stage(stage_id: String) -> void:
 	set_stage_spec(game.stages.get(stage_id, game.stages[game.defaultStageId]))
 

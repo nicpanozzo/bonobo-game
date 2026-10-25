@@ -30,6 +30,7 @@ var _lan_link_button: Button
 var pause_menu: Control
 var world: Node2D
 var camera := Camera2D.new()
+var post_fx: Node # luce e colori dell'arena (post_fx.gd), sotto l'HUD
 var audio: Node2D
 var rumble: Rumble
 var hud: Control
@@ -98,6 +99,11 @@ func _ready() -> void:
 
 	var layer := CanvasLayer.new()
 	add_child(layer)
+	# Per primo nel livello dell'HUD: filtra l'arena disegnata sotto, non l'HUD e i menu sopra
+	post_fx = preload("res://scripts/post_fx.gd").new()
+	post_fx.world = world
+	post_fx.enabled = settings.video.post
+	layer.add_child(post_fx)
 	hud = preload("res://scripts/hud.gd").new()
 	hud.game = game
 	hud.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -366,6 +372,8 @@ func _apply_volumes() -> void:
 	audio.set_volumes(settings.master, settings.sfx, settings.music, settings.music_on, settings.voices)
 	rumble.level = settings.rumble
 	world.effects = settings.video.effects
+	if post_fx != null:
+		post_fx.enabled = settings.video.post
 	world.attack_boxes = settings.video.hitboxes
 	_apply_prediction()
 	Video.apply(settings)

@@ -130,6 +130,7 @@ func _video_page() -> VBoxContainer:
 		page.add_child(UI.toggle("Sincronizza con lo schermo (vsync)", settings.video.vsync, func(on): save.call("vsync", on)))
 		page.add_child(_choice_row("FPS massimi", Video.FPS_NAMES, settings.video.max_fps, func(i): save.call("max_fps", i)))
 	page.add_child(UI.toggle("Scie e polvere", settings.video.effects, func(on): save.call("effects", on)))
+	page.add_child(UI.toggle("Luce e colori dell'arena", settings.video.post, func(on): save.call("post", on)))
 	page.add_child(UI.toggle("Hitbox dei colpi", settings.video.hitboxes, func(on): save.call("hitboxes", on)))
 	return page
 
