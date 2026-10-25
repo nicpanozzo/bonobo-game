@@ -69,6 +69,7 @@ const VIDEO_DEFAULTS := {
 	"vsync": true,
 	"max_fps": 0, # indice in Video.FPS_LIMITS (0 = senza limite)
 	"effects": true, # scie e polvere
+	"post": true, # luce e colori dell'arena (post_fx.gd): bagliore, colori per arena, vignetta e grana
 	"predict": true, # il proprio lottatore previsto (E17): risponde subito anche con un server lontano
 	"hitboxes": true, # rettangolo del colpo in corso sopra gli sprite
 }
