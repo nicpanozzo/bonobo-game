@@ -19,6 +19,7 @@ const CARD_GAP := 0.12 # tra una scheda e la successiva
 const CARD_SLIDE := 0.16 # quanto ci mette una scheda ad arrivare
 const CARD_MAX_W := 250.0 # larghezza massima di una scheda della presentazione, pixel
 const FLASH_MS := 260.0 # lampo bianco al VIA!, ms
+const POSTER_H := 0.8 # in due, quanto è alto il lottatore sulla locandina, parte dell'altezza dello schermo
 
 var game: Dictionary
 var my_id := ""
@@ -32,6 +33,7 @@ var _font: Font = UI.font()
 var _button: Button
 var portrait_of: Callable # personaggio (look) -> [Texture2D, Rect2] o []: lo stesso dell'HUD, con la sua cache
 var _cued := {} # i momenti già suonati in questa presentazione o conto alla rovescia
+var _bodies := {} # personaggio (look.id) -> [Texture2D, Rect2]: il corpo intero per la locandina, o []
 
 
 # Tutto in _init: i test lo usano anche senza che entri nell'albero
@@ -236,6 +238,9 @@ static func card_in(t: float, i: int) -> float:
 
 # Le schede dei lottatori arrivano una dopo l'altra, alternando dall'alto e dal basso, poi il VS sbatte in mezzo
 func _draw_intro(w: float, h: float, t: float) -> void:
+	if _players.size() == 2:
+		_draw_poster(w, h, t)
+		return
 	var fade := 1.0 - smoothstep(0.9, 1.0, t)
 	draw_rect(Rect2(0, 0, w, h), Color(0.02, 0.01, 0.05, 0.6 * minf(t * 6.0, 1.0) * fade))
 	# Due fasce diagonali che attraversano lo schermo
@@ -284,6 +289,121 @@ func _draw_card(p: Dictionary, r: Rect2, variant: int, alpha: float) -> void:
 	_centered(str(p.get("name", "?")), Vector2(r.get_center().x, r.end.y - 46), name_px, Color(1, 1, 1, alpha))
 	var character: Dictionary = game.get("characters", {}).get(str(p.get("characterId", "")), {})
 	_centered(str(character.get("name", "")).to_upper(), Vector2(r.get_center().x, r.end.y - 18), 16, Color(color.lightened(0.3), alpha))
+
+
+# In due: una locandina da incontro di boxe. Sfondo nei due colori, i lottatori enormi che entrano dai lati
+# guardandosi, contorno al neon, nomi in basso e il VS acceso in mezzo
+func _draw_poster(w: float, h: float, t: float) -> void:
+	var fade := 1.0 - smoothstep(0.9, 1.0, t)
+	var cols: Array[Color] = []
+	for p in _players:
+		cols.append(Color.hex((int(p.get("color", 0xffffff)) << 8) | 0xff))
+	var bg := minf(t * 6.0, 1.0) * fade
+	var a := cols[0].darkened(0.75)
+	var b := cols[1].darkened(0.75)
+	var dark := Color(0.02, 0.01, 0.05)
+	# Metà sinistra e metà destra, ognuna nel colore del suo lottatore che sfuma verso il centro
+	var tilt := h * 0.09
+	draw_polygon(PackedVector2Array([Vector2(0, 0), Vector2(w / 2 + tilt, 0), Vector2(w / 2 - tilt, h), Vector2(0, h)]),
+		PackedColorArray([Color(a, 0.97 * bg), Color(dark, 0.97 * bg), Color(dark, 0.97 * bg), Color(a, 0.97 * bg)]))
+	draw_polygon(PackedVector2Array([Vector2(w / 2 + tilt, 0), Vector2(w, 0), Vector2(w, h), Vector2(w / 2 - tilt, h)]),
+		PackedColorArray([Color(dark, 0.97 * bg), Color(b, 0.97 * bg), Color(b, 0.97 * bg), Color(dark, 0.97 * bg)]))
+	# Righe orizzontali sottili, come un'insegna vista da vicino
+	for y in range(0, int(h), 6):
+		draw_line(Vector2(0, y), Vector2(w, y), Color(0, 0, 0, 0.18 * bg), 2.0)
+	var variants: Dictionary = FighterPose.variant_ranks(_players)
+	for i in 2:
+		var k := card_in(t, i)
+		if k <= 0.0:
+			continue
+		_draw_poster_fighter(_players[i], i, w, h, (1.0 - k) * w * 0.6, int(variants.get(_players[i].id, 0)), cols[i], fade)
+	# La riga di luce che divide le due metà
+	var split := minf(t * 5.0, 1.0)
+	var top := Vector2(w / 2 + tilt, 0)
+	var bottom := top.lerp(Vector2(w / 2 - tilt, h), split)
+	for glow in [[22.0, 0.12], [10.0, 0.3], [3.0, 1.0]]:
+		draw_line(top, bottom, Color(1, 1, 1, glow[1] * fade), glow[0])
+	var vs_t := CARD_FIRST + 2 * CARD_GAP + 0.04
+	if t >= vs_t:
+		_draw_neon("VS", Vector2(w / 2, h * 0.5), 190, cols[0].lerp(cols[1], 0.5).lightened(0.3), (t - vs_t) * 0.5, fade)
+	_centered("PREPARATEVI!", Vector2(w / 2, h * 0.1), 36, Color(1.0, 0.81, 0.29, fade))
+
+
+# Un lottatore della locandina: alone del suo colore, sagoma bianca al neon, il corpo intero, il nome in basso
+func _draw_poster_fighter(p: Dictionary, i: int, w: float, h: float, slide: float, variant: int, color: Color, alpha: float) -> void:
+	var side := -1.0 if i == 0 else 1.0
+	var area := Rect2(w * (0.03 if i == 0 else 0.55), h * (0.97 - POSTER_H) - 30.0, w * 0.42, h * POSTER_H)
+	area.position.x += side * slide
+	var center := area.get_center()
+	for step in 8:
+		draw_circle(center, area.size.y * (0.56 - step * 0.05), Color(color, 0.06 * alpha))
+	var look: Dictionary = FighterPose.look(game, str(p.get("characterId", "")), FighterPose.skin_of(p))
+	var src := body_of(look)
+	if src.is_empty():
+		var initial := str(look.get("name", p.get("name", "?"))).left(1).to_upper()
+		_draw_neon(initial, center, int(area.size.y * 0.6), color, 1.0, alpha)
+	else:
+		var region: Rect2 = src[1]
+		var k := minf(area.size.x / region.size.x, area.size.y / region.size.y)
+		var size := region.size * k
+		# In basso al suo riquadro, e chi sta a destra si gira verso il centro
+		var at := Vector2(center.x - size.x / 2, area.end.y - size.y)
+		var flip := 1.0 if i == 0 else -1.0
+		draw_set_transform(Vector2(at.x + (size.x if flip < 0 else 0.0), at.y), 0.0, Vector2(flip, 1))
+		var white := FighterPose.sprite_modulate(0, alpha, 1.0)
+		for d in [Vector2(5, 0), Vector2(-5, 0), Vector2(0, 5), Vector2(0, -5), Vector2(4, 4), Vector2(-4, 4), Vector2(4, -4), Vector2(-4, -4)]:
+			draw_texture_rect_region(src[0], Rect2(d, size), region, white)
+		draw_texture_rect_region(src[0], Rect2(Vector2.ZERO, size), region, FighterPose.sprite_modulate(variant, alpha))
+		draw_set_transform(Vector2.ZERO)
+	# Nome del giocatore grande, personaggio sotto nel suo colore
+	var x := area.position.x + 20.0 if i == 0 else area.end.x - 20.0
+	var name_px := Access.px(54)
+	var player := str(p.get("name", "?")).to_upper()
+	var character: Dictionary = game.get("characters", {}).get(str(p.get("characterId", "")), {})
+	var role := str(character.get("name", "")).to_upper()
+	var nw := _font.get_string_size(player, HORIZONTAL_ALIGNMENT_LEFT, -1, name_px).x
+	var rw := _font.get_string_size(role, HORIZONTAL_ALIGNMENT_LEFT, -1, Access.px(24)).x
+	_outlined(player, Vector2(x if i == 0 else x - nw, h - 58), 54, Color(1, 1, 1, alpha))
+	_outlined(role, Vector2(x if i == 0 else x - rw, h - 24), 24, Color(color.lightened(0.35), alpha))
+
+
+# Scritta al neon: alone colorato a strati e cuore quasi bianco, che arriva grande e si assesta
+func _draw_neon(text: String, center: Vector2, px: int, color: Color, t: float, alpha: float) -> void:
+	var pop := 1.0 + 0.6 * pow(1.0 - clampf(t * 3.0, 0.0, 1.0), 3.0)
+	var s := _font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, px)
+	draw_set_transform(center, 0.0, Vector2(pop, pop))
+	var at := Vector2(-s.x / 2, s.y * 0.3)
+	for glow in [[48, 0.1], [30, 0.18], [16, 0.45]]:
+		draw_string_outline(_font, at, text, HORIZONTAL_ALIGNMENT_LEFT, -1, px, glow[0], Color(color, glow[1] * alpha))
+	draw_string_outline(_font, at, text, HORIZONTAL_ALIGNMENT_LEFT, -1, px, 6, Color(color, alpha))
+	draw_string(_font, at, text, HORIZONTAL_ALIGNMENT_LEFT, -1, px, Color(color.lightened(0.75), alpha))
+	draw_set_transform(Vector2.ZERO)
+
+
+# Il corpo intero del personaggio (il primo fotogramma di idle, senza bordi vuoti); senza sprite il ritratto
+func body_of(look: Dictionary) -> Array:
+	var id := str(look.get("id", ""))
+	if _bodies.has(id):
+		return _bodies[id]
+	var out := []
+	var sprite: Variant = look.get("sprite")
+	if sprite is Dictionary:
+		var path: String = "%s/idle.png" % sprite.dir if sprite.has("dir") else sprite.path
+		var tex: Texture2D = load("res://data/" + path)
+		if tex != null:
+			var image := tex.get_image()
+			var frame := Rect2i(0, 0, int(sprite.frameWidth), int(sprite.frameHeight))
+			if image != null:
+				if image.is_compressed():
+					image.decompress()
+				var used := image.get_region(frame).get_used_rect()
+				if used.size.x > 0:
+					frame = Rect2i(used.position, used.size)
+			out = [tex, Rect2(frame)]
+	if out.is_empty() and portrait_of.is_valid():
+		out = portrait_of.call(look)
+	_bodies[id] = out
+	return out
 
 
 # VIA!: lampo bianco, raggi che partono dal centro e la scritta che esplode

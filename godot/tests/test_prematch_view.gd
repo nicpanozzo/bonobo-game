@@ -70,3 +70,9 @@ func test_suoni_della_presentazione_una_volta_sola() -> void:
 	v.on_snapshot({"players": players, "events": [{"type": "matchStart"}]})
 	runner.check(heard == ["intro", "card", "card", "vs", "3", "2", "1", "go"], "in ordine e senza doppioni: %s" % [heard])
 	v.free()
+
+
+func test_locandina_senza_immagine_non_si_rompe() -> void:
+	var v: Control = View.new()
+	runner.check(v.body_of({"id": "default", "name": "Bonobo"}).is_empty(), "il bonobo disegnato col codice non ha corpo: si usa l'iniziale")
+	v.free()
