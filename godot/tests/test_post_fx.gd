@@ -32,3 +32,11 @@ func test_si_spegne() -> void:
 	post.enabled = false
 	runner.check(not post._rect.visible, "spento dalle opzioni")
 	post.free()
+
+
+func test_contorno_uguale_per_tutti() -> void:
+	var WorldView: GDScript = load("res://scripts/world_view.gd")
+	var small: float = WorldView.outline_tint(2.5, 100.0, 100.0)
+	var big: float = WorldView.outline_tint(2.5, 100.0, 200.0)
+	runner.check(small > 1.5 and is_equal_approx((big - 2.0) * 8.0, 2.0 * (small - 2.0) * 8.0), "uno sprite più fine ha il contorno di più texel, stesso tratto nel mondo")
+	runner.check(WorldView.outline_tint(2.5, 0.0, 100.0) == 1.0, "niente contorno su un fotogramma vuoto")

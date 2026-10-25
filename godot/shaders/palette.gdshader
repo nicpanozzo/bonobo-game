@@ -3,7 +3,11 @@
 // modulate oltre 1 (2 + spostamento della tinta, da 0 a 1), che nessun altro disegno usa.
 // I pixel quasi grigi (contorni, bianchi, neri) restano com'erano.
 // Il verde oltre 1 (2 + quanto, da 0 a 1) schiarisce lo sprite verso il bianco: il lampo del colpo caricato.
+// Il blu oltre 1 (2 + spessore in texel / 8) fa il contorno uniforme dei lottatori: i pixel pieni vicini al bordo
+// della sagoma diventano INK, così sprite fatti in modi diversi hanno tutti lo stesso tratto.
 shader_type canvas_item;
+
+const vec3 INK = vec3(0.1, 0.08, 0.12);
 
 varying vec4 tint;
 
@@ -25,7 +29,7 @@ vec3 hsv2rgb(vec3 c) {
 }
 
 void fragment() {
-	if (tint.r > 1.5 || tint.g > 1.5) {
+	if (tint.r > 1.5 || tint.g > 1.5 || tint.b > 1.5) {
 		vec4 tex = texture(TEXTURE, UV);
 		vec3 rgb = tex.rgb;
 		if (tint.r > 1.5) {
@@ -34,6 +38,15 @@ void fragment() {
 				hsv.x = fract(hsv.x + tint.r - 2.0);
 			}
 			rgb = hsv2rgb(hsv);
+		}
+		if (tint.b > 1.5 && tex.a > 0.0) {
+			// Contorno interno: otto letture a distanza w. Dentro la sagoma, così non pesca nei fotogrammi accanto
+			vec2 w = TEXTURE_PIXEL_SIZE * (tint.b - 2.0) * 8.0;
+			float a = min(texture(TEXTURE, UV + vec2(w.x, 0.0)).a, texture(TEXTURE, UV - vec2(w.x, 0.0)).a);
+			a = min(a, min(texture(TEXTURE, UV + vec2(0.0, w.y)).a, texture(TEXTURE, UV - vec2(0.0, w.y)).a));
+			a = min(a, min(texture(TEXTURE, UV + w * 0.7).a, texture(TEXTURE, UV - w * 0.7).a));
+			a = min(a, min(texture(TEXTURE, UV + vec2(w.x, -w.y) * 0.7).a, texture(TEXTURE, UV + vec2(-w.x, w.y) * 0.7).a));
+			rgb = mix(rgb, INK, 1.0 - smoothstep(0.1, 0.5, a));
 		}
 		if (tint.g > 1.5) {
 			rgb = mix(rgb, vec3(1.0, 0.97, 0.85), clamp(tint.g - 2.0, 0.0, 1.0));
