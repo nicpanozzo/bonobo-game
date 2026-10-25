@@ -207,6 +207,8 @@ func on_event(e: Dictionary) -> void:
 			if stage_crowd:
 				_play("shutter", {"volume": 0.6, "x": e.x})
 			voice(str(e.get("id", "")), "ko", e.x)
+			if e.get("byId") != null and e.byId != e.id:
+				voice(str(e.byId), "kill", e.x) # chi l'ha buttato fuori esulta, se ha la battuta
 			duck()
 			if int(e.get("stocksLeft", 0)) == 1:
 				announce("lastLife")
