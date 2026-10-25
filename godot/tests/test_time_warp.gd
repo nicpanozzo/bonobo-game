@@ -64,3 +64,30 @@ func test_scritta_game() -> void:
 	runner.check(TimeWarp.game_text_scale(0.1) < 1.0, "scatta un po' sotto")
 	runner.check(TimeWarp.game_text_scale(0.5) == 1.0, "poi resta")
 	runner.check(TimeWarp.game_text_scale(1.0) == 0.0 and TimeWarp.game_text_scale(-0.1) == 0.0, "fuori dalla vita non c'è")
+
+
+# La previsione del colpo decisivo (#470, correzione): casi controllati con la fisica vera del server sul Palco,
+# con chi vola che si difende (tests: scratch di confronto, 880 lanci per arena)
+func _phys() -> Dictionary:
+	return {"gravity": 2300.0, "drag": 0.985, "dt": 0.9 / 60.0, "hitstun_ms": 0.0, "drift": 700.0, "air_friction": 1200.0,
+		"max_fall": 950.0, "extra_ms": 0.0}
+
+
+func _ko(x: float, angle_deg: float, kb: float) -> bool:
+	var a := deg_to_rad(angle_deg)
+	var phys := _phys()
+	phys.hitstun_ms = kb * 0.35
+	var zone := {"left": -250, "right": 1530, "top": -350, "bottom": 920}
+	var solids := [{"x": 240, "y": 560, "width": 800, "height": 80}]
+	var platforms := [{"x": 340, "width": 200, "y": 420}, {"x": 740, "width": 200, "y": 420}, {"x": 540, "width": 200, "y": 290}]
+	return TimeWarp.predicts_ko(Vector2(x, 558), Vector2(cos(a) * kb, -sin(a) * kb), zone, solids, platforms, phys)
+
+
+func test_previsione_del_colpo_decisivo() -> void:
+	runner.check(_ko(1040, 30, 2600), "forte verso fuori dal bordo destro: esce")
+	runner.check(_ko(240, 160, 2200), "forte verso fuori dal bordo sinistro: esce")
+	runner.check(_ko(640, 90, 3000), "fortissimo verso l'alto: esce dal cielo")
+	runner.check(not _ko(640, 30, 900), "colpo medio al centro: resta in gioco")
+	runner.check(not _ko(640, 60, 1500), "forte ma al centro e in alto: resta in gioco")
+	runner.check(not _ko(320, 10, 1200), "radente sul palco: resta in gioco")
+	runner.check(not _ko(640, -80, 2600), "verso il basso al centro: sbatte sul palco")

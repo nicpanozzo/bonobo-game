@@ -266,6 +266,10 @@
     "perDamageMs": 11,
     "maxMs": 500
   },
+  "hitstun": {
+    "airDrag": 0.985,
+    "perKnockback": 0.35
+  },
   "respawnMs": 1500,
   "smashCharge": {
     "maxMs": 1000,
@@ -926,6 +930,8 @@
     "finishFollowFactor": 0.3,
     "finishFollowMs": 1200,
     "finishZoom": 0.45,
+    "finishMinKnockback": 500,
+    "finishExtraMs": 0,
     "gameSlowFactor": 0.25,
     "gameSlowMs": 1400,
     "gameZoom": 0.35,

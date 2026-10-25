@@ -25,6 +25,7 @@ import { RANDOM_STAGE_ART } from "../src/shared/stageGenerator";
 import { characterStats } from "../src/shared/characters";
 import { CHARACTER_STATS, PERF_BUDGET } from "../src/shared/constants";
 import { RESPAWN_MS } from "../src/shared/constants"; // la nuvoletta della rinascita (#470)
+import { HITSTUN_AIR_DRAG, HITSTUN_PER_KNOCKBACK } from "../src/shared/constants"; // la previsione del colpo decisivo (#470)
 
 // La versione del gioco ha una fonte sola, package.json (E2, #106)
 const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")) as { version: string };
@@ -224,6 +225,7 @@ const data = {
   dodge: DODGE, // schivata (#3), per la predizione (E17)
   attacks: ATTACKS,
   hitstop: HITSTOP, // fermo dei colpi (#15): chi è colpito trema per tanto
+  hitstun: { airDrag: HITSTUN_AIR_DRAG, perKnockback: HITSTUN_PER_KNOCKBACK }, // il volo da storditi: la previsione del colpo decisivo (#470)
   respawnMs: RESPAWN_MS, // attesa dopo un KO prima di ricomparire: la nuvoletta della rinascita (#470) arriva in tempo
   smashCharge: SMASH_CHARGE, // colpi caricati: il pesante a terra tenuto, per la predizione (E17)
   recovery: RECOVERY, // spinta del recupero (#11), per la predizione (E17)

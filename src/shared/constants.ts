@@ -489,6 +489,8 @@ export const EFFECTS = {
   finishFollowFactor: 0.3, // velocità della scena mentre la telecamera segue chi vola via
   finishFollowMs: 1200, // ms reali in cui si segue chi vola via; se non esce, la scena si rimette in pari
   finishZoom: 0.45, // frazione: quanto stringe la telecamera sul colpo decisivo
+  finishMinKnockback: 500, // px/s: sotto, un colpo non si considera nemmeno per il colpo decisivo (decide la previsione del volo)
+  finishExtraMs: 0, // ms di slancio dopo lo stordimento che la previsione guarda ancora: 0, chi esce dallo stordimento sul bordo di solito si salva
   gameSlowFactor: 0.25, // velocità della scena sull'ultimo KO
   gameSlowMs: 1400, // ms reali dell'ultimo KO al rallentatore
   gameZoom: 0.35, // frazione: quanto stringe la telecamera dove esce l'ultimo KO
