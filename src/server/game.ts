@@ -107,7 +107,7 @@ export function attachGame(io: Server<ClientToServer, ServerToClient>, deps: Gam
         // Arena, regole e bot li decide chi crea la stanza
         const bots = new Bots();
         const discord = discordHooks(deps.discordWebhookUrl, (id) => bots.isBot(id), deps.leaderboard);
-        r = new Room(code, io, { stageId, rules }, combineHooks(bots.hooks, discord), deps.reconnectHoldMs);
+        r = new Room(code, io, { stageId, rules, prematch: true }, combineHooks(bots.hooks, discord), deps.reconnectHoldMs);
         rooms.set(code, r);
         r.onClose = () => rooms.delete(code);
         const kind = parseBotKind(bot);
@@ -135,6 +135,10 @@ export function attachGame(io: Server<ClientToServer, ServerToClient>, deps: Gam
     });
     socket.on("rematch", () => {
       if (room && allow(rematchBucket)) room.requestRematch();
+    });
+    // Pre-partita: Pronto (o non più); conta solo finché la partita non è cominciata
+    socket.on("ready", (raw: unknown) => {
+      if (room && allow(rematchBucket) && typeof raw === "object" && raw !== null) room.match.setReady(playerId, (raw as { ready?: unknown }).ready === true);
     });
     // Cambio di squadra (#409): la Match accetta solo una squadra che esiste in queste regole
     socket.on("team", (raw: unknown) => {

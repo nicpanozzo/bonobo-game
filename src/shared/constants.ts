@@ -286,6 +286,13 @@ export const RESPAWN_INVULNERABLE_MS = 1500;
 export const PHASE_LIFT_GAP_PX = 70; // px tra chi viene riportato su da una fase che stringe la zona di espulsione (Bologna, zuffa)
 export const PHASE_LIFT_MARGIN_PX = 150; // px sopra il nuovo fondo: chi sta già cadendo lì quando la fase lo stringe viene riportato su anche lui
 export const MATCH_RESTART_MS = 5000; // pausa dopo la vittoria prima della nuova partita
+// Pre-partita: nella stanza si aspetta che tutti dicano "Pronto", poi presentazione e 3, 2, 1, VIA!
+export const PREMATCH = {
+  introMs: 2500, // ms di presentazione dei lottatori prima del conto alla rovescia, solo alla prima partita
+  countdownMs: 3000, // ms del 3, 2, 1: lottatori fermi al loro posto; anche prima di ogni rivincita
+  autoStartMs: 60_000, // ms di attesa con almeno due lottatori dopo cui si parte anche senza tutti pronti (client vecchi)
+  minFighters: 2, // da soli si gira per l'arena: la partita comincia con almeno tanti lottatori
+};
 
 export const COLORS = [0xe74c3c, 0x3498db, 0x2ecc71, 0xf1c40f, 0x9b59b6, 0xe67e22, 0x1abc9c, 0xff6fb5];
 

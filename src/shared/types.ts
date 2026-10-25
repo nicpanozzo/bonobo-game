@@ -279,6 +279,16 @@ export interface GameSnapshot {
   cannonballs?: CannonballState[]; // palle di mortadella in volo (#433), con stations
   towerPoints?: Record<number, number>; // punti torre per squadra (#433): colpi di bombarda a segno sugli avversari, con stations
   prizeTeam?: number; // premio (#433): la squadra in testa ai punti torre congelata a prizeAtMs; assente prima, o se era pareggio
+  prematch?: PrematchState; // pre-partita: c'è solo finché la partita non è cominciata (attesa, presentazione, 3, 2, 1)
+}
+
+// Pre-partita. waiting: si aspetta che tutti dicano Pronto, intanto ci si scalda senza perdere vite;
+// starting: lottatori fermi al loro posto, leftMs al VIA (più di PREMATCH.countdownMs = c'è ancora la presentazione)
+export interface PrematchState {
+  phase: "waiting" | "starting";
+  leftMs: number; // in starting: ms al VIA; in waiting 0
+  ready: string[]; // id di chi ha detto Pronto
+  autoStartMs: number | null; // in waiting: ms dopo cui si parte comunque; null se manca qualcuno con cui giocare
 }
 
 // Eventi Socket.IO tipizzati
@@ -309,6 +319,7 @@ export interface ClientToServer {
   join: (data: { room: string; name: string; characterId?: string; skinId?: string; team?: number; stageId?: string; rules?: Partial<MatchRules>; bot?: string; token?: string; version?: string; protocol?: number }) => void;
   input: (input: InputState) => void;
   rematch: () => void; // a fine partita, ricomincia subito (#17)
+  ready: (data: { ready: boolean }) => void; // pre-partita: pronto o non più pronto; quando lo sono tutti si comincia
   // Cambio di squadra (#409), solo a squadre: subito se la partita non è in corso, altrimenti dalla prossima
   team: (data: { team: number }) => void;
   // Allenamento (#113): percentuale degli avversari, velocità dell'orologio (TRAINING.speeds), si ricomincia da capo.
