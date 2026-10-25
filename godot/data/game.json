@@ -423,6 +423,27 @@
         "supreme": [
           "assets/characters/bradipo/voice/supreme.ogg"
         ]
+      },
+      "egiainuso": {
+        "kill": [
+          "assets/characters/egiainuso/voice/kill.ogg"
+        ],
+        "ko": [
+          "assets/characters/egiainuso/voice/ko.ogg"
+        ],
+        "supreme": [
+          "assets/characters/egiainuso/voice/supreme.ogg"
+        ]
+      },
+      "giovannifrana": {
+        "ko": [
+          "assets/characters/giovannifrana/voice/ko.ogg"
+        ]
+      },
+      "lampione": {
+        "kill": [
+          "assets/characters/lampione/voice/kill.ogg"
+        ]
       }
     }
   },

@@ -9,7 +9,7 @@ La guida per chi registra effetti, musica, voci dei personaggi e annunciatore (E
 | Effetti | `public/assets/sfx/<evento>_<n>.ogg`, es. `hitHeavy_1.ogg`, `hitHeavy_2.ogg` | al posto della ricetta con lo stesso nome in `audio.gd` (`hitLight`, `hitHeavy`, `jump`, `land`, `ko`, `taunt`...) |
 | Musica | `public/assets/music/lobby.ogg`, `public/assets/music/match.ogg` | nella lobby e in partita, in loop |
 | Annunciatore | `public/assets/announcer/<frase>.ogg`: `go`, `lastLife`, `tenSeconds`, `game`, `draw` | inizio, ultima vita, dieci secondi, fine partita |
-| Voce di un personaggio | `public/assets/characters/<id>/voice/taunt_<n>.ogg`, `ko_<n>.ogg`, `victory_<n>.ogg` | provocazione (tasto T), quando esce dall'arena, quando vince |
+| Voce di un personaggio | `public/assets/characters/<id>/voice/taunt_<n>.ogg`, `ko_<n>.ogg`, `kill_<n>.ogg`, `victory_<n>.ogg`, `supreme_<n>.ogg` | provocazione (tasto T), quando esce dall'arena, quando butta fuori qualcuno, quando vince, quando lancia la suprema |
 
 - Il numero `_<n>` serve per le varianti: con più file il gioco ne sceglie uno a caso, mai lo stesso due volte di fila.
 - `<id>` è l'id del personaggio in `src/shared/characters.ts` (`default`, `egiainuso`, `bonobot`, `elvedeo`...). Le voci in `characters/default/voice/` valgono anche per i personaggi che non hanno le loro.
