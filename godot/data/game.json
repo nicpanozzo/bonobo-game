@@ -931,7 +931,14 @@
     "gameTextMs": 2000,
     "warpCatchUp": 1.6,
     "warpMaxDelayMs": 2400,
-    "warpBufferFrames": 200
+    "warpBufferFrames": 200,
+    "fastFallGlintMs": 300,
+    "crashPower": 1.3,
+    "crashStarsMs": 1300,
+    "steamFromPercent": 60,
+    "steamFullPercent": 150,
+    "itemSparkleMs": 500,
+    "itemPickMs": 450
   },
   "items": {
     "banana": {

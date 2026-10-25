@@ -132,6 +132,9 @@ func draw_additive(ci: CanvasItem) -> void:
 				_draw_tex(ci, p, ap)
 	for m in _marks:
 		var k := (_now - float(m.t0)) / float(m.life_ms)
+		if m.kind == "sparkle" and k < 1.0:
+			_draw_sparkle(ci, m, k)
+			continue
 		if _glow == null or k >= 1.0:
 			continue
 		if m.kind == "glow" or m.kind == "star":
@@ -168,6 +171,24 @@ func _draw_cloud(c: Dictionary) -> void:
 		var r: float = b[2]
 		var t2 := _texture("smoke", "puff", int(b[3]))
 		draw_texture_rect(t2 if t2 else tex, Rect2(pos.x + float(b[0]) - r, pos.y + float(b[1]) - r, r * 2.0, r * 2.0), false, col)
+
+
+# Luccichio (#470 passo 3): una stella a quattro punte che brilla e sparisce. "converge" = si stringe verso x1, y1
+# rimpicciolendo (raccolta); altrimenti cresce e cala sul posto (comparsa, caduta veloce)
+func _draw_sparkle(ci: CanvasItem, m: Dictionary, k: float) -> void:
+	var converge: bool = m.has("x1")
+	var e := 1.0 - (1.0 - k) * (1.0 - k)
+	var pos := Vector2(m.x, m.y).lerp(Vector2(m.get("x1", m.x), m.get("y1", m.y)), e) if converge else Vector2(m.x, m.y)
+	var size: float = float(m.size) * ((1.0 - k) + 0.15 if converge else sin(k * PI))
+	if size <= 0.3:
+		return
+	var col: Color = m.get("col", Color.WHITE)
+	col.a = 1.0 - k * 0.3
+	ci.draw_set_transform(pos, float(m.get("spin", 0.0)) * k)
+	ci.draw_colored_polygon(ParticleFx.star_points(Vector2.ZERO, size, 4, 0.18, 0, 0.0), col)
+	if _glow:
+		var gc := Color(1, 1, 1, 0.55 * (1.0 - k))
+		ci.draw_texture_rect(_glow, Rect2(-size * 2.2, -size * 2.2, size * 4.4, size * 4.4), false, gc)
 
 
 func _texture(tone: String, shape: String, v: int) -> Texture2D:

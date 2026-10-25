@@ -495,6 +495,14 @@ export const EFFECTS = {
   warpCatchUp: 1.6, // velocità con cui la scena si rimette in pari dopo il rallentatore
   warpMaxDelayMs: 2400, // ms: il disegno non resta indietro più di così
   warpBufferFrames: 200, // snapshot tenuti in memoria (a 60 al secondo, più di warpMaxDelayMs)
+  // Leggibilità (#470 passo 3), solo nel client
+  fastFallGlintMs: 300, // durata del brillio a stella quando comincia la caduta veloce
+  crashPower: 1.3, // grandezza dello sbuffo di uno schianto a terra da storditi (1 = polvere normale)
+  crashStarsMs: 1300, // per tanto girano le stelline sopra la testa dopo uno schianto
+  steamFromPercent: 60, // da questa percentuale in su sale il vapore
+  steamFullPercent: 150, // percentuale a cui il vapore è al massimo
+  itemSparkleMs: 500, // stelline dove compare un oggetto
+  itemPickMs: 450, // stelline che si stringono su chi raccoglie un oggetto
 };
 
 // Bot del server (#20, src/server/bot.ts): quanto è svelto e quando attacca
