@@ -839,7 +839,19 @@
     "impactStarMs": 240,
     "impactStarKoMs": 380,
     "koColumnInset": 30,
-    "cloudDescentMs": 900
+    "cloudDescentMs": 900,
+    "finishSlowFactor": 0.12,
+    "finishSlowMs": 750,
+    "finishFollowFactor": 0.3,
+    "finishFollowMs": 1200,
+    "finishZoom": 0.45,
+    "gameSlowFactor": 0.25,
+    "gameSlowMs": 1400,
+    "gameZoom": 0.35,
+    "gameTextMs": 2000,
+    "warpCatchUp": 1.6,
+    "warpMaxDelayMs": 2400,
+    "warpBufferFrames": 200
   },
   "items": {
     "banana": {

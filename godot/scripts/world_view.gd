@@ -25,6 +25,10 @@ var _particles: Node2D # effetti a particelle (#470): polvere, anello d'aria, im
 var _fx_seed := 0 # ogni gruppo di particelle ha la sua variante
 var _fx_last := {} # id -> { vx, facing, ms, smoke, brake }: quello che serve per frenata, inversione e fumo del lancio
 var _fall_vy := {} # id -> velocità di caduta all'ultimo frame in aria, per l'atterraggio pesante
+var _warp := {} # il rallentatore solo grafico (#470 passo 2b, time_warp.gd): vuoto se non c'è
+var _game_text := {} # { at }: la scritta GAME! dall'evento matchEnd (#470), vuoto se non c'è
+var _neg_overlay: ColorRect # la scena in negativo nel colpo che chiude la partita (#470)
+var _moment: Node2D # sopra a tutto: la scritta GAME!
 var _respawn_clouds := {} # id -> { at, x, y, col }: la nuvoletta della rinascita (#470), da quando scende e dove arriva
 var _clouds: Array = [] # [{ x, y, dir, age, damage }] nuvole soffiate col bong (#302)
 var _high_overlay: ColorRect # lo schermo distorto di chi è fatto col bong (#302)
@@ -103,6 +107,16 @@ const MotionFeel := preload("res://scripts/motion_feel.gd") # squash & stretch d
 const StrikeFx := preload("res://scripts/strike_fx.gd") # scia dei colpi e linee di velocità (#384)
 const ParticleFx := preload("res://scripts/particle_fx.gd") # effetti a particelle (#470)
 const ParticleView := preload("res://scripts/particle_view.gd")
+const TimeWarp := preload("res://scripts/time_warp.gd") # rallentatore solo grafico (#470 passo 2b)
+
+
+# Il livello della scritta GAME!: chiede a world_view di disegnarci sopra (sopra il negativo e le particelle)
+class MomentLayer extends Node2D:
+	var view # world_view.gd, senza tipo: la chiamata si risolve a runtime
+
+	func _draw() -> void:
+		view.draw_moment(self)
+
 const SunLight := preload("res://scripts/sun_light.gd") # luce e ombre del sole e della luna (#288)
 static var _screen_px_per_world := 0.0 # pixel dello schermo per pixel di mondo alla telecamera più vicina; 0 = non si sa (headless)
 var _character_sprites := {} # id personaggio -> true quando i suoi sprite sono caricati
@@ -160,6 +174,16 @@ func setup(game_data: Dictionary) -> void:
 	_particles = ParticleView.new()
 	_particles.max_particles = int(game.effects.get("particleMax", 600))
 	add_child(_particles)
+	_neg_overlay = ColorRect.new()
+	var negativo := ShaderMaterial.new()
+	negativo.shader = load("res://shaders/negativo.gdshader")
+	_neg_overlay.material = negativo
+	_neg_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_neg_overlay.visible = false
+	add_child(_neg_overlay)
+	_moment = MomentLayer.new()
+	_moment.view = self
+	add_child(_moment)
 	predictor.setup(game)
 	reset()
 	if material == null:
@@ -256,10 +280,13 @@ func reset() -> void:
 	_fx_last = {}
 	_fall_vy = {}
 	_respawn_clouds = {}
+	_warp = {}
+	_game_text = {}
 	buffer = SnapshotBuffer.new()
 	buffer.delay_ms = game.net.interpolationDelayMs
 	buffer.teleport_distance = game.net.teleportDistance
 	buffer.size = int(game.net.bufferSize)
+	buffer.size = maxi(buffer.size, int(game.effects.get("warpBufferFrames", 0))) # il rallentatore disegna fino a 2 s indietro (#470)
 	buffer.own_extrapolate_ms = float(game.net.get("ownExtrapolateMaxMs", 0.0))
 	player_ids = []
 	positions = {}
@@ -692,6 +719,7 @@ func on_event(e: Dictionary) -> void:
 				_flash = fx.flashMs
 			if kb >= float(fx.get("koZoomKnockback", INF)):
 				_punch = {"at": Time.get_ticks_msec(), "x": float(e.x), "y": float(e.y)}
+			_maybe_finish(e, kb)
 			_react(e)
 		"pad":
 			# Bottone sonoro (#423): uno sbuffo di scintille del colore del bottone e una scossa leggera
@@ -807,13 +835,19 @@ func on_event(e: Dictionary) -> void:
 				if effects and _particles: # #470: anello d'aria e sbuffetti spinti giù dal salto
 					_particles.add(ParticleFx.air_burst(_next_fx_seed(), e.x, e.y))
 					_particles.mark({"kind": "ring", "x": float(e.x), "y": float(e.y), "r0": 16.0, "r1": 76.0, "squash": 0.3, "width": 6.0, "life_ms": float(game.effects.airRingMs)})
+		"matchEnd":
+			if effects: # #470: GAME! arriva con la voce dell'annunciatore (audio.gd), sopra il rallentatore
+				_game_text = {"at": Time.get_ticks_msec()}
 		"ko":
 			_shake = game.effects.shakeKo
 			# Il raggio prende il colore di chi è uscito, come in Smash
 			var p: Variant = buffer.sample(e.id, Time.get_ticks_msec())
 			var col: Color = Access.color(p.color) if p != null else Color(1, 0.4, 0.3)
+			var ko_at := Vector2(clampf(e.x, view_rect.position.x, view_rect.end.x), clampf(e.y, view_rect.position.y, view_rect.end.y))
 			if effects and _particles: # #470: una colonna di fuoco del suo colore che entra dal punto d'uscita
-				_ko_column(e, col)
+				ko_at = _ko_column(e, col)
+			if effects and _is_final_ko(e): # #470: l'ultimo KO al rallentatore, con lo zoom dove è uscito
+				_warp = TimeWarp.game(Time.get_ticks_msec(), ko_at, game.effects)
 			else:
 				_sparks.append({"x": clampf(e.x, 0, stage_width()), "y": clampf(e.y, 0, game.world.height), "age": 0.0, "size": 90.0, "color": Color(1, 0.4, 0.3)})
 				_beams.append({"x": e.x, "y": e.y, "age": 0.0, "color": col})
@@ -860,6 +894,9 @@ func _hit_flash(id: String, now: float) -> float:
 # Lo zoom breve della telecamera sui colpi da KO (#384): 1 quando non c'è, poco più di 1 al culmine.
 # point è dove avvicinarsi. main.gd lo applica sopra l'inquadratura, senza cambiarla
 func punch_zoom(now: float) -> float:
+	var wz := TimeWarp.zoom(_warp, now) if effects else 1.0
+	if wz > 1.0:
+		return wz
 	if _punch.is_empty() or not effects or Access.calm:
 		return 1.0
 	var t := (now - float(_punch.at)) / float(game.effects.koZoomMs)
@@ -870,6 +907,8 @@ func punch_zoom(now: float) -> float:
 
 
 func punch_point() -> Vector2:
+	if not _warp.is_empty() and effects: # #470: nel colpo decisivo il colpo, poi chi vola via; a GAME! dove è uscito
+		return positions.get(_warp.target, _warp.point) if _warp.phase == "follow" else _warp.point
 	return Vector2(float(_punch.x), float(_punch.y)) if not _punch.is_empty() else Vector2.ZERO
 
 
@@ -936,9 +975,95 @@ func _impact(e: Dictionary, heavy: bool, ko: bool) -> void:
 
 # Particelle che nascono dallo stato e non da un evento (#470): fumo di chi vola via, frenata e inversione a terra.
 # Si chiama dal disegno, una volta per lottatore a ogni frame, come la scia di _draw_trail
+# Il colpo che chiude la partita (#470 passo 2b, come il Finish Zoom di Smash): un colpo da KO a chi è all'ultima vita,
+# quando in gioco ne restano due (o due squadre). Come in Smash è una previsione: se chi è colpito si salva, la scena si
+# rimette in pari e basta. Non nei percorsi e non se un rallentatore è già in corso
+func _maybe_finish(e: Dictionary, kb: float) -> void:
+	if not effects or not _warp.is_empty() or stage.get("goal") != null:
+		return
+	if kb < float(game.effects.get("koZoomKnockback", INF)) or e.get("attackerId") == e.get("targetId"):
+		return
+	var target: Variant = _sampled.get(str(e.get("targetId", "")))
+	if target == null or int(target.get("stocks", 0)) != 1:
+		return
+	var alive := 0
+	var teams := {}
+	for id in _sampled:
+		var p: Dictionary = _sampled[id]
+		if not p.get("eliminated", false):
+			alive += 1
+			teams[int(p.get("team", 0))] = true
+	if alive == 2 or (teams.size() == 2 and not teams.has(0)):
+		_warp = TimeWarp.finish(Time.get_ticks_msec(), Vector2(e.x, e.y), str(e.targetId), game.effects)
+
+
+# È il KO che chiude la partita? Chi è uscito non ha più vite e resta al massimo uno in gioco, o una squadra sola
+func _is_final_ko(e: Dictionary) -> bool:
+	if int(e.get("stocksLeft", 1)) > 0 or stage.get("goal") != null:
+		return false
+	var others := 0
+	var teams := {}
+	for id in _sampled:
+		var p: Dictionary = _sampled[id]
+		if id == e.id or p.get("eliminated", false):
+			continue
+		others += 1
+		teams[int(p.get("team", 0))] = true
+	return others <= 1 or (teams.size() == 1 and not teams.has(0))
+
+
+# La scena in negativo del colpo decisivo (#470): un ColorRect con lo shader che legge lo schermo, come lo schermo
+# distorto del bong. Niente negativo con "meno scossa e lampi"
+func _update_neg_overlay() -> void:
+	if _neg_overlay == null:
+		return
+	var amount := 0.0 if Access.calm or not effects else TimeWarp.negative(_warp, Time.get_ticks_msec())
+	_neg_overlay.visible = amount > 0.0
+	if amount <= 0.0 or view_rect.size.y <= 0.0:
+		return
+	_neg_overlay.position = view_rect.position - position
+	_neg_overlay.size = view_rect.size
+	var mat: ShaderMaterial = _neg_overlay.material
+	var point: Vector2 = _warp.point
+	mat.set_shader_parameter("amount", amount)
+	mat.set_shader_parameter("center", (point - view_rect.position) / view_rect.size)
+	mat.set_shader_parameter("aspect", view_rect.size.x / view_rect.size.y)
+	mat.set_shader_parameter("t", Time.get_ticks_msec() / 1000.0)
+
+
+# La scritta GAME! (#470): al centro dell'inquadratura, entra grande e scatta al suo posto, con il contorno scuro
+func draw_moment(ci: CanvasItem) -> void:
+	if _game_text.is_empty():
+		return
+	var k := (Time.get_ticks_msec() - float(_game_text.at)) / float(game.effects.gameTextMs)
+	var sc := TimeWarp.game_text_scale(k)
+	if sc <= 0.0:
+		if k >= 1.0:
+			_game_text = {}
+		return
+	var font := UI.font(900)
+	var size := int(view_rect.size.y * 0.16)
+	var w := font.get_string_size("GAME!", HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
+	var alpha := minf(1.0, k / 0.03) * (1.0 if k < 0.9 else (1.0 - k) / 0.1)
+	ci.draw_set_transform(view_rect.get_center() - position, -0.06, Vector2(sc, sc))
+	var at := Vector2(-w / 2.0, size * 0.35)
+	ci.draw_string_outline(font, at, "GAME!", HORIZONTAL_ALIGNMENT_LEFT, -1, size, maxi(4, int(size * 0.16)), Color(0.13, 0.11, 0.15, alpha))
+	ci.draw_string(font, at, "GAME!", HORIZONTAL_ALIGNMENT_LEFT, -1, size, Color(1, 1, 1, alpha))
+	ci.draw_set_transform(Vector2.ZERO)
+
+
+# Rallentatore (#470): main.gd trattiene eventi, HUD e audio mentre il disegno è indietro, e li rilascia quando li raggiunge
+func holding() -> bool:
+	return buffer.extra_delay_ms > 0.0 or not _warp.is_empty()
+
+
+func reached(server_t: float) -> bool:
+	return buffer.reached(server_t, Time.get_ticks_msec())
+
+
 # Esplosione del KO a colonna (#470): parte dal bordo dell'inquadratura più vicino al punto d'uscita e punta verso
 # il centro, nel colore di chi è uscito, con un bagliore dove entra
-func _ko_column(e: Dictionary, col: Color) -> void:
+func _ko_column(e: Dictionary, col: Color) -> Vector2:
 	var inset: float = game.effects.koColumnInset
 	var inner := view_rect.grow(-inset)
 	var from := Vector2(clampf(e.x, inner.position.x, inner.end.x), clampf(e.y, inner.position.y, inner.end.y))
@@ -948,6 +1073,7 @@ func _ko_column(e: Dictionary, col: Color) -> void:
 	_particles.add(ParticleFx.ko_column(_next_fx_seed(), from.x, from.y, dir, col))
 	var glow_col := col.lightened(0.6)
 	_particles.mark({"kind": "glow", "x": from.x, "y": from.y, "size": 220.0, "col": glow_col, "alpha": 0.9, "life_ms": 260.0})
+	return from
 
 
 # La nuvoletta della rinascita (#470): mentre si è fuori scende dall'alto fino al punto di ritorno, poi sta sotto i
@@ -1018,6 +1144,13 @@ func _feed_particles(id: String, p: Dictionary) -> void:
 func _process(delta: float) -> void:
 	var fx: Dictionary = game.effects
 	var dt_ms := delta * 1000.0
+	if not _warp.is_empty(): # il rallentatore (#470): il disegno resta indietro e poi si rimette in pari
+		var r: Dictionary = TimeWarp.step(_warp, buffer.extra_delay_ms, dt_ms, Time.get_ticks_msec(), fx)
+		_warp = r.warp
+		buffer.extra_delay_ms = r.extra
+	_update_neg_overlay()
+	if _moment:
+		_moment.queue_redraw()
 	_sparks = _aged(_sparks, dt_ms, fx.hitSparkMs)
 	_dust = _aged(_dust, dt_ms, fx.dustMs)
 	_beams = _aged(_beams, dt_ms, fx.koBeamMs)
@@ -1140,7 +1273,7 @@ func _draw() -> void:
 	var now := Time.get_ticks_msec()
 	_alive = []
 	_sampled = buffer.sample_all(player_ids, now)
-	var mine: Variant = predictor.sample(now, _sampled.get(my_id))
+	var mine: Variant = predictor.sample(now, _sampled.get(my_id)) if buffer.extra_delay_ms <= 0.0 else null # al rallentatore niente predizione (#470)
 	if mine != null:
 		_sampled[my_id] = mine
 	_draw_sun_light(t_stage) # ombre a terra e luce dal lato del sole o della luna (#288), sotto i lottatori

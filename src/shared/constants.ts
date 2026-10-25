@@ -469,6 +469,19 @@ export const EFFECTS = {
   // Esplosione del KO a colonna e nuvoletta della rinascita (#470 passo 2a)
   koColumnInset: 30, // pixel: la colonna del KO parte così dentro il bordo dell'inquadratura
   cloudDescentMs: 900, // la nuvoletta scende dall'alto per tanto e arriva al punto di ritorno quando si ricompare
+  // Rallentatore solo grafico (#470 passo 2b, godot/scripts/time_warp.gd): il disegno resta indietro, il server no
+  finishSlowFactor: 0.12, // velocità della scena nel colpo che chiude la partita (1 = normale)
+  finishSlowMs: 750, // ms reali del colpo decisivo al rallentatore, in negativo e con lo zoom sul colpo
+  finishFollowFactor: 0.3, // velocità della scena mentre la telecamera segue chi vola via
+  finishFollowMs: 1200, // ms reali in cui si segue chi vola via; se non esce, la scena si rimette in pari
+  finishZoom: 0.45, // frazione: quanto stringe la telecamera sul colpo decisivo
+  gameSlowFactor: 0.25, // velocità della scena sull'ultimo KO
+  gameSlowMs: 1400, // ms reali dell'ultimo KO al rallentatore
+  gameZoom: 0.35, // frazione: quanto stringe la telecamera dove esce l'ultimo KO
+  gameTextMs: 2000, // durata della scritta GAME!
+  warpCatchUp: 1.6, // velocità con cui la scena si rimette in pari dopo il rallentatore
+  warpMaxDelayMs: 2400, // ms: il disegno non resta indietro più di così
+  warpBufferFrames: 200, // snapshot tenuti in memoria (a 60 al secondo, più di warpMaxDelayMs)
 };
 
 // Bot del server (#20, src/server/bot.ts): quanto è svelto e quando attacca
