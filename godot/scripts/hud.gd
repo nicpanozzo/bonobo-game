@@ -13,7 +13,7 @@ var rematch_key := "R" # o il pulsante del pad, se si gioca col pad (main.gd)
 var _info := "" # riga in alto a sinistra: stanza, arena, modalità
 var _stage: Dictionary = {}
 var _snap: Dictionary = {}
-var _stats := {} # id -> { kos, falls, damage, flags }: la classifica di fine partita, dagli eventi
+var _stats := {} # id -> { kos, falls, damage, flags, best }: la classifica di fine partita (results_view.gd), dagli eventi
 var _font: Font = UI.font()
 var _last_percent := {} # id -> percentuale dell'ultimo snapshot, per accorgersi dei colpi presi
 var _jolts := {} # id -> { ms, amp }: la percentuale trema per un attimo dopo un colpo
@@ -24,12 +24,10 @@ var compact := false # modalità telefono (Phone): la classifica sta più in alt
 var cards_band := Vector2.ZERO # da x a x dove stanno le schede (tra levetta e tasti touch); zero = tutta la larghezza
 
 const WorldView := preload("res://scripts/world_view.gd")
-const SpeechBubbles := preload("res://scripts/speech_bubbles.gd")
 const FighterPose := preload("res://scripts/fighter_pose.gd")
 const StagePhases := preload("res://scripts/stage_phases.gd")
 const TeamPicker := preload("res://scripts/team_picker.gd")
 const PORTRAIT := 40.0 # lato del ritratto che spunta sopra la scheda, pixel
-const PORTRAIT_ROW := 26.0 # lato del ritratto accanto al nome nella classifica
 const TEAM_GAP := 18.0 # a squadre, spazio tra un gruppo di schede e l'altro, pixel (#409)
 
 
@@ -70,7 +68,9 @@ func on_snapshot(snap: Dictionary) -> void:
 			"matchStart":
 				_stats = {}
 			"hit":
-				_stat(e.attackerId).damage += e.damage
+				var st := _stat(e.attackerId)
+				st.damage += e.damage
+				st.best = maxf(st.best, e.damage) # il colpo più forte, per il premio di fine partita
 			"flag":
 				if e.byId != null:
 					_stat(e.byId).flags += 1
@@ -113,7 +113,7 @@ func set_status(text: String) -> void:
 
 func _stat(id: String) -> Dictionary:
 	if not _stats.has(id):
-		_stats[id] = {"kos": 0, "falls": 0, "damage": 0, "flags": 0}
+		_stats[id] = {"kos": 0, "falls": 0, "damage": 0, "flags": 0, "best": 0}
 	return _stats[id]
 
 
@@ -153,8 +153,6 @@ func _draw() -> void:
 		var band := cards_band if cards_band != Vector2.ZERO else Vector2(0, w)
 		_draw_cards(band / k, h / k, scores != null)
 	draw_set_transform(Vector2.ZERO)
-	if _snap.winnerId != null:
-		_draw_results(w, h)
 
 
 # Il nome della fase appena cominciata (#433), o l'avviso della prossima, grande sopra la partita
@@ -384,71 +382,20 @@ func _supreme_max() -> float:
 	return float(game.get("supreme", {}).get("max", 100))
 
 
-# Vincitore e classifica: chi ha vinto in cima, poi bandiere, KO e danni (come results.ts)
-func _draw_results(w: float, _h: float) -> void:
-	var players: Array = _snap.players.duplicate()
-	var winner: Dictionary = {}
-	for p in players:
-		if p.id == _snap.winnerId:
-			winner = p
-	var title := "Pareggio!"
-	var title_color := UI.ACCENT
-	if not winner.is_empty():
-		var team: bool = int(winner.team) > 0
-		title = ("Squadra %s vince!" % game.teamNames[str(int(winner.team))]) if team else "%s vince!" % winner.name
-		if team:
-			title_color = Access.team_color(game, int(winner.team)).lightened(0.2) # la scritta ha il colore di chi ha vinto (#409)
-	var lift := 110.0 if compact else 0.0 # sul telefono tutto più in alto: sotto ci sono Rivincita e Cambia lottatore
-	_centered(title, Vector2(w / 2, 200 - lift), 48, title_color)
-	# La frase di vittoria del suo personaggio (#13), o la provocazione se la scheda ha solo quella
-	if not winner.is_empty() and rules.get("mode", "ffa") == "ffa":
-		var c: Dictionary = game.characters.get(winner.get("characterId", ""), {})
-		var line := SpeechBubbles.quote(c, "victory")
-		if line == "":
-			line = SpeechBubbles.quote(c, "taunt")
-		if line != "":
-			_centered("«%s»" % line, Vector2(w / 2, 236 - lift), 20, Color.WHITE)
-
-	players.sort_custom(func(a, b):
-		var sa := _stat(a.id)
-		var sb := _stat(b.id)
-		if (a.id == _snap.winnerId) != (b.id == _snap.winnerId):
-			return a.id == _snap.winnerId
-		if sa.flags != sb.flags:
-			return sa.flags > sb.flags
-		if sa.kos != sb.kos:
-			return sa.kos > sb.kos
-		return sa.damage > sb.damage)
-	var flag: bool = _snap.get("teamScores") != null
-	var rows: Array[String] = []
-	for p in players:
-		var s := _stat(p.id)
-		var crown := "* " if p.id == _snap.winnerId else ""
-		var flags := "bandiere %d · " % s.flags if flag else ""
-		rows.append("%s%s   %sKO %d · cadute %d · danni %d%%" % [crown, p.name, flags, s.kos, s.falls, s.damage])
-	rows.append("")
-	rows.append("%s: rivincita subito" % rematch_key)
-	var line_h := 30.0 * Access.text_scale
-	var panel_w := 620.0 * Access.text_scale
-	var top := 250.0 - lift
-	draw_rect(Rect2(w / 2 - panel_w / 2, top, panel_w, rows.size() * line_h + 28), Color(0, 0, 0, 0.67))
-	for i in rows.size():
-		_centered(rows[i], Vector2(w / 2, top + 36 + i * line_h), 20, Color.WHITE)
-	# Il ritratto di ognuno a sinistra della sua riga
-	for i in players.size():
-		_draw_portrait(players[i], Rect2(w / 2 - panel_w / 2 + 14, top + 36 + i * line_h - PORTRAIT_ROW * 0.8, PORTRAIT_ROW, PORTRAIT_ROW))
-
-
 # Il ritratto di un giocatore dentro r, con i suoi colori; niente per i personaggi senza disegni
 func _draw_portrait(p: Dictionary, r: Rect2) -> void:
-	var src := _portrait(FighterPose.look(game, str(p.get("characterId", "")), FighterPose.skin_of(p)))
+	var src := portrait_of(p, 0.35 if p.get("eliminated", false) else 1.0)
 	if src.is_empty():
 		return
-	var tex: Texture2D = src[0]
-	var region: Rect2 = src[1]
-	var fit := fit_rect(region.size, r)
-	var alpha := 0.35 if p.get("eliminated", false) else 1.0
-	draw_texture_rect_region(tex, fit, region, FighterPose.sprite_modulate(int(_variants.get(p.id, 0)), alpha))
+	draw_texture_rect_region(src[0], fit_rect(src[1].size, r), src[1], src[2])
+
+
+# Il ritratto di un giocatore: [Texture2D, regione, colori] o [] se il personaggio non ha disegni
+func portrait_of(p: Dictionary, alpha := 1.0) -> Array:
+	var src := _portrait(FighterPose.look(game, str(p.get("characterId", "")), FighterPose.skin_of(p)))
+	if src.is_empty():
+		return []
+	return [src[0], src[1], FighterPose.sprite_modulate(int(_variants.get(p.id, 0)), alpha)]
 
 
 # Da dove prendere il ritratto: portrait.png se c'è, altrimenti il primo fotogramma di idle,
