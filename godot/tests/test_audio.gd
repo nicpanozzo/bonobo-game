@@ -105,6 +105,18 @@ func test_proiettili_e_carica_hanno_il_loro_suono() -> void:
 	a.free()
 
 
+func test_la_bassline_di_bradipo_suona_il_basso() -> void:
+	var a: Node = _audio()
+	runner.check(a.stream_for("bass") is AudioStreamWAV, "manca la nota di basso")
+	runner.check(Audio.shot_cue(a.game, "bradipo", "specialSide") == "bass", "la Bassline suona il basso")
+	runner.check(Audio.shot_cue(a.game, "bradipo", "specialNeutral") == "projectile", "le Ciacole fanno il tiro di sempre")
+	runner.check(Audio.shot_cue(a.game, "sconosciuto", "specialSide") == "projectile", "personaggio sconosciuto: il tiro di sempre")
+	a.on_snapshot({"timeLeftMs": null, "winnerId": null, "players": [{"id": "a", "characterId": "bradipo", "x": 0}]})
+	for e in [{"type": "attack", "id": "a", "kind": "specialSide"}, {"type": "projectile", "id": "a", "projectileId": 1, "x": 0, "y": 0}]:
+		a.on_event(e)
+	a.free()
+
+
 func test_accordi_per_nome() -> void:
 	# Il giro di sempre (La minore, Fa, Do, Sol), in Hz come in music.ts
 	var old := [[220.0, 261.6, 329.6], [174.6, 220.0, 261.6], [261.6, 329.6, 392.0], [196.0, 246.9, 293.7]]

@@ -216,6 +216,18 @@ static func charge_radius(fighter_height: float, charge: float) -> float:
 	return fighter_height * (0.45 + 0.35 * clampf(charge, 0.0, 1.0))
 
 
+# La speciale a proiettile del personaggio (i campi solo per Godot: words, sound), {} se non è sua
+static func projectile_special(game_data: Dictionary, character_id: String, kind: String) -> Dictionary:
+	var c: Dictionary = game_data.characters.get(character_id, {})
+	return c.get("specials", {}).get(SLOT_OF_KIND.get(kind, "neutral"), {})
+
+
+# Le Ciacole di Bradipo: la parola scritta di un proiettile, scelta dal suo id (uguale per tutti); "" se è una palla
+static func projectile_word(game_data: Dictionary, character_id: String, kind: String, projectile_id: int) -> String:
+	var words: Array = projectile_special(game_data, character_id, kind).get("words", [])
+	return str(words[posmod(projectile_id, words.size())]) if not words.is_empty() else ""
+
+
 # Il colore del proiettile: quello della speciale del personaggio, poi quello del personaggio base
 static func projectile_color(game_data: Dictionary, character_id: String, kind: String) -> Color:
 	var slot: String = SLOT_OF_KIND.get(kind, "neutral")

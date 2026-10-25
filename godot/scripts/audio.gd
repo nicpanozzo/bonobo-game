@@ -6,6 +6,7 @@ extends Node2D
 
 const StageMotion := preload("res://scripts/stage_motion.gd")
 const WonderStage := preload("res://scripts/wonder_stage.gd")
+const FighterPose := preload("res://scripts/fighter_pose.gd")
 const PLAYERS := 12 # suoni che possono sovrapporsi
 const MUSIC_STEPS_PER_FRAME := 4 # la musica si calcola un pezzo per frame, senza bloccare il gioco
 const STEPS := 16 # sedicesimi in una battuta
@@ -49,6 +50,7 @@ var _swings := {} # indice della piattaforma -> ultimo estremo dell'altalena sen
 var stage_pads: Array = [] # bottoni sonori dell'arena (#423): servono per sentire quando arriva la Meraviglia
 var _wonder_on := false
 const WAKA_MS := 270
+const BASS_NOTES := [1.0, 1.189, 1.335, 1.498, 1.782] # la Bassline: Mi, Sol, La, Si, Re della pentatonica minore (pitch)
 var _waka_at := 0 # Pac-Man (#427): quando è suonato l'ultimo "waka" (ms dell'orologio)
 var _song := "" # brano dell'arena musicale (#423): una traccia di _music_files, o "" se l'arena non ne ha
 var _song_ms := 0.0 # quanto dura un giro del brano
@@ -66,6 +68,7 @@ var _charges := {} # id -> carica della speciale nell'ultimo snapshot (E10)
 var _supremes := {} # id -> barra della suprema piena nell'ultimo snapshot (#101)
 var _voices := {} # id personaggio -> battuta (taunt, ko, victory) -> Array[AudioStream] (E13 passo 3)
 var _characters := {} # id giocatore -> id personaggio, dagli snapshot
+var _last_attack := {} # id giocatore -> l'ultimo attacco partito: il tiro di un proiettile non dice da quale speciale
 var _voice_players := {} # id giocatore -> AudioStreamPlayer2D: una voce per giocatore alla volta
 var _taunted := {} # id giocatore -> ms dell'ultima voce di provocazione
 
@@ -123,6 +126,7 @@ func on_event(e: Dictionary) -> void:
 		"attack":
 			# Le varianti direzionali (#2) usano il suono del colpo base, un po' più acuto in su e più grave in giù
 			var kind: String = e.kind
+			_last_attack[e.id] = kind
 			var tilt := 0.12 if kind.ends_with("Up") else (-0.12 if kind.ends_with("Down") else 0.0)
 			if kind == "recovery":
 				_play("doubleJump", {"volume": 0.7}) # il recupero (#11) suona come un doppio salto
@@ -197,7 +201,10 @@ func on_event(e: Dictionary) -> void:
 			_play("counter", {"x": e.x})
 		# Proiettili (E10): il colpo e lo scudo hanno già il loro suono, qui il tiro e lo schiocco contro un muro
 		"projectile":
-			_play("projectile", {"x": e.x, "pitch": randf_range(0.95, 1.05)})
+			if shot_cue(game, str(_characters.get(e.id, "default")), str(_last_attack.get(e.id, ""))) == "bass":
+				_play("bass", {"x": e.x, "pitch": BASS_NOTES[randi() % BASS_NOTES.size()]}) # la Bassline di Bradipo: una nota del riff
+			else:
+				_play("projectile", {"x": e.x, "pitch": randf_range(0.95, 1.05)})
 		"projectileEnd":
 			if e.reason == "wall" or e.reason == "hit":
 				_play("projectilePop", {"x": e.x, "volume": 0.8 if e.reason == "wall" else 0.5})
@@ -365,6 +372,11 @@ func on_snapshot(data: Dictionary) -> void:
 		if full and _supremes.has(p.id) and not _supremes[p.id]:
 			_play("supremeReady", {"x": p.x})
 		_supremes[p.id] = full
+
+
+# Il suono di un tiro: "bass" se la speciale del personaggio ha sound "bass" (la Bassline), sennò il "piu" del Tiro
+static func shot_cue(game_data: Dictionary, character_id: String, kind: String) -> String:
+	return "bass" if FighterPose.projectile_special(game_data, character_id, kind).get("sound", "") == "bass" else "projectile"
 
 
 # Le trappole che viaggiano: il ciclista (#229) "bell" quando comincia l'avviso e "bikeRattle" quando entra; l'auto di
@@ -923,6 +935,12 @@ func _build_sounds() -> void:
 	_sounds.projectile = make.call(0.14, func(s):
 		s.tone(0, "square", 880, 520, 0.1, 0.16)
 		s.noise(0, "bandpass", 3000, 1500, 0.06, 0.25))
+	# Una nota di basso pizzicata (la Bassline di Bradipo): Mi grave con l'ottava sopra, che si sente anche dal portatile
+	_sounds.bass = make.call(0.9, func(s):
+		s.tone(0, "sawtooth", 82.41, 81.5, 0.75, 0.22)
+		s.tone(0, "sine", 82.41, 82.41, 0.85, 0.55)
+		s.tone(0, "triangle", 164.81, 164.81, 0.35, 0.25)
+		s.noise(0, "lowpass", 2500, 300, 0.03, 0.25))
 	# Proiettile che sbatte: uno schiocco sordo
 	_sounds.projectilePop = make.call(0.1, func(s):
 		s.noise(0, "lowpass", 3000, 400, 0.07, 0.5)

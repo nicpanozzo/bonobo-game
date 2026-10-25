@@ -158,6 +158,12 @@ func test_colore_dei_proiettili_e_alone_della_carica() -> void:
 	var fumo := FighterPose.projectile_color(game, "bonobot", "specialNeutral")
 	runner.check(fumo.is_equal_approx(Color.hex(0xd9d3c7ff)), "l'Anello di fumo di Bonobot è grigio: %s" % fumo)
 	runner.check(FighterPose.projectile_color(game, "sconosciuto", "specialNeutral").is_equal_approx(FighterPose.projectile_color(game, "default", "specialNeutral")), "personaggio sconosciuto: quello di Bonobo")
+	# Le Ciacole di Bradipo sono parole, sempre la stessa per lo stesso tiro; gli altri proiettili restano palle
+	var w := FighterPose.projectile_word(game, "bradipo", "specialNeutral", 7)
+	runner.check(w != "" and w == FighterPose.projectile_word(game, "bradipo", "specialNeutral", 7), "le Ciacole sono parole: '%s'" % w)
+	runner.check(w != FighterPose.projectile_word(game, "bradipo", "specialNeutral", 8), "tiri diversi, parole diverse")
+	runner.check(FighterPose.projectile_word(game, "bradipo", "specialSide", 7) == "", "la Bassline resta un'onda")
+	runner.check(FighterPose.projectile_word(game, "egiainuso", "specialNeutral", 7) == "", "lo Sputo resta una palla")
 	var schizzo := FighterPose.projectile_color(game, "orsoblu", "specialNeutral")
 	runner.check(schizzo.is_equal_approx(Color.hex(0x6ec8ffff)), "lo Schizzo di Capt. OrsoBlu è azzurro: %s" % schizzo)
 	runner.check(FighterPose.charge_radius(88, 1.0) > FighterPose.charge_radius(88, 0.2), "l'alone cresce con la carica")
