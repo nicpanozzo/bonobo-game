@@ -129,7 +129,7 @@ func _ready() -> void:
 	link_row.add_child(_link_button)
 	# Chi ospita (#308) ha anche il link per chi è sulla stessa rete: niente tunnel, niente lag
 	_lan_link_button = UI.small_button("Copia link di casa", func():
-		UI.copy(PAGES_URL + "?room=" + str(params.room).uri_encode() + "&server=" + str(HostServer.instance(get_tree()).info.get("lanServer", "")).uri_encode())
+		UI.copy(PAGES_URL + "?room=" + str(params.room).uri_encode() + "&server=" + str(HostServer.instance(get_tree()).info.get("lanServer", "")))
 		UI.toast(ui_layer, "Link di casa copiato: chi è sul tuo Wi-Fi lo copia e apre l'app (nel browser non va)"))
 	_lan_link_button.focus_mode = Control.FOCUS_NONE
 	_lan_link_button.visible = false
@@ -386,7 +386,7 @@ func room_link(room: String) -> String:
 	if not same_origin:
 		# Chi ospita dal suo computer (#308) gioca su 127.0.0.1: agli amici va il tunnel o l'indirizzo di casa
 		var server := HostServer.instance(get_tree()).public_server() if _local_host() else str(params.server)
-		link += "&server=" + server.uri_encode()
+		link += "&server=" + server # senza %3A%2F: chi lo legge o lo corregge a mano capisce cos'è
 	return link
 
 
