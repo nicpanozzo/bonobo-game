@@ -39,3 +39,12 @@ Il foglio originale non è nella repo: è nella #178. Se cambia la misura dei fo
 - Il foglio l'hai fatto tu o con un generatore di immagini? Con che licenza lo dai al gioco?
 - Che statistiche (velocità, salto, peso) e che mosse speciali vuoi per Egiainuso?
 - Ci sono animazioni vere in arrivo, con più fotogrammi per mossa?
+
+## Skin "Animato"
+
+In `skins/animato/`: le animazioni vere, dal video di tutte le mosse fatto da Nicola con Google Flow (il prompt e i riferimenti sono quelli del flusso di Bradipo Giallo). Una striscia per stato, fotogrammi da 400×330 px coi piedi a 290 e `scale: 0.5`. La speciale neutra è lo sputo. Per rifarla:
+
+```bash
+python3 tools/sprite/egiainuso_dal_video.py <video.mp4> <cartella di lavoro>
+npm run export:godot
+```

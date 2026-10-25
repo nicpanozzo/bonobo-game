@@ -759,6 +759,48 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         supreme: { fps: 1, loop: false }, // "Final Smash"
       },
     },
+    skins: {
+      // Dal video di tutte le mosse fatto da Nicola con Google Flow (tools/sprite/egiainuso_dal_video.py): stesso
+      // omino del foglio ma animato, e la speciale neutra è lo sputo
+      animato: {
+        name: "Animato",
+        sprite: {
+          dir: "assets/characters/egiainuso/skins/animato",
+          frameWidth: 400, // largo e alto: l'aura della suprema e lo sputo escono dal corpo
+          frameHeight: 330,
+          footY: 290,
+          scale: 0.5, // alto come le pose del foglio
+          animations: {
+            idle: { fps: 10, loop: true },
+            walk: { fps: 14, loop: true },
+            dash: { fps: 14, loop: true },
+            jump: { fps: 18, loop: false },
+            fall: { fps: 1, loop: true },
+            doubleJump: { fps: 24, loop: false }, // la capriola
+            tumble: { fps: 18, loop: true },
+            land: { fps: 24, loop: false },
+            hit: { fps: 16, loop: false },
+            taunt: { fps: 12, loop: false }, // le guance gonfie
+            shield: { fps: 8, loop: true },
+            light: { fps: 24, loop: false, hitFrame: 2 },
+            heavy: { fps: 24, loop: false, hitFrame: 3 },
+            lightUp: { fps: 24, loop: false, hitFrame: 2 },
+            heavyUp: { fps: 24, loop: false, hitFrame: 3 },
+            lightDown: { fps: 24, loop: false, hitFrame: 2 },
+            heavyDown: { fps: 24, loop: false, hitFrame: 1 },
+            lightAir: { fps: 24, loop: false, hitFrame: 0 },
+            heavyAir: { fps: 24, loop: false, hitFrame: 2 },
+            recovery: { fps: 24, loop: false, hitFrame: 0 },
+            grab: { fps: 24, loop: false, hitFrame: 1 },
+            throw: { fps: 24, loop: false, hitFrame: 0 },
+            specialNeutral: { fps: 24, loop: false, hitFrame: 4 }, // Sputo: gonfia le guance e sputa
+            specialSide: { fps: 24, loop: false, hitFrame: 1 }, // Scatto
+            specialDown: { fps: 24, loop: false, hitFrame: 2 }, // Contrattacco: il lampo e il pugno
+            supreme: { fps: 24, loop: true }, // l'aura nera a zig-zag
+          },
+        },
+      },
+    },
     // il corpo che si può colpire, misurato sulla sagoma del fermo (#243)
     hurtbox: { width: 41, height: 92 },
     // le zone dei colpi dove arriva il disegno (#243, tools/sprite/zone_dei_colpi.py)
