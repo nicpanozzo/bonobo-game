@@ -188,6 +188,8 @@ export interface ProjectileSpecial extends SpecialBase, SpecialHit {
   lifeMs: number; // dopo quanto sparisce da solo
   maxAlive: number; // proiettili dello stesso giocatore in volo insieme
   color?: number; // colore del proiettile in Godot (0xRRGGBB); senza, quello del Tiro
+  words?: string[]; // in Godot il proiettile è una di queste parole scritte, scelta dall'id del tiro (le Ciacole)
+  sound?: "bass"; // in Godot il tiro suona questo al posto del "piu" del Tiro (la Bassline)
 }
 // Scatto: si corre in avanti colpendo, in aria una volta sola fino all'atterraggio
 export interface DashSpecial extends SpecialBase, SpecialHit {
@@ -950,9 +952,11 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     stats: { weight: 0.95, speed: 1.1, airSpeed: 1.1, jump: 1.1 },
     specials: {
       // spara parole: tante, piccole e deboli, in direzioni "un po' a caso" (angoli fissi a rotazione: la fisica è deterministica)
-      neutral: { type: "projectile", name: "Ciacole", startupMs: 150, cooldownMs: 320, speed: 820, gravity: 0, spreadDeg: [0, 14, -8, 22, 6, -14], lifeMs: 600, maxAlive: 3, range: 16, height: 12, damage: 3, baseKnockback: 150, knockbackGrowth: 2.5, angleDeg: 25, color: 0xf5c211 },
+      neutral: { type: "projectile", name: "Ciacole", startupMs: 150, cooldownMs: 320, speed: 820, gravity: 0, spreadDeg: [0, 14, -8, 22, 6, -14], lifeMs: 600, maxAlive: 3, range: 16, height: 12, damage: 3, baseKnockback: 150, knockbackGrowth: 2.5, angleDeg: 25, color: 0xf5c211,
+        // parole a caso del chiacchierone di LoL (la scheda non ne dà: provvisorie, Nicola 2026-10-25)
+        words: ["Ciò!", "Raga", "Speta", "Ma va là", "Ostrega!", "Boh", "Daghe!", "Xe vero", "Gank!", "Ez", "Ff 15", "Noob", "Report!", "Spritz?", "Bro", "Eh?", "Zio", "Ciacole"] },
       // l'onda del basso: lenta, alta e larga, spinge poco
-      side: { type: "projectile", name: "Bassline", startupMs: 240, cooldownMs: 700, speed: 420, gravity: 0, lifeMs: 1000, maxAlive: 1, range: 26, height: 70, damage: 5, baseKnockback: 260, knockbackGrowth: 3, angleDeg: 20, color: 0xb48cff },
+      side: { type: "projectile", name: "Bassline", startupMs: 240, cooldownMs: 700, speed: 420, gravity: 0, lifeMs: 1000, maxAlive: 1, range: 26, height: 70, damage: 5, baseKnockback: 260, knockbackGrowth: 3, angleDeg: 20, color: 0xb48cff, sound: "bass" },
       down: { type: "counter", name: "Cambio pannolino", startupMs: 50, windowMs: 400, endLagMs: 450, minDamage: 8, multiplier: 1.3, range: 60, height: 60, baseKnockback: 450, knockbackGrowth: 9, angleDeg: 40 },
     },
     // il corpo che si può colpire, misurato sulla sagoma del fermo (#243)

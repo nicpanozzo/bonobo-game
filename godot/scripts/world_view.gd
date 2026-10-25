@@ -1390,12 +1390,33 @@ func _draw_projectiles() -> void:
 		var c := Vector2(pr.x, pr.y) + vel * minf(dt, 0.1)
 		var color := FighterPose.projectile_color(game, str(pr.characterId), str(pr.kind))
 		var angle := vel.angle() if vel.length() > 1.0 else 0.0
+		var word := FighterPose.projectile_word(game, str(pr.characterId), str(pr.kind), int(pr.id))
+		if word != "":
+			_draw_projectile_word(word, c, vel, color)
+			continue
 		for i in [3, 2, 1]: # la scia: copie più piccole e trasparenti dietro
 			var tc := color
 			tc.a = 0.5 - 0.13 * i
 			_draw_oval(c - vel * 0.018 * i, angle, size * (1.0 - 0.15 * i), tc)
 		_draw_oval(c, angle, size, color)
 		_draw_oval(c + Vector2(-2, -2).rotated(angle), angle, size * 0.45, color.lightened(0.6))
+
+
+# Una parola che vola (le Ciacole di Bradipo): scritta col bordo scuro, inclinata appena verso dove va, con la scia
+func _draw_projectile_word(word: String, c: Vector2, vel: Vector2, color: Color) -> void:
+	const SIZE := 20
+	var tilt := clampf(vel.angle() if vel.x >= 0.0 else vel.angle() - PI, -0.4, 0.4)
+	var tw := _font.get_string_size(word, HORIZONTAL_ALIGNMENT_LEFT, -1, SIZE).x
+	var at := Vector2(-tw / 2.0, SIZE * 0.36)
+	for i in [2, 1]:
+		var tc := color
+		tc.a = 0.45 - 0.15 * i
+		draw_set_transform(c - vel * 0.02 * i, tilt)
+		draw_string(_font, at, word, HORIZONTAL_ALIGNMENT_LEFT, -1, SIZE, tc)
+	draw_set_transform(c, tilt)
+	draw_string_outline(_font, at, word, HORIZONTAL_ALIGNMENT_LEFT, -1, SIZE, 5, Color("1e1a17"))
+	draw_string(_font, at, word, HORIZONTAL_ALIGNMENT_LEFT, -1, SIZE, color)
+	draw_set_transform(Vector2.ZERO)
 
 
 func _draw_oval(c: Vector2, angle: float, size: Vector2, color: Color) -> void:

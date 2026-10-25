@@ -12395,7 +12395,27 @@
           "baseKnockback": 150,
           "knockbackGrowth": 2.5,
           "angleDeg": 25,
-          "color": 16106001
+          "color": 16106001,
+          "words": [
+            "Ciò!",
+            "Raga",
+            "Speta",
+            "Ma va là",
+            "Ostrega!",
+            "Boh",
+            "Daghe!",
+            "Xe vero",
+            "Gank!",
+            "Ez",
+            "Ff 15",
+            "Noob",
+            "Report!",
+            "Spritz?",
+            "Bro",
+            "Eh?",
+            "Zio",
+            "Ciacole"
+          ]
         },
         "side": {
           "type": "projectile",
@@ -12412,7 +12432,8 @@
           "baseKnockback": 260,
           "knockbackGrowth": 3,
           "angleDeg": 20,
-          "color": 11832575
+          "color": 11832575,
+          "sound": "bass"
         },
         "down": {
           "type": "counter",
