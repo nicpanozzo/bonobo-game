@@ -153,7 +153,9 @@ describe("mosse speciali (E10 passo 1)", () => {
   });
 
   it("chi non ne ha di sue usa quelle di base, e un id sconosciuto quelle del personaggio base", () => {
-    assert.deepEqual(specialsFor("egiainuso"), DEFAULT_SPECIALS);
+    assert.deepEqual(specialsFor("egiainuso").side, DEFAULT_SPECIALS.side);
+    assert.deepEqual(specialsFor("egiainuso").down, DEFAULT_SPECIALS.down);
+    assert.equal(specialsFor("egiainuso").neutral.name, "Sputo", "il tiro di base, ma sputato");
     assert.deepEqual(specialsFor("nessuno"), specialsFor("default"));
     assert.equal(specialsFor("default").neutral.name, "Banana");
     assert.deepEqual(specialsFor("default").side, DEFAULT_SPECIALS.side, "le speciali che mancano sono quelle di base");
