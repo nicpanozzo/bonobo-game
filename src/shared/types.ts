@@ -121,6 +121,7 @@ export interface PredictionState {
   lightBuffer: number; // ms in cui una pressione del leggero vale ancora (E6)
   heavyBuffer: number; // ms in cui una pressione del pesante vale ancora (E6)
   attackAir?: boolean; // l'attacco in corso è partito in aria: atterrando si interrompe con la sua pausa (#384 A3)
+  dropHold?: number; // ms di giù tenuto a terra prima di scendere da una sottile, -1 bloccato (Fighter.dropHold); manca se 0
 }
 
 // Un proiettile in volo (E10): lo tira una speciale e colpisce come un attacco

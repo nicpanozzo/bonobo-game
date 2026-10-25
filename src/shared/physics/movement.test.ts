@@ -51,7 +51,7 @@ describe("tempo di grazia sul bordo (coyote)", () => {
     const { ctx, f } = setup();
     Object.assign(f, { x: 440, y: 420, vx: 0, vy: 0, onGround: true });
     press(f, { down: true });
-    run(f, ctx, 1);
+    run(f, ctx, Math.ceil(FIGHTER.dropHoldMs / DT));
     press(f, {});
     run(f, ctx, 2);
     assert.equal(f.onGround, false);
@@ -72,6 +72,54 @@ describe("tempo di grazia sul bordo (coyote)", () => {
     const [jump] = jumps(ctx.events);
     assert.equal(jump?.air, true);
     assert.equal(f.jumpsLeft, 0);
+  });
+});
+
+describe("giù sulle piattaforme sottili", () => {
+  const onThin = () => {
+    const { ctx, f } = setup();
+    Object.assign(f, { x: 440, y: 420, vx: 0, vy: 0, onGround: true });
+    return { ctx, f };
+  };
+
+  it("tenendo giù senza attaccare si scende dopo FIGHTER.dropHoldMs", () => {
+    const { ctx, f } = onThin();
+    press(f, { down: true });
+    run(f, ctx, Math.floor(FIGHTER.dropHoldMs / DT) - 1);
+    assert.equal(f.onGround, true, "ancora sopra mentre si tiene giù");
+    run(f, ctx, 4);
+    assert.equal(f.onGround, false);
+    assert.ok(f.y > 420);
+  });
+
+  it("giù + leggero o pesante fa la mossa in giù e resta sulla piattaforma", () => {
+    for (const key of ["light", "heavy"] as const) {
+      const { ctx, f } = onThin();
+      press(f, { down: true });
+      run(f, ctx, 2);
+      press(f, { down: true, [key]: true });
+      run(f, ctx, 1);
+      assert.equal(f.attack, key === "light" ? "lightDown" : "heavyDown");
+      press(f, { down: true }); // giù resta tenuto per tutta la mossa e dopo
+      run(f, ctx, Math.ceil((ATTACKS.heavyDown.cooldownMs + FIGHTER.dropHoldMs) / DT) + 10);
+      assert.equal(f.onGround, true, `${key}: sempre sopra`);
+      assert.equal(f.y, 420);
+    }
+  });
+
+  it("atterrando con giù tenuto si resta sopra; ripremendolo si scende", () => {
+    const { ctx, f } = onThin();
+    press(f, { down: true });
+    run(f, ctx, 1);
+    Object.assign(f, { y: 380, onGround: false, vy: 0 }); // in aria sopra la sottile, con giù già tenuto
+    run(f, ctx, 40);
+    assert.equal(f.onGround, true, "tenendo giù dall'aria si atterra e si resta");
+    assert.equal(f.y, 420);
+    press(f, {});
+    run(f, ctx, 1);
+    press(f, { down: true });
+    run(f, ctx, Math.ceil(FIGHTER.dropHoldMs / DT) + 3);
+    assert.equal(f.onGround, false, "ripremuto, si scende");
   });
 });
 

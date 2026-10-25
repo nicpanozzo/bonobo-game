@@ -44,7 +44,7 @@ static func state_from(p: Dictionary, timers: Dictionary, input: Dictionary) -> 
 		"x": float(p.x), "y": float(p.y), "vx": float(p.vx), "vy": float(p.vy),
 		"onGround": bool(p.onGround), "facing": int(p.facing),
 		"jumps": int(timers.jumps), "coyote": float(timers.coyote), "rising": bool(timers.rising),
-		"drop": float(timers.drop), "dropFromY": float(timers.get("dropFromY", p.y)), "jumpBuffer": float(timers.jumpBuffer),
+		"drop": float(timers.drop), "dropFromY": float(timers.get("dropFromY", p.y)), "dropHold": float(timers.get("dropHold", 0)), "jumpBuffer": float(timers.jumpBuffer),
 		"dashing": bool(p.get("dashing", false)), "dash": float(timers.get("dash", 0)),
 		"tapDir": int(timers.get("tapDir", 0)), "tapTimer": float(timers.get("tapTimer", 0)), "tapHold": float(timers.get("tapHold", 0)),
 		"dodge": float(timers.get("dodge", 0)), "dodgeCooldown": float(timers.get("dodgeCooldown", 0)),
@@ -97,9 +97,11 @@ func step(s: Dictionary, dt_ms: float) -> void:
 	if _step_lag(s, dt_ms):
 		_end_dash(s)
 		s.rising = false
+		_step_drop(s, dt_ms, true)
 	else:
 		_apply_controls(s, dt)
 		_try_start_attack(s)
+		_step_drop(s, dt_ms, false)
 	_apply_gravity(s, dt)
 	var prev_y: float = s.y
 	var was_on_ground: bool = s.onGround
@@ -184,9 +186,36 @@ func _apply_controls(s: Dictionary, dt: float) -> void:
 		s.onGround = false
 		s.coyote = 0.0
 		s.rising = true
-	if _pressed(s, "down"):
-		s.drop = float(fighter.dropThroughMs)
-		s.dropFromY = s.y # rampe e archi più in basso di così ti prendono (#246)
+
+
+# Giù attraversa le sottili (stepDrop in movement.ts): in aria basta premerlo, a terra va tenuto dropHoldMs senza
+# attaccare. dropHold -1: bloccato finché non si lascia giù
+func _step_drop(s: Dictionary, dt_ms: float, busy: bool) -> void:
+	if not s.input.get("down", false):
+		s.dropHold = 0.0
+		return
+	if busy:
+		s.dropHold = -1.0
+		return
+	if not s.onGround:
+		if _pressed(s, "down"):
+			_start_drop(s)
+		s.dropHold = -1.0
+		return
+	if s.dropHold < 0:
+		return
+	if s.attack != "":
+		s.dropHold = -1.0
+		return
+	s.dropHold += dt_ms
+	if s.dropHold >= float(fighter.dropHoldMs):
+		_start_drop(s)
+		s.dropHold = -1.0
+
+
+func _start_drop(s: Dictionary) -> void:
+	s.drop = float(fighter.dropThroughMs)
+	s.dropFromY = s.y # rampe e archi più in basso di così ti prendono (#246)
 
 
 # Preparazione al salto e pausa all'atterraggio (stepLag in movement.ts): true se in questo tick non si comanda niente

@@ -2687,6 +2687,8 @@ func _attack_rect(p: Dictionary, spec: Dictionary) -> Rect2:
 		o = dog
 		front = float(game.characters[p.characterId].companion.width) / 2.0
 		y = o.y - float(spec.height)
+	if spec.get("bothSides", false) and dog == null:
+		return Rect2(o.x - front - spec.range, y, 2.0 * (front + spec.range), spec.height) # davanti e dietro, come attackBox()
 	var x: float = o.x + front if p.facing == 1 else o.x - front - spec.range
 	return Rect2(x, y, spec.range, spec.height)
 
@@ -2706,15 +2708,21 @@ func _draw_strike(p: Dictionary, now: float) -> void:
 		_strikes[p.id] = {"kind": str(p.attack), "at": now}
 	var box := _attack_rect(p, spec)
 	var chest := Vector2(p.x, p.y - float(game.fighter.height) * 0.6)
-	var arc := StrikeFx.arc_for(chest, int(p.facing), box)
 	var progress := _fight_ms(now, float(_strikes[p.id].at)) / maxf(1.0, float(spec.get("activeMs", 100)) * 0.6)
 	var heavy: bool = kind.begins_with("heavy") or kind == "dashAttack"
 	var own: Variant = game.characters.get(p.characterId, {}).get("strikeColor")
 	var col: Color = Color(own) if own is String else (Color(1, 0.75, 0.35) if heavy else Color.WHITE)
-	var poly := StrikeFx.crescent(arc, progress, float(game.effects.strikeWidth) * (1.5 if heavy else 1.0))
-	if poly.size() >= 3:
-		col.a = 0.55
-		draw_colored_polygon(poly, col)
+	col.a = 0.55
+	# Il colpo dai due lati (pesante in giù) ha una scia per lato, ognuna sulla sua metà del rettangolo
+	var sides: Array = [[int(p.facing), box]]
+	if spec.get("bothSides", false):
+		var half := box.size.x / 2.0
+		sides = [[1, Rect2(box.position.x + half, box.position.y, half, box.size.y)], [-1, Rect2(box.position, Vector2(half, box.size.y))]]
+	for side in sides:
+		var arc := StrikeFx.arc_for(chest, side[0], side[1])
+		var poly := StrikeFx.crescent(arc, progress, float(game.effects.strikeWidth) * (1.5 if heavy else 1.0))
+		if poly.size() >= 3:
+			draw_colored_polygon(poly, col)
 
 
 # Chi vola via forte (lanciato, non chi salta) ha delle linee di velocità dietro, come nei fumetti (#384 B2)

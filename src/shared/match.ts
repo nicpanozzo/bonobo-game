@@ -495,5 +495,6 @@ function predictionState(f: Fighter): PredictionState {
     lightBuffer: Math.round(f.buffer.light),
     heavyBuffer: Math.round(f.buffer.heavy),
     attackAir: f.attackAir,
+    ...(f.dropHold !== 0 && { dropHold: Math.round(f.dropHold) }),
   };
 }

@@ -29,7 +29,7 @@ import { tickBuffer, type Fighter, type PhysicsContext } from "./fighter";
 import { grabbing, inGrab, resolveGrabs, stepGrabs } from "./grab";
 import { swapTripInput, tickPowerup } from "./items";
 import { holdLedge, remapLedges, tryGrabLedge } from "./ledge";
-import { applyControls, applyGravity, startLanding, stepLag, tickCoyote } from "./movement";
+import { applyControls, applyGravity, startLanding, stepDrop, stepLag, tickCoyote } from "./movement";
 import { holdShield } from "./shield";
 import { stepProjectiles } from "./projectiles";
 import { cancelSpecial, specialing } from "./specials";
@@ -145,9 +145,11 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
   if (!grabbing(f, dtMs, ctx) && !specialing(f, dtMs, ctx) && !stepLag(f, dtMs, ctx) && !holdShield(f, dtMs, ctx)) {
     applyControls(f, dt, ctx);
     tryStartAttack(f, ctx);
+    if (!f.hitstun) stepDrop(f, dtMs);
   } else {
     endDash(f); // scudo, presa o speciale fermano lo scatto (#199)
     f.jumpRising = false; // il salto corto vale solo per la spinta del salto
+    stepDrop(f, dtMs, true);
   }
   applyGravity(f, dt);
 

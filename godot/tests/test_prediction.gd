@@ -12,7 +12,7 @@ func test_numero_dell_input_e_il_tick_locale() -> void:
 
 # E17 passo 3: movement.gd rigioca le tracce della fisica TypeScript (src/shared/predictionTraces.ts)
 const KEYS := {"l": "left", "r": "right", "j": "jump", "d": "down", "x": "dodge", "a": "light", "h": "heavy", "u": "up", "s": "run"}
-const FIELDS := ["x", "y", "vx", "vy", "onGround", "facing", "jumps", "coyote", "rising", "drop", "jumpBuffer",
+const FIELDS := ["x", "y", "vx", "vy", "onGround", "facing", "jumps", "coyote", "rising", "drop", "dropHold", "jumpBuffer",
 	"dashing", "dash", "tapDir", "tapTimer", "tapHold", "dodge", "dodgeCooldown", "airDodge", "dodgeBuffer",
 	"attack", "attackTimer", "smashCharge", "cooldown", "recoveryUsed", "helpless", "lightBuffer", "heavyBuffer",
 	"jumpSquat", "landing", "attackAir"]
