@@ -34,6 +34,10 @@ var _clouds: Array = [] # [{ x, y, dir, age, damage }] nuvole soffiate col bong 
 var _poison_clouds: Array = [] # [{ x, y, age }] nubi di veleno del fungo di Teemo che scoppia (#419)
 var _blasted := {} # id del fungo di Teemo già scoppiato: una nube sola anche se avvelena più lottatori
 var _shrooms := {} # id oggetto -> { since, popped }: da quando il fungo di Teemo è piazzato, per farlo sparire
+var _ink := ArcadeView.INK # il colore del contorno di quello che si disegna: gli oggetti usano la loro tinta scura (#498)
+var _ink_width := 1.0 # moltiplica lo spessore del contorno (gli oggetti lo hanno sottile, #498)
+var _light := Color.WHITE # la luce dell'arena sugli oggetti (#498): moltiplica i loro colori
+var _sun := {} # la luce del sole o della luna di questo frame (#288), vuota nelle arene senza ciclo del giorno
 var _high_overlay: ColorRect # lo schermo distorto di chi è fatto col bong (#302)
 var effects := true # scie e polvere (opzioni → Video), main.gd lo legge dalle preferenze
 var _beams: Array = [] # [{ x, y, age, color }] raggi dei KO, dal punto di uscita verso il centro
@@ -1456,15 +1460,16 @@ func _draw_items(now: int) -> void:
 		if it.kind == "fungoTeemo" and owner != null:
 			alpha = _teemo_alpha(it, str(owner), now)
 			pos += Vector2(0, 3.0 * clampf(float(now - int(_shrooms[it.id].since)) / float(game.get("fungo", {}).get("armMs", 1000)), 0.0, 1.0)) # si arma e affonda un po'
-		# A terra l'oggetto ondeggia sopra la sua ombra e ogni tanto luccica: si capisce che si raccoglie
+		# A terra l'oggetto è posato e fermo sulla superficie, con la sua ombra (#498): niente ondeggiamento né luccichio.
+		# Quando il proprio lottatore è abbastanza vicino da raccoglierlo prende un contorno chiaro
 		var lying: bool = holder == null and not it.thrown and absf(float(it.get("vy", 0.0))) < 1.0 and it.kind != "fungo" and not (it.kind == "fungoTeemo" and owner != null)
-		var bob := 0.0
+		var rest := rest_tilt(it.kind, int(it.id)) if lying else 0.0
+		var near := lying and _near_me(pos)
 		if lying:
-			bob = -ITEM_BOB_PX * (0.5 + 0.5 * sin(now / 380.0 + float(it.id)))
-			_draw_item_shadow(it.kind, pos, bob)
-		_draw_item(it.kind, pos + Vector2(0, bob), spin, float(it.get("load", -1.0)), alpha)
-		if lying and not Access.calm:
-			_draw_item_glint(it.kind, pos + Vector2(0, bob), now + int(it.id) * 977)
+			_draw_item_shadow(it.kind, pos, near)
+		if near:
+			_draw_item(it.kind, pos, spin, float(it.get("load", -1.0)), alpha, rest, lying, true)
+		_draw_item(it.kind, pos, spin, float(it.get("load", -1.0)), alpha, rest, lying)
 	for id in _item_pos.keys():
 		if not seen.has(id):
 			_item_pos.erase(id)
@@ -1504,29 +1509,67 @@ func _is_ally(id: String) -> bool:
 	return me is Dictionary and them is Dictionary and int(me.team) > 0 and int(me.team) == int(them.team)
 
 
-# L'ombra a terra: un'ovale scura che si stringe quando l'oggetto sale
-func _draw_item_shadow(kind: String, base: Vector2, bob: float) -> void:
+# L'ombra di un oggetto a terra (#498): quella del sole o della luna come per i lottatori, se l'arena ne ha uno, e sotto
+# un'ovale stretta e scura dove tocca la superficie. Se lo si può raccogliere, un chiarore a terra
+func _draw_item_shadow(kind: String, base: Vector2, near := false) -> void:
 	var w: float = float(game.items.get(kind, {"width": 24}).width) * ITEM_SCALE
-	var k := 1.0 + bob / (ITEM_BOB_PX * 4.0)
+	if not _sun.is_empty():
+		_draw_shadow(SunLight.shadow(base, w * 0.8, _sun))
 	var pts := PackedVector2Array()
 	for i in 16:
 		var a := TAU * i / 16.0
-		pts.append(base + Vector2(cos(a) * w * 0.55 * k, sin(a) * 3.5 * k))
-	draw_colored_polygon(pts, Color(0, 0, 0, 0.28 * k))
+		pts.append(base + Vector2(cos(a) * w * 0.42, sin(a) * 2.5))
+	draw_colored_polygon(pts, Color(0, 0, 0, 0.32))
+	if near:
+		for i in 16:
+			pts[i] = base + Vector2(cos(TAU * i / 16.0) * w * 0.7, sin(TAU * i / 16.0) * 5.0)
+		draw_colored_polygon(pts, Color(GLOW_INK, 0.22))
 
 
-# Il luccichio: una stellina a quattro punte che passa su un angolo dell'oggetto ogni ~2,5 s
-func _draw_item_glint(kind: String, base: Vector2, now: int) -> void:
-	var t := fmod(now / 2500.0, 1.0)
-	if t > 0.16:
-		return
-	var spec: Dictionary = game.items.get(kind, {"width": 24, "height": 16})
-	var life := sin(t / 0.16 * PI)
-	var c := base + Vector2(float(spec.width) * 0.35, -float(spec.height) * 0.95) * ITEM_SCALE
-	var r := 7.0 * life
-	var col := Color(1, 1, 0.92, 0.95 * life)
-	draw_colored_polygon(PackedVector2Array([c + Vector2(0, -r), c + Vector2(r * 0.22, -r * 0.22), c + Vector2(r, 0), c + Vector2(r * 0.22, r * 0.22),
-		c + Vector2(0, r), c + Vector2(-r * 0.22, r * 0.22), c + Vector2(-r, 0), c + Vector2(-r * 0.22, -r * 0.22)]), col)
+# Il proprio lottatore è abbastanza vicino da raccogliere l'oggetto con J o K (#498)
+func _near_me(item: Vector2) -> bool:
+	var me: Variant = _sampled.get(my_id)
+	if not (me is Dictionary) or me.get("eliminated", false) or me.get("respawning", false):
+		return false
+	return in_pick_range(item, Vector2(me.x, me.y), float(game.itemRules.pickRange), float(game.fighter.height))
+
+
+# Come handleItemInput sul server (physics/items.ts): abbastanza vicino in orizzontale, all'altezza del corpo
+static func in_pick_range(item: Vector2, feet: Vector2, pick_range: float, height: float) -> bool:
+	return absf(item.x - feet.x) < pick_range and item.y > feet.y - height and item.y < feet.y + 12.0
+
+
+# Come si posa un oggetto a terra (#498): la banana coricata un po' storta, gli altri dritti con appena un filo
+# d'inclinazione, i funghi e gli arcade dritti. Sempre la stessa per lo stesso oggetto, così non trema
+static func rest_tilt(kind: String, id: int) -> float:
+	var r := fposmod(sin(id * 12.9898) * 43758.5453, 1.0) * 2.0 - 1.0
+	if kind == "banana":
+		return r * 0.22
+	if kind in ARCADE_ITEMS or kind in ["fungo", "fungoTeemo", "funghetti"]:
+		return 0.0
+	return r * 0.05
+
+
+# Il contorno di un oggetto (#498): la sua tinta, molto più scura, al posto dell'inchiostro nero
+static func item_ink(base: Color) -> Color:
+	return Color(base.darkened(0.55), 0.9)
+
+
+# La luce dell'arena sugli oggetti (#498): un filo del colore del cielo, così non sembrano incollati sopra, e col
+# sole o la luna (#288) la loro tinta, più calda al tramonto e fredda e più scura di notte
+static func item_light(sun: Dictionary, sky: Color) -> Color:
+	var l := Color.WHITE.lerp(Color(sky, 1.0), 0.08)
+	if sun.is_empty():
+		return l
+	l = l * Color.WHITE.lerp(sun.tint, 0.45)
+	if not bool(sun.sun):
+		l = l.darkened(0.25)
+	return Color(l, 1.0)
+
+
+# Un colore di un oggetto sotto la luce dell'arena
+func _lit(c: Color) -> Color:
+	return Color(c.r * _light.r, c.g * _light.g, c.b * _light.b, c.a)
 
 
 # Le pozze dell'IRA (#13): una macchia marrone schiacciata a terra, lucida, con due grumi
@@ -1547,20 +1590,28 @@ func _draw_puddles(now: int) -> void:
 
 # Gli oggetti sono disegnati come i lottatori: contorno scuro a inchiostro, colore pieno, una luce e un'ombra.
 # Più grandi della loro scatola di gioco (ITEM_SCALE), così si riconoscono anche da lontano
-func _draw_item(kind: String, base: Vector2, spin: float, load: float = -1.0, alpha: float = 1.0) -> void:
+# A terra (lying) poggia sulla superficie e si inclina di rest attorno al punto di contatto (#498); glow disegna solo
+# il contorno chiaro di chi lo può raccogliere, sotto all'oggetto vero
+func _draw_item(kind: String, base: Vector2, spin: float, load: float = -1.0, alpha: float = 1.0, rest := 0.0, lying := false, glow := false) -> void:
 	var spec: Dictionary = game.items.get(kind, {"width": 24, "height": 16, "color": 0xffffff})
 	var w: float = spec.width
 	var h: float = spec.height
-	var center := base - Vector2(0, h / 2) * ITEM_SCALE
-	draw_set_transform(center, spin, Vector2.ONE * ITEM_SCALE)
+	if lying:
+		base += Vector2(0, 1.0 - float(ITEM_REST_LIFT.get(kind, 0.0)) * h * ITEM_SCALE) # un pixel dentro la superficie
+	var center := base + (Vector2(0, -h / 2) * ITEM_SCALE).rotated(rest)
+	draw_set_transform(center, spin + rest, Vector2.ONE * ITEM_SCALE)
+	_ink = GLOW_INK if glow else item_ink(_color(spec.color))
+	_ink_width = GLOW_INK_WIDTH if glow else ITEM_INK_WIDTH
+	_light = Color.WHITE if kind in ARCADE_ITEMS else item_light(_sun, _palette.get("sky", Color.WHITE))
 	var now := Time.get_ticks_msec()
 	if kind == "banana":
 		_draw_banana(w, h)
 	elif kind == "fiore":
-		# Un alone che respira, così a terra si nota anche da lontano
-		var glow := 0.5 + 0.5 * sin(now / 260.0)
-		draw_circle(Vector2(0, -h * 0.05), h * (0.8 + 0.12 * glow), Color(FLOWER_GREEN.lightened(0.4), 0.25 + 0.15 * glow))
-		draw_leaf(self, Vector2(0, h / 2), h * 1.3, FLOWER_GREEN.lightened(0.1))
+		# La foglia alla luce dell'arena; da vicino il contorno chiaro è una foglia un po' più grande dietro (#498)
+		if glow:
+			draw_leaf(self, Vector2(0, h / 2 + 2), h * 1.45, GLOW_INK)
+		else:
+			draw_leaf(self, Vector2(0, h / 2), h * 1.3, _lit(FLOWER_GREEN.lightened(0.1)))
 	elif kind == "pacman":
 		# Pac-Man (#427): raggi arcade che girano dietro, la bocca che mastica, l'occhio e una pallina davanti
 		_draw_arcade_rays(w, ArcadeView.PAC_YELLOW, now)
@@ -1596,14 +1647,17 @@ func _draw_item(kind: String, base: Vector2, spin: float, load: float = -1.0, al
 	elif kind == "fungoTeemo":
 		_draw_teemo(w, h, alpha)
 	else:
-		draw_rect(Rect2(-w / 2, -h / 2, w, h), _color(spec.color))
-		draw_rect(Rect2(-w / 2, -h / 2, w, h), ArcadeView.INK, false, 2.0)
+		draw_rect(Rect2(-w / 2, -h / 2, w, h), _lit(_color(spec.color)))
+		draw_rect(Rect2(-w / 2, -h / 2, w, h), _ink, false, 2.0 * _ink_width)
 	draw_set_transform(Vector2.ZERO)
+	_ink = ArcadeView.INK
+	_ink_width = 1.0
+	_light = Color.WHITE
 
 
 # Il contorno a inchiostro di un poligono chiuso
 func _ink_outline(pts: PackedVector2Array, width := 2.0, alpha := 1.0) -> void:
-	draw_polyline(pts + PackedVector2Array([pts[0]]), Color(ArcadeView.INK, alpha), width, true)
+	draw_polyline(pts + PackedVector2Array([pts[0]]), Color(_ink, _ink.a * alpha), width * _ink_width, true)
 
 
 # Dietro ai power-up arcade (#427): un sole di raggi che gira piano, come nei cabinati
@@ -1633,7 +1687,7 @@ func _draw_banana(w: float, h: float) -> void:
 		inner.append(hub + Vector2.from_angle(a) * (radius - t * 0.5))
 	inner.reverse()
 	var body := outer + inner
-	draw_colored_polygon(body, Color("f4c81c"))
+	draw_colored_polygon(body, _lit(Color("f4c81c")))
 	# L'ombra sotto e la luce sopra, due strisce che seguono la curva
 	var under := PackedVector2Array()
 	var shine := PackedVector2Array()
@@ -1641,37 +1695,37 @@ func _draw_banana(w: float, h: float) -> void:
 		var a := lerpf(PI * 0.3, PI * 0.7, k / 8.0)
 		under.append(hub + Vector2.from_angle(a) * (radius + thick * 0.28))
 		shine.append(hub + Vector2.from_angle(a) * (radius - thick * 0.12))
-	draw_polyline(under, Color("d99a12"), 3.5, true)
-	draw_polyline(shine, Color(1, 0.97, 0.75), 2.0, true)
+	draw_polyline(under, _lit(Color("d99a12")), 3.5, true)
+	draw_polyline(shine, _lit(Color(1, 0.97, 0.75)), 2.0, true)
 	_ink_outline(body, 1.5)
-	draw_circle(outer[0].lerp(inner[inner.size() - 1], 0.5), 2.8, Color("4a2e14"))
+	draw_circle(outer[0].lerp(inner[inner.size() - 1], 0.5), 2.8, _lit(Color("4a2e14")))
 	var tip := outer[outer.size() - 1].lerp(inner[0], 0.5)
-	draw_line(tip, tip + Vector2(-2, -6), Color("6b4a1e"), 3.5)
+	draw_line(tip, tip + Vector2(-2, -6), _lit(Color("6b4a1e")), 3.5)
 
 
 # Il bong (#302): tubo di vetro con l'acqua, il fornelletto di lato e il boccaglio in alto.
 # In carica l'acqua gorgoglia e sopra c'è la barra
 func _draw_bong(spec: Dictionary, h: float, load: float) -> void:
 	var w: float = spec.width
-	var glass := Color(0.75, 0.95, 0.9, 0.55)
+	var glass := _lit(Color(0.75, 0.95, 0.9, 0.55))
 	var base := Rect2(-w / 2, h * 0.12, w, h * 0.38)
 	var neck := Rect2(-w * 0.22, -h / 2, w * 0.44, h * 0.64)
 	# Il fornelletto, inclinato verso l'esterno, dietro al vetro
-	draw_line(Vector2(w * 0.3, h * 0.32), Vector2(w * 0.85, h * 0.02), ArcadeView.INK, 5.5)
-	draw_line(Vector2(w * 0.3, h * 0.32), Vector2(w * 0.85, h * 0.02), Color(0.85, 1, 0.95), 2.5)
-	draw_circle(Vector2(w * 0.88, 0), 4.5, ArcadeView.INK)
-	draw_circle(Vector2(w * 0.88, 0), 3.2, Color("8a5a32"))
+	draw_line(Vector2(w * 0.3, h * 0.32), Vector2(w * 0.85, h * 0.02), _ink, 2.5 + 3.0 * _ink_width)
+	draw_line(Vector2(w * 0.3, h * 0.32), Vector2(w * 0.85, h * 0.02), _lit(Color(0.85, 1, 0.95)), 2.5)
+	draw_circle(Vector2(w * 0.88, 0), 3.2 + 1.3 * _ink_width, _ink)
+	draw_circle(Vector2(w * 0.88, 0), 3.2, _lit(Color("8a5a32")))
 	var body := PackedVector2Array([neck.position, Vector2(neck.end.x, neck.position.y), Vector2(neck.end.x, base.position.y), Vector2(base.end.x, base.position.y + 4),
 		base.end, Vector2(base.position.x, base.end.y), Vector2(base.position.x, base.position.y + 4), Vector2(neck.position.x, base.position.y)])
 	draw_colored_polygon(body, glass)
-	var water := Color(0.35, 0.75, 0.6, 0.85)
+	var water := _lit(Color(0.35, 0.75, 0.6, 0.85))
 	draw_rect(Rect2(base.position.x + 2, base.position.y + base.size.y * 0.35, base.size.x - 4, base.size.y * 0.6), water)
 	draw_line(Vector2(base.position.x + 2, base.position.y + base.size.y * 0.35), Vector2(base.end.x - 2, base.position.y + base.size.y * 0.35), water.lightened(0.4), 1.5)
 	# Il riflesso sul vetro, una riga chiara a sinistra
 	draw_line(neck.position + Vector2(3, 4), Vector2(neck.position.x + 3, base.position.y - 2), Color(1, 1, 1, 0.75), 2.0)
 	draw_line(Vector2(base.position.x + 3, base.position.y + 6), Vector2(base.position.x + 3, base.end.y - 4), Color(1, 1, 1, 0.6), 2.0)
 	_ink_outline(body)
-	draw_line(neck.position + Vector2(-2, 0), Vector2(neck.end.x + 2, neck.position.y), ArcadeView.INK, 3.0)
+	draw_line(neck.position + Vector2(-2, 0), Vector2(neck.end.x + 2, neck.position.y), _ink, 3.0 * _ink_width)
 	if load >= 0.0:
 		var now := Time.get_ticks_msec() / 1000.0
 		for k in 4:
@@ -1691,16 +1745,16 @@ func _draw_bong(spec: Dictionary, h: float, load: float) -> void:
 func _draw_mushroom(w: float, h: float, alpha: float, offset := Vector2.ZERO) -> void:
 	var base := offset + Vector2(0, h / 2)
 	var stem := PackedVector2Array([base + Vector2(-w * 0.17, 0), base + Vector2(-w * 0.13, -h * 0.55), base + Vector2(w * 0.13, -h * 0.55), base + Vector2(w * 0.17, 0)])
-	draw_colored_polygon(stem, Color(0.95, 0.9, 0.8, alpha))
+	draw_colored_polygon(stem, _lit(Color(0.95, 0.9, 0.8, alpha)))
 	_ink_outline(stem, 1.5, alpha)
 	var cap := PackedVector2Array()
 	for k in 13:
 		var a := PI + PI * k / 12.0
 		cap.append(base + Vector2(0, -h * 0.5) + Vector2(cos(a) * w * 0.5, sin(a) * h * 0.55))
-	draw_colored_polygon(cap, Color(0.8, 0.15, 0.2, alpha))
-	draw_line(base + Vector2(-w * 0.42, -h * 0.55), base + Vector2(w * 0.42, -h * 0.55), Color(0.55, 0.08, 0.12, alpha), 2.0)
+	draw_colored_polygon(cap, _lit(Color(0.8, 0.15, 0.2, alpha)))
+	draw_line(base + Vector2(-w * 0.42, -h * 0.55), base + Vector2(w * 0.42, -h * 0.55), _lit(Color(0.55, 0.08, 0.12, alpha)), 2.0)
 	for d in [Vector2(-0.22, -0.72), Vector2(0.15, -0.85), Vector2(0.3, -0.62)]:
-		draw_circle(base + Vector2(d.x * w, d.y * h), maxf(1.5, w * 0.08), Color(1, 1, 1, alpha))
+		draw_circle(base + Vector2(d.x * w, d.y * h), maxf(1.5, w * 0.08), _lit(Color(1, 1, 1, alpha)))
 	_ink_outline(cap, 1.5, alpha)
 
 
@@ -1708,7 +1762,7 @@ func _draw_mushroom(w: float, h: float, alpha: float, offset := Vector2.ZERO) ->
 func _draw_mushroom_bag(w: float, h: float) -> void:
 	for k in 3:
 		_draw_mushroom(w * 0.5, h * 0.55, 1.0, Vector2((k - 1) * w * 0.24, -h * 0.62 + absf(k - 1) * h * 0.08))
-	var cloth := Color(0.45, 0.25, 0.55)
+	var cloth := _lit(Color(0.45, 0.25, 0.55))
 	var neck := PackedVector2Array([Vector2(-w * 0.36, -h * 0.36), Vector2(w * 0.36, -h * 0.36), Vector2(w * 0.2, -h * 0.12), Vector2(-w * 0.2, -h * 0.12)])
 	draw_colored_polygon(neck, cloth.lightened(0.1))
 	_ink_outline(neck, 1.5)
@@ -1719,8 +1773,8 @@ func _draw_mushroom_bag(w: float, h: float) -> void:
 	draw_colored_polygon(bag, cloth)
 	draw_arc(Vector2(-w * 0.1, h * 0.12), w * 0.26, PI * 0.95, PI * 1.45, 8, cloth.lightened(0.3), 2.5)
 	_ink_outline(bag)
-	draw_line(Vector2(-w * 0.24, -h * 0.17), Vector2(w * 0.24, -h * 0.17), Color(0.95, 0.8, 0.35), 2.5)
-	draw_circle(Vector2(w * 0.26, -h * 0.13), 2.2, Color(0.95, 0.8, 0.35))
+	draw_line(Vector2(-w * 0.24, -h * 0.17), Vector2(w * 0.24, -h * 0.17), _lit(Color(0.95, 0.8, 0.35)), 2.5)
+	draw_circle(Vector2(w * 0.26, -h * 0.13), 2.2, _lit(Color(0.95, 0.8, 0.35)))
 
 
 # Il fungo di Teemo (#419), ricalcato sulla Trappola velenosa di LoL: cappello bulboso, quasi una palla, verde oliva
@@ -1733,7 +1787,7 @@ func _draw_teemo(w: float, h: float, alpha: float, offset := Vector2.ZERO) -> vo
 	var base := offset + Vector2(0, h / 2)
 	# Il gambo: corto, si stringe verso il cappello, che ne copre la cima
 	var stem := PackedVector2Array([base + Vector2(-w * 0.12, -h * 0.42), base + Vector2(w * 0.1, -h * 0.42), base + Vector2(w * 0.14, 0), base + Vector2(-w * 0.13, 0)])
-	draw_colored_polygon(stem, Color(SHROOM_STEM, alpha))
+	draw_colored_polygon(stem, _lit(Color(SHROOM_STEM, alpha)))
 	_ink_outline(stem, 1.5, alpha)
 	# Il cappello: quasi una palla, col fondo che rientra sotto (la metà bassa dell'ellisse è schiacciata)
 	var c := base + Vector2(0, -h * 0.5)
@@ -1744,20 +1798,20 @@ func _draw_teemo(w: float, h: float, alpha: float, offset := Vector2.ZERO) -> vo
 		var a := TAU * k / 32.0
 		var y := sin(a) * ry
 		cap.append(c + Vector2(cos(a) * rx, y * (0.42 if y > 0.0 else 1.0)))
-	draw_colored_polygon(cap, Color(SHROOM_GREEN.darkened(0.35), alpha))
+	draw_colored_polygon(cap, _lit(Color(SHROOM_GREEN.darkened(0.35), alpha)))
 	# Sopra il bordo scuro di sotto, la parte in luce
 	var lit := PackedVector2Array()
 	for k in 32:
 		var a := TAU * k / 32.0
 		var y := sin(a) * ry * 0.92
 		lit.append(c + Vector2(cos(a) * rx * 0.93, y * (0.12 if y > 0.0 else 1.0) - h * 0.02))
-	draw_colored_polygon(lit, Color(SHROOM_GREEN, alpha))
+	draw_colored_polygon(lit, _lit(Color(SHROOM_GREEN, alpha)))
 	# Riflesso in alto a sinistra e puntini più chiari, la pelle ruvida del fungo
-	draw_circle(c + Vector2(-rx * 0.38, -ry * 0.58), w * 0.12, Color(SHROOM_GREEN.lightened(0.18), alpha * 0.8))
+	draw_circle(c + Vector2(-rx * 0.38, -ry * 0.58), w * 0.12, _lit(Color(SHROOM_GREEN.lightened(0.18), alpha * 0.8)))
 	for k in 12:
 		var u := fmod(k * 0.618, 1.0) * 1.6 - 0.8
 		var v := fmod(k * 0.381 + 0.2, 1.0) * -0.85
-		draw_circle(c + Vector2(u * rx, v * ry), maxf(0.8, w * 0.018), Color(SHROOM_GREEN.lightened(0.3), alpha * 0.8))
+		draw_circle(c + Vector2(u * rx, v * ry), maxf(0.8, w * 0.018), _lit(Color(SHROOM_GREEN.lightened(0.3), alpha * 0.8)))
 	# Le macchie: (u, v) sul cappello in unità del raggio, e la grandezza. Verso i bordi si schiacciano, come su una palla
 	for d in [Vector3(-0.5, -0.38, 0.15), Vector3(0.08, -0.78, 0.12), Vector3(0.5, -0.4, 0.13), Vector3(-0.12, -0.1, 0.11), Vector3(0.74, -0.02, 0.08), Vector3(-0.8, -0.06, 0.07), Vector3(0.32, -0.04, 0.06)]:
 		var spot := c + Vector2(d.x * rx, d.y * ry)
@@ -1769,9 +1823,9 @@ func _draw_teemo(w: float, h: float, alpha: float, offset := Vector2.ZERO) -> vo
 			var a := TAU * j / 16.0
 			var wobble := 1.0 + 0.12 * sin(j * 1.9 + d.x * 9.0)
 			blob.append(spot + Vector2(cos(a) * r * qx * wobble, sin(a) * r * qy * wobble))
-		draw_colored_polygon(blob, Color(SHROOM_PURPLE, alpha))
+		draw_colored_polygon(blob, _lit(Color(SHROOM_PURPLE, alpha)))
 		_ink_outline(blob, 1.0, alpha * 0.6)
-		draw_circle(spot + Vector2(-r * 0.3 * qx, -r * 0.3 * qy), r * 0.22, Color(SHROOM_PURPLE.lightened(0.3), alpha * 0.8))
+		draw_circle(spot + Vector2(-r * 0.3 * qx, -r * 0.3 * qy), r * 0.22, _lit(Color(SHROOM_PURPLE.lightened(0.3), alpha * 0.8)))
 	_ink_outline(cap, 2.0, alpha)
 
 
@@ -1895,7 +1949,11 @@ const SHROOM_STEM := Color("6f604c") # il gambo marrone-grigio
 const POISON_GREEN := Color(0.62, 0.9, 0.22) # la nube e il veleno: verde tossico che tira al giallo
 const POISON_PURPLE := Color(0.55, 0.25, 0.65)
 const ITEM_SCALE := 1.3 # gli oggetti si disegnano un po' più grandi della loro scatola di gioco, per vederli bene
-const ITEM_BOB_PX := 4.0 # pixel di ondeggiamento di un oggetto a terra
+const ITEM_INK_WIDTH := 0.55 # gli oggetti hanno un contorno sottile nella loro tinta scura, non l'inchiostro spesso (#498)
+const GLOW_INK := Color(1.0, 0.96, 0.82, 0.95) # il contorno chiaro di un oggetto che si può raccogliere (#498)
+const GLOW_INK_WIDTH := 2.6 # e quanto è spesso: sta sotto all'oggetto, ne esce mezzo
+const ITEM_REST_LIFT := {"banana": 0.22} # frazione dell'altezza che il disegno scende sotto la base: a terra si alza tanto così
+const ARCADE_ITEMS := ["pacman", "tetris", "bassanese"] # power-up arcade: brillano di luce loro, non prendono quella dell'arena
 const SMOKE_GREY := Color(0.82, 0.86, 0.8)
 
 
@@ -2159,9 +2217,11 @@ func _draw_stairs(p: Dictionary, col: Color) -> void:
 # che arriva dal lato dell'astro e sfuma dall'altra parte, poi le ombre a terra delle decorazioni (statue, alberi,
 # fontana) e dei lottatori, allungate dalla parte opposta all'astro. I lottatori restano dei loro colori
 func _draw_sun_light(t: float) -> void:
+	_sun = {}
 	if _life.is_empty() or not _life.life.get("daycycle") is Dictionary:
 		return
 	var l := SunLight.light(_life.sky.day_phase(t))
+	_sun = l # anche gli oggetti a terra prendono questa luce e fanno questa ombra (#498)
 	var r := view_rect
 	var side: float = l.side
 	if absf(side) > 0.05 and not Access.calm:

@@ -33,7 +33,7 @@ export const ITEMS: Record<string, ItemSpec> = {
   funghetti: { id: "funghetti", name: "Funghetti", damage: 4, knockback: 250, width: 24, height: 20, color: 0x9b59b6, rarity: "mai", mushrooms: true },
   fungo: { id: "fungo", name: "Funghetto", damage: 0, knockback: 0, width: 20, height: 16, color: 0xc0392b, rarity: "mai", planted: true },
   // TODO community: il nome nel gioco (#419). Teemo di LoL: un fungo grande, invisibile da armato, scoppia in una nube di veleno (FUNGO)
-  fungoTeemo: { id: "fungoTeemo", name: "Fungo di Teemo", damage: FUNGO.thrownDamage, knockback: 260, width: 36, height: 34, color: 0x3fd14a, rarity: "normale", shroom: true },
+  fungoTeemo: { id: "fungoTeemo", name: "Fungo di Teemo", damage: FUNGO.thrownDamage, knockback: 260, width: 36, height: 34, color: 0x5a7631, rarity: "normale", shroom: true },
   bong: { id: "bong", name: "Bong", damage: 10, knockback: 380, width: 22, height: 40, color: 0x7fd8c4, rarity: "normale", bong: true },
   // Pac-Man (#427): si diventa Pac-Man e si mangiano gli altri (PACMAN)
   pacman: { id: "pacman", name: "Pac-Man", damage: 0, knockback: 0, width: 28, height: 28, color: 0xffeb3b, rarity: "rarissimo", consume: { powerup: "pacman", ms: PACMAN.ms } },

@@ -324,3 +324,23 @@ func test_veleno_pulsa_a_ogni_scatto() -> void:
 	runner.check(FighterPose.poison_pulse(5700.0, 6000.0, 500.0) == 0.0, "tra uno scatto e l'altro è spenta")
 	runner.check(FighterPose.poison_pulse(5500.0, 6000.0, 500.0) == 1.0, "al secondo scatto si riaccende")
 	runner.check(FighterPose.poison_pulse(0.0, 6000.0, 500.0) == 0.0, "finito il veleno niente")
+
+
+# Oggetti integrati con l'arena (#498): contorno nella loro tinta scura, luce dell'arena, posati fermi, segnale da vicino
+func test_oggetti_integrati_con_l_arena() -> void:
+	var ink := WorldView.item_ink(Color("f1c40f"))
+	runner.check(ink.r > 0.15 and ink.g > ink.b and ink.get_luminance() < 0.35, "il contorno della banana è un ocra scuro, non nero: %s" % ink)
+	runner.check(WorldView.item_light({}, Color.WHITE) == Color.WHITE, "senza sole e col cielo bianco i colori restano quelli")
+	var sky := WorldView.item_light({}, Color(0.3, 0.5, 0.9))
+	runner.check(sky.b > sky.r and sky.r < 1.0, "un filo del cielo dell'arena: %s" % sky)
+	var night := WorldView.item_light({"tint": Color(0.72, 0.8, 1.0), "sun": false}, Color.WHITE)
+	var noon := WorldView.item_light({"tint": Color(1.0, 0.92, 0.75), "sun": true}, Color.WHITE)
+	runner.check(night.get_luminance() < noon.get_luminance() and night.b > night.r, "di notte più scuri e freddi")
+	runner.check(WorldView.rest_tilt("banana", 7) == WorldView.rest_tilt("banana", 7), "la stessa banana sta sempre allo stesso modo")
+	for id in 40:
+		runner.check(absf(WorldView.rest_tilt("banana", id)) <= 0.22 and absf(WorldView.rest_tilt("bong", id)) <= 0.05, "storti di poco (id %d)" % id)
+	runner.check(WorldView.rest_tilt("fungoTeemo", 3) == 0.0 and WorldView.rest_tilt("pacman", 3) == 0.0, "funghi e arcade dritti")
+	var feet := Vector2(500, 560)
+	runner.check(WorldView.in_pick_range(Vector2(530, 560), feet, 40.0, 64.0), "a 30 px lo si raccoglie: contorno chiaro")
+	runner.check(not WorldView.in_pick_range(Vector2(560, 560), feet, 40.0, 64.0), "a 60 px no")
+	runner.check(not WorldView.in_pick_range(Vector2(500, 420), feet, 40.0, 64.0), "sulla piattaforma sopra no")
