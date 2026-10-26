@@ -207,7 +207,7 @@ func test_fuoco_della_fossa() -> void:
 		top = minf(top, ParticleFx.at(pa[0], pa[1]).y)
 	runner.check(top > 640.0 - 30.0 * 5.0 and top < 640.0 - 30.0, "le fiamme salgono sopra la trappola, ma non troppo (%.0f)" % top)
 	var off := ParticleFx.fire_wall(440, 840, 640, 30, 6200, 4000, 1500, cache)
-	runner.check((flames.call(off) as Array).is_empty() and off.any(func(pa): return pa[0].ramp[0] == "dark"), "spenta resta il fumo nero")
+	runner.check((flames.call(off) as Array).is_empty() and off.any(func(pa): return pa[0].get("ramp", [""])[0] == "dark"), "spenta resta il fumo nero")
 
 
 # Chi è preso dal fuoco lascia fuliggine
