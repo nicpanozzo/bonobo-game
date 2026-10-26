@@ -12,33 +12,53 @@ static func mover_position(m: Dictionary, t: float) -> Vector2:
 	var pts: Array = m.path
 	if pts.size() < 2:
 		return Vector2(pts[0].x, pts[0].y)
-	var route: Array = pts.duplicate()
-	if m.get("loop", false):
-		route.append(pts[0])
-	else:
-		for i in range(pts.size() - 2, -1, -1):
-			route.append(pts[i])
+	var r := _route(m)
+	var route: PackedVector2Array = r[0]
+	var lengths: PackedFloat64Array = r[1]
+	var total: float = r[2]
 	var segments := route.size() - 1
 	var pause: float = m.get("pauseMs", 0)
-	var lengths: Array[float] = []
-	var total := 0.0
-	for i in segments:
-		var d := Vector2(route[i + 1].x - route[i].x, route[i + 1].y - route[i].y).length()
-		lengths.append(d)
-		total += d
 	var period: float = m.periodMs
 	var travel := maxf(1.0, period - pause * segments)
 	var left := fposmod(t + float(m.get("offsetMs", 0)), period)
 	for i in segments:
-		var a := Vector2(route[i].x, route[i].y)
 		if left < pause:
-			return a
+			return route[i]
 		left -= pause
 		var seg_ms: float = travel * lengths[i] / total if total > 0 else travel / segments
 		if left < seg_ms:
-			return a.lerp(Vector2(route[i + 1].x, route[i + 1].y), left / seg_ms)
+			return route[i].lerp(route[i + 1], left / seg_ms)
 		left -= seg_ms
-	return Vector2(route[segments].x, route[segments].y)
+	return route[segments]
+
+
+# Il giro di una piattaforma (andata e ritorno, o ad anello) con la lunghezza di ogni tratto: [punti, lunghezze, totale].
+# Si calcola una volta per piattaforma (#83): rifarlo a ogni chiamata costava ~40 µs con i 36 punti delle tazze di
+# Padova, chiamate una quindicina di volte a frame. La chiave è la piattaforma stessa (is_same), i dati dell'arena non cambiano
+static var _routes: Array = [] # [[piattaforma, giro], ...]
+static func _route(m: Dictionary) -> Array:
+	for e in _routes:
+		if is_same(e[0], m):
+			return e[1]
+	var pts: Array = m.path
+	var route := PackedVector2Array()
+	for p in pts:
+		route.append(Vector2(p.x, p.y))
+	if m.get("loop", false):
+		route.append(route[0])
+	else:
+		for i in range(pts.size() - 2, -1, -1):
+			route.append(route[i])
+	var lengths := PackedFloat64Array()
+	var total := 0.0
+	for i in route.size() - 1:
+		lengths.append(route[i].distance_to(route[i + 1]))
+		total += lengths[i]
+	if _routes.size() >= 64: # arene cambiate tante volte: si riparte da capo
+		_routes.clear()
+	var r := [route, lengths, total]
+	_routes.append([m, r])
+	return r
 
 
 # Arena musicale (#423): come keyedPosition() in physics/elements.ts, tra le due chiavi [ms, x, y] a cavallo di t
