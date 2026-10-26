@@ -104,6 +104,20 @@ func test_fotogramma_d_impatto_con_la_hitbox() -> void:
 	runner.check(FighterPose.sprite_frame(rest, 260, spec) == 6, "e l'impatto resta all'accendersi della hitbox")
 
 
+func test_fotogrammi_attivi_finche_il_colpo_prende() -> void:
+	# #506: 10 fotogrammi, l'arco disegnato dal 2 al 5. I fotogrammi 2-5 riempiono activeMs, il recupero il resto
+	var heavy := {"frames": 10, "fps": 24, "loop": false, "hitFrame": 2, "activeEnd": 5}
+	var spec := {"startupMs": 260, "activeMs": 120, "cooldownMs": 750}
+	runner.check(FighterPose.sprite_frame(heavy, 259, spec) == 1, "prima della hitbox, la carica")
+	runner.check(FighterPose.sprite_frame(heavy, 260, spec) == 2, "con la hitbox accesa: il primo con l'arco")
+	runner.check(FighterPose.sprite_frame(heavy, 349, spec) == 4, "a metà della finestra attiva: %d" % FighterPose.sprite_frame(heavy, 349, spec))
+	runner.check(FighterPose.sprite_frame(heavy, 379, spec) == 5, "fino all'ultimo ms attivo, l'ultimo con l'arco")
+	runner.check(FighterPose.sprite_frame(heavy, 380, spec) == 6, "spenta la hitbox, il recupero")
+	runner.check(FighterPose.sprite_frame(heavy, 749, spec) == 9 and FighterPose.sprite_frame(heavy, 2000, spec) == 9, "alla fine: ultimo")
+	var whole := {"frames": 4, "fps": 24, "loop": false, "hitFrame": 0, "activeEnd": 3}
+	runner.check(FighterPose.sprite_frame(whole, 600, spec) == 3, "se l'arco arriva in fondo, resta lì")
+
+
 func test_disconnesso_semitrasparente() -> void:
 	runner.check(FighterPose.away_alpha(_player({"away": true})) < 1.0, "away: trasparente")
 	runner.check(FighterPose.away_alpha(_player({"away": false})) == 1.0, "collegato: pieno")

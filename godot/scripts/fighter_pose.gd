@@ -119,6 +119,17 @@ static func sprite_frame(a: Dictionary, elapsed_ms: float, attack: Dictionary = 
 		# startFrame salta la posa di riposo degli scheletri: la sagoma cambia subito (#384 C1)
 		var first := mini(int(a.get("startFrame", 0)), hit)
 		return first + int(elapsed_ms / startup * (hit - first))
+	if a.has("activeEnd"):
+		# I fotogrammi da hitFrame ad activeEnd riempiono la finestra attiva (#506): la scia disegnata e il braccio
+		# teso si vedono finché il colpo prende, il resto dei fotogrammi va nel recupero
+		var end := clampi(int(a.activeEnd), hit, frames - 1)
+		var active: float = maxf(1.0, float(attack.get("activeMs", 0)))
+		if elapsed_ms < startup + active:
+			return mini(hit + int((elapsed_ms - startup) / active * (end - hit + 1)), end)
+		if end >= frames - 1:
+			return end
+		var tail := maxf(1.0, animation_ms(a, attack) - startup - active)
+		return mini(end + 1 + int((elapsed_ms - startup - active) / tail * (frames - end - 1)), frames - 1)
 	var rest := maxf(1.0, animation_ms(a, attack) - startup)
 	return mini(hit + int((elapsed_ms - startup) / rest * (frames - hit)), frames - 1)
 

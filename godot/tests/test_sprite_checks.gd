@@ -108,8 +108,10 @@ func test_il_colpo_arriva_nella_zona() -> void:
 			var spec := FighterPose.attack_spec(game, look[1], state)
 			if spec.is_empty():
 				continue
-			# Il fotogramma d'impatto, o l'unica posa di chi ne ha una sola
+			# Il fotogramma d'impatto, o l'unica posa di chi ne ha una sola; con activeEnd (#506) tutti quelli mostrati
+			# mentre il colpo prende: conta il più lontano, come in tools/sprite/zone_dei_colpi.py
 			var hit := int(a.get("hitFrame", int(a.frames) - 1))
+			var last := int(a.get("activeEnd", hit))
 			var img := _frame(sprite, state, hit)
 			# La zona come attackBox() in attacks.ts, guardando a destra, rispetto ai piedi, in pixel del PNG
 			var x0 := (float(spec.get("boxX", fw / 2.0))) / scale + float(sprite.frameWidth) / 2.0
@@ -117,16 +119,22 @@ func test_il_colpo_arriva_nella_zona() -> void:
 			var zone := Rect2i(roundi(x0), roundi(y0), roundi(float(spec.range) / scale), roundi(float(spec.height) / scale))
 			zone = zone.intersection(Rect2i(0, 0, img.get_width(), img.get_height()))
 			var inside := 0
-			for y in range(zone.position.y, zone.end.y, 2):
-				for x in range(zone.position.x, zone.end.x, 2):
-					inside += int(_solid(img, x, y))
-			runner.check(inside >= 4, "%s, %s: nel fotogramma %d niente del disegno nella zona del colpo %s" % [look[0], state, hit, zone])
+			for f in range(hit, last + 1):
+				var shown := _frame(sprite, state, f)
+				for y in range(zone.position.y, zone.end.y, 2):
+					for x in range(zone.position.x, zone.end.x, 2):
+						inside += int(_solid(shown, x, y))
+			runner.check(inside >= 4, "%s, %s: nei fotogrammi %d-%d niente del disegno nella zona del colpo %s" % [look[0], state, hit, last, zone])
 			if look[0] != look[1]:
 				continue # le skin usano le zone del disegno base: cambiano solo l'aspetto
 			# La zona intera, anche fuori dal fotogramma: il bordo è quello che la fisica usa
 			var full := Rect2(x0, y0, float(spec.range) / scale, float(spec.height) / scale)
 			var up: bool = state in UP
 			var tip := _tip(img, Rect2i(full), up)
+			for f in range(hit + 1, last + 1):
+				var t := _tip(_frame(sprite, state, f), Rect2i(full), up)
+				if t >= 0:
+					tip = t if tip < 0 else (mini(tip, t) if up else maxi(tip, t))
 			# di quanto la zona va oltre la punta, in pixel di mondo: poco oltre va bene, tanto è colpire nel vuoto
 			var gap := (float(tip) - full.position.y if up else full.end.x - float(tip)) * scale
 			runner.check(tip >= 0 and gap >= -TIP_TOLERANCE and gap <= 2 * TIP_TOLERANCE,

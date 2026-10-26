@@ -88,6 +88,9 @@ function folderSprite(id: string, sprite: SpriteFolderSpec): SpriteFolderSpec {
     if (a.hitFrame !== undefined && (a.hitFrame < 0 || a.hitFrame >= frames)) {
       spriteErrors.push(`${id}: hitFrame ${a.hitFrame} di "${state}" è fuori dai ${frames} fotogrammi di public/${path} (si conta da 0)`);
     }
+    if (a.activeEnd !== undefined && (a.hitFrame === undefined || a.activeEnd < a.hitFrame || a.activeEnd >= frames)) {
+      spriteErrors.push(`${id}: activeEnd ${a.activeEnd} di "${state}" va da hitFrame (${a.hitFrame ?? "manca"}) a ${frames - 1}, l'ultimo fotogramma di public/${path}`);
+    }
     animations[state] = { ...a, frames };
     spriteFiles.push(path);
   }
