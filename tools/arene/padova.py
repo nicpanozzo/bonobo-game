@@ -2134,7 +2134,8 @@ def ring_statue(t, x, base, s, rng, haze):
 CANAL_OVAL = (960, 575, 1210, 125)  # dietro l'isola la sponda di là sta a y 450, davanti la ringhiera a 700
 
 
-PARK_FAR = (88, 112, 64)  # il prato del parco oltre il canale, prima della foschia (#378)
+PARK_FAR = (76, 102, 57)  # il prato del parco oltre il canale: lo stesso verde dell'erba vicina (paint_grass, #378)
+PARK_HAZE = 0.05  # appena velato: Riccardo lo voleva dello stesso colore del prato in primo piano
 WALK = 30  # il vialetto lungo il canale, fuori dall'ovale; oltre c'è il prato del Prato (#378)
 GRASS, GRASS_D, GRASS_L = (86, 106, 66), (62, 80, 50), (112, 134, 82)
 GRAVEL = (182, 172, 150)
@@ -2180,13 +2181,12 @@ def ansa(name):
     # strisce del taglio sempre più strette verso l'orizzonte, le ombre a chiazze degli alberi, qualche cespuglio
     # e la grana, senza i fili d'erba che da lì non si vedono
     frng = random.Random(3792)
-    q.fill(far_m, far(PARK_FAR + (255,), 0.2)[:3])
-    q.fill(q.intersect(q.soften(q.poly(q.mask(), [(x0, y0), (x0 + w, y0), (x0 + w, 432), (x0, 432)]), 6), far_m), far((150, 170, 160, 255), 0.4)[:3], 0.35)
+    q.fill(far_m, far(PARK_FAR + (255,), PARK_HAZE)[:3])
     yy, k = 408.0, 0
     while yy < 470:
         hh = 2.0 + (yy - 408) * 0.09
         if k % 2:
-            q.fill(q.intersect(q.poly(q.mask(), [(x0, yy), (x0 + w, yy), (x0 + w, yy + hh), (x0, yy + hh)]), far_m), far((106, 132, 76, 255), 0.22)[:3], 0.45)
+            q.fill(q.intersect(q.poly(q.mask(), [(x0, yy), (x0 + w, yy), (x0 + w, yy + hh), (x0, yy + hh)]), far_m), far((100, 128, 70, 255), PARK_HAZE)[:3], 0.45)
         yy += hh
         k += 1
     shade_m = q.mask()
@@ -2194,17 +2194,17 @@ def ansa(name):
         sx, sy = frng.uniform(x0, x0 + w), frng.uniform(416, 452)
         sw = frng.uniform(26, 70) * (0.6 + (sy - 416) / 60)
         q.ellipse(shade_m, sx - sw, sy - sw * 0.06, sx + sw, sy + sw * 0.06)
-    q.fill(q.intersect(q.soften(shade_m, 2.5), far_m), far((52, 72, 44, 255), 0.22)[:3], 0.4)
+    q.fill(q.intersect(q.soften(shade_m, 2.5), far_m), far((50, 72, 40, 255), PARK_HAZE)[:3], 0.4)
     bush = q.mask()
     for _ in range(26):
         bx, by = frng.uniform(x0, x0 + w), frng.uniform(424, 450)
         br = 2.5 + (by - 424) * 0.12
         q.ellipse(bush, bx - br * 1.6, by - br, bx + br * 1.6, by + br * 0.4)
     bush = q.intersect(bush, far_m)
-    q.fill(q.shift(q.soften(bush, 0.8), 1, 1.2), far((40, 56, 36, 255), 0.25)[:3], 0.5)
-    q.fill(bush, far((70, 98, 56, 255), 0.25)[:3])
-    q.fill(q.inner_shadow(bush, -1, -1, 0.6), far((50, 72, 44, 255), 0.25)[:3], 0.8)
-    q.fill(q.grain(far_m, 0.4, 3791, 1.6), far((112, 136, 80, 255), 0.22)[:3], 0.25)
+    q.fill(q.shift(q.soften(bush, 0.8), 1, 1.2), far((40, 56, 36, 255), PARK_HAZE)[:3], 0.5)
+    q.fill(bush, far((64, 92, 50, 255), PARK_HAZE)[:3])
+    q.fill(q.inner_shadow(bush, -1, -1, 0.6), far((46, 66, 40, 255), PARK_HAZE)[:3], 0.8)
+    q.fill(q.grain(far_m, 0.4, 3791, 1.6), far((112, 140, 78, 255), PARK_HAZE)[:3], 0.25)
     fade_far = Image.new("L", q.size, 0)
     for py in range(q.size[1]):
         y = y0 + py / q.k
@@ -3073,7 +3073,7 @@ def bridges_and_statues(name):
 def lawn(t):
     base = 560
     rng = rand(11)
-    t.rect(-300, base - 50, 2200, base - 18, fill=far(PARK_FAR + (255,), 0.2))  # il prato del parco: lo stesso dell'ansa, che ci sfuma sopra (#378)
+    t.rect(-300, base - 50, 2200, base - 18, fill=far(PARK_FAR + (255,), PARK_HAZE))  # il prato del parco: lo stesso dell'ansa, che ci sfuma sopra (#378)
     # sotto il prato il canale dell'isola (#378, idea di Riccardo): la sponda di pietra e poi l'acqua stagnante che
     # va fino al canale davanti (life.outerWater), più chiara e velata perché più lontana
     t.rect(-300, base - 18, 2200, base - 12, fill=(176, 170, 156, 255))
