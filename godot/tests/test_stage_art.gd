@@ -188,3 +188,20 @@ func test_materiale_trasparente_non_si_disegna() -> void:
 	runner.check(WorldView.texture_is_clear("padova", "vuoto.png"), "vuoto.png è tutto trasparente")
 	runner.check(not WorldView.texture_is_clear("padova", "bordo.png"), "il bordo si vede")
 	runner.check(not WorldView.texture_is_clear("padova", "non-esiste.png"), "un file che manca non conta")
+
+
+func test_piattaforma_mobile_lungo_il_percorso() -> void:
+	# come moverPosition() in physics/elements.ts; il giro si tiene in memoria per piattaforma (#83)
+	var avanti := {"path": [{"x": 0, "y": 0}, {"x": 100, "y": 0}], "periodMs": 2000, "width": 50}
+	runner.check(StageMotion.mover_position(avanti, 500) == Vector2(50, 0), "andata a metà: %s" % StageMotion.mover_position(avanti, 500))
+	runner.check(StageMotion.mover_position(avanti, 1500) == Vector2(50, 0), "ritorno a metà")
+	runner.check(StageMotion.mover_position(avanti, 1000) == Vector2(100, 0), "in fondo")
+	var anello := {"path": [{"x": 0, "y": 0}, {"x": 100, "y": 0}, {"x": 100, "y": 100}], "periodMs": 3000, "width": 50, "loop": true}
+	var giro := 200.0 + 100.0 * sqrt(2.0) # si torna al primo punto: il terzo tratto è la diagonale
+	var all_angolo := StageMotion.mover_position(anello, 3000.0 * 200.0 / giro)
+	runner.check(all_angolo.is_equal_approx(Vector2(100, 100)), "ad anello, al terzo punto: %s" % all_angolo)
+	runner.check(StageMotion.mover_position(anello, 2999.0).distance_to(Vector2.ZERO) < 1.0, "e poi torna al primo")
+	var ferma := {"path": [{"x": 0, "y": 0}, {"x": 100, "y": 0}], "periodMs": 2000, "pauseMs": 500, "width": 50}
+	runner.check(StageMotion.mover_position(ferma, 300) == Vector2.ZERO, "la pausa all'inizio")
+	runner.check(StageMotion.mover_position(ferma, 1000) == Vector2(100, 0), "dopo pausa e andata")
+	runner.check(StageMotion.mover_position(avanti, 500) == Vector2(50, 0), "ognuna col suo giro, anche dopo le altre")
