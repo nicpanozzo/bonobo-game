@@ -35,6 +35,7 @@ var _dizzy := {} # id -> fino a quando (ms) girano le stelline dopo uno schianto
 var _burns := {} # id -> ms in cui è stato preso dal fuoco: la scia di fuliggine (#470 fase 4)
 var _ball_trail_ms := 0 # l'ultimo sbuffo di fumo dietro le palle di mortadella (#470 fase 4)
 var _fire_caches := {} # indice della trappola -> le particelle già fatte del suo fuoco (ParticleFx.fire_wall)
+var _ko_specials: Array = [] # KO stella e sullo schermo in corso: [{ kind, at, ghost (copia del giocatore), from_x, col, hit }]
 var _respawn_clouds := {} # id -> { at, x, y, col }: la nuvoletta della rinascita (#470), da quando scende e dove arriva
 var _clouds: Array = [] # [{ x, y, dir, age, damage }] nuvole soffiate col bong (#302)
 var _poison_clouds: Array = [] # [{ x, y, age }] nubi di veleno del fungo di Teemo che scoppia (#419)
@@ -125,6 +126,7 @@ const ParticleView := preload("res://scripts/particle_view.gd")
 const TerrainFx := preload("res://scripts/terrain_fx.gd") # la polvere presa dalla superficie sotto ai piedi
 const FighterFx := preload("res://scripts/fighter_fx.gd") # l'accento del lottatore negli effetti di movimento
 const TimeWarp := preload("res://scripts/time_warp.gd") # rallentatore solo grafico (#470 passo 2b)
+const KoSpecial := preload("res://scripts/ko_special.gd") # KO stella e KO sullo schermo (#470 fase 4)
 
 
 # Il livello della scritta GAME!: chiede a world_view di disegnarci sopra (sopra il negativo e le particelle)
@@ -301,6 +303,9 @@ func reset() -> void:
 	_dizzy = {}
 	_burns = {}
 	_fire_caches = {}
+	for k in _ko_specials:
+		_drop_ghost(k)
+	_ko_specials = []
 	_warp = {}
 	_finish_candidate = {}
 	_game_text = {}
@@ -912,11 +917,15 @@ func on_event(e: Dictionary) -> void:
 			var p: Variant = buffer.sample(e.id, Time.get_ticks_msec())
 			var col: Color = Access.color(p.color) if p != null else Color(1, 0.4, 0.3)
 			var ko_at := Vector2(clampf(e.x, view_rect.position.x, view_rect.end.x), clampf(e.y, view_rect.position.y, view_rect.end.y))
-			if effects and _particles: # #470: una colonna di fuoco del suo colore che entra dal punto d'uscita
+			var special: String = KoSpecial.pick(str(e.id), float(e.x), float(e.y), int(e.get("stocksLeft", 0)), stage.get("blastZone", {}),
+				_is_final_ko(e), Access.calm, game.effects) if effects and p != null and stage.get("blastZone") is Dictionary else ""
+			if special != "": # #470 fase 4: invece della colonna, ogni tanto la stella o lo schermo
+				_start_ko_special(special, e, p, col)
+			elif effects and _particles: # #470: una colonna di fuoco del suo colore che entra dal punto d'uscita
 				ko_at = _ko_column(e, col)
 			if effects and _is_final_ko(e): # #470: l'ultimo KO al rallentatore, con lo zoom dove è uscito
 				_warp = TimeWarp.game(Time.get_ticks_msec(), ko_at, game.effects)
-			else:
+			elif special == "": # la stella e lo schermo non esplodono al bordo
 				_sparks.append({"x": clampf(e.x, 0, stage_width()), "y": clampf(e.y, 0, game.world.height), "age": 0.0, "size": 90.0, "color": Color(1, 0.4, 0.3)})
 				_beams.append({"x": e.x, "y": e.y, "age": 0.0, "color": col})
 			# La nuvoletta della rinascita (#470) parte in tempo per arrivare quando si ricompare; non nei percorsi
@@ -1271,6 +1280,109 @@ func _draw_fire_pit(h: Dictionary, r: Rect2, t: float, index: int) -> void:
 	_particles.set_live("fuoco%d" % index, ParticleFx.fire_wall(r.position.x, r.end.x, r.end.y, r.size.y, t, t - phase, active, _fire_caches[index]))
 
 
+# KO stella e KO sullo schermo (#470 fase 4): si disegna una copia del giocatore com'era quando è uscito, con un id
+# suo (le animazioni non si mescolano con chi intanto rinasce) e la stessa variante di colore
+func _start_ko_special(kind: String, e: Dictionary, p: Dictionary, col: Color) -> void:
+	var ghost: Dictionary = p.duplicate()
+	ghost.id = "%s~ko%d" % [e.id, Time.get_ticks_msec()]
+	ghost.hitstun = true
+	ghost.onGround = false
+	ghost.attack = null
+	ghost.respawning = false
+	ghost.invulnerable = false
+	ghost.away = false
+	ghost.ko_variant = _variants.get(e.id, 0) # _variants si rifà a ogni snapshot: la variante la tiene la copia
+	_ko_specials.append({"kind": kind, "at": Time.get_ticks_msec(), "ghost": ghost, "from_x": float(e.x), "col": col, "hit": false})
+
+
+func _drop_ghost(k: Dictionary) -> void:
+	var gid: String = k.ghost.id
+	_anims.erase(gid)
+	_rig_motion.erase(gid)
+
+
+# Toglie quelli finiti; quando lo schermo viene colpito, una scossa
+func _age_ko_specials() -> void:
+	var now := Time.get_ticks_msec()
+	var fx: Dictionary = game.effects
+	var kept: Array = []
+	for k in _ko_specials:
+		var ms := float(now - int(k.at))
+		if ms >= KoSpecial.duration(k.kind, fx):
+			_drop_ghost(k)
+			continue
+		if k.kind == "screen" and not k.hit and ms >= float(fx.koScreenDelayMs) + float(fx.koScreenApproachMs):
+			k.hit = true
+			_shake = maxf(_shake, 8.0)
+		if k.kind == "star" and not k.get("twinkled", false) and ms >= float(fx.koStarDelayMs) + float(fx.koStarTravelMs) and _particles:
+			k.twinkled = true # il brillio bianco con l'alone, sopra il cielo
+			var s := KoSpecial.star_at(ms, view_rect, float(k.from_x), fx)
+			if not s.is_empty():
+				_particles.mark({"kind": "sparkle", "x": s.pos.x, "y": s.pos.y, "size": view_rect.size.y * 0.05, "life_ms": float(fx.koStarTwinkleMs), "spin": 1.2})
+		kept.append(k)
+	_ko_specials = kept
+
+
+# Il lottatore copiato, centrato in at, alto h pixel di mondo, girato di rot e schiacciato di sx, sy
+func _draw_ghost(ghost: Dictionary, at: Vector2, h: float, rot: float, sx := 1.0, sy := 1.0) -> void:
+	var fh: float = game.fighter.height
+	var s := h / fh
+	var center := Vector2(float(ghost.x), float(ghost.y) - fh / 2.0)
+	var react := Transform2D(rot, Vector2(s * sx, s * sy), 0.0, at) * Transform2D(0.0, -center)
+	var character := _look(ghost)
+	if _textures.has(character.id):
+		_variants[ghost.id] = ghost.ko_variant
+		_draw_sprite(ghost, character, Time.get_ticks_msec(), react)
+		_variants.erase(ghost.id)
+	else:
+		draw_set_transform_matrix(react)
+		draw_rect(Rect2(center.x - float(game.fighter.width) / 2.0, center.y - fh / 2.0, float(game.fighter.width), fh), Access.color(ghost.color))
+		draw_set_transform(Vector2.ZERO)
+
+
+func _draw_star_kos() -> void:
+	var now := Time.get_ticks_msec()
+	for k in _ko_specials:
+		if k.kind != "star":
+			continue
+		var s := KoSpecial.star_at(float(now - int(k.at)), view_rect, float(k.from_x), game.effects)
+		if s.is_empty():
+			continue
+		if s.has("scale"):
+			_draw_ghost(k.ghost, s.pos, float(s.scale) * view_rect.size.y, float(s.rot))
+			continue
+		var r := view_rect.size.y * 0.075 * float(s.twinkle) # la stellina gialla col contorno, il brillio bianco lo fa particle_view
+		if r > 0.5:
+			draw_colored_polygon(KoSpecial.sparkle_points(s.pos, r + 3.0, float(s.spin), 0.24), Color("211c26"))
+			draw_colored_polygon(KoSpecial.sparkle_points(s.pos, r, float(s.spin)), Color("ffd447"))
+
+
+func _draw_screen_kos() -> void:
+	var now := Time.get_ticks_msec()
+	for k in _ko_specials:
+		if k.kind != "screen":
+			continue
+		var s := KoSpecial.screen_at(float(now - int(k.at)), view_rect, game.effects)
+		if s.is_empty():
+			continue
+		var h := float(s.scale) * view_rect.size.y
+		var pos: Vector2 = s.pos
+		if float(s.smear) > 0.0: # la striscia sul vetro mentre scivola
+			var top := view_rect.position.y + view_rect.size.y * 0.55 - h * 0.3
+			draw_rect(Rect2(pos.x - h * 0.2, top, h * 0.4, pos.y - top), Color(1, 1, 1, 0.22 * float(s.smear)))
+		_draw_ghost(k.ghost, pos, h, float(s.rot), float(s.sx), float(s.sy))
+		if s.hands: # le mani sul vetro, del suo colore
+			var col: Color = k.col
+			col.a = float(s.alpha)
+			for side in [-1.0, 1.0]:
+				var c := pos + Vector2(side * h * 0.2, h * 0.12)
+				draw_circle(c, h * 0.07, Color(0.13, 0.11, 0.15, float(s.alpha)))
+				draw_circle(c, h * 0.058, col)
+				draw_circle(c + Vector2(-h * 0.012, -h * 0.014), h * 0.026, Color(col.lightened(0.45), float(s.alpha)))
+		if float(s.flash) > 0.0:
+			draw_rect(view_rect.grow(40), Color(1, 1, 1, 0.55 * float(s.flash)))
+
+
 # La nuvoletta della rinascita (#470): mentre si è fuori scende dall'alto fino al punto di ritorno, poi sta sotto i
 # piedi di chi scende e si dissolve in uno sbuffo del suo colore quando tocca terra, risale (salto) o non è più
 # invulnerabile. Solo disegno: la fisica non la vede
@@ -1366,6 +1478,8 @@ func _process(delta: float) -> void:
 		_moment.queue_redraw()
 	if effects and _particles and not _stations.is_empty(): # #470: il filo di fumo dietro le palle di mortadella
 		_feed_ball_trails()
+	if not _ko_specials.is_empty():
+		_age_ko_specials()
 	_sparks = _aged(_sparks, dt_ms, fx.hitSparkMs)
 	_dust = _aged(_dust, dt_ms, fx.dustMs)
 	_beams = _aged(_beams, dt_ms, fx.koBeamMs)
@@ -1438,6 +1552,7 @@ func _draw() -> void:
 		far = l[1]
 	if not _life.is_empty():
 		_life.draw_band(self, far, 1.01, t_stage, view_center, rain, _ambient)
+	_draw_star_kos() # il KO stella vola nello sfondo, dietro al palco (#470 fase 4)
 	_draw_props(_props_back) # statue e decorazioni dietro al palco (#237): le lastre che reggono ci stanno sopra
 	if night > 0.0:
 		for entry in _light_props: # i vetri accesi delle decorazioni (#288)
@@ -1558,6 +1673,7 @@ func _draw() -> void:
 	_wonder.draw_front(self, t_stage, view_rect, _pads_pressed) # coriandoli e scritta della Meraviglia (#423)
 	if _flash > 0:
 		draw_rect(view_rect.grow(40), Color(1, 1, 1, 0.45 * _flash / float(game.effects.flashMs)))
+	_draw_screen_kos() # il KO sullo schermo, davanti a tutto (#470 fase 4)
 
 
 # Raggio del KO: parte a punta dal bordo dello schermo dove si è usciti e si allarga verso il centro.
