@@ -951,7 +951,16 @@
     "ballTrailEveryMs": 30,
     "boomGlowMs": 450,
     "burnTrailMs": 800,
-    "burnEveryMs": 30
+    "burnEveryMs": 30,
+    "koStarChance": 0.3,
+    "koScreenChance": 0.1,
+    "koStarDelayMs": 150,
+    "koStarTravelMs": 900,
+    "koStarTwinkleMs": 520,
+    "koScreenDelayMs": 300,
+    "koScreenApproachMs": 220,
+    "koScreenStickMs": 650,
+    "koScreenSlideMs": 900
   },
   "items": {
     "banana": {

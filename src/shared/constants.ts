@@ -513,6 +513,16 @@ export const EFFECTS = {
   boomGlowMs: 450, // bagliore arancio dell'esplosione della mortadella, ms
   burnTrailMs: 800, // per quanto chi è preso dal fuoco lascia la scia di fuliggine, ms
   burnEveryMs: 30, // uno sbuffo di fuliggine ogni tanti ms
+  // KO stella e KO sullo schermo (#470 fase 4), solo per chi esce dall'alto e mai all'ultimo KO, come in Smash
+  koStarChance: 0.3, // probabilità del KO stella (0-1)
+  koScreenChance: 0.1, // probabilità del KO sullo schermo (0-1), mai con la modalità calma
+  koStarDelayMs: 150, // dopo il KO, prima che lo si veda piccolo nello sfondo, ms
+  koStarTravelMs: 900, // quanto vola nello sfondo rimpicciolendo, ms
+  koStarTwinkleMs: 520, // la stellina finale, ms
+  koScreenDelayMs: 300, // dopo il KO, prima che torni verso lo schermo, ms
+  koScreenApproachMs: 220, // quanto ci mette ad arrivare enorme contro il vetro, ms
+  koScreenStickMs: 650, // quanto resta spiaccicato, ms
+  koScreenSlideMs: 900, // quanto ci mette a scivolare giù, ms
 };
 
 // Bot del server (#20, src/server/bot.ts): quanto è svelto e quando attacca
