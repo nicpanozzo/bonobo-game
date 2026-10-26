@@ -945,7 +945,13 @@
     "steamFromPercent": 60,
     "steamFullPercent": 150,
     "itemSparkleMs": 500,
-    "itemPickMs": 450
+    "itemPickMs": 450,
+    "cannonRecoilPx": 14,
+    "cannonRecoilMs": 450,
+    "ballTrailEveryMs": 30,
+    "boomGlowMs": 450,
+    "burnTrailMs": 800,
+    "burnEveryMs": 30
   },
   "items": {
     "banana": {

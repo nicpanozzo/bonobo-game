@@ -17,6 +17,7 @@ var balls: Array = [] # snapshot.cannonballs
 var game: Dictionary = {}
 var _balls_ms := 0 # quando sono arrivate le palle: tra uno snapshot e l'altro avanzano da sole
 var _k: Dictionary = {} # i numeri di STATION
+var _fired := {} # indice della bombarda -> ms dell'ultimo sparo: la canna rincula (#470 fase 4)
 
 
 func setup(spec: Dictionary, game_data: Dictionary) -> void:
@@ -29,6 +30,43 @@ func setup(spec: Dictionary, game_data: Dictionary) -> void:
 func clear() -> void:
 	states = []
 	balls = []
+	_fired = {}
+
+
+# La bombarda index ha sparato adesso (evento station "fire"): la canna torna indietro e poi al suo posto
+func on_fire(index: int, now: int) -> void:
+	_fired[index] = now
+
+
+# Quanto è indietro la canna adesso: scatta in 50 ms, poi torna in cannonRecoilMs
+func recoil(index: int, now: int) -> float:
+	if not _fired.has(index):
+		return 0.0
+	var fx: Dictionary = game.get("effects", {})
+	var a := float(now - int(_fired[index]))
+	var back := clampf(a / 50.0, 0.0, 1.0) if a < 50.0 else maxf(0.0, 1.0 - (a - 50.0) / float(fx.get("cannonRecoilMs", 450)))
+	return back * float(fx.get("cannonRecoilPx", 14))
+
+
+# Verso dove punta la canna della postazione index, dalla bocca at (lo sparo arriva con la sua posizione)
+func muzzle_dir(index: int, at: Vector2) -> Vector2:
+	if index < 0 or index >= stations.size():
+		return Vector2.RIGHT
+	var s: Dictionary = stations[index]
+	var pivot := Vector2(float(s.x) + float(s.width) / 2.0, float(s.y) - float(_k.get("pivotPx", 46)))
+	var d := (at - pivot).normalized()
+	return d if d != Vector2.ZERO else Vector2(float(s.get("dir", 1)), 0.0)
+
+
+# Dove sono adesso le palle in volo: tra uno snapshot e l'altro avanzano da sole. [[centro, velocità], ...]
+func ball_centers(now: int) -> Array:
+	var dt := minf((now - _balls_ms) / 1000.0, 0.1)
+	var g := float(_k.get("ballGravityPxS2", 1300))
+	var out: Array = []
+	for b: Dictionary in balls:
+		var v := Vector2(float(b.vx), float(b.vy))
+		out.append([Vector2(float(b.x), float(b.y)) + v * dt + Vector2(0, 0.5 * g * dt * dt), v])
+	return out
 
 
 func on_snapshot(snap: Dictionary, now: int) -> void:
@@ -69,7 +107,7 @@ func draw(canvas: CanvasItem, t: float) -> void:
 		var used: bool = st.get("user") != null
 		canvas.draw_rect(Rect2(float(s.x), float(s.y) - 6.0, float(s.width), 6.0), Color(tint.lightened(0.3 if used else 0.0), alpha))
 		if s.kind == "bombarda":
-			_draw_cannon(canvas, s, st, t, alpha)
+			_draw_cannon(canvas, s, st, t, alpha, recoil(i, Time.get_ticks_msec()))
 		elif s.kind == "gru":
 			_draw_crane(canvas, s, st, t, alpha, tint)
 		else:
@@ -81,12 +119,12 @@ static func alpha_at(s: Dictionary, t: float) -> float:
 	return StageMotion.piece_alpha(s, t)
 
 
-func _draw_cannon(canvas: CanvasItem, s: Dictionary, st: Dictionary, t: float, alpha: float) -> void:
+func _draw_cannon(canvas: CanvasItem, s: Dictionary, st: Dictionary, t: float, alpha: float, back := 0.0) -> void:
 	var lo := float(s.get("aimMinDeg", _k.get("aimMinDeg", 5)))
 	var hi := float(s.get("aimMaxDeg", _k.get("aimMaxDeg", 60)))
 	var b := barrel(s, float(st.get("aim", (lo + hi) / 2.0)), float(_k.get("pivotPx", 46)))
-	var pivot: Vector2 = b[0]
 	var dir: Vector2 = b[1]
+	var pivot: Vector2 = b[0] - dir * back # il rinculo dello sparo (#470 fase 4): la canna scivola indietro sul carrello
 	var length := float(_k.get("barrelPx", 56))
 	# Pronta a sparare: la bocca è accesa
 	var can_fire := t >= float(st.get("readyAt", 0)) and int(st.get("ammo", 0)) > 0
@@ -94,9 +132,10 @@ func _draw_cannon(canvas: CanvasItem, s: Dictionary, st: Dictionary, t: float, a
 	canvas.draw_line(pivot + dir * (length - 6.0), pivot + dir * length, Color(BRONZE.lightened(0.3), alpha), 26.0)
 	canvas.draw_circle(pivot + dir * length, 7.0, Color(Color("ffcf5a") if can_fire else INK, alpha))
 	# Il carrello con la ruota
-	canvas.draw_rect(Rect2(pivot.x - 22.0, pivot.y, 44.0, float(s.y) - 6.0 - pivot.y), Color(WOOD, alpha))
-	canvas.draw_circle(Vector2(pivot.x, float(s.y) - 16.0), 14.0, Color(INK, alpha))
-	canvas.draw_circle(Vector2(pivot.x, float(s.y) - 16.0), 8.0, Color(WOOD.lightened(0.2), alpha))
+	var base: Vector2 = b[0] # il carrello resta fermo
+	canvas.draw_rect(Rect2(base.x - 22.0, base.y, 44.0, float(s.y) - 6.0 - base.y), Color(WOOD, alpha))
+	canvas.draw_circle(Vector2(base.x, float(s.y) - 16.0), 14.0, Color(INK, alpha))
+	canvas.draw_circle(Vector2(base.x, float(s.y) - 16.0), 8.0, Color(WOOD.lightened(0.2), alpha))
 	# Le palle dentro: piene quelle che ci sono, vuote le altre
 	var full := int(s.get("ammoMax", _k.get("ammoMax", 6)))
 	var have := int(st.get("ammo", 0))

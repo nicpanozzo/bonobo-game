@@ -32,6 +32,9 @@ var _neg_overlay: ColorRect # la scena in negativo nel colpo che chiude la parti
 var _moment: Node2D # sopra a tutto: la scritta GAME!
 var _dodges := {} # id -> ms d'inizio della schivata: per la sagoma chiara (#470 passo 3)
 var _dizzy := {} # id -> fino a quando (ms) girano le stelline dopo uno schianto a terra (#470 passo 3)
+var _burns := {} # id -> ms in cui è stato preso dal fuoco: la scia di fuliggine (#470 fase 4)
+var _ball_trail_ms := 0 # l'ultimo sbuffo di fumo dietro le palle di mortadella (#470 fase 4)
+var _fire_caches := {} # indice della trappola -> le particelle già fatte del suo fuoco (ParticleFx.fire_wall)
 var _respawn_clouds := {} # id -> { at, x, y, col }: la nuvoletta della rinascita (#470), da quando scende e dove arriva
 var _clouds: Array = [] # [{ x, y, dir, age, damage }] nuvole soffiate col bong (#302)
 var _poison_clouds: Array = [] # [{ x, y, age }] nubi di veleno del fungo di Teemo che scoppia (#419)
@@ -296,6 +299,8 @@ func reset() -> void:
 	_respawn_clouds = {}
 	_dodges = {}
 	_dizzy = {}
+	_burns = {}
+	_fire_caches = {}
 	_warp = {}
 	_finish_candidate = {}
 	_game_text = {}
@@ -761,19 +766,29 @@ func on_event(e: Dictionary) -> void:
 		"tetris":
 			# Una riga del Tetris che esplode (#427): lampo lungo la riga e scossa
 			if e.phase == "line":
-				_arcade.on_line(e, Time.get_ticks_msec())
+				_arcade.on_line(e, Time.get_ticks_msec(), effects) # #470: con gli effetti, la luce arcade
 				_shake = maxf(_shake, 10.0)
 		"station":
 			# Postazioni (#433): la bombarda spara con una scossa, la palla di mortadella si schianta in uno sbuffo rosa
 			if e.phase == "fire":
 				_shake = maxf(_shake, 6.0)
+				_stations.on_fire(int(e.index), Time.get_ticks_msec()) # #470: la canna rincula
+				if effects and _particles: # #470: nuvolone di polvere da sparo e anello di fumo
+					_cannon_smoke(e)
 			elif e.phase == "boom":
-				_sparks.append({"x": e.x, "y": e.y, "age": 0.0, "size": 40.0, "color": Color("f2a7b0")})
+				if effects and _particles: # #470: esplosione vera, con le fette di mortadella che ricadono
+					_mortadella_boom(e)
+				else:
+					_sparks.append({"x": e.x, "y": e.y, "age": 0.0, "size": 40.0, "color": Color("f2a7b0")})
 				_shake = maxf(_shake, 5.0)
 		"hazard":
 			# Trappola (#14): scintilla arancione e scossa come un colpo forte
 			_sparks.append({"x": e.x, "y": e.y, "age": 0.0, "size": 30.0, "color": Color(1, 0.55, 0.15)})
 			_shake = maxf(_shake, minf(game.effects.shakeMax, float(e.knockback) * game.effects.shakePerKnockback))
+			var traps: Array = stage.get("hazards") if stage.get("hazards") is Array else []
+			var hi := int(e.get("index", -1))
+			if hi >= 0 and hi < traps.size() and traps[hi].get("kind", "") == "fuoco": # #470: chi è preso dal fuoco vola via bruciacchiato
+				_burns[e.id] = Time.get_ticks_msec()
 		"land":
 			_land_dust(e)
 			_bounces[e.id] = MotionFeel.start(game.effects, "land", Time.get_ticks_msec())
@@ -1198,6 +1213,64 @@ func _ko_column(e: Dictionary, col: Color) -> Vector2:
 	return from
 
 
+# Lo sparo della bombarda (#470 fase 4, "Nuvolone di polvere"): un lampo alla bocca, il fumo e un anello di fumo che
+# parte lungo la canna
+func _cannon_smoke(e: Dictionary) -> void:
+	var at := Vector2(e.x, e.y)
+	var dir: Vector2 = _stations.muzzle_dir(int(e.index), at)
+	_particles.add(ParticleFx.cannon_smoke(_next_fx_seed(), at.x, at.y, dir))
+	_particles.mark({"kind": "glow", "x": at.x, "y": at.y, "size": 60.0, "col": Color(1, 0.95, 0.8), "alpha": 1.0, "life_ms": 120.0})
+	var to := at + dir * 72.0
+	_particles.mark({"kind": "ring", "x": at.x, "y": at.y, "x1": to.x, "y1": to.y, "r0": 12.0, "r1": 40.0, "squash": 0.4,
+		"angle": dir.angle() + PI / 2.0, "width": 8.0, "col": Color("f2eff6"), "life_ms": 650.0})
+
+
+# La palla di mortadella che si schianta (#470 fase 4, "Esplosione vera"): fuoco, fumo nero, schegge, onda d'urto e le
+# fette che volano e restano a terra. Lontano da terra niente polvere sollevata
+func _mortadella_boom(e: Dictionary) -> void:
+	var x: float = e.x
+	var y: float = e.y
+	var floor_y := _surface_below(x, y - 10.0)
+	var near := floor_y - y < 120.0
+	_particles.add(ParticleFx.explosion_burst(_next_fx_seed(), x, y, floor_y if near else y + 400.0, near))
+	_particles.add(ParticleFx.mortadella_slices(_next_fx_seed(), x, y, 10, floor_y if near else INF))
+	_particles.mark({"kind": "glow", "x": x, "y": y, "size": 160.0, "col": Color(1, 1, 0.94), "alpha": 1.0, "life_ms": 70.0})
+	_particles.mark({"kind": "glow", "x": x, "y": y, "size": 200.0, "col": Color(1, 0.6, 0.25), "alpha": 0.8, "life_ms": float(game.effects.boomGlowMs)})
+	_particles.mark({"kind": "ring", "x": x, "y": y, "r0": 24.0, "r1": 180.0, "squash": 0.55, "width": 6.0, "col": Color("fff6d8"), "life_ms": 320.0})
+
+
+# Un filo di fumo dietro le palle di mortadella in volo, uno sbuffo ogni ballTrailEveryMs
+func _feed_ball_trails() -> void:
+	var now := Time.get_ticks_msec()
+	if now - _ball_trail_ms < int(game.effects.ballTrailEveryMs):
+		return
+	_ball_trail_ms = now
+	for b in _stations.ball_centers(now):
+		var v: Vector2 = b[1]
+		_particles.add([ParticleFx.smoke_puff(_next_fx_seed(), b[0].x, b[0].y, -v.x * 0.03, -v.y * 0.03, 0.2)])
+
+
+# Il fuoco della fossa (#470 fase 4, "Fiamme e fumo nero"): le bocchette che si scaldano prima di accendersi, il
+# bagliore in basso e le fiamme a particelle, calcolate dal tempo dell'arena come la fisica (ParticleFx.fire_wall)
+func _draw_fire_pit(h: Dictionary, r: Rect2, t: float, index: int) -> void:
+	var period: float = maxf(1.0, float(h.get("periodMs", 4000)))
+	var active: float = h.get("activeMs", period / 2.0)
+	var phase := fposmod(t + float(h.get("offsetMs", 0)), period)
+	var heat := 1.0 if phase < active else maxf(maxf(0.0, 1.0 - (phase - active) / 500.0), clampf(1.0 - (period - phase) / 450.0, 0.0, 1.0))
+	var n := maxi(1, int(r.size.x / 40.0))
+	for i in n:
+		var vx := r.position.x + (i + 0.5) * r.size.x / n - 12.0
+		draw_rect(Rect2(vx - 2.0, r.end.y - 10.0, 28.0, 10.0), Color("1c1410"))
+		draw_rect(Rect2(vx, r.end.y - 8.0, 24.0, 8.0), Color("5a2a1a").lerp(Color("ffb070"), heat))
+	if phase < active:
+		var glow := Color(1, 0.55, 0.2, 0.7)
+		draw_polygon(PackedVector2Array([Vector2(r.position.x, r.end.y), Vector2(r.end.x, r.end.y), Vector2(r.end.x, r.end.y - 50.0), Vector2(r.position.x, r.end.y - 50.0)]),
+			PackedColorArray([glow, glow, Color(glow, 0.0), Color(glow, 0.0)]))
+	if not _fire_caches.has(index):
+		_fire_caches[index] = {}
+	_particles.set_live("fuoco%d" % index, ParticleFx.fire_wall(r.position.x, r.end.x, r.end.y, r.size.y, t, t - phase, active, _fire_caches[index]))
+
+
 # La nuvoletta della rinascita (#470): mentre si è fuori scende dall'alto fino al punto di ritorno, poi sta sotto i
 # piedi di chi scende e si dissolve in uno sbuffo del suo colore quando tocca terra, risale (salto) o non è più
 # invulnerabile. Solo disegno: la fisica non la vede
@@ -1252,6 +1325,9 @@ func _feed_particles(id: String, p: Dictionary) -> void:
 	if heat > 0.0 and now - int(last.get("steam", 0)) >= ParticleFx.steam_every_ms(heat): # vapore a danno alto
 		last.steam = now
 		_particles.add([ParticleFx.steam_puff(_next_fx_seed(), p.x, float(p.y) - float(game.fighter.height) * 0.9, heat)])
+	if now - int(_burns.get(id, -100000)) < int(fx.burnTrailMs) and now - int(last.get("burn", 0)) >= int(fx.burnEveryMs):
+		last.burn = now # preso dal fuoco (#470 fase 4): fuliggine e braci mentre vola via
+		_particles.add(ParticleFx.burn_puff(_next_fx_seed(), p.x, float(p.y) - float(game.fighter.height) * 0.5))
 	var speed := Vector2(vx, vy).length()
 	var trail: float = fx.trailSpeed
 	if p.hitstun and not p.onGround and speed > trail and now - int(last.get("smoke", 0)) >= int(fx.smokeEveryMs):
@@ -1288,6 +1364,8 @@ func _process(delta: float) -> void:
 	_update_neg_overlay()
 	if _moment:
 		_moment.queue_redraw()
+	if effects and _particles and not _stations.is_empty(): # #470: il filo di fumo dietro le palle di mortadella
+		_feed_ball_trails()
 	_sparks = _aged(_sparks, dt_ms, fx.hitSparkMs)
 	_dust = _aged(_dust, dt_ms, fx.dustMs)
 	_beams = _aged(_beams, dt_ms, fx.koBeamMs)
@@ -2303,6 +2381,9 @@ func _draw_hazard(h: Dictionary, on: bool, t: float, index := -1) -> void:
 				var x: float = h.x + i * w
 				draw_colored_polygon(PackedVector2Array([Vector2(x, h.y + h.height), Vector2(x + w / 2, h.y), Vector2(x + w, h.y + h.height)]), col)
 		"fuoco":
+			if effects and _particles: # #470 fase 4: fiamme vere a particelle e fumo nero
+				_draw_fire_pit(h, r, t, index)
+				return
 			if not on:
 				# Spento: solo le bocchette, che si scaldano poco prima di accendersi
 				draw_rect(Rect2(r.position.x, r.end.y - 6, r.size.x, 6), Color("5a2a1a"))

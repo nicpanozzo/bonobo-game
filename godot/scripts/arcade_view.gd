@@ -12,6 +12,7 @@ const PAC_YELLOW := Color("ffe11a")
 const GHOST_BLUE := Color("2a3cff")
 const PELLET := Color("ffd9b0")
 const PELLET_STEP := 40.0 # pixel tra due palline
+const ParticleFx := preload("res://scripts/particle_fx.gd")
 
 var cell := 40.0
 var fade_ms := 1500.0
@@ -22,6 +23,13 @@ var pac_ms := 8000.0
 var _pellets: Array = [] # [posizione, pallina grande]
 var _lines: Array = [] # righe del Tetris che esplodono: [{ x, y, width, at }], x e y al centro
 const LINE_MS := 450.0 # ms del lampo di una riga
+# Luce arcade (#470 fase 4): un raggio di luce lungo la riga, i quadretti si accendono di bianco dal centro verso i lati
+# e diventano stelline che salgono
+const BEAM_MS := 380.0 # il raggio
+const CELL_DELAY_MS := 18.0 # ritardo di un quadretto per ogni posto di distanza dal centro
+const CELL_WHITE_MS := 90.0 # quanto resta bianco prima di diventare stellina
+const SPARKLE_MS := 700.0 # la stellina che sale
+const ARCADE_LINE_MS := 900.0 # tutto (CELL_DELAY_MS × metà riga + CELL_WHITE_MS + SPARKLE_MS, arrotondato)
 
 
 func setup(game: Dictionary) -> void:
@@ -46,13 +54,16 @@ func clear() -> void:
 
 
 # Una riga completa (#427): lampo bianco lungo la riga, poi le schegge colorate volano via
-func on_line(e: Dictionary, now: int) -> void:
-	_lines.append({"x": float(e.x), "y": float(e.y), "width": float(e.get("width", cell)), "at": now})
+func on_line(e: Dictionary, now: int, arcade := false) -> void:
+	_lines.append({"x": float(e.x), "y": float(e.y), "width": float(e.get("width", cell)), "at": now, "arcade": arcade})
 
 
 func draw_lines(canvas: CanvasItem, now: int) -> void:
-	_lines = _lines.filter(func(l): return now - int(l.at) < LINE_MS)
+	_lines = _lines.filter(func(l): return now - int(l.at) < (ARCADE_LINE_MS if l.arcade else LINE_MS))
 	for l: Dictionary in _lines:
+		if l.arcade:
+			_draw_arcade_line(canvas, l, float(now - int(l.at)))
+			continue
 		var k := (now - int(l.at)) / LINE_MS
 		var h := cell * (1.0 + 2.0 * k)
 		canvas.draw_rect(Rect2(l.x - l.width / 2.0 - 10.0 * k, l.y - h / 2.0, l.width + 20.0 * k, h), Color(1, 1, 1, 0.85 * (1.0 - k)))
@@ -62,6 +73,46 @@ func draw_lines(canvas: CanvasItem, now: int) -> void:
 			var kind: String = COLORS.keys()[i % COLORS.size()]
 			var pos := Vector2(l.x - l.width / 2.0 + (i + 0.5) * cell + (i - n / 2.0) * 30.0 * k, l.y - 160.0 * k + 220.0 * k * k)
 			draw_cell(canvas, pos - Vector2(cell, cell) * 0.25, cell * 0.5, color_of(kind), 1.0 - k)
+
+
+# La riga che esplode in luce arcade all'istante a (ms dall'esplosione)
+func _draw_arcade_line(canvas: CanvasItem, l: Dictionary, a: float) -> void:
+	var lw: float = l.width
+	var n := maxi(1, int(round(lw / cell)))
+	var x0: float = float(l.x) - lw / 2.0
+	var cy: float = l.y
+	var u := cell / 14.0 # le misure del banco di prova, dove un quadretto era 14
+	var k := a / BEAM_MS
+	if k < 1.0:
+		var h := cell * 1.8 * sin(minf(1.0, k * 2.5) * PI / 2.0) * (1.0 - k)
+		var ext := 60.0 * u * k
+		var clear := Color(1, 1, 1, 0)
+		for side in [-1.0, 1.0]: # metà sopra e metà sotto: bianco pieno al centro, trasparente ai bordi
+			canvas.draw_polygon(PackedVector2Array([Vector2(x0 - ext, cy), Vector2(x0 + lw + ext, cy), Vector2(x0 + lw + ext, cy + side * h), Vector2(x0 - ext, cy + side * h)]),
+				PackedColorArray([Color.WHITE, Color.WHITE, clear, clear]))
+		for side in [-1.0, 1.0]: # linee di velocità ai lati
+			var edge: float = x0 if side < 0.0 else x0 + lw
+			for j in 3:
+				var ly := cy + (-6.0 + j * 6.0) * u
+				canvas.draw_line(Vector2(edge + side * (8.0 + 60.0 * k + j * 6.0) * u, ly), Vector2(edge + side * (24.0 + 90.0 * k + j * 10.0) * u, ly), Color(1, 1, 1, 1.0 - k), 1.6 * u * (1.0 - k) + 0.5)
+	for i in n:
+		var col := color_of(COLORS.keys()[i % COLORS.size()])
+		var cx := x0 + (i + 0.5) * cell
+		var ai := a - absf(i - (n - 1) / 2.0) * CELL_DELAY_MS
+		if ai < CELL_WHITE_MS:
+			draw_cell(canvas, Vector2(cx - cell / 2.0, cy - cell / 2.0), cell, Color.WHITE if ai > 0.0 else col)
+			continue
+		var k2 := (ai - CELL_WHITE_MS) / SPARKLE_MS
+		if k2 >= 1.0:
+			continue
+		var sy := cy - 34.0 * u * (1.0 - (1.0 - k2) * (1.0 - k2))
+		var tw := sin(k2 * PI)
+		canvas.draw_circle(Vector2(cx, sy), cell * 0.55, Color(col.lightened(0.3), 0.35 * tw)) # il bagliore del suo colore
+		canvas.draw_set_transform(Vector2(cx, sy), k2 * 2.0)
+		canvas.draw_colored_polygon(ParticleFx.star_points(Vector2.ZERO, (7.0 * tw + 1.0) * u, 4, 0.18, 0, 0.0), Color(1, 1, 1, tw))
+		canvas.draw_set_transform(Vector2.ZERO)
+		var bit := 5.0 * u
+		draw_cell(canvas, Vector2(cx - bit / 2.0 + sin(i * 2.3) * 8.0 * u * k2, sy + (10.0 + 14.0 * k2) * u), bit, col, 1.0 - k2)
 
 
 static func color_of(kind: String) -> Color:

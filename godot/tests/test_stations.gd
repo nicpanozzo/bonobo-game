@@ -70,3 +70,19 @@ func test_postazione_spenta_non_si_vede() -> void:
 	runner.check(StationView.alpha_at(s, 6000.0) == 0.0, "dopo la finestra sparisce")
 	runner.check(StationView.alpha_at(s, 0.0) == 0.0, "prima della finestra non c'è")
 	runner.check(StationView.alpha_at({"kind": "munizioni", "x": 0, "y": 0, "width": 80}, 0.0) == 1.0, "senza finestre c'è sempre")
+
+
+# La bombarda che spara (#470 fase 4): la canna rincula e torna, lo sparo sa dove punta, le palle avanzano da sole
+func test_rinculo_e_direzione_dello_sparo() -> void:
+	var view: RefCounted = StationView.new()
+	view.setup({"stations": [{"kind": "bombarda", "x": 100, "y": 650, "width": 80}]}, {"station": {"pivotPx": 46}, "effects": {"cannonRecoilPx": 14, "cannonRecoilMs": 450}})
+	runner.check(view.recoil(0, 1000) == 0.0, "prima dello sparo la canna è al suo posto")
+	view.on_fire(0, 1000)
+	runner.check(absf(view.recoil(0, 1050) - 14.0) < 0.01, "subito dopo è indietro di 14 px")
+	runner.check(view.recoil(0, 1300) > 0.0 and view.recoil(0, 1300) < 14.0, "poi torna")
+	runner.check(view.recoil(0, 1600) == 0.0, "e si rimette a posto")
+	var dir: Vector2 = view.muzzle_dir(0, Vector2(140, 604) + Vector2(1, -1).normalized() * 56.0)
+	runner.check(dir.is_equal_approx(Vector2(1, -1).normalized()), "la direzione dello sparo va dal perno alla bocca")
+	view.on_snapshot({"cannonballs": [{"id": 1, "x": 200, "y": 500, "vx": 900, "vy": 0}]}, 0)
+	var c: Array = view.ball_centers(50)
+	runner.check(c.size() == 1 and c[0][0].x > 200.0 and c[0][0].y > 500.0, "la palla avanza e scende tra uno snapshot e l'altro")
