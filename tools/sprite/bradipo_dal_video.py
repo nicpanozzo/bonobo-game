@@ -4,7 +4,7 @@
 # 1. scontorno col colore: il verde dello sfondo e l'ombra verde scura sotto i salti vanno via, i bordi si ripuliscono
 #    togliendo il verde mescolato; la scia verde chiara della suprema resta, schiarita e velata, come smear;
 # 2. rimpicciolito all'altezza delle pose del foglio (#335), contorno chiaro, un PNG a strisce per stato in
-#    public/assets/characters/bradipo/skins/bassista con i piedi allineati (footY).
+#    public/assets/characters/bradipo con i piedi allineati (footY).
 # Il video non va nella repo. Servono ffmpeg, Pillow, numpy e scipy, solo per rifarlo.
 import os, subprocess, sys
 import numpy as np
@@ -12,7 +12,7 @@ from PIL import Image
 from scipy import ndimage as ndi
 
 VIDEO, WORK = sys.argv[1], sys.argv[2]
-OUT = os.path.join(os.path.dirname(__file__), "../../public/assets/characters/bradipo/skins/bassista")
+OUT = os.path.join(os.path.dirname(__file__), "../../public/assets/characters/bradipo")
 FW, FH, FOOT_Y = 320, 250, 232  # fotogramma e piedi: copiati in characters.ts
 SCALE = 0.38  # il bradipo fermo nel video è alto 485 px, nel foglio 184
 GROUND, CENTER = 655, 600  # dove tocca terra e il centro del fermo, nel video

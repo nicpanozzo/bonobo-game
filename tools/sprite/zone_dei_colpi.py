@@ -8,7 +8,7 @@ import json
 import math
 import sys
 
-from PIL import Image
+from PIL import Image, ImageChops
 
 game = json.load(open("godot/data/game.json", encoding="utf-8"))
 FW, FH = game["fighter"]["width"], game["fighter"]["height"]
@@ -31,7 +31,11 @@ def mask(sprite, state):
     hit = int(src.get("hitFrame", int(src["frames"]) - 1))
     img = Image.open("godot/data/%s/%s.png" % (sprite["dir"], a.get("src", state))).convert("RGBA")
     w, h = sprite["frameWidth"], sprite["frameHeight"]
-    alpha = img.crop((hit * w, 0, hit * w + w, h)).getchannel("A").load()
+    # con activeEnd (#506) la zona copre tutti i fotogrammi mostrati mentre il colpo prende, non solo l'impatto
+    alpha_img = img.crop((hit * w, 0, hit * w + w, h)).getchannel("A")
+    for f in range(hit + 1, int(src.get("activeEnd", hit)) + 1):
+        alpha_img = ImageChops.lighter(alpha_img, img.crop((f * w, 0, f * w + w, h)).getchannel("A"))
+    alpha = alpha_img.load()
     s = float(sprite.get("scale", 1.0))
     foot = float(sprite.get("footY", h))
     # punti opachi in pixel di mondo, rispetto ai piedi, guardando a destra

@@ -77,6 +77,7 @@ export interface SpriteAnimation {
   loop: boolean;
   hitFrame?: number; // solo negli attacchi, vedi SpriteStateSpec
   startFrame?: number; // solo negli attacchi, vedi SpriteStateSpec
+  activeEnd?: number; // solo negli attacchi, vedi SpriteStateSpec
 }
 
 // Formato a foglio unico: un PNG con una riga per animazione (Capt. OrsoBlu, Bonobot)
@@ -107,6 +108,10 @@ export interface SpriteStateSpec {
   // Negli attacchi: il primo fotogramma mostrato (manca = 0). Serve quando il fotogramma 0 è la posa di riposo,
   // uguale a idle: così la sagoma cambia nell'istante in cui si preme il tasto (#384 C1)
   startFrame?: number;
+  // Negli attacchi: l'ultimo fotogramma mostrato mentre il colpo prende (activeMs), da hitFrame in poi (#506).
+  // I fotogrammi da hitFrame ad activeEnd riempiono la finestra attiva, il resto va nel recupero: così la scia
+  // disegnata e il braccio teso si vedono finché il colpo prende davvero. Manca = l'impatto è un fotogramma solo
+  activeEnd?: number;
 }
 
 // I lottatori a scheletro (tools/rig) partono dalla posa di riposo: negli attacchi si mostra dal fotogramma 1 (#384 C1)
@@ -125,6 +130,8 @@ export interface SpriteFolderSpec {
   // Prova del rig a pezzi in tempo reale (#403): cartella con rig.json, animazioni.json e pezzi/ (tools/rig/).
   // Godot monta i pezzi e interpola le pose; senza, o se il rig non si carica, si usano i PNG degli stati
   rig?: string;
+  // La scia dei colpi è già disegnata nei fotogrammi (#506): il gioco non ci aggiunge la sua mezzaluna (#389)
+  drawnSmear?: boolean;
   animations: Record<AnimationName, SpriteStateSpec> & Partial<Record<OptionalAnimationName, SpriteStateSpec>>;
 }
 
@@ -886,48 +893,52 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     name: "Bradipo Giallo",
     quotes: { supreme: "DEMACIAA!" }, // il fumetto della suprema, con la sua voce (voice/supreme.ogg)
     crews: ["lolhardcore"],
-    // la Bassline col basso a tracolla: tools/sprite/bradipo_bassline.py
-    sprite: sheetSprite("bradipo", 298, 200, 185, { specialSide: { fps: 1, loop: false } }),
+    // Dal video di tutte le mosse fatto da Nicola con Google Flow (tools/sprite/bradipo_dal_video.py): la Bassline col
+    // basso e DEMACIAAA che gira in piedi come la E di Garen, brandendo il basso. Era la skin "Bassista": dal #506 è
+    // l'aspetto di base, perché le zone dei colpi qui sotto sono misurate su questi disegni
+    sprite: {
+      dir: "assets/characters/bradipo",
+      frameWidth: 320, // largo: la scia del basso nella suprema esce di lato
+      frameHeight: 250,
+      footY: 232,
+      scale: 0.5, // alto come le pose del foglio
+      drawnSmear: true, // gli archi rosa dei colpi sono nei fotogrammi
+      animations: {
+        idle: { fps: 8, loop: true },
+        walk: { fps: 14, loop: true },
+        dash: { fps: 14, loop: true },
+        jump: { fps: 18, loop: false },
+        fall: { fps: 10, loop: true },
+        doubleJump: { fps: 24, loop: false }, // la capriola
+        tumble: { fps: 18, loop: true },
+        land: { fps: 24, loop: false },
+        hit: { fps: 16, loop: false },
+        taunt: { fps: 12, loop: false }, // il riff a testa bassa
+        shield: { fps: 8, loop: true },
+        // hitFrame..activeEnd: i fotogrammi con l'arco rosa davanti, mentre il colpo prende (#506)
+        light: { fps: 24, loop: false, hitFrame: 2, activeEnd: 5 },
+        heavy: { fps: 24, loop: false, hitFrame: 2, activeEnd: 5 },
+        lightUp: { fps: 24, loop: false, hitFrame: 1, activeEnd: 3 },
+        heavyUp: { fps: 24, loop: false, hitFrame: 2, activeEnd: 4 },
+        lightDown: { fps: 24, loop: false, hitFrame: 0, activeEnd: 2 },
+        heavyDown: { fps: 24, loop: false, hitFrame: 2, activeEnd: 4 },
+        lightAir: { fps: 24, loop: false, hitFrame: 1, activeEnd: 3 },
+        heavyAir: { fps: 24, loop: false, hitFrame: 0, activeEnd: 1 },
+        recovery: { fps: 24, loop: false, hitFrame: 0 },
+        grab: { fps: 24, loop: false, hitFrame: 5 },
+        throw: { fps: 24, loop: false, hitFrame: 0 },
+        specialNeutral: { fps: 24, loop: false, hitFrame: 3 }, // Ciacole: le mani alla bocca
+        specialSide: { fps: 24, loop: false, hitFrame: 5 }, // Bassline: il riff
+        specialDown: { fps: 24, loop: false, hitFrame: 1 }, // Cambio pannolino: si copre
+        supreme: { fps: 24, loop: true }, // DEMACIAAA: due giri col basso, ripetuti finché gira
+      },
+    },
     skins: {
-      // Dal video di tutte le mosse fatto da Nicola con Google Flow (tools/sprite/bradipo_dal_video.py): la Bassline col
-      // basso e DEMACIAAA che gira in piedi come la E di Garen, brandendo il basso
-      bassista: {
-        name: "Bassista",
-        sprite: {
-          dir: "assets/characters/bradipo/skins/bassista",
-          frameWidth: 320, // largo: la scia del basso nella suprema esce di lato
-          frameHeight: 250,
-          footY: 232,
-          scale: 0.5, // alto come le pose del foglio
-          animations: {
-            idle: { fps: 8, loop: true },
-            walk: { fps: 14, loop: true },
-            dash: { fps: 14, loop: true },
-            jump: { fps: 18, loop: false },
-            fall: { fps: 10, loop: true },
-            doubleJump: { fps: 24, loop: false }, // la capriola
-            tumble: { fps: 18, loop: true },
-            land: { fps: 24, loop: false },
-            hit: { fps: 16, loop: false },
-            taunt: { fps: 12, loop: false }, // il riff a testa bassa
-            shield: { fps: 8, loop: true },
-            light: { fps: 24, loop: false, hitFrame: 3 },
-            heavy: { fps: 24, loop: false, hitFrame: 5 },
-            lightUp: { fps: 24, loop: false, hitFrame: 2 },
-            heavyUp: { fps: 24, loop: false, hitFrame: 3 },
-            lightDown: { fps: 24, loop: false, hitFrame: 2 },
-            heavyDown: { fps: 24, loop: false, hitFrame: 3 },
-            lightAir: { fps: 24, loop: false, hitFrame: 1 },
-            heavyAir: { fps: 24, loop: false, hitFrame: 1 },
-            recovery: { fps: 24, loop: false, hitFrame: 0 },
-            grab: { fps: 24, loop: false, hitFrame: 5 },
-            throw: { fps: 24, loop: false, hitFrame: 0 },
-            specialNeutral: { fps: 24, loop: false, hitFrame: 3 }, // Ciacole: le mani alla bocca
-            specialSide: { fps: 24, loop: false, hitFrame: 5 }, // Bassline: il riff
-            specialDown: { fps: 24, loop: false, hitFrame: 1 }, // Cambio pannolino: si copre
-            supreme: { fps: 24, loop: true }, // DEMACIAAA: due giri col basso, ripetuti finché gira
-          },
-        },
+      // Le pose ferme del foglio, con la Bassline col basso a tracolla (tools/sprite/bradipo_bassline.py): prima era
+      // l'aspetto di base. TODO community: il nome della skin
+      foglio: {
+        name: "Foglio",
+        sprite: { ...sheetSprite("bradipo", 298, 200, 185, { specialSide: { fps: 1, loop: false } }), dir: "assets/characters/bradipo/skins/foglio" },
       },
     },
     // dalla scheda: "DEMACIAAA", gira come Garen e fa danno a chi tocca (#358). Nel foglio è la palla della Final Smash
@@ -960,18 +971,18 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       down: { type: "counter", name: "Cambio pannolino", startupMs: 50, windowMs: 400, endLagMs: 450, minDamage: 8, multiplier: 1.3, range: 60, height: 60, baseKnockback: 450, knockbackGrowth: 9, angleDeg: 40 },
     },
     // il corpo che si può colpire, misurato sulla sagoma del fermo (#243)
-    hurtbox: { width: 44, height: 90 },
+    hurtbox: { width: 41, height: 92 },
     // le zone dei colpi dove arriva il disegno (#243, tools/sprite/zone_dei_colpi.py)
     attacks: {
-      light: { range: 51, height: 30, boxX: 0, boxY: -52 },
-      heavy: { range: 78, height: 44, boxX: 0, boxY: -49 },
-      lightUp: { range: 54, height: 48, boxX: -16, boxY: -84 },
-      lightDown: { range: 52, height: 24, boxX: 0, boxY: -28 },
-      lightAir: { range: 44, height: 50, boxX: 0, boxY: -62 },
-      heavyUp: { range: 80, height: 64, boxX: -16, boxY: -87 },
-      heavyDown: { range: 62, height: 30, boxX: -11, boxY: -30 },
-      heavyAir: { range: 62, height: 60, boxX: 0, boxY: -62 },
-      dashAttack: { range: 75, height: 44, boxX: 2, boxY: -49 },
+      light: { range: 66, height: 30, boxX: 0, boxY: -62 },
+      heavy: { range: 68, height: 44, boxX: 0, boxY: -66 },
+      lightUp: { range: 54, height: 48, boxX: -15, boxY: -115 },
+      lightDown: { range: 54, height: 24, boxX: 0, boxY: -33 },
+      lightAir: { range: 50, height: 50, boxX: 0, boxY: -69 },
+      heavyUp: { range: 80, height: 64, boxX: -28, boxY: -115 },
+      heavyDown: { range: 62, height: 30, boxX: -4, boxY: -36 },
+      heavyAir: { range: 49, height: 60, boxX: 0, boxY: -76 },
+      dashAttack: { range: 68, height: 44, boxX: 0, boxY: -66 },
     },
   },
 

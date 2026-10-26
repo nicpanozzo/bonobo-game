@@ -6,8 +6,8 @@ import math
 
 from PIL import Image, ImageDraw, ImageFilter
 
-SRC = "public/assets/characters/bradipo/idle.png"
-OUT = "public/assets/characters/bradipo/specialSide.png"
+SRC = "public/assets/characters/bradipo/skins/foglio/idle.png"
+OUT = "public/assets/characters/bradipo/skins/foglio/specialSide.png"
 K = 4  # sovracampionamento
 INK = (20, 16, 16, 255)
 BODY = (226, 33, 138, 255)  # il fucsia della cresta

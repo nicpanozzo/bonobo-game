@@ -2883,6 +2883,10 @@ func _draw_strike(p: Dictionary, now: float) -> void:
 	if not effects or not p.attackActive or not (kind.begins_with("light") or kind.begins_with("heavy") or kind == "dashAttack"):
 		_strikes.erase(p.id)
 		return
+	# Chi ha la scia già disegnata nei fotogrammi (#506) non ne prende una seconda sopra
+	var look_sprite: Variant = _look(p).get("sprite")
+	if look_sprite is Dictionary and look_sprite.get("drawnSmear", false):
+		return
 	var spec := FighterPose.attack_spec(game, p.characterId, str(p.attack))
 	if spec.is_empty() or spec.get("range") == null:
 		return
