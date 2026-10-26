@@ -506,6 +506,13 @@ export const EFFECTS = {
   steamFullPercent: 150, // percentuale a cui il vapore è al massimo
   itemSparkleMs: 500, // stelline dove compare un oggetto
   itemPickMs: 450, // stelline che si stringono su chi raccoglie un oggetto
+  // Fase 4, il sapore (#470): esplosioni e fuoco nelle arene
+  cannonRecoilPx: 14, // quanto torna indietro la canna della bombarda quando spara, px
+  cannonRecoilMs: 450, // quanto ci mette a tornare al suo posto, ms
+  ballTrailEveryMs: 30, // uno sbuffo di fumo dietro la palla di mortadella ogni tanti ms
+  boomGlowMs: 450, // bagliore arancio dell'esplosione della mortadella, ms
+  burnTrailMs: 800, // per quanto chi è preso dal fuoco lascia la scia di fuliggine, ms
+  burnEveryMs: 30, // uno sbuffo di fuliggine ogni tanti ms
 };
 
 // Bot del server (#20, src/server/bot.ts): quanto è svelto e quando attacca

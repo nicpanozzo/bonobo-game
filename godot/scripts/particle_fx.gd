@@ -181,7 +181,8 @@ static func fire_step(i: int, x: float, y: float) -> Array:
 
 # Esplosione (pronta per la fase 4): palla di fuoco che passa dal bianco al fumo scuro, fumo che sale, scintille,
 # schegge che ricadono fino a floor_y e polvere sollevata a terra. Lampo e onda d'urto li disegna particle_view
-static func explosion_burst(key: int, x: float, y: float, floor_y: float) -> Array:
+# near_ground false: lontano da terra (in aria, contro un muro) niente polvere sollevata
+static func explosion_burst(key: int, x: float, y: float, floor_y: float, near_ground := true) -> Array:
 	var r := _rng(key)
 	var out: Array = []
 	for i in 26:
@@ -209,7 +210,7 @@ static func explosion_burst(key: int, x: float, y: float, floor_y: float) -> Arr
 		out.append({"kind": "grit", "x": x, "y": y, "vx": cos(a) * sp, "vy": sin(a) * sp, "drag": 0.6, "gy": 520.0,
 			"life": r.randf_range(0.8, 1.1), "s": r.randf_range(1.6, 3.2), "spin": r.randf_range(-14, 14),
 			"col": Color("3a3340") if i % 2 == 1 else Color("5a4a3c"), "floor": floor_y})
-	for i in 14:
+	for i in (14 if near_ground else 0):
 		var sd := 1.0 if i % 2 == 1 else -1.0
 		out.append({"x": x, "ox": sd * r.randf_range(6, 20), "y": floor_y, "oy": -2.0, "vx": sd * r.randf_range(70, 170), "vy": -r.randf_range(5, 25),
 			"drag": 4.0, "gy": -10.0, "s0": 4.0, "s1": r.randf_range(9, 15), "life": r.randf_range(0.5, 0.8), "rot": r.randf() * TAU,
@@ -313,3 +314,123 @@ static func item_puff(key: int, x: float, y: float) -> Array:
 			p.vy = float(p.vy) * 0.5
 			out.append(p)
 	return out
+
+
+# Fase 4, il sapore (#470). Lo sparo della bombarda, "Nuvolone di polvere": poco fuoco alla bocca, tanto fumo bianco
+# che va avanti lungo dir (versore della canna) e resta, e un po' di fumo che torna indietro e avvolge la bombarda
+static func cannon_smoke(key: int, x: float, y: float, dir: Vector2) -> Array:
+	var r := _rng(key)
+	var out: Array = []
+	for i in 6:
+		var d := dir.rotated(r.randf_range(-0.25, 0.25))
+		var sp := r.randf_range(120, 220)
+		out.append({"x": x, "y": y, "vx": d.x * sp, "vy": d.y * sp, "drag": 8.0, "s0": 6.0, "s1": 2.0, "life": 0.16,
+			"rot": d.angle() + PI / 2, "v": i % VARIANTS, "shape": "flame", "stretch": 1.5, "ramp": ["core", "yellow", "orange"]})
+	for i in 22:
+		var d := dir.rotated(r.randf_range(-0.55, 0.55))
+		var sp := r.randf_range(50, 210)
+		out.append({"x": x, "y": y, "vx": d.x * sp, "vy": d.y * sp, "drag": 2.6, "gy": -14.0, "s0": 6.0, "s1": r.randf_range(17, 27),
+			"life": r.randf_range(1.6, 2.2), "rot": r.randf() * TAU, "spin": r.randf_range(-0.8, 0.8), "v": i % VARIANTS,
+			"ramp": ["smoke"], "alpha": 0.92, "delay": r.randf_range(0.0, 0.06), "fade": "late"})
+	for i in 9:
+		var a := r.randf() * TAU
+		var sp := r.randf_range(15, 55)
+		out.append({"x": x, "ox": -dir.x * 14.0, "y": y, "oy": -dir.y * 14.0, "vx": cos(a) * sp, "vy": sin(a) * sp * 0.6,
+			"drag": 2.0, "gy": -10.0, "s0": 6.0, "s1": r.randf_range(13, 19), "life": r.randf_range(1.4, 2.0), "rot": r.randf() * TAU,
+			"v": i % VARIANTS, "ramp": ["smoke"], "alpha": 0.7, "delay": 0.05, "fade": "late"})
+	return out
+
+
+# Le fette di mortadella dello scoppio: volano in alto, girano su se stesse e restano piatte a terra (floor_y)
+static func mortadella_slices(key: int, x: float, y: float, n: int, floor_y: float) -> Array:
+	var r := _rng(key)
+	var out: Array = []
+	for i in n:
+		var a := -PI / 2 + r.randf_range(-1.25, 1.25)
+		var sp := r.randf_range(140, 260)
+		out.append({"kind": "slice", "x": x, "y": y, "vx": cos(a) * sp, "vy": sin(a) * sp, "drag": 0.5, "gy": 640.0,
+			"life": r.randf_range(1.5, 1.9), "s": r.randf_range(3.2, 5.0), "spin": r.randf_range(-14, 14),
+			"flip": r.randf_range(8, 16), "floor": floor_y - 4.0})
+	return out
+
+
+# Chi è preso dal fuoco: uno sbuffo di fuliggine e, una volta su due, una brace
+static func burn_puff(key: int, x: float, y: float) -> Array:
+	var r := _rng(key)
+	var out: Array = [{"x": x, "ox": r.randf_range(-4, 4), "y": y, "vx": r.randf_range(-12, 12), "vy": r.randf_range(-10, 30),
+		"drag": 3.0, "gy": -16.0, "s0": 3.0, "s1": r.randf_range(8, 12), "life": r.randf_range(0.6, 0.9), "rot": r.randf() * TAU,
+		"spin": r.randf_range(-1.5, 1.5), "v": key % VARIANTS, "ramp": ["dark"], "alpha": 0.8}]
+	if key % 2 == 0:
+		out.append({"kind": "spark", "x": x, "y": y, "vx": r.randf_range(-40, 40), "vy": r.randf_range(-20, 40), "drag": 2.0,
+			"gy": 120.0, "life": 0.5, "w": 1.4, "col": Color("ff9a3c")})
+	return out
+
+
+# Il fuoco della fossa, "Fiamme e fumo nero": un muro di fiamme lungo [x0, x1] coi piedi a y, alto circa 2,5 volte
+# la trappola (h), acceso da start per active ms; poi fumo nero e uno sbuffo quando si spegne. Come stream() del banco:
+# le particelle vive all'ora t (ms dell'arena) sono quelle nate negli ultimi istanti, ognuna dal suo indice, quindi il
+# fuoco si accende e si spegne esattamente con la fisica e non ha stato. Restituisce [[particella, età in s], ...].
+# cache: indice -> particella, per non ricrearle a ogni frame
+const FIRE_WALL_MS := 5 # una lingua ogni tanti ms, a turno lungo la fossa
+const FIRE_WALL_GAP := 12.0 # distanza tra due bocchette, in unità del banco
+static func fire_wall(x0: float, x1: float, y: float, h: float, t: float, start: float, active: float, cache: Dictionary) -> Array:
+	var out: Array = []
+	var n := maxi(1, int((x1 - x0) / (FIRE_WALL_GAP * SCALE)))
+	var w := {"x0": x0, "x1": x1, "y": y, "n": n, "gap": (x1 - x0) / n, "tall": maxf(12.0, h * 2.5 / SCALE), "start": start}
+	var stop := start + active
+	_wall_part(out, cache, w, "f", t, FIRE_WALL_MS, 700.0, start, stop) # lingue di fuoco
+	_wall_part(out, cache, w, "c", t, 9, 400.0, start, stop) # il cuore chiaro, che si somma alla luce
+	_wall_part(out, cache, w, "e", t, 60, 1300.0, start, stop) # braci
+	_wall_part(out, cache, w, "s", t, 70, 1800.0, start + 100.0, stop + 500.0) # fumo nero sopra la fossa
+	_wall_part(out, cache, w, "o", t, 5, 1200.0, stop, stop + 60.0) # lo sbuffo quando si spegne
+	return out
+
+
+# Un pezzo del muro di fuoco: una particella ogni every ms nata in [from, to), viva se ha meno di max_life ms
+static func _wall_part(out: Array, cache: Dictionary, w: Dictionary, tag: String, t: float, every: int, max_life: float, from: float, to: float) -> void:
+	var lo := maxi(int(ceil(maxf(from, t - max_life) / every)), 0)
+	var hi := int(floor(minf(t, to - 0.001) / every))
+	for i in range(lo, hi + 1):
+		var k := "%s%d" % [tag, i]
+		if not cache.has(k):
+			cache[k] = _wall_particle(tag, i, float(i * every), w)
+		var p: Dictionary = cache[k]
+		if p.is_empty():
+			continue
+		var a := (t - i * every) / 1000.0
+		if a < float(p.life):
+			out.append([p, a])
+	if cache.size() > 3000: # le particelle vecchie non servono più
+		cache.clear()
+
+
+static func _wall_particle(tag: String, i: int, t0: float, w: Dictionary) -> Dictionary:
+	var r := _rng(i * 7919 + tag.unicode_at(0))
+	var x0: float = w.x0
+	var x1: float = w.x1
+	var tall: float = w.tall
+	match tag:
+		"f":
+			var boost := 1.5 if t0 < float(w.start) + 160.0 else 1.0 # all'accensione una vampata più alta
+			return {"x": x0 + (i % int(w.n) + 0.5) * float(w.gap), "ox": r.randf_range(-3, 3), "y": w.y, "oy": -2.0,
+				"vx": r.randf_range(-10, 10) + sin(t0 / 150.0 + i) * 6.0, "vy": -r.randf_range(1.3, 1.9) * tall * boost, "drag": 1.1,
+				"gy": -50.0, "s0": r.randf_range(0.18, 0.24) * tall, "s1": r.randf_range(2, 3.5), "life": r.randf_range(0.45, 0.7),
+				"rot": r.randf_range(-0.15, 0.15), "v": i % VARIANTS, "shape": "flame", "stretch": r.randf_range(1.6, 2.2),
+				"ramp": ["yellow", "orange", "red"], "alpha": 0.95}
+		"c":
+			return {"x": x0 + r.randf() * (x1 - x0), "y": w.y, "oy": -1.0, "vx": r.randf_range(-5, 5), "vy": -r.randf_range(2.6, 3.4) * tall,
+				"drag": 1.3, "gy": -35.0, "s0": r.randf_range(0.11, 0.14) * tall, "s1": 1.5, "life": r.randf_range(0.26, 0.36), "rot": 0.0,
+				"v": i % VARIANTS, "shape": "flame", "stretch": 1.8, "ramp": ["core", "yellow"], "alpha": 0.7, "add": true}
+		"e":
+			if r.randf() < 0.4:
+				return {}
+			return {"kind": "spark", "x": x0 + r.randf() * (x1 - x0), "y": w.y, "oy": -tall * 0.35, "vx": r.randf_range(-30, 30),
+				"vy": -r.randf_range(90, 170), "drag": 0.8, "gy": -20.0, "life": r.randf_range(0.7, 1.2), "w": r.randf_range(1, 1.8),
+				"col": Color("ffd27a") if r.randf() > 0.5 else Color("ff8a3a")}
+		"s":
+			return {"x": x0 + r.randf() * (x1 - x0), "y": w.y, "oy": -tall * 0.85, "vx": r.randf_range(-12, 12), "vy": -r.randf_range(25, 45),
+				"drag": 1.0, "gy": -20.0, "s0": 8.0, "s1": r.randf_range(18, 26), "life": r.randf_range(1.3, 1.8), "rot": r.randf() * TAU,
+				"spin": r.randf_range(-0.8, 0.8), "v": i % VARIANTS, "ramp": ["dark"], "alpha": 0.6, "fade": "late"}
+	return {"x": x0 + (i % 12 + 0.5) * (x1 - x0) / 12.0, "y": w.y, "oy": -6.0, "vx": r.randf_range(-15, 15), "vy": -r.randf_range(25, 60),
+		"drag": 2.2, "gy": -18.0, "s0": 4.0, "s1": r.randf_range(10, 16), "life": r.randf_range(0.8, 1.2), "rot": r.randf() * TAU,
+		"v": i % VARIANTS, "ramp": ["dark", "smoke"], "alpha": 0.6, "fade": "late"}

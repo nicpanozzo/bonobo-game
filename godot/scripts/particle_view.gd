@@ -17,6 +17,7 @@ var _tex := {} # "tono_forma" -> Array[Texture2D] (le varianti); manca se i file
 var _glow: Texture2D
 var _add: Node2D
 var _clouds := {} # id -> { pos, col }: le nuvolette della rinascita (#470 passo 2a), le muove world_view.gd
+var _live := {} # chiave -> { list: [[particella, età]], at }: fuochi calcolati a ogni frame dal tempo dell'arena (#470 fase 4)
 
 
 # Il livello additivo: chiede a chi lo possiede di disegnarci sopra
@@ -66,6 +67,7 @@ func mark(m: Dictionary) -> void:
 
 func clear() -> void:
 	_clouds = {}
+	_live = {}
 	_groups = []
 	_marks = []
 	_count = 0
@@ -87,6 +89,9 @@ func _process(delta: float) -> void:
 		_groups = kept
 	if not _marks.is_empty():
 		_marks = _marks.filter(func(m): return _now - float(m.t0) < float(m.life_ms))
+	for key in _live.keys(): # un fuoco che non si ridisegna più (fuori inquadratura, arena cambiata) si spegne
+		if _now - float(_live[key].at) > 100.0:
+			_live.erase(key)
 	queue_redraw()
 	if _add:
 		_add.queue_redraw()
@@ -108,6 +113,13 @@ func _draw() -> void:
 				_draw_pixel(p, ap)
 			elif kind == "star5":
 				_draw_star5(p, ap)
+			elif kind == "slice":
+				_draw_slice(p, ap)
+	for key in _live:
+		for pa in _live[key].list:
+			var lp: Dictionary = pa[0]
+			if lp.get("kind", "tex") == "tex" and not lp.get("add", false):
+				_draw_tex(self, lp, float(pa[1]))
 	for id in _clouds:
 		_draw_cloud(_clouds[id])
 	for m in _marks:
@@ -135,6 +147,14 @@ func draw_additive(ci: CanvasItem) -> void:
 				_draw_spark(ci, p, ap)
 			elif kind == "tex" and p.get("add", false):
 				_draw_tex(ci, p, ap)
+	for key in _live:
+		for pa in _live[key].list:
+			var lp: Dictionary = pa[0]
+			var lk: String = lp.get("kind", "tex")
+			if lk == "spark":
+				_draw_spark(ci, lp, float(pa[1]))
+			elif lk == "tex" and lp.get("add", false):
+				_draw_tex(ci, lp, float(pa[1]))
 	for m in _marks:
 		var k := (_now - float(m.t0)) / float(m.life_ms)
 		if m.kind == "sparkle" and k < 1.0:
@@ -162,6 +182,12 @@ func drop_cloud(id: String) -> void:
 
 func has_cloud(id: String) -> bool:
 	return _clouds.has(id)
+
+
+# Particelle vive calcolate da chi le possiede per l'istante di adesso (ParticleFx.fire_wall): si disegnano finché
+# vengono rinnovate a ogni frame
+func set_live(key: String, list: Array) -> void:
+	_live[key] = {"list": list, "at": _now}
 
 
 # Tre sbuffi del fumo colorati col colore del giocatore, schiariti: una nuvoletta morbida, con un bagliore additivo
@@ -307,8 +333,35 @@ func _draw_mark(m: Dictionary) -> void:
 			if rk < 1.0:
 				draw_arc(Vector2.ZERO, rr, 0.0, TAU, 40, Color(1, 1, 1, 0.9 * (1.0 - rk)), 2.2 * (1.0 - rk), true)
 		"ring": # anello d'aria del salto o onda d'urto: un'ellisse che si allarga e si assottiglia
-			var r: float = lerpf(float(m.r0), float(m.r1), 1.0 - (1.0 - k) * (1.0 - k))
+			var e := 1.0 - (1.0 - k) * (1.0 - k)
+			var r: float = lerpf(float(m.r0), float(m.r1), e)
 			var col: Color = m.get("col", Color.WHITE)
 			col.a = float(m.get("alpha", 0.85)) * (1.0 - k)
-			draw_set_transform(c, 0.0, Vector2(1.0, float(m.get("squash", 1.0))))
+			if m.has("x1"): # l'anello di fumo della bombarda: va avanti mentre si allarga
+				c = c.lerp(Vector2(m.x1, m.y1), e)
+			draw_set_transform(c, float(m.get("angle", 0.0)), Vector2(1.0, float(m.get("squash", 1.0))))
 			draw_arc(Vector2.ZERO, r, 0.0, TAU, 40, col, float(m.get("width", 3.5)) * (1.0 - k) + 0.4, true)
+
+
+# Fetta di mortadella (#470 fase 4): rosa coi quadretti di grasso e un pistacchio, gira su se stessa in volo e a
+# terra resta piatta
+const SLICE_DOTS := [Vector2(0.3, -0.2), Vector2(-0.35, 0.1), Vector2(0.05, 0.4), Vector2(-0.1, -0.45), Vector2(0.45, 0.25)]
+func _draw_slice(p: Dictionary, a: float) -> void:
+	var k := a / float(p.life)
+	if k >= 1.0:
+		return
+	var pos := ParticleFx.at(p, a)
+	var flip := absf(cos(float(p.flip) * a))
+	var rot := float(p.spin) * a
+	if pos.y > float(p.get("floor", INF)):
+		pos.y = float(p.floor)
+		flip = 0.3
+		rot = 0.0
+	var alpha := 1.0 if k < 0.75 else (1.0 - k) / 0.25
+	var z: float = float(p.s) * ParticleFx.SCALE
+	draw_set_transform(pos, rot, Vector2(1.0, maxf(0.25, flip)))
+	draw_circle(Vector2.ZERO, z + 2.0, Color(0.13, 0.11, 0.15, alpha))
+	draw_circle(Vector2.ZERO, z, Color(Color("d77f8e"), alpha))
+	draw_circle(Vector2(-z * 0.12, -z * 0.14), z * 0.8, Color(Color("f2a7b2"), alpha))
+	for i in SLICE_DOTS.size():
+		draw_circle(SLICE_DOTS[i] * z, z * 0.12, Color(Color("7fae4a") if i == 2 else Color("fff4f2"), alpha))

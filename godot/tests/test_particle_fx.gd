@@ -169,3 +169,48 @@ func test_vapore() -> void:
 func test_sbuffo_degli_oggetti() -> void:
 	var list := ParticleFx.item_puff(5, 300, 200)
 	runner.check(not list.is_empty() and list.all(func(p): return p.get("kind", "tex") == "tex" and p.ramp[0] == "air" and float(p.gy) == 0.0), "solo sbuffi d'aria che non cadono")
+
+
+# Fase 4 (#470): il nuvolone della bombarda va lungo la canna, più fumo che fuoco
+func test_sparo_della_bombarda() -> void:
+	var list := ParticleFx.cannon_smoke(3, 100, 100, Vector2(1, -0.5).normalized())
+	var smoke := list.filter(func(p): return p.get("shape", "puff") == "puff" and p.get("ox") == null)
+	var flames := list.filter(func(p): return p.get("shape", "") == "flame")
+	runner.check(smoke.size() > flames.size() * 3, "tanto fumo e poco fuoco (%d contro %d)" % [smoke.size(), flames.size()])
+	runner.check(smoke.all(func(p): return float(p.vx) > 0.0), "il fumo va avanti lungo la canna")
+
+
+# Le fette di mortadella: volano, girano e restano a terra
+func test_fette_di_mortadella() -> void:
+	var list := ParticleFx.mortadella_slices(4, 300, 400, 10, 460)
+	runner.check(list.size() == 10 and list.all(func(p): return p.kind == "slice" and float(p.floor) <= 460.0), "dieci fette che conoscono il terreno")
+	runner.check(list.all(func(p): return float(p.vy) < 0.0), "partono verso l'alto")
+
+
+# L'esplosione lontano da terra non solleva polvere
+func test_esplosione_in_aria() -> void:
+	var dust := func(l: Array) -> int: return l.filter(func(p): return p.get("ramp", []) == ["dust"]).size()
+	runner.check(dust.call(ParticleFx.explosion_burst(5, 400, 480, 520)) > 0, "vicino a terra la polvere c'è")
+	runner.check(dust.call(ParticleFx.explosion_burst(5, 400, 200, 900, false)) == 0, "in aria no")
+
+
+# Il fuoco della fossa: acceso solo nella sua finestra, alto quanto la trappola, uguale a ogni frame; poi fumo nero
+func test_fuoco_della_fossa() -> void:
+	var cache := {}
+	var flames := func(l: Array) -> Array: return l.filter(func(pa): return pa[0].get("shape", "") == "flame")
+	runner.check((flames.call(ParticleFx.fire_wall(440, 840, 640, 30, 3900, 4000, 1500, cache)) as Array).is_empty(), "prima di accendersi niente fiamme")
+	var on := ParticleFx.fire_wall(440, 840, 640, 30, 4600, 4000, 1500, cache)
+	runner.check((flames.call(on) as Array).size() > 40, "accesa è un muro di fiamme (%d)" % (flames.call(on) as Array).size())
+	runner.check(str(on) == str(ParticleFx.fire_wall(440, 840, 640, 30, 4600, 4000, 1500, {})), "lo stesso istante dà le stesse fiamme, con o senza cache")
+	var top := 640.0
+	for pa in flames.call(on):
+		top = minf(top, ParticleFx.at(pa[0], pa[1]).y)
+	runner.check(top > 640.0 - 30.0 * 5.0 and top < 640.0 - 30.0, "le fiamme salgono sopra la trappola, ma non troppo (%.0f)" % top)
+	var off := ParticleFx.fire_wall(440, 840, 640, 30, 6200, 4000, 1500, cache)
+	runner.check((flames.call(off) as Array).is_empty() and off.any(func(pa): return pa[0].ramp[0] == "dark"), "spenta resta il fumo nero")
+
+
+# Chi è preso dal fuoco lascia fuliggine
+func test_fuliggine() -> void:
+	var list := ParticleFx.burn_puff(2, 0, 0)
+	runner.check(list[0].ramp == ["dark"] and list.size() == 2, "fuliggine e una brace")
