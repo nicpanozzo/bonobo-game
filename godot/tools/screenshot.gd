@@ -330,6 +330,8 @@ func _partita() -> void:
 	cam.zoom = Vector2.ONE * (float(_bologna.zoom) if not _bologna.is_empty() else 1.4)
 	root.add_child(cam)
 	cam.make_current()
+	var screen := root.get_visible_rect().size
+	world.view_rect = Rect2(cam.position - screen / cam.zoom / 2.0, screen / cam.zoom) # come main.gd: serve a non disegnare il fuori campo
 	_hud = load("res://scripts/hud.gd").new()
 	_hud.game = _game
 	_hud.size = Vector2(_game.world.width, _game.world.height)

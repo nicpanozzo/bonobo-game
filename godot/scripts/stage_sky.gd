@@ -108,6 +108,8 @@ func draw_sky(ci: CanvasItem, t: float, view: Rect2) -> void:
 		for i in 90:
 			var sx: float = fposmod(i * 0.6180339 * 3000.0, _l.width + 1400.0) - 700.0
 			var sy := -420.0 + fposmod(i * 0.4142136 * 1000.0, 700.0)
+			if not r.has_point(Vector2(sx, sy) + off): # fuori dall'inquadratura (#433)
+				continue
 			var tw := 0.55 + 0.45 * sin(t / 280.0 + i * 1.7)
 			ci.draw_circle(Vector2(sx, sy) + off, 1.2 + (i % 3) * 0.6, Color(1, 1, 0.92, a * tw))
 	# sole di giorno, luna di notte
@@ -165,6 +167,8 @@ func draw_lamps(ci: CanvasItem, t: float, view: Rect2, parallax: float, ground :
 		if absf(float(l.parallax) - parallax) > 0.001:
 			continue
 		var p: Vector2 = Vector2(l.x, l.y) + _l.offset(float(l.parallax), view.get_center())
+		if p.x < view.position.x - 60.0 or p.x > view.end.x + 60.0 or p.y > view.end.y + 40.0 or p.y + ground < view.position.y: # fuori campo (#433)
+			continue
 		var warm := Color(1.0, 0.84, 0.55)
 		ci.draw_colored_polygon(PackedVector2Array([p + Vector2(-7, 8), p + Vector2(7, 8), p + Vector2(34, ground), p + Vector2(-34, ground)]), Color(warm, 0.12 * on))
 		var pool := PackedVector2Array()

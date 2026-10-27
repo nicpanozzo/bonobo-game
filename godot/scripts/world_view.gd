@@ -1576,8 +1576,11 @@ func _draw() -> void:
 			_draw_lit(entry[0], Rect2(float(pr.x) - size.x / 2.0, float(pr.y) - size.y, size.x, size.y), view_rect, Color(1, 1, 1, night))
 	if not _life.is_empty():
 		_life.sky.draw_daycycle(self, t_stage, view_rect) # di notte lampioni e finestre accese
+	var near := view_rect.grow(60.0) # i pezzi fuori dall'inquadratura non si disegnano (#433: le torri di Bologna sono tante)
 	for i in stage.solids.size():
 		var s: Dictionary = stage.solids[i]
+		if not near.intersects(Rect2(s.x, s.y, s.width, s.height)):
+			continue
 		var skin := _skin_for("solids", i)
 		_piece_alpha = StageMotion.piece_alpha(s, t_stage, _prize_team) # pezzi a tempo (#433): sfumano entrando e uscendo
 		if _piece_alpha <= 0.0:
@@ -1590,6 +1593,9 @@ func _draw() -> void:
 			_draw_skinned_solid(s, skin)
 	for i in stage.platforms.size():
 		var p: Dictionary = stage.platforms[i]
+		var py := minf(float(p.y), float(p.get("y2", p.y)))
+		if not near.intersects(Rect2(p.x, py - 200.0, p.width, absf(float(p.get("y2", p.y)) - float(p.y)) + 400.0)): # archi e spessore
+			continue
 		var skin := _skin_for("platforms", i)
 		_piece_alpha = StageMotion.piece_alpha(p, t_stage, _prize_team)
 		if _piece_alpha <= 0.0:
