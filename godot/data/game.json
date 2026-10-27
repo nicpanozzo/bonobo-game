@@ -1155,7 +1155,8 @@
   "bong": {
     "loadMs": 1200,
     "highMs": 7000,
-    "gravityMult": 0.7,
+    "gravityMult": 0.85,
+    "gravityMultMax": 0.55,
     "stunMs": 2500,
     "cloudRadius": 95,
     "cloudOffsetX": 55,
@@ -1165,7 +1166,9 @@
     "maxKnockback": 820,
     "knockbackGrowth": 6,
     "angleDeg": 40,
-    "cooldownMs": 350
+    "cooldownMs": 350,
+    "tripMs": 3000,
+    "crashTripMs": 5500
   },
   "funghi": {
     "uses": 3,
