@@ -209,7 +209,8 @@ export function tickCoyote(f: Fighter, dtMs: number): void {
 export function applyGravity(f: Fighter, dt: number): void {
   const fastFall = f.input.down && !f.hitstun;
   const maxFall = fastFall ? FIGHTER.fastFallSpeed : FIGHTER.maxFallSpeed;
-  const high = f.powerup === "bong" ? BONG.gravityMult : 1; // fatti col bong si è più leggeri (#302)
+  // Fatti col bong si è più leggeri (#302), sempre di più finché non si soffia
+  const high = f.powerup === "bong" ? BONG.gravityMult + (BONG.gravityMultMax - BONG.gravityMult) * (1 - f.powerupMs / BONG.highMs) : 1;
   f.vy = Math.min(f.vy + FIGHTER.gravity * characterStats(f.characterId).gravity * high * dt, f.hitstun ? Infinity : maxFall);
   if (fastFall && !f.onGround && f.vy > 0) f.vy = Math.max(f.vy, maxFall * 0.8);
 }

@@ -263,15 +263,24 @@ export function tickPowerup(f: Fighter, dtMs: number, ctx: PhysicsContext): void
   if (f.powerupMs > 0) return;
   ctx.events.push({ type: "powerEnd", id: f.id, kind: f.powerup });
   if (isArcade(f)) endArcade(f); // si torna in partita (#427)
-  // Troppo fatti (#302): non si è soffiato in tempo, si crolla tramortiti come con lo scudo rotto
+  // Troppo fatti (#302): non si è soffiato in tempo, si crolla tramortiti come con lo scudo rotto, e poi si viaggia
   if (f.powerup === "bong") {
     f.stunTimer = BONG.stunMs;
     f.stunned = true;
     f.attack = null;
     f.attackActive = false;
     ctx.events.push({ type: "bong", phase: "stun", id: f.id, x: Math.round(f.x), y: Math.round(f.y) });
+    startTrip(f, BONG.crashTripMs, ctx);
+    return;
   }
   f.powerup = null;
+}
+
+// Il viaggio dei funghetti (#302) dato dal bong: destra e sinistra invertite, spirali in testa e schermo distorto
+function startTrip(f: Fighter, ms: number, ctx: PhysicsContext) {
+  f.powerup = "trip";
+  f.powerupMs = ms;
+  ctx.events.push({ type: "powerUp", itemId: -1, id: f.id, kind: "trip", x: Math.round(f.x), y: Math.round(f.y) });
 }
 
 // Il bong (#302) si carica tenendo J. Carico, lasciando J si è fatti e il bong è finito; lasciando prima si perde la carica
@@ -332,6 +341,9 @@ function blowCloud(f: Fighter, fighters: Fighter[], ctx: PhysicsContext) {
     target.lastHitById = f.id;
     clearStun(target);
     target.hitstopTimer = Math.max(target.hitstopTimer, Math.min(HITSTOP.maxMs, HITSTOP.baseMs + HITSTOP.perDamageMs * damage));
+    // Chi respira la nuvola viaggia come coi funghetti; il fiore e gli arcade rendono intoccabili, quindi qui non arrivano
+    if (target.powerup === "bong") ctx.events.push({ type: "powerEnd", id: target.id, kind: "bong" });
+    startTrip(target, BONG.tripMs, ctx);
     ctx.events.push({
       type: "hit",
       attackerId: f.id,

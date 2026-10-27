@@ -317,6 +317,12 @@ func test_quanto_si_e_fatti_col_bong() -> void:
 	var late := FighterPose.high_level({"powerup": "bong", "powerupMs": 500}, 7000.0)
 	runner.check(FighterPose.high_level({"powerup": "trip", "powerupMs": 2000}, 7000.0) > 0.0, "i funghetti distorcono un po'")
 	runner.check(soon > 0.0 and soon < late and late <= 1.0, "cresce col tempo: %s → %s" % [soon, late])
+	# Già mentre lo si carica la fattanza sale piano, e a carica piena si attacca a quella appena fumato
+	var half := FighterPose.high_level({"powerup": null, "powerupMs": 0}, 7000.0, 0.5)
+	var full := FighterPose.high_level({"powerup": null, "powerupMs": 0}, 7000.0, 1.0)
+	runner.check(half > 0.0 and half < full and is_equal_approx(full, soon), "cresce con la carica: %s → %s → %s" % [half, full, soon])
+	var items := [{"id": 1, "kind": "bong", "heldBy": "a", "load": 0.4}, {"id": 2, "kind": "banana", "heldBy": "b"}]
+	runner.check(is_equal_approx(FighterPose.bong_load(items, "a"), 0.4) and FighterPose.bong_load(items, "b") == 0.0, "la carica del bong in mano")
 
 
 # Il fungo di Teemo (#419): agli avversari sparisce dopo che si è armato; chi l'ha lanciato lo vede sempre, più trasparente

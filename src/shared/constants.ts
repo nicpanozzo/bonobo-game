@@ -684,7 +684,8 @@ export const POWERUP = {
 export const BONG = {
   loadMs: 1200, // ms tenendo J per caricarlo; lasciando prima la carica si perde
   highMs: 7000, // ms da fatti prima di crollare se non si soffia
-  gravityMult: 0.7, // frazione della gravità da fatti: più leggeri, salti più alti e cadute lente
+  gravityMult: 0.85, // frazione della gravità appena fatti: più leggeri, salti più alti e cadute lente
+  gravityMultMax: 0.55, // frazione della gravità poco prima di crollare: la fattanza cresce finché non si soffia
   stunMs: 2500, // ms tramortiti quando si crolla: fermi e colpibili come con lo scudo rotto
   cloudRadius: 95, // pixel del raggio della nuvola
   cloudOffsetX: 55, // pixel davanti al centro del lottatore dove sta il centro della nuvola
@@ -695,6 +696,8 @@ export const BONG = {
   knockbackGrowth: 6, // pixel/s in più per ogni punto di percentuale del bersaglio
   angleDeg: 40, // angolo di lancio di chi prende la nuvola
   cooldownMs: 350, // ms dopo la nuvola prima di poter attaccare
+  tripMs: 3000, // ms di viaggio dei funghetti (destra e sinistra invertite) per chi prende la nuvola
+  crashTripMs: 5500, // ms di viaggio per chi crolla senza aver soffiato: comincia col crollo, dura oltre stunMs
 };
 
 // I funghetti di Teemo (#302): dal sacchetto giù + J ne pianta uno ai piedi; quasi invisibili agli altri, chi li calpesta "viaggia"

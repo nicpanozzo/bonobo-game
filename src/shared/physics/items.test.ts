@@ -309,12 +309,12 @@ describe("il bong, in tre fasi (#302)", () => {
     assert.equal(powerUp.length, 1);
     assert.equal(powerUp[0].kind, "bong");
     // Più leggeri: la stessa caduta accelera meno
-    const vy = (high: boolean) => {
+    const vy = (high: boolean, leftMs = BONG.highMs) => {
       const s = setup();
       const [f] = s.fighters;
       if (high) {
         f.powerup = "bong";
-        f.powerupMs = BONG.highMs;
+        f.powerupMs = leftMs;
       }
       f.y -= 300;
       f.onGround = false;
@@ -323,6 +323,8 @@ describe("il bong, in tre fasi (#302)", () => {
       return f.vy;
     };
     assert.ok(Math.abs(vy(true) - vy(false) * BONG.gravityMult) < 1);
+    // La fattanza cresce: poco prima di crollare si è ancora più leggeri
+    assert.ok(Math.abs(vy(true, 100) - vy(false) * BONG.gravityMultMax) < 2);
   });
 
   it("J soffia la nuvola: colpisce chi è vicino, più forte se si aspetta", () => {
@@ -344,6 +346,8 @@ describe("il bong, in tre fasi (#302)", () => {
       assert.equal(hits.length, 1);
       assert.equal(hits[0].itemKind, "bong");
       assert.ok(b.vx > 0, "vola via");
+      assert.equal(b.powerup, "trip", "chi respira la nuvola viaggia come coi funghetti");
+      assert.equal(b.powerupMs, BONG.tripMs);
       return b.percent;
     };
     const soon = damage(0);
@@ -363,16 +367,19 @@ describe("il bong, in tre fasi (#302)", () => {
     assert.equal(b.percent, 0);
   });
 
-  it("se non si soffia in tempo si crolla tramortiti", () => {
+  it("se non si soffia in tempo si crolla tramortiti, e poi si viaggia", () => {
     const { ctx, world, fighters } = pickAndLoad(loadTicks);
     const [a] = fighters;
     press(a, {});
     run(world, fighters, ctx, Math.ceil(BONG.highMs / DT) + 2);
-    assert.equal(a.powerup, null);
+    assert.equal(a.powerup, "trip");
     assert.equal(a.stunned, true);
     assert.equal(ofType(ctx.events, "bong").filter((e) => e.phase === "stun").length, 1);
     run(world, fighters, ctx, Math.ceil(BONG.stunMs / DT) + 1);
     assert.equal(a.stunned, false);
+    assert.equal(a.powerup, "trip", "il viaggio dura oltre il crollo");
+    run(world, fighters, ctx, Math.ceil((BONG.crashTripMs - BONG.stunMs) / DT) + 1);
+    assert.equal(a.powerup, null);
   });
 
   it("colpiti mentre lo si carica, cade di mano e la carica si perde", () => {

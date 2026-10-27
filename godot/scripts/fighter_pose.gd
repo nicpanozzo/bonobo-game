@@ -260,13 +260,22 @@ static func aura_alpha(ms_left: float, now_ms: float, ending_ms: float) -> float
 	return 0.45 + 0.12 * sin(now_ms / 420.0)
 
 
-# Quanto è fatto il proprio lottatore (#302): da 0,25 appena fumato a 1 prima di crollare; 0 se non lo è
-static func high_level(p: Variant, high_ms: float) -> float:
+# Quanto è fatto un lottatore (#302): mentre carica il bong sale piano fino a 0,25 (load da 0 a 1), poi da fumato
+# va da 0,25 a 1 prima di crollare; 0 se non lo è
+static func high_level(p: Variant, high_ms: float, load: float = 0.0) -> float:
 	if p is Dictionary and p.get("powerup") == "trip":
 		return 0.45 # i funghetti (#302): un viaggio leggero, sempre uguale
 	if not (p is Dictionary) or p.get("powerup") != "bong":
-		return 0.0
+		return 0.25 * clampf(load, 0.0, 1.0)
 	return 0.25 + 0.75 * clampf(1.0 - float(p.get("powerupMs", 0)) / high_ms, 0.0, 1.0)
+
+
+# Quanto ha caricato il bong che id tiene in mano (#302), da 0 a 1; 0 se non ne carica uno
+static func bong_load(items: Array, id: String) -> float:
+	for it in items:
+		if it.get("heldBy") == id and it.has("load"):
+			return float(it.load)
+	return 0.0
 
 
 # Il veleno del fungo di Teemo (#419): quanto si accende la tinta verde, 1 subito dopo uno scatto di danno e giù

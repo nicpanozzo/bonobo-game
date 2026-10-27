@@ -2245,7 +2245,7 @@ func _draw_cloud(c: Dictionary) -> void:
 func _update_high_overlay() -> void:
 	if _high_overlay == null:
 		return
-	var level := FighterPose.high_level(_sampled.get(my_id), float(game.get("bong", {}).get("highMs", 7000)))
+	var level := FighterPose.high_level(_sampled.get(my_id), float(game.get("bong", {}).get("highMs", 7000)), FighterPose.bong_load(_items, my_id))
 	if Access.calm:
 		level *= 0.35
 	_high_overlay.visible = level > 0.0
@@ -2346,15 +2346,17 @@ func _draw_supreme_ready(p: Dictionary, now: float, height: float) -> void:
 
 
 # Il fumo: sbuffi grigio-verdi che salgono lenti dalla testa e si allargano, sempre gli stessi per lo stesso istante
-func _draw_power_smoke(p: Dictionary, now: float, height: float) -> void:
+# level (#302): quanto si è fatti col bong; il fumo diventa più fitto, grande e mosso. 0 = il fiore, fumo leggero
+func _draw_power_smoke(p: Dictionary, now: float, height: float, level: float = 0.0) -> void:
 	if Access.calm:
 		return
 	var offset := float(hash(p.id) % 1000) / 1000.0
-	for k in 5:
-		var life := fmod(now / 1800.0 + k / 5.0 + offset, 1.0)
-		var drift := sin(now / 700.0 + k * 1.7 + offset * TAU) * 10.0 * life
-		var pos := Vector2(p.x + p.facing * 14.0 + drift, p.y - height * 0.85 - life * 80.0)
-		draw_circle(pos, 5.0 + life * 13.0, Color(0.86, 0.9, 0.84, 0.55 * (1.0 - life)))
+	var puffs := 5 + int(round(9.0 * level))
+	for k in puffs:
+		var life := fmod(now / (1800.0 - 600.0 * level) + float(k) / puffs + offset, 1.0)
+		var drift := sin(now / 700.0 + k * 1.7 + offset * TAU) * (10.0 + 26.0 * level) * life
+		var pos := Vector2(p.x + p.facing * 14.0 + drift, p.y - height * 0.85 - life * (80.0 + 60.0 * level))
+		draw_circle(pos, (5.0 + life * 13.0) * (1.0 + level), Color(0.86, 0.9, 0.84, (0.55 + 0.25 * level) * (1.0 - life)))
 
 
 # Chi vola veloce (lanciato lontano) lascia dietro di sé delle sagome che sbiadiscono
@@ -2907,7 +2909,9 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 	# Chi fa la suprema propria (#102) è invulnerabile ma appeso alla liana: non lampeggia
 	# Col fiore (#231) si è intoccabili per 8 s: invece di lampeggiare si ha l'alone verde
 	var powered: bool = p.get("powerup") == "fiore" and not away
-	var high: bool = p.get("powerup") == "bong" and not away # col bong (#302) si fuma ma si resta colpibili
+	# Col bong (#302) si fuma ma si resta colpibili; il fumo cresce già mentre lo si carica e poi con la fattanza
+	var fattanza := 0.0 if away else FighterPose.high_level(p, float(game.get("bong", {}).get("highMs", 7000)), FighterPose.bong_load(_items, p.id))
+	var high: bool = fattanza > 0.0 and p.get("powerup") != "trip"
 	# chi fa la suprema è intoccabile ma non lampeggia: la sta facendo lui (DEMACIAAA dura quasi 2 s)
 	var blink: bool = p.invulnerable and not away and not powered and not _supreme_view.holds(p.id, now) and p.get("attack") != "supreme" and _dodge_look(p.id, now).y >= 1.0
 	if p.respawning or (blink and int(now / 100) % 2 == 0):
@@ -2948,7 +2952,7 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 		draw_circle(Vector2(p.x + p.facing * fw * 0.27, p.y - fh * 0.78), 2.5, Color.BLACK)
 		draw_set_transform(Vector2.ZERO)
 	if powered or high:
-		_draw_power_smoke(p, now, fh)
+		_draw_power_smoke(p, now, fh, fattanza if high else 0.0)
 	if p.get("powerup") == "spore" and not away:
 		# Infettati dal filo di Kirschner (#358): spore verdi che salgono intorno al corpo
 		for k in 6:
