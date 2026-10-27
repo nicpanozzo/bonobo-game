@@ -17,7 +17,7 @@ func test_chi_scatta_ha_la_posa_dello_scatto() -> void:
 
 func test_senza_disegno_ripiega_sulla_camminata() -> void:
 	var game: Dictionary = JSON.parse_string(FileAccess.open("res://data/game.json", FileAccess.READ).get_as_text())
-	var anims: Dictionary = game.characters.elvedeo.sprite.animations
-	runner.check(anims.has("dash") and str(anims.dash.src) == "walk", "Elvedeo (senza disegno dello scatto): lo scatto usa la camminata")
+	var anims: Dictionary = game.characters.orsoblu.sprite.animations
+	runner.check(anims.has("dash") and str(anims.dash.src) == "walk", "Capt. OrsoBlu (senza disegno dello scatto): lo scatto usa la camminata")
 	var own: Dictionary = game.characters.bonobot.sprite.animations
 	runner.check(str(own.dash.src) == "dash", "Bonobot ha il suo scatto (#257)")

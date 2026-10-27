@@ -1,49 +1,26 @@
 # Elvedeo
 
-Gatto rasta grassottello: berretto a righe, dreadlock, canna sempre accesa, pancia e jeans. Attacca con una nuvola di fumo verde e con il bong. Proposto da @MauroGrecchi in #168. È un personaggio inventato, non la caricatura di un membro.
+Rasta in groppa a una capra, col piccione sulla spalla: berretto verde, giallo e rosso, dreadlock, occhiali tondi, canna accesa, maglietta nera strappata, pantaloni senape e crocs. Dal 2026-10-27 (Nicola) sostituisce il gatto rasta col bong proposto da @MauroGrecchi in #168, che resta nella storia della repo.
 
-## Eccezione provvisoria alla style guide
+## Mosse
 
-Come Capt. OrsoBlu, Elvedeo per ora **non segue** [docs/stile-grafico.md](../../../../docs/stile-grafico.md):
-
-- **risoluzione bassa:** il foglio originale ha lottatori alti circa 72 px, qui ingranditi 2,5 volte con un filtro morbido; da vicino si vede sgranato;
-- **stile diverso:** proporzioni chibi, linea e ombre dipinte invece di inchiostro e due toni piatti;
-- **colori rasta** (rosso, giallo, verde saturi) vicini ai colori riservati ai giocatori (`COLORS` in `constants.ts`).
-
-Una proposta di ridisegno nello stile comune è in una PR a parte (Parte di #168): si fa solo se Mauro è d'accordo.
+| Tasto | Mossa |
+|---|---|
+| Speciale neutra | **Piccione**: indica e il piccione vola dritto contro il nemico |
+| Speciale laterale | **Incornata**: la capra gratta il terreno, carica a testa bassa e sbatte |
+| Speciale giù | **Calcione**: si carica, poi la capra scalcia all'indietro (il colpo sta dietro) |
+| Suprema | **Elefante**: una nuvola di fumo e per poco la capra è un elefante e il piccione un'aquila; pesta tutto intorno mentre avanza piano |
 
 ## Fotogrammi
 
-- Formato cartella (E7): un PNG per stato, fotogrammi da **360×200 px** in fila da sinistra, `scale: 0.5` → 180×100 px di mondo. Il corpo è alto circa 89 px di mondo, come la hitbox (88).
-- Guarda **a destra**, piedi al centro del bordo basso, sfondo trasparente.
-
-| Stato | Fotogrammi | Dal foglio di Mauro | Note |
-|---|---|---|---|
-| `idle` | 24 | riga 0 | fuma, a 12 fps |
-| `walk` | 10 | riga 1 | a quattro zampe |
-| `jump` | 7 | riga 2, fotogrammi 4-7 e i primi tre del gruppo a destra | slancio e salita |
-| `fall` | 2 | riga 2, gli ultimi due a destra | braccia larghe, in ciclo |
-| `light` | 6 | riga 4, i primi 6 | soffia la nuvola verde; `hitFrame: 2` |
-| `heavy` | 8 | riga 5, fotogrammi 2-9 | alza il bong e lo abbatte; `hitFrame: 6` |
-| `hit` | 8 | riga 6 | |
-| `tumble` | 12 | riga 3 | rotola quando vola via |
-
-Gli altri stati usano il ripiego (`ANIMATION_FALLBACK` in `characters.ts`).
-
-**Non usati:** l'ultimo fotogramma della nuvola (il getto grande, non sta nel fotogramma senza allargarlo a tutti), il secondo colpo di bong con il bong che si rompe e i tre fotogrammi dopo (riga 5, da 10 in poi). Potrebbero servire per una speciale (E10) o per `heavyDown`.
+- Formato cartella (E7): un PNG per stato, fotogrammi da **440×300 px** in fila da sinistra, `scale: 0.5`, piedi a `footY: 276`. Largo e alto perché l'elefante e le nuvole escono dalla capra.
+- Guarda **a destra**, sfondo trasparente, contorno chiaro di 2 px.
 
 ## Come è stato fatto
 
-Dal JPEG di #168 (1888×560, la scacchiera grigia era dipinta nell'immagine): scacchiera tolta in automatico, poi uno script Python (Pillow, SciPy) che
+Dai tre video di Nicola fatti con Google Flow (1280×720, 24 fps), con `tools/sprite/elvedeo_dai_video.py`: i fotogrammi da usare per ogni stato sono nel `PLAN` dello script.
 
-1. pela i bordi grigi rimasti dalla scacchiera e toglie la scritta in basso a destra;
-2. trova i fotogrammi come macchie separate in ogni riga; nella riga della nuvola separa il fumo (verde salvia) dal corpo, così ogni nuvola resta col suo fotogramma;
-3. mette i piedi al centro del bordo basso e ingrandisce ×2,5 con filtro bicubico (alfa premoltiplicato).
+- **Clip 2 (speciali) e clip 3 (suprema)** così come sono. Nella 3 l'elefante a metà si gira a sinistra: quei fotogrammi sono specchiati.
+- **Clip 1 (mosse base)**: Flow ha messo Elvedeo a piedi accanto alla capra. Lo script rimonta la capra della clip 1 (girata a destra quando guarda a sinistra) con sopra Elvedeo seduto, ritagliato da un fermo della clip 2, che segue l'inclinazione della schiena. Nei colpi col bastone, nella presa, nello scudo e quando viene colpito il busto è quello di Elvedeo a piedi della clip 1, tagliato in vita.
 
-Il foglio originale e lo spritesheet senza scacchiera sono nella storia del branch `riccardo/elvedeo` (commit "Elvedeo: spritesheet di partenza di Mauro").
-
-## Da chiedere a Mauro
-
-- Ha una versione PNG con trasparenza vera, o a risoluzione più alta?
-- Con che strumento l'ha fatto e con che licenza (per `CREDITS.md`)?
-- Come si chiamano le righe del foglio (le abbiamo indovinate)?
+I video e le immagini di riferimento non sono nella repo.
