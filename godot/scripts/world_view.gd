@@ -917,8 +917,9 @@ func on_event(e: Dictionary) -> void:
 			var p: Variant = buffer.sample(e.id, Time.get_ticks_msec())
 			var col: Color = Access.color(p.color) if p != null else Color(1, 0.4, 0.3)
 			var ko_at := Vector2(clampf(e.x, view_rect.position.x, view_rect.end.x), clampf(e.y, view_rect.position.y, view_rect.end.y))
-			var special: String = KoSpecial.pick(str(e.id), float(e.x), float(e.y), int(e.get("stocksLeft", 0)), stage.get("blastZone", {}),
-				_is_final_ko(e), Access.calm, game.effects) if effects and p != null and stage.get("blastZone") is Dictionary else ""
+			var zone: Dictionary = TimeWarp.arena_at(stage, buffer.sample_stage_ms(Time.get_ticks_msec()), _prize_team).zone # la zona della fase attiva
+			var special: String = KoSpecial.pick(str(e.id), float(e.x), float(e.y), int(e.get("stocksLeft", 0)), zone,
+				_is_final_ko(e), Access.calm, game.effects) if effects and p != null and not zone.is_empty() else ""
 			if special != "": # #470 fase 4: invece della colonna, ogni tanto la stella o lo schermo
 				_start_ko_special(special, e, p, col)
 			elif effects and _particles: # #470: una colonna di fuoco del suo colore che entra dal punto d'uscita
@@ -1122,7 +1123,8 @@ func _check_finish(snap: Dictionary) -> void:
 		return
 	var c := _finish_candidate
 	_finish_candidate = {}
-	if Time.get_ticks_msec() - int(c.at) > 250 or not _warp.is_empty() or not (stage.get("blastZone") is Dictionary):
+	var arena := TimeWarp.arena_at(stage, float(snap.get("stageMs", 0)), _prize_team) # la fase attiva e i pezzi che ci sono
+	if Time.get_ticks_msec() - int(c.at) > 250 or not _warp.is_empty() or (arena.zone as Dictionary).is_empty():
 		return
 	for p in snap.get("players", []):
 		if str(p.id) != str(c.target):
@@ -1138,7 +1140,7 @@ func _check_finish(snap: Dictionary) -> void:
 			"max_fall": float(game.fighter.maxFallSpeed),
 			"extra_ms": float(game.effects.finishExtraMs),
 		}
-		if TimeWarp.predicts_ko(Vector2(p.x, p.y), Vector2(p.vx, p.vy), stage.blastZone, stage.get("solids", []), stage.get("platforms", []), phys):
+		if TimeWarp.predicts_ko(Vector2(p.x, p.y), Vector2(p.vx, p.vy), arena.zone, arena.solids, arena.platforms, phys):
 			_warp = TimeWarp.finish(Time.get_ticks_msec(), c.point, str(c.target), game.effects)
 		return
 
