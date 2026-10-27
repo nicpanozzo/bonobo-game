@@ -267,6 +267,7 @@ export interface DropSupremeArt {
 export interface SpinSupreme {
   type: "spin";
   name: string; // come si chiama nei menu
+  whirl?: boolean; // false: in Godot niente vortici bianchi (l'Elefante di Elvedeo si vede già nel disegno)
   windupMs: number;
   durationMs: number;
   hitEveryMs: number;
@@ -675,55 +676,71 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     },
   },
 
-  // Gatto rasta grassottello col bong, proposto da @MauroGrecchi (#168). Provvisorio: è il suo foglio ritagliato
-  // e ingrandito, un'eccezione alla style guide come Capt. OrsoBlu (vedi public/assets/characters/elvedeo/README.md).
+  // Rasta in groppa a una capra col piccione sulla spalla (Nicola, 2026-10-27): sostituisce il gatto col bong di
+  // @MauroGrecchi (#168). Animato dai video di Nicola fatti con Google Flow (tools/sprite/elvedeo_dai_video.py)
   elvedeo: {
     id: "elvedeo",
     name: "Elvedeo",
     crews: ["cuamm"],
-    // Con la pancia è più pesante e un po' lento, salta meno (E11). Peso da 1,15 a 1,05 (#276): con 1,15 vinceva
-    // il 67-73% contro il bot in npm run balance, sopra la soglia del 60%
-    // TODO community: statistiche provvisorie, da confermare con @MauroGrecchi
-    stats: { weight: 1.05, speed: 0.85, airSpeed: 0.95, jump: 0.9 },
-    // Speciali proprie (#262), dal foglio di Mauro: la nuvola verde soffiata lontano, la rotolata, il colpo di bong caricato
-    // TODO community: nomi e numeri provvisori, da confermare con @MauroGrecchi
+    // con la capra è più grosso e pesante, ma la capra corre e salta bene
+    stats: { weight: 1.15, speed: 0.95, airSpeed: 0.9, jump: 0.95 },
+    // il piccione che parte dalla spalla, l'incornata della capra, il calcione caricato
     specials: {
-      // lenta e larga: copre una zona più che colpire lontano
-      neutral: { type: "projectile", name: "Nuvola verde", startupMs: 300, cooldownMs: 700, speed: 260, gravity: 0, lifeMs: 1100, maxAlive: 1, range: 44, height: 40, damage: 6, baseKnockback: 150, knockbackGrowth: 3, angleDeg: 30, color: 0x8fbf6a },
-      // più lenta e lunga dello scatto di base, e più bassa: rotola sulla pancia
-      side: { type: "dash", name: "Rotolata di pancia", startupMs: 120, durationMs: 360, speed: 700, endLagMs: 380, range: 46, height: 40, damage: 9, baseKnockback: 380, knockbackGrowth: 8, angleDeg: 30 },
-      // la carica di esempio, più pesante: parte più tardi e chiude più lenta
-      down: { type: "charge", name: "Bongata", minMs: 250, maxMs: 1300, maxMultiplier: 1.8, activeMs: 120, endLagMs: 420, range: 56, height: 54, damage: 12, baseKnockback: 420, knockbackGrowth: 10.5, angleDeg: 45 },
+      // dritto e veloce, come il piccione che vola via
+      neutral: { type: "projectile", name: "Piccione", startupMs: 260, cooldownMs: 650, speed: 480, gravity: 0, lifeMs: 900, maxAlive: 1, range: 40, height: 26, damage: 7, baseKnockback: 170, knockbackGrowth: 4, angleDeg: 35, color: 0x8a8f99 },
+      // la capra gratta il terreno, carica a testa bassa e sbatte: lenta a partire, forte
+      side: { type: "dash", name: "Incornata", startupMs: 250, durationMs: 380, speed: 820, endLagMs: 420, range: 56, height: 50, damage: 11, baseKnockback: 420, knockbackGrowth: 9, angleDeg: 32 },
+      // la capra si abbassa, trema e scalcia all'indietro: il colpo sta dietro e manda via all'indietro
+      down: { type: "charge", name: "Calcione", minMs: 250, maxMs: 1300, maxMultiplier: 1.8, activeMs: 140, endLagMs: 400, range: 64, height: 50, boxX: -96, boxY: -56, damage: 12, baseKnockback: 430, knockbackGrowth: 10, angleDeg: 145 },
     },
+    // per poco la capra diventa un elefante e il piccione un'aquila (Nicola, 2026-10-27): pesta tutto intorno
+    // mentre avanza piano, e l'ultima pestata manda lontano
+    supreme: { type: "spin", name: "Elefante", whirl: false, windupMs: 700, durationMs: 2400, hitEveryMs: 600, endLagMs: 450, moveSpeed: 0.35, width: 200, height: 150, damage: 6, baseKnockback: 260, knockbackGrowth: 4, angleDeg: 50, finisher: { damage: 14, baseKnockback: 520, knockbackGrowth: 12, angleDeg: 40 } },
     sprite: {
       dir: "assets/characters/elvedeo",
-      frameWidth: 360,
-      frameHeight: 200,
-      scale: 0.5, // ingrandito a 2x dal foglio originale
+      frameWidth: 440, // largo e alto: l'elefante, le nuvole e lo schianto escono dalla capra
+      frameHeight: 300,
+      footY: 276,
+      scale: 0.5,
       animations: {
-        idle: { fps: 12, loop: true }, // fuma, 2 s
-        walk: { fps: 20, loop: true }, // a quattro zampe
-        jump: { fps: 24, loop: false },
+        idle: { fps: 12, loop: true }, // fuma, la capra rumina
+        walk: { fps: 14, loop: true }, // trotto
+        dash: { fps: 16, loop: true }, // galoppo
+        jump: { fps: 12, loop: false },
         fall: { fps: 6, loop: true },
-        light: { fps: 24, loop: false, hitFrame: 2 }, // soffia la nuvola di fumo verde
-        heavy: { fps: 24, loop: false, hitFrame: 6 }, // colpo di bong dall'alto
+        land: { fps: 16, loop: false },
+        light: { fps: 24, loop: false, hitFrame: 4, activeEnd: 6 }, // colpetto col bastone
+        lightUp: { fps: 24, loop: false, hitFrame: 3 }, // il bastone in alto
+        lightDown: { fps: 24, loop: false, hitFrame: 4 }, // testatina della capra
+        lightAir: { fps: 24, loop: false, hitFrame: 3 }, // la capra scalcia davanti in aria
+        heavy: { fps: 24, loop: false, hitFrame: 5, activeEnd: 6 }, // s'impenna e pesta
+        heavyUp: { fps: 24, loop: false, hitFrame: 3, activeEnd: 5 }, // l'arco col bastone
+        heavyDown: { fps: 24, loop: false, hitFrame: 3 }, // scalcia
+        grab: { fps: 24, loop: false, hitFrame: 3 },
+        throw: { fps: 24, loop: false, hitFrame: 4 },
+        shield: { fps: 12, loop: false },
         hit: { fps: 24, loop: false },
-        tumble: { fps: 24, loop: true }, // rotola quando vola via
+        tumble: { fps: 16, loop: true },
+        taunt: { fps: 12, loop: false }, // una boccata e la nuvola
+        specialNeutral: { fps: 24, loop: false, hitFrame: 5 }, // indica e il piccione parte
+        specialSide: { fps: 24, loop: false, hitFrame: 3, activeEnd: 9 }, // la carica, poi lo schianto con le stelline
+        specialDown: { fps: 24, loop: false, hitFrame: 4, activeEnd: 6 }, // la nuvola dietro
+        supreme: { fps: 24, loop: false, hitFrame: 7, activeEnd: 14 }, // la nuvola, l'elefante con l'aquila, la nuvola
       },
     },
-    // il corpo che si può colpire, misurato sulla sagoma del fermo (#243)
-    hurtbox: { width: 40, height: 88 },
+    // il corpo che si può colpire: la capra e lui seduto sopra, misurato sul fermo (#243)
+    hurtbox: { width: 64, height: 106 }, // 66 misurato, 64 è il massimo da lottatore
     // le zone dei colpi dove arriva il disegno (#243, tools/sprite/zone_dei_colpi.py)
     attacks: {
-      light: { range: 56, height: 30, boxX: 0, boxY: -64 },
-      heavy: { range: 49, height: 44, boxX: -4, boxY: -48 },
-      lightUp: { range: 54, height: 48, boxX: -22, boxY: -92 },
-      lightDown: { range: 42, height: 24, boxX: -18, boxY: -28 },
-      lightAir: { range: 56, height: 50, boxX: 0, boxY: -74 },
-      heavyUp: { range: 80, height: 64, boxX: -28, boxY: -81 },
-      heavyDown: { range: 62, height: 30, boxX: -18, boxY: -38 },
-      heavyAir: { range: 47, height: 60, boxX: -2, boxY: -72 },
-      dashAttack: { range: 44, height: 44, boxX: 0, boxY: -48 },
+      light: { range: 67, height: 30, boxX: 18, boxY: -63 },
+      heavy: { range: 91, height: 44, boxX: 2, boxY: -79 },
+      lightUp: { range: 54, height: 48, boxX: -8, boxY: -126 },
+      lightDown: { range: 60, height: 24, boxX: 0, boxY: -28 },
+      lightAir: { range: 70, height: 50, boxX: 12, boxY: -68 },
+      heavyUp: { range: 80, height: 64, boxX: -23, boxY: -137 },
+      heavyDown: { range: 72, height: 30, boxX: 0, boxY: -44 },
+      heavyAir: { range: 85, height: 60, boxX: 8, boxY: -94 },
+      dashAttack: { range: 75, height: 44, boxX: 18, boxY: -79 },
     },
   },
 

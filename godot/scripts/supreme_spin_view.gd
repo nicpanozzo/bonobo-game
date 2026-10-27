@@ -57,7 +57,7 @@ func _draw() -> void:
 func _draw_spin(sp: Dictionary, ms: float, feet: Vector2) -> void:
 	var spin_ms := ms - float(sp.windupMs)
 	var dur := float(sp.durationMs)
-	if spin_ms < 0:
+	if spin_ms < 0 or not sp.get("whirl", true): # l'Elefante di Elvedeo si vede già nel disegno
 		return
 	# compare e sparisce in fretta, in mezzo è pieno
 	var alpha := clampf(minf(spin_ms, dur + 200.0 - spin_ms) / 150.0, 0.0, 1.0)

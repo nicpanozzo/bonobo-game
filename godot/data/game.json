@@ -10439,82 +10439,107 @@
         "cuamm"
       ],
       "stats": {
-        "speed": 0.85,
-        "airSpeed": 0.95,
-        "jump": 0.9,
-        "weight": 1.05,
+        "speed": 0.95,
+        "airSpeed": 0.9,
+        "jump": 0.95,
+        "weight": 1.15,
         "gravity": 1
       },
       "specials": {
         "neutral": {
           "type": "projectile",
-          "name": "Nuvola verde",
-          "startupMs": 300,
-          "cooldownMs": 700,
-          "speed": 260,
+          "name": "Piccione",
+          "startupMs": 260,
+          "cooldownMs": 650,
+          "speed": 480,
           "gravity": 0,
-          "lifeMs": 1100,
+          "lifeMs": 900,
           "maxAlive": 1,
-          "range": 44,
-          "height": 40,
-          "damage": 6,
-          "baseKnockback": 150,
-          "knockbackGrowth": 3,
-          "angleDeg": 30,
-          "color": 9420650
+          "range": 40,
+          "height": 26,
+          "damage": 7,
+          "baseKnockback": 170,
+          "knockbackGrowth": 4,
+          "angleDeg": 35,
+          "color": 9080729
         },
         "side": {
           "type": "dash",
-          "name": "Rotolata di pancia",
-          "startupMs": 120,
-          "durationMs": 360,
-          "speed": 700,
-          "endLagMs": 380,
-          "range": 46,
-          "height": 40,
-          "damage": 9,
-          "baseKnockback": 380,
-          "knockbackGrowth": 8,
-          "angleDeg": 30
+          "name": "Incornata",
+          "startupMs": 250,
+          "durationMs": 380,
+          "speed": 820,
+          "endLagMs": 420,
+          "range": 56,
+          "height": 50,
+          "damage": 11,
+          "baseKnockback": 420,
+          "knockbackGrowth": 9,
+          "angleDeg": 32
         },
         "down": {
           "type": "charge",
-          "name": "Bongata",
+          "name": "Calcione",
           "minMs": 250,
           "maxMs": 1300,
           "maxMultiplier": 1.8,
-          "activeMs": 120,
-          "endLagMs": 420,
-          "range": 56,
-          "height": 54,
+          "activeMs": 140,
+          "endLagMs": 400,
+          "range": 64,
+          "height": 50,
+          "boxX": -96,
+          "boxY": -56,
           "damage": 12,
-          "baseKnockback": 420,
-          "knockbackGrowth": 10.5,
-          "angleDeg": 45
+          "baseKnockback": 430,
+          "knockbackGrowth": 10,
+          "angleDeg": 145
+        }
+      },
+      "supreme": {
+        "type": "spin",
+        "name": "Elefante",
+        "whirl": false,
+        "windupMs": 700,
+        "durationMs": 2400,
+        "hitEveryMs": 600,
+        "endLagMs": 450,
+        "moveSpeed": 0.35,
+        "width": 200,
+        "height": 150,
+        "damage": 6,
+        "baseKnockback": 260,
+        "knockbackGrowth": 4,
+        "angleDeg": 50,
+        "finisher": {
+          "damage": 14,
+          "baseKnockback": 520,
+          "knockbackGrowth": 12,
+          "angleDeg": 40
         }
       },
       "sprite": {
         "dir": "assets/characters/elvedeo",
-        "frameWidth": 360,
-        "frameHeight": 200,
+        "frameWidth": 440,
+        "frameHeight": 300,
+        "footY": 276,
         "scale": 0.5,
         "animations": {
           "idle": {
             "fps": 12,
             "loop": true,
-            "frames": 24,
+            "frames": 12,
             "src": "idle"
           },
           "walk": {
-            "fps": 20,
+            "fps": 14,
             "loop": true,
-            "frames": 10,
+            "frames": 12,
             "src": "walk"
           },
           "jump": {
-            "fps": 24,
+            "fps": 12,
             "loop": false,
-            "frames": 7,
+            "frames": 3,
             "src": "jump"
           },
           "fall": {
@@ -10526,285 +10551,310 @@
           "light": {
             "fps": 24,
             "loop": false,
-            "hitFrame": 2,
-            "frames": 6,
+            "hitFrame": 4,
+            "activeEnd": 6,
+            "frames": 9,
             "src": "light"
           },
           "heavy": {
             "fps": 24,
             "loop": false,
-            "hitFrame": 6,
-            "frames": 8,
+            "hitFrame": 5,
+            "activeEnd": 6,
+            "frames": 11,
             "src": "heavy"
           },
           "hit": {
             "fps": 24,
             "loop": false,
-            "frames": 8,
+            "frames": 5,
             "src": "hit"
           },
           "doubleJump": {
-            "fps": 24,
+            "fps": 12,
             "loop": false,
-            "frames": 7,
+            "frames": 3,
             "src": "jump"
           },
           "tumble": {
-            "fps": 24,
+            "fps": 16,
             "loop": true,
-            "frames": 12,
+            "frames": 7,
             "src": "tumble"
           },
           "ledge": {
-            "fps": 24,
+            "fps": 12,
             "loop": false,
-            "frames": 7,
+            "frames": 3,
             "src": "jump"
           },
           "climb": {
-            "fps": 24,
+            "fps": 12,
             "loop": false,
-            "frames": 7,
+            "frames": 3,
             "src": "jump"
           },
           "land": {
-            "fps": 12,
-            "loop": true,
-            "frames": 24,
-            "src": "idle"
+            "fps": 16,
+            "loop": false,
+            "frames": 2,
+            "src": "land"
           },
           "lightUp": {
             "fps": 24,
             "loop": false,
-            "hitFrame": 2,
-            "frames": 6,
-            "src": "light"
+            "hitFrame": 3,
+            "frames": 7,
+            "src": "lightUp"
           },
           "lightDown": {
             "fps": 24,
             "loop": false,
-            "hitFrame": 2,
-            "frames": 6,
-            "src": "light"
+            "hitFrame": 4,
+            "frames": 9,
+            "src": "lightDown"
           },
           "lightAir": {
             "fps": 24,
             "loop": false,
-            "hitFrame": 2,
-            "frames": 6,
-            "src": "light"
+            "hitFrame": 3,
+            "frames": 8,
+            "src": "lightAir"
           },
           "heavyUp": {
             "fps": 24,
             "loop": false,
-            "hitFrame": 6,
-            "frames": 8,
-            "src": "heavy"
+            "hitFrame": 3,
+            "activeEnd": 5,
+            "frames": 9,
+            "src": "heavyUp"
           },
           "heavyDown": {
             "fps": 24,
             "loop": false,
-            "hitFrame": 6,
-            "frames": 8,
-            "src": "heavy"
+            "hitFrame": 3,
+            "frames": 12,
+            "src": "heavyDown"
           },
           "heavyAir": {
             "fps": 24,
             "loop": false,
-            "hitFrame": 6,
-            "frames": 8,
+            "hitFrame": 5,
+            "activeEnd": 6,
+            "frames": 11,
             "src": "heavy"
           },
           "recovery": {
-            "fps": 24,
+            "fps": 12,
             "loop": false,
-            "frames": 7,
+            "frames": 3,
             "src": "jump"
           },
           "taunt": {
             "fps": 12,
-            "loop": true,
-            "frames": 24,
-            "src": "idle"
+            "loop": false,
+            "frames": 12,
+            "src": "taunt"
           },
           "shield": {
             "fps": 12,
-            "loop": true,
-            "frames": 24,
-            "src": "idle"
+            "loop": false,
+            "frames": 3,
+            "src": "shield"
           },
           "grab": {
             "fps": 24,
             "loop": false,
-            "hitFrame": 2,
-            "frames": 6,
-            "src": "light"
+            "hitFrame": 3,
+            "frames": 7,
+            "src": "grab"
           },
           "throw": {
             "fps": 24,
             "loop": false,
-            "hitFrame": 2,
-            "frames": 6,
-            "src": "light"
+            "hitFrame": 4,
+            "frames": 7,
+            "src": "throw"
           },
           "grabbed": {
             "fps": 24,
             "loop": false,
-            "frames": 8,
+            "frames": 5,
             "src": "hit"
           },
           "special": {
             "fps": 24,
             "loop": false,
-            "hitFrame": 6,
-            "frames": 8,
+            "hitFrame": 5,
+            "activeEnd": 6,
+            "frames": 11,
             "src": "heavy"
           },
           "dash": {
-            "fps": 20,
+            "fps": 16,
             "loop": true,
             "frames": 10,
-            "src": "walk"
+            "src": "dash"
           },
           "supreme": {
             "fps": 24,
             "loop": false,
-            "hitFrame": 6,
-            "frames": 8,
-            "src": "heavy"
+            "hitFrame": 7,
+            "activeEnd": 14,
+            "frames": 18,
+            "src": "supreme"
           },
           "specialNeutral": {
             "fps": 24,
             "loop": false,
-            "hitFrame": 6,
-            "frames": 8,
-            "src": "heavy"
+            "hitFrame": 5,
+            "frames": 12,
+            "src": "specialNeutral"
           },
           "specialSide": {
             "fps": 24,
             "loop": false,
-            "hitFrame": 6,
-            "frames": 8,
-            "src": "heavy"
+            "hitFrame": 3,
+            "activeEnd": 9,
+            "frames": 16,
+            "src": "specialSide"
           },
           "specialDown": {
             "fps": 24,
             "loop": false,
-            "hitFrame": 6,
-            "frames": 8,
-            "src": "heavy"
+            "hitFrame": 4,
+            "activeEnd": 6,
+            "frames": 13,
+            "src": "specialDown"
           },
           "dashAttack": {
             "fps": 24,
             "loop": false,
-            "hitFrame": 6,
-            "frames": 8,
+            "hitFrame": 5,
+            "activeEnd": 6,
+            "frames": 11,
             "src": "heavy"
           },
           "jumpSquat": {
-            "fps": 12,
-            "loop": true,
-            "frames": 24,
-            "src": "idle"
+            "fps": 16,
+            "loop": false,
+            "frames": 2,
+            "src": "land"
           }
         }
       },
       "hurtbox": {
-        "width": 40,
-        "height": 88
+        "width": 64,
+        "height": 106
       },
       "attacks": {
         "light": {
-          "range": 56,
+          "range": 67,
           "height": 30,
-          "boxX": 0,
-          "boxY": -64
+          "boxX": 18,
+          "boxY": -63
         },
         "heavy": {
-          "range": 49,
+          "range": 91,
           "height": 44,
-          "boxX": -4,
-          "boxY": -48
+          "boxX": 2,
+          "boxY": -79
         },
         "lightUp": {
           "range": 54,
           "height": 48,
-          "boxX": -22,
-          "boxY": -92
+          "boxX": -8,
+          "boxY": -126
         },
         "lightDown": {
-          "range": 42,
+          "range": 60,
           "height": 24,
-          "boxX": -18,
+          "boxX": 0,
           "boxY": -28
         },
         "lightAir": {
-          "range": 56,
+          "range": 70,
           "height": 50,
-          "boxX": 0,
-          "boxY": -74
+          "boxX": 12,
+          "boxY": -68
         },
         "heavyUp": {
           "range": 80,
           "height": 64,
-          "boxX": -28,
-          "boxY": -81
+          "boxX": -23,
+          "boxY": -137
         },
         "heavyDown": {
-          "range": 62,
+          "range": 72,
           "height": 30,
-          "boxX": -18,
-          "boxY": -38
+          "boxX": 0,
+          "boxY": -44
         },
         "heavyAir": {
-          "range": 47,
+          "range": 85,
           "height": 60,
-          "boxX": -2,
-          "boxY": -72
+          "boxX": 8,
+          "boxY": -94
         },
         "dashAttack": {
-          "range": 44,
+          "range": 75,
           "height": 44,
-          "boxX": 0,
-          "boxY": -48
+          "boxX": 18,
+          "boxY": -79
         }
       },
+      "portrait": "assets/characters/elvedeo/portrait.png",
       "specialAttacks": {
         "specialNeutral": {
-          "baseKnockback": 150,
-          "knockbackGrowth": 3,
-          "angleDeg": 30,
-          "range": 44,
-          "height": 40,
-          "damage": 6,
-          "startupMs": 300,
+          "baseKnockback": 170,
+          "knockbackGrowth": 4,
+          "angleDeg": 35,
+          "range": 40,
+          "height": 26,
+          "damage": 7,
+          "startupMs": 260,
           "activeMs": 0,
-          "cooldownMs": 700
+          "cooldownMs": 650
         },
         "specialSide": {
-          "baseKnockback": 380,
-          "knockbackGrowth": 8,
-          "angleDeg": 30,
-          "range": 46,
-          "height": 40,
-          "damage": 9,
-          "startupMs": 120,
-          "activeMs": 360,
-          "cooldownMs": 860
+          "baseKnockback": 420,
+          "knockbackGrowth": 9,
+          "angleDeg": 32,
+          "range": 56,
+          "height": 50,
+          "damage": 11,
+          "startupMs": 250,
+          "activeMs": 380,
+          "cooldownMs": 1050
         },
         "specialDown": {
-          "baseKnockback": 420,
-          "knockbackGrowth": 10.5,
-          "angleDeg": 45,
-          "range": 56,
-          "height": 54,
+          "baseKnockback": 430,
+          "knockbackGrowth": 10,
+          "angleDeg": 145,
+          "range": 64,
+          "height": 50,
+          "boxX": -96,
+          "boxY": -56,
           "damage": 12,
           "startupMs": 250,
-          "activeMs": 120,
+          "activeMs": 140,
           "cooldownMs": 1840
         }
       },
-      "supremeAttack": null,
+      "supremeAttack": {
+        "damage": 6,
+        "baseKnockback": 260,
+        "knockbackGrowth": 4,
+        "angleDeg": 50,
+        "startupMs": 700,
+        "activeMs": 2400,
+        "cooldownMs": 3550,
+        "range": 200,
+        "height": 150,
+        "boxX": -100,
+        "boxY": -142,
+        "outward": true
+      },
       "skins": {}
     },
     "egiainuso": {
