@@ -108,6 +108,9 @@ def place(rgba, body, mode):
     fb[ys, xs] = sb[sy, sx]
     # contorno chiaro di 2 px attorno al corpo (non alla scia), sotto il disegno
     ring = ndi.gaussian_filter(ndi.binary_dilation(fb > 0.5, iterations=2).astype(np.float32), 0.6)
+    # ma non nelle fessure strette (tra braccio e corpo, tra le gambe): lì i due contorni si toccherebbero e
+    # riempirebbero il buco di chiaro (#506, tools/sprite/apri_fessure.py)
+    ring[ndi.binary_closing(fb > 0.5, iterations=3, border_value=0) & (fb <= 0.5)] = 0
     a = frame[..., 3:] / 255
     rgb = frame[..., :3] * a + OUTLINE * ring[..., None] * (1 - a)
     alpha = a[..., 0] + ring * (1 - a[..., 0])
