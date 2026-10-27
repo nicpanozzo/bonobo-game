@@ -65,7 +65,7 @@ export interface SoundPad {
 // Postazione (#433): un pezzo di pavimento da cui si guida qualcosa, come in Lovers in a Dangerous Spacetime. Chi ci sta
 // sopra a terra e preme attacco la usa coi suoi tasti (su e giù, attacco; salto per uscire). Logica in physics/stations.ts
 export interface Station {
-  kind: "bombarda" | "munizioni" | "gru"; // bombarda: spara palle di mortadella; munizioni: carica le casse per una bombarda; gru: cala pezzi del Tetris
+  kind: "bombarda" | "munizioni" | "gru" | "teleferica"; // bombarda: spara palle di mortadella; munizioni: carica le casse per una bombarda; gru: cala pezzi del Tetris; teleferica: muove il cestello
   x: number; // bordo sinistro dell'area su cui si sta
   y: number; // superficie
   width: number;
@@ -88,6 +88,8 @@ export interface Station {
   toX?: number; // bordo destro
   dropY?: number; // altezza del fondo del pezzo appeso
   landY?: number; // altezza a cui i pezzi si posano (il ripiano): i blocchi che restano sono qui sopra
+  // Teleferica: destra e sinistra spingono il cestello lungo il cavo; con due argani (uno per squadra) le spinte si sommano
+  cart?: number; // indice in movers del cestello: si muove tra path[0] e path[1] solo quando lo spinge qualcuno
 }
 
 export interface PadEffect {
@@ -1118,6 +1120,10 @@ export const STAGES: Record<string, StageSpec> = {
       // l'assalto: chi ci sta sopra è in mezzo, scoperto ai colpi di tutti e alle palle delle bombarde
       { kind: "campana", width: 110, path: [{ x: 925, y: 1355 }, { x: 1245, y: 1410 }], periodMs: BOLOGNA.liftPeriodMs, on: BOLOGNA_GARISENDA,
         swing: { pivot: { x: 1140, y: 1150 }, length: 260, amplitudeDeg: BOLOGNA.bellAmplitudeDeg, swingMs: BOLOGNA.bellSwingMs } },
+      // La teleferica del cantiere (da 0:45 al crollo, in fondo: è l'indice 4 di stations[].cart): un cestello appeso a un
+      // cavo dalla cima della Garisenda (accanto alla sua bombarda) alla finestra in alto dell'Asinelli. Non va da solo:
+      // lo spingono i due argani qui sotto, uno per squadra. Serve per le incursioni sulla torre nemica
+      { kind: "teleferica", width: 110, path: [{ x: 790, y: 1180 }, { x: 1260, y: 1050 }], periodMs: BOLOGNA.liftPeriodMs, on: BOLOGNA_GARISENDA },
     ],
     hazards: [
       // Traffico leggero della piazza (0-45 s), alto solo 50 px: chi sta sui portici e sulle basi è al riparo
@@ -1189,6 +1195,10 @@ export const STAGES: Record<string, StageSpec> = {
       // di y 1280 accanto al tetto dell'Asinelli, dalla propria parte. I blocchi posati restano fino alla fine: piattaforme per la zuffa
       { kind: "gru", x: 410, y: 1275, width: 110, team: 1, fromX: 1000, toX: 1240, dropY: 1000, landY: 1280, on: BOLOGNA_GARISENDA },
       { kind: "gru", x: 1370, y: 1100, width: 100, team: 2, fromX: 1760, toX: 2000, dropY: 1000, landY: 1280, on: BOLOGNA_ASINELLI_STATIONS },
+      // Gli argani della teleferica (in fondo, dopo le gru): sulla postazione (A) di ogni torre, destra e sinistra spingono
+      // il cestello. Tirano insieme: se le due squadre spingono in versi opposti il cestello resta fermo a metà
+      { kind: "teleferica", x: 830, y: 1465, width: 110, team: 1, cart: 4, on: BOLOGNA_GARISENDA },
+      { kind: "teleferica", x: 1335, y: 1340, width: 110, team: 2, cart: 4, on: BOLOGNA_GARISENDA },
     ],
     // Il premio: chi ha più punti torre al crollo trova dei ponteggi nella zuffa
     prizeAtMs: BOLOGNA.collapseMs,
