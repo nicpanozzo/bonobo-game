@@ -1543,6 +1543,8 @@ func _draw() -> void:
 	_t_draw = t_stage
 	_wonder.draw_back(self, t_stage, view_rect, _pads_pressed, Time.get_ticks_msec()) # solo nelle arene col brano (#423)
 	var view_center := view_rect.get_center()
+	# Quello che si vede davvero, dalla telecamera: view_rect lo aggiorna main.gd solo mentre si gioca (#433)
+	var shown := get_global_transform_with_canvas().affine_inverse() * get_viewport_rect()
 	var rain := _rain_now(t_stage)
 	_ambient = _life.sky.ambient(t_stage) # la luce del momento del giorno (#267), bianca senza ciclo
 	if not _life.is_empty():
@@ -1561,7 +1563,7 @@ func _draw() -> void:
 			# finivano spostati sulle facciate sbagliate (le luci sulla Loggia Amulea che vedeva Riccardo)
 			var full: Vector2 = l[2] if l.size() > 2 else (l[0] as Texture2D).get_size()
 			var whole := StageMotion.layer_rect(full * _layer_scale, l[1], Vector2(stage_width() / 2.0, h / 2.0), view_center, _vertical_parallax())
-			_draw_lit(lights, whole, view_rect, Color(1, 1, 1, night))
+			_draw_lit(lights, whole, shown, Color(1, 1, 1, night))
 		if night > 0.0:
 			_life.sky.draw_lamps(self, t_stage, view_rect, float(l[1]))
 		far = l[1]
@@ -1573,10 +1575,10 @@ func _draw() -> void:
 		for entry in _light_props: # i vetri accesi delle decorazioni (#288)
 			var pr: Dictionary = entry[1]
 			var size: Vector2 = entry[0][3] * float(pr.get("scale", _layer_scale))
-			_draw_lit(entry[0], Rect2(float(pr.x) - size.x / 2.0, float(pr.y) - size.y, size.x, size.y), view_rect, Color(1, 1, 1, night))
+			_draw_lit(entry[0], Rect2(float(pr.x) - size.x / 2.0, float(pr.y) - size.y, size.x, size.y), shown, Color(1, 1, 1, night))
 	if not _life.is_empty():
 		_life.sky.draw_daycycle(self, t_stage, view_rect) # di notte lampioni e finestre accese
-	var near := view_rect.grow(60.0) # i pezzi fuori dall'inquadratura non si disegnano (#433: le torri di Bologna sono tante)
+	var near := shown.grow(60.0) # i pezzi fuori dall'inquadratura non si disegnano (#433: le torri di Bologna sono tante)
 	for i in stage.solids.size():
 		var s: Dictionary = stage.solids[i]
 		if not near.intersects(Rect2(s.x, s.y, s.width, s.height)):
@@ -1593,8 +1595,8 @@ func _draw() -> void:
 			_draw_skinned_solid(s, skin)
 	for i in stage.platforms.size():
 		var p: Dictionary = stage.platforms[i]
-		var py := minf(float(p.y), float(p.get("y2", p.y)))
-		if not near.intersects(Rect2(p.x, py - 200.0, p.width, absf(float(p.get("y2", p.y)) - float(p.y)) + 400.0)): # archi e spessore
+		var y2: float = float(p.y2) if p.get("y2") != null else float(p.y)
+		if not near.intersects(Rect2(p.x, minf(float(p.y), y2) - 200.0, p.width, absf(y2 - float(p.y)) + 400.0)): # archi e spessore
 			continue
 		var skin := _skin_for("platforms", i)
 		_piece_alpha = StageMotion.piece_alpha(p, t_stage, _prize_team)
