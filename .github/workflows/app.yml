@@ -51,6 +51,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          # Il node scaricato sotto finisce dentro bonobo-server: sempre l'ultima 22 con le correzioni
+          # di sicurezza, non quella (magari vecchia) già sul runner
+          check-latest: true
           cache: npm
       - run: npm ci
       - name: Scarica node e cloudflared per ${{ matrix.name }}
