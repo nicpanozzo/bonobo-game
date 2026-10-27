@@ -715,7 +715,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         lightAir: { fps: 24, loop: false, hitFrame: 3 }, // la capra scalcia davanti in aria
         heavy: { fps: 24, loop: false, hitFrame: 5, activeEnd: 6 }, // s'impenna e pesta
         heavyUp: { fps: 24, loop: false, hitFrame: 3, activeEnd: 5 }, // l'arco col bastone
-        heavyDown: { fps: 24, loop: false, hitFrame: 7 }, // scalcia
+        heavyDown: { fps: 24, loop: false, hitFrame: 3 }, // scalcia
         grab: { fps: 24, loop: false, hitFrame: 3 },
         throw: { fps: 24, loop: false, hitFrame: 4 },
         shield: { fps: 12, loop: false },
@@ -738,7 +738,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       lightDown: { range: 60, height: 24, boxX: 0, boxY: -28 },
       lightAir: { range: 70, height: 50, boxX: 12, boxY: -68 },
       heavyUp: { range: 80, height: 64, boxX: -23, boxY: -137 },
-      heavyDown: { range: 62, height: 30, boxX: -34, boxY: -36 },
+      heavyDown: { range: 72, height: 30, boxX: 0, boxY: -44 },
       heavyAir: { range: 85, height: 60, boxX: 8, boxY: -94 },
       dashAttack: { range: 75, height: 44, boxX: 18, boxY: -79 },
     },

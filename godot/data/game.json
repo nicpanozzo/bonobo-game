@@ -10632,7 +10632,7 @@
           "heavyDown": {
             "fps": 24,
             "loop": false,
-            "hitFrame": 7,
+            "hitFrame": 3,
             "frames": 12,
             "src": "heavyDown"
           },
@@ -10785,10 +10785,10 @@
           "boxY": -137
         },
         "heavyDown": {
-          "range": 62,
+          "range": 72,
           "height": 30,
-          "boxX": -34,
-          "boxY": -36
+          "boxX": 0,
+          "boxY": -44
         },
         "heavyAir": {
           "range": 85,
