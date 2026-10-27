@@ -6,6 +6,7 @@ var runner
 const WorldView := preload("res://scripts/world_view.gd")
 const StageMotion := preload("res://scripts/stage_motion.gd")
 const StagePreview := preload("res://scripts/stage_preview.gd")
+const LitTiles := preload("res://scripts/lit_tiles.gd")
 
 
 func _game() -> Dictionary:
@@ -77,6 +78,34 @@ func test_luci_della_notte_ritagliate() -> void:
 		var part: Rect2 = w._light_layers[k][1]
 		runner.check(part.size.x * part.size.y < 0.5, "strato %s ritagliato: %s" % [k, part])
 		runner.check(Rect2(0, 0, 1, 1).encloses(part), "dentro allo strato: %s" % part)
+	w.free()
+
+
+# E del pezzo ritagliato si disegnano solo le strisce con un vetro acceso (#433): a Bologna le luci intere facevano
+# rallentare la partita appena calava il buio
+func test_luci_della_notte_a_strisce() -> void:
+	var game := _game()
+	var w: Node2D = WorldView.new()
+	w.setup(game)
+	w.set_stage_spec(game.stages.bologna)
+	runner.check(w._light_layers.size() == 3 and w._light_props.size() == 7, "strati e decorazioni con le luci: %d, %d" % [w._light_layers.size(), w._light_props.size()])
+	for k in w._light_layers:
+		var lit: Array = w._light_layers[k]
+		var tex: Texture2D = lit[0]
+		var area := 0.0
+		for row in lit[2]:
+			for r: Rect2 in row[2]:
+				runner.check(Rect2(Vector2.ZERO, tex.get_size()).encloses(r), "striscia dentro all'immagine: %s" % r)
+				area += r.get_area()
+		var share := area / (tex.get_size().x * tex.get_size().y)
+		runner.check(share > 0.05 and share < 0.5, "strato %s: si disegna il %d%% dell'immagine" % [k, roundi(share * 100)])
+	# Si disegnano solo le strisce dentro la vista
+	var first: Array = w._light_layers.values()[0]
+	var size: Vector2 = (first[0] as Texture2D).get_size()
+	var all := LitTiles.visible(size, first[2], Rect2(Vector2.ZERO, size), Rect2(Vector2.ZERO, size))
+	var some := LitTiles.visible(size, first[2], Rect2(Vector2.ZERO, size), Rect2(Vector2.ZERO, size / 3.0))
+	runner.check(not all.is_empty() and some.size() < all.size(), "una vista più piccola, meno strisce: %d su %d" % [some.size() / 2, all.size() / 2])
+	runner.check(LitTiles.visible(size, first[2], Rect2(size.x * 2.0, 0, size.x, size.y), Rect2(Vector2.ZERO, size)).is_empty(), "fuori dalla vista niente")
 	w.free()
 
 
