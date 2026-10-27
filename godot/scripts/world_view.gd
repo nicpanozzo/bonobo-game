@@ -530,9 +530,10 @@ func _draw_lit(lit: Array, whole: Rect2, view: Rect2, modulate: Color) -> void:
 		LitTiles.draw(self, lit[0], lit[2], dst, view, modulate)
 
 
-# La parte di mondo che ci finisce sullo schermo, nelle coordinate di ci: dalla telecamera e dalla posizione del nodo
-static func visible_rect(ci: CanvasItem) -> Rect2:
-	return ci.get_global_transform_with_canvas().affine_inverse() * ci.get_viewport_rect()
+# La parte di mondo che finisce sullo schermo, nelle coordinate del nodo: xf è get_global_transform_with_canvas()
+# (telecamera e posizione del nodo), screen get_viewport_rect()
+static func visible_rect(xf: Transform2D, screen: Rect2) -> Rect2:
+	return xf.affine_inverse() * screen
 
 
 # Un'immagine dell'arena senza nemmeno un pixel visibile (#83)
@@ -1549,7 +1550,7 @@ func _draw() -> void:
 	_wonder.draw_back(self, t_stage, view_rect, _pads_pressed, Time.get_ticks_msec()) # solo nelle arene col brano (#423)
 	var view_center := view_rect.get_center()
 	# Quello che si vede davvero, dalla telecamera: view_rect lo aggiorna main.gd solo mentre si gioca (#433)
-	var shown := visible_rect(self)
+	var shown := visible_rect(get_global_transform_with_canvas(), get_viewport_rect())
 	var rain := _rain_now(t_stage)
 	_ambient = _life.sky.ambient(t_stage) # la luce del momento del giorno (#267), bianca senza ciclo
 	if not _life.is_empty():
