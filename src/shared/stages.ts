@@ -65,7 +65,7 @@ export interface SoundPad {
 // Postazione (#433): un pezzo di pavimento da cui si guida qualcosa, come in Lovers in a Dangerous Spacetime. Chi ci sta
 // sopra a terra e preme attacco la usa coi suoi tasti (su e giù, attacco; salto per uscire). Logica in physics/stations.ts
 export interface Station {
-  kind: "bombarda" | "munizioni" | "gru"; // bombarda: spara palle di mortadella; munizioni: carica le casse per una bombarda; gru: cala pezzi del Tetris
+  kind: "bombarda" | "munizioni" | "gru" | "ombrellone"; // bombarda: spara palle di mortadella; munizioni: carica le casse per una bombarda; gru: cala pezzi del Tetris; ombrellone: sposta lo scudo
   x: number; // bordo sinistro dell'area su cui si sta
   y: number; // superficie
   width: number;
@@ -88,6 +88,8 @@ export interface Station {
   toX?: number; // bordo destro
   dropY?: number; // altezza del fondo del pezzo appeso
   landY?: number; // altezza a cui i pezzi si posano (il ripiano): i blocchi che restano sono qui sopra
+  // Ombrellone: destra e sinistra spostano lo scudo tra fromX e toX, all'altezza shieldY; ferma le palle delle altre squadre
+  shieldY?: number; // il bordo alto dello scudo
 }
 
 export interface PadEffect {
@@ -1189,6 +1191,10 @@ export const STAGES: Record<string, StageSpec> = {
       // di y 1280 accanto al tetto dell'Asinelli, dalla propria parte. I blocchi posati restano fino alla fine: piattaforme per la zuffa
       { kind: "gru", x: 410, y: 1275, width: 110, team: 1, fromX: 1000, toX: 1240, dropY: 1000, landY: 1280, on: BOLOGNA_GARISENDA },
       { kind: "gru", x: 1370, y: 1100, width: 100, team: 2, fromX: 1760, toX: 2000, dropY: 1000, landY: 1280, on: BOLOGNA_ASINELLI_STATIONS },
+      // Gli ombrelloni dei portici (in fondo, dopo le gru): dal balcone di legno alto di ogni torre si sposta uno scudo
+      // sopra la cima, dove cadono le palle della bombarda nemica (le palle vanno da 400 a 1000 e da 1300 a 1700)
+      { kind: "ombrellone", x: 595, y: 1370, width: 140, team: 1, fromX: 380, toX: 1000, shieldY: 1060, on: BOLOGNA_GARISENDA },
+      { kind: "ombrellone", x: 1520, y: 1220, width: 130, team: 2, fromX: 1280, toX: 1720, shieldY: 860, on: BOLOGNA_ASINELLI_STATIONS },
     ],
     // Il premio: chi ha più punti torre al crollo trova dei ponteggi nella zuffa
     prizeAtMs: BOLOGNA.collapseMs,

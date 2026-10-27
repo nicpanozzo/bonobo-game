@@ -87,6 +87,13 @@ func station_of(id: String) -> int:
 	return -1
 
 
+# Il bordo sinistro dello scudo dell'ombrellone (#433): dallo snapshot; prima, in mezzo al suo tratto come shieldStart() in physics/stations.ts
+func shield_x(s: Dictionary, st: Dictionary) -> float:
+	if st.get("shield") != null:
+		return float(st.shield)
+	return (float(s.get("fromX", s.x)) + float(s.get("toX", float(s.x) + float(s.width))) - float(_k.get("umbrellaWidthPx", 170))) / 2.0
+
+
 # Il perno della canna e la direzione in cui punta, come barrel() in physics/stations.ts
 static func barrel(s: Dictionary, aim: float, pivot: float) -> Array:
 	var a := deg_to_rad(aim)
@@ -110,6 +117,8 @@ func draw(canvas: CanvasItem, t: float) -> void:
 			_draw_cannon(canvas, s, st, t, alpha, recoil(i, Time.get_ticks_msec()))
 		elif s.kind == "gru":
 			_draw_crane(canvas, s, st, t, alpha, tint)
+		elif s.kind == "ombrellone":
+			_draw_umbrella(canvas, s, st, alpha, tint, t)
 		else:
 			_draw_crates(canvas, s, st, t, alpha)
 
@@ -220,3 +229,26 @@ func draw_balls(canvas: CanvasItem, now: int) -> void:
 		canvas.draw_arc(c, r, 0, TAU, 20, Color("c76f7c"), 2.0)
 		for d: Vector2 in [Vector2(-5, -4), Vector2(4, -6), Vector2(6, 3), Vector2(-3, 5), Vector2(0, 0)]:
 			canvas.draw_circle(c + d, 1.8, Color("fff3ee"))
+
+
+# L'ombrellone dei portici: alla postazione la manovella con la corda, lassù lo scudo, un grande ombrellone da mercato
+# a spicchi del colore della squadra con l'asta che pende; la fascia larga umbrellaHeightPx è quella che ferma le palle
+func _draw_umbrella(canvas: CanvasItem, s: Dictionary, st: Dictionary, alpha: float, tint: Color, t: float) -> void:
+	var c := Vector2(float(s.x) + float(s.width) / 2.0, float(s.y) - 30.0)
+	canvas.draw_line(Vector2(c.x, float(s.y) - 6.0), c, Color(WOOD, alpha), 6.0)
+	var turn := shield_x(s, st) / 40.0
+	canvas.draw_line(c, c + Vector2(cos(turn), sin(turn)) * 16.0, Color(BRONZE, alpha), 4.0)
+	var w := float(_k.get("umbrellaWidthPx", 170))
+	var h := float(_k.get("umbrellaHeightPx", 30))
+	var x0 := shield_x(s, st)
+	var top := float(s.get("shieldY", s.y))
+	var sway := 2.0 * sin(t / 400.0) # l'ombrellone ondeggia appena
+	var ribs := 6
+	for k in ribs:
+		var a := x0 + w * k / ribs
+		var b := x0 + w * (k + 1) / ribs
+		var poly := PackedVector2Array([Vector2(x0 + w / 2.0 + sway, top - 18.0), Vector2(b, top + h * 0.6), Vector2((a + b) / 2.0, top + h), Vector2(a, top + h * 0.6)])
+		canvas.draw_colored_polygon(poly, Color(tint if k % 2 == 0 else Color("f3e6cc"), alpha))
+	canvas.draw_line(Vector2(x0 + w / 2.0 + sway, top - 18.0), Vector2(x0 + w / 2.0, top + h + 50.0), Color(INK, alpha), 3.0)
+	canvas.draw_circle(Vector2(x0 + w / 2.0 + sway, top - 20.0), 4.0, Color(INK, alpha))
+

@@ -6,7 +6,8 @@
 //   stepStations()  alla fine di stepWorld: chi è stato colpito esce, casse e munizioni, palle di mortadella in volo
 // Tipi: "bombarda" spara palle di mortadella ad arco (+1 punto torre alla squadra per ogni avversario preso);
 // "munizioni" carica casse tenendo attacco, che dopo deliveryMs arrivano alla bombarda di `feeds`; "gru" cala pezzi del Tetris
-// (crane.ts): destra/sinistra li spostano, attacco leggero o su li girano, attacco pesante li lascia cadere.
+// (crane.ts): destra/sinistra li spostano, attacco leggero o su li girano, attacco pesante li lascia cadere;
+// "ombrellone" è uno scudo sopra la torre: destra/sinistra lo spostano e ferma le palle delle altre squadre, anche senza nessuno.
 
 import { STATION } from "../constants";
 import type { Station } from "../stages";
@@ -27,6 +28,7 @@ interface Slot {
   crates: number[]; // munizioni: arrivo delle casse in salita
   held: Held | null; // gru: il pezzo appeso
   nextAt: number; // gru: tempo dell'arena da cui pende il pezzo nuovo
+  shield: number; // ombrellone: il bordo sinistro dello scudo
 }
 
 interface Ball extends CannonballState {
@@ -43,6 +45,8 @@ export interface StationWorld {
 }
 
 const now = (ctx: PhysicsContext) => ctx.timeMs ?? 0;
+// Lo scudo dell'ombrellone parte in mezzo al suo tratto
+const shieldStart = (s: Station) => s.kind === "ombrellone" ? ((s.fromX ?? s.x) + (s.toX ?? s.x + s.width) - STATION.umbrellaWidthPx) / 2 : 0;
 const aimRange = (s: Station): [number, number] => [s.aimMinDeg ?? STATION.aimMinDeg, s.aimMaxDeg ?? STATION.aimMaxDeg];
 export const ammoMax = (s: Station) => s.ammoMax ?? STATION.ammoMax;
 
@@ -51,7 +55,7 @@ function world(ctx: PhysicsContext): StationWorld {
   ctx.stations ??= {
     slots: (ctx.stage.stations ?? []).map((s) => {
       const [lo, hi] = aimRange(s);
-      return { user: null, aim: Math.round((lo + hi) / 2), ammo: Math.min(STATION.startAmmo, ammoMax(s)), readyAt: 0, autoAt: t + (s.autoAmmoMs ?? Infinity), loadAt: null, crates: [], held: null, nextAt: 0 };
+      return { user: null, aim: Math.round((lo + hi) / 2), ammo: Math.min(STATION.startAmmo, ammoMax(s)), readyAt: 0, autoAt: t + (s.autoAmmoMs ?? Infinity), loadAt: null, crates: [], held: null, nextAt: 0, shield: shieldStart(s) };
     }),
     balls: [],
     nextId: 1,
@@ -132,6 +136,11 @@ export function useStation(f: Fighter, dtMs: number, ctx: PhysicsContext): boole
       slot.held = null;
       slot.nextAt = t + STATION.gruCooldownMs;
     }
+  } else if (s.kind === "ombrellone") {
+    const push = (f.input.right ? 1 : 0) - (f.input.left ? 1 : 0);
+    const lo = s.fromX ?? s.x;
+    const hi = (s.toX ?? s.x + s.width) - STATION.umbrellaWidthPx;
+    slot.shield = Math.max(lo, Math.min(hi, slot.shield + (push * STATION.umbrellaSpeedPxS * dtMs) / 1000));
   } else loadCrate(f, s, slot, i, list, w, t, ctx);
   return true;
 }
@@ -250,6 +259,11 @@ function stepBalls(fighters: Fighter[], dtMs: number, w: StationWorld, ctx: Phys
       continue;
     }
     const box = { x: b.x - r, y: b.y - r, w: 2 * r, h: 2 * r };
+    if (blockedByUmbrella(box, b, w, ctx)) {
+      gone.add(b);
+      event(ctx, "boom", b.from, b.ownerId, b.x, b.y);
+      continue;
+    }
     if (ctx.stage.solids.some((s) => overlap(box, { x: s.x, y: s.y, w: s.width, h: s.height }))) {
       gone.add(b);
       event(ctx, "boom", b.from, b.ownerId, b.x, b.y);
@@ -272,6 +286,14 @@ function stepBalls(fighters: Fighter[], dtMs: number, w: StationWorld, ctx: Phys
   w.balls = w.balls.filter((b) => !gone.has(b));
 }
 
+// Una palla che tocca lo scudo di un ombrellone acceso di un'altra squadra si ferma lì (niente punto torre)
+function blockedByUmbrella(box: { x: number; y: number; w: number; h: number }, b: Ball, w: StationWorld, ctx: PhysicsContext): boolean {
+  const list = ctx.stage.stations ?? [];
+  const team = list[b.from]?.team;
+  return list.some((s, i) => s.kind === "ombrellone" && s.team !== team && pieceOn(s, now(ctx)) &&
+    overlap(box, { x: w.slots[i].shield, y: s.shieldY ?? s.y, w: STATION.umbrellaWidthPx, h: STATION.umbrellaHeightPx }));
+}
+
 // Rivincita: postazioni libere, munizioni, punti e gru da capo (i blocchi della gru stanno in ctx.arcade, che la rivincita azzera)
 export function resetStations(fighters: Fighter[], ctx: PhysicsContext): void {
   ctx.stations = undefined;
@@ -289,6 +311,7 @@ export function stationSnapshot(ctx: PhysicsContext): { stations?: StationState[
       const slot = w.slots[i];
       if (s.kind === "gru") return { user: slot.user, readyAt: Math.round(slot.nextAt), ...(slot.held && { piece: { kind: slot.held.kind, cells: hangCells(s, slot.held) } }) };
       if (s.kind === "bombarda") return { user: slot.user, aim: Math.round(slot.aim), ammo: slot.ammo, readyAt: Math.round(slot.readyAt) };
+      if (s.kind === "ombrellone") return { user: slot.user, shield: Math.round(slot.shield) };
       return { user: slot.user, ...(slot.loadAt !== null && { load: Math.round(slot.loadAt) }), crates: slot.crates.map(Math.round) };
     }),
     cannonballs: w.balls.map((b) => ({ id: b.id, ownerId: b.ownerId, x: Math.round(b.x), y: Math.round(b.y), vx: Math.round(b.vx), vy: Math.round(b.vy) })),
