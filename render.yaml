@@ -14,8 +14,10 @@ services:
     # Pubblica main solo quando la CI è verde
     autoDeployTrigger: checksPass
     envVars:
+      # Sempre l'ultima 22 e mai sotto la 22.23.4: lì sono corretti i bug di TLS e Brotli e i certificati
+      # eMudhra compromessi (avviso di sicurezza Node del 21 ottobre 2026). Render la sceglie a ogni build
       - key: NODE_VERSION
-        value: "22"
+        value: ">=22.23.4 <23"
       # Il webhook del Discord si incolla a mano nella dashboard di Render, non sta nella repo
       - key: DISCORD_WEBHOOK_URL
         sync: false

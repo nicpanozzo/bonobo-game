@@ -10,6 +10,10 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# La CI legge soltanto: il token di GitHub non può scrivere niente nella repo
+permissions:
+  contents: read
+
 jobs:
   check:
     runs-on: ubuntu-latest

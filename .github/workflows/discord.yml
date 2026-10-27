@@ -22,7 +22,7 @@ jobs:
           ref: ${{ github.event.pull_request.base.ref }}
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - run: node scripts/discord.mjs pr-merged
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
