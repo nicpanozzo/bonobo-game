@@ -241,7 +241,7 @@ func test_inquadratura_vera() -> void:
 	var node := Node2D.new()
 	runner.root.add_child(node)
 	node.position = Vector2(100, 50)
-	var before := runner.root.canvas_transform
+	var before: Transform2D = runner.root.canvas_transform
 	runner.root.canvas_transform = Transform2D(0.0, Vector2(2, 2), 0.0, Vector2(-400, -600)) # zoom 2, spostata
 	var size := node.get_viewport_rect().size
 	var shown: Rect2 = WorldView.visible_rect(node)
