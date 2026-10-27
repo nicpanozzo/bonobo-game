@@ -10,7 +10,7 @@ var _out := "user://screenshots"
 var _game: Dictionary
 var _world: Node2D # nella partita finta: riceve uno snapshot a ogni frame
 var _hud: Control
-const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre", "lobby_regole", "musica", "tetris", "pacman", "bassanese", "bologna_piazza", "bologna_torri", "bologna_crollo", "bologna_zuffa", "oggetti", "prepartita_attesa", "prepartita_vs", "prepartita_conto", "fine_partita", "perf_piazza", "perf_torri", "perf_crollo", "perf_notte", "perf_zuffa", "perf_zuffa_noluci", "perf_zuffa_nopioggia", "perf_zuffa_nofondo"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
+const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre", "lobby_regole", "musica", "tetris", "pacman", "bassanese", "bologna_piazza", "bologna_torri", "bologna_crollo", "bologna_zuffa", "oggetti", "prepartita_attesa", "prepartita_vs", "prepartita_conto", "fine_partita", "perf"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
 var _index := -1
 var _frame := 0
 var _failed := false
@@ -25,6 +25,7 @@ var _pre_fighters := 0 # quanti lottatori nella partita finta del pre-partita (0
 var _pre_view: Control
 var _end_on := false # la partita finta finita: GAME!, vincitore e classifica coi premi (results_view.gd)
 var _results: Control
+var _world_script: Variant = null # PROVVISORIO (#433)
 var _bologna: Dictionary = {} # le fasi di Bologna (#433): {ms, cam, zoom, spots}, vuoto nelle altre partite
 # Bologna in quattro momenti: l'auto in piazza, l'ingorgo sotto le torri, la Garisenda che cade coi mattoni, la polvere
 const BOLOGNA_SHOTS := {
@@ -45,24 +46,97 @@ func _initialize() -> void:
 	_next()
 
 
+# PROVVISORIO (#433): misura di Bologna lungo la partita. [nome, stageMs, variante, zoom]
+const PERF_RUNS := [
+	["t000", 0, "", 0.6], ["t030", 30000, "", 0.6], ["t060", 60000, "", 0.6], ["t090", 90000, "", 0.6],
+	["t120", 120000, "", 0.6], ["t150", 152000, "", 0.6], ["t180", 180000, "", 0.6], ["t210", 210000, "", 0.6],
+	["t240", 240000, "", 0.6], ["t270", 270000, "", 0.6], ["t300", 300000, "", 0.6], ["t330", 330000, "", 0.6],
+	["t360", 360000, "", 0.6], ["t390", 390000, "", 0.6], ["t420", 420000, "", 0.6],
+	["z300_noluci", 300000, "noluci", 0.6], ["z300_nocielo", 300000, "nocielo", 0.6], ["z300_nopost", 300000, "nopost", 0.6],
+	["z300_notrappole", 300000, "notrappole", 0.6], ["z300_nostrati", 300000, "nostrati", 0.6],
+	["z300_zoom035", 300000, "", 0.35], ["z022_zoom035", 22000, "", 0.35],
+]
+const PERF_WARM := 10
+const PERF_FRAMES := 60
+var _perf_i := -1
 var _perf_t0 := 0
-const PERF_FRAMES := 120
+var _perf_draw_us := 0
+var _perf_calls := 0
+var _perf_prims := 0
+
+
+class TimedWorld extends "res://scripts/world_view.gd":
+	var draw_us := 0
+	func _draw() -> void:
+		var t := Time.get_ticks_usec()
+		super()
+		draw_us += Time.get_ticks_usec() - t
+
+
+func _perf() -> void:
+	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+	_perf_next()
+
+
+func _perf_next() -> void:
+	for c in root.get_children():
+		c.queue_free()
+	_perf_i += 1
+	_frame = 0
+	if _perf_i >= PERF_RUNS.size():
+		_world = null
+		return
+	var run: Array = PERF_RUNS[_perf_i]
+	_bologna = BOLOGNA_SHOTS.zuffa.duplicate()
+	_bologna.ms = run[1]
+	_bologna.zoom = run[3]
+	_world_script = TimedWorld
+	_partita()
+	_world_script = null
+	match String(run[2]):
+		"noluci":
+			_world._light_layers = {}
+			_world._light_props = []
+		"nocielo":
+			_world._life.life = {}
+		"nopost":
+			for c in root.get_children():
+				if c is CanvasLayer:
+					c.get_child(0).enabled = false
+		"notrappole":
+			_world.stage.hazards = []
+			_world.stage.jets = []
+		"nostrati":
+			_world._layers = []
+
+
+func _perf_process() -> bool:
+	if _world == null:
+		return false
+	var snap := _snapshot(_frame)
+	_world.on_snapshot(snap)
+	_hud.on_snapshot(snap)
+	if _frame == PERF_WARM:
+		_perf_t0 = Time.get_ticks_usec()
+		_world.draw_us = 0
+		_perf_calls = 0
+		_perf_prims = 0
+	elif _frame > PERF_WARM:
+		_perf_calls += int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME))
+		_perf_prims += int(Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME))
+	if _frame < PERF_WARM + PERF_FRAMES:
+		return false
+	var ms := (Time.get_ticks_usec() - _perf_t0) / 1000.0 / PERF_FRAMES
+	print("PERF %-16s frame %6.2f ms, _draw del mondo %6.2f ms, draw call %5d, primitive %7d" % [PERF_RUNS[_perf_i][0], ms,
+		_world.draw_us / 1000.0 / PERF_FRAMES, _perf_calls / PERF_FRAMES, _perf_prims / PERF_FRAMES])
+	_perf_next()
+	return _world == null
 
 
 func _process(_delta: float) -> bool:
 	_frame += 1
-	# PROVVISORIO: misura delle prestazioni di Bologna
-	if String(SHOTS[_index]).begins_with("perf_") and _frame >= SHOT_FRAME:
-		if _frame == SHOT_FRAME:
-			_perf_t0 = Time.get_ticks_usec()
-		var snap2 := _snapshot(_frame)
-		_world.on_snapshot(snap2)
-		_hud.on_snapshot(snap2)
-		if _frame < SHOT_FRAME + PERF_FRAMES:
-			return false
-		print("PERF %s: %.2f ms per frame, fps %d" % [SHOTS[_index], (Time.get_ticks_usec() - _perf_t0) / 1000.0 / PERF_FRAMES, Engine.get_frames_per_second()])
-		_next()
-		if _index >= SHOTS.size():
+	if SHOTS[_index] == "perf":
+		if _perf_process():
 			quit(1 if _failed else 0)
 			return true
 		return false
@@ -186,34 +260,6 @@ func _bologna_crollo() -> void:
 	_partita()
 
 
-func _perf(ms: int, mod := "") -> void:
-	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
-	_bologna = BOLOGNA_SHOTS.zuffa.duplicate()
-	_bologna.ms = ms
-	_partita()
-	if mod == "noluci":
-		_world._light_layers = {}
-		_world._light_props = []
-	elif mod == "nopioggia":
-		var life: Dictionary = _world.stage.art.life
-		life.erase("rain")
-	elif mod == "nofondo":
-		_world._light_layers = {}
-		_world._light_props = []
-		var art: Dictionary = _world.stage.art
-		art.erase("life")
-
-
-func _perf_piazza() -> void: _perf(22000)
-func _perf_torri() -> void: _perf(100000)
-func _perf_crollo() -> void: _perf(152000)
-func _perf_notte() -> void: _perf(230000)
-func _perf_zuffa() -> void: _perf(308000)
-func _perf_zuffa_noluci() -> void: _perf(308000, "noluci")
-func _perf_zuffa_nopioggia() -> void: _perf(308000, "nopioggia")
-func _perf_zuffa_nofondo() -> void: _perf(308000, "nofondo")
-
-
 func _bologna_zuffa() -> void:
 	_bologna = BOLOGNA_SHOTS.zuffa
 	_partita()
@@ -274,7 +320,7 @@ func _fine_partita() -> void:
 
 
 func _partita() -> void:
-	var world: Node2D = load("res://scripts/world_view.gd").new()
+	var world: Node2D = _world_script.new() if _world_script != null else load("res://scripts/world_view.gd").new()
 	root.add_child(world)
 	world.setup(_game)
 	world.set_stage("bologna" if not _bologna.is_empty() else ("musica" if _music else _game.defaultStageId))
