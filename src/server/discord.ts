@@ -1,11 +1,12 @@
 // Risultati delle partite nel canale Discord (#18). Il webhook arriva solo dalla variabile
 // d'ambiente DISCORD_WEBHOOK_URL (mai nel codice né nei log): senza, non succede niente.
 
-import { TEAM_NAMES } from "../shared/constants";
+import { DISCORD_LIMITS, TEAM_NAMES } from "../shared/constants";
 import type { MatchEndEvent } from "../shared/match";
 import type { Fighter } from "../shared/physics";
 import type { MatchRules } from "../shared/types";
 import type { Leaderboard } from "./leaderboard";
+import { TokenBucket } from "./rateLimit";
 import type { RoomHooks } from "./Room";
 import { MatchStats, type PlayerStats } from "./stats";
 
@@ -16,8 +17,12 @@ export interface Player {
   stocks: number;
 }
 
+// Il server è pubblico e i nomi li sceglie chiunque: nel canale restano testo, mai grassetti, spoiler o link cliccabili
+export const escapeMarkdown = (text: string) => text.replace(/[\\*_~|`<>:[\]()]/g, (c) => `\\${c}`);
+
 // Il messaggio per il canale: chi ha vinto e una riga per giocatore
-export function formatResult(result: MatchEndEvent, players: readonly Player[], stats: (id: string) => PlayerStats, rules: MatchRules): string {
+export function formatResult(result: MatchEndEvent, named: readonly Player[], stats: (id: string) => PlayerStats, rules: MatchRules): string {
+  const players = named.map((p) => ({ ...p, name: escapeMarkdown(p.name) }));
   const winner = players.find((p) => p.id === result.winnerId);
   const minutes = Math.floor(result.durationMs / 60000);
   const seconds = Math.round((result.durationMs % 60000) / 1000);
@@ -67,7 +72,8 @@ export async function postToDiscord(url: string, content: string): Promise<void>
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content, allowed_mentions: { parse: [] } }), // i nomi non taggano nessuno
+      // I nomi non taggano nessuno e niente anteprime di link (flags 4 = SUPPRESS_EMBEDS)
+      body: JSON.stringify({ content, allowed_mentions: { parse: [] }, flags: 4 }),
     });
     if (!res.ok) console.warn(`[discord] il webhook ha risposto ${res.status}`);
   } catch (err) {
@@ -75,9 +81,17 @@ export async function postToDiscord(url: string, content: string): Promise<void>
   }
 }
 
+// Uno solo per tutto il server: chi apre tante stanze e chiude partite lampo non riempie il canale
+const discordPosts = new TokenBucket(DISCORD_LIMITS.postsPerHour / 3600, DISCORD_LIMITS.burst, Date.now());
+
 // I ganci per una stanza: contano le statistiche e a fine partita postano il risultato
 // e lo segnano in classifica. Le partite con meno di due umani (es. da soli contro un bot) non contano.
-export function discordHooks(webhookUrl: string | undefined, isBot: (id: string) => boolean, leaderboard?: Leaderboard): RoomHooks {
+export function discordHooks(
+  webhookUrl: string | undefined,
+  isBot: (id: string) => boolean,
+  leaderboard?: Leaderboard,
+  posts: TokenBucket = discordPosts,
+): RoomHooks {
   const stats = new MatchStats();
   return {
     onEvents: (_room, events) => stats.add(events),
@@ -92,7 +106,7 @@ export function discordHooks(webhookUrl: string | undefined, isBot: (id: string)
           return { name: f.name, won, kos: s.kos, falls: s.falls, damageDealt: s.damageDealt };
         }),
       });
-      if (webhookUrl) void postToDiscord(webhookUrl, formatResult(result, fighters, (id) => stats.get(id), room.rules));
+      if (webhookUrl && posts.take(Date.now())) void postToDiscord(webhookUrl, formatResult(result, fighters, (id) => stats.get(id), room.rules));
     },
   };
 }

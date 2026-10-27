@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { sanitizeRules } from "../shared/rules";
 import type { GameEvent } from "../shared/types";
-import { formatResult, funTitles } from "./discord";
+import { discordHooks, escapeMarkdown, formatResult, funTitles } from "./discord";
+import { TokenBucket } from "./rateLimit";
 import { MatchStats } from "./stats";
 
 const hit = (attackerId: string, targetId: string, damage: number): GameEvent => ({
@@ -61,5 +62,38 @@ describe("messaggio Discord", () => {
     const s = new MatchStats();
     const text = formatResult({ type: "matchEnd", winnerId: "a", winnerTeam: 2, durationMs: 0 }, players, (id) => s.get(id), sanitizeRules({ mode: "teams" }));
     assert.match(text, /^🦍 Vince la squadra \*\*Blu\*\*/);
+  });
+
+  it("i nomi restano testo: niente grassetti, spoiler o link", () => {
+    assert.equal(escapeMarkdown("**a**||b||"), "\\*\\*a\\*\\*\\|\\|b\\|\\|");
+    assert.equal(escapeMarkdown("[x](https://y)"), "\\[x\\]\\(https\\://y\\)");
+    assert.equal(escapeMarkdown("Nonna Gina 2"), "Nonna Gina 2");
+    const s = new MatchStats();
+    const text = formatResult({ type: "matchEnd", winnerId: "a", winnerTeam: 0, durationMs: 0 }, [{ id: "a", name: "_x_", team: 0, stocks: 1 }, players[1]], (id) => s.get(id), sanitizeRules({}));
+    assert.match(text, /^🦍 \*\*\\_x\\_\*\* vince su Marta/);
+  });
+});
+
+describe("limite dei post sul Discord", () => {
+  it("oltre il limite i risultati non partono, la classifica sì", () => {
+    const sent: string[] = [];
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = (async (_url: unknown, init?: { body?: string }) => {
+      sent.push(init?.body ?? "");
+      return new Response(null, { status: 204 });
+    }) as typeof fetch;
+    try {
+      const posts = new TokenBucket(0, 2, Date.now());
+      const fighters = [{ id: "a", name: "A", team: 0 }, { id: "b", name: "B", team: 0 }] as never;
+      const room = { rules: sanitizeRules({}) } as never;
+      for (let i = 0; i < 5; i++) {
+        const hooks = discordHooks("https://example.invalid/hook", () => false, undefined, posts);
+        hooks.onMatchEnd?.(room, { type: "matchEnd", winnerId: "a", winnerTeam: 0, durationMs: 1000 }, fighters);
+      }
+      assert.equal(sent.length, 2);
+      assert.equal(JSON.parse(sent[0]).flags, 4);
+    } finally {
+      globalThis.fetch = realFetch;
+    }
   });
 });
