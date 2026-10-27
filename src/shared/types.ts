@@ -171,6 +171,7 @@ export interface StationState {
   load?: number; // munizioni: quando è pronta la cassa in carica; manca se non se ne carica una
   crates?: number[]; // munizioni: quando arriva su ognuna delle casse in salita
   cart?: number; // teleferica: dove sta il cestello lungo il cavo, da 0 (path[0] del mover) a 1 (path[1])
+  shield?: number; // ombrellone: il bordo sinistro dello scudo
   piece?: { kind: string; cells: [number, number][] }; // gru: il pezzo appeso (forma e quadretti in pixel, angolo in alto a sinistra); manca se non ce n'è. readyAt: da quando pende il prossimo
 }
 

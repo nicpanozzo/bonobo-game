@@ -36,6 +36,14 @@ func test_cestello_della_teleferica() -> void:
 	runner.check(is_equal_approx(view.cart_k(3), 0.8), "dallo snapshot, dove l'hanno spinto")
 
 
+func test_scudo_dell_ombrellone() -> void:
+	var view: RefCounted = StationView.new()
+	var s := {"kind": "ombrellone", "x": 0, "y": 650, "width": 80, "fromX": 300, "toX": 1100, "shieldY": 400}
+	view.setup({"stations": [s]}, {"station": {"umbrellaWidthPx": 170}})
+	runner.check(is_equal_approx(view.shield_x(s, {}), 615.0), "prima del primo snapshot lo scudo sta in mezzo al tratto")
+	runner.check(is_equal_approx(view.shield_x(s, {"shield": 300}), 300.0), "poi dove dice lo snapshot")
+
+
 func test_canna_come_la_fisica() -> void:
 	var b: Array = StationView.barrel({"x": 100, "y": 650, "width": 80, "dir": -1}, 0.0, 46.0)
 	runner.check(b[0] == Vector2(140, 604), "il perno sopra il centro della pedana")

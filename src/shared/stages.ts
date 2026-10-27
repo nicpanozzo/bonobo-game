@@ -65,7 +65,7 @@ export interface SoundPad {
 // Postazione (#433): un pezzo di pavimento da cui si guida qualcosa, come in Lovers in a Dangerous Spacetime. Chi ci sta
 // sopra a terra e preme attacco la usa coi suoi tasti (su e giù, attacco; salto per uscire). Logica in physics/stations.ts
 export interface Station {
-  kind: "bombarda" | "munizioni" | "gru" | "teleferica"; // bombarda: spara palle di mortadella; munizioni: carica le casse per una bombarda; gru: cala pezzi del Tetris; teleferica: muove il cestello
+  kind: "bombarda" | "munizioni" | "gru" | "teleferica" | "ombrellone"; // bombarda: spara palle di mortadella; munizioni: carica le casse per una bombarda; gru: cala pezzi del Tetris; teleferica: muove il cestello; ombrellone: sposta lo scudo
   x: number; // bordo sinistro dell'area su cui si sta
   y: number; // superficie
   width: number;
@@ -90,6 +90,8 @@ export interface Station {
   landY?: number; // altezza a cui i pezzi si posano (il ripiano): i blocchi che restano sono qui sopra
   // Teleferica: destra e sinistra spingono il cestello lungo il cavo; con due argani (uno per squadra) le spinte si sommano
   cart?: number; // indice in movers del cestello: si muove tra path[0] e path[1] solo quando lo spinge qualcuno
+  // Ombrellone: destra e sinistra spostano lo scudo tra fromX e toX, all'altezza shieldY; ferma le palle delle altre squadre
+  shieldY?: number; // il bordo alto dello scudo
 }
 
 export interface PadEffect {
@@ -1199,6 +1201,10 @@ export const STAGES: Record<string, StageSpec> = {
       // il cestello. Tirano insieme: se le due squadre spingono in versi opposti il cestello resta fermo a metà
       { kind: "teleferica", x: 830, y: 1465, width: 110, team: 1, cart: 4, on: BOLOGNA_GARISENDA },
       { kind: "teleferica", x: 1335, y: 1340, width: 110, team: 2, cart: 4, on: BOLOGNA_GARISENDA },
+      // Gli ombrelloni dei portici (in fondo, dopo le gru): dal balcone di legno alto di ogni torre si sposta uno scudo
+      // sopra la cima, dove cadono le palle della bombarda nemica (le palle vanno da 400 a 1000 e da 1300 a 1700)
+      { kind: "ombrellone", x: 595, y: 1370, width: 140, team: 1, fromX: 380, toX: 1000, shieldY: 1060, on: BOLOGNA_GARISENDA },
+      { kind: "ombrellone", x: 1520, y: 1220, width: 130, team: 2, fromX: 1280, toX: 1720, shieldY: 860, on: BOLOGNA_ASINELLI_STATIONS },
     ],
     // Il premio: chi ha più punti torre al crollo trova dei ponteggi nella zuffa
     prizeAtMs: BOLOGNA.collapseMs,

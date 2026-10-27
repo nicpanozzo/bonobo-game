@@ -825,7 +825,10 @@
     "gruCooldownMs": 2500,
     "gruMaxBlocks": 16,
     "cartSpeedPxS": 170,
-    "cartStart": 0.5
+    "cartStart": 0.5,
+    "umbrellaWidthPx": 170,
+    "umbrellaHeightPx": 30,
+    "umbrellaSpeedPxS": 420
   },
   "pacman": {
     "ms": 8000,
@@ -9007,6 +9010,38 @@
             [
               45000,
               150000
+            ]
+          ]
+        },
+        {
+          "kind": "ombrellone",
+          "x": 595,
+          "y": 1370,
+          "width": 140,
+          "team": 1,
+          "fromX": 380,
+          "toX": 1000,
+          "shieldY": 1060,
+          "on": [
+            [
+              45000,
+              150000
+            ]
+          ]
+        },
+        {
+          "kind": "ombrellone",
+          "x": 1520,
+          "y": 1220,
+          "width": 130,
+          "team": 2,
+          "fromX": 1280,
+          "toX": 1720,
+          "shieldY": 860,
+          "on": [
+            [
+              45000,
+              165000
             ]
           ]
         }
