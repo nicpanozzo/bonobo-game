@@ -7,6 +7,9 @@
 # Fasi: "slow" (il colpo che chiude la partita, al 12%), "follow" (si segue chi vola via), "game" (l'ultimo KO),
 # "catch" (ci si rimette in pari). Vuoto = niente rallentatore.
 
+const StagePhases := preload("res://scripts/stage_phases.gd")
+const PredictMovement := preload("res://scripts/predict/movement.gd")
+
 
 # Il colpo che chiude la partita (come il Finish Zoom di Smash): fermo quasi del tutto e zoom stretto sul colpo
 static func finish(now: float, point: Vector2, target: String, fx: Dictionary) -> Dictionary:
@@ -135,3 +138,14 @@ static func _blocked(x: float, y: float, nx: float, ny: float, solids: Array, pl
 		if ny > y and y < top and ny >= top and nx >= float(p.x) and nx <= float(p.x) + float(p.width):
 			return true
 	return false
+
+
+# L'arena com'è al tempo t (ms dell'arena), come la vede il server: la zona di espulsione della fase attiva (Bologna la
+# sposta di fase in fase: sotto le Torri il cielo finisce a 1300, sulle torri a 300) e solo i pezzi a tempo che ci sono.
+# Con la zona dell'arena di partenza chi stava sulle torri era già "fuori" e ogni colpo faceva partire lo zoom.
+# prize: la squadra del premio (pezzi forLeader). { zone, solids, platforms }
+static func arena_at(stage: Dictionary, t: float, prize := 0) -> Dictionary:
+	var zone: Variant = StagePhases.effective_stage(stage, t).get("blastZone")
+	var solids: Array = (stage.get("solids", []) as Array).filter(func(s): return PredictMovement.piece_on(s, t, prize))
+	var platforms: Array = (stage.get("platforms", []) as Array).filter(func(p): return PredictMovement.piece_on(p, t, prize))
+	return {"zone": zone if zone is Dictionary else {}, "solids": solids, "platforms": platforms}

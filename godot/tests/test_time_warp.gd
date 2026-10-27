@@ -91,3 +91,27 @@ func test_previsione_del_colpo_decisivo() -> void:
 	runner.check(not _ko(640, 60, 1500), "forte ma al centro e in alto: resta in gioco")
 	runner.check(not _ko(320, 10, 1200), "radente sul palco: resta in gioco")
 	runner.check(not _ko(640, -80, 2600), "verso il basso al centro: sbatte sul palco")
+
+
+# Bologna cambia zona di espulsione di fase in fase (sotto le Torri il cielo finisce a 1300, sulle torri a 300): con la
+# zona dell'arena di partenza chi stava sulle torri era già "fuori" e ogni colpo faceva partire lo zoom. Casi controllati
+# con la fisica vera del server (scratch di confronto: prima 1000-1900 zoom a vuoto per fase, ora 0-10)
+func _bologna_ko(x: float, y: float, angle_deg: float, kb: float, t: float) -> bool:
+	var game: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/game.json"))
+	var arena := TimeWarp.arena_at(game.stages.bologna, t)
+	var a := deg_to_rad(angle_deg)
+	var phys := _phys()
+	phys.hitstun_ms = kb * 0.35
+	return TimeWarp.predicts_ko(Vector2(x, y), Vector2(cos(a) * kb, -sin(a) * kb), arena.zone, arena.solids, arena.platforms, phys)
+
+
+func test_bologna_a_fasi() -> void:
+	var game: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/game.json"))
+	runner.check(float(TimeWarp.arena_at(game.stages.bologna, 60000).zone.top) < float(game.stages.bologna.blastZone.top), "sulle torri il cielo è più in alto")
+	runner.check(not _bologna_ko(1420, 1098, 45, 900, 60000), "sulle torri un colpo medio non manda fuori")
+	runner.check(not _bologna_ko(1420, 1098, 30, 1200, 60000), "neanche uno forte di lato")
+	runner.check(_bologna_ko(1420, 1098, 90, 3000, 60000), "uno fortissimo in alto sì")
+	runner.check(not _bologna_ko(1500, 738, 160, 900, 170000), "nella zuffa un colpo medio no")
+	runner.check(_bologna_ko(1500, 738, 90, 3000, 170000), "nella zuffa uno fortissimo in alto sì")
+	var all_before: int = (game.stages.bologna.platforms as Array).size()
+	runner.check((TimeWarp.arena_at(game.stages.bologna, 20000).platforms as Array).size() < all_before, "sotto le Torri le piattaforme delle torri non ci sono ancora")
