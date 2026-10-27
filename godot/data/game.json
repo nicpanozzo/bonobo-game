@@ -10455,13 +10455,20 @@
           "gravity": 0,
           "lifeMs": 900,
           "maxAlive": 1,
-          "range": 40,
-          "height": 26,
+          "range": 44,
+          "height": 28,
           "damage": 7,
           "baseKnockback": 170,
           "knockbackGrowth": 4,
           "angleDeg": 35,
-          "color": 9080729
+          "color": 9080729,
+          "sprite": {
+            "path": "assets/characters/elvedeo/proiettili/piccione.png",
+            "frameWidth": 128,
+            "frameHeight": 110,
+            "fps": 18,
+            "scale": 0.5
+          }
         },
         "side": {
           "type": "dash",
@@ -10499,13 +10506,14 @@
         "type": "spin",
         "name": "Elefante",
         "whirl": false,
+        "grow": 1.6,
         "windupMs": 700,
         "durationMs": 2400,
         "hitEveryMs": 600,
         "endLagMs": 450,
         "moveSpeed": 0.35,
-        "width": 200,
-        "height": 150,
+        "width": 300,
+        "height": 220,
         "damage": 6,
         "baseKnockback": 260,
         "knockbackGrowth": 4,
@@ -10525,15 +10533,15 @@
         "scale": 0.5,
         "animations": {
           "idle": {
-            "fps": 12,
+            "fps": 10,
             "loop": true,
-            "frames": 12,
+            "frames": 18,
             "src": "idle"
           },
           "walk": {
-            "fps": 14,
+            "fps": 18,
             "loop": true,
-            "frames": 12,
+            "frames": 13,
             "src": "walk"
           },
           "jump": {
@@ -10691,9 +10699,9 @@
             "src": "heavy"
           },
           "dash": {
-            "fps": 16,
+            "fps": 28,
             "loop": true,
-            "frames": 10,
+            "frames": 13,
             "src": "dash"
           },
           "supreme": {
@@ -10708,7 +10716,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 5,
-            "frames": 12,
+            "frames": 11,
             "src": "specialNeutral"
           },
           "specialSide": {
@@ -10749,58 +10757,58 @@
       },
       "attacks": {
         "light": {
-          "range": 67,
+          "range": 44,
           "height": 30,
-          "boxX": 18,
+          "boxX": 0,
           "boxY": -63
         },
         "heavy": {
-          "range": 91,
+          "range": 50,
           "height": 44,
-          "boxX": 2,
-          "boxY": -79
+          "boxX": 0,
+          "boxY": -80
         },
         "lightUp": {
           "range": 54,
           "height": 48,
-          "boxX": -8,
-          "boxY": -126
+          "boxX": -44,
+          "boxY": -128
         },
         "lightDown": {
-          "range": 60,
+          "range": 42,
           "height": 24,
-          "boxX": 0,
-          "boxY": -28
+          "boxX": -22,
+          "boxY": -31
         },
         "lightAir": {
-          "range": 70,
+          "range": 50,
           "height": 50,
-          "boxX": 12,
+          "boxX": 0,
           "boxY": -68
         },
         "heavyUp": {
           "range": 80,
           "height": 64,
-          "boxX": -23,
+          "boxX": -70,
           "boxY": -137
         },
         "heavyDown": {
-          "range": 72,
+          "range": 62,
           "height": 30,
-          "boxX": 0,
+          "boxX": -26,
           "boxY": -44
         },
         "heavyAir": {
-          "range": 85,
+          "range": 50,
           "height": 60,
-          "boxX": 8,
-          "boxY": -94
+          "boxX": 0,
+          "boxY": -95
         },
         "dashAttack": {
-          "range": 75,
+          "range": 50,
           "height": 44,
-          "boxX": 18,
-          "boxY": -79
+          "boxX": 0,
+          "boxY": -80
         }
       },
       "portrait": "assets/characters/elvedeo/portrait.png",
@@ -10809,8 +10817,8 @@
           "baseKnockback": 170,
           "knockbackGrowth": 4,
           "angleDeg": 35,
-          "range": 40,
-          "height": 26,
+          "range": 44,
+          "height": 28,
           "damage": 7,
           "startupMs": 260,
           "activeMs": 0,
@@ -10849,10 +10857,10 @@
         "startupMs": 700,
         "activeMs": 2400,
         "cooldownMs": 3550,
-        "range": 200,
-        "height": 150,
-        "boxX": -100,
-        "boxY": -142,
+        "range": 300,
+        "height": 220,
+        "boxX": -150,
+        "boxY": -212,
         "outward": true
       },
       "skins": {}

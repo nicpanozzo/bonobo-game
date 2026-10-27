@@ -177,6 +177,13 @@ for (const [id, spec] of Object.entries(CHARACTERS)) {
   const portraitPath = `assets/characters/${id}/portrait.png`;
   const portrait = existsSync(publicDir + portraitPath) ? portraitPath : undefined;
   if (portrait) spriteFiles.push(portrait);
+  // i disegni dei proiettili (il Piccione di Elvedeo)
+  for (const slot of SPECIAL_SLOTS) {
+    const sp = specials[slot];
+    if (sp.type !== "projectile" || !sp.sprite) continue;
+    if (existsSync(publicDir + sp.sprite.path)) spriteFiles.push(sp.sprite.path);
+    else spriteErrors.push(`${id}: manca public/${sp.sprite.path} (disegno del proiettile in characters.ts)`);
+  }
   // supremeAttack: la suprema propria letta come attacco (#102), null per chi usa quella di base
   const c = { ...spec, stats: characterStats(id), portrait, specials, specialAttacks, supremeAttack: supremeAttackSpec(id) };
   characters[id] = c;
