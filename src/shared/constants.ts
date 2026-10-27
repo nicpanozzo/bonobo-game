@@ -615,6 +615,10 @@ export const LEADERBOARD = {
   windowDays: 7, // la pagina /classifica conta le partite degli ultimi 7 giorni
   maxMatches: 2000, // partite tenute nel file, le più vecchie si buttano
 };
+export const DISCORD_LIMITS = {
+  postsPerHour: 20, // risultati delle partite postati sul Discord in un'ora, da tutto il server insieme
+  burst: 5, // risultati che possono partire uno dopo l'altro (una serata con più stanze)
+};
 
 // Oggetti (#17): cadono dal cielo, si raccolgono con J o K e si lanciano con J o K
 // Classi di frequenza degli oggetti che cadono (Nicola, 24 ottobre 2026): ogni oggetto ne ha una, proporzionata a quanto
