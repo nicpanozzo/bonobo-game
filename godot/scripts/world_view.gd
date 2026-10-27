@@ -62,6 +62,7 @@ var _companions: RefCounted = preload("res://scripts/companion_view.gd").new() #
 var _item_pos := {} # id oggetto -> Vector2 disegnata, che insegue quella dello snapshot
 var _facings := {} # id giocatore -> verso, per mettere in mano gli oggetti
 var _font: Font = ThemeDB.fallback_font
+var _projectile_tex := {} # percorso -> Texture2D dei proiettili disegnati (null se manca)
 var view_rect := Rect2(0, 0, 1280, 720) # la parte di mondo che si vede, decisa dalla telecamera in main.gd
 var _layers: Array = [] # strati dello sfondo dell'arena (E12), dal più lontano: [texture, parallasse]
 var _foreground: Array = [] # strato davanti ai lottatori, o []
@@ -1716,12 +1717,40 @@ func _draw_projectiles() -> void:
 		if word != "":
 			_draw_projectile_word(word, c, vel, color)
 			continue
+		var art: Variant = FighterPose.projectile_special(game, str(pr.characterId), str(pr.kind)).get("sprite")
+		if art is Dictionary and _draw_projectile_sprite(art, c, vel, color):
+			continue
 		for i in [3, 2, 1]: # la scia: copie più piccole e trasparenti dietro
 			var tc := color
 			tc.a = 0.5 - 0.13 * i
 			_draw_oval(c - vel * 0.018 * i, angle, size * (1.0 - 0.15 * i), tc)
 		_draw_oval(c, angle, size, color)
 		_draw_oval(c + Vector2(-2, -2).rotated(angle), angle, size * 0.45, color.lightened(0.6))
+
+
+# Un proiettile disegnato (il Piccione di Elvedeo): i fotogrammi in ciclo, girato verso dove vola, con una scia
+# leggera del colore della speciale. false se il PNG non c'è: allora si disegna l'ovale
+func _draw_projectile_sprite(art: Dictionary, c: Vector2, vel: Vector2, color: Color) -> bool:
+	var path := "res://data/%s" % art.path
+	if not _projectile_tex.has(path):
+		_projectile_tex[path] = load(path) if ResourceLoader.exists(path) else null
+	var tex: Texture2D = _projectile_tex[path]
+	if tex == null:
+		return false
+	var fw := float(art.frameWidth)
+	var fh := float(art.frameHeight)
+	var frames := maxi(1, int(tex.get_width() / fw))
+	var f := int(Time.get_ticks_msec() / 1000.0 * float(art.fps)) % frames
+	var size := Vector2(fw, fh) * float(art.scale)
+	var left := vel.x < 0.0
+	for i in [2, 1]: # la scia
+		var tc := color
+		tc.a = 0.3 - 0.1 * i
+		draw_circle(c - vel * 0.025 * i, size.y * 0.25, tc)
+	draw_set_transform(c, 0.0, Vector2(-1.0 if left else 1.0, 1.0))
+	draw_texture_rect_region(tex, Rect2(-size / 2.0, size), Rect2(f * fw, 0, fw, fh))
+	draw_set_transform(Vector2.ZERO)
+	return true
 
 
 # Una parola che vola (le Ciacole di Bradipo): scritta col bordo scuro, inclinata appena verso dove va, con la scia
@@ -3208,6 +3237,7 @@ func _draw_sprite(p: Dictionary, character: Dictionary, now: float, react := Tra
 		texture = _state_textures[character.id][a.src]
 	var src := frame_region(frame, row, fw, fh, float(_sprite_keep.get(character.id, 1.0)))
 	var scale: float = sheet.get("scale", 1.0) # 0.5 per i disegni fatti a 2x
+	scale *= FighterPose.supreme_grow(character, p.get("attack"), _fight_ms(now, float(state.since))) # l'Elefante cresce
 	draw_set_transform_matrix(react * Transform2D(0.0, Vector2(p.facing * scale, scale), 0.0, Vector2(p.x, p.y)))
 	var foot_y: float = sheet.get("footY", fh) # dove stanno i piedi nel fotogramma: sotto c'è chi è appeso al bordo
 	if outlines:

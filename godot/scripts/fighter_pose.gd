@@ -303,3 +303,16 @@ static func supreme_flames(id: String, now: float, height: float, count := 7) ->
 		var x := side * height * 0.28 + sin(now / 160.0 + k) * 4.0
 		out.append({"pos": Vector2(x, -t * height * 1.15), "r": lerpf(7.0, 2.0, t), "a": sin(t * PI)})
 	return out
+
+
+# Quanto è grande il disegno durante la suprema che fa crescere (grow, l'Elefante di Elvedeo): cresce mentre la
+# nuvola lo copre, resta grande mentre pesta e torna normale nel recupero. 1.0 per tutti gli altri
+static func supreme_grow(character: Dictionary, attack: Variant, ms: float) -> float:
+	var sp: Variant = character.get("supreme")
+	if attack != "supreme" or not (sp is Dictionary) or not sp.has("grow"):
+		return 1.0
+	var windup := float(sp.get("windupMs", 0))
+	var end := windup + float(sp.get("durationMs", 0))
+	var up := smoothstep(windup * 0.4, windup, ms) # le nuvole coprono il cambio
+	var down := 1.0 - smoothstep(end, end + 250.0, ms)
+	return 1.0 + (float(sp.grow) - 1.0) * minf(up, down)

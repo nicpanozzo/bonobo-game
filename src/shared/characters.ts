@@ -197,6 +197,15 @@ export interface ProjectileSpecial extends SpecialBase, SpecialHit {
   color?: number; // colore del proiettile in Godot (0xRRGGBB); senza, quello del Tiro
   words?: string[]; // in Godot il proiettile è una di queste parole scritte, scelta dall'id del tiro (le Ciacole)
   sound?: "bass"; // in Godot il tiro suona questo al posto del "piu" del Tiro (la Bassline)
+  sprite?: ProjectileSprite; // in Godot il proiettile è questo disegno animato (il Piccione di Elvedeo)
+}
+// Il disegno di un proiettile: fotogrammi in fila nel PNG, guarda a destra e si gira con il tiro
+export interface ProjectileSprite {
+  path: string; // relativo alla radice del sito
+  frameWidth: number; // pixel
+  frameHeight: number;
+  fps: number; // in ciclo
+  scale: number; // 0.5 per i disegni fatti a 2x
 }
 // Scatto: si corre in avanti colpendo, in aria una volta sola fino all'atterraggio
 export interface DashSpecial extends SpecialBase, SpecialHit {
@@ -268,6 +277,7 @@ export interface SpinSupreme {
   type: "spin";
   name: string; // come si chiama nei menu
   whirl?: boolean; // false: in Godot niente vortici bianchi (l'Elefante di Elvedeo si vede già nel disegno)
+  grow?: number; // in Godot il disegno cresce di tanto mentre gira e torna normale alla fine (l'Elefante: 1.6)
   windupMs: number;
   durationMs: number;
   hitEveryMs: number;
@@ -687,15 +697,19 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     // il piccione che parte dalla spalla, l'incornata della capra, il calcione caricato
     specials: {
       // dritto e veloce, come il piccione che vola via
-      neutral: { type: "projectile", name: "Piccione", startupMs: 260, cooldownMs: 650, speed: 480, gravity: 0, lifeMs: 900, maxAlive: 1, range: 40, height: 26, damage: 7, baseKnockback: 170, knockbackGrowth: 4, angleDeg: 35, color: 0x8a8f99 },
+      neutral: {
+        type: "projectile", name: "Piccione", startupMs: 260, cooldownMs: 650, speed: 480, gravity: 0, lifeMs: 900, maxAlive: 1,
+        range: 44, height: 28, damage: 7, baseKnockback: 170, knockbackGrowth: 4, angleDeg: 35, color: 0x8a8f99,
+        sprite: { path: "assets/characters/elvedeo/proiettili/piccione.png", frameWidth: 128, frameHeight: 110, fps: 18, scale: 0.5 }, // ritagliato dal video
+      },
       // la capra gratta il terreno, carica a testa bassa e sbatte: lenta a partire, forte
       side: { type: "dash", name: "Incornata", startupMs: 250, durationMs: 380, speed: 820, endLagMs: 420, range: 56, height: 50, damage: 11, baseKnockback: 420, knockbackGrowth: 9, angleDeg: 32 },
       // la capra si abbassa, trema e scalcia all'indietro: il colpo sta dietro e manda via all'indietro
       down: { type: "charge", name: "Calcione", minMs: 250, maxMs: 1300, maxMultiplier: 1.8, activeMs: 140, endLagMs: 400, range: 64, height: 50, boxX: -96, boxY: -56, damage: 12, baseKnockback: 430, knockbackGrowth: 10, angleDeg: 145 },
     },
-    // per poco la capra diventa un elefante e il piccione un'aquila (Nicola, 2026-10-27): pesta tutto intorno
-    // mentre avanza piano, e l'ultima pestata manda lontano
-    supreme: { type: "spin", name: "Elefante", whirl: false, windupMs: 700, durationMs: 2400, hitEveryMs: 600, endLagMs: 450, moveSpeed: 0.35, width: 200, height: 150, damage: 6, baseKnockback: 260, knockbackGrowth: 4, angleDeg: 50, finisher: { damage: 14, baseKnockback: 520, knockbackGrowth: 12, angleDeg: 40 } },
+    // per poco la capra diventa un elefante e il piccione un'aquila (Nicola, 2026-10-27): cresce del 60%, pesta tutto
+    // intorno mentre avanza piano, e l'ultima pestata manda lontano. La zona è larga quanto l'elefante cresciuto
+    supreme: { type: "spin", name: "Elefante", whirl: false, grow: 1.6, windupMs: 700, durationMs: 2400, hitEveryMs: 600, endLagMs: 450, moveSpeed: 0.35, width: 300, height: 220, damage: 6, baseKnockback: 260, knockbackGrowth: 4, angleDeg: 50, finisher: { damage: 14, baseKnockback: 520, knockbackGrowth: 12, angleDeg: 40 } },
     sprite: {
       dir: "assets/characters/elvedeo",
       frameWidth: 440, // largo e alto: l'elefante, le nuvole e lo schianto escono dalla capra
@@ -703,9 +717,9 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       footY: 276,
       scale: 0.5,
       animations: {
-        idle: { fps: 12, loop: true }, // fuma, la capra rumina
-        walk: { fps: 14, loop: true }, // trotto
-        dash: { fps: 16, loop: true }, // galoppo
+        idle: { fps: 10, loop: true }, // fuma, la capra rumina (avanti e indietro)
+        walk: { fps: 18, loop: true }, // un passo di galoppo, lento
+        dash: { fps: 28, loop: true }, // lo stesso passo, veloce
         jump: { fps: 12, loop: false },
         fall: { fps: 6, loop: true },
         land: { fps: 16, loop: false },
@@ -732,15 +746,15 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     hurtbox: { width: 64, height: 106 }, // 66 misurato, 64 è il massimo da lottatore
     // le zone dei colpi dove arriva il disegno (#243, tools/sprite/zone_dei_colpi.py)
     attacks: {
-      light: { range: 67, height: 30, boxX: 18, boxY: -63 },
-      heavy: { range: 91, height: 44, boxX: 2, boxY: -79 },
-      lightUp: { range: 54, height: 48, boxX: -8, boxY: -126 },
-      lightDown: { range: 60, height: 24, boxX: 0, boxY: -28 },
-      lightAir: { range: 70, height: 50, boxX: 12, boxY: -68 },
-      heavyUp: { range: 80, height: 64, boxX: -23, boxY: -137 },
-      heavyDown: { range: 72, height: 30, boxX: 0, boxY: -44 },
-      heavyAir: { range: 85, height: 60, boxX: 8, boxY: -94 },
-      dashAttack: { range: 75, height: 44, boxX: 18, boxY: -79 },
+      light: { range: 44, height: 30, boxX: 0, boxY: -63 },
+      heavy: { range: 50, height: 44, boxX: 0, boxY: -80 },
+      lightUp: { range: 54, height: 48, boxX: -44, boxY: -128 },
+      lightDown: { range: 42, height: 24, boxX: -22, boxY: -31 },
+      lightAir: { range: 50, height: 50, boxX: 0, boxY: -68 },
+      heavyUp: { range: 80, height: 64, boxX: -70, boxY: -137 },
+      heavyDown: { range: 62, height: 30, boxX: -26, boxY: -44 },
+      heavyAir: { range: 50, height: 60, boxX: 0, boxY: -95 },
+      dashAttack: { range: 50, height: 44, boxX: 0, boxY: -80 },
     },
   },
 

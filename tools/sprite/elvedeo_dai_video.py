@@ -35,15 +35,18 @@ SPLIT = 595  # nella clip 1 Elvedeo a piedi sta a sinistra di qui, la capra a de
 
 R = lambda a, b, s=1: list(range(a, b + 1, s))
 g = lambda *ii: [("g", i) for i in ii]  # capra della clip 1 con Elvedeo seduto
+w = lambda *ii: [("w", i) for i in ii]  # come g, con la capra tenuta al centro: il trotto e il galoppo sul posto
 t = lambda *ii: [("t", i) for i in ii]  # come g, col busto di Elvedeo della clip 1 (i colpi col bastone)
 s = lambda *ii: [("s", i) for i in ii]  # clip 2
 u = lambda *ii: [("u", i) for i in ii]  # clip 3
 m = lambda *ii: [("m", i) for i in ii]  # clip 3 specchiata (l'elefante girato a sinistra)
 # stato -> fotogrammi. "world": coordinate del video (terra fissa); "feet": piedi su footY (stati in aria)
 PLAN = {
-    "idle": dict(frames=s(*R(0, 22, 2)), mode="world"),  # fuma, la capra rumina
-    "walk": dict(frames=g(*R(4, 26, 2)), mode="world"),  # trotto
-    "dash": dict(frames=g(*R(28, 46, 2)), mode="world"),  # galoppo
+    # fuma, la capra rumina: avanti e indietro, così il ciclo non salta (nel video la capra scivola piano)
+    "idle": dict(frames=s(*R(0, 18, 2), *range(16, 0, -2)), mode="world"),
+    # un passo di galoppo intero (nella clip 1 si ripete ogni 13 fotogrammi, da 32 a 44): lento cammina, veloce corre
+    "walk": dict(frames=w(*R(32, 44)), mode="world"),
+    "dash": dict(frames=w(*R(32, 44)), mode="world"),
     "jump": dict(frames=g(48, 52, 56), mode="feet"),
     "fall": dict(frames=g(60, 64), mode="feet"),
     "land": dict(frames=g(68, 72), mode="world"),
@@ -60,7 +63,9 @@ PLAN = {
     "hit": dict(frames=t(*R(186, 194, 2)), mode="world"),
     "tumble": dict(frames=g(*R(194, 206, 2)), mode="feet"),  # rotola via con la capra
     "taunt": dict(frames=u(*R(0, 33, 3)), mode="world"),  # una boccata e la nuvola di fumo
-    "specialNeutral": dict(frames=s(*R(18, 40, 2)), mode="world"),  # Piccione: indica e il piccione parte
+    # Piccione: indica e il piccione parte. Quando si stacca dalla spalla lo disegna il gioco come proiettile
+    # (piccione.png): qui resta solo Elvedeo
+    "specialNeutral": dict(frames=s(18, 20, 22, 24, 26) + [("p", i) for i in R(30, 40, 2)], mode="world"),
     "specialSide": dict(frames=s(76, 82, 88, 94, 100, 106, 112, 116, 120, 122, 124, 126, 128, 132, 136, 140), mode="world"),  # Incornata
     "specialDown": dict(frames=s(*R(160, 196, 3)), mode="world"),  # Calcione: la nuvola dietro
     # Elefante: la boccata e la nuvola, l'elefante con l'aquila che barrisce e pesta, la proboscide, la nuvola
@@ -113,7 +118,10 @@ def goat(i):
 
 
 def axis(mask):
+    """Centro e inclinazione del tronco della capra: solo la parte alta, perché le zampe che corrono non lo spostino."""
     ys, xs = np.nonzero(mask)
+    top = ys < ys.min() + 0.55 * (ys.max() - ys.min())
+    ys, xs = ys[top], xs[top]
     c = np.array([xs.mean(), ys.mean()])
     w, v = np.linalg.eigh(np.cov(np.stack([xs - c[0], ys - c[1]])))
     ax = v[:, 1] if v[0, 1] >= 0 else -v[:, 1]
@@ -151,6 +159,7 @@ def torso(i):
 
 RIDER = None
 GOAT0 = None
+POSES = {}
 
 
 def stamp(canvas, rgba, src_pt, dst_pt, k, angle):
@@ -164,21 +173,63 @@ def stamp(canvas, rgba, src_pt, dst_pt, k, angle):
     canvas.alpha_composite(big.crop((x0, y0, x0 + canvas.width, y0 + canvas.height)))
 
 
-def mounted(i, with_torso):
+def goat_at(i, centered):
+    """La capra del fotogramma i: immagine e maschera già spostate dove sta nel gioco (centro e terra come il fermo)."""
+    c0, _, _, shift0 = GOAT0
+    im, mask = goat(i)
+    dx, dy = shift0
+    if centered is True:  # nella clip 1 la capra che galoppa avanza nel fotogramma: qui resta sul posto, come nel gioco
+        dx += c0[0] - axis(mask)[0][0]
+    elif centered is not None:  # una mossa: la capra parte dal centro al primo fotogramma e poi si muove come nel video
+        dx += c0[0] - axis(goat(centered)[1])[0][0]
+    dx, dy = int(round(dx)), int(round(dy))
+    im = Image.fromarray(np.roll(np.asarray(im), (dy, dx), (0, 1)))
+    return im, np.roll(mask, (dy, dx), (0, 1))
+
+
+def pose(i, centered):
+    """Centro e inclinazione del tronco, mediati sui fotogrammi vicini: il video trema, Elvedeo in sella no."""
+    near = []
+    for j in range(i - 2, i + 3):
+        key = (j, centered)
+        if key not in POSES:
+            try:
+                POSES[key] = axis(goat_at(j, centered)[1])
+            except (FileNotFoundError, ValueError):
+                POSES[key] = None
+        if POSES[key] is not None:
+            near.append(POSES[key])
+    c = np.mean([n[0] for n in near], 0)
+    a = float(np.mean([n[1] for n in near]))
+    own = POSES[(i, centered)]
+    return np.array([own[0][0], c[1]]) if centered is True else c, a
+
+
+def mounted(i, with_torso, centered=None):
     global RIDER, GOAT0
     if RIDER is None:
         RIDER = rider()
-        _, m0 = goat(0)
+        im0, m0 = goat(0)
         c0, a0 = axis(m0)
         xs = np.nonzero(m0.any(0))[0]
         sx = int(xs.min() + 0.32 * (xs.max() - xs.min()))  # la sella: a un terzo dalla coda, come nella clip 2
-        GOAT0 = (c0, a0, np.array([sx, np.nonzero(m0[:, sx])[0].min() + 8.0]))
-    c0, a0, seat0 = GOAT0
-    im, mask = goat(i)
-    c, a = axis(mask)
+        seat0 = np.array([sx, np.nonzero(m0[:, sx])[0].min() + 8.0])
+        # il fermo rimontato va dove sta il fermo della clip 2: corpo intero (capra e Elvedeo) centrato su CENTER,
+        # zoccoli sulla terra GROUND
+        GOAT0 = (c0, a0, seat0, (0.0, 0.0))
+        probe = compose(im0, m0, c0, a0, False, 0)
+        middle = lambda im: np.nonzero(fg(im).sum(0) >= 30)[0].mean()  # le colonne piene: corpo, non coda o fumo
+        GOAT0 = (c0, a0, seat0, (middle(C2(RIDER_FRAME)) - middle(probe), GROUND - np.nonzero(m0.any(1))[0].max()))
+    im, mask = goat_at(i, centered)
+    c, a = pose(i, centered)
+    return compose(im, mask, c, a, with_torso, i)
+
+
+def compose(im, mask, c, a, with_torso, i):
+    c0, a0, seat0, (sx0, sy0) = GOAT0
     da = float(np.clip(a - a0, -0.5, 0.5))  # la capra s'inclina: Elvedeo con lei, ma non si capovolge
     rot = np.array([[np.cos(da), -np.sin(da)], [np.sin(da), np.cos(da)]])
-    seat = c + rot @ (seat0 - c0)
+    seat = c + rot @ (seat0 + (sx0, sy0) - (c0 + (sx0, sy0)))
     canvas = Image.new("RGBA", im.size, (*BG.astype(int), 255))
     canvas.alpha_composite(Image.fromarray(np.dstack([np.asarray(im), mask * 255]).astype(np.uint8), "RGBA"))
     full, legs = RIDER
@@ -187,6 +238,8 @@ def mounted(i, with_torso):
         return canvas.convert("RGB")
     stamp(canvas, legs, RIDER_SEAT, seat, RIDER_K, da)
     body, hip = torso(i)
+    body = np.roll(body, (int(round(sy0)), int(round(sx0))), (0, 1))
+    hip = (hip[0] + sx0, hip[1] + sy0)
     # la vita del seduto, nello stesso riferimento della sella
     rider_hip = np.array([535.0, RIDER_HIP]) - np.array(RIDER_SEAT)
     stamp(canvas, body, hip, seat + rot @ (rider_hip * RIDER_K), RIDER_K * 0.95, da)
@@ -201,14 +254,57 @@ def mirrored(i):
     return Image.fromarray(np.roll(np.asarray(im)[:, ::-1], shift, 1))
 
 
+def alone(im):
+    """Il fotogramma con solo il pezzo più grande (Elvedeo sulla capra): via il piccione in volo e il fumo staccato."""
+    lab, comps = components(fg(im))
+    keep = lab == max(comps, key=lambda c: c[1])[0]
+    p = np.asarray(im).copy()
+    p[~ndi.binary_dilation(keep, iterations=3)] = BG.astype(np.uint8)
+    return Image.fromarray(p)
+
+
+PIGEON_FRAMES = R(32, 38)  # nella clip 2 il piccione vola staccato verso destra (prima tocca il braccio teso)
+PIGEON_W, PIGEON_H, PIGEON_K = 128, 110, 0.55  # fotogramma del proiettile e quanto si rimpicciolisce dal video
+
+
+def pigeon():
+    """Il piccione che vola, ritagliato dalla clip 2: una striscia di fotogrammi centrati, col contorno chiaro."""
+    out = []
+    for i in PIGEON_FRAMES:
+        rgba, body = cut(C2(i))
+        lab, comps = components(body)
+        flying = [c for c in comps if c[2] > 760 and c[1] > 300]  # a destra di Elvedeo
+        bird = lab == max(flying, key=lambda c: c[1])[0]
+        ys, xs = np.nonzero(bird)
+        cx, cy = (xs.min() + xs.max()) / 2, (ys.min() + ys.max()) / 2
+        rgba = rgba * ndi.binary_dilation(bird, iterations=3)[..., None]
+        size = (round(rgba.shape[1] * PIGEON_K), round(rgba.shape[0] * PIGEON_K))
+        sm = np.pad(resize(rgba, size), ((PIGEON_H, PIGEON_H), (PIGEON_W, PIGEON_W), (0, 0)))
+        cx, cy = cx + PIGEON_W / PIGEON_K, cy + PIGEON_H / PIGEON_K  # il margine aggiunto
+        x0, y0 = round(cx * PIGEON_K - PIGEON_W / 2), round(cy * PIGEON_K - PIGEON_H / 2)
+        f = sm[y0 : y0 + PIGEON_H, x0 : x0 + PIGEON_W]
+        a = f[..., 3] / 255
+        ring = ndi.gaussian_filter(ndi.binary_dilation(a > 0.5, iterations=2).astype(np.float32), 0.6)
+        al = a + ring * (1 - a)
+        rgb = (f[..., :3] * a[..., None] + OUTLINE * ring[..., None] * (1 - a[..., None])) / np.maximum(al, 1e-3)[..., None]
+        fr = np.dstack([rgb, al * 255]).round().clip(0, 255).astype(np.uint8)
+        fr[0, 0] = 0
+        out.append(fr)
+    return np.concatenate(out, 1)
+
+
 def source(f):
     kind, i = f
     if kind == "g":
-        return mounted(i, False)
+        return mounted(i, False, FIRST)
     if kind == "t":
-        return mounted(i, True)
+        return mounted(i, True, FIRST)
+    if kind == "w":
+        return mounted(i, False, centered=True)
     if kind == "s":
         return C2(i)
+    if kind == "p":
+        return alone(C2(i))
     if kind == "u":
         return C3(i)
     return mirrored(i)
@@ -276,9 +372,26 @@ def save(rgba, path):
     im.save(path, optimize=True)
 
 
+MIDDLE_OFFSET = -3  # il fermo (clip 2) ha il corpo pieno 3 px a sinistra del centro: le mosse rimontate uguale
+FIRST = None  # il primo fotogramma della mossa che si sta facendo: lì la capra sta al centro
+
+
 def strip(state):
+    global FIRST
     spec = PLAN[state]
-    return np.concatenate([place(*cut(source(f)), spec["mode"]) for f in spec["frames"]], 1)
+    FIRST = spec["frames"][0][1]
+    frames = [place(*cut(source(f)), spec["mode"]) for f in spec["frames"]]
+    if spec["frames"][0][0] in "gtw":
+        # le mosse rimontate partono con il corpo intero (capra e Elvedeo) al centro del fotogramma, come il fermo
+        cols = np.nonzero((frames[0][..., 3] > 128).sum(0) >= 30)[0]
+        dx = int(round(FW / 2 + MIDDLE_OFFSET - cols.mean()))
+        for f in frames:
+            f[:] = np.roll(f, dx, 1)
+            if dx > 0:
+                f[:, :dx] = 0
+            elif dx < 0:
+                f[:, dx:] = 0
+    return np.concatenate(frames, 1)
 
 
 def portrait():
@@ -310,12 +423,16 @@ def main():
         bg.convert("RGB").save(sys.argv[5])
         return
     os.makedirs(OUT, exist_ok=True)
-    for state in PLAN:
+    only = os.environ.get("STATI", "").split(",") if os.environ.get("STATI") else list(PLAN)  # STATI=idle,walk per rifarne alcuni
+    for state in only:
         st = strip(state)
         assert st.shape[1] <= 8192, f"{state}: striscia troppo larga"
         save(st, f"{OUT}/{state}.png")
         print(state, st.shape[1] // FW)
-    save(portrait(), f"{OUT}/portrait.png")
+    if "STATI" not in os.environ:
+        save(portrait(), f"{OUT}/portrait.png")
+        os.makedirs(f"{OUT}/proiettili", exist_ok=True)  # fuori dagli stati
+        save(pigeon(), f"{OUT}/proiettili/piccione.png")
 
 
 if __name__ == "__main__":
