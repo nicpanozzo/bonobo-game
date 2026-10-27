@@ -184,6 +184,13 @@ for (const [id, spec] of Object.entries(CHARACTERS)) {
     if (existsSync(publicDir + sp.sprite.path)) spriteFiles.push(sp.sprite.path);
     else spriteErrors.push(`${id}: manca public/${sp.sprite.path} (disegno del proiettile in characters.ts)`);
   }
+  // l'aquila dell'Elefante di Elvedeo: il suo disegno e la suprema senza l'aquila sul braccio
+  const eagle = spec.supreme?.type === "spin" ? spec.supreme.eagle : undefined;
+  for (const path of eagle ? [eagle.sprite?.path, eagle.after] : []) {
+    if (!path) continue;
+    if (existsSync(publicDir + path)) spriteFiles.push(path);
+    else spriteErrors.push(`${id}: manca public/${path} (aquila della suprema in characters.ts)`);
+  }
   // supremeAttack: la suprema propria letta come attacco (#102), null per chi usa quella di base
   const c = { ...spec, stats: characterStats(id), portrait, specials, specialAttacks, supremeAttack: supremeAttackSpec(id) };
   characters[id] = c;

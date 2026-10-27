@@ -10471,7 +10471,12 @@
             "frameHeight": 110,
             "fps": 18,
             "scale": 0.5
-          }
+          },
+          "spawnX": -15,
+          "spawnY": 85,
+          "spreadDeg": [
+            -6
+          ]
         },
         "side": {
           "type": "dash",
@@ -10509,7 +10514,7 @@
         "type": "spin",
         "name": "Elefante",
         "whirl": false,
-        "grow": 1.6,
+        "grow": 2,
         "windupMs": 700,
         "durationMs": 2400,
         "hitEveryMs": 600,
@@ -10526,6 +10531,41 @@
           "baseKnockback": 520,
           "knockbackGrowth": 12,
           "angleDeg": 40
+        },
+        "eagle": {
+          "type": "projectile",
+          "name": "Aquila",
+          "startupMs": 0,
+          "cooldownMs": 0,
+          "maxAlive": 1,
+          "speed": 700,
+          "spreadDeg": [
+            -50
+          ],
+          "gravity": -1000,
+          "lifeMs": 1200,
+          "spawnX": -30,
+          "spawnY": 190,
+          "range": 90,
+          "height": 70,
+          "damage": 12,
+          "baseKnockback": 380,
+          "knockbackGrowth": 9,
+          "angleDeg": 35,
+          "color": 8016432,
+          "grabDamage": 4,
+          "carryMs": 700,
+          "carrySpeed": 300,
+          "carryRise": 220,
+          "hangPx": 100,
+          "sprite": {
+            "path": "assets/characters/elvedeo/proiettili/aquila.png",
+            "frameWidth": 280,
+            "frameHeight": 320,
+            "fps": 14,
+            "scale": 0.57
+          },
+          "after": "assets/characters/elvedeo/proiettili/suprema-senza-aquila.png"
         }
       },
       "sprite": {
@@ -10719,7 +10759,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 5,
-            "frames": 11,
+            "frames": 10,
             "src": "specialNeutral"
           },
           "specialSide": {

@@ -1,4 +1,5 @@
 # Uso: python3 tools/sprite/elvedeo_dai_video.py <clip1.mp4> <clip2.mp4> <clip3.mp4> <cartella di lavoro> [anteprima.png stato]
+# STATI=idle,walk rifà solo quegli stati; STATI=uccelli solo il piccione, l'aquila e la suprema senza aquila
 # Elvedeo in groppa alla capra, dai tre video fatti da Nicola con Google Flow (1280x720, 24 fps, 240 fotogrammi,
 # sfondo verde pieno, camera ferma, di profilo verso destra). Lo stesso metodo di egiainuso_dal_video.py, con due
 # differenze:
@@ -40,6 +41,8 @@ t = lambda *ii: [("t", i) for i in ii]  # come g, col busto di Elvedeo della cli
 s = lambda *ii: [("s", i) for i in ii]  # clip 2
 u = lambda *ii: [("u", i) for i in ii]  # clip 3
 m = lambda *ii: [("m", i) for i in ii]  # clip 3 specchiata (l'elefante girato a sinistra)
+n = lambda *ii: [("n", i) for i in ii]  # come u, senza l'aquila sul braccio: è partita con la U (vedi no_eagle())
+nm = lambda *ii: [("nm", i) for i in ii]  # come m, senza l'aquila
 # stato -> fotogrammi. "world": coordinate del video (terra fissa); "feet": piedi su footY (stati in aria)
 PLAN = {
     # fuma, la capra rumina: avanti e indietro, così il ciclo non salta (nel video la capra scivola piano)
@@ -65,12 +68,15 @@ PLAN = {
     "taunt": dict(frames=u(*R(0, 33, 3)), mode="world"),  # una boccata e la nuvola di fumo
     # Piccione: indica e il piccione parte. Quando si stacca dalla spalla lo disegna il gioco come proiettile
     # (piccione.png): qui resta solo Elvedeo
-    "specialNeutral": dict(frames=s(18, 20, 22, 24, 26) + [("p", i) for i in R(30, 40, 2)], mode="world"),
+    "specialNeutral": dict(frames=s(18, 20, 22, 24, 26) + [("p", i) for i in R(30, 38, 2)], mode="world"),
     "specialSide": dict(frames=s(76, 82, 88, 94, 100, 106, 112, 116, 120, 122, 124, 126, 128, 132, 136, 140), mode="world"),  # Incornata
     "specialDown": dict(frames=s(*R(160, 196, 3)), mode="world"),  # Calcione: la nuvola dietro
     # Elefante: la boccata e la nuvola, l'elefante con l'aquila che barrisce e pesta, la proboscide, la nuvola
     "supreme": dict(frames=u(4, 12, 20, 28, 36, 44, 52) + u(64, 80, 88, 92, 96) + m(108, 112, 116) + u(200, 212, 224), mode="world"),
 }
+# La suprema dopo che con la U è partita l'aquila: gli stessi fotogrammi, ma Elvedeo col braccio teso e niente aquila.
+# Non è uno stato: il gioco la scambia con "supreme" (SpinSupreme.eagle.after in characters.ts)
+AFTER_EAGLE = dict(frames=u(4, 12, 20, 28, 36, 44, 52) + n(64, 80, 88, 92, 96) + nm(108, 112, 116) + u(200, 212, 224), mode="world")
 PORTRAIT = ("s", 0)
 
 
@@ -265,32 +271,80 @@ def alone(im):
 
 PIGEON_FRAMES = R(32, 38)  # nella clip 2 il piccione vola staccato verso destra (prima tocca il braccio teso)
 PIGEON_W, PIGEON_H, PIGEON_K = 128, 110, 0.55  # fotogramma del proiettile e quanto si rimpicciolisce dal video
+# nella clip 3 l'aquila vola staccata dall'elefante (girato a sinistra) tra 165 e 173 (prima si tuffa): specchiata guarda a destra,
+# con gli artigli avanti. Avanti e indietro, così le ali battono
+EAGLE_FRAMES = [*R(169, 173), *range(172, 169, -1)]
+EAGLE_W, EAGLE_H, EAGLE_K = 280, 320, 0.7  # più grande del piccione: è l'aquila dell'elefante cresciuto
+
+
+def flyer(im, pick, w, h, k):
+    """Un uccello in volo staccato dal resto: fotogramma w x h col corpo al centro, rimpicciolito di k, col contorno.
+    Il centro è quello del corpo (la maschera erosa: via le ali), così il disegno non balla sul rettangolo del colpo."""
+    rgba, body = cut(im)
+    lab, comps = components(body)
+    bird = lab == max([c for c in comps if pick(c)], key=lambda c: c[1])[0]
+    core = ndi.binary_erosion(bird, iterations=12)
+    cy, cx = ndi.center_of_mass(core if core.any() else bird)
+    rgba = rgba * ndi.binary_dilation(bird, iterations=3)[..., None]
+    size = (round(rgba.shape[1] * k), round(rgba.shape[0] * k))
+    sm = np.pad(resize(rgba, size), ((h, h), (w, w), (0, 0)))
+    x0, y0 = round(cx * k + w - w / 2), round(cy * k + h - h / 2)  # + il margine aggiunto
+    f = sm[y0 : y0 + h, x0 : x0 + w]
+    a = f[..., 3] / 255
+    ring = ndi.gaussian_filter(ndi.binary_dilation(a > 0.5, iterations=2).astype(np.float32), 0.6)
+    al = a + ring * (1 - a)
+    rgb = (f[..., :3] * a[..., None] + OUTLINE * ring[..., None] * (1 - a[..., None])) / np.maximum(al, 1e-3)[..., None]
+    fr = np.dstack([rgb, al * 255]).round().clip(0, 255).astype(np.uint8)
+    fr[0, 0] = 0
+    return fr
 
 
 def pigeon():
-    """Il piccione che vola, ritagliato dalla clip 2: una striscia di fotogrammi centrati, col contorno chiaro."""
-    out = []
-    for i in PIGEON_FRAMES:
-        rgba, body = cut(C2(i))
-        lab, comps = components(body)
-        flying = [c for c in comps if c[2] > 760 and c[1] > 300]  # a destra di Elvedeo
-        bird = lab == max(flying, key=lambda c: c[1])[0]
-        ys, xs = np.nonzero(bird)
-        cx, cy = (xs.min() + xs.max()) / 2, (ys.min() + ys.max()) / 2
-        rgba = rgba * ndi.binary_dilation(bird, iterations=3)[..., None]
-        size = (round(rgba.shape[1] * PIGEON_K), round(rgba.shape[0] * PIGEON_K))
-        sm = np.pad(resize(rgba, size), ((PIGEON_H, PIGEON_H), (PIGEON_W, PIGEON_W), (0, 0)))
-        cx, cy = cx + PIGEON_W / PIGEON_K, cy + PIGEON_H / PIGEON_K  # il margine aggiunto
-        x0, y0 = round(cx * PIGEON_K - PIGEON_W / 2), round(cy * PIGEON_K - PIGEON_H / 2)
-        f = sm[y0 : y0 + PIGEON_H, x0 : x0 + PIGEON_W]
-        a = f[..., 3] / 255
-        ring = ndi.gaussian_filter(ndi.binary_dilation(a > 0.5, iterations=2).astype(np.float32), 0.6)
-        al = a + ring * (1 - a)
-        rgb = (f[..., :3] * a[..., None] + OUTLINE * ring[..., None] * (1 - a[..., None])) / np.maximum(al, 1e-3)[..., None]
-        fr = np.dstack([rgb, al * 255]).round().clip(0, 255).astype(np.uint8)
-        fr[0, 0] = 0
-        out.append(fr)
-    return np.concatenate(out, 1)
+    """Il piccione che vola, ritagliato dalla clip 2: una striscia di fotogrammi centrati sul corpo."""
+    pick = lambda c: c[2] > 760 and c[1] > 300  # a destra di Elvedeo
+    return np.concatenate([flyer(C2(i), pick, PIGEON_W, PIGEON_H, PIGEON_K) for i in PIGEON_FRAMES], 1)
+
+
+def eagle():
+    """L'aquila che vola, dalla clip 3 specchiata: guarda a destra come il piccione."""
+    pick = lambda c: c[2] < 1279 - 850 and 5000 < c[1] < 80000  # staccata, dietro l'elefante
+    flip = lambda i: Image.fromarray(np.asarray(C3(i))[:, ::-1].copy())
+    return np.concatenate([flyer(flip(i), pick, EAGLE_W, EAGLE_H, EAGLE_K) for i in EAGLE_FRAMES], 1)
+
+
+EAGLE_DONOR = 168  # clip 3: l'aquila è appena partita, Elvedeo tende il braccio (specchiato: verso destra)
+
+
+def beanie(p):
+    """Il centro della banda rossa del berretto: da lì si allinea il busto (il collare rosso dell'elefante sta sotto)."""
+    q = p.astype(int)
+    red = (q[..., 0] > 150) & (q[..., 1] < 90) & (q[..., 2] < 90)
+    red[380:] = False
+    lab, comps = components(red)
+    y, x = ndi.center_of_mass(red, lab, max(comps, key=lambda c: c[1])[0])
+    return x, y
+
+
+def no_eagle(im, clear):
+    """Il fotogramma dell'elefante senza l'aquila: via il busto di Elvedeo e l'aquila sopra la vita, al loro posto il
+    busto col braccio teso del fotogramma EAGLE_DONOR, allineato sul berretto. clear: fin dove a destra del berretto si
+    toglie (nei fotogrammi specchiati l'aquila sta davanti a lui); oltre si incolla solo sul verde (la proboscide alzata)."""
+    t = np.asarray(im).copy()
+    d = np.asarray(C3(EAGLE_DONOR))[:, ::-1].copy()
+    tx, ty = beanie(t)
+    dx, dy = beanie(d)
+    yy, xx = np.mgrid[0 : t.shape[0], 0 : t.shape[1]]
+    waist = yy < ty + 150
+    region = waist & (xx > tx - 320) & (xx < tx + clear)
+    region |= (yy < ty + 175) & (xx > tx - 320) & (xx < tx - 120)  # la coda dell'aquila scende sotto la vita
+    t[region & ndi.binary_dilation(fg(t), iterations=4)] = BG.astype(np.uint8)  # anche il bordo sfumato sul verde
+    d = np.roll(d, (int(round(ty - dy)), int(round(tx - dx))), (0, 1))
+    q = d.astype(int)
+    pigeon_ = (q[..., 2] > q[..., 0] + 6) & (yy > ty + 90) & (xx < tx - 30)  # il piccione sulla groppa del donatore
+    paste = fg(d) & waist & (xx > tx - 120) & (xx < tx + 260) & ~ndi.binary_dilation(pigeon_, iterations=4)
+    paste &= region | ~fg(t)
+    t[paste] = d[paste]
+    return Image.fromarray(t)
 
 
 def source(f):
@@ -307,6 +361,10 @@ def source(f):
         return alone(C2(i))
     if kind == "u":
         return C3(i)
+    if kind == "n":
+        return no_eagle(C3(i), 130)
+    if kind == "nm":
+        return no_eagle(mirrored(i), 240)
     return mirrored(i)
 
 
@@ -378,7 +436,7 @@ FIRST = None  # il primo fotogramma della mossa che si sta facendo: lì la capra
 
 def strip(state):
     global FIRST
-    spec = PLAN[state]
+    spec = PLAN[state] if isinstance(state, str) else state
     FIRST = spec["frames"][0][1]
     frames = [place(*cut(source(f)), spec["mode"]) for f in spec["frames"]]
     if spec["frames"][0][0] in "gtw":
@@ -424,15 +482,18 @@ def main():
         return
     os.makedirs(OUT, exist_ok=True)
     only = os.environ.get("STATI", "").split(",") if os.environ.get("STATI") else list(PLAN)  # STATI=idle,walk per rifarne alcuni
-    for state in only:
+    for state in [s_ for s_ in only if s_ in PLAN]:
         st = strip(state)
         assert st.shape[1] <= 8192, f"{state}: striscia troppo larga"
         save(st, f"{OUT}/{state}.png")
         print(state, st.shape[1] // FW)
     if "STATI" not in os.environ:
         save(portrait(), f"{OUT}/portrait.png")
+    if "STATI" not in os.environ or "uccelli" in only:  # STATI=uccelli: solo piccione, aquila e suprema senza aquila
         os.makedirs(f"{OUT}/proiettili", exist_ok=True)  # fuori dagli stati
         save(pigeon(), f"{OUT}/proiettili/piccione.png")
+        save(eagle(), f"{OUT}/proiettili/aquila.png")
+        save(strip(AFTER_EAGLE), f"{OUT}/proiettili/suprema-senza-aquila.png")
 
 
 if __name__ == "__main__":

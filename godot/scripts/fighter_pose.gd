@@ -233,6 +233,29 @@ static func projectile_special(game_data: Dictionary, character_id: String, kind
 	return c.get("specials", {}).get(SLOT_OF_KIND.get(kind, "neutral"), {})
 
 
+# Quanto si inclina un proiettile disegnato: col muso verso dove va, ma al massimo di 35 gradi (gira già da sé)
+static func projectile_tilt(vel: Vector2) -> float:
+	if vel.length() < 1.0:
+		return 0.0
+	var a := atan2(vel.y, absf(vel.x)) # come se andasse a destra: lo specchio lo gira dopo
+	return clampf(a, -0.6, 0.6) * (-1.0 if vel.x < 0.0 else 1.0)
+
+
+# L'aquila dell'Elefante di Elvedeo: il proiettile che tira la sua suprema "spin" (vuoto per gli altri)
+static func supreme_eagle(game_data: Dictionary, character_id: String) -> Dictionary:
+	var sp: Variant = game_data.characters.get(character_id, {}).get("supreme")
+	return sp.get("eagle", {}) if sp is Dictionary else {}
+
+
+# I numeri e il disegno di un proiettile dello snapshot: quelli dell'aquila se l'ha tirato la suprema
+static func projectile_of(game_data: Dictionary, pr: Dictionary) -> Dictionary:
+	if pr.get("supreme", false):
+		var eagle := supreme_eagle(game_data, str(pr.characterId))
+		if not eagle.is_empty():
+			return eagle
+	return projectile_special(game_data, str(pr.characterId), str(pr.kind))
+
+
 # Le Ciacole di Bradipo: la parola scritta di un proiettile, scelta dal suo id (uguale per tutti); "" se è una palla
 static func projectile_word(game_data: Dictionary, character_id: String, kind: String, projectile_id: int) -> String:
 	var words: Array = projectile_special(game_data, character_id, kind).get("words", [])

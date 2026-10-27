@@ -64,6 +64,7 @@ export interface Fighter extends PlayerState {
   supremeY: number; // terreno dell'impatto: i piedi alla partenza
   rewindTrail: { x: number; y: number; percent: number }[]; // la suprema "rewind" (#358): com'era a ogni tick, i più vecchi prima
   rewindDone: boolean; // la "rewind" in corso è già tornata indietro
+  eagleShot: boolean; // l'aquila della suprema in corso è già partita (una volta sola)
   pet: Companion | null; // il compagno che lo segue (#369), null se il personaggio non ne ha
   supremeRate: number; // moltiplicatore della carica della suprema, dalle regole della stanza (1 = normale)
   supremeBusyMs: number; // ms che restano della suprema in corso, attesa finale compresa: intanto la barra non si carica col tempo
@@ -241,6 +242,7 @@ export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
     supremeY: 0,
     rewindTrail: [],
     rewindDone: false,
+    eagleShot: false,
     pet: null,
     supremeRate: s.supremeRate ?? 1,
     supremeBusyMs: 0,
