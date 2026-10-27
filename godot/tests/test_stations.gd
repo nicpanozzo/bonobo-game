@@ -27,6 +27,15 @@ func test_vista_dallo_snapshot() -> void:
 	runner.check(StationView.new().is_empty(), "un'arena senza postazioni")
 
 
+func test_cestello_della_teleferica() -> void:
+	var view: RefCounted = StationView.new()
+	view.setup({"stations": [{"kind": "gru", "x": 0, "y": 650, "width": 80}, {"kind": "teleferica", "x": 100, "y": 650, "width": 80, "cart": 3}]}, {"station": {"cartStart": 0.5}})
+	runner.check(is_equal_approx(view.cart_k(3), 0.5), "prima del primo snapshot il cestello sta a cartStart")
+	runner.check(view.cart_k(0) < 0.0, "un mover che nessun argano muove va col tempo")
+	view.on_snapshot({"stations": [{"user": null}, {"user": "p0", "cart": 0.8}]}, 0)
+	runner.check(is_equal_approx(view.cart_k(3), 0.8), "dallo snapshot, dove l'hanno spinto")
+
+
 func test_scudo_dell_ombrellone() -> void:
 	var view: RefCounted = StationView.new()
 	var s := {"kind": "ombrellone", "x": 0, "y": 650, "width": 80, "fromX": 300, "toX": 1100, "shieldY": 400}

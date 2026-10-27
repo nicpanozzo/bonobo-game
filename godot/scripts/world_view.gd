@@ -2392,6 +2392,9 @@ func _draw_elements(t: float) -> void:
 	for mi in StageMotion.movers_back_to_front(movers, t): # la giostra d'acqua: prima quelle che passano dietro
 		var m: Dictionary = movers[mi]
 		var pos := StageMotion.mover_position(m, t)
+		var cart_k: float = _stations.cart_k(mi) if not _stations.is_empty() else -1.0
+		if cart_k >= 0.0: # il cestello della teleferica (#433) sta dove l'hanno spinto gli argani, non va col tempo
+			pos = Vector2(m.path[0].x, m.path[0].y).lerp(Vector2(m.path[1].x, m.path[1].y), cart_k)
 		var fx := _pad_fx(m, t) # i bottoni sonori la alzano o la accendono (#423)
 		pos.y += float(fx.dy)
 		if m.get("kind", "") == "nota":
@@ -2402,6 +2405,9 @@ func _draw_elements(t: float) -> void:
 		if m.get("kind", "") == "bus": # il bus di Bologna su cui si sale (#433)
 			var stopped := StageMotion.mover_position(m, t + 50.0).distance_to(StageMotion.mover_position(m, t)) < 0.5
 			BolognaHazards.draw_bus(self, _life, pos, float(m.width), StageMotion.mover_facing(m, t, stage_width()), stopped, t, _stage_light())
+			continue
+		if m.get("kind", "") == "teleferica": # il cestello della teleferica di Bologna (#433), col suo cavo
+			BolognaHazards.draw_cable_car(self, m, pos, _stage_light())
 			continue
 		if m.get("kind", "") == "campana": # la campana appesa tra le torri di Bologna (#433)
 			BolognaHazards.draw_bell(self, m, pos, StageMotion.swing_angle(m.swing, t + float(m.get("offsetMs", 0))), t, _stage_light())

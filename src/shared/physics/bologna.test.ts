@@ -51,7 +51,7 @@ const prizePieces = (ctx: PhysicsContext) => ctx.stage.platforms.filter((p) => p
 
 describe("Bologna: postazioni (#433)", () => {
   it("una bombarda per torre sulla cima, munizioni alla base, alla squadra giusta", () => {
-    assert.deepEqual(bologna.stations!.map((s) => [s.kind, s.team]), [["bombarda", 1], ["munizioni", 1], ["bombarda", 2], ["munizioni", 2], ["gru", 1], ["gru", 2], ["ombrellone", 1], ["ombrellone", 2]]);
+    assert.deepEqual(bologna.stations!.map((s) => [s.kind, s.team]), [["bombarda", 1], ["munizioni", 1], ["bombarda", 2], ["munizioni", 2], ["gru", 1], ["gru", 2], ["teleferica", 1], ["teleferica", 2], ["ombrellone", 1], ["ombrellone", 2]]);
     assert.equal(garisendaAmmo.feeds, 0);
     assert.equal(asinelliAmmo.feeds, 2);
     assert.equal(garisendaCannon.dir, 1);

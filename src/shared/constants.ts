@@ -608,6 +608,8 @@ export const STATION = {
   gruMoveMs: 120, // gru: ms tra due spostamenti di colonna tenendo destra o sinistra
   gruCooldownMs: 2500, // gru: ms dopo un pezzo lasciato cadere prima che ne penda un altro
   gruMaxBlocks: 16, // gru: blocchi posati che restano per tutta la partita, per gru (circa 4 pezzi); oltre, spariscono come quelli del Tetris
+  cartSpeedPxS: 170, // teleferica: pixel/s del cestello lungo il cavo tenendo destra o sinistra (circa 3 s da una torre all'altra)
+  cartStart: 0.5, // teleferica: dove sta il cestello a inizio partita, da 0 (path[0]) a 1 (path[1])
   umbrellaWidthPx: 170, // ombrellone: largo tanto lo scudo, pixel
   umbrellaHeightPx: 30, // ombrellone: alto tanto lo scudo, pixel (le palle che lo toccano si fermano)
   umbrellaSpeedPxS: 420, // ombrellone: pixel/s dello scudo tenendo destra o sinistra

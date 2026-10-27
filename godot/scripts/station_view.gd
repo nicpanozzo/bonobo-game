@@ -87,6 +87,19 @@ func station_of(id: String) -> int:
 	return -1
 
 
+# Dove sta il cestello della teleferica che è il mover mover_index (#433): da 0 (path[0]) a 1 (path[1]), dallo snapshot
+# degli argani che lo spingono; -1 se nessun argano lo muove. Prima del primo snapshot, cartStart
+func cart_k(mover_index: int) -> float:
+	var found := false
+	for i in stations.size():
+		if stations[i].get("cart") == null or int(stations[i].cart) != mover_index:
+			continue
+		found = true
+		if i < states.size() and states[i].get("cart") != null:
+			return float(states[i].cart)
+	return float(_k.get("cartStart", 0.5)) if found else -1.0
+
+
 # Il bordo sinistro dello scudo dell'ombrellone (#433): dallo snapshot; prima, in mezzo al suo tratto come shieldStart() in physics/stations.ts
 func shield_x(s: Dictionary, st: Dictionary) -> float:
 	if st.get("shield") != null:
@@ -117,6 +130,8 @@ func draw(canvas: CanvasItem, t: float) -> void:
 			_draw_cannon(canvas, s, st, t, alpha, recoil(i, Time.get_ticks_msec()))
 		elif s.kind == "gru":
 			_draw_crane(canvas, s, st, t, alpha, tint)
+		elif s.kind == "teleferica":
+			_draw_winch(canvas, s, st, alpha)
 		elif s.kind == "ombrellone":
 			_draw_umbrella(canvas, s, st, alpha, tint, t)
 		else:
@@ -229,6 +244,21 @@ func draw_balls(canvas: CanvasItem, now: int) -> void:
 		canvas.draw_arc(c, r, 0, TAU, 20, Color("c76f7c"), 2.0)
 		for d: Vector2 in [Vector2(-5, -4), Vector2(4, -6), Vector2(6, 3), Vector2(-3, 5), Vector2(0, 0)]:
 			canvas.draw_circle(c + d, 1.8, Color("fff3ee"))
+
+
+# L'argano della teleferica: il tamburo col cavo avvolto e la manovella, che gira con il cestello (st.cart)
+func _draw_winch(canvas: CanvasItem, s: Dictionary, st: Dictionary, alpha: float) -> void:
+	var c := Vector2(float(s.x) + float(s.width) / 2.0, float(s.y) - 34.0)
+	var turn := float(st.get("cart", _k.get("cartStart", 0.5))) * TAU * 3.0 # tre giri da un capo all'altro del cavo
+	for side in [-1.0, 1.0]: # i due cavalletti di legno
+		canvas.draw_line(Vector2(c.x + side * 30.0, float(s.y) - 6.0), Vector2(c.x + side * 22.0, c.y), Color(WOOD, alpha), 6.0)
+	canvas.draw_circle(c, 20.0, Color(INK, alpha))
+	canvas.draw_circle(c, 15.0, Color(WOOD.lightened(0.15), alpha))
+	for k in 3: # il cavo avvolto
+		canvas.draw_arc(c, 9.0 + k * 2.0, 0.0, TAU, 18, Color(Color("4a4a4a"), alpha), 1.5)
+	var crank := c + Vector2(cos(turn), sin(turn)) * 22.0
+	canvas.draw_line(c, crank, Color(BRONZE, alpha), 4.0)
+	canvas.draw_circle(crank, 5.0, Color(BRONZE.lightened(0.3), alpha))
 
 
 # L'ombrellone dei portici: alla postazione la manovella con la corda, lassù lo scudo, un grande ombrellone da mercato
