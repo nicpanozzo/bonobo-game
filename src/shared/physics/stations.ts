@@ -6,7 +6,8 @@
 //   stepStations()  alla fine di stepWorld: chi è stato colpito esce, casse e munizioni, palle di mortadella in volo
 // Tipi: "bombarda" spara palle di mortadella ad arco (+1 punto torre alla squadra per ogni avversario preso);
 // "munizioni" carica casse tenendo attacco, che dopo deliveryMs arrivano alla bombarda di `feeds`; "gru" cala pezzi del Tetris
-// (crane.ts): destra/sinistra li spostano, attacco leggero o su li girano, attacco pesante li lascia cadere.
+// (crane.ts): destra/sinistra li spostano, attacco leggero o su li girano, attacco pesante li lascia cadere;
+// "teleferica" è un argano: destra/sinistra spingono il cestello (un mover) lungo il cavo, che senza spinta resta dov'è.
 
 import { STATION } from "../constants";
 import type { Station } from "../stages";
@@ -27,6 +28,14 @@ interface Slot {
   crates: number[]; // munizioni: arrivo delle casse in salita
   held: Held | null; // gru: il pezzo appeso
   nextAt: number; // gru: tempo dell'arena da cui pende il pezzo nuovo
+  push: number; // teleferica: -1, 0 o 1, dai tasti di chi la usa
+}
+
+// Il cestello di una teleferica: dove sta adesso lungo il cavo (0 = path[0], 1 = path[1]) e dove stava al tick prima,
+// che serve a portare chi ci sta sopra (carryRider e landOnMover chiedono anche la posizione di un passo fa)
+export interface Cart {
+  k: number;
+  prev: number;
 }
 
 interface Ball extends CannonballState {
@@ -40,6 +49,7 @@ export interface StationWorld {
   points: Record<number, number>; // punti torre per squadra
   prize?: number; // premio: la squadra in testa ai punti torre congelata a prizeAtMs (0 = pareggio o nessun punto); prima, undefined
   reenter: Record<string, number>; // chi -> tempo dell'arena da cui può rientrare in una postazione
+  carts: Record<number, Cart>; // indice in movers -> il cestello della teleferica
 }
 
 const now = (ctx: PhysicsContext) => ctx.timeMs ?? 0;
@@ -51,12 +61,13 @@ function world(ctx: PhysicsContext): StationWorld {
   ctx.stations ??= {
     slots: (ctx.stage.stations ?? []).map((s) => {
       const [lo, hi] = aimRange(s);
-      return { user: null, aim: Math.round((lo + hi) / 2), ammo: Math.min(STATION.startAmmo, ammoMax(s)), readyAt: 0, autoAt: t + (s.autoAmmoMs ?? Infinity), loadAt: null, crates: [], held: null, nextAt: 0 };
+      return { user: null, aim: Math.round((lo + hi) / 2), ammo: Math.min(STATION.startAmmo, ammoMax(s)), readyAt: 0, autoAt: t + (s.autoAmmoMs ?? Infinity), loadAt: null, crates: [], held: null, nextAt: 0, push: 0 };
     }),
     balls: [],
     nextId: 1,
     points: {},
     reenter: {},
+    carts: Object.fromEntries((ctx.stage.stations ?? []).filter((s) => s.cart !== undefined).map((s) => [s.cart!, { k: STATION.cartStart, prev: STATION.cartStart }])),
   };
   return ctx.stations;
 }
@@ -132,7 +143,8 @@ export function useStation(f: Fighter, dtMs: number, ctx: PhysicsContext): boole
       slot.held = null;
       slot.nextAt = t + STATION.gruCooldownMs;
     }
-  } else loadCrate(f, s, slot, i, list, w, t, ctx);
+  } else if (s.kind === "teleferica") slot.push = (f.input.right ? 1 : 0) - (f.input.left ? 1 : 0);
+  else loadCrate(f, s, slot, i, list, w, t, ctx);
   return true;
 }
 
@@ -177,6 +189,7 @@ function loadCrate(f: Fighter, s: Station, slot: Slot, i: number, list: Station[
 function leave(f: Fighter, w: StationWorld, i: number, ctx: PhysicsContext) {
   w.slots[i].user = null;
   w.slots[i].loadAt = null; // una carica interrotta si perde
+  w.slots[i].push = 0;
   f.station = undefined;
   w.reenter[f.id] = now(ctx) + STATION.reenterMs;
   event(ctx, "exit", i, f.id, f.x, f.y);
@@ -231,7 +244,26 @@ export function stepStations(fighters: Fighter[], dtMs: number, ctx: PhysicsCont
       }
     }
   });
+  stepCarts(list, dtMs, w, ctx);
   stepBalls(fighters, dtMs, w, ctx);
+}
+
+// I cestelli delle teleferiche: le spinte degli argani occupati si sommano (due squadre che tirano in versi opposti si
+// annullano), poi il cestello va lungo il cavo a STATION.cartSpeedPxS e si ferma ai capi. Fuori dalla finestra del mover sta fermo
+function stepCarts(list: Station[], dtMs: number, w: StationWorld, ctx: PhysicsContext) {
+  const movers = ctx.stage.movers ?? [];
+  for (const [key, c] of Object.entries(w.carts)) {
+    const m = movers[Number(key)];
+    c.prev = c.k;
+    if (!m || m.path.length < 2 || !pieceOn(m, now(ctx))) continue;
+    let push = 0;
+    list.forEach((s, i) => {
+      if (s.cart === Number(key) && w.slots[i].user !== null) push += w.slots[i].push;
+    });
+    const len = Math.hypot(m.path[1].x - m.path[0].x, m.path[1].y - m.path[0].y);
+    const step = len > 0 ? (Math.max(-1, Math.min(1, push)) * STATION.cartSpeedPxS * dtMs) / 1000 / len : 0;
+    c.k = Math.max(0, Math.min(1, c.k + step));
+  }
 }
 
 // Le palle di mortadella: arco, poi si schiantano su un blocco pieno o su un lottatore. Fuori dall'arena spariscono
@@ -289,6 +321,7 @@ export function stationSnapshot(ctx: PhysicsContext): { stations?: StationState[
       const slot = w.slots[i];
       if (s.kind === "gru") return { user: slot.user, readyAt: Math.round(slot.nextAt), ...(slot.held && { piece: { kind: slot.held.kind, cells: hangCells(s, slot.held) } }) };
       if (s.kind === "bombarda") return { user: slot.user, aim: Math.round(slot.aim), ammo: slot.ammo, readyAt: Math.round(slot.readyAt) };
+      if (s.kind === "teleferica") return { user: slot.user, cart: Math.round((w.carts[s.cart ?? -1]?.k ?? STATION.cartStart) * 1000) / 1000 };
       return { user: slot.user, ...(slot.loadAt !== null && { load: Math.round(slot.loadAt) }), crates: slot.crates.map(Math.round) };
     }),
     cannonballs: w.balls.map((b) => ({ id: b.id, ownerId: b.ownerId, x: Math.round(b.x), y: Math.round(b.y), vx: Math.round(b.vx), vy: Math.round(b.vy) })),

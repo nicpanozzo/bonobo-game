@@ -823,7 +823,9 @@
     "crate": 3,
     "gruMoveMs": 120,
     "gruCooldownMs": 2500,
-    "gruMaxBlocks": 16
+    "gruMaxBlocks": 16,
+    "cartSpeedPxS": 170,
+    "cartStart": 0.5
   },
   "pacman": {
     "ms": 8000,
@@ -8358,6 +8360,27 @@
             "amplitudeDeg": 38,
             "swingMs": 4400
           }
+        },
+        {
+          "kind": "teleferica",
+          "width": 110,
+          "path": [
+            {
+              "x": 790,
+              "y": 1180
+            },
+            {
+              "x": 1260,
+              "y": 1050
+            }
+          ],
+          "periodMs": 3600000,
+          "on": [
+            [
+              45000,
+              150000
+            ]
+          ]
         }
       ],
       "hazards": [
@@ -8956,6 +8979,34 @@
             [
               45000,
               165000
+            ]
+          ]
+        },
+        {
+          "kind": "teleferica",
+          "x": 830,
+          "y": 1465,
+          "width": 110,
+          "team": 1,
+          "cart": 4,
+          "on": [
+            [
+              45000,
+              150000
+            ]
+          ]
+        },
+        {
+          "kind": "teleferica",
+          "x": 1335,
+          "y": 1340,
+          "width": 110,
+          "team": 2,
+          "cart": 4,
+          "on": [
+            [
+              45000,
+              150000
             ]
           ]
         }

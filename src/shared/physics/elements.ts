@@ -2,7 +2,7 @@
 // Tutto dipende solo dal tempo dell'arena (ctx.timeMs): il client Godot rifà gli stessi
 // calcoli in world_view.gd e disegna gli elementi senza riceverne le posizioni.
 
-import { FIGHTER, HAZARD, HITSTOP, HITSTUN_PER_KNOCKBACK, PAD, TICK_RATE, WIND } from "../constants";
+import { FIGHTER, HAZARD, HITSTOP, HITSTUN_PER_KNOCKBACK, PAD, STATION, TICK_RATE, WIND } from "../constants";
 import type { Hazard, Jet, MovingPlatform, SoundPad } from "../stages";
 import type { Fighter, PhysicsContext } from "./fighter";
 import { chargeFromHit } from "./supreme";
@@ -93,9 +93,22 @@ export function padFx(m: MovingPlatform, timeMs: number, pads: SoundPad[] | unde
 
 // Dove si trova e se c'è una piattaforma nella partita, con gli effetti dei bottoni (moverPosition e moverOn da soli no)
 export function moverPlace(m: MovingPlatform, timeMs: number, ctx: PhysicsContext): { x: number; y: number } {
-  const p = moverPosition(m, timeMs);
+  const p = cartPlace(m, timeMs, ctx) ?? moverPosition(m, timeMs);
   const dy = padFx(m, timeMs, ctx.stage.pads, ctx.padsMs).dy;
   return dy ? { x: p.x, y: p.y + dy } : p;
+}
+
+// Il cestello di una teleferica (#433) non va col tempo ma dove l'hanno spinto gli argani (physics/stations.ts):
+// al tempo di adesso dove sta, prima dove stava al tick precedente. null se m non è un cestello
+function cartPlace(m: MovingPlatform, timeMs: number, ctx: PhysicsContext): { x: number; y: number } | null {
+  const list = ctx.stage.stations;
+  if (!list?.some((s) => s.cart !== undefined)) return null;
+  const i = ctx.stage.movers?.indexOf(m) ?? -1;
+  if (i < 0 || !list.some((s) => s.cart === i)) return null;
+  const c = ctx.stations?.carts[i];
+  const k = c ? (timeMs < (ctx.timeMs ?? 0) ? c.prev : c.k) : STATION.cartStart;
+  const [a, b] = m.path;
+  return { x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k };
 }
 
 export function moverHere(m: MovingPlatform, timeMs: number, ctx: PhysicsContext): boolean {

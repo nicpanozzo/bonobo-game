@@ -20,6 +20,8 @@ const AWNING_REACH_PX := 160.0 # sopra il tendone fin dove si sente il peso di c
 const BUS_OVERHANG := 1.06 # il bus disegnato è un po' più lungo del suo tetto, che è la piattaforma
 const BUS_ROOF := 0.96 # bus.png: il tetto è a tanto della sua altezza dal basso
 const EMBER := Color("ff9a3c")
+const CABLE_CAR_HANG_PX := 120.0 # il cavo della teleferica sta tanto sopra il fondo del cestello
+const CABLE_CAR_BASKET_PX := 34.0 # alto tanto il cestello: le sbarre arrivano alla vita di chi ci sta dentro
 const UPDRAFT_BITS := 14 # tra braci, foglie e pezzi di carta che salgono nella corrente
 const BRONZE := Color("a8792f")
 const BELL_CABLE_PX := 190.0 # il cavo della campana, da una parte e dall'altra del perno: arriva alle due torri
@@ -287,3 +289,29 @@ static func draw_updraft(ci: CanvasItem, j: Dictionary, t: float, mod: Color) ->
 				ci.draw_colored_polygon(PackedVector2Array([Vector2(-6, 0), Vector2(0, -3), Vector2(6, 0), Vector2(0, 3)]),
 					paint.call(Color(0.78, 0.55, 0.2, 0.85 * fade)))
 				ci.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+# La teleferica del cantiere (mover "teleferica"): il cavo teso tra i due capi, CABLE_CAR_HANG_PX sopra la superficie,
+# la carrucola che ci scorre sopra, le due funi e il cestello di ferro, il cui fondo è la superficie della fisica
+static func draw_cable_car(ci: CanvasItem, m: Dictionary, pos: Vector2, mod: Color) -> void:
+	var w := float(m.width)
+	var paint := func(c: Color) -> Color: return Color(c.r * mod.r, c.g * mod.g, c.b * mod.b, c.a)
+	var lift := Vector2(w / 2.0, -CABLE_CAR_HANG_PX)
+	var a := Vector2(m.path[0].x, m.path[0].y) + lift
+	var b := Vector2(m.path[1].x, m.path[1].y) + lift
+	var along := (b - a).normalized()
+	ci.draw_line(a - along * 40.0, b + along * 40.0, paint.call(INK), 3.0) # il cavo, un po' oltre i capi: è legato alle torri
+	var wheel := pos + lift
+	ci.draw_circle(wheel, 9.0, paint.call(INK))
+	ci.draw_circle(wheel, 5.0, paint.call(Color("b0b0b0")))
+	var top := pos.y - CABLE_CAR_BASKET_PX
+	for x in [pos.x + 8.0, pos.x + w - 8.0]: # le funi dalla carrucola agli angoli del cestello
+		ci.draw_line(wheel, Vector2(x, top), paint.call(INK), 2.0)
+	# il cestello: un telaio di ferro giallo da cantiere, con le sbarre e il fondo che si vede, dove si sta
+	ci.draw_rect(Rect2(pos.x, top, w, CABLE_CAR_BASKET_PX), paint.call(Color(0.85, 0.65, 0.12, 0.25)))
+	ci.draw_rect(Rect2(pos.x, top, w, CABLE_CAR_BASKET_PX), paint.call(Color("d9a521")), false, 3.0)
+	for k in range(1, 5):
+		var x := pos.x + w * k / 5.0
+		ci.draw_line(Vector2(x, top), Vector2(x, pos.y), paint.call(Color("d9a521")), 2.0)
+	ci.draw_rect(Rect2(pos.x - 3.0, pos.y - 2.0, w + 6.0, 6.0), paint.call(INK))
+
