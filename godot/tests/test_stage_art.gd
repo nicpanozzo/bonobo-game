@@ -234,3 +234,17 @@ func test_piattaforma_mobile_lungo_il_percorso() -> void:
 	runner.check(StageMotion.mover_position(ferma, 300) == Vector2.ZERO, "la pausa all'inizio")
 	runner.check(StageMotion.mover_position(ferma, 1000) == Vector2(100, 0), "dopo pausa e andata")
 	runner.check(StageMotion.mover_position(avanti, 500) == Vector2(50, 0), "ognuna col suo giro, anche dopo le altre")
+
+
+# Quello che si disegna (#433) si taglia con l'inquadratura vera: telecamera più posizione del nodo
+func test_inquadratura_vera() -> void:
+	var node := Node2D.new()
+	runner.root.add_child(node)
+	node.position = Vector2(100, 50)
+	var before := runner.root.canvas_transform
+	runner.root.canvas_transform = Transform2D(0.0, Vector2(2, 2), 0.0, Vector2(-400, -600)) # zoom 2, spostata
+	var size := node.get_viewport_rect().size
+	var shown: Rect2 = WorldView.visible_rect(node)
+	runner.root.canvas_transform = before
+	node.queue_free()
+	runner.check(shown.position.is_equal_approx(Vector2(100, 250)) and shown.size.is_equal_approx(size / 2.0), "vista: %s" % shown)
