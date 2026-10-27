@@ -134,6 +134,7 @@ export interface ProjectileState {
   y: number;
   vx: number;
   vy: number;
+  supreme?: boolean; // tirato dalla suprema (l'aquila dell'Elefante di Elvedeo): numeri e disegno da lì, non dalla speciale
 }
 
 // Una pozza di merda dell'IRA di Lendmar (#13): a terra, chi ci sta sopra scivola (non chi l'ha tirata)

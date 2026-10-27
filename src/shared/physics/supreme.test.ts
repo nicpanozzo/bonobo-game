@@ -560,3 +560,62 @@ describe("suprema con Speciale + Pesante", () => {
     assert.equal(a.attack, "specialNeutral");
   });
 });
+
+describe("l'aquila dell'Elefante di Elvedeo", () => {
+  const spin = getCharacter("elvedeo").supreme as SpinSupreme;
+  const eagle = spin.eagle!;
+
+  // Elvedeo in suprema, finito l'avvio; b davanti, dove l'aquila scende in picchiata
+  function eagleSetup() {
+    const { ctx, fighters, a, b } = setup(10);
+    a.characterId = "elvedeo";
+    a.supreme = SUPREME.max;
+    b.characterId = "egiainuso";
+    b.x = a.x + 200;
+    press(a, { supreme: true });
+    run(fighters, ctx, 1);
+    press(a, {});
+    run(fighters, ctx, ticks(spin.windupMs) + 1);
+    ctx.events.length = 0;
+    return { ctx, fighters, elvedeo: a, b };
+  }
+  const eagles = (ctx: PhysicsContext) => (ctx.projectiles?.list ?? []).filter((p) => p.supreme);
+
+  it("con la Speciale parte l'aquila, una volta sola", () => {
+    const { ctx, fighters, elvedeo } = eagleSetup();
+    press(elvedeo, { special: true });
+    run(fighters, ctx, 1);
+    press(elvedeo, {});
+    assert.equal(eagles(ctx).length, 1);
+    assert.equal(elvedeo.attack, "supreme", "la suprema continua");
+    run(fighters, ctx, ticks(eagle.lifeMs + eagle.carryMs) + 5);
+    press(elvedeo, { special: true });
+    run(fighters, ctx, 1);
+    assert.equal(eagles(ctx).length, 0, "la seconda Speciale non tira niente");
+  });
+
+  it("afferra chi tocca, lo porta su e lo molla più in là", () => {
+    const { ctx, fighters, elvedeo, b } = eagleSetup();
+    const y0 = b.y;
+    press(elvedeo, { special: true });
+    run(fighters, ctx, 1);
+    press(elvedeo, {});
+    let caught = -1;
+    for (let i = 0; i < ticks(eagle.lifeMs) && caught < 0; i++) {
+      run(fighters, ctx, 1);
+      if (eagles(ctx)[0]?.carryId === b.id) caught = i;
+    }
+    assert.ok(caught >= 0, "l'aquila lo prende");
+    const x0 = b.x;
+    run(fighters, ctx, ticks(eagle.carryMs / 2));
+    assert.ok(b.y < y0 - 40, `è in aria (${y0 - b.y} px sopra)`);
+    assert.ok(b.hitstun, "intanto non fa niente");
+    run(fighters, ctx, ticks(eagle.carryMs / 2) + 2);
+    // i colpi dell'aquila (l'elefante che pesta lì vicino può colpirlo anche lui)
+    const hits = ofType(ctx.events, "hit").filter((h) => h.targetId === b.id && h.kind === "specialNeutral");
+    assert.deepEqual(hits.map((h) => h.damage), [eagle.grabDamage, eagle.damage]);
+    assert.ok(b.x > x0 + 100, "lo ha portato avanti");
+    assert.ok(b.vx > 0, "e lo lancia avanti");
+    assert.equal(eagles(ctx)[0]?.carryId, undefined, "l'ha mollato");
+  });
+});

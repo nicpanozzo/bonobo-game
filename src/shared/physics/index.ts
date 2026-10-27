@@ -36,7 +36,7 @@ import { cancelSpecial, specialing } from "./specials";
 import { endDash } from "./dash";
 import { collideWithStage, liftOutOfZone, loseStock, outOfBlastZone, respawn } from "./stage";
 export { platformSurfaceY } from "./stage";
-import { burstFire, stepRewinds, supreming, tickSupreme, tryComboSupreme } from "./supreme";
+import { burstFire, eagleFire, stepRewinds, supreming, tickSupreme, tryComboSupreme } from "./supreme";
 import { landTech, tickTech } from "./tech";
 import { stageAt } from "./timed";
 import { freezePrize, stepStations, useStation } from "./stations";
@@ -133,6 +133,7 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
 
   updateAttack(f, dtMs);
   burstFire(f, dtMs, ctx); // le raffiche di IRA di Lendmar (#358)
+  eagleFire(f, ctx); // l'aquila dell'Elefante di Elvedeo
   // Suprema propria (#102): appesi alla liana, fermi dove si è
   if (supreming(f, dtMs)) {
     endDash(f); // la suprema ferma lo scatto (#199)

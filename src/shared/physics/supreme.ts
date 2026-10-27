@@ -63,6 +63,7 @@ export function tryComboSupreme(f: Fighter, ctx: PhysicsContext): boolean {
 
 function startSupreme(f: Fighter, ctx: PhysicsContext): void {
   f.supreme = 0;
+  f.eagleShot = false;
   startAttack(f, "supreme", ctx);
   const own = supremeAttackSpec(f.characterId);
   const drop = dropOf(f.characterId);
@@ -103,6 +104,17 @@ function burstOf(characterId: string): BurstSupreme | null {
 
 // La suprema colpisce col suo rettangolo? Non la "burst", che colpisce coi proiettili, né la "rewind", che stordisce
 export const supremeMelee = (characterId: string) => !burstOf(characterId) && !rewindOf(characterId);
+
+// L'aquila dell'Elefante di Elvedeo: mentre la "spin" gira, la Speciale la tira una volta sola. Gli altri tasti
+// durante la suprema non fanno niente, e la Speciale premuta dopo la prima si consuma senza effetto
+export function eagleFire(f: Fighter, ctx: PhysicsContext): void {
+  const sp = f.attack === "supreme" ? spinOf(f.characterId) : null;
+  if (!sp?.eagle || !pressed(f, "special")) return;
+  consume(f, "special");
+  if (f.eagleShot || f.attackTimer < sp.windupMs) return;
+  f.eagleShot = true;
+  fire(f, "specialNeutral", sp.eagle, ctx, undefined, true);
+}
 
 // La suprema "burst" (#358): a ogni raffica tira count proiettili della speciale neutra a ventaglio, da una parte
 // all'altra; le raffiche dispari sono spostate di mezzo passo, così non passano dagli stessi punti

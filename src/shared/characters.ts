@@ -198,6 +198,18 @@ export interface ProjectileSpecial extends SpecialBase, SpecialHit {
   words?: string[]; // in Godot il proiettile è una di queste parole scritte, scelta dall'id del tiro (le Ciacole)
   sound?: "bass"; // in Godot il tiro suona questo al posto del "piu" del Tiro (la Bassline)
   sprite?: ProjectileSprite; // in Godot il proiettile è questo disegno animato (il Piccione di Elvedeo)
+  spawnX?: number; // pixel davanti al centro da cui parte (negativo: dietro); senza, davanti alle mani
+  spawnY?: number; // pixel sopra i piedi da cui parte; senza, SPECIAL_MOVES.projectileY (il Piccione: dalla spalla)
+}
+// L'aquila della suprema "spin" (l'Elefante di Elvedeo): un proiettile tirato con la Speciale mentre si gira, una volta
+// sola. Chi tocca lo afferra, lo porta in volo per carryMs e lo molla con i numeri del colpo (damage, knockback...)
+export interface SupremeEagle extends ProjectileSpecial {
+  grabDamage: number; // quando afferra
+  carryMs: number; // quanto lo porta
+  carrySpeed: number; // pixel/s in avanti mentre lo porta
+  carryRise: number; // pixel/s verso l'alto mentre lo porta
+  hangPx: number; // i piedi di chi è preso stanno così sotto il centro dell'aquila
+  after: string; // in Godot, partita l'aquila, la suprema usa questo PNG (stessi fotogrammi senza l'aquila sul braccio)
 }
 // Il disegno di un proiettile: fotogrammi in fila nel PNG, guarda a destra e si gira con il tiro
 export interface ProjectileSprite {
@@ -277,7 +289,8 @@ export interface SpinSupreme {
   type: "spin";
   name: string; // come si chiama nei menu
   whirl?: boolean; // false: in Godot niente vortici bianchi (l'Elefante di Elvedeo si vede già nel disegno)
-  grow?: number; // in Godot il disegno cresce di tanto mentre gira e torna normale alla fine (l'Elefante: 1.6)
+  grow?: number; // in Godot il disegno cresce di tanto mentre gira e torna normale alla fine (l'Elefante: 2)
+  eagle?: SupremeEagle; // la Speciale, mentre gira, tira l'aquila (l'Elefante di Elvedeo)
   windupMs: number;
   durationMs: number;
   hitEveryMs: number;
@@ -701,15 +714,28 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         type: "projectile", name: "Piccione", startupMs: 260, cooldownMs: 650, speed: 480, gravity: 0, lifeMs: 900, maxAlive: 1,
         range: 44, height: 28, damage: 7, baseKnockback: 170, knockbackGrowth: 4, angleDeg: 35, color: 0x8a8f99,
         sprite: { path: "assets/characters/elvedeo/proiettili/piccione.png", frameWidth: 128, frameHeight: 110, fps: 18, scale: 0.5 }, // ritagliato dal video
+        // parte dalla spalla, dove sta nel disegno, e scende appena: all'altezza della testa di un lottatore a 300 px
+        spawnX: -15, spawnY: 85, spreadDeg: [-6],
       },
       // la capra gratta il terreno, carica a testa bassa e sbatte: lenta a partire, forte
       side: { type: "dash", name: "Incornata", startupMs: 250, durationMs: 380, speed: 820, endLagMs: 420, range: 56, height: 50, damage: 11, baseKnockback: 420, knockbackGrowth: 9, angleDeg: 32 },
       // la capra si abbassa, trema e scalcia all'indietro: il colpo sta dietro e manda via all'indietro
       down: { type: "charge", name: "Calcione", minMs: 250, maxMs: 1300, maxMultiplier: 1.8, activeMs: 140, endLagMs: 400, range: 64, height: 50, boxX: -96, boxY: -56, damage: 12, baseKnockback: 430, knockbackGrowth: 10, angleDeg: 145 },
     },
-    // per poco la capra diventa un elefante e il piccione un'aquila (Nicola, 2026-10-27): cresce del 60%, pesta tutto
-    // intorno mentre avanza piano, e l'ultima pestata manda lontano. La zona è larga quanto l'elefante cresciuto
-    supreme: { type: "spin", name: "Elefante", whirl: false, grow: 1.6, windupMs: 700, durationMs: 2400, hitEveryMs: 600, endLagMs: 450, moveSpeed: 0.35, width: 300, height: 220, damage: 6, baseKnockback: 260, knockbackGrowth: 4, angleDeg: 50, finisher: { damage: 14, baseKnockback: 520, knockbackGrowth: 12, angleDeg: 40 } },
+    // per poco la capra diventa un elefante e il piccione un'aquila (Nicola, 2026-10-27): diventa grande il doppio, pesta
+    // tutto intorno mentre avanza piano, e l'ultima pestata manda lontano. La zona è larga quanto l'elefante cresciuto.
+    // Con la U, una volta sola, parte l'aquila: scende in picchiata, afferra il primo che tocca e lo molla più in là
+    supreme: {
+      type: "spin", name: "Elefante", whirl: false, grow: 2, windupMs: 700, durationMs: 2400, hitEveryMs: 600, endLagMs: 450, moveSpeed: 0.35, width: 300, height: 220, damage: 6, baseKnockback: 260, knockbackGrowth: 4, angleDeg: 50, finisher: { damage: 14, baseKnockback: 520, knockbackGrowth: 12, angleDeg: 40 },
+      eagle: {
+        // dal braccio alzato (nel disegno cresciuto), giù in picchiata fino all'altezza del petto a 240 px, poi risale
+        type: "projectile", name: "Aquila", startupMs: 0, cooldownMs: 0, maxAlive: 1, speed: 700, spreadDeg: [-50], gravity: -1000, lifeMs: 1200,
+        spawnX: -30, spawnY: 190, range: 90, height: 70, damage: 12, baseKnockback: 380, knockbackGrowth: 9, angleDeg: 35, color: 0x7a5230,
+        grabDamage: 4, carryMs: 700, carrySpeed: 300, carryRise: 220, hangPx: 100,
+        sprite: { path: "assets/characters/elvedeo/proiettili/aquila.png", frameWidth: 280, frameHeight: 320, fps: 14, scale: 0.57 }, // dal video, grande come l'elefante cresciuto
+        after: "assets/characters/elvedeo/proiettili/suprema-senza-aquila.png",
+      },
+    },
     sprite: {
       dir: "assets/characters/elvedeo",
       frameWidth: 440, // largo e alto: l'elefante, le nuvole e lo schianto escono dalla capra

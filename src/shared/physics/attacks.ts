@@ -222,8 +222,10 @@ export function resolveHits(fighters: Fighter[], ctx: PhysicsContext): void {
 
 // Il colpo vero: percentuale e volo nella direzione in cui guarda chi colpisce. Lo usano anche i lanci della presa
 // damage cambia il danno della mossa (la risposta del contrattacco dipende dal colpo parato)
-export function launch(target: Fighter, attacker: Fighter, kind: AttackKind, x: number, y: number, ctx: PhysicsContext, damage?: number): void {
-  const base = damage === undefined ? attackSpecFor(attacker, kind) : { ...attackSpecFor(attacker, kind), damage };
+// hit: altri numeri del colpo al posto di quelli di kind (l'aquila dell'Elefante, che ha i suoi)
+export function launch(target: Fighter, attacker: Fighter, kind: AttackKind, x: number, y: number, ctx: PhysicsContext, damage?: number, hit?: Pick<AttackSpec, "damage" | "baseKnockback" | "knockbackGrowth" | "angleDeg">): void {
+  const own = hit ? { ...attackSpecFor(attacker, kind), damage: hit.damage, baseKnockback: hit.baseKnockback, knockbackGrowth: hit.knockbackGrowth, angleDeg: hit.angleDeg } : attackSpecFor(attacker, kind);
+  const base = damage === undefined ? own : { ...own, damage };
   // Potenziati dal fiore (#231) i colpi fanno più danno; il volo cresce già con la percentuale
   const mult = attacker.powerup === "fiore" ? POWERUP.damageMult : attacker.powerup === "micelio" ? MICELIO.damageMult : 1; // il micelio di Dr. Micelium (#358)
   const spec = mult !== 1 ? { ...base, damage: Math.round(base.damage * mult * 10) / 10 } : base;
