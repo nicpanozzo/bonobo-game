@@ -88,8 +88,8 @@ const TEAM_NAME_LIGHTEN := 0.35 # il nome sopra la testa ha il colore della squa
 const TEAM_NAME_OUTLINE := 4 # bordo scuro del nome a squadre, pixel
 const SHADOW_STEPS := 6 # ovali sovrapposti di un'ombra a terra (#378): più sono, più è sfumata
 const SHADOW_STEP_ALPHA := 0.17 # quanto scurisce ognuno: al centro si arriva a circa 2/3 della forza dell'ombra
-var _light_layers := {} # parallasse -> [Texture2D, Rect2]: i vetri accesi di quello strato (#288), ritagliati; Rect2 in frazioni dello strato
-var _light_props: Array = [] # [texture, decorazione] con i vetri accesi, sopra le decorazioni (#288)
+var _light_layers := {} # parallasse -> _lit_texture(): i vetri accesi di quello strato (#288), ritagliati; Rect2 in frazioni dello strato
+var _light_props: Array = [] # [_lit_texture(), decorazione] con i vetri accesi, sopra le decorazioni (#288)
 var _life: RefCounted = preload("res://scripts/stage_life.gd").new() # sfondo vivo (#260)
 var _crowd: RefCounted = StageCrowd.new() # i flash dei turisti a ogni KO (#433)
 var _water: RefCounted = preload("res://scripts/stage_water.gd").new() # getti, fontane e vento (#325)
@@ -138,6 +138,7 @@ class MomentLayer extends Node2D:
 		view.draw_moment(self)
 
 const SunLight := preload("res://scripts/sun_light.gd") # luce e ombre del sole e della luna (#288)
+const LitTiles := preload("res://scripts/lit_tiles.gd") # i vetri accesi solo dove ce ne sono (#433)
 static var _screen_px_per_world := 0.0 # pixel dello schermo per pixel di mondo alla telecamera più vicina; 0 = non si sa (headless)
 var _character_sprites := {} # id personaggio -> true quando i suoi sprite sono caricati
 var _looks := {} # "<personaggio>/<skin>" -> il suo disegno (FighterPose.look), #339
@@ -478,9 +479,9 @@ func _load_stage_dressing(dir: String, art: Dictionary) -> void:
 		if not lit.is_empty():
 			_light_layers[snappedf(float(ll.parallax), 0.001)] = lit
 	for lp in day.get("lightProps", []):
-		var tex := _stage_texture(dir, lp.file)
-		if tex != null:
-			_light_props.append([tex, lp])
+		var lit := _lit_texture(dir, lp.file)
+		if not lit.is_empty():
+			_light_props.append([lit, lp])
 
 
 static func _stage_texture(dir: String, file: String, world_scale := 0.0) -> Texture2D:
@@ -493,7 +494,8 @@ static func _stage_texture(dir: String, file: String, world_scale := 0.0) -> Tex
 
 # I vetri accesi di uno strato sono grandi quanto lo strato ma quasi tutti trasparenti: disegnarli interi di notte
 # costava tre strati in più da fondere a ogni frame (gli fps calavano al tramonto). Si tiene solo la parte con qualcosa,
-# con la sua posizione in frazioni dello strato. [] se manca il file
+# con la sua posizione in frazioni dello strato, e dentro solo le strisce accese (lit_tiles.gd, #433).
+# [texture, Rect2 in frazioni, strisce (vuote = tutta), grandezza vera]; [] se manca il file
 static func _lit_texture(dir: String, file: String, world_scale := 0.0) -> Array:
 	var path := "res://data/assets/stages/%s/%s" % [dir, file]
 	if not ResourceLoader.exists(path):
@@ -501,7 +503,8 @@ static func _lit_texture(dir: String, file: String, world_scale := 0.0) -> Array
 		return []
 	var img: Image = (load(path) as Texture2D).get_image()
 	if img == null or img.is_compressed():
-		return [_sprite_texture(path, "linear", world_scale), Rect2(0, 0, 1, 1)]
+		var whole := _sprite_texture(path, "linear", world_scale)
+		return [whole, Rect2(0, 0, 1, 1), [], whole.get_size()]
 	var full := Vector2(img.get_size())
 	var used := img.get_used_rect()
 	if used.size.x <= 0 or used.size.y <= 0:
@@ -510,11 +513,28 @@ static func _lit_texture(dir: String, file: String, world_scale := 0.0) -> Array
 	var keep := minf(1.0, _screen_px_per_world * world_scale)
 	if keep > 0.0 and keep < 0.9:
 		part.resize(maxi(1, roundi(part.get_width() * keep)), maxi(1, roundi(part.get_height() * keep)), Image.INTERPOLATE_CUBIC)
+	var rows := LitTiles.runs(part)
 	part.generate_mipmaps()
 	var canvas := CanvasTexture.new()
 	canvas.diffuse_texture = ImageTexture.create_from_image(part)
 	canvas.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-	return [canvas, Rect2(Vector2(used.position) / full, Vector2(used.size) / full)]
+	return [canvas, Rect2(Vector2(used.position) / full, Vector2(used.size) / full), rows, full]
+
+
+# I vetri accesi di _lit_texture() dove andrebbe l'immagine intera (whole), solo le strisce dentro la vista
+func _draw_lit(lit: Array, whole: Rect2, view: Rect2, modulate: Color) -> void:
+	var part: Rect2 = lit[1]
+	var dst := Rect2(whole.position + part.position * whole.size, part.size * whole.size)
+	if (lit[2] as Array).is_empty():
+		draw_texture_rect(lit[0], dst, false, modulate)
+	else:
+		LitTiles.draw(self, lit[0], lit[2], dst, view, modulate)
+
+
+# La parte di mondo che finisce sullo schermo, nelle coordinate del nodo: xf è get_global_transform_with_canvas()
+# (telecamera e posizione del nodo), screen get_viewport_rect()
+static func visible_rect(xf: Transform2D, screen: Rect2) -> Rect2:
+	return xf.affine_inverse() * screen
 
 
 # Un'immagine dell'arena senza nemmeno un pixel visibile (#83)
@@ -1530,6 +1550,8 @@ func _draw() -> void:
 	_t_draw = t_stage
 	_wonder.draw_back(self, t_stage, view_rect, _pads_pressed, Time.get_ticks_msec()) # solo nelle arene col brano (#423)
 	var view_center := view_rect.get_center()
+	# Quello che si vede davvero, dalla telecamera: view_rect lo aggiorna main.gd solo mentre si gioca (#433)
+	var shown := visible_rect(get_global_transform_with_canvas(), get_viewport_rect())
 	var rain := _rain_now(t_stage)
 	_ambient = _life.sky.ambient(t_stage) # la luce del momento del giorno (#267), bianca senza ciclo
 	if not _life.is_empty():
@@ -1548,8 +1570,7 @@ func _draw() -> void:
 			# finivano spostati sulle facciate sbagliate (le luci sulla Loggia Amulea che vedeva Riccardo)
 			var full: Vector2 = l[2] if l.size() > 2 else (l[0] as Texture2D).get_size()
 			var whole := StageMotion.layer_rect(full * _layer_scale, l[1], Vector2(stage_width() / 2.0, h / 2.0), view_center, _vertical_parallax())
-			var part: Rect2 = lights[1]
-			draw_texture_rect(lights[0], Rect2(whole.position + part.position * whole.size, part.size * whole.size), false, Color(1, 1, 1, night))
+			_draw_lit(lights, whole, shown, Color(1, 1, 1, night))
 		if night > 0.0:
 			_life.sky.draw_lamps(self, t_stage, view_rect, float(l[1]))
 		far = l[1]
@@ -1559,14 +1580,16 @@ func _draw() -> void:
 	_draw_props(_props_back) # statue e decorazioni dietro al palco (#237): le lastre che reggono ci stanno sopra
 	if night > 0.0:
 		for entry in _light_props: # i vetri accesi delle decorazioni (#288)
-			var tex: Texture2D = entry[0]
 			var pr: Dictionary = entry[1]
-			var size := tex.get_size() * float(pr.get("scale", _layer_scale))
-			draw_texture_rect(tex, Rect2(float(pr.x) - size.x / 2.0, float(pr.y) - size.y, size.x, size.y), false, Color(1, 1, 1, night))
+			var size: Vector2 = entry[0][3] * float(pr.get("scale", _layer_scale))
+			_draw_lit(entry[0], Rect2(float(pr.x) - size.x / 2.0, float(pr.y) - size.y, size.x, size.y), shown, Color(1, 1, 1, night))
 	if not _life.is_empty():
 		_life.sky.draw_daycycle(self, t_stage, view_rect) # di notte lampioni e finestre accese
+	var near := shown.grow(60.0) # i pezzi fuori dall'inquadratura non si disegnano (#433: le torri di Bologna sono tante)
 	for i in stage.solids.size():
 		var s: Dictionary = stage.solids[i]
+		if not near.intersects(Rect2(s.x, s.y, s.width, s.height)):
+			continue
 		var skin := _skin_for("solids", i)
 		_piece_alpha = StageMotion.piece_alpha(s, t_stage, _prize_team) # pezzi a tempo (#433): sfumano entrando e uscendo
 		if _piece_alpha <= 0.0:
@@ -1579,6 +1602,9 @@ func _draw() -> void:
 			_draw_skinned_solid(s, skin)
 	for i in stage.platforms.size():
 		var p: Dictionary = stage.platforms[i]
+		var y2: float = float(p.y2) if p.get("y2") != null else float(p.y)
+		if not near.intersects(Rect2(p.x, minf(float(p.y), y2) - 200.0, p.width, absf(y2 - float(p.y)) + 400.0)): # archi e spessore
+			continue
 		var skin := _skin_for("platforms", i)
 		_piece_alpha = StageMotion.piece_alpha(p, t_stage, _prize_team)
 		if _piece_alpha <= 0.0:
