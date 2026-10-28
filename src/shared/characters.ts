@@ -722,16 +722,17 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       // la capra si abbassa, trema e scalcia all'indietro: il colpo sta dietro e manda via all'indietro
       down: { type: "charge", name: "Calcione", minMs: 250, maxMs: 1300, maxMultiplier: 1.8, activeMs: 140, endLagMs: 400, range: 64, height: 50, boxX: -96, boxY: -56, damage: 12, baseKnockback: 430, knockbackGrowth: 10, angleDeg: 145 },
     },
-    // per poco la capra diventa un elefante e il piccione un'aquila (Nicola, 2026-10-27): diventa grande il doppio, pesta
+    // per 4 secondi (Nicola, 2026-10-28: prima 2,4) la capra diventa un elefante e il piccione un'aquila: grande il doppio, pesta
     // tutto intorno mentre avanza piano, e l'ultima pestata manda lontano. La zona è larga quanto l'elefante cresciuto.
     // Con la U, una volta sola, parte l'aquila: scende in picchiata, afferra il primo che tocca e lo molla più in là
     supreme: {
-      type: "spin", name: "Elefante", whirl: false, grow: 2, windupMs: 700, durationMs: 2400, hitEveryMs: 600, endLagMs: 450, moveSpeed: 0.35, width: 300, height: 220, damage: 6, baseKnockback: 260, knockbackGrowth: 4, angleDeg: 50, finisher: { damage: 14, baseKnockback: 520, knockbackGrowth: 12, angleDeg: 40 },
+      type: "spin", name: "Elefante", whirl: false, grow: 2, windupMs: 700, durationMs: 4000, hitEveryMs: 600, endLagMs: 450, moveSpeed: 0.35, width: 300, height: 220, damage: 6, baseKnockback: 260, knockbackGrowth: 4, angleDeg: 50, finisher: { damage: 14, baseKnockback: 520, knockbackGrowth: 12, angleDeg: 40 },
       eagle: {
-        // dal braccio alzato (nel disegno cresciuto), giù in picchiata fino all'altezza del petto a 240 px, poi risale
+        // dal braccio alzato (nel disegno cresciuto), giù in picchiata fino all'altezza del petto a 240 px, poi risale.
+        // Danno basso (Nicola, 2026-10-28: prima 4 + 12): conta più il lancio che la percentuale
         type: "projectile", name: "Aquila", startupMs: 0, cooldownMs: 0, maxAlive: 1, speed: 700, spreadDeg: [-50], gravity: -1000, lifeMs: 1200,
-        spawnX: -30, spawnY: 190, range: 90, height: 70, damage: 12, baseKnockback: 380, knockbackGrowth: 9, angleDeg: 35, color: 0x7a5230,
-        grabDamage: 4, carryMs: 700, carrySpeed: 300, carryRise: 220, hangPx: 100,
+        spawnX: -30, spawnY: 190, range: 90, height: 70, damage: 6, baseKnockback: 380, knockbackGrowth: 9, angleDeg: 35, color: 0x7a5230,
+        grabDamage: 2, carryMs: 700, carrySpeed: 300, carryRise: 220, hangPx: 100,
         sprite: { path: "assets/characters/elvedeo/proiettili/aquila.png", frameWidth: 280, frameHeight: 320, fps: 14, scale: 0.57 }, // dal video, grande come l'elefante cresciuto
         after: "assets/characters/elvedeo/proiettili/suprema-senza-aquila.png",
       },
