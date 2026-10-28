@@ -105,3 +105,21 @@ func test_indirizzo_di_casa_da_godot() -> void:
 	runner.check(HostServerScript.lan_ip(PackedStringArray(["127.0.0.1", "fe80::1", "192.168.1.54"])) == "192.168.1.54", "il Wi-Fi di casa")
 	runner.check(HostServerScript.lan_ip(PackedStringArray(["172.20.0.3"])) == "172.20.0.3", "172.16-31")
 	runner.check(HostServerScript.lan_ip(PackedStringArray(["127.0.0.1", "8.8.8.8"])) == "", "niente rete di casa")
+
+
+# Chi ospita senza tunnel (#526): un avviso che dice perché, e "Riprova il tunnel" solo a tentativi finiti
+func test_avviso_senza_tunnel() -> void:
+	var HostServerScript := preload("res://scripts/host_server.gd")
+	var with_tunnel := {"state": "ready", "server": TUNNEL, "lanServer": "http://192.168.1.91:3000"}
+	runner.check(HostServerScript.tunnel_note_text(with_tunnel) == "", "col tunnel niente avviso")
+	runner.check(not HostServerScript.tunnel_can_retry(with_tunnel), "col tunnel niente Riprova")
+	runner.check(HostServerScript.tunnel_note_text({}) == "", "server non ancora acceso: niente avviso")
+	var failed := {"state": "lan", "tunnel": "failed", "round": "3", "error": "Cloudflare non ha aperto il tunnel.", "detail": "429 Too Many Requests"}
+	var text := HostServerScript.tunnel_note_text(failed)
+	runner.check(text.contains("Wi-Fi") and text.contains("Cloudflare non ha aperto il tunnel.") and text.contains("429"), "dice dove vale il link e il motivo: %s" % text)
+	runner.check(HostServerScript.tunnel_can_retry(failed), "tentativi finiti: si può riprovare")
+	runner.check(not HostServerScript.tunnel_can_retry(failed, true), "appena chiesto: niente secondo clic")
+	runner.check(HostServerScript.tunnel_note_text(failed, true).begins_with("Cerco il tunnel"), "appena chiesto: si sta cercando")
+	var trying := {"state": "lan", "tunnel": "trying", "round": "1", "error": "Cloudflare non ha aperto il tunnel."}
+	runner.check(HostServerScript.tunnel_note_text(trying).begins_with("Cerco il tunnel"), "il server riprova da solo: lo dice")
+	runner.check(not HostServerScript.tunnel_can_retry(trying), "il server riprova da solo: niente pulsante")
