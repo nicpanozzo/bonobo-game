@@ -9,6 +9,7 @@ const GymFlow := preload("res://scripts/gym_flow.gd")
 const StagePhases := preload("res://scripts/stage_phases.gd")
 const DEFAULT_SERVER := "http://localhost:3000" # npm run dev
 const LINK_BUTTON_POS := Vector2(12, 36) # "Copia link" in partita, sotto la riga della stanza, pixel
+const TUNNEL_NOTE_WIDTH := 460.0 # l'avviso "niente tunnel" va a capo oltre questa larghezza, pixel
 const LobbyScript := preload("res://scripts/lobby.gd") # i testi del link copiato
 const HOST_LINK_TOAST_S := 10.0 # quanto resta l'avviso "link copiato" a chi ospita, secondi
 const PRODUCTION_SERVER := "https://bonobo-game.onrender.com" # server fisso (render.yaml, #19): lo usa il gioco esportato
@@ -28,6 +29,9 @@ var url_params := {} # solo quelli dell'indirizzo o della riga di comando
 var ui_layer := CanvasLayer.new()
 var _link_button: Button
 var _lan_link_button: Button
+var _links_on := false # partita vera (non palestra, tutorial o sfida): ci sono i link per gli amici e il secondo giocatore
+var _tunnel_note: Label # chi ospita senza tunnel: perché il link vale solo in casa (#526)
+var _tunnel_retry: Button
 var pause_menu: Control
 var world: Node2D
 var camera := Camera2D.new()
@@ -142,6 +146,18 @@ func _ready() -> void:
 	_lan_link_button.focus_mode = Control.FOCUS_NONE
 	_lan_link_button.visible = false
 	link_row.add_child(_lan_link_button)
+	# Senza tunnel (#526): il motivo e il pulsante per richiederlo, al posto di due link uguali
+	_tunnel_retry = UI.small_button("Riprova il tunnel", func():
+		HostServer.instance(get_tree()).retry_tunnel())
+	_tunnel_retry.focus_mode = Control.FOCUS_NONE
+	_tunnel_retry.visible = false
+	link_row.add_child(_tunnel_retry)
+	_tunnel_note = UI.note("", 0.95)
+	_tunnel_note.add_theme_color_override("font_color", UI.WARN)
+	_tunnel_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_tunnel_note.custom_minimum_size.x = TUNNEL_NOTE_WIDTH
+	_tunnel_note.visible = false
+	link_row.add_child(_tunnel_note)
 	# Due sullo stesso schermo: chi ha un pad in mano lo deve sapere
 	_p2_hint = UI.note("Secondo giocatore: prendi un pad e premi Start")
 	_p2_hint.visible = false
@@ -318,8 +334,8 @@ func _join(choice: Dictionary) -> void:
 	if is_instance_valid(lobby):
 		lobby.queue_free()
 	playing = true
-	_link_button.visible = not choice.get("gym", false) and not params.tutorial and params.challenge.is_empty()
-	_lan_link_button.visible = _local_host() and HostServer.instance(get_tree()).lan_server() != ""
+	_links_on = not choice.get("gym", false) and not params.tutorial and params.challenge.is_empty()
+	_update_host_links()
 	_connect()
 	if _local_host(): # chi ospita (#308): il link per gli amici va negli appunti, e va detto
 		# Solo qui: prima di _join params.server non è ancora 127.0.0.1 e il link uscirebbe con Render
@@ -329,12 +345,16 @@ func _join(choice: Dictionary) -> void:
 		var lan_only := not host.info.has("server")
 		UI.toast(ui_layer, LobbyScript.link_copied_text(link) + (" · per ora solo per chi è sul tuo Wi-Fi: quando arriva il tunnel copio il link nuovo" if lan_only else ""), \
 				UI.WARN if lan_only else UI.OK, HOST_LINK_TOAST_S)
-		if lan_only and not host.tunnel_ready.is_connected(_on_tunnel_ready):
+		# Il tunnel può arrivare dopo, riprovare o chiudersi (#526): il link e l'avviso seguono
+		if not host.tunnel_ready.is_connected(_on_tunnel_ready):
 			host.tunnel_ready.connect(_on_tunnel_ready)
+		if not host.tunnel_changed.is_connected(_on_tunnel_changed):
+			host.tunnel_changed.connect(_on_tunnel_changed)
 
 
 # Il tunnel è arrivato dopo (si giocava già in casa): il link con il tunnel va negli appunti e va detto
 func _on_tunnel_ready(_info: Dictionary) -> void:
+	_update_host_links()
 	if not playing or not _local_host():
 		return
 	var link := room_link(params.room)
@@ -342,13 +362,29 @@ func _on_tunnel_ready(_info: Dictionary) -> void:
 	UI.toast(ui_layer, "Il tunnel è pronto, ora entra anche chi è lontano. " + LobbyScript.link_copied_text(link), UI.OK, HOST_LINK_TOAST_S)
 
 
+func _on_tunnel_changed(_info: Dictionary) -> void:
+	_update_host_links()
+
+
+# I link per gli amici in alto a sinistra. Chi ospita (#308) senza tunnel (#526) avrebbe due pulsanti con lo
+# stesso link di casa: resta solo "Copia link di casa", con il motivo e "Riprova il tunnel"
+func _update_host_links() -> void:
+	var host: HostServer = HostServer.instance(get_tree()) if _links_on and _local_host() else null
+	var note: String = host.tunnel_note() if host != null else ""
+	_link_button.visible = _links_on and note == ""
+	_lan_link_button.visible = host != null and host.lan_server() != ""
+	_tunnel_note.text = note
+	_tunnel_note.visible = note != ""
+	_tunnel_retry.visible = host != null and host.can_retry_tunnel()
+
+
 
 # Esce dalla stanza e torna alla lobby (dal menu di pausa o dalla fine della partita).
 # page: la pagina della lobby da aprire, "fighter" per "Cambia lottatore" a fine partita (#250)
 func _leave(page := "match") -> void:
 	playing = false
-	_link_button.visible = false
-	_lan_link_button.visible = false
+	_links_on = false
+	_update_host_links()
 	if p2 != null:
 		p2.stop()
 	_retry_at = -1
@@ -949,7 +985,7 @@ func _my_supreme_ready() -> bool:
 
 # Il secondo giocatore entra solo nelle partite vere: non in palestra, tutorial e sfide
 func _p2_allowed() -> bool:
-	return playing and _link_button.visible and not is_instance_valid(pause_menu)
+	return playing and _links_on and not is_instance_valid(pause_menu)
 
 
 # I pad che non sono in mano al primo giocatore

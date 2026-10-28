@@ -11,6 +11,7 @@ signal progress(text: String)
 signal ready_to_play(info: Dictionary) # {room, port, server (tunnel, può mancare), lanServer}
 signal failed(text: String)
 signal tunnel_ready(info: Dictionary) # il tunnel arriva dopo che si gioca già in casa: c'è un link nuovo
+signal tunnel_changed(info: Dictionary) # senza tunnel: riprova in corso, motivo nuovo o tunnel chiuso (#526)
 
 const RELEASE_URL := "https://github.com/nicpanozzo/bonobo-game/releases/download/app-%d/bonobo-server-%s.zip"
 const DIR := "user://server/"
@@ -28,6 +29,7 @@ var _waited := 0.0
 var _room := ""
 var _shown_mb := -1
 var _port := 0 # la porta provata per ultima, per ripartire dalla successiva se il server la trova occupata
+var _retry_round := "" # "Riprova il tunnel" chiesto quando info.json era a questo giro: finché non cambia, si sta riprovando
 
 
 # Il server che fa da host c'è solo nell'app scaricata per computer, con la sua versione
@@ -77,6 +79,43 @@ static func lan_ip(addresses: PackedStringArray) -> String:
 	return ""
 
 
+# Cosa dire a chi ospita quando il link per gli amici non è quello del tunnel (#526); vuoto se il tunnel c'è.
+# retrying: chi ospita ha appena chiesto di riprovare e il server non ha ancora risposto
+static func tunnel_note_text(server_info: Dictionary, retrying := false) -> String:
+	if server_info.is_empty() or server_info.has("server"):
+		return ""
+	if retrying or str(server_info.get("tunnel", "")) == "trying":
+		return "Cerco il tunnel per chi è lontano... intanto il link vale solo per il tuo Wi-Fi"
+	var detail := str(server_info.get("detail", ""))
+	return "Niente tunnel: il link vale solo per il tuo Wi-Fi. %s%s" % [str(server_info.get("error", "")), (" (" + detail + ")") if detail != "" else ""]
+
+
+# Il pulsante "Riprova il tunnel" ha senso solo quando i tentativi del server sono finiti
+static func tunnel_can_retry(server_info: Dictionary, retrying := false) -> bool:
+	return not retrying and not server_info.is_empty() and not server_info.has("server") and str(server_info.get("tunnel", "failed")) != "trying"
+
+
+func tunnel_note() -> String:
+	return tunnel_note_text(info, _retry_round != "")
+
+
+func can_retry_tunnel() -> bool:
+	return running() and tunnel_can_retry(info, _retry_round != "")
+
+
+# Chiede al server un giro nuovo di tentativi: lo legge da un file accanto a info.json (host.ts, RETRY_FILE)
+func retry_tunnel() -> void:
+	if not can_retry_tunnel():
+		return
+	var f := FileAccess.open(_dir() + "info.json.retry", FileAccess.WRITE)
+	if f == null:
+		return
+	f.store_string("1")
+	f.close()
+	_retry_round = str(info.get("round", "?"))
+	tunnel_changed.emit(info)
+
+
 func running() -> bool:
 	return _pid > 0 and OS.is_process_running(_pid) and not info.is_empty()
 
@@ -114,6 +153,7 @@ func stop() -> void:
 		OS.kill(_pid)
 	_pid = 0
 	info = {}
+	_retry_round = ""
 
 
 func _download() -> void:
@@ -216,17 +256,21 @@ func _poll() -> void:
 	_waited += POLL_S
 	var read: Variant = JSON.parse_string(FileAccess.get_file_as_string(_dir() + "info.json")) if FileAccess.file_exists(_dir() + "info.json") else null
 	if not info.is_empty():
-		# Si gioca già in casa: il tunnel lento arriva dopo (host.ts riscrive "ready"), e il link deve cambiare
-		if read is Dictionary and read.get("state") == "ready":
-			_timer.stop()
+		# Si gioca già: il tunnel lento arriva dopo (host.ts riscrive "ready") e il link deve cambiare, oppure
+		# il tunnel cambia stato (riprova, motivo nuovo, si chiude) e l'avviso per chi ospita va aggiornato (#526)
+		if read is Dictionary and read.get("state") in ["ready", "lan"] and read != info:
+			var was_ready: bool = info.has("server")
 			info = read
-			tunnel_ready.emit(info)
+			if _retry_round != "" and (str(read.get("round", "")) != _retry_round or read.has("server")):
+				_retry_round = ""
+			if read.has("server") and not was_ready:
+				tunnel_ready.emit(info)
+			else:
+				tunnel_changed.emit(info)
 		elif not OS.is_process_running(_pid):
 			_timer.stop()
 		return
 	if read is Dictionary and read.get("state") in ["ready", "lan"]:
-		if read.get("state") == "ready":
-			_timer.stop()
 		info = read
 		ready_to_play.emit(info)
 	elif read is Dictionary and read.get("state") == "error" and str(read.get("busy", "")) == "true" and _port > 0:
