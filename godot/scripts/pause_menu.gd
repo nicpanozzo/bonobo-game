@@ -40,7 +40,7 @@ func setup(s: Settings, room_link: String, report := {}) -> void:
 	_add_team_picker(box)
 	box.add_child(UI.button("Copia link della stanza", func():
 		UI.copy(link)
-		_note.text = "Link copiato: incollalo sul Discord"))
+		_note.text = preload("res://scripts/lobby.gd").link_copied_text(link)))
 	box.add_child(UI.button("Segnala un problema", _send_report))
 	box.add_child(UI.button("Esci alla lobby", func():
 		queue_free()

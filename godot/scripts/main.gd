@@ -9,6 +9,7 @@ const GymFlow := preload("res://scripts/gym_flow.gd")
 const StagePhases := preload("res://scripts/stage_phases.gd")
 const DEFAULT_SERVER := "http://localhost:3000" # npm run dev
 const LINK_BUTTON_POS := Vector2(12, 36) # "Copia link" in partita, sotto la riga della stanza, pixel
+const LobbyScript := preload("res://scripts/lobby.gd") # i testi del link copiato
 const HOST_LINK_TOAST_S := 10.0 # quanto resta l'avviso "link copiato" a chi ospita, secondi
 const PRODUCTION_SERVER := "https://bonobo-game.onrender.com" # server fisso (render.yaml, #19): lo usa il gioco esportato
 const RECONNECT_MS := 1500 # attesa prima di riprovare a collegarsi
@@ -124,8 +125,9 @@ func _ready() -> void:
 	prematch.cue.connect(audio.on_prematch_cue)
 	# In alto a sinistra, sotto la riga della stanza: il link per gli amici a portata di clic (#308)
 	_link_button = UI.small_button("Copia link", func():
-		UI.copy(room_link(params.room))
-		UI.toast(ui_layer, "Link copiato: incollalo sul Discord. Chi ha l'app lo copia e apre il gioco"))
+		var link := room_link(params.room)
+		UI.copy(link)
+		UI.toast(ui_layer, LobbyScript.link_copied_text(link), UI.WARN if LobbyScript.link_server(link) == "" and _local_host() else UI.OK, HOST_LINK_TOAST_S))
 	_link_button.focus_mode = Control.FOCUS_NONE # niente fuoco: spazio e invio restano ai comandi
 	_link_button.visible = false
 	var link_row := HBoxContainer.new()
@@ -135,7 +137,7 @@ func _ready() -> void:
 	link_row.add_child(_link_button)
 	# Chi ospita (#308) ha anche il link per chi è sulla stessa rete: niente tunnel, niente lag
 	_lan_link_button = UI.small_button("Copia link di casa", func():
-		UI.copy(PAGES_URL + "?room=" + str(params.room).uri_encode() + "&server=" + str(HostServer.instance(get_tree()).info.get("lanServer", "")))
+		UI.copy(PAGES_URL + "?room=" + str(params.room).uri_encode() + "&server=" + HostServer.instance(get_tree()).lan_server())
 		UI.toast(ui_layer, "Link di casa copiato: chi è sul tuo Wi-Fi lo copia e apre l'app (nel browser non va)"))
 	_lan_link_button.focus_mode = Control.FOCUS_NONE
 	_lan_link_button.visible = false
@@ -317,14 +319,28 @@ func _join(choice: Dictionary) -> void:
 		lobby.queue_free()
 	playing = true
 	_link_button.visible = not choice.get("gym", false) and not params.tutorial and params.challenge.is_empty()
-	_lan_link_button.visible = _local_host() and str(HostServer.instance(get_tree()).info.get("lanServer", "")) != ""
+	_lan_link_button.visible = _local_host() and HostServer.instance(get_tree()).lan_server() != ""
 	_connect()
 	if _local_host(): # chi ospita (#308): il link per gli amici va negli appunti, e va detto
 		# Solo qui: prima di _join params.server non è ancora 127.0.0.1 e il link uscirebbe con Render
-		UI.copy(room_link(params.room))
-		var lan_only := not HostServer.instance(get_tree()).info.has("server")
-		UI.toast(ui_layer, "Link copiato: vale solo per chi è sul tuo Wi-Fi (il tunnel non è partito)" if lan_only \
-				else "Link della serata copiato: incollalo sul Discord (anche da Esc → Copia link)", UI.WARN if lan_only else UI.OK, HOST_LINK_TOAST_S)
+		var link := room_link(params.room)
+		UI.copy(link)
+		var host := HostServer.instance(get_tree())
+		var lan_only := not host.info.has("server")
+		UI.toast(ui_layer, LobbyScript.link_copied_text(link) + (" · per ora solo per chi è sul tuo Wi-Fi: quando arriva il tunnel copio il link nuovo" if lan_only else ""), \
+				UI.WARN if lan_only else UI.OK, HOST_LINK_TOAST_S)
+		if lan_only and not host.tunnel_ready.is_connected(_on_tunnel_ready):
+			host.tunnel_ready.connect(_on_tunnel_ready)
+
+
+# Il tunnel è arrivato dopo (si giocava già in casa): il link con il tunnel va negli appunti e va detto
+func _on_tunnel_ready(_info: Dictionary) -> void:
+	if not playing or not _local_host():
+		return
+	var link := room_link(params.room)
+	UI.copy(link)
+	UI.toast(ui_layer, "Il tunnel è pronto, ora entra anche chi è lontano. " + LobbyScript.link_copied_text(link), UI.OK, HOST_LINK_TOAST_S)
+
 
 
 # Esce dalla stanza e torna alla lobby (dal menu di pausa o dalla fine della partita).

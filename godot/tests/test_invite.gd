@@ -92,3 +92,16 @@ func test_entra_col_codice_del_tunnel() -> void:
 	lobby._submit()
 	runner.check(got.get("room") == "amici" and got.get("server") == TUNNEL, "si entra nel tunnel giusto: %s %s" % [got.get("room"), got.get("server")])
 	lobby.free()
+
+
+func test_il_link_copiato_dice_il_server() -> void:
+	runner.check(Lobby.link_copied_text("https://x/?room=a&server=" + TUNNEL).contains("gatto-blu.trycloudflare.com"), "il messaggio dice il server")
+	runner.check(Lobby.link_copied_text("https://x/?room=a&server=").contains("non ha ancora un indirizzo"), "server vuoto: lo dice, non finge")
+	runner.check(Lobby.link_copied_text("https://bonobo-game.onrender.com/godot/?room=a") == "Link copiato: incollalo sul Discord", "pagina sul server: niente server nel link")
+
+
+func test_indirizzo_di_casa_da_godot() -> void:
+	var HostServerScript := preload("res://scripts/host_server.gd")
+	runner.check(HostServerScript.lan_ip(PackedStringArray(["127.0.0.1", "fe80::1", "192.168.1.54"])) == "192.168.1.54", "il Wi-Fi di casa")
+	runner.check(HostServerScript.lan_ip(PackedStringArray(["172.20.0.3"])) == "172.20.0.3", "172.16-31")
+	runner.check(HostServerScript.lan_ip(PackedStringArray(["127.0.0.1", "8.8.8.8"])) == "", "niente rete di casa")
