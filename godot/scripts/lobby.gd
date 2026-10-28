@@ -267,8 +267,9 @@ func _match_page(params: Dictionary) -> Control:
 		if _hosting_new():
 			_msg.text = "Ospitando dal tuo computer, il link si copia da solo quando entri"
 		else:
-			UI.copy(room_link.call(_clean_room(_new_room.text)))
-			_msg.text = "Link copiato: incollalo sul Discord"
+			var link: String = room_link.call(_clean_room(_new_room.text))
+			UI.copy(link)
+			_msg.text = link_copied_text(link)
 		_msg.show()))
 	create.add_child(row)
 	_msg = UI.label("Manda il link agli amici: chi lo apre entra nella tua stessa partita.", UI.SIZE_NOTE, Color(UI.TEXT, 0.7))
@@ -1280,6 +1281,22 @@ static func where_text(server: String) -> String:
 	if host == "localhost" or host == "127.0.0.1":
 		return "su questo computer"
 	return "su " + host
+
+
+# Il server del link, a parole brevi: "gatto-blu.trycloudflare.com", "192.168.1.5:3000"; vuoto se manca
+static func link_server(link: String) -> String:
+	var server := str(parse_link(link).get("server", ""))
+	return server.get_slice("://", 1) if server.contains("://") else server
+
+
+# Cosa dire dopo aver copiato un link: sempre con il server, così si sa dove entreranno gli amici
+static func link_copied_text(link: String) -> String:
+	var server := link_server(link)
+	if server == "" and link.contains("&server="):
+		return "Link copiato, ma il server non ha ancora un indirizzo per gli amici: riprova tra qualche secondo"
+	if server == "":
+		return "Link copiato: incollalo sul Discord"
+	return "Link copiato · server %s · incollalo sul Discord" % server
 
 
 static func _clean_room(text: String) -> String:

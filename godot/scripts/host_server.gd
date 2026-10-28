@@ -10,6 +10,7 @@ extends Node
 signal progress(text: String)
 signal ready_to_play(info: Dictionary) # {room, port, server (tunnel, può mancare), lanServer}
 signal failed(text: String)
+signal tunnel_ready(info: Dictionary) # il tunnel arriva dopo che si gioca già in casa: c'è un link nuovo
 
 const RELEASE_URL := "https://github.com/nicpanozzo/bonobo-game/releases/download/app-%d/bonobo-server-%s.zip"
 const DIR := "user://server/"
@@ -52,7 +53,28 @@ func local_server() -> String:
 
 # Il server da mettere nel link per gli amici: il tunnel, altrimenti l'indirizzo di casa
 func public_server() -> String:
-	return str(info.get("server", info.get("lanServer", "")))
+	return str(info.get("server", lan_server()))
+
+
+# L'indirizzo di casa: lo scrive il server, ma sul Mac a volte arriva vuoto; allora lo si chiede a Godot
+func lan_server() -> String:
+	var lan := str(info.get("lanServer", ""))
+	if lan == "" and not info.is_empty():
+		var ip := lan_ip(IP.get_local_addresses())
+		lan = "http://%s:%d" % [ip, int(info.get("port", 3000))] if ip != "" else ""
+	return lan
+
+
+# Il primo indirizzo IPv4 della rete di casa (192.168.x, 10.x, 172.16-31.x), vuoto se non c'è
+static func lan_ip(addresses: PackedStringArray) -> String:
+	for a in addresses:
+		var parts := a.split(".")
+		if parts.size() != 4 or not a.is_valid_ip_address():
+			continue
+		var second := int(parts[1])
+		if parts[0] == "192" and parts[1] == "168" or parts[0] == "10" or parts[0] == "172" and second >= 16 and second <= 31:
+			return a
+	return ""
 
 
 func running() -> bool:
@@ -193,8 +215,18 @@ func _launch() -> void:
 func _poll() -> void:
 	_waited += POLL_S
 	var read: Variant = JSON.parse_string(FileAccess.get_file_as_string(_dir() + "info.json")) if FileAccess.file_exists(_dir() + "info.json") else null
+	if not info.is_empty():
+		# Si gioca già in casa: il tunnel lento arriva dopo (host.ts riscrive "ready"), e il link deve cambiare
+		if read is Dictionary and read.get("state") == "ready":
+			_timer.stop()
+			info = read
+			tunnel_ready.emit(info)
+		elif not OS.is_process_running(_pid):
+			_timer.stop()
+		return
 	if read is Dictionary and read.get("state") in ["ready", "lan"]:
-		_timer.stop()
+		if read.get("state") == "ready":
+			_timer.stop()
 		info = read
 		ready_to_play.emit(info)
 	elif read is Dictionary and read.get("state") == "error" and str(read.get("busy", "")) == "true" and _port > 0:
