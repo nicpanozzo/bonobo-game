@@ -32,6 +32,7 @@ var _lan_link_button: Button
 var _links_on := false # partita vera (non palestra, tutorial o sfida): ci sono i link per gli amici e il secondo giocatore
 var _tunnel_note: Label # chi ospita senza tunnel: perché il link vale solo in casa (#526)
 var _tunnel_retry: Button
+var _fps_counter: FpsCounter # in alto a destra, da Opzioni → Video (#529)
 var pause_menu: Control
 var world: Node2D
 var camera := Camera2D.new()
@@ -177,6 +178,10 @@ func _ready() -> void:
 	var top := CanvasLayer.new()
 	top.layer = 3
 	add_child(top)
+	# Prima dell'avviso "gira il telefono", che lo copre; ovunque: menu, lobby e partita
+	_fps_counter = FpsCounter.new()
+	top.add_child(_fps_counter)
+	_fps_counter.set_enabled(bool(settings.video.get("fps_counter", false)))
 	_rotate_hint = UI.label("Gira il telefono\nin orizzontale")
 	_rotate_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_rotate_hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -428,6 +433,8 @@ func _apply_volumes() -> void:
 	if post_fx != null:
 		post_fx.enabled = settings.video.post
 	world.attack_boxes = settings.video.hitboxes
+	if _fps_counter != null:
+		_fps_counter.set_enabled(bool(settings.video.get("fps_counter", false)))
 	_apply_prediction()
 	Video.apply(settings)
 	Access.apply(game, settings.access)

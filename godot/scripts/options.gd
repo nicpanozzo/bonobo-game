@@ -132,6 +132,7 @@ func _video_page() -> VBoxContainer:
 	page.add_child(UI.toggle("Scie e polvere", settings.video.effects, func(on): save.call("effects", on)))
 	page.add_child(UI.toggle("Luce e colori dell'arena", settings.video.post, func(on): save.call("post", on)))
 	page.add_child(UI.toggle("Hitbox dei colpi", settings.video.hitboxes, func(on): save.call("hitboxes", on)))
+	page.add_child(UI.toggle("Contatore FPS", settings.video.fps_counter, func(on): save.call("fps_counter", on)))
 	return page
 
 
