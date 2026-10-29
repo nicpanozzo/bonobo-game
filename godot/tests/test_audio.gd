@@ -137,6 +137,14 @@ func test_preset_incompleto_prende_la_musica_di_sempre() -> void:
 	runner.check(d.bpm == 132.0 and d.chords == Audio.DEFAULT_CHORDS and d.lead == "square", "%s" % d)
 
 
+# Calcola tutta la musica in coda, un frame alla volta (al massimo 5000 frame)
+func _render_all(a: Node) -> void:
+	for i in 5000:
+		if a._to_render.is_empty():
+			return
+		a._process(0.016)
+
+
 func test_ogni_arena_la_sua_musica() -> void:
 	var a := _audio()
 	var game: Dictionary = a.game
@@ -144,8 +152,9 @@ func test_ogni_arena_la_sua_musica() -> void:
 	a.set_stage_music(game.stages.isole.music)
 	a.play_music("match")
 	runner.check(not a.stage_music_ready(), "si calcola un pezzo per frame")
-	for i in 100:
-		a._process(0.016)
+	a._process(0.016)
+	runner.check(not a.stage_music_ready(), "un frame non basta: il calcolo ha un tetto di tempo per frame")
+	_render_all(a)
 	runner.check(a.stage_music_ready(), "pronta")
 	var isole: AudioStream = a._music.stream
 	runner.check(isole is AudioStreamWAV and isole != a._synth_music, "in partita suona la musica delle Isole")
@@ -169,8 +178,7 @@ func test_arena_col_brano_registrato() -> void:
 	runner.check(a.stage_music_ready(), "niente da calcolare")
 	runner.check(a._music.stream == a._music_files["massima-tackenza"], "in partita suona il brano registrato")
 	a.set_stage_music(a.game.stages.isole.music)
-	for i in 100:
-		a._process(0.016)
+	_render_all(a)
 	runner.check(a._music.stream != a._music_files["massima-tackenza"], "su un'altra arena no")
 	a.free()
 	var b := _audio()
@@ -263,3 +271,52 @@ func test_il_pubblico_non_reagisce_sopra_se_stesso() -> void:
 	runner.check(not Audio.crowd_may_react(100, 600, 1200, false), "un altro ooh subito dopo no")
 	runner.check(Audio.crowd_may_react(100, 600, 1200, true), "un KO passa sopra")
 	runner.check(Audio.crowd_may_react(100, 1400, 1200, false), "passato il tempo, sì")
+
+
+# Synth calcola curve e inviluppi con una moltiplicazione per campione (per il web): stesso suono della formula con pow()
+func test_synth_come_la_formula() -> void:
+	for type in ["sine", "square", "sawtooth", "triangle"]:
+		var s := Synth.new(0.4)
+		s.tone(0.01, type, 300.0, 120.0, 0.2, 0.5)
+		var ref := _tone_ref(0.4, 0.01, type, 300.0, 120.0, 0.2, 0.5)
+		var worst := 0.0
+		for i in ref.size():
+			worst = maxf(worst, absf(s.buf[i] - ref[i]))
+		runner.check(worst < 0.002, "%s: scarto massimo %f" % [type, worst])
+	var w := Synth.new(0.1)
+	w.tone(0.05, "sine", 440.0, 440.0, 0.09, 0.3, true)
+	var wr := _tone_ref(0.1, 0.05, "sine", 440.0, 440.0, 0.09, 0.3, true)
+	var worst_wrap := 0.0
+	for i in wr.size():
+		worst_wrap = maxf(worst_wrap, absf(w.buf[i] - wr[i]))
+	runner.check(worst_wrap < 0.002, "in loop quello che esce dalla fine ricomincia dall'inizio: scarto %f" % worst_wrap)
+
+
+# La formula di prima (pow per ogni campione), come riferimento
+func _tone_ref(seconds: float, t: float, type: String, from: float, to: float, dur: float, vol: float, wrap := false) -> PackedFloat32Array:
+	var out := PackedFloat32Array()
+	out.resize(int(seconds * Synth.RATE))
+	var start := int(t * Synth.RATE)
+	var phase := 0.0
+	for i in int((dur + 0.02) * Synth.RATE):
+		var tt := float(i) / Synth.RATE
+		var f := from * pow(to / from, minf(tt / dur, 1.0))
+		phase = fmod(phase + f / Synth.RATE, 1.0)
+		var wv := 0.0
+		match type:
+			"sine": wv = sin(phase * TAU)
+			"square": wv = 1.0 if phase < 0.5 else -1.0
+			"sawtooth": wv = phase * 2.0 - 1.0
+			"triangle": wv = 1.0 - 4.0 * absf(phase - 0.5)
+		var env := 0.0
+		if tt < 0.005:
+			env = Synth.SILENCE * pow(vol / Synth.SILENCE, tt / 0.005)
+		elif tt < dur:
+			env = vol * pow(Synth.SILENCE / vol, (tt - 0.005) / (dur - 0.005))
+		var j := start + i
+		if j >= out.size():
+			if not wrap:
+				continue
+			j %= out.size()
+		out[j] += wv * env
+	return out

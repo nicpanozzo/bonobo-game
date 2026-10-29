@@ -8,7 +8,10 @@ const StageMotion := preload("res://scripts/stage_motion.gd")
 const WonderStage := preload("res://scripts/wonder_stage.gd")
 const FighterPose := preload("res://scripts/fighter_pose.gd")
 const PLAYERS := 12 # suoni che possono sovrapporsi
-const MUSIC_STEPS_PER_FRAME := 4 # la musica si calcola un pezzo per frame, senza bloccare il gioco
+# La musica si calcola a pezzi, al massimo tanti µs per frame: nel browser c'è un thread solo e un calcolo lungo
+# ferma il disegno. Prima erano 4 sedicesimi per frame, che sul web costavano decine di ms all'inizio della partita
+const MUSIC_BUDGET_US := 2000
+const MUSIC_ENCODE_CHUNK := 2048 # campioni convertiti in 16 bit tra un controllo del tempo e l'altro
 const STEPS := 16 # sedicesimi in una battuta
 # Giro di quattro accordi della musica di sempre (La minore, Fa, Do, Sol), come in music.ts.
 # Le arene possono averne un altro (E12 passo 4, StageSpec.music in stages.ts)
@@ -543,10 +546,12 @@ func _process(_delta: float) -> void:
 	if _to_render.is_empty():
 		return
 	var preset := _to_render[0]
-	for i in MUSIC_STEPS_PER_FRAME:
-		_music_play_step(_music_step, preset)
-		_music_step += 1
-		if _music_step >= STEPS * _music_chords.size():
+	var until := Time.get_ticks_usec() + MUSIC_BUDGET_US
+	while Time.get_ticks_usec() < until:
+		if _music_step < STEPS * _music_chords.size():
+			_music_play_step(_music_step, preset)
+			_music_step += 1
+		elif _music_synth.encode(MUSIC_ENCODE_CHUNK):
 			var key := music_key(preset)
 			_rendered[key] = _music_synth.to_stream(true) # finita: da qui in poi gira in loop
 			if key == _default_key:
