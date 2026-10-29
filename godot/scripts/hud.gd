@@ -14,7 +14,9 @@ var _info := "" # riga in alto a sinistra: stanza, arena, modalità
 var _stage: Dictionary = {}
 var _snap: Dictionary = {}
 var _stats := {} # id -> { kos, falls, damage, flags, best }: la classifica di fine partita (results_view.gd), dagli eventi
-var _font: Font = UI.font()
+var _font: Font = UI.font(UI.WEIGHT_BOLD) # righe e nomi: Rubik pieno, si legge sopra qualunque arena
+var _num: Font = UI.numbers() # percentuali e tempo: corsivo nero a cifre larghe uguali
+var _display: Font = UI.display() # scritte grandi (fasi, squadre)
 var _last_percent := {} # id -> percentuale dell'ultimo snapshot, per accorgersi dei colpi presi
 var _jolts := {} # id -> { ms, amp }: la percentuale trema per un attimo dopo un colpo
 var _supreme_full := false # qualcuno ha la barra della suprema piena (#101): la barra pulsa, si ridisegna sempre
@@ -27,7 +29,8 @@ const WorldView := preload("res://scripts/world_view.gd")
 const FighterPose := preload("res://scripts/fighter_pose.gd")
 const StagePhases := preload("res://scripts/stage_phases.gd")
 const TeamPicker := preload("res://scripts/team_picker.gd")
-const PORTRAIT := 40.0 # lato del ritratto che spunta sopra la scheda, pixel
+const PORTRAIT := 46.0 # lato del ritratto che spunta sopra la scheda, pixel
+const LEAN := 10.0 # quanto pendono le schede e le targhette dell'HUD, pixel
 const TEAM_GAP := 18.0 # a squadre, spazio tra un gruppo di schede e l'altro, pixel (#409)
 
 
@@ -122,7 +125,10 @@ func _draw() -> void:
 	var h: float = size.y if size.y > 0 else game.world.height
 	var top_line := status if status != "" else _info
 	if top_line != "":
-		_outlined(top_line, Vector2(12, 26), 16, Color.WHITE)
+		# La riga della stanza su una targhetta scura, così si legge anche sopra un'arena chiara
+		var tw := _font.get_string_size(top_line, HORIZONTAL_ALIGNMENT_LEFT, -1, Access.px(15)).x
+		UI.draw_plate(self, Rect2(-LEAN, 8, tw + 34 + LEAN, Access.px(15) + 12), Color(UI.INK, 0.62), LEAN, UI.INK, 0.0)
+		_outlined(top_line, Vector2(14, 13 + Access.px(15)), 15, UI.PAPER)
 	if _snap.is_empty():
 		return
 
@@ -134,8 +140,8 @@ func _draw() -> void:
 		# Bandiera a pari punti allo scadere: si gioca finché qualcuno segna
 		var golden: bool = s == 0 and scores != null and scores["1"] == scores["2"] and _snap.winnerId == null
 		var text := "Punto d'oro!" if golden else "%d:%02d" % [s / 60, s % 60]
-		_centered(text, Vector2(w / 2, y), 28, Color("ff5a4a") if s <= LAST_SECONDS else Color.WHITE)
-		y += 34 * Access.text_scale
+		_draw_timer(text, w / 2, y, s <= LAST_SECONDS and not golden, golden)
+		y += 40 * Access.text_scale
 	if scores != null:
 		var names: Dictionary = game.teamNames
 		_centered("%s %d  –  %d %s" % [names["1"], scores["1"], scores["2"], names["2"]], Vector2(w / 2, y), 24, Color.WHITE)
@@ -155,6 +161,24 @@ func _draw() -> void:
 	draw_set_transform(Vector2.ZERO)
 
 
+# Il tempo in alto al centro, su una lastra storta: rossa e che pulsa negli ultimi secondi
+func _draw_timer(text: String, cx: float, y: float, hurry: bool, golden: bool) -> void:
+	var f := _display if golden else _num
+	var px := Access.px(30)
+	var tw := f.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
+	var pulse := 1.0
+	if hurry and not Access.calm:
+		pulse = 1.0 + 0.08 * maxf(0.0, sin(Time.get_ticks_msec() / 1000.0 * TAU))
+		queue_redraw()
+	draw_set_transform(Vector2(cx, y - px * 0.35), 0.0, Vector2(pulse, pulse))
+	var plate := Rect2(-tw / 2 - 22, -px * 0.62 - 4, tw + 44, px * 1.24 + 6)
+	var fill := UI.PUNCH if hurry else (UI.BANANA if golden else Color(UI.INK, 0.8))
+	UI.draw_plate(self, plate, fill, LEAN + 2, UI.INK, 3.0, Vector2(3, 4))
+	var color := UI.INK if golden else UI.PAPER
+	UI.draw_sticker(self, f, Vector2(-tw / 2, px * 0.35), text, px, color, 0 if golden else 5, Vector2.ZERO)
+	draw_set_transform(Vector2.ZERO)
+
+
 # Il nome della fase appena cominciata (#433), o l'avviso della prossima, grande sopra la partita
 func _draw_phase_banner(w: float, h: float) -> void:
 	if not _stage.has("phases") or _snap.winnerId != null:
@@ -169,16 +193,15 @@ func _draw_phase_banner(w: float, h: float) -> void:
 	_draw_banner_line(b.text, b.alpha, w, h * 0.28, Access.px(34 if b.warn else 54), color)
 
 
-# Una riga di testo grande centrata, con il contorno scuro
+# Una riga di testo grande centrata: adesivo col contorno a inchiostro e l'ombra dura
 func _draw_banner_line(text: String, alpha: float, w: float, y: float, size: int, color: Color) -> void:
-	var tw := _font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
-	var pos := Vector2(w / 2 - tw / 2, y)
+	var tw := _display.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
 	color.a = alpha
-	draw_string_outline(_font, pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, 6, Color(0, 0, 0, alpha))
-	draw_string(_font, pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, color)
+	UI.draw_sticker(self, _display, Vector2(w / 2 - tw / 2, y), text, size, color, maxi(6, size / 6), Vector2(3, maxf(4.0, size / 10.0)))
 
 
-# Una scheda per giocatore in basso, tra band.x e band.y
+# Una scheda per giocatore in basso, tra band.x e band.y: lastra storta a inchiostro con la fascia del colore
+# del giocatore, il ritratto che spunta in alto a destra in una cornice storta, la percentuale grande in corsivo
 func _draw_cards(band: Vector2, h: float, flag: bool) -> void:
 	var players: Array = team_order(_snap.players)
 	var groups := team_breaks(players)
@@ -194,11 +217,11 @@ func _draw_cards(band: Vector2, h: float, flag: bool) -> void:
 			continue
 		var gx := x0 + first * card_w + g * TEAM_GAP
 		var tc := Access.team_color(game, team)
-		draw_rect(Rect2(gx + 6, h - 90, count * card_w - 12, 4), tc)
+		UI.draw_plate(self, Rect2(gx + 8, h - 11, count * card_w - 16, 5), tc, 4.0, UI.INK, 0.0) # sotto le schede della squadra
 		var tname := str(game.teamNames[str(team)]).to_upper()
-		var tw := _font.get_string_size(tname, HORIZONTAL_ALIGNMENT_LEFT, -1, 12).x
-		draw_rect(Rect2(gx + 6, h - 106, tw + 14, 18), tc)
-		draw_string(_font, Vector2(gx + 13, h - 92), tname, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, TeamPicker.text_on(tc))
+		var tw := _display.get_string_size(tname, HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x
+		UI.draw_plate(self, Rect2(gx + 12, h - 110, tw + 18, 19), tc, 7.0, UI.INK, 2.0)
+		draw_string(_display, Vector2(gx + 21, h - 95), tname, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, TeamPicker.text_on(tc))
 	var group := 0
 	for i in players.size():
 		var p: Dictionary = players[i]
@@ -206,47 +229,90 @@ func _draw_cards(band: Vector2, h: float, flag: bool) -> void:
 			group += 1
 		var x := x0 + i * card_w + group * TEAM_GAP
 		var col := Access.color(p.color)
+		var out: bool = p.eliminated
+		var plate := Rect2(x + 10, h - 80, card_w - 20, 66)
+		UI.draw_plate(self, plate, Color(UI.INK, 0.6 if out else 0.84), LEAN, UI.INK, 3.0, Vector2(3, 4))
+		# La fascia del colore del giocatore sul lato sinistro, storta come la lastra
+		var strip := UI.plate_points(Rect2(plate.position.x + 3, plate.position.y + 3, 7, plate.size.y - 6), LEAN * (plate.size.y - 6) / plate.size.y)
+		draw_colored_polygon(strip, Color(col, 0.45 if out else 1.0))
 		# Il ritratto spunta sopra l'angolo destro della scheda, come nei picchiaduro (E11 passo C)
-		_draw_portrait(p, Rect2(x + card_w - 12 - PORTRAIT, h - 86 - PORTRAIT * 0.8, PORTRAIT, PORTRAIT))
-		draw_rect(Rect2(x + 6, h - 86, card_w - 12, 74), Color(0, 0, 0, 0.45))
-		draw_rect(Rect2(x + 6, h - 86, 6, 74), col)
+		var frame := Rect2(x + card_w - 18 - PORTRAIT, h - 80 - PORTRAIT * 0.62, PORTRAIT, PORTRAIT)
+		UI.draw_plate(self, frame, col.darkened(0.55) if not out else Color(0.15, 0.15, 0.18), 8.0, UI.INK, 3.0, Vector2(2, 3))
+		if not _draw_portrait(p, frame.grow(-4)):
+			# Senza disegni (il bonobo fatto col codice): l'iniziale del personaggio nella cornice
+			var who: Dictionary = game.get("characters", {}).get(str(p.get("characterId", "")), {})
+			var initial := str(who.get("name", p.name)).left(1).to_upper()
+			var iw := _display.get_string_size(initial, HORIZONTAL_ALIGNMENT_LEFT, -1, 30).x
+			UI.draw_sticker(self, _display, Vector2(frame.get_center().x - iw / 2, frame.end.y - 10), initial, 30, col.lightened(0.25) if not out else Color(UI.LILAC, 0.5), 5, Vector2(1, 2))
 		var name: String = p.name + (" (tu)" if p.id == my_id else "")
-		# Barra della suprema piena: "SUPREMA!" sta sulla riga del nome, a destra (sotto c'erano le vite)
-		var supreme_full: bool = not p.eliminated and float(p.get("supreme", 0)) >= _supreme_max()
-		var name_w := card_w - 30 - (62.0 if supreme_full else 0.0)
-		draw_string(_font, Vector2(x + 20, h - 64), name, HORIZONTAL_ALIGNMENT_LEFT, name_w, 15, Color.WHITE)
-		if supreme_full:
-			draw_string(_font, Vector2(x + card_w - 72, h - 65), "SUPREMA!", HORIZONTAL_ALIGNMENT_RIGHT, 58, 11, UI.ACCENT)
+		var fit := fit_text(_font, name, 14, frame.position.x - x - 26)
+		draw_string(_font, Vector2(x + 22, h - 62), fit[0], HORIZONTAL_ALIGNMENT_LEFT, -1, fit[1], UI.PAPER if not out else Color(UI.LILAC, 0.6))
+		# Barra della suprema piena: "SUPREMA!" è un bollino giallo sotto il ritratto
+		if not out and float(p.get("supreme", 0)) >= _supreme_max():
+			_draw_badge("SUPREMA!", Vector2(frame.get_center().x, frame.end.y), UI.ACCENT)
 		elif p.get("nextTeam") != null:
 			# Ha chiesto di cambiare squadra a partita in corso: ci passa dalla prossima (#409)
-			draw_string(_font, Vector2(x + card_w - 72, h - 65), "→ " + str(game.teamNames[str(int(p.nextTeam))]), HORIZONTAL_ALIGNMENT_RIGHT, 58, 11, Access.team_color(game, int(p.nextTeam)))
-		var pct := "OUT" if p.eliminated else "%d%%" % roundi(p.percent)
-		var pos := Vector2(x + 20, h - 30)
-		var size := 28
-		if _jolts.has(p.id) and not p.eliminated and not Access.calm:
-			var j: Dictionary = _jolts[p.id]
-			var left: float = j.ms / game.effects.percentShakeMs
-			pos += Vector2(randf_range(-1, 1), randf_range(-1, 1)) * j.amp * left
-			size = roundi(28 * (1.0 + 0.3 * left * j.amp / game.effects.percentShakeMax))
-		draw_string(_font, pos, pct, HORIZONTAL_ALIGNMENT_LEFT, -1, size, _percent_color(p.percent, p.eliminated))
-		if not p.eliminated:
-			_draw_supreme(Rect2(x + 20, h - 23, card_w - 40, 5), float(p.get("supreme", 0)))
-		if p.get("powerup") != null and not p.eliminated:
-			_draw_powerup(Rect2(x + 6, h - 86, card_w - 12, 74), float(p.get("powerupMs", 0)), str(p.powerup))
+			_draw_badge("→ " + str(game.teamNames[str(int(p.nextTeam))]), Vector2(frame.get_center().x, frame.end.y), Access.team_color(game, int(p.nextTeam)))
+		var roomy := card_w >= 165.0 # con sette o otto giocatori le schede sono strette: numeri e vite più piccoli
+		_draw_percent(p, Vector2(x + 20, h - 25), 31 if roomy else 26)
+		if not out:
+			_draw_supreme(Rect2(x + 20, h - 22, card_w - 52, 5), float(p.get("supreme", 0)))
+		if p.get("powerup") != null and not out:
+			_draw_powerup(Rect2(x + 14, h - 80, card_w - 28, 66), float(p.get("powerupMs", 0)), str(p.powerup))
+		var right := x + card_w - 20 # bordo destro della lastra, dove stanno vite e bandiera
 		if _stage.get("goal") != null:
 			# Corsa: quanta strada si è fatta
-			draw_string(_font, Vector2(x + card_w - 62, h - 30), "%d%%" % _progress(p.x), HORIZONTAL_ALIGNMENT_LEFT, -1, 16, UI.ACCENT)
+			draw_string(_num, Vector2(right - 46, h - 30), "%d%%" % _progress(p.x), HORIZONTAL_ALIGNMENT_RIGHT, 40, 16, UI.ACCENT)
 		elif flag:
 			# Bandiera: le vite sono infinite, si segna chi porta la bandiera
 			if p.get("carrier", false):
-				draw_colored_polygon(PackedVector2Array([Vector2(x + card_w - 34, h - 44), Vector2(x + card_w - 14, h - 37), Vector2(x + card_w - 34, h - 30)]), col)
+				var flag_pts := PackedVector2Array([Vector2(right - 26, h - 46), Vector2(right - 6, h - 39), Vector2(right - 26, h - 32)])
+				draw_colored_polygon(flag_pts, col)
+				draw_polyline(flag_pts + PackedVector2Array([flag_pts[0]]), UI.INK, 2.0)
 		elif rules.get("mode", "ffa") != "training": # in allenamento le vite sono infinite
-			for k in int(rules.get("stocks", 3)):
-				var c := Vector2(x + card_w - 24 - k * 13, h - 34)
-				if k < int(p.stocks):
-					draw_circle(c, 5, col)
-				else:
-					draw_arc(c, 5, 0, TAU, 12, col, 1.5)
+			_draw_stocks(p, col, right, h - 36, roomy)
+
+
+# Un bollino storto col contorno a inchiostro, centrato in at (sotto il ritratto)
+func _draw_badge(text: String, at: Vector2, color: Color) -> void:
+	var px := 11
+	var tw := _display.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
+	var r := Rect2(at.x - tw / 2 - 7, at.y - 8, tw + 14, 15)
+	UI.draw_plate(self, r, color, 5.0, UI.INK, 2.0)
+	draw_string(_display, Vector2(r.position.x + 7, r.end.y - 3.5), text, HORIZONTAL_ALIGNMENT_LEFT, -1, px, TeamPicker.text_on(color))
+
+
+# La percentuale: corsivo nero con il contorno a inchiostro e il segno % più piccolo; trema quando si prende un colpo
+func _draw_percent(p: Dictionary, pos: Vector2, base := 31) -> void:
+	var out: bool = p.eliminated
+	var size := base
+	if _jolts.has(p.id) and not out and not Access.calm:
+		var j: Dictionary = _jolts[p.id]
+		var left: float = j.ms / game.effects.percentShakeMs
+		pos += Vector2(randf_range(-1, 1), randf_range(-1, 1)) * j.amp * left
+		size = roundi(base * (1.0 + 0.3 * left * j.amp / game.effects.percentShakeMax))
+	var color := _percent_color(p.percent, out)
+	if out:
+		UI.draw_sticker(self, _display, pos, "OUT", base - 5, color, 5, Vector2(2, 3))
+		return
+	var digits := str(roundi(p.percent))
+	UI.draw_sticker(self, _num, pos, digits, size, color, 6, Vector2(2, 3))
+	var dw := _num.get_string_size(digits, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
+	UI.draw_sticker(self, _num, pos + Vector2(dw + 1, 0), "%", roundi(size * 0.58), color, 5, Vector2(2, 3))
+
+
+# Le vite: piccoli rombi del colore del giocatore col contorno a inchiostro, da destra; quelle perse vuote
+func _draw_stocks(p: Dictionary, col: Color, right: float, y: float, roomy := true) -> void:
+	var total := int(rules.get("stocks", 3))
+	var big := total <= 5 and roomy
+	var step := 13.0 if big else 9.0
+	for k in total:
+		var c := Vector2(right - 8 - k * step, y)
+		var r := 5.5 if big else 4.0
+		var gem := PackedVector2Array([c + Vector2(0, -r - 1), c + Vector2(r, 0), c + Vector2(0, r + 1), c + Vector2(-r, 0)])
+		var alive := k < int(p.stocks)
+		draw_colored_polygon(gem, col if alive else Color(UI.INK, 0.9))
+		draw_polyline(gem + PackedVector2Array([gem[0]]), UI.INK if alive else Color(col, 0.6), 2.0, true)
 
 
 # A squadre (#409), in alto al centro: le vite rimaste di ogni squadra, ognuna col suo colore
@@ -324,13 +390,14 @@ static func team_breaks(players: Array) -> Array:
 # (ferma con l'opzione "calma"); la scritta "SUPREMA!" la mette la scheda, sulla riga del nome
 func _draw_supreme(r: Rect2, value: float) -> void:
 	var t := clampf(value / _supreme_max(), 0.0, 1.0)
-	draw_rect(r, Color(1, 1, 1, 0.18))
+	UI.draw_plate(self, r.grow(1), Color(1, 1, 1, 0.12), 3.0, UI.INK, 0.0)
 	if t < 1.0:
-		draw_rect(Rect2(r.position, Vector2(r.size.x * t, r.size.y)), Color("8fd3ff"))
+		if t > 0.0:
+			UI.draw_plate(self, Rect2(r.position, Vector2(r.size.x * t, r.size.y)), Color("8fd3ff"), 3.0, UI.INK, 0.0)
 		return
 	var pulse := 1.0 if Access.calm else 0.65 + 0.35 * sin(Time.get_ticks_msec() / 110.0)
-	draw_rect(r.grow(2), Color(UI.ACCENT, 0.45 * pulse))
-	draw_rect(r, Color(UI.ACCENT, pulse).lerp(Color.WHITE, 0.25 * pulse))
+	UI.draw_plate(self, r.grow(2), Color(UI.ACCENT, 0.45 * pulse), 3.0, UI.INK, 0.0)
+	UI.draw_plate(self, r, Color(UI.ACCENT, pulse).lerp(Color.WHITE, 0.25 * pulse), 3.0, UI.INK, 0.0)
 
 
 # Potenziati dal fiore (#231): la foglia sopra la scheda e, sul suo bordo alto,
@@ -383,11 +450,12 @@ func _supreme_max() -> float:
 
 
 # Il ritratto di un giocatore dentro r, con i suoi colori; niente per i personaggi senza disegni
-func _draw_portrait(p: Dictionary, r: Rect2) -> void:
+func _draw_portrait(p: Dictionary, r: Rect2) -> bool:
 	var src := portrait_of(p, 0.35 if p.get("eliminated", false) else 1.0)
 	if src.is_empty():
-		return
+		return false
 	draw_texture_rect_region(src[0], fit_rect(src[1].size, r), src[1], src[2])
+	return true
 
 
 # Il ritratto di un giocatore: [Texture2D, regione, colori] o [] se il personaggio non ha disegni
@@ -440,6 +508,19 @@ static func fit_rect(size: Vector2, r: Rect2) -> Rect2:
 	return Rect2(r.position + (r.size - s) / 2, s)
 
 
+# Il nome che sta in width pixel: prima si rimpicciolisce (fino a 11), poi si taglia coi puntini. [testo, misura]
+static func fit_text(f: Font, text: String, size: int, width: float) -> Array:
+	var s := size
+	while s > 11 and f.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, s).x > width:
+		s -= 1
+	if f.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, s).x <= width:
+		return [text, s]
+	var cut := text
+	while cut.length() > 1 and f.get_string_size(cut + "…", HORIZONTAL_ALIGNMENT_LEFT, -1, s).x > width:
+		cut = cut.left(cut.length() - 1)
+	return [cut.strip_edges() + "…", s]
+
+
 # Strada fatta in un percorso della Corsa, da 0 (partenza) a 100 (traguardo)
 func _progress(x: float) -> int:
 	var start: float = _stage.spawns[0].x
@@ -463,5 +544,5 @@ func _centered(text: String, pos: Vector2, size: int, color: Color) -> void:
 # size è quella al 100%: la scala del testo scelta nelle opzioni si applica qui
 func _outlined(text: String, pos: Vector2, size: int, color: Color) -> void:
 	size = Access.px(size)
-	draw_string_outline(_font, pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, 4, Color.BLACK)
+	draw_string_outline(_font, pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, 5, UI.INK)
 	draw_string(_font, pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, color)

@@ -22,18 +22,24 @@ func setup() -> void:
 	box.add_child(UI.header("Crediti"))
 	box.add_child(UI.note("Bonobo Game è fatto dal nostro canale Discord"))
 	var scroll := ScrollContainer.new()
-	scroll.custom_minimum_size = Vector2(0, 320)
+	scroll.custom_minimum_size = Vector2(0, 380)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	var list := VBoxContainer.new()
 	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	list.add_theme_constant_override("separation", UI.GAP_L)
 	scroll.add_child(list)
+	# Come i titoli di coda: il ruolo piccolo in maiuscolo, il nome grande, sotto cosa ha fatto
 	for p in PEOPLE:
-		var who := UI.label("%s · %s" % [p[0], p[1]])
-		list.add_child(who)
+		var entry := VBoxContainer.new()
+		entry.add_theme_constant_override("separation", 0)
+		entry.add_child(UI.heading(p[1]))
+		var who := UI.label(p[0], UI.SIZE_BIG - 2, UI.PAPER)
+		who.add_theme_font_override("font", UI.display())
+		entry.add_child(who)
 		var what := UI.label(p[2], UI.SIZE_SMALL, Color(UI.TEXT, 0.75))
 		what.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		list.add_child(what)
+		entry.add_child(what)
+		list.add_child(entry)
 	box.add_child(scroll)
 	box.add_child(UI.note("Asset e licenze: public/assets/CREDITS.md"))
 	var actions := HBoxContainer.new()

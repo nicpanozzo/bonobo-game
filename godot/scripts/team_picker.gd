@@ -55,32 +55,29 @@ func _chip(team: int, text: String, color: Color) -> Button:
 	return b
 
 
-# La scelta è piena e bordata di bianco, le altre più scure: il colore si vede sempre
+# La scelta è piena e bordata di crema, le altre più scure col contorno a inchiostro: il colore si vede sempre
 func _refresh() -> void:
 	for b in get_children():
 		var color: Color = b.get_meta("color")
 		var on: bool = int(b.get_meta("team")) == selected
-		var bg := color if on else color.darkened(0.45)
-		var border := Color.WHITE if on else color.darkened(0.2)
-		b.add_theme_stylebox_override("normal", _box(bg, border, 4 if on else 2))
-		b.add_theme_stylebox_override("hover", _box(bg.lightened(0.12), border, 4 if on else 2))
-		b.add_theme_stylebox_override("pressed", _box(bg, Color.WHITE, 4))
-		b.add_theme_stylebox_override("focus", UI.focus_box(UI.RADIUS_CARD))
+		var bg := color if on else color.darkened(0.5)
+		var border := UI.PAPER if on else UI.INK
+		b.add_theme_stylebox_override("normal", _box(bg, border, on))
+		b.add_theme_stylebox_override("hover", _box(bg.lightened(0.15), border, on))
+		b.add_theme_stylebox_override("pressed", _box(bg, UI.PAPER, true, true))
+		b.add_theme_stylebox_override("focus", UI.focus_box(UI.RADIUS, UI.SKEW * 0.75))
 		var text := text_on(bg)
 		for state in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
-			b.add_theme_color_override(state, text)
-		b.add_theme_font_override("font", UI.font(UI.WEIGHT_BOLD if on else UI.WEIGHT_BODY))
+			b.add_theme_color_override(state, text if on else Color(text, 0.85))
+		b.add_theme_font_override("font", UI.display() if on else UI.font(UI.WEIGHT_BOLD))
 		b.text = ("✓ " if on else "") + str(b.text).trim_prefix("✓ ")
 
 
-static func _box(bg: Color, border: Color, width: int) -> StyleBoxFlat:
-	var s := StyleBoxFlat.new()
-	s.bg_color = bg
-	s.border_color = border
-	s.set_border_width_all(width)
-	s.set_corner_radius_all(UI.RADIUS_CARD)
-	s.content_margin_left = 10
-	s.content_margin_right = 10
+static func _box(bg: Color, border: Color, on: bool, pressed := false) -> StyleBoxFlat:
+	var s := UI.button_box(bg, pressed, 6, UI.SKEW * 0.75, border)
+	s.set_border_width_all(4 if on else UI.OUTLINE)
+	s.content_margin_left = 12
+	s.content_margin_right = 12
 	return s
 
 

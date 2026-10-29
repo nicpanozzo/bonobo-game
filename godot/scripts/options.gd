@@ -111,6 +111,8 @@ func _keys_page() -> VBoxContainer:
 		settings.save()))
 	page.add_child(tabs)
 	_keys.add_theme_constant_override("h_separation", UI.GAP_M)
+	# Col testo grande le tredici righe dei tasti devono stare in 720 pixel: righe attaccate
+	_keys.add_theme_constant_override("v_separation", 4 if Access.text_scale <= 1.0 else 0)
 	page.add_child(_keys)
 	_notice.add_theme_constant_override("separation", UI.GAP_L)
 	_notice.custom_minimum_size = Vector2(0, 36)
@@ -240,6 +242,8 @@ func _volume_row(key: String, text: String) -> HBoxContainer:
 	slider.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(slider)
 	value.custom_minimum_size = Vector2(40, 0)
+	value.add_theme_font_override("font", UI.numbers(UI.WEIGHT_BOLD, false))
+	value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	row.add_child(value)
 	return row
 
@@ -274,6 +278,8 @@ func _draw_keys() -> void:
 				_waiting = {"action": action, "slot": slot}
 				_draw_keys())
 			b.custom_minimum_size = Vector2(110 if _pad else 160, 0)
+			if Access.text_scale > 1.0:
+				b.add_theme_font_size_override("font_size", Access.px(UI.SIZE_SMALL - 1))
 			b.clip_text = true
 			# Spazio e invio non arrivano al pulsante (li prende _input come tasti da assegnare),
 			# ma il pad ci si muove sopra e lo preme con A

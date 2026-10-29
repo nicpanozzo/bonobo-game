@@ -73,3 +73,13 @@ func test_schede_raggruppate_per_squadra() -> void:
 	runner.check(ordered.map(func(p): return p.id) == ["b", "a", "c", "d"], "in ordine di squadra: %s" % [ordered])
 	runner.check(Hud.team_breaks(ordered) == [[0, 1], [1, 2], [3, 1]], "tre gruppi: %s" % [Hud.team_breaks(ordered)])
 	runner.check(Hud.team_breaks([{"id": "a", "team": 0}, {"id": "b", "team": 0}]) == [[0, 2]], "senza squadre un gruppo solo")
+
+
+# I nomi lunghi nelle schede strette: prima più piccoli, poi tagliati coi puntini
+func test_nome_che_sta_nella_scheda() -> void:
+	var f := UI.font(UI.WEIGHT_BOLD)
+	runner.check(Hud.fit_text(f, "Ugo", 14, 200) == ["Ugo", 14], "corto: com'è")
+	var small: Array = Hud.fit_text(f, "Gianluca", 14, f.get_string_size("Gianluca", HORIZONTAL_ALIGNMENT_LEFT, -1, 12).x + 1)
+	runner.check(small == ["Gianluca", 12], "un po' lungo: più piccolo, %s" % [small])
+	var cut: Array = Hud.fit_text(f, "Gianluca Lunghissimo (tu)", 14, 60)
+	runner.check(str(cut[0]).ends_with("…") and f.get_string_size(cut[0], HORIZONTAL_ALIGNMENT_LEFT, -1, cut[1]).x <= 60, "troppo lungo: tagliato, %s" % [cut])
