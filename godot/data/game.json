@@ -1,6 +1,6 @@
 {
   "version": "0.2.0",
-  "protocol": 1,
+  "protocol": 2,
   "tickRate": 60,
   "gameSpeed": 0.9,
   "world": {
