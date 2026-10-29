@@ -617,7 +617,7 @@ export const STATION = {
 
 // Sala d'attesa 3D (src/shared/hall.ts): misure in centimetri, tempi in millisecondi
 export const HALL = {
-  width: 3000, // pavimento della sala, cm (da -1500 a 1500)
+  width: 5400, // pavimento della sala, cm (da -2700 a 2700): ai lati la zona giochi, a sinistra gli scacchi e a destra il basket
   depth: 1800, // cm (da -900 davanti... a 900 verso la telecamera)
   walkSpeed: 520, // cm/s camminando
   accel: 4200, // cm/s² per arrivare alla velocità piena
@@ -650,6 +650,99 @@ export const HALL = {
   collideHeight: 120, // cm di differenza d'altezza oltre cui due giocatori non si urtano (si salta sopra)
   boardRefreshMs: 10_000, // ogni quanto il server rilegge la classifica per il tabellone (non a ogni snapshot)
   voteMaxSpeed: 150, // cm/s: si vota (pedane, portali, piedistalli, gabbie) fermandosi sopra, non passandoci di corsa
+  // Zona giochi: oggetti fisici (palloni, scacchi giganti) mossi dal server in src/shared/hall.ts
+  playerHeight: 160, // cm: altezza del cilindro di un giocatore per gli urti con gli oggetti (ci si colpisce anche di testa)
+  playerMass: 40, // kg (finti): quanto un giocatore sposta un pezzo degli scacchi camminandoci contro
+  propStepMs: 4, // ms: passo massimo dei palloni (sottopassi), così non attraversano il ferro
+  // Canestro, sul muro di destra rivolto verso la sala
+  rimHeight: 305, // cm da terra al ferro
+  rimRadius: 23, // cm, raggio del ferro (il pallone ne ha 12: ci passa, ma non di molto)
+  rimTube: 1, // cm, raggio del tubo del ferro
+  rimOffset: 38, // cm dal tabellone al centro del ferro
+  boardInset: 120, // cm dal muro di destra al tabellone
+  boardWidth: 180, // cm, larghezza del tabellone (lungo z)
+  boardBottom: 290, // cm da terra al bordo basso del tabellone
+  boardHeight: 105, // cm
+  boardThickness: 5, // cm
+  netDepth: 40, // cm di retina sotto il ferro: frena il pallone che entra
+  netDrag: 6, // 1/s: frenata orizzontale nella retina
+  courtRadius: 600, // cm: mezzo campo quadrato, metà lato (zona "court")
+  threePointRadius: 600, // cm dal punto sotto il ferro: tirando da più lontano il canestro vale 3
+  freeThrowDist: 420, // cm dal punto sotto il ferro alla lunetta (solo da disegnare)
+  rackX: 1900, // cm: centro della rastrelliera dei palloni da basket (lì tornano)
+  rackZ: -800,
+  rackGap: 40, // cm tra un pallone e l'altro sulla rastrelliera
+  basketballs: 3,
+  // Palloni
+  basketballRadius: 12, // cm
+  basketballMass: 8, // kg (finti) negli urti
+  beachballRadius: 60, // cm
+  beachballMass: 2,
+  ballBounce: 0.75, // rimbalzo del pallone da basket sul pavimento (0-1)
+  beachBounce: 0.85, // rimbalzo del pallone da spiaggia
+  wallBounce: 0.7, // rimbalzo sui muri
+  rimBounce: 0.5, // rimbalzo sul ferro
+  boardBounce: 0.6, // rimbalzo sul tabellone
+  ballBallBounce: 0.8, // tra due palloni
+  pieceBounce: 0.3, // pallone contro un pezzo degli scacchi
+  kickBounce: 0.6, // giocatore contro pallone: il pallone parte con la velocità di chi lo urta più questa frazione
+  kickLift: 280, // cm/s verso l'alto di un pallone da spiaggia calciato a piena velocità (un terzo per il basket)
+  trampolineBounce: 0.95, // rimbalzo dei palloni sul trampolino
+  rollDecel: 120, // cm/s² di frenata di un pallone da basket che rotola
+  beachRollDecel: 220, // cm/s² per quello da spiaggia
+  beachDrag: 0.5, // 1/s: resistenza dell'aria del pallone da spiaggia
+  beachGravity: 0.55, // frazione della gravità per il pallone da spiaggia: fluttua
+  ballRestSpeed: 50, // cm/s: un rimbalzo più lento di così si ferma a terra
+  ballIdleMs: 20_000, // ms fermo fuori posto: il pallone torna alla rastrelliera (o al suo posto)
+  // In mano e al tiro
+  holdHeight: 195, // cm sopra i piedi: il pallone si tiene sopra la testa
+  holdForward: 15, // cm davanti al centro, verso dove si guarda
+  pickReach: 12, // cm oltre il contatto entro cui camminando si prende un pallone da basket
+  heavyPickReach: 70, // cm oltre il contatto col tasto pesante
+  reachHeight: 240, // cm sopra i piedi: più in alto non lo si prende (si salta per i rimbalzi)
+  noPickMs: 500, // ms dopo il tiro in cui chi ha tirato non lo riprende
+  shotRange: 1300, // cm dal punto sotto il ferro: più vicino, guardando il canestro, il leggero tira a canestro
+  shotEntryDeg: 52, // gradi: angolo con cui il tiro scende nel ferro (decide l'arco, 55-75° in partenza)
+  maxLaunchDeg: 80, // gradi: arco più ripido possibile
+  aimFreeDist: 450, // cm: fermi e più vicini di così (lunetta compresa) il tiro è perfetto
+  aimErrorPerCm: 0.035, // cm di errore di mira per ogni cm oltre aimFreeDist
+  aimErrorPerSpeed: 0.05, // cm di errore per ogni cm/s di velocità di chi tira
+  aimErrorAir: 8, // cm di errore tirando in salto
+  aimErrorMax: 80, // cm
+  throwSpeed: 900, // cm/s del lancio in avanti (lontano dal canestro o girati)
+  throwLift: 420, // cm/s verso l'alto nel lancio in avanti
+  shoveBallSpeed: 900, // cm/s che la spinta dà a un pallone vicino
+  shoveBallLift: 350, // cm/s verso l'alto
+  propHitSpeed: 250, // cm/s: urti più forti fanno l'evento propHit (suono)
+  propHitCooldownMs: 150, // ms tra due propHit dello stesso oggetto
+  // Scacchi giganti, a sinistra: bianchi verso la telecamera
+  chessSquare: 70, // cm, lato di una casella (scacchiera 8x8 da 560 cm)
+  chessPieces: {
+    // h altezza in cm, r raggio della base in cm, mass in kg (finti)
+    king: { h: 180, r: 27, mass: 25 },
+    queen: { h: 165, r: 26, mass: 18 },
+    bishop: { h: 135, r: 23, mass: 12 },
+    knight: { h: 120, r: 24, mass: 12 },
+    rook: { h: 110, r: 24, mass: 15 },
+    pawn: { h: 90, r: 20, mass: 8 },
+  },
+  pieceFriction: 2500, // cm/s² di frenata di un pezzo che scivola
+  piecePushCarry: 0.6, // frazione della velocità di chi spinge camminando che il pezzo si porta dietro
+  pieceBetweenBounce: 0.2, // rimbalzo tra due pezzi
+  shovePieceImpulse: 9000, // kg·cm/s della spinta su un pezzo: velocità = questo / massa (il re non cade, scivola)
+  toppleSpeed: 380, // cm/s: un pezzo che riceve un colpo più forte di così cade
+  toppleMs: 400, // ms per cadere a terra
+  chessResetMs: 5000, // ms dallo scacco matto (re caduto) a quando i pezzi tornano in piedi
+  chessIdleResetMs: 20_000, // ms con la scacchiera in disordine e nessuno vicino: si rimette a posto
+};
+
+// Chat vocale (WebRTC del browser): il server gira solo i messaggi per collegarsi
+export const VOICE = {
+  maxSignalBytes: 8192, // byte massimi di un'offerta SDP o di un candidato ICE
+  signalsPerSecond: 40, // messaggi di collegamento al secondo da un client (all'inizio i candidati ICE arrivano a raffica)
+  signalBurst: 80,
+  statesPerSecond: 4, // cambi di stato (entra, silenzia...) al secondo
+  stunUrls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"], // senza TURN: chi è dietro una rete molto chiusa non si collega
 };
 
 // Classifica a punti (src/server/rating.ts): Elo a coppie, ricalcolato dalle partite salvate
