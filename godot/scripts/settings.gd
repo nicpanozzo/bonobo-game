@@ -72,6 +72,7 @@ const VIDEO_DEFAULTS := {
 	"post": true, # luce e colori dell'arena (post_fx.gd): bagliore, colori per arena, vignetta e grana
 	"predict": true, # il proprio lottatore previsto (E17): risponde subito anche con un server lontano
 	"hitboxes": true, # rettangolo del colpo in corso sopra gli sprite
+	"fps_counter": false, # FPS e ms per fotogramma in alto a destra (#529)
 }
 # Accessibilità (E14): si applicano con Access.apply()
 const ACCESS_DEFAULTS := {
