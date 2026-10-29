@@ -42,3 +42,24 @@ func test_righe_e_chiusura() -> void:
 	view.close()
 	runner.check(closed[0], "Chiudi avvisa chi l'ha aperta")
 	view.free()
+
+
+# Il podio coi primi tre e le righe dal quarto; gradi, iniziali e il lottatore se il server lo manda
+func test_podio_gradi_e_iniziali() -> void:
+	var view: Control = View.new()
+	runner.root.add_child(view)
+	view.setup("http://localhost:3000", false)
+	var board := []
+	for i in 5:
+		board.append({"name": "P%d" % i, "rating": 1200 - i * 10, "tier": "Gorilla", "wins": 5 - i, "matches": 6, "streak": i})
+	view.show_rows(View.parse_board({"board": board}))
+	var shown: Array = view._list.get_children().filter(func(c): return c != view._status and not c.is_queued_for_deletion())
+	runner.check(shown.size() == 3, "podio più due righe: %d" % shown.size())
+	runner.check(shown[0].rows.size() == 3 and shown[0].rows[0].name == "P0", "sul podio i primi tre")
+	runner.check(shown[1].rank == 4 and shown[2].rank == 5, "le righe dal quarto")
+	view.free()
+	runner.check(View.initials("Giovanni fRa") == "GF" and View.initials("nicola") == "N" and View.initials(" ") == "?", "iniziali")
+	runner.check(View.tier_color("Gorilla") != View.tier_color("Babbuino"), "ogni grado il suo colore")
+	runner.check(View.tier_color("Grado nuovo") == UI.LILAC, "un grado nuovo è lilla")
+	var rows := View.parse_board({"board": [{"name": "Nic", "rating": 1100, "characterId": "orsoblu"}]})
+	runner.check(rows[0].characterId == "orsoblu", "il lottatore preferito resta: %s" % [rows[0]])

@@ -15,12 +15,22 @@ signal challenges_requested # sfide con medaglie (E15)
 signal invite_requested(invite: Dictionary) # entra nella stanza del link copiato: {room, server?}
 
 const Lobby := preload("res://scripts/lobby.gd")
+const MenuTile := preload("res://scripts/menu_tile.gd")
 const BLINK_S := 0.6 # mezzo giro del lampeggio di "Premi un tasto"
-const CARD_SIZE := Vector2(460, 76) # schede del menu, pixel
-const PHONE_CARD_SIZE := Vector2(460, 64) # sul telefono un po' più basse: il sottomenu "Da solo" ne ha quattro
+const MENU_W := 640.0 # larghezza del menu sul computer, pixel: i lottatori ai lati restano fuori
+const PHONE_MENU_W := 440.0 # sul telefono il menu sta tra i due lottatori del fondo (title_backdrop.gd)
+const PHONE_BLEED := 90.0 # sul telefono il fondo esce dallo schermo di tanto per lato: i lottatori finiscono sul bordo, pixel
+const TILE_H := 124.0 # le due piastrelle grandi, pixel
+const PHONE_TILE_H := 58.0
+const SOLO_TILE := Vector2(314, 96) # le quattro di "Da solo", due per riga, pixel
+const PHONE_SOLO_H := 56.0 # sul telefono due per riga anche lì, solo col nome
+const LIFT := 96.0 # il menu sale di tanto: sotto c'è la fascia gialla che scorre, pixel
+const PHONE_LIFT := 50.0
+const PHONE_CARD_SIZE := Vector2(PHONE_MENU_W, PHONE_TILE_H) # la larghezza del riquadro dell'invito
+const CARD_SIZE := Vector2(MENU_W, TILE_H)
 
 var game: Dictionary
-var _press := UI.label("Premi un tasto", UI.SIZE_BIG, UI.TEXT)
+var _press := UI.label("Premi un tasto", UI.SIZE_BIG + 2, UI.PAPER)
 var _menu := VBoxContainer.new() # il menu principale
 var _solo := VBoxContainer.new() # il sottomenu "Da solo"
 var _first: Button
@@ -36,41 +46,74 @@ func setup(game_data: Dictionary, skip_press := false, own_room := "") -> void:
 	game = game_data
 	_own_room = own_room
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	var bg := ColorRect.new()
-	bg.color = UI.BG
-	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	add_child(bg)
+	# Il fondo animato: raggi, sagome, due lottatori ai lati e la fascia che scorre (title_backdrop.gd)
+	var backdrop: Control = preload("res://scripts/title_backdrop.gd").new()
+	add_child(backdrop)
+	backdrop.setup(game)
+	if Phone.active: # lo schermo è stretto: i due lottatori vanno verso i bordi e lasciano posto al menu
+		backdrop.offset_left = -PHONE_BLEED
+		backdrop.offset_right = PHONE_BLEED
+	var lift := MarginContainer.new()
+	lift.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	lift.add_theme_constant_override("margin_bottom", roundi(PHONE_LIFT if Phone.active else LIFT))
+	add_child(lift)
 	var center := CenterContainer.new()
-	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	add_child(center)
+	lift.add_child(center)
 	var box := VBoxContainer.new()
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
-	box.add_theme_constant_override("separation", UI.GAP_L)
+	box.add_theme_constant_override("separation", UI.GAP_S if Phone.active else UI.GAP_L)
 	center.add_child(box)
-	var logo := UI.title("BONOBO GAME")
 	# Sul telefono (Phone) il logo è più piccolo: sotto devono stare le quattro schede di "Da solo"
-	logo.add_theme_font_size_override("font_size", Access.px(roundi(UI.SIZE_TITLE * (1.4 if Phone.active else 2.0))))
-	logo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var logo: Control = backdrop.make_logo(0.6 if Phone.active else 1.0)
+	logo.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	box.add_child(logo)
-	var subtitle := UI.label("Il picchiaduro del nostro Discord", UI.SIZE_SUBTITLE, Color(UI.TEXT, 0.7))
+	var subtitle := UI.label("Il picchiaduro del nostro Discord", UI.SIZE_SUBTITLE, UI.PAPER)
+	subtitle.add_theme_font_override("font", UI.font(UI.WEIGHT_BOLD))
+	subtitle.add_theme_color_override("font_outline_color", UI.INK)
+	subtitle.add_theme_constant_override("outline_size", 6)
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(subtitle)
 	var spacer := Control.new()
-	spacer.custom_minimum_size = Vector2(0, 8 if Phone.active else 40)
+	spacer.custom_minimum_size = Vector2(0, 4 if Phone.active else 30)
 	box.add_child(spacer)
+	# "Premi un tasto": grosso, col contorno a inchiostro, che lampeggia come nei cabinati
+	_press.add_theme_font_override("font", UI.display())
+	_press.add_theme_color_override("font_outline_color", UI.INK)
+	_press.add_theme_constant_override("outline_size", 10)
+	_press.add_theme_color_override("font_shadow_color", UI.INK)
+	_press.add_theme_constant_override("shadow_offset_y", 4)
+	_press.add_theme_constant_override("shadow_outline_size", 10)
 	_press.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_press.custom_minimum_size = Vector2(0, 60)
 	if Phone.active:
 		_press.text = "Tocca lo schermo"
 	box.add_child(_press)
+	var menu_w := PHONE_MENU_W if Phone.active else MENU_W
 	for m in [_menu, _solo]:
-		m.add_theme_constant_override("separation", UI.GAP_M)
+		m.add_theme_constant_override("separation", UI.GAP_M if Phone.active else UI.GAP_L)
+		m.custom_minimum_size = Vector2(menu_w, 0)
+		m.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		m.visible = false
 		box.add_child(m)
-	_first = _card(_menu, "Gioca con gli amici", "Crea una stanza o entra con il link del Discord", func(): play_requested.emit(), true)
-	_card(_menu, "Da solo", "Contro un bot, allenamento, tutorial e sfide", _show_solo)
+	# Le due strade grandi: sul computer affiancate (la principale più larga), sul telefono una sopra l'altra
+	var tiles: BoxContainer = VBoxContainer.new() if Phone.active else HBoxContainer.new()
+	tiles.add_theme_constant_override("separation", UI.GAP_S if Phone.active else UI.GAP_M)
+	_menu.add_child(tiles)
+	var tile_h := PHONE_TILE_H if Phone.active else TILE_H
+	_first = _tile(tiles, "Gioca con gli amici", "Crea una stanza o entra con il link del Discord", "VS", func(): play_requested.emit(), true, tile_h)
+	var solo := _tile(tiles, "Da solo", "Bot, allenamento, tutorial e sfide", "1P", _show_solo, false, tile_h)
+	if not Phone.active:
+		_first.size_flags_stretch_ratio = 1.6
+		_first.title_label.add_theme_font_size_override("font_size", Access.px(UI.SIZE_TITLE - 6))
+		solo.title_label.add_theme_font_size_override("font_size", Access.px(UI.SIZE_TITLE - 6))
+		for t in [_first, solo]:
+			t.detail_label.add_theme_font_size_override("font_size", Access.px(UI.SIZE_SMALL))
+		solo.detail_label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING # col taglio un'etichetta a capo resta alta zero
+		solo.detail_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		solo.detail_label.custom_minimum_size.x = 160.0
+	# Le voci piccole in fila sotto le due grandi
 	var row := HBoxContainer.new()
-	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.add_theme_constant_override("separation", UI.GAP_M)
+	row.add_theme_constant_override("separation", UI.GAP_S if Phone.active else UI.GAP_M)
 	row.add_child(_small("Classifica", func(): leaderboard_requested.emit()))
 	row.add_child(_small("Opzioni", func(): options_requested.emit()))
 	row.add_child(_small("Crediti", func(): credits_requested.emit()))
@@ -82,6 +125,7 @@ func setup(game_data: Dictionary, skip_press := false, own_room := "") -> void:
 	if install != "" and install != "installed":
 		var hint := UI.note(Phone.install_hint(install))
 		hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		if install == "ios":
 			_menu.add_child(hint)
 		else:
@@ -92,37 +136,54 @@ func setup(game_data: Dictionary, skip_press := false, own_room := "") -> void:
 			_menu.add_child(b)
 			hint.visible = false
 			_menu.add_child(hint)
-	_solo_first = _card(_solo, "Contro un bot", "Una partita veloce contro il computer", func(): bot_requested.emit(), true)
-	_card(_solo, "Allenamento", "Prova le mosse sul manichino, con i numeri dei colpi", func(): training_requested.emit())
-	_card(_solo, "Tutorial", "Impara i comandi un passo alla volta", func(): tutorial_requested.emit())
-	_card(_solo, "Sfide", "Prove a tempo, con le medaglie", func(): challenges_requested.emit())
+	# "Da solo": quattro piastrelle, due per riga (sul telefono solo col nome: la spiegazione non ci sta)
+	var solo_grid := GridContainer.new()
+	solo_grid.columns = 2
+	solo_grid.add_theme_constant_override("h_separation", UI.GAP_M)
+	solo_grid.add_theme_constant_override("v_separation", UI.GAP_S if Phone.active else UI.GAP_M)
+	_solo.add_child(solo_grid)
+	var solo_h := PHONE_SOLO_H if Phone.active else SOLO_TILE.y
+	_solo_first = _tile(solo_grid, "Contro un bot", "Una partita veloce contro il computer", "CPU", func(): bot_requested.emit(), true, solo_h)
+	_tile(solo_grid, "Allenamento", "Le mosse sul manichino, coi numeri", "LAB", func(): training_requested.emit(), false, solo_h)
+	_tile(solo_grid, "Tutorial", "I comandi un passo alla volta", "ABC", func(): tutorial_requested.emit(), false, solo_h)
+	_tile(solo_grid, "Sfide", "Prove a tempo, con le medaglie", "TOP", func(): challenges_requested.emit(), false, solo_h)
 	var back := _small("‹ Indietro", _show_main)
 	back.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	_solo.add_child(back)
 	var version := UI.note(UI.version_text(game))
+	version.add_theme_color_override("font_outline_color", UI.INK)
+	version.add_theme_constant_override("outline_size", 4)
 	version.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
 	version.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	version.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	version.position -= Vector2(UI.GAP_L, UI.GAP_L)
+	version.position -= Vector2(UI.GAP_L, UI.GAP_S)
 	add_child(version)
 	_refresh_invite()
 	if skip_press or _invite_card != null: # col link negli appunti niente "Premi un tasto": si entra
 		_open_menu()
 
 
-# Scheda del menu con la sua spiegazione; quella principale è rossa come i pulsanti per giocare
-func _card(menu: Control, text: String, detail: String, on_press: Callable, primary := false) -> Button:
-	var b := UI.choice_card(text, detail, on_press)
-	b.custom_minimum_size = PHONE_CARD_SIZE if Phone.active else CARD_SIZE
-	if primary:
-		UI.set_primary(b)
-	menu.add_child(b)
+# Una piastrella del menu (menu_tile.gd) con la sua spiegazione e la sigla; la principale è gialla
+func _tile(parent: Control, text: String, detail: String, mark: String, on_press: Callable, primary: bool, height: float) -> Button:
+	var b: Button = MenuTile.new().setup(text, detail, mark, on_press, primary)
+	var w := 0.0 # nella fila delle due grandi decide la proporzione
+	if parent is GridContainer:
+		w = (PHONE_MENU_W - UI.GAP_M) / 2.0 if Phone.active else SOLO_TILE.x
+		if Phone.active:
+			b.detail_label.visible = false
+			b.title_label.add_theme_font_size_override("font_size", Access.px(UI.SIZE_BODY + 3))
+	elif Phone.active:
+		w = PHONE_MENU_W
+	b.custom_minimum_size = Vector2(w, height)
+	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	parent.add_child(b)
 	return b
 
 
 func _small(text: String, on_press: Callable) -> Button:
-	var b := UI.button(text, on_press)
-	b.custom_minimum_size = Vector2(140, 0)
+	var b := UI.small_button(text, on_press) if Phone.active else UI.button(text, on_press)
+	b.custom_minimum_size = Vector2(0, 30 if Phone.active else 40)
+	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	return b
 
 
@@ -177,7 +238,9 @@ func _show_invite(found: Dictionary) -> void:
 	# Un riquadro col bordo giallo sopra il menu, non un'altra scheda grande: si legge dove si entra
 	# e si preme Entra; chi vuole fare altro ha il menu di sempre sotto
 	_invite_box = PanelContainer.new()
-	_invite_box.add_theme_stylebox_override("panel", UI._box(UI.CARD, UI.ACCENT, UI.RADIUS_CARD, UI.GAP_L))
+	var frame := UI.panel_box(Color(UI.GRAPE, 0.97), 14)
+	frame.border_color = UI.BANANA
+	_invite_box.add_theme_stylebox_override("panel", frame)
 	_invite_box.custom_minimum_size.x = (PHONE_CARD_SIZE if Phone.active else CARD_SIZE).x
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", UI.GAP_L)

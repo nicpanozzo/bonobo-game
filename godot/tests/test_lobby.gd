@@ -101,6 +101,42 @@ func test_scheda_del_lottatore() -> void:
 	lobby.free()
 
 
+# Senza una scelta salvata si parte da un lottatore disegnato (Bonobot), non dal rettangolo del bonobo
+# fatto col codice; una scelta salvata vince sempre, anche se è proprio il bonobo
+func test_lottatore_di_partenza() -> void:
+	var lobby := _lobby(false)
+	runner.check(lobby._character == "bonobot", "senza scelta: Bonobot, non %s" % lobby._character)
+	runner.check(lobby._summary.text.ends_with("Bonobot"), "e nel riassunto: %s" % lobby._summary.text)
+	lobby.free()
+	lobby = _lobby(false, {"char": ""})
+	runner.check(lobby._character == "bonobot", "profilo salvato senza lottatore: Bonobot")
+	lobby.free()
+	lobby = _lobby(false, {"char": "default"})
+	runner.check(lobby._character == "default", "la scelta salvata resta: %s" % lobby._character)
+	lobby.free()
+	lobby = _lobby(false, {"char": "elvedeo"})
+	runner.check(lobby._character == "elvedeo" and lobby._big_name.text == "Elvedeo", "anche un altro: %s" % lobby._big_name.text)
+	lobby.free()
+	var game := {"defaultCharacterId": "default", "characters": {"default": {}, "tizio": {"sprite": {}}}}
+	runner.check(Lobby.default_fighter(game) == "tizio", "senza Bonobot il primo disegnato")
+	runner.check(Lobby.default_fighter({"defaultCharacterId": "default", "characters": {"default": {}}}) == "default", "senza disegni il bonobo")
+
+
+# Le pagine stanno in uno schermo da 1280x720 senza scorrere: la prima creando, la seconda entrando con la squadra
+func test_pagine_senza_scorrere() -> void:
+	for kind in ["create", "bot", "join"]:
+		var lobby := _lobby(false, {}, kind, true)
+		lobby.size = Vector2(1280, 720)
+		var scroll: ScrollContainer = lobby.find_children("*", "ScrollContainer", true, false)[0]
+		var bars: Array = scroll.get_parent().get_children().filter(func(c): return c != scroll)
+		var room: float = 720.0 - bars.reduce(func(acc, c): return acc + c.get_combined_minimum_size().y, 0.0)
+		for page in ["match", "fighter"]:
+			lobby._show_page(page, false)
+			var need: float = lobby._pages[page].get_combined_minimum_size().y + Lobby.PAGE_TOP + UI.GAP_L
+			runner.check(need <= room, "%s, %s: serve %d, c'è %d" % [kind, page, need, room])
+		lobby.free()
+
+
 func test_skin_del_lottatore() -> void:
 	var lobby := _lobby(false, {"char": "lampione", "skin": "jax"})
 	runner.check(lobby._skin == "jax", "la skin ricordata resta: %s" % lobby._skin)
