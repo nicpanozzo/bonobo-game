@@ -29,6 +29,7 @@ const TIMES := [[0, "Senza tempo"], [120, "2 minuti"], [180, "3 minuti"], [300, 
 # TODO community: soprannomi e tormentoni del canale
 const RANDOM_NAMES := ["Bonobo", "Scimmione", "Banana", "Liana", "Gorilla", "Babbuino", "Orango"]
 const BOTS := [["", "Nessun bot"], ["manichino", "Manichino"], ["facile", "Bot facile"], ["semplice", "Bot"], ["difficile", "Bot difficile"]]
+const BOT_CHARACTER_ID := "bonobot" # il lottatore dei bot se non se ne sceglie un altro, come BOT_CHARACTER_ID in src/server/bot.ts (#383)
 const STAT_BARS := [["speed", "Vel.", "Velocità"], ["jump", "Salto", "Salto"], ["weight", "Peso", "Peso"]] # barre sotto il ritratto (E11)
 const BAR_W := 44.0 # larghezza delle barre nei riquadri, pixel
 const BIG_BAR_W := 200.0 # larghezza delle barre nella scheda del lottatore scelto, pixel
@@ -81,6 +82,9 @@ var _items_box: Control # quanti e quali oggetti: solo dove gli oggetti ci sono
 var _host: CheckButton # Crea: ospita dal proprio computer (#308), solo nell'app per computer
 var _host_status: Label # a che punto è il server mentre si accende
 var _bot := Stepper.new()
+var _bot_char := Stepper.new() # il lottatore del bot (#383): il manichino lo tiene fermo, gli altri lo fanno combattere
+var _bot_char_ids: Array = [] # id dei lottatori, nell'ordine del selettore
+var _bot_char_box: HBoxContainer
 var _stocks_box: Control # titoletto e selettore delle vite, si nascondono insieme
 var _stocks_label: Label
 var _time_box: Control
@@ -373,6 +377,15 @@ func _match_page(params: Dictionary) -> Control:
 	_team_count.item_selected.connect(func(_i): _sync_rules())
 	_bot_label = UI.heading("Bot")
 	rules.add_child(_labeled(_bot_label, _bot))
+	# Senza scelta Bonobot, come il server (bot.ts, BOT_CHARACTER_ID)
+	_bot_char_ids = game.characters.keys()
+	for id in _bot_char_ids:
+		_bot_char.add_item(str(game.characters[id].name))
+	var wanted := str(params.get("botChar", BOT_CHARACTER_ID))
+	_bot_char.select(maxi(0, _bot_char_ids.find(wanted if game.characters.has(wanted) else BOT_CHARACTER_ID)))
+	_bot_char_box = _labeled(UI.heading("Lottatore del bot"), _bot_char)
+	rules.add_child(_bot_char_box)
+	_bot_char.item_selected.connect(func(_i): _update_summary())
 	_ff.text = "Fuoco amico"
 	_ff.button_pressed = bool(saved.get("friendlyFire", false))
 	_ff.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
@@ -484,6 +497,8 @@ func _sync_rules() -> void:
 		_bot.select(1) # in palestra serve qualcuno da colpire: il manichino
 	_course_note.visible = race
 	_bot_label.text = "AVVERSARIO" if _kind == "bot" else "BOT (SE VUOI)"
+	if _bot_char_box != null:
+		_bot_char_box.visible = _bot.selected > 0 or _kind == "bot" # contro un bot ce n'è sempre uno (QUICK_BOT)
 	for i in 5:
 		var n := i + 1
 		var word := ("punto" if n == 1 else "punti") if mode == "flag" else ("vita" if n == 1 else "vite")
@@ -1024,7 +1039,7 @@ func _update_summary() -> void:
 			var target := str(read_invite(_room.text).get("room", ""))
 			parts.append("Entri in " + target if target != "" else "Entri in una stanza")
 		"bot":
-			parts.append("Contro: " + str(BOTS[_bot.selected][1]) if _bot.selected > 0 else "Contro un bot")
+			parts.append(("Contro: " + str(BOTS[_bot.selected][1]) if _bot.selected > 0 else "Contro un bot") + " (%s)" % _bot_char_name())
 	if _kind != "join":
 		var mode := _mode_id()
 		var rules := str(MODES[_mode_i][1])
@@ -1065,6 +1080,11 @@ static func stats_text(c: Dictionary) -> String:
 func _select_cards(cards: Control, selected: String) -> void:
 	for b in cards.get_children():
 		UI.set_selected(b, b.get_meta("id") == selected)
+
+
+func _bot_char_name() -> String:
+	var i := _bot_char.selected
+	return str(game.characters[_bot_char_ids[i]].name) if i >= 0 and i < _bot_char_ids.size() else "Bonobot"
 
 
 func _submit() -> void:
@@ -1159,6 +1179,7 @@ func _choice(bot: String) -> Dictionary:
 		"team": _team_picker.selected if _team_box.visible else 0, # la squadra chiesta (#409), 0 = automatica
 		"server": normalize_server(_server.text),
 		"bot": "manichino" if mode == "training" and bot == "" else bot, # conta solo se la stanza è nuova
+		"botChar": str(_bot_char_ids[_bot_char.selected]) if _bot_char.selected >= 0 and _bot_char.selected < _bot_char_ids.size() else BOT_CHARACTER_ID,
 		"kind": _kind, # per tornare alla stessa scheda dopo la partita
 		"host": _hosting_new(), # ricordato per la prossima volta; il server vero lo mette _host_and_join
 	}
