@@ -13,6 +13,7 @@ export interface JoinData {
   stageId?: string;
   rules?: Partial<MatchRules>;
   bot?: string;
+  botCharacterId?: string; // lottatore del bot (#383), lo controlla botCharacter
   token?: string; // token del welcome per rientrare dopo una caduta di rete (#107)
   version?: string; // versione del gioco del client (E2)
   protocol?: number; // PROTOCOL_VERSION del client (E2)
@@ -49,6 +50,7 @@ export function parseJoin(raw: unknown): JoinData | null {
     stageId: shortString(raw.stageId),
     rules,
     bot: shortString(raw.bot),
+    botCharacterId: shortString(raw.botCharacterId),
     // I token che diamo noi sono 22 caratteri base64url: qualunque altra cosa non è un token
     token: typeof raw.token === "string" && /^[A-Za-z0-9_-]{1,32}$/.test(raw.token) ? raw.token : undefined,
     version: shortString(raw.version),

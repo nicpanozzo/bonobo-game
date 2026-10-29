@@ -3,7 +3,7 @@
 
 import { ATTACKS, BOT, BOT_LEVELS, FIGHTER, TICK_RATE } from "../shared/constants";
 import type { Match } from "../shared/match";
-import { getCharacter, specialsFor } from "../shared/characters";
+import { CHARACTERS, getCharacter, specialsFor } from "../shared/characters";
 import { emptyInput, ledgesOf, platformSurfaceY, type Fighter } from "../shared/physics";
 import { supremeReach, supremeReady } from "../shared/physics/supreme";
 import type { StageSpec, Station } from "../shared/stages";
@@ -25,6 +25,14 @@ const BOT_NAMES: Record<BotKind, string> = {
   semplice: "Bot",
   difficile: "Bot difficile",
 };
+
+// Il lottatore dei bot quando chi crea la stanza non ne sceglie uno (#383): Bonobot, nato come manichino da allenamento
+export const BOT_CHARACTER_ID = "bonobot";
+
+// L'id arriva dalla rete: un lottatore che non c'è diventa Bonobot, non il lottatore base
+export function botCharacter(id: string | undefined): string {
+  return id && Object.hasOwn(CHARACTERS, id) ? id : BOT_CHARACTER_ID;
+}
 
 // Il parametro arriva dalla rete: si accettano solo i tipi conosciuti
 // Fin dove arriva il colpo del personaggio davanti al suo centro: le zone seguono il disegno (#243)
@@ -72,11 +80,11 @@ export class Bots {
     return this.bots.has(id);
   }
 
-  // characterId: il personaggio del bot (E10, per provare le speciali); senza, quello base
+  // characterId: il lottatore del bot, scelto nella lobby (#383); senza, Bonobot. Il manichino lo tiene fermo
   add(match: Match, kind: BotKind, characterId?: string): string | null {
     if (match.isFull) return null;
     const id = `bot-${kind}-${++this.count}`;
-    match.addPlayer(id, BOT_NAMES[kind], characterId);
+    match.addPlayer(id, BOT_NAMES[kind], botCharacter(characterId));
     match.setReady(id, true); // il bot non fa aspettare nessuno nel pre-partita
     // Lo scatto col doppio tocco (#199) i bot non lo usano: i loro tocchi brevi lo farebbero partire per sbaglio
     const fighter = match.players.find((p) => p.id === id);

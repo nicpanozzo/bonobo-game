@@ -5,7 +5,7 @@ import { ATTACKS, BOT, FIGHTER, HITSTUN_PER_KNOCKBACK, LEDGE, SUPREME, TICK_RATE
 import { Match } from "../shared/match";
 import { emptyInput, ledgesOf } from "../shared/physics";
 import type { StageSpec } from "../shared/stages";
-import { Bots, parseBotKind } from "./bot";
+import { BOT_CHARACTER_ID, Bots, parseBotKind } from "./bot";
 
 const DT = 1000 / TICK_RATE;
 
@@ -119,6 +119,35 @@ describe("bot", () => {
       match.step(DT);
     }
     assert.ok(dummy.percent > 0, "il colpo è entrato");
+  });
+
+  it("il lottatore del bot: quello scelto, altrimenti Bonobot, anche con un id inventato (#383)", () => {
+    const match = new Match();
+    const bots = new Bots();
+    const plain = bots.add(match, "semplice")!;
+    const chosen = bots.add(match, "difficile", "elvedeo")!;
+    const bogus = bots.add(match, "facile", "non-esiste")!;
+    const char = (id: string) => match.players.find((p) => p.id === id)?.characterId;
+    assert.equal(BOT_CHARACTER_ID, "bonobot");
+    assert.equal(char(plain), "bonobot", "senza scelta è Bonobot, non Bonobo");
+    assert.equal(char(chosen), "elvedeo");
+    assert.equal(char(bogus), "bonobot");
+  });
+
+  it("il manichino è il lottatore scelto, fermo (#383)", () => {
+    const match = new Match();
+    const bots = new Bots();
+    match.addPlayer("a", "A");
+    const botId = bots.add(match, "manichino", "lampione")!;
+    const dummy = match.players.find((p) => p.id === botId)!;
+    assert.equal(dummy.characterId, "lampione");
+    for (let i = 0; i < 60; i++) match.step(DT); // atterra
+    const start = { x: dummy.x, y: dummy.y };
+    for (let i = 0; i < 60; i++) {
+      bots.tick(match);
+      match.step(DT);
+    }
+    assert.deepEqual({ x: dummy.x, y: dummy.y }, start, "non si muove e non attacca");
   });
 
   it("il bot semplice va verso il giocatore e lo colpisce", () => {

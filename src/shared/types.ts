@@ -317,10 +317,11 @@ export interface Refusal {
 export interface ClientToServer {
   // stageId e rules contano solo per chi crea la stanza; gli altri entrano in quella che c'è
   // bot: chi crea la stanza può aggiungere un avversario del server, es. "manichino" (#20)
+  // botCharacterId: il lottatore di quel bot (#383); manca o non esiste = Bonobot. Il manichino è quel lottatore fermo
   // token: quello del welcome, dopo una caduta di rete; se il posto è ancora tenuto si rientra nello stesso lottatore (#107)
   // version e protocol: versione del gioco (package.json) e PROTOCOL_VERSION del client; mancano nei client di prima (E2)
   // team: la squadra che si vorrebbe (#409), da 1 a teamCount; manca o 0 = quella con meno giocatori
-  join: (data: { room: string; name: string; characterId?: string; skinId?: string; team?: number; stageId?: string; rules?: Partial<MatchRules>; bot?: string; token?: string; version?: string; protocol?: number }) => void;
+  join: (data: { room: string; name: string; characterId?: string; skinId?: string; team?: number; stageId?: string; rules?: Partial<MatchRules>; bot?: string; botCharacterId?: string; token?: string; version?: string; protocol?: number }) => void;
   input: (input: InputState) => void;
   rematch: () => void; // a fine partita, ricomincia subito (#17)
   ready: (data: { ready: boolean }) => void; // pre-partita: pronto o non più pronto; quando lo sono tutti si comincia
