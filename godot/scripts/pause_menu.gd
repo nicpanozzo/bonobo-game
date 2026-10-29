@@ -37,6 +37,7 @@ func setup(s: Settings, room_link: String, report := {}) -> void:
 	box.add_child(_options_button)
 	_moves_button = UI.button("Mosse del lottatore", _open_moves)
 	box.add_child(_moves_button)
+	_add_voice_row(box)
 	_add_team_picker(box)
 	box.add_child(UI.button("Copia link della stanza", func():
 		UI.copy(link)
@@ -52,6 +53,30 @@ func setup(s: Settings, room_link: String, report := {}) -> void:
 	var game = JSON.parse_string(FileAccess.get_file_as_string("res://data/game.json"))
 	box.add_child(UI.note(UI.version_text(game if game is Dictionary else {}), 0.5))
 	UI.keep_focus(self, resume_button)
+
+
+# Chat vocale: entrare, uscire e spegnere il microfono anche in partita, dove il riquadro è senza pulsanti
+# (soprattutto sul telefono, che non ha i tasti N e B). Solo nel browser e dentro una stanza
+func _add_voice_row(box: VBoxContainer) -> void:
+	var vc := VoiceChat.current
+	if vc == null or not vc.supported or vc.my_id == "":
+		return
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", UI.GAP_S)
+	var join := UI.button("", func(): vc.toggle_join())
+	join.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(join)
+	var mic := UI.button("", func(): vc.toggle_mute())
+	mic.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(mic)
+	box.add_child(row)
+	var refresh := func() -> void:
+		join.text = "Entra in voce" if vc.phase == VoiceChat.OFF else "Esci dalla voce"
+		mic.visible = vc.phase == VoiceChat.ON
+		mic.text = "Accendi microfono" if vc.effective_muted() else "Spegni microfono"
+	refresh.call()
+	vc.changed.connect(refresh)
+	tree_exiting.connect(func(): vc.changed.disconnect(refresh))
 
 
 # A squadre (#409): la tua squadra, da cambiare con un clic. Il server la cambia subito se la partita

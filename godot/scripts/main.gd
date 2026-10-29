@@ -79,6 +79,8 @@ var _hall_room := false # la stanza ha la sala (welcome.hall): a fine partita si
 var _welcome := {} # l'ultimo welcome: id e stanza servono anche quando dalla sala arriva l'arena (stage)
 var _results_since := 0 # ms in cui sono comparsi i pulsanti di fine partita: il conto del ritorno in sala
 var _return_note: Label # "Si torna in sala tra 9 s", sotto i pulsanti di fine partita
+var voice: VoiceChat # chat vocale (voice.gd): nel browser, tra chi è nella stanza
+var voice_panel: VoicePanel # chi è in voce, in alto a destra (voice_panel.gd)
 
 
 func _ready() -> void:
@@ -181,6 +183,7 @@ func _ready() -> void:
 			gym.training.toggle())
 	ui_layer.layer = 2 # menu sopra l'HUD
 	add_child(ui_layer)
+	_setup_voice()
 	var top := CanvasLayer.new()
 	top.layer = 3
 	add_child(top)
@@ -419,6 +422,7 @@ func _leave(page := "match") -> void:
 	_join_since = -1
 	_last_snapshot = 0
 	socket.close()
+	voice.reset_room() # la voce è della stanza: uscendo si chiude
 	_exit_hall()
 	_hall_room = false
 	_welcome = {}
@@ -640,6 +644,7 @@ func _on_event(name: String, data: Variant) -> void:
 				_try_hint = ""
 			_welcome = data
 			_hall_room = bool(data.get("hall", false))
+			voice.on_welcome(str(data.get("id", "")))
 			prematch.reset()
 			# Da solo contro un bot non c'è nessuno da aspettare: si va dritti al 3, 2, 1 (in sala il Pronto è il cerchio)
 			if str(params.get("bot", "")) != "" and str(params.get("kind", "")) != "create" and not _hall_room:
@@ -661,6 +666,7 @@ func _on_event(name: String, data: Variant) -> void:
 			hall_view.on_snapshot(data)
 			hall_hud.on_snapshot(data)
 			audio.on_hall_snapshot(data)
+			voice.on_hall_snapshot(data) # nomi e, se acceso, volume per distanza
 		"stage": # dalla sala si parte: arena e regole della partita, poi arrivano gli snapshot
 			_exit_hall()
 			_setup_stage(HallFlow.stage_welcome(_welcome, data))
@@ -677,6 +683,7 @@ func _on_event(name: String, data: Variant) -> void:
 				_exit_hall() # un server senza il messaggio stage: si gioca nell'arena che c'è, meglio che restare in sala
 			_last_snapshot = Time.get_ticks_msec()
 			_last_players = data.get("players", [])
+			voice.on_match_snapshot(_last_players)
 			if world.holding() or not _held.is_empty():
 				# Rallentatore (#470): lo snapshot entra subito nel buffer, il resto aspetta che il disegno lo raggiunga
 				world.on_snapshot(data)
@@ -694,6 +701,15 @@ func _on_event(name: String, data: Variant) -> void:
 				_apply_prediction() # al 3, 2, 1 si sta fermi: niente predizione
 				audio.on_snapshot(data)
 				gym.on_snapshot(data)
+		"voiceConfig": # subito dopo il welcome: chi è già in voce (non in palestra, tutorial e sfide)
+			if data is Dictionary and _links_on:
+				voice.on_config(data)
+		"voiceState":
+			if data is Dictionary:
+				voice.on_state(data)
+		"voice":
+			if data is Dictionary:
+				voice.on_signal(data)
 		"roomFull":
 			_show_connecting("Stanza piena!", "Prova con un'altra stanza: Annulla torna alla lobby.")
 		"refused": # il server non ci fa entrare e dice perché (E2): si torna alla lobby con il messaggio
@@ -755,6 +771,7 @@ func _enter_hall() -> void:
 		hall_hud.copy_link_requested.connect(_copy_room_link)
 	hall_hud.my_id = world.my_id
 	hall_hud.room_code = str(params.get("room", ""))
+	_sync_hall_voice()
 	_show_hall_layers(false)
 	audio.set_stage_song(null) # il brano dell'arena musicale non insegue la sala
 	audio.play_music("hall")
@@ -836,6 +853,7 @@ func _process(_delta: float) -> void:
 		p2.poll()
 	_p2_hint.visible = _p2_allowed() and p2 == null and _free_pads().size() > 0
 	_fit_view()
+	_place_voice()
 	if is_instance_valid(_return_note):
 		_return_note.text = HallFlow.return_note(_hall_return_ms() - (Time.get_ticks_msec() - _results_since))
 	if playing and _in_hall:
@@ -857,6 +875,72 @@ func _process(_delta: float) -> void:
 		var view := Rect2(camera.position + camera.offset, _view / (_cam_zoom * punch))
 		world.view_rect = view
 		audio.view_left = view.position.x
+
+
+# Chat vocale: il nodo che decide, il riquadro in alto a destra e i messaggi col server
+func _setup_voice() -> void:
+	voice = VoiceChat.new()
+	add_child(voice)
+	voice.setup(settings)
+	VoiceChat.current = voice
+	voice.signal_out.connect(func(to: String, kind: String, data: String): socket.emit("voice", {"to": to, "kind": kind, "data": data}))
+	voice.state_out.connect(func(st: Dictionary): socket.emit("voiceState", st))
+	voice.notice.connect(func(text: String, warn: bool): UI.toast(ui_layer, text, UI.WARN if warn else UI.OK, 4.0))
+	voice.speaking_changed.connect(func(id: String, on: bool):
+		if is_instance_valid(hall_view) and hall_view.has_method("set_speaking"):
+			hall_view.set_speaking(id, on))
+	voice.muted_changed.connect(func(id: String, muted: bool):
+		if is_instance_valid(hall_view) and hall_view.has_method("set_voice_muted"):
+			hall_view.set_voice_muted(id, muted))
+	voice_panel = VoicePanel.new()
+	voice_panel.game = game
+	voice_panel.portrait_of = hud._portrait
+	ui_layer.add_child(voice_panel)
+	voice_panel.setup(voice)
+	voice_panel.settings_requested.connect(_open_voice_options)
+
+
+# La sala 3D è nuova (si torna dalla partita): chi parla e chi è silenziato si ridice
+func _sync_hall_voice() -> void:
+	if not is_instance_valid(hall_view):
+		return
+	for row in voice.participants():
+		if hall_view.has_method("set_voice_muted"):
+			hall_view.set_voice_muted(row.id, row.muted or row.deafened)
+		if hall_view.has_method("set_speaking"):
+			hall_view.set_speaking(row.id, row.speaking)
+
+
+# Il riquadro della voce: in sala sotto "Si gioca" (in alto a destra), in partita sotto il contatore FPS
+# o il tasto di pausa del telefono. Nascosto fuori dalla stanza e nella palestra
+func _place_voice() -> void:
+	voice.hotkeys = playing and socket.is_joined()
+	var area := ""
+	if playing and _links_on and not _welcome.is_empty():
+		area = "hall" if _in_hall else "match"
+	voice_panel.area = area
+	var top := 12.0
+	if _in_hall and is_instance_valid(hall_hud):
+		top = 150.0
+		var lead: Variant = hall_hud.get("_lead_card") # la scheda "Si gioca" di hall_hud.gd
+		if lead is Control and (lead as Control).visible and (lead as Control).size.y > 0.0:
+			top = (lead as Control).position.y + (lead as Control).size.y + 12.0
+	elif touch.active:
+		top = 64.0 # sotto il tasto di pausa del telefono
+	elif _fps_counter != null and bool(settings.video.get("fps_counter", false)):
+		top = 44.0
+	voice_panel.top = top
+
+
+# Impostazioni della voce dal riquadro: le opzioni aperte sulla scheda Voce
+func _open_voice_options() -> void:
+	if is_instance_valid(pause_menu):
+		return
+	var o: Control = preload("res://scripts/options.gd").new()
+	o.theme = UI.theme()
+	ui_layer.add_child(o)
+	o.setup(settings)
+	o.open_page("voice")
 
 
 # Nei percorsi della Corsa, più larghi dello schermo, la telecamera segue il proprio lottatore:
