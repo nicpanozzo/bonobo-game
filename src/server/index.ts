@@ -10,6 +10,7 @@ import { health } from "./health";
 import { Leaderboard, leaderboardPage } from "./leaderboard";
 
 const PORT = Number(process.env.PORT) || 3000;
+const BOARD_PAGE_ROWS = 50; // righe della classifica a punti nella pagina e nel JSON
 const GAME_PAGE_URL = "https://nicpanozzo.github.io/bonobo-game/godot/"; // come PAGES_URL in host.ts
 
 const app = express();
@@ -37,10 +38,14 @@ app.get("/health", (_req, res) => {
 const leaderboard = new Leaderboard(process.env.LEADERBOARD_FILE || path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../data/classifica.json"));
 void leaderboard.load();
 app.get("/classifica", (_req, res) => {
-  res.type("html").send(leaderboardPage(leaderboard.week()));
+  res.type("html").send(leaderboardPage(leaderboard.week(), leaderboard.board(BOARD_PAGE_ROWS)));
 });
+// I JSON li legge anche il gioco web da github.io, un altro dominio: senza questo il browser li blocca
 app.get("/classifica.json", (_req, res) => {
-  res.json(leaderboard.week());
+  res.set("Access-Control-Allow-Origin", "*").json(leaderboard.week());
+});
+app.get("/classifica/punti.json", (_req, res) => {
+  res.set("Access-Control-Allow-Origin", "*").json({ board: leaderboard.board(BOARD_PAGE_ROWS), updatedAt: Date.now() });
 });
 
 // Stanze e messaggi dei giocatori: src/server/game.ts
