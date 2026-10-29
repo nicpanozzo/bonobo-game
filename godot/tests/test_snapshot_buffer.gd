@@ -142,3 +142,36 @@ func test_ritardo_in_piu() -> void:
 	runner.check(b.reached(1100, now) and not b.reached(1200, now), "gli eventi aspettano che il disegno arrivi al loro istante")
 	b.extra_delay_ms = 0.0
 	runner.check(b.reached(1200, 1220), "senza ritardo un evento appena arrivato parte subito")
+
+
+# Ritardo che si adatta alla rete: con gli snapshot puntuali resta delay_ms, con quelli a scatti sale (fino al tetto)
+# e poi torna giù piano
+func test_ritardo_si_adatta_alla_rete() -> void:
+	var b := SnapshotBuffer.new()
+	b.delay_ms = 50.0
+	b.max_delay_ms = 120.0
+	var t := 1000.0
+	for i in 120: # 2 s puntuali a 60 snapshot al secondo
+		t += 16.0
+		b.push(t, t + 20.0, _players(i))
+	runner.check(b.current_delay() == 50.0, "rete puntuale: resta delay_ms, avuto %s" % b.current_delay())
+	for i in 120: # 2 s con uno snapshot su due in ritardo di 60 ms
+		t += 16.0
+		b.push(t, t + 20.0 + (60.0 if i % 2 == 0 else 0.0), _players(i))
+	var high := b.current_delay()
+	runner.check(high > 70.0 and high <= 120.0, "rete a scatti: il ritardo sale, avuto %s" % high)
+	for i in 600: # 10 s di nuovo puntuali
+		t += 16.0
+		b.push(t, t + 20.0, _players(i))
+	runner.check(b.current_delay() < high, "rete di nuovo puntuale: il ritardo torna giù, avuto %s" % b.current_delay())
+	var s: Variant = b.sample("a", t + 20.0)
+	runner.check(s != null, "si disegna sempre qualcosa")
+
+
+func test_ritardo_fisso_senza_tetto() -> void:
+	var b := SnapshotBuffer.new()
+	var t := 1000.0
+	for i in 60:
+		t += 16.0
+		b.push(t, t + 20.0 + (80.0 if i % 2 == 0 else 0.0), _players(i))
+	runner.check(b.current_delay() == b.delay_ms, "con max_delay_ms a 0 il ritardo resta delay_ms")

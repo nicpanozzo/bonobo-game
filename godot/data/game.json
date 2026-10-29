@@ -300,6 +300,7 @@
   },
   "net": {
     "interpolationDelayMs": 50,
+    "interpolationMaxDelayMs": 120,
     "teleportDistance": 300,
     "bufferSize": 30,
     "predictionSmoothMs": 100,

@@ -318,6 +318,7 @@ func reset() -> void:
 	_game_text = {}
 	buffer = SnapshotBuffer.new()
 	buffer.delay_ms = game.net.interpolationDelayMs
+	buffer.max_delay_ms = float(game.net.get("interpolationMaxDelayMs", 0.0)) # il ritardo si adatta alla rete
 	buffer.teleport_distance = game.net.teleportDistance
 	buffer.size = int(game.net.bufferSize)
 	buffer.size = maxi(buffer.size, int(game.effects.get("warpBufferFrames", 0))) # il rallentatore disegna fino a 2 s indietro (#470)

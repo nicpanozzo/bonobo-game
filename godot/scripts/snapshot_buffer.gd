@@ -12,9 +12,21 @@ var own_extrapolate_ms := 50.0
 # Rallentatore solo grafico (#470 passo 2b): ritardo in più sul disegno. Cresce mentre la scena va piano e torna a zero
 # quando si rimette in pari (time_warp.gd); la partita sul server non cambia. A zero tutto resta com'era
 var extra_delay_ms := 0.0
+# Ritardo che si adatta alla rete: se gli snapshot arrivano più in ritardo del solito (wifi, browser lento) il disegno
+# va un po' più indietro, fino a max_delay_ms, invece di restare senza lo snapshot dopo e fermarsi a scatti.
+# max_delay_ms <= delay_ms lo spegne (il ritardo resta delay_ms)
+var max_delay_ms := 0.0
+const LATE_FORGET := 0.02 # ms di ritardo dimenticati per ms che passa: un picco pesa per qualche secondo
+const ADAPT_UP := 0.1 # di quanto sale il ritardo per ms che passa: il disegno rallenta al massimo del 10%
+const ADAPT_DOWN := 0.02 # e di quanto scende: accelera del 2%, non si nota
+const ADAPT_MARGIN_MS := 5.0 # aria in più oltre al ritardo più alto visto
 
 var _frames: Array = [] # [{ t: ora del server, stage_ms: tempo dell'arena, players: { id: PlayerState } }]
 var _offset := NAN # ora locale - ora del server, stimata
+var _late := 0.0 # ritardo di arrivo più alto visto di recente rispetto al più veloce, ms (scende piano)
+var _gap := 0.0 # ora del server tra due snapshot, ms (media)
+var _adapt := 0.0 # ritardo in più per la rete di adesso, ms
+var _last_received := NAN
 
 
 func push(server_time: float, received_at: float, players: Array, stage_ms := 0.0) -> void:
@@ -24,12 +36,33 @@ func push(server_time: float, received_at: float, players: Array, stage_ms := 0.
 	_offset = sample if is_nan(_offset) else minf(sample, _offset + 0.5)
 	if not _frames.is_empty() and server_time <= _frames[-1].t:
 		return # fuori ordine o doppio
+	_adapt_delay(sample - _offset, received_at, server_time - float(_frames[-1].t) if not _frames.is_empty() else 0.0)
 	var by_id := {}
 	for p in players:
 		by_id[p.id] = p
 	_frames.append({"t": server_time, "stage_ms": stage_ms, "players": by_id})
 	if _frames.size() > size:
 		_frames.pop_front()
+
+
+# Per interpolare tra due snapshot serve già quello dopo: il ritardo deve coprire l'intervallo tra due snapshot
+# più il ritardo di arrivo peggiore. Si sposta piano, così il disegno non salta
+func _adapt_delay(late: float, received_at: float, gap: float) -> void:
+	var dt := 0.0 if is_nan(_last_received) else maxf(0.0, received_at - _last_received)
+	_last_received = received_at
+	if max_delay_ms <= delay_ms:
+		_adapt = 0.0
+		return
+	if gap > 0.0:
+		_gap = gap if _gap <= 0.0 else lerpf(_gap, gap, 0.1)
+	_late = maxf(late, _late - dt * LATE_FORGET)
+	var target := clampf(_late + _gap + ADAPT_MARGIN_MS - delay_ms, 0.0, max_delay_ms - delay_ms)
+	_adapt = move_toward(_adapt, target, dt * (ADAPT_UP if target > _adapt else ADAPT_DOWN))
+
+
+# Il ritardo con cui si disegnano gli altri adesso, ms (senza il rallentatore)
+func current_delay() -> float:
+	return delay_ms + _adapt
 
 
 # Stato da disegnare per un giocatore all'ora locale `now`, con x e y interpolate
@@ -42,7 +75,7 @@ func sample_all(ids: Array, now: float) -> Dictionary:
 	var out := {}
 	if is_nan(_offset) or _frames.is_empty():
 		return out
-	var render_time := now - _offset - delay_ms - extra_delay_ms
+	var render_time := now - _offset - delay_ms - _adapt - extra_delay_ms
 	var i := _frames.size() - 1
 	while i > 0 and _frames[i].t > render_time:
 		i -= 1
@@ -119,7 +152,7 @@ func _latest(id: String) -> Variant:
 func sample_stage_ms(now: float) -> float:
 	if is_nan(_offset) or _frames.is_empty():
 		return 0.0
-	var render_time := now - _offset - delay_ms - extra_delay_ms
+	var render_time := now - _offset - delay_ms - _adapt - extra_delay_ms
 	var i := _frames.size() - 1
 	while i > 0 and _frames[i].t > render_time:
 		i -= 1

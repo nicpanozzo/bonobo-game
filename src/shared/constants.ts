@@ -393,6 +393,7 @@ export const AUDIO = {
 // così il movimento resta fluido anche se i pacchetti arrivano a scatti
 export const NET = {
   interpolationDelayMs: 50, // tre snapshot a 60/s: margine per un pacchetto in ritardo, 30 ms meno di prima
+  interpolationMaxDelayMs: 120, // ms: con la rete o il browser che fanno arrivare gli snapshot a scatti il ritardo sale fin qui, poi torna giù piano
   teleportDistance: 300, // pixel: oltre questo salto (es. respawn) non si interpola
   bufferSize: 30, // snapshot tenuti in memoria (1 secondo)
   predictionSmoothMs: 100, // E17: una correzione della predizione si spalma su circa tanto (costante di tempo)
