@@ -15384,6 +15384,466 @@
         "height": 0
       },
       "skins": {}
+    },
+    "opus": {
+      "id": "opus",
+      "name": "Maestro Opus",
+      "strikeColor": "#ffd77a",
+      "quotes": {
+        "taunt": "Grazie, grazie, troppo gentili!",
+        "ko": "Che stonatura!",
+        "victory": "Bis! Bis!",
+        "supreme": "Gran Finale!"
+      },
+      "sprite": {
+        "dir": "assets/characters/opus",
+        "frameWidth": 380,
+        "frameHeight": 380,
+        "footY": 296,
+        "scale": 0.5,
+        "animations": {
+          "idle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "walk": {
+            "fps": 24,
+            "loop": true,
+            "frames": 10,
+            "src": "walk"
+          },
+          "jump": {
+            "fps": 24,
+            "loop": false,
+            "frames": 7,
+            "src": "jump"
+          },
+          "fall": {
+            "fps": 24,
+            "loop": true,
+            "frames": 12,
+            "src": "fall"
+          },
+          "light": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "activeEnd": 3,
+            "frames": 9,
+            "src": "light"
+          },
+          "heavy": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 7,
+            "activeEnd": 9,
+            "frames": 18,
+            "src": "heavy"
+          },
+          "hit": {
+            "fps": 24,
+            "loop": false,
+            "frames": 8,
+            "src": "hit"
+          },
+          "doubleJump": {
+            "fps": 24,
+            "loop": false,
+            "frames": 10,
+            "src": "doubleJump"
+          },
+          "tumble": {
+            "fps": 24,
+            "loop": true,
+            "frames": 12,
+            "src": "tumble"
+          },
+          "ledge": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "ledge"
+          },
+          "climb": {
+            "fps": 24,
+            "loop": false,
+            "frames": 10,
+            "src": "climb"
+          },
+          "land": {
+            "fps": 24,
+            "loop": false,
+            "frames": 6,
+            "src": "land"
+          },
+          "lightUp": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "activeEnd": 3,
+            "frames": 9,
+            "src": "lightUp"
+          },
+          "lightDown": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "activeEnd": 3,
+            "frames": 9,
+            "src": "lightDown"
+          },
+          "lightAir": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "activeEnd": 4,
+            "frames": 9,
+            "src": "lightAir"
+          },
+          "heavyUp": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 7,
+            "activeEnd": 9,
+            "frames": 18,
+            "src": "heavyUp"
+          },
+          "heavyDown": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 6,
+            "activeEnd": 8,
+            "frames": 18,
+            "src": "heavyDown"
+          },
+          "heavyAir": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 6,
+            "activeEnd": 8,
+            "frames": 17,
+            "src": "heavyAir"
+          },
+          "recovery": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "activeEnd": 4,
+            "frames": 8,
+            "src": "recovery"
+          },
+          "taunt": {
+            "fps": 12,
+            "loop": false,
+            "frames": 24,
+            "src": "taunt"
+          },
+          "shield": {
+            "fps": 12,
+            "loop": true,
+            "frames": 12,
+            "src": "shield"
+          },
+          "grab": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "frames": 15,
+            "src": "grab"
+          },
+          "throw": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 8,
+            "src": "throw"
+          },
+          "grabbed": {
+            "fps": 12,
+            "loop": true,
+            "frames": 12,
+            "src": "grabbed"
+          },
+          "special": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 7,
+            "activeEnd": 9,
+            "frames": 18,
+            "src": "heavy"
+          },
+          "dash": {
+            "fps": 24,
+            "loop": true,
+            "frames": 8,
+            "src": "dash"
+          },
+          "supreme": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 24,
+            "activeEnd": 25,
+            "frames": 36,
+            "src": "supreme"
+          },
+          "specialNeutral": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 5,
+            "frames": 15,
+            "src": "specialNeutral"
+          },
+          "specialSide": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 4,
+            "activeEnd": 8,
+            "frames": 15,
+            "src": "specialSide"
+          },
+          "specialDown": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "activeEnd": 8,
+            "frames": 16,
+            "src": "specialDown"
+          },
+          "dashAttack": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 7,
+            "activeEnd": 9,
+            "frames": 18,
+            "src": "heavy"
+          },
+          "jumpSquat": {
+            "fps": 24,
+            "loop": false,
+            "frames": 6,
+            "src": "land"
+          }
+        }
+      },
+      "stats": {
+        "speed": 1.08,
+        "airSpeed": 1.12,
+        "jump": 1.15,
+        "weight": 0.85,
+        "gravity": 0.88
+      },
+      "hurtbox": {
+        "width": 29,
+        "height": 100
+      },
+      "attacks": {
+        "light": {
+          "damage": 4,
+          "cooldownMs": 250,
+          "range": 67,
+          "height": 30,
+          "boxX": 8,
+          "boxY": -73
+        },
+        "heavy": {
+          "damage": 12,
+          "startupMs": 230,
+          "cooldownMs": 720,
+          "range": 71,
+          "height": 44,
+          "boxX": 0,
+          "boxY": -59
+        },
+        "lightUp": {
+          "range": 54,
+          "height": 48,
+          "boxX": -28,
+          "boxY": -136
+        },
+        "lightDown": {
+          "range": 78,
+          "height": 24,
+          "boxX": 0,
+          "boxY": -24
+        },
+        "lightAir": {
+          "range": 70,
+          "height": 50,
+          "boxX": 2,
+          "boxY": -82
+        },
+        "heavyUp": {
+          "range": 80,
+          "height": 64,
+          "boxX": -36,
+          "boxY": -142
+        },
+        "heavyDown": {
+          "range": 80,
+          "height": 30,
+          "boxX": 0,
+          "boxY": -34
+        },
+        "heavyAir": {
+          "range": 68,
+          "height": 60,
+          "boxX": 0,
+          "boxY": -62
+        },
+        "dashAttack": {
+          "range": 71,
+          "height": 44,
+          "boxX": 0,
+          "boxY": -59
+        }
+      },
+      "specials": {
+        "neutral": {
+          "type": "projectile",
+          "name": "Staccato",
+          "startupMs": 200,
+          "cooldownMs": 480,
+          "speed": 640,
+          "gravity": 0,
+          "spreadDeg": [
+            4,
+            -6,
+            10,
+            -2
+          ],
+          "lifeMs": 950,
+          "maxAlive": 2,
+          "range": 26,
+          "height": 26,
+          "damage": 5,
+          "baseKnockback": 210,
+          "knockbackGrowth": 3.5,
+          "angleDeg": 30,
+          "color": 16041551,
+          "sprite": {
+            "path": "assets/characters/opus/proiettili/nota.png",
+            "frameWidth": 72,
+            "frameHeight": 72,
+            "fps": 12,
+            "scale": 0.5
+          }
+        },
+        "side": {
+          "type": "dash",
+          "name": "Glissando",
+          "startupMs": 110,
+          "durationMs": 280,
+          "speed": 880,
+          "endLagMs": 300,
+          "range": 52,
+          "height": 40,
+          "damage": 9,
+          "baseKnockback": 360,
+          "knockbackGrowth": 8,
+          "angleDeg": 35,
+          "boxY": -48
+        },
+        "down": {
+          "type": "counter",
+          "name": "Fermata",
+          "startupMs": 50,
+          "windowMs": 420,
+          "endLagMs": 460,
+          "minDamage": 8,
+          "multiplier": 1.35,
+          "range": 64,
+          "height": 64,
+          "baseKnockback": 460,
+          "knockbackGrowth": 9,
+          "angleDeg": 40
+        }
+      },
+      "supreme": {
+        "type": "drop",
+        "name": "Gran Finale",
+        "label": "Pianoforte",
+        "leapMs": 325,
+        "leapDx": 60,
+        "leapDy": 110,
+        "pullMs": 195,
+        "warnMs": 650,
+        "fallMs": 390,
+        "flipMs": 455,
+        "flipDx": 130,
+        "flipArc": 50,
+        "impactMs": 100,
+        "recoverMs": 390,
+        "width": 132,
+        "height": 150,
+        "damage": 35,
+        "baseKnockback": 600,
+        "knockbackGrowth": 11,
+        "angleDeg": 70,
+        "runSpeed": 520,
+        "art": {
+          "dir": "assets/characters/opus/supreme",
+          "falling": "pianoforte-cade.png",
+          "landed": "pianoforte-a-terra.png",
+          "runner": "pianoforte-corre.png",
+          "runnerFrames": 4,
+          "runnerFps": 12,
+          "scale": 0.5
+        }
+      },
+      "portrait": "assets/characters/opus/portrait.png",
+      "specialAttacks": {
+        "specialNeutral": {
+          "baseKnockback": 210,
+          "knockbackGrowth": 3.5,
+          "angleDeg": 30,
+          "range": 26,
+          "height": 26,
+          "damage": 5,
+          "startupMs": 200,
+          "activeMs": 0,
+          "cooldownMs": 480
+        },
+        "specialSide": {
+          "baseKnockback": 360,
+          "knockbackGrowth": 8,
+          "angleDeg": 35,
+          "range": 52,
+          "height": 40,
+          "boxY": -48,
+          "damage": 9,
+          "startupMs": 110,
+          "activeMs": 280,
+          "cooldownMs": 690
+        },
+        "specialDown": {
+          "baseKnockback": 460,
+          "knockbackGrowth": 9,
+          "angleDeg": 40,
+          "range": 64,
+          "height": 64,
+          "damage": 8,
+          "startupMs": 50,
+          "activeMs": 420,
+          "cooldownMs": 930
+        }
+      },
+      "supremeAttack": {
+        "damage": 35,
+        "baseKnockback": 600,
+        "knockbackGrowth": 11,
+        "angleDeg": 70,
+        "startupMs": 1170,
+        "activeMs": 100,
+        "cooldownMs": 1660,
+        "range": 132,
+        "height": 150,
+        "boxX": -66,
+        "boxY": -140,
+        "outward": true
+      },
+      "skins": {}
     }
   },
   "crews": {
