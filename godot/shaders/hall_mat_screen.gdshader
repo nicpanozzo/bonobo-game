@@ -31,7 +31,7 @@ void fragment() {
 		float chev = step(0.5, fract(suv.x * 8.0 - abs(suv.y - 0.5) * 3.0 - t * 0.4));
 		img *= 0.7 + 0.3 * chev;
 	}
-	// led tondo con i tre sottopixel
+	// led tondo
 	vec2 f = fract(g) - 0.5;
 	float d = length(f);
 	float dot_mask = 1.0 - smoothstep(0.5 - led_gap, 0.5 - led_gap * 0.4, d);
@@ -40,7 +40,7 @@ void fragment() {
 	// il centro del led più caldo: sembra una lucina e non un pallino piatto
 	float hot = 1.0 + 0.6 * (1.0 - smoothstep(0.0, 0.3, d));
 	float far = clamp(max(fwidth(g.x), fwidth(g.y)) * 1.4 - 0.4, 0.0, 1.0);
-	vec3 led = img * mix(dot_mask * hot * led_var * 1.3, vec3(0.9), far);
+	vec3 led = img * mix(vec3(dot_mask * hot * led_var * 1.3), vec3(0.9), far);
 	// banda di aggiornamento e righe orizzontali appena visibili
 	float roll = exp(-pow((fract(UV.y * 0.6 - t * 0.12) - 0.5) * 9.0, 2.0)) * 0.12;
 	float vign = 1.0 - 0.35 * pow(length(UV - 0.5) * 1.35, 2.5);

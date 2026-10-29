@@ -54,29 +54,36 @@ void fragment() {
 	vec2 mq = q * vein_scale + tile_rand * 13.0;
 	float n = hall_fbm(mq * 1.3, 2.0 + detail);
 	float warp = hall_fbm(mq * 0.6 + 3.1, 2.0);
-	float v = abs(sin((mq.x + mq.y * 0.55) * 2.6 + n * 5.0 + warp * 4.5));
-	float vein_aa = clamp(fwidth(v) * 2.0, 0.0, 1.0);
-	float veins = pow(1.0 - v, mix(26.0, 6.0, vein_aa)) * (1.0 - vein_aa * 0.6);
-	float veins_soft = pow(1.0 - v, 3.0);
-	// seconda rete di vene più sottili, di traverso
-	float v2 = abs(sin((mq.y - mq.x * 0.35) * 4.1 + warp * 7.0 + n * 3.0));
-	float veins2 = pow(1.0 - v2, mix(40.0, 10.0, vein_aa)) * smoothstep(0.35, 0.6, n) * detail;
+	// vene: le creste dove il rumore passa per 0,5, stirate in diagonale come nel marmo tagliato
+	vec2 vq = mat2(vec2(0.8, 0.6), vec2(-0.6, 0.8)) * mq * vec2(0.55, 1.5);
+	float v = abs(hall_fbm(vq + warp * 1.7, 2.0 + detail) - 0.5) * 2.0;
+	float vein_aa = clamp(fwidth(v) * 3.0, 0.0, 1.0);
+	float veins = pow(1.0 - v, mix(28.0, 8.0, vein_aa)) * (1.0 - vein_aa * 0.6);
+	float veins_soft = pow(1.0 - v, 4.0);
+	// seconda rete di vene più sottili, di traverso, solo in alcune zone
+	float veins2 = 0.0;
+	if (detail > 0.0) {
+		float v2 = abs(hall_noise(vq.yx * 2.3 + n * 2.0) - 0.5) * 2.0;
+		veins2 = pow(1.0 - v2, mix(45.0, 12.0, vein_aa)) * smoothstep(0.4, 0.65, n);
+	}
 	vec3 base = mix(base_a, base_b, clamp(checker * 0.6 + (n - 0.5) * 1.1, 0.0, 1.0));
-	base += vein_color * (veins * 0.4 + veins2 * 0.22 + veins_soft * 0.04) * vein_strength;
+	base += vein_color * (veins * 0.34 + veins2 * 0.16 + veins_soft * 0.03) * vein_strength;
 	// macchie più chiare come nel marmo vero
 	base += vein_color * 0.06 * smoothstep(0.55, 0.85, warp) * vein_strength;
 
 	// Terrazzo: scaglie d'oro e madreperla, sparite da lontano per non sfarfallare
-	vec2 fq = q / 0.07;
-	vec2 fi = floor(fq);
-	vec2 ff = fract(fq) - 0.5;
-	vec2 fo = (hall_hash22(fi) - 0.5) * 0.55;
-	float fr = hall_hash21(fi + 3.7);
-	float fd = length(ff - fo);
-	float far_fade = 1.0 - smoothstep(0.25, 0.6, fwidth(fq.x) + fwidth(fq.y));
-	float fleck = (1.0 - smoothstep(0.06, 0.13, fd)) * step(0.86, fr) * far_fade * detail;
-	vec3 fleck_col = mix(vec3(1.0, 0.78, 0.38), vec3(0.85, 0.82, 1.0), step(0.95, fr));
-	base = mix(base, fleck_col * 0.55, fleck * 0.8);
+	if (detail > 0.0) {
+		vec2 fq = q / 0.07;
+		vec2 fi = floor(fq);
+		vec2 ff = fract(fq) - 0.5;
+		vec2 fo = (hall_hash22(fi) - 0.5) * 0.55;
+		float fr = hall_hash21(fi + 3.7);
+		float fd = length(ff - fo);
+		float far_fade = 1.0 - smoothstep(0.25, 0.6, fwidth(fq.x) + fwidth(fq.y));
+		float fleck = (1.0 - smoothstep(0.06, 0.13, fd)) * step(0.86, fr) * far_fade;
+		vec3 fleck_col = mix(vec3(1.0, 0.78, 0.38), vec3(0.85, 0.82, 1.0), step(0.95, fr));
+		base = mix(base, fleck_col * 0.55, fleck * 0.8);
+	}
 
 	// Intarsi: una riga d'oro a ogni lastra, una doppia ogni quattro, rombi agli incroci
 	vec2 gd = abs(fract(q / tile_size + 0.5) - 0.5) * tile_size;

@@ -62,9 +62,10 @@ void fragment() {
 	vec3 V = normalize(CAMERA_POSITION_WORLD - wpos);
 	vec3 n_r = n_w;
 	if (hammered > 0.0) {
-		vec2 hq = lpos.xz * 7.0 / ring_radius;
-		vec2 hd = fract(hq) - 0.5 - (hall_hash22(floor(hq)) - 0.5) * 0.4;
-		n_r = normalize(n_w + (vec3(hd.x, hd.y, -hd.x) * hammered * 0.5));
+		// ammaccature morbide: due rumori continui, niente bordi a mosaico tra un colpo e l'altro
+		vec2 hq = lpos.xz * 14.0 / ring_radius;
+		vec2 hd = vec2(hall_noise(hq), hall_noise(hq + 7.7)) - 0.5;
+		n_r = normalize(n_w + vec3(hd.x, hd.y, -hd.x) * hammered * 0.6);
 	}
 	vec3 R = reflect(-V, n_r);
 	R.y += (streak - 0.5) * 0.2 * brush;

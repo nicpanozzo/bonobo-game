@@ -36,6 +36,16 @@ func _all() -> Dictionary:
 		"backdrop": HallMaterials.backdrop_material(),
 		"sprite": HallMaterials.sprite_rim_material(tex),
 		"sprite_pixel": HallMaterials.sprite_rim_material(tex, Color.RED, true),
+		"court": HallMaterials.court_material(Vector2(10, 9)),
+		"chessboard": HallMaterials.chessboard_material(),
+		"square": HallMaterials.chess_square_material(true),
+		"chess_white": HallMaterials.chess_material("white"),
+		"chess_black": HallMaterials.chess_material("black", 0.2),
+		"basketball": HallMaterials.basketball_material(),
+		"beachball": HallMaterials.beachball_material(),
+		"net": HallMaterials.net_material(),
+		"glass": HallMaterials.glass_material(),
+		"rim": HallMaterials.rim_material(),
 	}
 
 
@@ -52,6 +62,8 @@ func test_ogni_materiale_ha_il_suo_shader() -> void:
 	runner.check(mats.portal.get_shader_parameter("preview_aspect") == 2.0, "anteprima 64x32: aspect 2")
 	runner.check(mats.portal_empty.get_shader_parameter("has_preview") == 0.0, "portale senza anteprima")
 	runner.check(mats.screen_idle.get_shader_parameter("has_tex") == 0.0, "schermo senza immagine: attesa")
+	runner.check(mats.chess_black.get_shader_parameter("black") == 1.0 and mats.chess_white.get_shader_parameter("black") == 0.0, "pezzi bianchi e neri")
+	runner.check(mats.court.get_shader_parameter("court_size") == Vector2(10, 9), "righe del campo sulla sua misura")
 
 
 # Ogni shader animato ha l'uniform motion (meno movimento) e include le funzioni comuni senza errori di percorso
@@ -91,7 +103,10 @@ func test_mesh_pronte_con_l_origine_giusta() -> void:
 	var refl := HallMaterials.floor_reflection(Color.WHITE, 1.0, 4.0)
 	var fa := refl.mesh.get_aabb()
 	runner.check(absf(fa.position.z) < 0.01 and absf(fa.end.z - 4.0) < 0.01, "riflesso: parte dall'origine %s" % fa)
-	for mi in [pad, portal, ray, refl, HallMaterials.halo(), HallMaterials.light_pool(), HallMaterials.blob_shadow(), HallMaterials.ready_ring(), HallMaterials.trampoline(), HallMaterials.backdrop()]:
+	var net := HallMaterials.hoop_net(0.23, 0.45)
+	var na := net.mesh.get_aabb()
+	runner.check(absf(na.end.y) < 0.01 and absf(na.position.y + 0.45) < 0.01, "retina: dal ferro in giù %s" % na)
+	for mi in [net, HallMaterials.court(), HallMaterials.chessboard(), pad, portal, ray, refl, HallMaterials.halo(), HallMaterials.light_pool(), HallMaterials.blob_shadow(), HallMaterials.ready_ring(), HallMaterials.trampoline(), HallMaterials.backdrop()]:
 		runner.check(mi is MeshInstance3D and mi.material_override is ShaderMaterial, "mesh pronta col materiale")
 		mi.free()
 

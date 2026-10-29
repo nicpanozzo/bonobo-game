@@ -18,6 +18,8 @@
 #   add_child(HallMaterials.halo(Color.GOLD, 1.5))          # bagliore finto (bloom) sempre rivolto alla telecamera
 #   add_child(HallMaterials.light_pool(Color.GOLD, 3.0))    # pozza di luce a terra sotto un faro
 #   add_child(HallMaterials.blob_shadow(0.9, 0.35))         # ombra sotto lottatori e statue
+#   add_child(HallMaterials.banner(Color.PURPLE, 1.5, 4.2)) # stendardo con la banana (QuadMesh, non BoxMesh)
+#   add_child(HallMaterials.floor_reflection(col, 2.0, 5.0)) # riflesso di portali/schermi sul pavimento lucido
 #   Sono MeshInstance3D: spostali e ruotali come vuoi. Il materiale è in .material_override.
 #
 #   Lottatori 2D: var f := HallMaterials.fighter(tex, Vector2(336, 368), 286, 0.006, Color.RED)
@@ -25,11 +27,28 @@
 #   Cambiare fotogramma: HallMaterials.set_sprite_frame(f.material_override, frame, 336, 368, columns)
 #   Statuette d'oro sui piedistalli: f.material_override.set_shader_parameter("gild", 1.0)
 #
+#   Lottatori: usa fighter() (QuadMesh), non Sprite3D: lo Sprite3D non passa la sua texture a uno shader suo.
+#
+# SOLO MATERIALI (per mesh tue): floor_material(tile, medallion_r, center), marble(light), wall_material(accent),
+#   trim_gold(box_edges), metal(box_edges), dark_metal(box_edges), gong_material(radius), neon(color, intensity,
+#   chase), hologram(color, fade_top), god_rays(color), crowd_glow(color), light_pool_material(color),
+#   shadow_material(), pad_material(color), portal_material(tex, color, aspect), ready_ring_material(),
+#   trampoline_material(color), screen_material(tex, led_count), velvet(color), banner_material(color, crest,
+#   aspect), cushion_material(color), backdrop_material(), sprite_rim_material(tex, outline, nearest).
+#   Basket e scacchi: court_material(size, lines), chessboard_material(size, border),
+#   chess_square_material(light, size), chess_material("white"|"black", gold_below), basketball_material(),
+#   beachball_material() (su SphereMesh con l'origine al centro), net_material(), glass_material(markings),
+#   rim_material(). Pronti: court(size), chessboard(size), hoop_net(radius, depth).
+#   Attenzione: box_edges = true solo su una BoxMesh (accende gli spigoli); gong_material vuole il raggio del
+#   disco (i cerchi girano attorno all'asse Y della mesh); i velluti vogliono le UV di un quad, non di un box.
+#
 # PARAMETRI DA ANIMARE (con un Tween: tween_property(mat, "shader_parameter/active", 1.0, 0.25)):
 #   pad: active 0..1 (qualcuno sopra)    ready_ring: fill 0..1 (pronti / totale; a 1 pulsa)
 #   portal: hover 0..1 (il velo si apre) trampoline: bounce 0..1 (salto, poi torna a 0)
 #   gong_material: strike 0..1 (colpo)   sprite: flash 0..1, gild 0..1, flip_h 0/1
-#   Tutti: motion (velocità delle animazioni; set_calm() la abbassa per "meno scossa e lampi").
+#   net: swish 0..1 (canestro segnato)    chess: highlight 0..1 (pezzo scelto)
+#   chessboard: select_square Vector2(colonna, traversa), (-1, -1) = nessuna
+#   Tutti: motion (velocità delle animazioni). Quando cambia Access.calm chiama HallMaterials.set_calm(on).
 #
 # PRESTAZIONI: ogni materiale costa solo ALU (niente texture, salvo anteprime e schermi). Sui telefoni
 # lenti metti HallMaterials.lite = true PRIMA di creare i materiali: tolgono le ottave di rumore e le trame
@@ -131,7 +150,7 @@ static func dark_metal(box_edges := false) -> ShaderMaterial:
 # Gong: bronzo martellato coi cerchi del tornio sulle UV; strike 0..1 lo accende quando lo colpiscono
 # radius: raggio del disco in m. I cerchi girano attorno all'asse Y della mesh (un CylinderMesh basso, ruotato).
 static func gong_material(radius := 1.0) -> ShaderMaterial:
-	return _mat("metal", {"tint": Color(0.85, 0.48, 0.18), "roughness": 0.25, "hammered": 0.5, "rings": 1.0, "ring_radius": radius,
+	return _mat("metal", {"tint": Color(0.85, 0.48, 0.18), "roughness": 0.25, "hammered": 0.35, "rings": 1.0, "ring_radius": radius,
 		"brush": 0.0, "reflect_strength": 0.8, "bands": 0.25})
 
 
@@ -212,6 +231,16 @@ static func banner_material(color: Color, crest := true, aspect := 2.6) -> Shade
 	return _mat("velvet", {"color": color, "crest": 1.0 if crest else 0.0, "swallowtail": 1.0, "fold_count": 3.0, "aspect": aspect})
 
 
+# Stendardo pronto: un QuadMesh suddiviso (ondeggia) col velluto e lo stemma, origine al centro, guarda +z.
+# Su una BoxMesh lo stemma e la coda di rondine non tornano: le UV del box sono divise in sei facce.
+static func banner(color: Color, width := 1.5, height := 4.2, crest := true) -> MeshInstance3D:
+	var q := QuadMesh.new()
+	q.size = Vector2(width, height)
+	q.subdivide_width = 6
+	q.subdivide_depth = 12
+	return _inst(q, banner_material(color, crest, height / width))
+
+
 static func cushion_material(color := Color(0.55, 0.06, 0.12)) -> ShaderMaterial:
 	return _mat("velvet", {"color": color, "tufted": 1.0, "trim": 0.0, "sway": 0.0, "folds": 0.0})
 
@@ -235,6 +264,85 @@ static func set_sprite_frame(m: ShaderMaterial, frame: int, frame_w: int, frame_
 	var col := frame % columns
 	var r := row + frame / columns
 	m.set_shader_parameter("frame_rect", Vector4(col * frame_w / w, r * frame_h / h, frame_w / w, frame_h / h))
+
+
+# ---------------------------------------------------------------- basket, palloni e scacchi
+
+# Parquet laccato del mezzo campo. size = misura del PlaneMesh in m: le righe FIBA si scalano sulla
+# larghezza; canestro sul lato a v = 0 (-z del piano), metà campo a v = 1. lines = false: solo parquet.
+static func court_material(size := Vector2(15, 14), lines := true) -> ShaderMaterial:
+	return _mat("court", {"court_size": size, "lines": 1.0 if lines else 0.0})
+
+
+# Scacchiera 8 x 8 disegnata sulle UV di un PlaneMesh quadrato di lato size m (cornice compresa).
+# Per accendere una casella: set_shader_parameter("select_square", Vector2(colonna, traversa)), (-1, -1) spegne.
+static func chessboard_material(size := 8.0, border := 0.06) -> ShaderMaterial:
+	return _mat("chessboard", {"board_size": size, "border": border})
+
+
+# Una casella sola, per chi fa la scacchiera a pezzi: light = avorio, altrimenti ossidiana
+static func chess_square_material(light: bool, size := 1.0) -> ShaderMaterial:
+	return _mat("chessboard", {"squares": 1.0, "border": 0.0, "board_size": size, "first_light": 1.0 if light else 0.0})
+
+
+# Pezzi: "white" = marmo avorio, "black" = ossidiana; vene d'oro in tutti e due, nello spazio del pezzo.
+# gold_below > 0: tutto quello sotto questa quota locale (m) è d'oro, per il basamento.
+# highlight 0..1 accende il bordo del pezzo selezionato.
+static func chess_material(color: String, gold_below := -1.0) -> ShaderMaterial:
+	return _mat("stone", {"black": 1.0 if color == "black" else 0.0, "gold_below": gold_below})
+
+
+static func basketball_material() -> ShaderMaterial:
+	return _mat("ball", {"kind": 0.0})
+
+
+static func beachball_material() -> ShaderMaterial:
+	return _mat("ball", {"kind": 1.0})
+
+
+# Retina: va su hoop_net() (o su un cilindro aperto con UV.y = 0 in alto). swish 0..1 quando entra il tiro.
+static func net_material() -> ShaderMaterial:
+	return _mat("net")
+
+
+# Vetro del tabellone con le righe bianche (markings): su un QuadMesh in proporzione 1,8 x 1,05
+static func glass_material(markings := true) -> ShaderMaterial:
+	return _mat("glass", {"markings": 1.0 if markings else 0.0})
+
+
+# Ferro del canestro: metallo arancione lucido
+static func rim_material() -> ShaderMaterial:
+	return _mat("metal", {"tint": Color(1.0, 0.36, 0.05), "roughness": 0.18, "brush": 0.15, "reflect_strength": 1.1})
+
+
+static func court(size := Vector2(15, 14), lines := true) -> MeshInstance3D:
+	var p := PlaneMesh.new()
+	p.size = size
+	return _inst(p, court_material(size, lines))
+
+
+static func chessboard(size := 8.0, border := 0.06) -> MeshInstance3D:
+	return _inst(_plane(size), chessboard_material(size, border))
+
+
+# Retina: origine all'altezza del ferro, scende di depth m stringendosi
+static func hoop_net(radius := 0.23, depth := 0.45) -> MeshInstance3D:
+	var c := CylinderMesh.new()
+	c.top_radius = radius
+	c.bottom_radius = radius * 0.6
+	c.height = depth
+	c.cap_top = false
+	c.cap_bottom = false
+	c.radial_segments = 24
+	c.rings = 6
+	var arrays := c.get_mesh_arrays()
+	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	for i in verts.size():
+		verts[i].y -= depth / 2.0
+	arrays[Mesh.ARRAY_VERTEX] = verts
+	var mesh := ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	return _inst(mesh, net_material())
 
 
 static func env(glow := true) -> Environment:
@@ -293,7 +401,8 @@ static func ready_ring(diameter := 3.0) -> MeshInstance3D:
 	return _inst(_plane(diameter), ready_ring_material())
 
 
-# Il telo si abbassa con bounce: per questo il piano è suddiviso. Il bordo imbottito è nel 20% esterno.
+# Il telo si abbassa con bounce (fino a 25 cm al centro): per questo il piano è suddiviso, e sotto ci va un
+# anello (TorusMesh), non un cilindro pieno che lo coprirebbe. Il bordo imbottito è nel 20% esterno.
 static func trampoline(diameter := 2.0, color := BANANA) -> MeshInstance3D:
 	var mi := _inst(_plane(diameter, 16), trampoline_material(color))
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
