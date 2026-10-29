@@ -61,3 +61,18 @@ func test_si_accende_a_fine_partita_e_si_spegne_alla_rivincita() -> void:
 	runner.check(not v.is_on() and v._confetti.is_empty(), "alla rivincita si spegne")
 	v.queue_free()
 	h.free()
+
+
+# Punti in classifica (evento ratings): per id, che contano dai vecchi ai nuovi, verdi se si guadagna
+func test_punti_in_classifica() -> void:
+	var view: Control = View.new()
+	view.set_ratings([{"id": "a", "name": "A", "rating": 1018, "delta": 18, "tier": "Babbuino", "rank": 3}, {"id": "b", "name": "B", "rating": 988, "delta": -12, "tier": "Babbuino", "rank": null}, "rotto"])
+	runner.check(view._ratings.size() == 2 and view._ratings.a.delta == 18, "tenuti per id: %s" % [view._ratings.keys()])
+	runner.check(View.rating_shown(view._ratings.a, 0) == 1000, "si parte dai punti di prima: %d" % View.rating_shown(view._ratings.a, 0))
+	runner.check(View.rating_shown(view._ratings.a, View.RATING_COUNT_MS * 2) == 1018, "e si arriva ai nuovi")
+	var mid := View.rating_shown(view._ratings.b, View.RATING_COUNT_MS / 2)
+	runner.check(mid < 1000 and mid > 988, "a metà sta in mezzo: %d" % mid)
+	runner.check(View.delta_color(18) == UI.OK and View.delta_color(-12) == UI.WARN, "verde chi guadagna, rosso chi perde")
+	view.reset()
+	runner.check(view._ratings.is_empty(), "la partita dopo li toglie")
+	view.free()

@@ -41,6 +41,7 @@ func setup(s: Settings, room_link: String, report := {}) -> void:
 	box.add_child(UI.button("Copia link della stanza", func():
 		UI.copy(link)
 		_note.text = preload("res://scripts/lobby.gd").link_copied_text(link)))
+	box.add_child(UI.button("Classifica", _open_leaderboard))
 	box.add_child(UI.button("Segnala un problema", _send_report))
 	box.add_child(UI.button("Esci alla lobby", func():
 		queue_free()
@@ -123,6 +124,19 @@ func _open_options() -> void:
 	add_child(options)
 	options.setup(settings)
 	options.closed.connect(func():
+		_in_options = false
+		_dim.show()
+		_options_button.grab_focus())
+
+
+# La classifica a punti (leaderboard_view.gd), dal server della partita
+func _open_leaderboard() -> void:
+	_in_options = true
+	_dim.hide()
+	var board := preload("res://scripts/leaderboard_view.gd").new()
+	add_child(board)
+	board.setup(str(_report.get("server", "")))
+	board.closed.connect(func():
 		_in_options = false
 		_dim.show()
 		_options_button.grab_focus())

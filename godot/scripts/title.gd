@@ -8,6 +8,7 @@ signal play_requested
 signal bot_requested # Da solo → Contro un bot: la lobby parte da "Contro un bot" (#250)
 signal options_requested
 signal credits_requested
+signal leaderboard_requested # la classifica a punti (leaderboard_view.gd)
 signal tutorial_requested # tutorial a tappe con lo sparring (E15)
 signal training_requested # palestra col manichino e il pannello dell'allenamento (E15)
 signal challenges_requested # sfide con medaglie (E15)
@@ -70,6 +71,7 @@ func setup(game_data: Dictionary, skip_press := false, own_room := "") -> void:
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", UI.GAP_M)
+	row.add_child(_small("Classifica", func(): leaderboard_requested.emit()))
 	row.add_child(_small("Opzioni", func(): options_requested.emit()))
 	row.add_child(_small("Crediti", func(): credits_requested.emit()))
 	if not OS.has_feature("web"): # nel browser si chiude la scheda

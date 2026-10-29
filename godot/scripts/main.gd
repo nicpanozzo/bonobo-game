@@ -20,6 +20,8 @@ const RESULTS_BAR_BOTTOM := 150 # distanza dal fondo dei pulsanti di fine partit
 const RESULTS_BAR_BOTTOM_PHONE := 24 # sul telefono le schede spariscono a fine partita: i pulsanti vanno in fondo, sotto i pollici
 const P2_NAME_CHARS := 13 # caratteri del nome tenuti per il secondo giocatore, che ci aggiunge " 2" (il server ne tiene 16)
 const PAGES_URL := "https://nicpanozzo.github.io/bonobo-game/godot/" # dove sta la versione web (pages.yml)
+const HallFlow := preload("res://scripts/hall_flow.gd") # sala d'attesa 3D: le scelte di main.gd senza scena, per i test
+const HALL_RETURN_MS := 12000 # come HALL.returnAfterMs in constants.ts: si usa se game.json non ha ancora "hall"
 
 var game: Dictionary
 var settings: Settings
@@ -70,6 +72,13 @@ var _view := Vector2(1280, 720) # quanto mondo si vede alla telecamera 1: più l
 var _view_k := 1.0 # pixel dello schermo del gioco per pixel della vista: sul telefono si disegna più piccolo (Phone)
 var _phase_cam := {} # zoom e pavimento della telecamera ora, in transizione verso quelli della fase attiva (#433)
 var _cam_zoom := 1.0 # lo zoom della telecamera come se lo schermo fosse alto 720; camera.zoom ci aggiunge _view_k
+var hall_view: Node3D # la sala d'attesa 3D (hall_view.gd), null fuori dalla sala
+var hall_hud: Control # scritte della sala (hall_hud.gd), nel livello dei menu
+var _in_hall := false # la stanza è nella sala d'attesa: arrivano i messaggi hall, l'arena 2D è spenta
+var _hall_room := false # la stanza ha la sala (welcome.hall): a fine partita si torna lì
+var _welcome := {} # l'ultimo welcome: id e stanza servono anche quando dalla sala arriva l'arena (stage)
+var _results_since := 0 # ms in cui sono comparsi i pulsanti di fine partita: il conto del ritorno in sala
+var _return_note: Label # "Si torna in sala tra 9 s", sotto i pulsanti di fine partita
 
 
 func _ready() -> void:
@@ -129,10 +138,7 @@ func _ready() -> void:
 	prematch.portrait_of = hud._portrait
 	prematch.cue.connect(audio.on_prematch_cue)
 	# In alto a sinistra, sotto la riga della stanza: il link per gli amici a portata di clic (#308)
-	_link_button = UI.small_button("Copia link", func():
-		var link := room_link(params.room)
-		UI.copy(link)
-		UI.toast(ui_layer, LobbyScript.link_copied_text(link), UI.WARN if LobbyScript.link_server(link) == "" and _local_host() else UI.OK, HOST_LINK_TOAST_S))
+	_link_button = UI.small_button("Copia link", _copy_room_link)
 	_link_button.focus_mode = Control.FOCUS_NONE # niente fuoco: spazio e invio restano ai comandi
 	_link_button.visible = false
 	var link_row := HBoxContainer.new()
@@ -207,8 +213,10 @@ func _ready() -> void:
 	socket.connect_failed.connect(_on_connect_failed)
 	socket.event_received.connect(_on_event)
 
-	# Con stanza e nome nell'indirizzo si entra subito, come nel gioco web
+	# Con stanza e nome nell'indirizzo si entra subito, come nel gioco web. Una stanza nuova ha la sala
+	# d'attesa come dalla lobby; --hall=0 (o ?hall=0) entra dritto nella partita di prima
 	if url_params.has("room") and url_params.has("name"):
+		params.hall = HallFlow.truthy(url_params.get("hall", true))
 		_join(params)
 
 
@@ -298,6 +306,12 @@ func _show_title(skip_press := false) -> void:
 		ui_layer.add_child(credits)
 		credits.setup()
 		credits.closed.connect(title.restore_focus))
+	title.leaderboard_requested.connect(func():
+		var board := preload("res://scripts/leaderboard_view.gd").new()
+		board.theme = UI.theme()
+		ui_layer.add_child(board)
+		board.setup(str(params.get("server", _default_server())))
+		board.closed.connect(title.restore_focus))
 
 
 func _show_first_run() -> void:
@@ -327,6 +341,7 @@ func _join(choice: Dictionary) -> void:
 	params.tutorial = choice.get("tutorial", false) # vale solo per questa entrata
 	params.challenge = choice.get("challenge", {})
 	params.kind = choice.get("kind", "") # come si è entrati dalla lobby (#250): vale solo per questa entrata
+	params.hall = HallFlow.truthy(choice.get("hall", false)) # la sala d'attesa: anche lei solo per questa entrata
 	if params.server == "":
 		params.server = _default_server()
 	# La palestra (E15) non diventa l'ultima scelta: la lobby resta com'era
@@ -357,6 +372,13 @@ func _join(choice: Dictionary) -> void:
 			host.tunnel_changed.connect(_on_tunnel_changed)
 
 
+# Il link della stanza negli appunti, con l'avviso: dal pulsante in alto a sinistra e dalla sala d'attesa
+func _copy_room_link() -> void:
+	var link := room_link(params.room)
+	UI.copy(link)
+	UI.toast(ui_layer, LobbyScript.link_copied_text(link), UI.WARN if LobbyScript.link_server(link) == "" and _local_host() else UI.OK, HOST_LINK_TOAST_S)
+
+
 # Il tunnel è arrivato dopo (si giocava già in casa): il link con il tunnel va negli appunti e va detto
 func _on_tunnel_ready(_info: Dictionary) -> void:
 	_update_host_links()
@@ -376,7 +398,7 @@ func _on_tunnel_changed(_info: Dictionary) -> void:
 func _update_host_links() -> void:
 	var host: HostServer = HostServer.instance(get_tree()) if _links_on and _local_host() else null
 	var note: String = host.tunnel_note() if host != null else ""
-	_link_button.visible = _links_on and note == ""
+	_link_button.visible = _links_on and note == "" and not _in_hall # in sala il link sta nelle scritte della sala
 	_lan_link_button.visible = host != null and host.lan_server() != ""
 	_tunnel_note.text = note
 	_tunnel_note.visible = note != ""
@@ -397,6 +419,9 @@ func _leave(page := "match") -> void:
 	_join_since = -1
 	_last_snapshot = 0
 	socket.close()
+	_exit_hall()
+	_hall_room = false
+	_welcome = {}
 	_held = []
 	world.reset()
 	hud.reset()
@@ -422,7 +447,7 @@ func _flash_status(text: String) -> void:
 
 # Predizione (E17): accesa dall'opzione, e solo a velocità normale (l'allenamento rallentato fa meno tick)
 func _apply_prediction() -> void:
-	world.predictor.enabled = bool(settings.video.get("predict", true)) and gym.speed == 1.0 and not (prematch != null and prematch.frozen())
+	world.predictor.enabled = bool(settings.video.get("predict", true)) and gym.speed == 1.0 and not (prematch != null and prematch.frozen()) and not _in_hall
 
 
 func _apply_volumes() -> void:
@@ -431,7 +456,7 @@ func _apply_volumes() -> void:
 	world.effects = settings.video.effects
 	world.outlines = settings.video.post
 	if post_fx != null:
-		post_fx.enabled = settings.video.post
+		post_fx.enabled = settings.video.post and not _in_hall
 	world.attack_boxes = settings.video.hitboxes
 	if _fps_counter != null:
 		_fps_counter.set_enabled(bool(settings.video.get("fps_counter", false)))
@@ -503,6 +528,8 @@ func _on_connected() -> void:
 		data.bot = params.bot
 		if str(params.get("botChar", "")) != "":
 			data.botCharacterId = params.botChar # il lottatore del bot (#383); senza, il server mette Bonobot
+	if HallFlow.wants_hall(params):
+		data.hall = true # la stanza nuova ha la sala d'attesa 3D; conta solo per chi la crea
 	if _token != "" and _token_room == str(params.room):
 		data.token = _token # dopo una caduta di rete: rientra nello stesso lottatore se il posto è tenuto (#107)
 	# Versione e protocollo (E2): un protocollo diverso viene rifiutato con refused, una versione diversa no.
@@ -598,9 +625,7 @@ func _on_connect_failed() -> void:
 func _on_event(name: String, data: Variant) -> void:
 	match name:
 		"welcome":
-			audio.play_music("match")
 			gym.speed = 1.0
-			_apply_prediction()
 			_token = str(data.get("token", ""))
 			_token_room = str(params.room)
 			# Dopo una caduta: o si torna nello stesso lottatore, o il posto era già scaduto
@@ -613,33 +638,43 @@ func _on_event(name: String, data: Variant) -> void:
 			if _try_hint != "":
 				_flash_status(_try_hint)
 				_try_hint = ""
-			world.my_id = data.id
-			hud.my_id = data.id
+			_welcome = data
+			_hall_room = bool(data.get("hall", false))
 			prematch.reset()
-			prematch.my_id = data.id
-			# Da solo contro un bot non c'è nessuno da aspettare: si va dritti al 3, 2, 1
-			if str(params.get("bot", "")) != "" and str(params.get("kind", "")) != "create":
+			# Da solo contro un bot non c'è nessuno da aspettare: si va dritti al 3, 2, 1 (in sala il Pronto è il cerchio)
+			if str(params.get("bot", "")) != "" and str(params.get("kind", "")) != "create" and not _hall_room:
 				socket.emit("ready", {"ready": true})
-			rumble.my_id = data.id
-			# Server vecchi non mandano l'arena intera: allora si cerca tra quelle fisse per id
-			if data.get("stage") is Dictionary:
-				world.set_stage_spec(data.stage)
+			if HallFlow.phase_of(data) == "hall":
+				_enter_hall()
 			else:
-				world.set_stage(data.stageId)
-			hud.on_welcome(data, world.stage)
-			audio.set_stage_music(world.stage.get("music"), str(world.stage.get("id", ""))) # la musica dell'arena, se ne ha una (E12)
-			audio.set_stage_song(world.stage.get("song")) # il brano dell'arena musicale (#423)
-			audio.stage_hazards = world.stage.get("hazards", []) if world.stage.get("hazards") is Array else [] # il ciclista (#229)
-			audio.stage_jets = world.stage.get("jets", []) if world.stage.get("jets") is Array else [] # i getti d'acqua (#253)
-			audio.stage_pads = world.stage.get("pads", []) if world.stage.get("pads") is Array else [] # la Meraviglia (#423)
-			audio.stage_crowd = world.has_crowd() # il pubblico che fotografa i KO (#433)
-			audio.stage_movers = world.stage.get("movers", []) if world.stage.get("movers") is Array else [] # la campana che dondola (#433)
+				_exit_hall()
+				_setup_stage(data)
 			gym.on_welcome(data)
 			_check_server_version(str(data.get("serverVersion", "")))
-			camera.position = Vector2.ZERO
-			_cam_zoom = 1.0
-			_phase_cam = {}
+		"hall": # la sala d'attesa (HallSnapshot): al posto degli snapshot della partita
+			_last_snapshot = Time.get_ticks_msec() # il silenzio della rete si misura anche in sala
+			if not _in_hall:
+				_enter_hall()
+			for e in data.get("events", []):
+				hall_view.on_event(e)
+				audio.on_hall_event(e, world.my_id)
+			hall_view.on_snapshot(data)
+			hall_hud.on_snapshot(data)
+			audio.on_hall_snapshot(data)
+		"stage": # dalla sala si parte: arena e regole della partita, poi arrivano gli snapshot
+			_exit_hall()
+			_setup_stage(HallFlow.stage_welcome(_welcome, data))
+			# Nel cerchio dei pronti ci sono già entrati tutti: nessuno deve ridire Pronto
+			socket.emit("ready", {"ready": true})
+		"ratings": # i punti in classifica di chi ha giocato, a fine partita
+			var changes: Array = data.get("changes", []) if data.get("changes") is Array else []
+			results.set_ratings(changes)
+			var mine := HallFlow.my_rating(changes, world.my_id)
+			if not mine.is_empty():
+				UI.toast(ui_layer, HallFlow.rating_toast(mine), UI.OK if int(mine.get("delta", 0)) >= 0 else UI.WARN, 6.0)
 		"snapshot":
+			if _in_hall:
+				_exit_hall() # un server senza il messaggio stage: si gioca nell'arena che c'è, meglio che restare in sala
 			_last_snapshot = Time.get_ticks_msec()
 			_last_players = data.get("players", [])
 			if world.holding() or not _held.is_empty():
@@ -664,6 +699,90 @@ func _on_event(name: String, data: Variant) -> void:
 		"refused": # il server non ci fa entrare e dice perché (E2): si torna alla lobby con il messaggio
 			_leave()
 			add_child(UI.banner(str(data.get("message", "Il server non ti fa entrare")), "", Callable(), 15.0))
+
+
+# L'arena della partita: dal welcome, o dall'evento stage quando dalla sala si parte
+func _setup_stage(data: Dictionary) -> void:
+	audio.play_music("match")
+	_held = []
+	world.my_id = data.id
+	hud.my_id = data.id
+	prematch.my_id = data.id
+	rumble.my_id = data.id
+	_apply_prediction()
+	# Server vecchi non mandano l'arena intera: allora si cerca tra quelle fisse per id
+	if data.get("stage") is Dictionary:
+		world.set_stage_spec(data.stage)
+	else:
+		world.set_stage(data.stageId)
+	hud.on_welcome(data, world.stage)
+	audio.set_stage_music(world.stage.get("music"), str(world.stage.get("id", ""))) # la musica dell'arena, se ne ha una (E12)
+	audio.set_stage_song(world.stage.get("song")) # il brano dell'arena musicale (#423)
+	audio.stage_hazards = world.stage.get("hazards", []) if world.stage.get("hazards") is Array else [] # il ciclista (#229)
+	audio.stage_jets = world.stage.get("jets", []) if world.stage.get("jets") is Array else [] # i getti d'acqua (#253)
+	audio.stage_pads = world.stage.get("pads", []) if world.stage.get("pads") is Array else [] # la Meraviglia (#423)
+	audio.stage_crowd = world.has_crowd() # il pubblico che fotografa i KO (#433)
+	audio.stage_movers = world.stage.get("movers", []) if world.stage.get("movers") is Array else [] # la campana che dondola (#433)
+	camera.position = Vector2.ZERO
+	_cam_zoom = 1.0
+	_phase_cam = {}
+
+
+# Si entra nella sala d'attesa 3D (welcome con phase "hall", o la stanza ci torna a fine partita):
+# l'arena 2D e tutto quello che le sta sopra si spengono, così niente copre la sala che sta sotto
+func _enter_hall() -> void:
+	if not _in_hall:
+		_in_hall = true
+		_held = []
+		_hide_results()
+		world.reset() # i lottatori della partita di prima non restano nel buffer
+		hud.reset()
+		prematch.reset()
+		results.reset()
+	world.my_id = str(_welcome.get("id", "")) # anche rientrando dopo una caduta di rete, che può dare un id nuovo
+	_apply_prediction()
+	if not is_instance_valid(hall_view):
+		hall_view = preload("res://scripts/hall_view.gd").new()
+		add_child(hall_view)
+		hall_view.setup(game, world.my_id)
+	hall_view.my_id = world.my_id
+	if not is_instance_valid(hall_hud):
+		hall_hud = preload("res://scripts/hall_hud.gd").new()
+		ui_layer.add_child(hall_hud)
+		ui_layer.move_child(hall_hud, 0) # sotto menu, avvisi e pausa
+		hall_hud.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		hall_hud.setup(game)
+		hall_hud.copy_link_requested.connect(_copy_room_link)
+	hall_hud.my_id = world.my_id
+	hall_hud.room_code = str(params.get("room", ""))
+	_show_hall_layers(false)
+	audio.set_stage_song(null) # il brano dell'arena musicale non insegue la sala
+	audio.play_music("hall")
+
+
+# Si esce dalla sala (si parte, o si lascia la stanza): via la sala 3D, tornano arena e HUD
+func _exit_hall() -> void:
+	if is_instance_valid(hall_view):
+		hall_view.queue_free()
+	if is_instance_valid(hall_hud):
+		hall_hud.queue_free()
+	hall_view = null
+	hall_hud = null
+	if not _in_hall:
+		return
+	_in_hall = false
+	_show_hall_layers(true)
+	_apply_prediction()
+
+
+func _show_hall_layers(on: bool) -> void:
+	world.visible = on
+	hud.visible = on
+	prematch.visible = on
+	results.visible = on
+	if post_fx != null:
+		post_fx.enabled = on and settings.video.post
+	_update_host_links()
 
 
 # Gli snapshot trattenuti dal rallentatore (#470) partono in ordine, quando il disegno arriva al loro istante:
@@ -708,7 +827,7 @@ func _process(_delta: float) -> void:
 		hud.rematch_key = "Tocca lo schermo"
 	# A fine partita i pulsanti Rivincita e Cambia lottatore; spariscono quando la rivincita comincia
 	var over: bool = playing and hud._snap.get("winnerId") != null and not gym.hides_results()
-	results.visible = not gym.hides_results() # sfide e tutorial hanno la loro fine
+	results.visible = not gym.hides_results() and not _in_hall # sfide e tutorial hanno la loro fine
 	if over and not is_instance_valid(results_bar) and not is_instance_valid(pause_menu):
 		_show_results()
 	elif not over and is_instance_valid(results_bar):
@@ -717,7 +836,11 @@ func _process(_delta: float) -> void:
 		p2.poll()
 	_p2_hint.visible = _p2_allowed() and p2 == null and _free_pads().size() > 0
 	_fit_view()
-	if playing:
+	if is_instance_valid(_return_note):
+		_return_note.text = HallFlow.return_note(_hall_return_ms() - (Time.get_ticks_msec() - _results_since))
+	if playing and _in_hall:
+		_send_input() # in sala si cammina con gli stessi tasti: li smista il server
+	elif playing:
 		_send_input()
 		# Solo i percorsi della Corsa (con il traguardo) seguono il proprio lottatore; le arene,
 		# anche quelle più larghe dello schermo (#240), inquadrano tutti
@@ -890,10 +1013,23 @@ func _show_results() -> void:
 	var again := UI.button("Rivincita", func(): socket.emit("rematch"), true)
 	again.custom_minimum_size = Vector2(220, 0)
 	results_bar.add_child(again)
-	var change := UI.button("Cambia lottatore", func(): _leave("fighter"))
+	# Nelle stanze con la sala (welcome.hall) il lottatore si cambia sui piedistalli: si torna in sala
+	var change := UI.button("Torna in sala", func(): socket.emit("hall")) if _hall_room else UI.button("Cambia lottatore", func(): _leave("fighter"))
 	change.custom_minimum_size = Vector2(220, 0)
 	results_bar.add_child(change)
 	results_bar.theme = UI.theme()
+	var column := results_bar
+	if _hall_room:
+		# Se nessuno chiede la rivincita il server riporta tutti in sala da solo: lo si dice, col conto
+		column = VBoxContainer.new()
+		column.add_theme_constant_override("separation", UI.GAP_S)
+		column.add_child(results_bar)
+		_results_since = Time.get_ticks_msec()
+		_return_note = UI.note(HallFlow.return_note(_hall_return_ms()))
+		_return_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		column.add_child(_return_note)
+		results_bar = column
+		results_bar.theme = UI.theme()
 	ui_layer.add_child(results_bar)
 	results_bar.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM, Control.PRESET_MODE_MINSIZE)
 	results_bar.position.y -= (RESULTS_BAR_BOTTOM_PHONE if Phone.active else RESULTS_BAR_BOTTOM) * Access.text_scale
@@ -907,6 +1043,12 @@ func _hide_results() -> void:
 	if is_instance_valid(results_bar):
 		results_bar.queue_free()
 	results_bar = null
+	_return_note = null
+
+
+# Dopo quanto il server riporta tutti in sala a fine partita (HALL.returnAfterMs)
+func _hall_return_ms() -> int:
+	return int(game.get("hall", {}).get("returnAfterMs", HALL_RETURN_MS)) if game.get("hall") is Dictionary else HALL_RETURN_MS
 
 
 # Pad in partita: Start apre il menu, il pulsante di rivincita la chiede a partita finita
@@ -958,7 +1100,7 @@ func _open_pause() -> void:
 	pause_menu = preload("res://scripts/pause_menu.gd").new()
 	pause_menu.theme = UI.theme()
 	ui_layer.add_child(pause_menu)
-	pause_menu.setup(settings, room_link(params.room), {"server": params.server, "room": params.room, "stage": world.stage.get("name", ""), "rules": hud.rules, "players": _last_players, "me": world.my_id})
+	pause_menu.setup(settings, room_link(params.room), {"server": params.server, "room": params.room, "stage": "Sala d'attesa" if _in_hall else world.stage.get("name", ""), "rules": hud.rules, "players": _last_players, "me": world.my_id})
 	pause_menu.left.connect(_leave)
 	pause_menu.team_chosen.connect(func(team: int):
 		params.team = team # anche la prossima volta si entra in questa squadra
@@ -981,7 +1123,8 @@ func _send_input() -> void:
 		var sent := input.duplicate()
 		sent.seq = local_tick(Time.get_ticks_msec(), float(game.get("tickRate", 60)))
 		socket.emit("input", sent)
-		world.predictor.record_input(input, sent.seq)
+		if not _in_hall: # in sala niente predizione: si disegna quello che dice il server
+			world.predictor.record_input(input, sent.seq)
 
 
 # La barra della suprema del proprio lottatore è piena: sul telefono compare il tasto Suprema

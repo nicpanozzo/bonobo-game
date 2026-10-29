@@ -26,6 +26,8 @@ const BOTTOM_PHONE := 100.0 # sul telefono le schede spariscono: restano i pulsa
 const ROW_H := 50.0 # una riga della classifica (nome sopra, premi sotto), pixel
 const AWARDS_MAX := 2 # premi al massimo per giocatore
 const GOLD := Color("ffcf4a")
+const RATING_COUNT_MS := 900.0 # i punti in classifica contano fino al nuovo totale in questo tempo, ms
+const DELTA_W := 64.0 # colonna dei punti guadagnati o persi, accanto ai numeri, pixel
 
 # I premi: statistica -> [nome, perché]. Va a chi è da solo in testa, se il valore non è zero
 const TOP_AWARDS := {
@@ -39,6 +41,7 @@ const UNTOUCHED := ["Intoccabile", "mai caduto"]
 const PEACEFUL := ["Pacifista", "zero danni"]
 
 const SpeechBubbles := preload("res://scripts/speech_bubbles.gd")
+const HallFlow := preload("res://scripts/hall_flow.gd")
 
 var game: Dictionary
 var hud: Control # da qui numeri (_stat) e ritratti (portrait_of)
@@ -49,6 +52,8 @@ var _duration_ms := 0.0
 var _confetti: Array = [] # { pos, vel, rot, spin, size, color }
 var _rain := 0.0 # coriandoli da far cadere ancora (frazione)
 var _font: Font = UI.font()
+var _ratings := {} # id -> RatingChange (evento ratings del server): i punti in classifica di questa partita
+var _ratings_at := 0 # ms in cui sono arrivati, per il conto che sale
 
 
 func _ready() -> void:
@@ -60,7 +65,29 @@ func reset() -> void:
 	_snap = {}
 	_duration_ms = 0.0
 	_confetti.clear()
+	_ratings = {}
 	queue_redraw()
+
+
+# I punti in classifica a fine partita (evento ratings): accanto a ogni riga e, per me, sotto la classifica
+func set_ratings(changes: Array) -> void:
+	_ratings = {}
+	for c in changes:
+		if c is Dictionary and c.has("id"):
+			_ratings[str(c.id)] = c
+	_ratings_at = Time.get_ticks_msec()
+	queue_redraw()
+
+
+# Il valore mostrato mentre conta: dai punti di prima ai nuovi, rallentando alla fine
+static func rating_shown(c: Dictionary, since_ms: float) -> int:
+	var to := float(c.get("rating", 0))
+	var from := to - float(c.get("delta", 0))
+	return roundi(lerpf(from, to, ease_out(since_ms / RATING_COUNT_MS)))
+
+
+static func delta_color(delta: int) -> Color:
+	return UI.OK if delta > 0 else (UI.WARN if delta < 0 else Color(UI.TEXT, 0.7))
 
 
 func is_on() -> bool:
@@ -336,6 +363,9 @@ func _draw_table(players: Array, winner: Dictionary, r: Rect2, k: float) -> void
 		cols.push_front(["Bandiere", "flags"])
 	var col_w := 86.0 * Access.text_scale
 	var x_cols := r.end.x - col_w * cols.size()
+	var x_delta := x_cols # i punti in classifica, se sono arrivati, a sinistra dei numeri
+	if not _ratings.is_empty():
+		x_delta = x_cols - DELTA_W * Access.text_scale
 	var head_a := ease_out(k / 300.0)
 	for j in cols.size():
 		_text(cols[j][0], Vector2(x_cols + col_w * (j + 0.5), r.position.y + 14), 14, Color(1, 1, 1, 0.7 * head_a))
@@ -364,8 +394,13 @@ func _draw_table(players: Array, winner: Dictionary, r: Rect2, k: float) -> void
 		var list: Array = prizes.get(p.id, [])
 		var name_y := mid + (-2.0 if not list.is_empty() else 7.0)
 		var fs := Access.px(20)
-		draw_string_outline(_font, Vector2(row.position.x + 96, name_y), label, HORIZONTAL_ALIGNMENT_LEFT, x_cols - row.position.x - 100, fs, 4, Color(0, 0, 0, a))
-		draw_string(_font, Vector2(row.position.x + 96, name_y), label, HORIZONTAL_ALIGNMENT_LEFT, x_cols - row.position.x - 100, fs, Color(1, 1, 1, a))
+		draw_string_outline(_font, Vector2(row.position.x + 96, name_y), label, HORIZONTAL_ALIGNMENT_LEFT, x_delta - row.position.x - 100, fs, 4, Color(0, 0, 0, a))
+		draw_string(_font, Vector2(row.position.x + 96, name_y), label, HORIZONTAL_ALIGNMENT_LEFT, x_delta - row.position.x - 100, fs, Color(1, 1, 1, a))
+		if _ratings.has(p.id):
+			# "+18" verde o "-12" rosso, che entra con un piccolo salto
+			var delta := int(_ratings[p.id].get("delta", 0))
+			var pop := ease_back(float(Time.get_ticks_msec() - _ratings_at) / POP_MS)
+			_text(HallFlow.delta_text(delta), Vector2(x_delta + off + DELTA_W * Access.text_scale / 2, mid + 8), maxi(4, roundi(20 * pop)), Color(delta_color(delta), a * clampf(pop, 0, 1)))
 		# I premi entrano dopo che i numeri hanno finito di contare
 		var px := row.position.x + 96
 		var prize_a := a * clampf((since - ROW_SLIDE_MS - COUNT_MS) / 250.0, 0, 1)
@@ -384,6 +419,17 @@ func _draw_table(players: Array, winner: Dictionary, r: Rect2, k: float) -> void
 		parts.append("Durata %s" % duration_text(_duration_ms))
 	parts.append("%s: rivincita subito" % hud.rematch_key)
 	_text(" · ".join(parts), Vector2(r.position.x + r.size.x / 2, foot), 16, Color(1, 1, 1, 0.8 * foot_a))
+	# I miei punti in classifica: il grado e il totale che conta fino al nuovo
+	var mine: Dictionary = _ratings.get(hud.my_id, {}) if hud != null else {}
+	if not mine.is_empty():
+		var since := float(Time.get_ticks_msec() - _ratings_at)
+		var delta := int(mine.get("delta", 0))
+		var text := "%s · %d punti" % [str(mine.get("tier", "")), rating_shown(mine, since)]
+		var ma := clampf(since / 300.0, 0, 1)
+		_text(text, Vector2(r.position.x + r.size.x / 2 - 30, foot + 30 * Access.text_scale), 20, Color(GOLD, ma))
+		var fs := Access.px(20)
+		var tw := _font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+		_text(HallFlow.delta_text(delta), Vector2(r.position.x + r.size.x / 2 - 30 + tw / 2 + 36, foot + 30 * Access.text_scale), 20, Color(delta_color(delta), ma))
 
 
 # Una targhetta dorata col premio; restituisce quanto è larga

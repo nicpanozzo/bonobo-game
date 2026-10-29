@@ -74,6 +74,7 @@ var _taunted := {} # id giocatore -> ms dell'ultima voce di provocazione
 
 const AnnouncerQueue := preload("res://scripts/announcer_queue.gd")
 var _crowd_at := -1 # ms dell'ultima reazione del pubblico
+var _hall_count := -1 # secondi al via della sala nell'ultimo snapshot, -1 senza conto
 const COUNT_PHRASES := {"3": "three", "2": "two", "1": "one"} # numeri del conto alla rovescia -> frasi dell'annunciatore
 
 
@@ -275,6 +276,62 @@ func on_event(e: Dictionary) -> void:
 
 
 # Pre-partita (prematch_view.gd): presentazione, schede, VS, 3, 2, 1, VIA. La voce c'è solo se il file è registrato
+# Sala d'attesa 3D (HallEvent): salti, spinte, voti e il gong, tutti sintetizzati. Il suono parte dall'evento
+# del server come in partita; l'id serve solo a far suonare più piano quello che fanno gli altri
+func on_hall_event(e: Dictionary, my_id := "") -> void:
+	var cue := hall_cue(e)
+	if cue.is_empty():
+		return
+	var mine: bool = my_id == "" or str(e.get("id", "")) == my_id
+	var volume: float = cue.get("volume", 1.0) * (1.0 if mine or cue.get("loud", false) else 0.6)
+	_play(cue.sound, {"volume": volume, "pitch": cue.get("pitch", 1.0)})
+	if cue.has("then"):
+		_play(cue.then, {"volume": volume})
+
+
+# Il conto alla rovescia della sala: un colpo a ogni secondo che cambia (countdownMs dello snapshot)
+func on_hall_snapshot(snap: Dictionary) -> void:
+	var left: Variant = snap.get("countdownMs")
+	var sec := ceili(float(left) / 1000.0) if left != null else -1
+	if sec > 0 and sec != _hall_count and sec <= 3:
+		_play("hallBeep", {"volume": 0.8, "pitch": 1.0 + (3 - sec) * 0.12})
+	_hall_count = sec
+
+
+# Quale suono per un evento della sala: {sound, volume?, pitch?, then?, loud?}; {} se non suona
+static func hall_cue(e: Dictionary) -> Dictionary:
+	match str(e.get("type", "")):
+		"hop":
+			return {"sound": "jump", "volume": 0.5}
+		"land":
+			return {"sound": "land", "volume": 0.35}
+		"bounce":
+			return {"sound": "boing", "volume": 0.8}
+		"shove":
+			return {"sound": "hallShove", "volume": 0.9 if not (e.get("targets", []) as Array).is_empty() else 0.4}
+		"vote":
+			return {"sound": "hallVote", "pitch": 1.0 if str(e.get("what", "")) == "mode" else 1.19}
+		"pick":
+			return {"sound": "hallPick"}
+		"gong":
+			return {"sound": "gong", "loud": true}
+		"throne":
+			return {"sound": "throneFanfare", "loud": true}
+		"bot":
+			return {"sound": "hallBot" if e.get("added", false) else "hallBotOff", "loud": true}
+		"join":
+			return {"sound": "hallJoin", "volume": 0.7, "loud": true}
+		"leave":
+			return {"sound": "hallLeave", "volume": 0.6, "loud": true}
+		"countdown":
+			return {"sound": "start", "volume": 0.8, "loud": true}
+		"cancel":
+			return {"sound": "hallCancel", "volume": 0.8, "loud": true}
+		"go":
+			return {"sound": "goBlast", "loud": true}
+	return {}
+
+
 func on_prematch_cue(cue: String) -> void:
 	match cue:
 		"intro":
@@ -1107,3 +1164,54 @@ func _build_sounds() -> void:
 		var notes := [523, 659, 784, 1047, 784, 1047]
 		for i in notes.size():
 			s.tone(i * 0.12, "square", notes[i], notes[i], 0.5 if i == 5 else 0.14, 0.14))
+	# Sala d'attesa 3D: la spinta è uno sbuffo con un "uff" che scende
+	_sounds.hallShove = make.call(0.3, func(s):
+		s.noise(0, "bandpass", 1200, 400, 0.18, 0.6)
+		s.tone(0, "triangle", 260, 140, 0.16, 0.3))
+	# Voto su una pedana o in un portale: due note che salgono, come un "sì!"
+	_sounds.hallVote = make.call(0.35, func(s):
+		s.tone(0, "triangle", 587.33, 587.33, 0.1, 0.25)
+		s.tone(0.09, "triangle", 880, 880, 0.22, 0.25))
+	# Lottatore cambiato sul piedistallo: uno schiocco e un luccichio
+	_sounds.hallPick = make.call(0.45, func(s):
+		s.noise(0, "lowpass", 3000, 600, 0.06, 0.5)
+		s.tone(0.03, "square", 660, 1320, 0.12, 0.1)
+		s.noise(0.1, "highpass", 8000, 6000, 0.3, 0.12))
+	# Il gong: un colpo grave e lungo con armonici che battono tra loro e un rombo sotto, il suono più grosso della sala
+	_sounds.gong = make.call(2.8, func(s):
+		s.noise(0, "lowpass", 3000, 200, 0.12, 0.9)
+		s.tone(0, "sine", 98, 96, 2.6, 0.7)
+		s.tone(0, "sine", 101, 99, 2.0, 0.35)
+		s.tone(0, "sine", 196, 192, 1.6, 0.35)
+		s.tone(0, "sine", 263, 258, 1.0, 0.25)
+		s.tone(0, "sine", 49, 47, 2.6, 0.6))
+	# Il trono del campione: una fanfara di trombe quadre in Do maggiore
+	_sounds.throneFanfare = make.call(1.6, func(s):
+		var notes := [[523.25, 0.0, 0.12], [523.25, 0.14, 0.12], [523.25, 0.28, 0.12], [698.46, 0.42, 0.3], [880.0, 0.74, 0.14], [1046.5, 0.9, 0.6]]
+		for n in notes:
+			s.tone(n[1], "square", n[0], n[0], n[2], 0.12)
+			s.tone(n[1], "sawtooth", n[0] / 2.0, n[0] / 2.0, n[2], 0.08)
+		s.noise(0.9, "highpass", 9000, 6000, 0.6, 0.12))
+	# La gabbia dei bot: un "bip bop" da robot che arriva, al contrario quando se ne va
+	_sounds.hallBot = make.call(0.5, func(s):
+		s.tone(0, "square", 440, 440, 0.08, 0.1)
+		s.tone(0.1, "square", 660, 660, 0.08, 0.1)
+		s.tone(0.2, "square", 330, 990, 0.2, 0.1))
+	_sounds.hallBotOff = make.call(0.5, func(s):
+		s.tone(0, "square", 660, 660, 0.08, 0.1)
+		s.tone(0.1, "square", 440, 440, 0.08, 0.1)
+		s.tone(0.2, "square", 990, 220, 0.25, 0.1))
+	# Qualcuno entra o esce dalla sala: un campanello leggero, su o giù
+	_sounds.hallJoin = make.call(0.4, func(s):
+		s.tone(0, "sine", 784, 784, 0.15, 0.25)
+		s.tone(0.12, "sine", 1175, 1175, 0.25, 0.25))
+	_sounds.hallLeave = make.call(0.4, func(s):
+		s.tone(0, "sine", 1175, 1175, 0.15, 0.2)
+		s.tone(0.12, "sine", 784, 784, 0.25, 0.2))
+	# Conto alla rovescia della sala: un bip secco; annullato: due note che scendono
+	_sounds.hallBeep = make.call(0.25, func(s):
+		s.tone(0, "square", 880, 880, 0.12, 0.14)
+		s.tone(0, "sine", 440, 440, 0.18, 0.3))
+	_sounds.hallCancel = make.call(0.5, func(s):
+		s.tone(0, "triangle", 587.33, 587.33, 0.15, 0.25)
+		s.tone(0.15, "triangle", 392, 370, 0.3, 0.25))

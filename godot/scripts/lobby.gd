@@ -4,6 +4,8 @@
 #   3 Lottatore: ritratto, statistiche e mosse, la griglia e il tuo nome, poi "Combatti!"
 # In alto le briciole dicono a che punto sei; Indietro, Esc o B tornano al passo prima (dal primo, al titolo).
 # L'indirizzo del server è in "Avanzate" sotto Entra: il link incollato lo porta già con sé.
+# Sala d'attesa 3D: creando una stanza (anche contro un bot) modalità e arena si votano camminando nella sala,
+# quindi qui restano solo le regole di chi crea (vite, tempo, oggetti) e i passi sono Partita → Lottatore.
 extends Control
 
 signal join_requested(choice: Dictionary)
@@ -41,6 +43,8 @@ const KINDS := [
 	["bot", "Contro un bot", "Da solo, contro il computer"],
 ]
 const PAGE_NAMES := {"match": "Partita", "stage": "Arena", "fighter": "Lottatore"}
+const HALL_MODES := ["ffa", "teams", "flag", "race"] # modalità che si votano in sala (HallMode in types.ts)
+const HALL_NOTE := "Modalità e arena si scelgono nella sala d'attesa, camminando: sali su una pedana o entra in un portale. Qui decidi le regole."
 const PAGE_W := 1010.0 # larghezza del contenuto delle pagine, pixel
 const PAGE_TOP := 16 # spazio sopra il titolo della pagina, pixel
 const BIG_STAGE := Vector2(560, 315) # anteprima grande dell'arena (16:9), pixel
@@ -55,6 +59,7 @@ const CREW_COLORS := {"cuamm": Color("c0392b"), "cologna": Color("d35400"), "sch
 
 var game: Dictionary
 var room_link: Callable # stanza -> link da mandare agli amici
+var hall := true # si entra nella sala d'attesa 3D (main.gd manda hall nel join); false = la lobby di prima, con modalità e arena
 
 var _name := LineEdit.new()
 var _room := LineEdit.new() # Entra: nome della stanza o link incollato
@@ -101,6 +106,8 @@ var _creating: bool: # si crea una stanza nuova (anche contro un bot), invece di
 var _kind_cards := {} # id -> riquadro nella prima pagina
 var _kind_boxes := {} # id -> parte della prima pagina che si vede solo con quel modo
 var _rules_box: Control
+var _mode_heading: Label # "Modalità": con la sala si nasconde insieme alle schede
+var _hall_note: Label # creando con la sala: modalità e arena si votano là
 var _bot_label: Label
 var _pages := {} # match/stage/fighter -> pagina
 var _page := "match"
@@ -334,9 +341,16 @@ func _match_page(params: Dictionary) -> Control:
 	# Regole e bot: contano solo per chi crea la stanza (anche contro un bot)
 	var rules_box := VBoxContainer.new()
 	rules_box.add_theme_constant_override("separation", UI.GAP_S)
-	rules_box.add_child(UI.heading("Modalità"))
+	_mode_heading = UI.heading("Modalità")
+	rules_box.add_child(_mode_heading)
+	_hall_note = UI.note(HALL_NOTE)
+	_hall_note.autowrap_mode = TextServer.AUTOWRAP_WORD
+	rules_box.add_child(_hall_note)
 	var saved: Dictionary = params.get("rules", {}) if params.get("rules") is Dictionary else {}
-	_mode_i = maxi(0, MODES.map(func(m): return m[0]).find(saved.get("mode", "ffa")))
+	var saved_mode := str(saved.get("mode", "ffa"))
+	if hall and not HALL_MODES.has(saved_mode):
+		saved_mode = "ffa" # l'Allenamento in sala non c'è: sta in "Da solo"
+	_mode_i = maxi(0, MODES.map(func(m): return m[0]).find(saved_mode))
 	_mode_cards.add_theme_constant_override("separation", UI.GAP_M)
 	for m in MODES:
 		var id: String = m[0]
@@ -493,7 +507,7 @@ func _sync_rules() -> void:
 	_stocks_box.visible = not race and not training
 	_time_box.visible = not training
 	_stocks_label.text = "PUNTI" if mode == "flag" else "VITE"
-	if training and _bot.selected == 0:
+	if training and _bot.selected == 0 and not _creating_in_hall():
 		_bot.select(1) # in palestra serve qualcuno da colpire: il manichino
 	_course_note.visible = race
 	_bot_label.text = "AVVERSARIO" if _kind == "bot" else "BOT (SE VUOI)"
@@ -503,8 +517,27 @@ func _sync_rules() -> void:
 		var n := i + 1
 		var word := ("punto" if n == 1 else "punti") if mode == "flag" else ("vita" if n == 1 else "vite")
 		_stocks.set_item_text(i, "%d %s" % [n, word])
+	if _creating_in_hall():
+		# La modalità la vota la sala: si vedono tutte le regole che potrebbero servire
+		_ff.visible = true
+		_team_count_box.visible = true
+		_items_box.visible = true
+		_stocks_box.visible = true
+		_time_box.visible = true
+		_course_note.visible = false
+		_stocks_label.text = "VITE"
+		for i in 5:
+			_stocks.set_item_text(i, "%d %s" % [i + 1, "vita" if i == 0 else "vite"])
+	_mode_heading.visible = not _creating_in_hall()
+	_mode_cards.visible = not _creating_in_hall()
+	_hall_note.visible = _creating_in_hall()
 	_update_crumbs()
 	_update_summary()
+
+
+# Si crea una stanza (anche contro un bot) che parte dalla sala d'attesa
+func _creating_in_hall() -> bool:
+	return hall and _creating
 
 
 # --- Pagina 2: Arena ---
@@ -696,7 +729,8 @@ func _sync_team_picker() -> void:
 		return
 	var mode := _mode_id()
 	var joining := _kind == "join"
-	_team_box.visible = joining or mode == "teams" or mode == "flag"
+	# In sala la squadra la fa il voto: chi crea entra in quella automatica
+	_team_box.visible = joining or ((mode == "teams" or mode == "flag") and not _creating_in_hall())
 	var count := 2
 	if joining:
 		count = int(game.get("maxTeams", 2))
@@ -913,7 +947,7 @@ func _page_box(text: String) -> VBoxContainer:
 
 # I passi di questa partita: l'arena si sceglie solo creando una stanza e mai in Corsa (il percorso è generato)
 func flow() -> Array:
-	if _kind == "join" or _mode_id() == "race":
+	if _kind == "join" or _creating_in_hall() or _mode_id() == "race":
 		return ["match", "fighter"]
 	return ["match", "stage", "fighter"]
 
@@ -923,7 +957,7 @@ func _show_page(page: String, focus := true) -> void:
 	for p in _pages:
 		_pages[p].visible = p == page
 	var last: bool = flow().back() == page
-	_next_button.text = ("Entra!" if _kind == "join" else "Combatti!") if last else "Avanti ›"
+	_next_button.text = ("Entra!" if _kind == "join" else ("In sala!" if _creating_in_hall() else "Combatti!")) if last else "Avanti ›"
 	_back_button.text = "‹ Menu" if page == "match" else "‹ Indietro"
 	_update_crumbs()
 	UI.fade_in(_pages[page])
@@ -1040,7 +1074,13 @@ func _update_summary() -> void:
 			parts.append("Entri in " + target if target != "" else "Entri in una stanza")
 		"bot":
 			parts.append(("Contro: " + str(BOTS[_bot.selected][1]) if _bot.selected > 0 else "Contro un bot") + " (%s)" % _bot_char_name())
-	if _kind != "join":
+	if _creating_in_hall():
+		var rules := _stocks.get_item_text(_stocks.selected)
+		if TIMES[_time.selected][0] > 0:
+			rules += ", " + _time.get_item_text(_time.selected)
+		parts.append(rules)
+		parts.append("modalità e arena in sala")
+	elif _kind != "join":
 		var mode := _mode_id()
 		var rules := str(MODES[_mode_i][1])
 		if _team_count_box.visible:
@@ -1181,6 +1221,7 @@ func _choice(bot: String) -> Dictionary:
 		"bot": "manichino" if mode == "training" and bot == "" else bot, # conta solo se la stanza è nuova
 		"botChar": str(_bot_char_ids[_bot_char.selected]) if _bot_char.selected >= 0 and _bot_char.selected < _bot_char_ids.size() else BOT_CHARACTER_ID,
 		"kind": _kind, # per tornare alla stessa scheda dopo la partita
+		"hall": hall, # la stanza nuova parte dalla sala d'attesa 3D (main.gd lo manda nel join)
 		"host": _hosting_new(), # ricordato per la prossima volta; il server vero lo mette _host_and_join
 	}
 
