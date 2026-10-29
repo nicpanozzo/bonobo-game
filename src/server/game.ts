@@ -2,9 +2,9 @@
 // Separato da index.ts (HTTP e avvio) così i test possono accenderlo su un server vero (E4 passo 2).
 
 import type { Server, Socket } from "socket.io";
-import { NET_LIMITS, ROOM_IDLE_MS } from "../shared/constants";
+import { HALL, NET_LIMITS, ROOM_IDLE_MS } from "../shared/constants";
 import type { ClientToServer, ServerToClient } from "../shared/types";
-import { Bots, parseBotKind } from "./bot";
+import { botCharacter, Bots, parseBotKind } from "./bot";
 import { discordHooks } from "./discord";
 import type { Leaderboard } from "./leaderboard";
 import { clientIp, Flood, IpLimits, TokenBucket } from "./rateLimit";
@@ -93,7 +93,7 @@ export function attachGame(io: Server<ClientToServer, ServerToClient>, deps: Gam
         owners.set(playerId, socket);
         socket.join(code);
         r.resumePlayer(playerId);
-        socket.emit("welcome", { id: playerId, room: code, stageId: r.stage.id, rules: r.rules, stage: r.stage, token, resumed: true, serverVersion: SERVER_VERSION });
+        socket.emit("welcome", { id: playerId, room: code, stageId: r.stage.id, rules: r.rules, stage: r.stage, token, resumed: true, serverVersion: SERVER_VERSION, hall: !!r.hall, phase: r.phase });
         console.log(`[${code}] rientra ${playerId}`);
         return;
       }
@@ -107,11 +107,21 @@ export function attachGame(io: Server<ClientToServer, ServerToClient>, deps: Gam
         // Arena, regole e bot li decide chi crea la stanza
         const bots = new Bots();
         const discord = discordHooks(deps.discordWebhookUrl, (id) => bots.isBot(id), deps.leaderboard);
-        r = new Room(code, io, { stageId, rules, prematch: true }, combineHooks(bots.hooks, discord), deps.reconnectHoldMs);
+        const kind = parseBotKind(bot);
+        // Sala d'attesa: i suoi bot entrano in ogni partita nuova; giocano come il bot scelto dal creatore (mai fermi)
+        const hallKind = kind === "facile" || kind === "difficile" ? kind : "semplice";
+        const hallBots = {
+          onMatchBuilt: (_room: Room, match: Room["match"], botIds: string[]) => {
+            bots.reset();
+            for (const id of botIds) bots.adopt(match, id, hallKind);
+          },
+        };
+        const board = () => deps.leaderboard?.board(HALL.boardRows) ?? [];
+        r = new Room(code, io, { stageId, rules, prematch: true, hall: data.hall, board }, combineHooks(bots.hooks, discord, hallBots), deps.reconnectHoldMs);
         rooms.set(code, r);
         r.onClose = () => rooms.delete(code);
-        const kind = parseBotKind(bot);
-        if (kind) bots.add(r.match, kind, botCharacterId);
+        if (kind && r.hall) r.hall.addBot(botCharacter(botCharacterId));
+        else if (kind) bots.add(r.match, kind, botCharacterId);
       }
       if (r.isFull) {
         socket.emit("roomFull");
@@ -120,11 +130,11 @@ export function attachGame(io: Server<ClientToServer, ServerToClient>, deps: Gam
       }
       room = r;
       socket.join(code);
-      const name = sanitizeName(data.name, r.match.players.map((p) => p.name));
+      const name = sanitizeName(data.name, r.playerNames);
       r.addPlayer(playerId, name, characterId, data.skinId, data.team);
       owners.set(playerId, socket);
       const fresh = r.seats.issue(playerId);
-      socket.emit("welcome", { id: playerId, room: code, stageId: r.stage.id, rules: r.rules, stage: r.stage, token: fresh, resumed: false, serverVersion: SERVER_VERSION });
+      socket.emit("welcome", { id: playerId, room: code, stageId: r.stage.id, rules: r.rules, stage: r.stage, token: fresh, resumed: false, serverVersion: SERVER_VERSION, hall: !!r.hall, phase: r.phase });
       console.log(`[${code}] entra ${playerId}`);
     });
 
@@ -135,6 +145,10 @@ export function attachGame(io: Server<ClientToServer, ServerToClient>, deps: Gam
     });
     socket.on("rematch", () => {
       if (room && allow(rematchBucket)) room.requestRematch();
+    });
+    // A partita finita: tutti nella sala d'attesa (solo nelle stanze con la sala)
+    socket.on("hall", () => {
+      if (room && allow(rematchBucket)) room.requestHall();
     });
     // Pre-partita: Pronto (o non più); conta solo finché la partita non è cominciata
     socket.on("ready", (raw: unknown) => {

@@ -5,8 +5,9 @@ import type { AddressInfo } from "node:net";
 import { after, before, test } from "node:test";
 import { Server } from "socket.io";
 import { io as connect, type Socket } from "socket.io-client";
-import { MAX_PLAYERS_PER_ROOM, NET_LIMITS, PROTOCOL_VERSION } from "../shared/constants";
-import type { ClientToServer, ServerToClient } from "../shared/types";
+import { HALL, MAX_PLAYERS_PER_ROOM, NET_LIMITS, PREMATCH, PROTOCOL_VERSION, TICK_RATE } from "../shared/constants";
+import { emptyInput } from "../shared/physics";
+import type { ClientToServer, GameSnapshot, HallSnapshot, HallZone, InputState, ServerToClient } from "../shared/types";
 import { attachGame, type GameDeps } from "./game";
 import type { Room } from "./Room";
 import { SERVER_VERSION } from "./version";
@@ -354,3 +355,124 @@ test("allenamento: percentuale al bot da soli, comandi ignorati con due umani o 
   c.disconnect();
 });
 
+
+// Sala d'attesa 3D: chi crea la stanza con hall: true la apre nella sala; i client di prima giocano come sempre
+
+const TICK = 1000 / TICK_RATE;
+
+// Fa correre la stanza più svelta dell'orologio: i passi partono subito, i messaggi arrivano ai client come sempre
+function fastForward(room: Room, ms: number) {
+  for (let t = 0; t < ms; t += TICK) room.advance(TICK);
+}
+
+const keys = (k: Partial<InputState>): InputState => ({ ...emptyInput(), ...k });
+
+// Cammina tenendo le frecce (prima in orizzontale, poi in profondità) fino a fermarsi dentro la zona
+async function walkOver(c: Client, room: Room, id: string, kind: HallZone["kind"], zoneId?: string) {
+  const hall = room.hall!;
+  const zone = hall.zones.find((z) => z.kind === kind && (zoneId === undefined || z.id === zoneId))!;
+  const me = () => hall.roster().find((p) => p.id === id)!;
+  for (const axis of ["x", "z"] as const) {
+    const target = zone[axis];
+    const dir = Math.sign(target - me()[axis]);
+    if (Math.abs(target - me()[axis]) < 40) continue;
+    c.emit("input", axis === "x" ? keys(dir > 0 ? { right: true } : { left: true }) : keys(dir > 0 ? { down: true } : { up: true }));
+    await sleep(30); // il tasto arriva al server
+    for (let i = 0; i < 600 && dir * (target - me()[axis]) > 40; i++) room.advance(TICK);
+  }
+  c.emit("input", emptyInput());
+  await sleep(30);
+  fastForward(room, 400); // si ferma sopra
+}
+
+test("sala: due client votano camminando, entrano nel cerchio, arriva stage e poi la partita; a fine partita hall li riporta nella sala", { timeout: 15_000 }, async () => {
+  const a = await client();
+  const b = await client();
+  const wa = await joinWith(a, { room: "salone", name: "A", hall: true, protocol: PROTOCOL_VERSION });
+  assert.deepEqual([wa.hall, wa.phase], [true, "hall"]);
+  const firstHall = new Promise<HallSnapshot>((resolve) => b.once("hall", resolve));
+  const wb = await joinWith(b, { room: "salone", name: "B", characterId: "elvedeo" });
+  assert.deepEqual([wb.hall, wb.phase], [true, "hall"]);
+  const snap = await firstHall;
+  assert.equal(snap.players.length, 2);
+  assert.equal(snap.players.find((p) => p.id === wa.id)?.host, true);
+  assert.equal(snap.need, "Mancano A e B nel cerchio");
+  const room = rooms.get("salone")!;
+
+  await walkOver(a, room, wa.id, "mode", "teams");
+  assert.equal(room.hall!.leading().mode, "teams");
+  await walkOver(a, room, wa.id, "ready");
+  await walkOver(b, room, wb.id, "ready");
+  assert.notEqual(room.hall!.countdownMs, null, "tutti nel cerchio: conto alla rovescia");
+
+  const staged = new Promise<Parameters<ServerToClient["stage"]>[0]>((resolve) => b.once("stage", resolve));
+  const afterStage = staged.then(() => new Promise<GameSnapshot>((resolve) => b.once("snapshot", resolve)));
+  fastForward(room, HALL.countdownMs + 100);
+  const stage = await staged;
+  assert.equal(stage.rules.mode, "teams");
+  assert.ok(stage.stage.solids.length > 0);
+  const first = await afterStage;
+  assert.equal(first.players.length, 2);
+  assert.equal(first.players.find((p) => p.id === wb.id)?.characterId, "elvedeo");
+  assert.equal(first.prematch?.phase, "starting");
+
+  // Chi arriva a partita in corso entra nella partita
+  const c = await client();
+  const wc = await joinWith(c, { room: "salone", name: "C" });
+  assert.deepEqual([wc.hall, wc.phase], [true, "match"]);
+  c.disconnect();
+  await until(() => room.match.players.length === 2);
+
+  fastForward(room, PREMATCH.introMs + PREMATCH.countdownMs + 100);
+  room.match.players.find((p) => p.id === wb.id)!.eliminated = true;
+  fastForward(room, 100);
+  assert.ok(room.match.ended);
+  const back = new Promise<HallSnapshot>((resolve) => a.once("hall", resolve));
+  b.emit("hall");
+  const hallAgain = await back;
+  assert.equal(room.phase, "hall");
+  assert.equal(hallAgain.players.length, 2);
+  assert.ok(hallAgain.players.every((p) => p.modeVote === null && !p.ready));
+  a.disconnect();
+  b.disconnect();
+});
+
+test("sala: un client di prima (senza hall) crea una stanza come sempre, senza messaggi hall", LIMIT, async () => {
+  const c = await client();
+  let halls = 0;
+  c.on("hall", () => halls++);
+  const w = await joinWith(c, { room: "senza-sala", name: "Vecchio" });
+  assert.deepEqual([w.hall, w.phase], [false, "match"]);
+  await new Promise((resolve) => c.once("snapshot", resolve));
+  assert.equal(halls, 0);
+  assert.equal(rooms.get("senza-sala")!.hall, null);
+  // In palestra la sala non c'è anche se chiesta
+  const g = await client();
+  const wg = await joinWith(g, { room: "palestra-sala", name: "G", hall: true, rules: { mode: "training" } });
+  assert.deepEqual([wg.hall, wg.phase], [false, "match"]);
+  c.disconnect();
+  g.disconnect();
+});
+
+test("sala: il bot chiesto da chi crea la stanza aspetta nella sala e poi gioca da bot", LIMIT, async () => {
+  const a = await client();
+  const w = await joinWith(a, { room: "sala-bot", name: "A", hall: true, bot: "semplice", botCharacterId: "orsoblu" });
+  const room = rooms.get("sala-bot")!;
+  const bot = room.hall!.roster().find((p) => p.bot)!;
+  assert.equal(bot.characterId, "orsoblu");
+  assert.equal(room.hall!.need(), "Manca A nel cerchio");
+  await walkOver(a, room, w.id, "ready");
+  fastForward(room, HALL.countdownMs + 100);
+  assert.equal(room.phase, "match");
+  assert.ok(room.match.players.some((p) => p.id === bot.id && p.characterId === "orsoblu"));
+  // Il bot gioca: dopo il VIA i suoi tasti li decide bot.ts
+  fastForward(room, PREMATCH.introMs + PREMATCH.countdownMs + 100);
+  const f = room.match.players.find((p) => p.id === bot.id)!;
+  let pressed = false;
+  for (let i = 0; i < TICK_RATE && !pressed; i++) {
+    room.advance(TICK);
+    pressed = f.input.left || f.input.right;
+  }
+  assert.ok(pressed, "il bot cammina verso A");
+  a.disconnect();
+});

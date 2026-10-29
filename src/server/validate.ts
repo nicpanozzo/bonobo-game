@@ -17,6 +17,7 @@ export interface JoinData {
   token?: string; // token del welcome per rientrare dopo una caduta di rete (#107)
   version?: string; // versione del gioco del client (E2)
   protocol?: number; // PROTOCOL_VERSION del client (E2)
+  hall?: boolean; // chi crea la stanza la vuole con la sala d'attesa 3D
 }
 
 const isObject = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
@@ -55,6 +56,7 @@ export function parseJoin(raw: unknown): JoinData | null {
     token: typeof raw.token === "string" && /^[A-Za-z0-9_-]{1,32}$/.test(raw.token) ? raw.token : undefined,
     version: shortString(raw.version),
     protocol: Number.isInteger(raw.protocol) ? (raw.protocol as number) : undefined,
+    hall: raw.hall === true,
   };
 }
 

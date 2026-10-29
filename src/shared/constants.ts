@@ -643,6 +643,13 @@ export const HALL = {
   gongCooldownMs: 1500,
   sendEveryTicks: 2, // uno snapshot della sala ogni 2 passi (30 al secondo)
   boardRows: 10, // righe del tabellone della classifica in sala
+  cageRadius: 90, // cm: le due gabbie dei bot (chiama / manda via)
+  gongRadius: 90, // cm: dentro si suona il gong col tasto leggero
+  throneRadius: 80, // cm: il trono del campione
+  shoveLift: 320, // cm/s verso l'alto di chi viene spinto: vola via invece di scivolare
+  collideHeight: 120, // cm di differenza d'altezza oltre cui due giocatori non si urtano (si salta sopra)
+  boardRefreshMs: 10_000, // ogni quanto il server rilegge la classifica per il tabellone (non a ogni snapshot)
+  voteMaxSpeed: 150, // cm/s: si vota (pedane, portali, piedistalli, gabbie) fermandosi sopra, non passandoci di corsa
 };
 
 // Classifica a punti (src/server/rating.ts): Elo a coppie, ricalcolato dalle partite salvate

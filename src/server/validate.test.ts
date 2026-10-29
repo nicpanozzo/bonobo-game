@@ -13,12 +13,12 @@ describe("parseJoin", () => {
 
   it("tiene i campi giusti e ripulisce il codice stanza", () => {
     const data = parseJoin({ room: "Serata-1!", name: "Luca", characterId: "egiainuso", stageId: "palco", bot: "facile", botCharacterId: "elvedeo" });
-    assert.deepEqual(data, { room: "serata-1", name: "Luca", characterId: "egiainuso", skinId: undefined, team: undefined, stageId: "palco", rules: undefined, bot: "facile", botCharacterId: "elvedeo", token: undefined, version: undefined, protocol: undefined });
+    assert.deepEqual(data, { room: "serata-1", name: "Luca", characterId: "egiainuso", skinId: undefined, team: undefined, stageId: "palco", rules: undefined, bot: "facile", botCharacterId: "elvedeo", token: undefined, version: undefined, protocol: undefined, hall: false });
   });
 
   it("ignora i campi del tipo sbagliato", () => {
     const data = parseJoin({ room: 7, name: { a: 1 }, characterId: 3, stageId: [], rules: "tante", bot: null, botCharacterId: 5 });
-    assert.deepEqual(data, { room: "lobby", name: "", characterId: undefined, skinId: undefined, team: undefined, stageId: undefined, rules: undefined, bot: undefined, botCharacterId: undefined, token: undefined, version: undefined, protocol: undefined });
+    assert.deepEqual(data, { room: "lobby", name: "", characterId: undefined, skinId: undefined, team: undefined, stageId: undefined, rules: undefined, bot: undefined, botCharacterId: undefined, token: undefined, version: undefined, protocol: undefined, hall: false });
   });
 
   it("taglia le stringhe enormi", () => {
@@ -44,6 +44,13 @@ describe("versione del client (E2)", () => {
     assert.equal(data?.protocol, 1);
     for (const protocol of ["1", 1.5, null, NaN, {}]) assert.equal(parseJoin({ room: "a", protocol })?.protocol, undefined);
     assert.equal(parseJoin({ room: "a", version: 2 })?.version, undefined);
+  });
+});
+
+describe("sala d'attesa", () => {
+  it("hall vale solo se è proprio true", () => {
+    assert.equal(parseJoin({ room: "a", hall: true })?.hall, true);
+    for (const hall of [undefined, "true", 1, null, {}]) assert.equal(parseJoin({ room: "a", hall })?.hall, false);
   });
 });
 
