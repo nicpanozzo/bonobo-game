@@ -295,6 +295,90 @@ export interface PrematchState {
   autoStartMs: number | null; // in waiting: ms dopo cui si parte comunque; null se manca qualcuno con cui giocare
 }
 
+// Sala d'attesa 3D: prima di ogni serie di partite ci si ritrova in una sala, ci si muove davvero e si vota
+// camminando (pedane delle modalità, portali delle arene, piedistalli dei lottatori, cerchio dei pronti).
+// Il server è l'arbitro anche qui: calcola dove sono tutti (src/shared/hall.ts) e manda HallSnapshot.
+// Coordinate in centimetri: x verso destra, z verso la telecamera (su = -z), y in alto; (0, 0, 0) al centro del pavimento.
+export type HallMode = "ffa" | "teams" | "flag" | "race";
+export type HallZoneKind = "mode" | "stage" | "fighter" | "ready" | "trampoline" | "botAdd" | "botRemove" | "gong" | "throne";
+export interface HallZone {
+  kind: HallZoneKind;
+  id: string; // mode: id della modalità; stage: id dell'arena o "casuale"; fighter: id del lottatore; gli altri: un nome unico
+  x: number;
+  z: number;
+  r: number; // raggio in cui si è "dentro", cm
+  label: string; // già pronto da mostrare
+}
+export interface HallPlayerState {
+  id: string;
+  name: string;
+  characterId: string;
+  skinId: string;
+  color: number;
+  x: number;
+  y: number; // altezza da terra, cm (salti e trampolini)
+  z: number;
+  facing: 1 | -1;
+  moving: boolean; // cammina: il client mostra la camminata invece della posa ferma
+  onGround: boolean;
+  ready: boolean; // dentro il cerchio dei pronti
+  modeVote: HallMode | null; // l'ultima pedana su cui è salito (il voto resta anche quando scende)
+  stageVote: string | null; // l'ultimo portale in cui è entrato
+  bot: boolean;
+  away: boolean; // caduto dalla rete, posto tenuto
+  host: boolean; // chi ha creato la stanza: a parità di voti vince la sua scelta
+  emote: boolean; // tiene premuta la provocazione: fa l'inchino
+  stunMs: number; // ms in cui vola via dopo una spinta
+  throne: boolean; // seduto sul trono del campione
+}
+export type HallEvent =
+  | { type: "hop"; id: string }
+  | { type: "land"; id: string }
+  | { type: "bounce"; id: string } // trampolino
+  | { type: "shove"; id: string; targets: string[] } // spinta col tasto leggero: chi è vicino vola via, senza danni
+  | { type: "vote"; id: string; what: "mode" | "stage"; value: string }
+  | { type: "pick"; id: string; characterId: string; skinId: string } // ha cambiato lottatore su un piedistallo
+  | { type: "gong"; id: string }
+  | { type: "throne"; id: string } // si è seduto sul trono
+  | { type: "bot"; id: string; added: boolean }
+  | { type: "join"; id: string }
+  | { type: "leave"; id: string }
+  | { type: "countdown"; ms: number } // tutti pronti: parte il conto alla rovescia
+  | { type: "cancel" } // qualcuno è uscito dal cerchio: conto annullato
+  | { type: "go"; mode: HallMode; stageId: string }; // si parte: subito dopo arriva l'evento stage
+// Una riga della classifica a punti (src/server/rating.ts)
+export interface BoardRow {
+  name: string;
+  rating: number; // punti Elo, si parte da RATING.start
+  tier: string; // il grado, da RATING.tiers
+  wins: number;
+  matches: number;
+  streak: number; // vittorie di fila (0 se l'ultima è persa)
+}
+export interface HallSnapshot {
+  t: number;
+  width: number; // pavimento, cm
+  depth: number;
+  zones: HallZone[];
+  players: HallPlayerState[];
+  votes: { mode: Partial<Record<HallMode, number>>; stage: Record<string, number> };
+  leading: { mode: HallMode; stageId: string }; // cosa si giocherebbe se si partisse adesso
+  countdownMs: number | null; // ms al via, null se non tutti sono pronti
+  need: string | null; // perché non si può ancora partire, già pronto da mostrare (null = basta entrare nel cerchio)
+  events: HallEvent[];
+  board: BoardRow[]; // i primi della classifica, per il tabellone della sala
+  rules: MatchRules; // regole di chi ha creato la stanza (vite, tempo, oggetti): la modalità la decide il voto
+}
+// Punti guadagnati o persi a fine partita, per la schermata dei risultati
+export interface RatingChange {
+  id: string;
+  name: string;
+  rating: number;
+  delta: number;
+  tier: string;
+  rank: number | null; // posizione in classifica dopo la partita
+}
+
 // Eventi Socket.IO tipizzati
 export interface ServerToClient {
   // stage è l'arena intera: chi non ha il codice di src/shared (client Godot, #59) non sa rigenerare
@@ -302,10 +386,14 @@ export interface ServerToClient {
   // token: segreto di questo giocatore in questa stanza, mai negli snapshot; si rimanda nel join per rientrare (#107)
   // resumed: true = rientrato nel posto tenuto, con lo stesso lottatore
   // serverVersion: versione del gioco sul server (package.json), il client avvisa se è diversa dalla sua (E2)
-  welcome: (data: { id: string; room: string; stageId: string; rules: MatchRules; stage: StageSpec; token: string; resumed: boolean; serverVersion: string }) => void;
+  // phase: "hall" = la stanza è nella sala d'attesa (arrivano i messaggi hall), "match" = partita; hall: la stanza ha la sala
+  welcome: (data: { id: string; room: string; stageId: string; rules: MatchRules; stage: StageSpec; token: string; resumed: boolean; serverVersion: string; hall?: boolean; phase?: "hall" | "match" }) => void;
   snapshot: (snap: GameSnapshot) => void;
   roomFull: () => void; // resta per i client di prima; i nuovi leggono refused
   refused: (data: Refusal) => void; // unico rifiuto con motivo: protocollo diverso, stanza piena, troppe stanze (E2, E4)
+  hall: (snap: HallSnapshot) => void; // la stanza è nella sala d'attesa: al posto degli snapshot della partita
+  stage: (data: { stageId: string; rules: MatchRules; stage: StageSpec }) => void; // dalla sala si parte: arena e regole della partita
+  ratings: (data: { changes: RatingChange[] }) => void; // a fine partita, i punti in classifica di chi ha giocato
 }
 
 // Perché il server non fa entrare: outdated = protocollo diverso, full = stanza piena, limit = troppe stanze sul server
@@ -321,7 +409,8 @@ export interface ClientToServer {
   // token: quello del welcome, dopo una caduta di rete; se il posto è ancora tenuto si rientra nello stesso lottatore (#107)
   // version e protocol: versione del gioco (package.json) e PROTOCOL_VERSION del client; mancano nei client di prima (E2)
   // team: la squadra che si vorrebbe (#409), da 1 a teamCount; manca o 0 = quella con meno giocatori
-  join: (data: { room: string; name: string; characterId?: string; skinId?: string; team?: number; stageId?: string; rules?: Partial<MatchRules>; bot?: string; botCharacterId?: string; token?: string; version?: string; protocol?: number }) => void;
+  // hall: chi crea la stanza la vuole con la sala d'attesa (i client di prima e palestra, tutorial e sfide non la chiedono)
+  join: (data: { room: string; name: string; characterId?: string; skinId?: string; team?: number; stageId?: string; rules?: Partial<MatchRules>; bot?: string; botCharacterId?: string; token?: string; version?: string; protocol?: number; hall?: boolean }) => void;
   input: (input: InputState) => void;
   rematch: () => void; // a fine partita, ricomincia subito (#17)
   ready: (data: { ready: boolean }) => void; // pre-partita: pronto o non più pronto; quando lo sono tutti si comincia
@@ -330,4 +419,5 @@ export interface ClientToServer {
   // Allenamento (#113): percentuale degli avversari, velocità dell'orologio (TRAINING.speeds), si ricomincia da capo.
   // Il server li accetta solo in una stanza "training" con un solo umano
   training: (data: { percent?: number; speed?: number; reset?: boolean }) => void;
+  hall: () => void; // a partita finita: tutti tornano nella sala d'attesa (solo nelle stanze con la sala)
 }

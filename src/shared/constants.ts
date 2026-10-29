@@ -615,6 +615,52 @@ export const STATION = {
   umbrellaSpeedPxS: 420, // ombrellone: pixel/s dello scudo tenendo destra o sinistra
 };
 
+// Sala d'attesa 3D (src/shared/hall.ts): misure in centimetri, tempi in millisecondi
+export const HALL = {
+  width: 3000, // pavimento della sala, cm (da -1500 a 1500)
+  depth: 1800, // cm (da -900 davanti... a 900 verso la telecamera)
+  walkSpeed: 520, // cm/s camminando
+  accel: 4200, // cm/s² per arrivare alla velocità piena
+  friction: 3600, // cm/s² di frenata senza tasti
+  jumpSpeed: 620, // cm/s verso l'alto al salto
+  gravity: 1900, // cm/s²
+  trampolineSpeed: 1500, // cm/s verso l'alto sul trampolino
+  shoveRadius: 170, // cm: chi è più vicino viene spinto
+  shoveSpeed: 1100, // cm/s della spinta
+  shoveCooldownMs: 600,
+  shoveStunMs: 450, // ms in cui chi è spinto non comanda il proprio movimento
+  playerRadius: 45, // cm: due giocatori non si sovrappongono
+  padRadius: 170, // pedane delle modalità
+  portalRadius: 120, // portali delle arene
+  pedestalRadius: 70, // piedistalli dei lottatori
+  readyRadius: 260, // cerchio dei pronti
+  trampolineRadius: 110,
+  botHoldMs: 1200, // ms fermi sulla gabbia dei bot per chiamarne uno (o mandarlo via)
+  maxBots: 3,
+  countdownMs: 5000, // dal "tutti pronti" al via
+  returnAfterMs: 12_000, // a fine partita, dopo tanto si torna da soli nella sala (se nessuno chiede la rivincita)
+  minFighters: 2, // lottatori (bot compresi) per poter partire
+  gongCooldownMs: 1500,
+  sendEveryTicks: 2, // uno snapshot della sala ogni 2 passi (30 al secondo)
+  boardRows: 10, // righe del tabellone della classifica in sala
+};
+
+// Classifica a punti (src/server/rating.ts): Elo a coppie, ricalcolato dalle partite salvate
+export const RATING = {
+  start: 1000, // punti di chi non ha mai giocato
+  k: 32, // quanto si muovono i punti in una partita a due; con più giocatori si divide per (giocatori - 1)
+  minMatches: 1, // partite per entrare nel tabellone
+  // TODO community: i gradi coi tormentoni del canale. Dal più basso: si ha il grado se si hanno almeno min punti
+  tiers: [
+    { min: 0, name: "Scimmietta" },
+    { min: 950, name: "Babbuino" },
+    { min: 1050, name: "Orango" },
+    { min: 1150, name: "Gorilla" },
+    { min: 1250, name: "Silverback" },
+    { min: 1400, name: "Re della giungla" },
+  ],
+};
+
 // Classifica delle partite (#18, src/server/leaderboard.ts)
 export const LEADERBOARD = {
   windowDays: 7, // la pagina /classifica conta le partite degli ultimi 7 giorni
@@ -883,7 +929,7 @@ export const INPUT = {
 
 // Versione del protocollo (E2, #106): sale solo quando types.ts cambia in modo che client e server
 // vecchi e nuovi non si capiscono più. La versione del gioco invece sta in package.json.
-export const PROTOCOL_VERSION = 1;
+export const PROTOCOL_VERSION = 2; // 2: sala d'attesa, classifica a punti
 
 // Vibrazione del pad (E6 passo 5): la sente chi colpisce, chi è colpito e chi va KO.
 // Forze da 0 a 1; il client Godot le moltiplica per l'opzione "Vibrazione" (debole o forte)

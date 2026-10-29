@@ -119,6 +119,11 @@ export class Room {
     this.speed = speed;
   }
 
+  // Un messaggio a tutti quelli nella stanza (es. i punti della classifica a fine partita, da discord.ts)
+  broadcast<E extends keyof ServerToClient>(event: E, ...args: Parameters<ServerToClient[E]>) {
+    this.io.to(this.code).emit(event, ...args);
+  }
+
   requestRematch() {
     this.match.requestRematch();
   }

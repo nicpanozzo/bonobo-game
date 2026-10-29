@@ -4,6 +4,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { LEADERBOARD } from "../shared/constants";
+import type { BoardRow } from "../shared/types";
 
 export interface MatchRecord {
   t: number; // quando è finita, ms dal 1970
@@ -64,6 +65,11 @@ export class Leaderboard {
         await writeFile(this.file, snapshot);
       })
       .catch((err) => console.warn(`[classifica] salvataggio non riuscito: ${(err as Error).message}`));
+  }
+
+  // Il tabellone della classifica a punti (rating.ts): i primi limit. Segnaposto finché rating.ts non c'è
+  board(_limit: number): BoardRow[] {
+    return [];
   }
 
   week(now = Date.now()): Standing[] {
