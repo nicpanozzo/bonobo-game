@@ -33,8 +33,6 @@ func test_punti_e_ritorno_in_sala() -> void:
 	var changes := [{"id": "a", "rating": 1163, "delta": 18, "tier": "Gorilla", "rank": 2}, {"id": "b", "rating": 990, "delta": -12, "tier": "Babbuino", "rank": null}]
 	runner.check(HallFlow.my_rating(changes, "b").delta == -12, "i miei punti")
 	runner.check(HallFlow.my_rating(changes, "").is_empty() and HallFlow.my_rating(changes, "z").is_empty(), "nessuno se non ci sono")
-	runner.check(HallFlow.rating_toast(changes[0]) == "Gorilla · 1163 punti (+18) · 2° in classifica", HallFlow.rating_toast(changes[0]))
-	runner.check(HallFlow.rating_toast(changes[1]) == "Babbuino · 990 punti (-12)", HallFlow.rating_toast(changes[1]))
 	runner.check(HallFlow.delta_text(0) == "±0", "pari")
 	runner.check(HallFlow.return_note(9200).ends_with("tra 10 s"), HallFlow.return_note(9200))
 	runner.check(HallFlow.return_note(-5) == "Si torna in sala...", "a tempo scaduto")

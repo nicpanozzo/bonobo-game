@@ -57,14 +57,6 @@ static func delta_text(delta: int) -> String:
 	return "±0"
 
 
-# L'avviso per me a fine partita: "Gorilla · 1163 punti (+18)"
-static func rating_toast(c: Dictionary) -> String:
-	var text := "%s · %d punti (%s)" % [str(c.get("tier", "")), int(c.get("rating", 0)), delta_text(int(c.get("delta", 0)))]
-	if c.get("rank") != null and int(c.get("rank", 0)) > 0:
-		text += " · %d° in classifica" % int(c.rank)
-	return text
-
-
 # Sotto i pulsanti di fine partita, nelle stanze con la sala: quanto manca al ritorno automatico
 static func return_note(ms_left: int) -> String:
 	var s := ceili(maxi(ms_left, 0) / 1000.0)

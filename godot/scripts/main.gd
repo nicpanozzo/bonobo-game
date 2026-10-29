@@ -674,10 +674,7 @@ func _on_event(name: String, data: Variant) -> void:
 			socket.emit("ready", {"ready": true})
 		"ratings": # i punti in classifica di chi ha giocato, a fine partita
 			var changes: Array = data.get("changes", []) if data.get("changes") is Array else []
-			results.set_ratings(changes)
-			var mine := HallFlow.my_rating(changes, world.my_id)
-			if not mine.is_empty():
-				UI.toast(ui_layer, HallFlow.rating_toast(mine), UI.OK if int(mine.get("delta", 0)) >= 0 else UI.WARN, 6.0)
+			results.set_ratings(changes) # grado, punti e posto li mostra la fine partita, sotto la tabella
 		"snapshot":
 			if _in_hall:
 				_exit_hall() # un server senza il messaggio stage: si gioca nell'arena che c'è, meglio che restare in sala

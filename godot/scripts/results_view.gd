@@ -475,6 +475,8 @@ func _draw_table(players: Array, winner: Dictionary, r: Rect2, k: float) -> void
 		var ma := clampf(since / 300.0, 0, 1)
 		var tier := str(mine.get("tier", ""))
 		var total := "%d punti" % rating_shown(mine, since)
+		if mine.get("rank") != null and int(mine.rank) > 0: # il posto in classifica
+			total += " · %d°" % int(mine.rank)
 		var ts := Access.px(22)
 		var total_w := _numbers.get_string_size(total, HORIZONTAL_ALIGNMENT_LEFT, -1, ts).x
 		var tier_w := Board.tier_width(tier, 15) if tier != "" else 0.0
