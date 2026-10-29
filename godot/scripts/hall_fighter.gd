@@ -11,6 +11,7 @@ const PX := 0.022 # metri per pixel di mondo del gioco: un lottatore da 96 px è
 const CM := 0.01 # metri per centimetro dello snapshot
 const TAG_PX := 0.005 # metri per pixel delle scritte sopra la testa
 const BONOBO_RED := Color("e74c3c") # il rettangolo rosso del gioco
+const VOICE_GREEN := Color("3ba55d") # il verde di chi parla, come su Discord
 
 # PNG già caricati, per tutta la sala: ogni striscia si legge dal disco una volta sola (sul web il caricamento blocca)
 static var _textures := {}
@@ -47,6 +48,21 @@ var _squash := 0.0 # atterraggio e rimbalzo: si schiaccia e torna
 var _t := 0.0
 var _host := false
 var _ready_shown := false
+# Scritte sopra la testa: hall_view.gd le alza quando si accavallano con quelle vicine e spegne quelle lontane
+var tag_lift := 0.0 # metri in più sopra la testa, deciso da hall_view (si arriva piano)
+var tag_lift_target := 0.0
+var tag_fade := 1.0 # 0..1
+var _tag_row: Node3D # gira con la telecamera: l'icona della voce a sinistra del nome, i canestri a destra
+var _tag_w := 0.0 # metri, larghezza del nome
+var _baskets := 0
+var _badge: Node3D
+var _badge_count: Label3D
+# Chat vocale (come Discord): anello verde sotto i piedi mentre parla, icona sopra la testa
+var speaking := false
+var voice_muted := false
+var _voice_ring: MeshInstance3D
+var _voice_icon: Sprite3D
+var _voice_glow := 0.0
 
 
 func setup(game_data: Dictionary, p: Dictionary, mine: bool) -> void:
@@ -82,6 +98,9 @@ func setup(game_data: Dictionary, p: Dictionary, mine: bool) -> void:
 	_tag.render_priority = 10
 	_tag.outline_render_priority = 9
 	add_child(_tag)
+	_tag_row = Node3D.new()
+	_tag_row.name = "TagRow"
+	add_child(_tag_row)
 	_crown = crown(0.3)
 	_crown.visible = false
 	add_child(_crown)
@@ -114,6 +133,24 @@ func setup(game_data: Dictionary, p: Dictionary, mine: bool) -> void:
 		_stars.add_child(s)
 	_stars.visible = false
 	add_child(_stars)
+	_voice_ring = MeshInstance3D.new()
+	var vt := TorusMesh.new()
+	vt.inner_radius = 0.6
+	vt.outer_radius = 0.7
+	vt.rings = 32
+	vt.ring_segments = 4
+	_voice_ring.mesh = vt
+	_voice_ring.material_override = HallMaterials.neon(VOICE_GREEN, 3.0)
+	_voice_ring.position.y = 0.03
+	_voice_ring.visible = false
+	add_child(_voice_ring)
+	_voice_icon = Sprite3D.new()
+	_voice_icon.pixel_size = 0.0042
+	_voice_icon.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	_voice_icon.no_depth_test = true
+	_voice_icon.render_priority = 11
+	_voice_icon.visible = false
+	_tag_row.add_child(_voice_icon)
 	apply(p, 0.0, 0.0, 0.0)
 
 
@@ -181,10 +218,19 @@ func apply(p: Dictionary, now: float, cam_yaw: float, delta: float) -> void:
 		tag += " · BOT"
 	if p.get("away", false):
 		tag += " · via"
-	_tag.text = tag
-	_tag.modulate = Color(1, 1, 1, alpha)
-	var top := _pivot.position.y + head + 0.35
+	if tag != _tag.text:
+		_tag.text = tag
+		_tag_w = _tag.font.get_string_size(tag, HORIZONTAL_ALIGNMENT_LEFT, -1, _tag.font_size).x * _tag.pixel_size if _tag.font != null else 0.0
+	tag_lift = move_toward(tag_lift, tag_lift_target, delta * 6.0)
+	var shown := alpha * tag_fade
+	_tag.modulate = Color(1, 1, 1, shown)
+	_tag.outline_modulate.a = shown
+	var top := _pivot.position.y + head + 0.35 + tag_lift
 	_tag.position.y = top
+	_tag_row.position.y = top
+	_tag_row.rotation.y = cam_yaw
+	_update_badge(int(p.get("baskets", 0)), shown)
+	_update_voice(delta, shown)
 	_host = bool(p.get("host", false))
 	_crown.visible = _host and not p.get("throne", false)
 	_crown.position.y = top + 0.32
@@ -196,6 +242,7 @@ func apply(p: Dictionary, now: float, cam_yaw: float, delta: float) -> void:
 	_check.visible = is_ready
 	_check.scale = _check.scale.lerp(Vector3.ONE, minf(1.0, delta * 10.0))
 	_check.position = Vector3(0.0, top + (0.62 if _crown.visible else 0.36), 0.0)
+	_check.modulate.a = tag_fade
 	if _marker != null:
 		_marker.position.y = top + (0.95 if _crown.visible or is_ready else 0.6) + sin(_t * 5.0) * 0.08
 		_marker.rotation.y = _t * 2.0
@@ -217,6 +264,89 @@ func apply(p: Dictionary, now: float, cam_yaw: float, delta: float) -> void:
 # Quanto è alto da terra il punto sopra la testa, metri: per gli effetti
 func top_height() -> float:
 	return _pivot.position.y + head
+
+
+# Il nome sopra la testa: dove sta senza spostamenti (metri da terra) e quanto è largo, per non accavallarli
+func tag_base_height() -> float:
+	return _pivot.position.y + head + 0.35
+
+
+func tag_size() -> Vector2:
+	var extra := (0.5 if _badge != null and _badge.visible else 0.0) + (0.4 if _voice_icon.visible else 0.0)
+	return Vector2(_tag_w + extra, _tag.font_size * _tag.pixel_size * 1.1)
+
+
+# Metri occupati sopra il nome (spunta dei pronti, corona): contano anche loro per non accavallarsi
+func tag_above() -> float:
+	if _check.visible:
+		return 0.62 if _crown.visible else 0.4
+	return 0.3 if _crown.visible else 0.0
+
+
+func tag_node() -> Label3D:
+	return _tag
+
+
+func set_voice(is_speaking: bool, is_muted: bool) -> void:
+	speaking = is_speaking and not is_muted
+	voice_muted = is_muted
+
+
+# Canestri fatti in questa sala: il pallino arancione col numero a destra del nome
+func _update_badge(n: int, shown: float) -> void:
+	if n > 0 and _badge == null:
+		_badge = Node3D.new()
+		var ball := Sprite3D.new()
+		ball.texture = HallIcons.basketball()
+		ball.pixel_size = 0.0048
+		ball.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		ball.no_depth_test = true
+		ball.render_priority = 11
+		_badge.add_child(ball)
+		_badge_count = Label3D.new()
+		_badge_count.font = UI.font(UI.WEIGHT_BOLD)
+		_badge_count.font_size = 40
+		_badge_count.pixel_size = TAG_PX
+		_badge_count.outline_size = 12
+		_badge_count.outline_modulate = Color(0.25, 0.08, 0.0)
+		_badge_count.modulate = Color("ffb04a")
+		_badge_count.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		_badge_count.no_depth_test = true
+		_badge_count.render_priority = 12
+		_badge_count.outline_render_priority = 11
+		_badge_count.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		_badge_count.position.x = 0.17
+		_badge.add_child(_badge_count)
+		_tag_row.add_child(_badge)
+	if _badge == null:
+		return
+	_badge.visible = n > 0
+	if n != _baskets and n > _baskets:
+		_badge.scale = Vector3.ONE * 1.8 # un canestro in più: il pallino salta
+	_baskets = n
+	_badge_count.text = str(n)
+	_badge.position.x = _tag_w / 2.0 + 0.16
+	_badge.scale = _badge.scale.lerp(Vector3.ONE, 0.12)
+	_badge_count.modulate.a = shown
+	_badge_count.outline_modulate.a = shown
+	(_badge.get_child(0) as Sprite3D).modulate.a = shown
+
+
+func _update_voice(delta: float, shown: float) -> void:
+	_voice_glow = move_toward(_voice_glow, 1.0 if speaking else 0.0, delta * (8.0 if speaking else 3.0))
+	_voice_ring.visible = _voice_glow > 0.01
+	if _voice_ring.visible:
+		var pulse := 1.0 + sin(_t * 9.0) * 0.06 * _voice_glow
+		_voice_ring.scale = Vector3(pulse, 0.15, pulse)
+		_param(_voice_ring.material_override, "intensity", 3.2 * _voice_glow)
+	_voice_icon.visible = speaking or voice_muted
+	if _voice_icon.visible:
+		var tex := HallIcons.muted() if voice_muted else HallIcons.speaker()
+		if _voice_icon.texture != tex:
+			_voice_icon.texture = tex
+		_voice_icon.position.x = -(_tag_w / 2.0 + 0.16)
+		_voice_icon.scale = Vector3.ONE * (1.0 + (sin(_t * 10.0) * 0.08 if speaking else 0.0))
+		_voice_icon.modulate.a = shown
 
 
 func pop() -> void:

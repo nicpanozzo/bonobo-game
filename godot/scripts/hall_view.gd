@@ -10,6 +10,7 @@ const HallFighter := preload("res://scripts/hall_fighter.gd")
 const HallZone := preload("res://scripts/hall_zone.gd")
 const HallFx := preload("res://scripts/hall_fx.gd")
 const HallIcons := preload("res://scripts/hall_icons.gd")
+const HallProps := preload("res://scripts/hall_props.gd")
 const StagePreview := preload("res://scripts/stage_preview.gd")
 
 const CM := 0.01 # metri per centimetro dello snapshot
@@ -26,12 +27,17 @@ const WALL_HEIGHT := 9.0
 const SPOTS := 5 # fari che girano sopra la sala
 const FRAME_RADIUS := 10.0 # metri: la telecamera si allarga per tenere dentro chi è entro questa distanza da me
 const MODE_NAMES := {"ffa": "Tutti contro tutti", "teams": "A squadre", "flag": "Ruba bandiera", "race": "Corsa"}
+const BASKET_NEWS_MS := 9000.0 # quanto resta sul maxischermo l'ultimo canestro
+const TAG_FADE_NEAR := 9.0 # metri dal mio lottatore: i nomi sono pieni fin qui
+const TAG_FADE_FAR := 16.0 # e mezzi spenti da qui in là
+const NEAR_SHAKE := 6.0 # metri: un pezzo degli scacchi che cade più vicino di così fa tremare la telecamera
 
 var my_id := ""
 var game: Dictionary
 var buffer := HallBuffer.new()
 var camera: Camera3D
 var fx: Node3D
+var props: HallProps # palloni e pezzi degli scacchi (hall_props.gd)
 
 var _snap: Dictionary = {}
 var _width := DEFAULT_WIDTH * CM # metri
@@ -77,6 +83,9 @@ var _board_rows: VBoxContainer
 var _board_sig := "-"
 var _flash_text := "" # una scritta sul maxischermo per un attimo (GONG!, ANNULLATO)
 var _flash_until := 0.0
+var _last_basket := {} # {name, points, color, at}: l'ultimo canestro, per il maxischermo
+var _voice := {} # id -> [parla, microfono spento]: lo dice main.gd con set_speaking e set_voice_muted
+var _declutter_frame := 0
 
 
 func setup(game_data: Dictionary, my_id_: String) -> void:
@@ -92,6 +101,9 @@ func setup(game_data: Dictionary, my_id_: String) -> void:
 	_zones_root.name = "Zones"
 	add_child(_zones_root)
 	add_child(_fighters_root)
+	props = HallProps.new()
+	props.name = "Props"
+	add_child(props)
 	fx = HallFx.new()
 	fx.name = "Fx"
 	fx.calm = Access.calm
@@ -121,6 +133,7 @@ func on_snapshot(snap: Dictionary) -> void:
 	var players: Array = snap.get("players", []) if snap.get("players") is Array else []
 	buffer.own_id = my_id
 	buffer.push(float(snap.get("t", 0.0)), float(Time.get_ticks_msec()), players)
+	props.on_snapshot(snap, float(Time.get_ticks_msec()))
 	var size := Vector2(float(snap.get("width", DEFAULT_WIDTH)), float(snap.get("depth", DEFAULT_DEPTH))) * CM
 	if size != _room_size:
 		_width = size.x
@@ -275,6 +288,210 @@ func _fx_for(e: Dictionary) -> void:
 				fx.confetti(_focus + Vector3(side * 6.0, 0.3, 3.0), Vector3(-side * 0.45, 1.0, -0.3))
 			_countdown_left = -1.0
 			fx.sparkles(_focus + Vector3(0, 0.5, 0), UI.ACCENT, 60, 1.6)
+		"pickup":
+			var bp := props.position_of(str(e.get("prop", "")))
+			fx.sparkles(bp, Color("ffb04a"), 14, 0.45)
+			fx.ring_wave(Vector3(bp.x, 0.0, bp.z), Color("ff9a3c"), 1.0, 0.3)
+			if _fighters.has(id):
+				_fighters[id].pop()
+		"throw":
+			var ball: Node3D = props.node_of(str(e.get("prop", "")))
+			if ball != null:
+				fx.trail(ball, _color_of(id).lightened(0.35), 0.8, Vector3.ZERO)
+			fx.dust(at, 6, Color(1, 1, 1, 0.4), 0.8)
+		"basket":
+			_fx_basket(e)
+		"propHit":
+			_fx_prop_hit(e)
+		"topple":
+			var pp := props.position_of(str(e.get("prop", "")))
+			var ground := Vector3(pp.x, 0.0, pp.z)
+			fx.ring_wave(ground, Color(0.95, 0.88, 1.0, 0.8), 1.8, 0.5)
+			fx.dust(ground, 18, Color(0.9, 0.85, 1.0, 0.55), 1.3)
+			var me_at := _feet(my_id)
+			if Vector2(me_at.x - pp.x, me_at.z - pp.z).length() < NEAR_SHAKE:
+				_kick(0.2)
+			var cb: Node3D = _nearest_zone("chessboard", pp)
+			if cb != null:
+				cb.bang()
+		"checkmate":
+			_fx_checkmate(e)
+
+
+# Canestro! La retina sobbalza, coriandoli e scintille dal ferro, la scritta grande nel colore di chi ha tirato
+func _fx_basket(e: Dictionary) -> void:
+	var id := str(e.get("id", ""))
+	var points := int(e.get("points", 2))
+	var swish := bool(e.get("swish", false))
+	var col := _color_of(id)
+	var bp := props.position_of(str(e.get("prop", "")))
+	var hoop: Node3D = _nearest_zone("hoop", bp)
+	var rim: Vector3 = hoop.rim_point() if hoop != null else bp
+	if hoop != null:
+		hoop.score(_name_of(id), points, col, swish)
+	var big := points >= 3
+	fx.ring_wave(rim, Color("ff9a3c"), 1.6 if not big else 2.6, 0.5)
+	fx.ring_wave(Vector3(rim.x, 0.0, rim.z), col, 3.5 if not big else 6.0, 0.9)
+	fx.sparkles(rim, Color("ffcf4a"), 40 if not big else 70, 1.0)
+	fx.sparkles(rim + Vector3(0, -0.4, 0), col.lightened(0.3), 24, 0.8)
+	for side in [-1.0, 1.0]:
+		fx.confetti(rim + Vector3(side * 0.9, -0.2, 0.0), Vector3(side * 0.35, 1.0, 0.2), 60 if not big else 110)
+	if big:
+		fx.beam(Vector3(rim.x, 0.0, rim.z), UI.ACCENT, 10.0, 1.4, 1.2)
+	var text := "CANESTRO! +%d" % points
+	fx.floater(rim + Vector3(0, 0.5, 0), text, col.lightened(0.2), 96 if big else 80, 1.1, 1.9)
+	if swish:
+		fx.floater(rim + Vector3(0, -0.2, 0), "SWISH!", Color.WHITE, 64, 0.9, 1.6)
+	_kick(0.3 if big else 0.18)
+	_pulse = maxf(_pulse, 0.7 if big else 0.4)
+	_last_basket = {"name": _name_of(id), "points": points, "swish": swish, "at": float(Time.get_ticks_msec())}
+	_flash("TRIPLA!" if big else ("SWISH!" if swish else "CANESTRO!"))
+
+
+# Un oggetto che sbatte: polvere a terra, scintille sul ferro, un lampo sul tabellone. Il punto si capisce da
+# dove sta l'oggetto; lo si scrive nell'evento (surface) così audio.gd, che lo riceve subito dopo, sceglie il suono
+func _fx_prop_hit(e: Dictionary) -> void:
+	var prop := str(e.get("prop", ""))
+	var p := props.position_of(prop)
+	var st: Dictionary = props.state_of(prop)
+	var r := float(st.get("r", 12.0)) * CM
+	var speed := float(e.get("speed", 0.0))
+	var surface := hit_surface(p, r, str(st.get("kind", "")))
+	e["surface"] = surface
+	e["kind"] = str(st.get("kind", ""))
+	var k := clampf(speed / 1200.0, 0.2, 1.0)
+	match surface:
+		"rim":
+			var hoop: Node3D = _nearest_zone("hoop", p)
+			fx.sparkles(hoop.rim_point() if hoop != null else p, Color("ffb04a"), int(12 + 20 * k), 0.5 + k * 0.4)
+		"board":
+			var hoop: Node3D = _nearest_zone("hoop", p)
+			if hoop != null:
+				fx.ring_wave(hoop.board_point(), Color(0.7, 0.9, 1.0, 0.7), 1.0, 0.3, true, 0.03)
+		"floor":
+			fx.dust(Vector3(p.x, 0.0, p.z), int(4 + 10 * k), Color(0.95, 0.85, 0.7, 0.45), 0.4 + k * 0.6)
+		_:
+			fx.sparkles(p, Color(1, 1, 1, 0.8), int(4 + 8 * k), 0.3)
+
+
+# Dove ha sbattuto un oggetto (metri, raggio r): "rim" (ferro), "board" (tabellone), "floor", "wall", "piece"
+func hit_surface(p: Vector3, r: float, kind: String) -> String:
+	if kind == "chess":
+		return "piece"
+	for key in _zones:
+		var z: Node3D = _zones[key]
+		if z.kind != "hoop":
+			continue
+		var rim: Vector3 = z.rim_point()
+		var flat := Vector2(p.x - rim.x, p.z - rim.z).length()
+		if absf(p.y - rim.y) < r + 0.25 and absf(flat - z.rim_radius) < r + 0.2:
+			return "rim"
+		var board: Vector3 = z.board_point()
+		if p.distance_to(board) < r + 1.4 and p.y > rim.y - 0.4:
+			return "board"
+	if p.y < r + 0.25:
+		return "floor"
+	return "wall"
+
+
+# Scacco matto: il re caduto brilla, coriandoli d'oro sulla scacchiera, la scritta sul maxischermo
+func _fx_checkmate(e: Dictionary) -> void:
+	var color := str(e.get("color", ""))
+	var king := props.king_of(color)
+	var kp := props.position_of(king) if king != "" else _feet(str(e.get("id", "")))
+	if king != "":
+		props.glow(king)
+	var board: Node3D = _nearest_zone("chessboard", kp)
+	var center: Vector3 = board.position if board != null else kp
+	if board != null:
+		board.bang()
+	fx.beam(Vector3(kp.x, 0.0, kp.z), HallMaterials.GOLD, 10.0, 1.8, 1.0)
+	fx.sparkles(kp + Vector3(0, 0.6, 0), HallMaterials.GOLD, 70, 1.3)
+	for side in [-1.0, 1.0]:
+		fx.confetti(center + Vector3(side * 3.0, 0.2, 0.0), Vector3(-side * 0.4, 1.0, 0.0), 120)
+	fx.floater(center + Vector3(0, 3.2, 0), "SCACCO MATTO!", HallMaterials.GOLD, 110, 1.6, 2.4)
+	var who := _name_of(str(e.get("id", "")))
+	if who != "":
+		fx.floater(center + Vector3(0, 2.4, 0), who, _color_of(str(e.get("id", ""))).lightened(0.3), 64, 1.4, 2.4)
+	_pulse = 1.0
+	_kick(0.35)
+	_flash("SCACCO MATTO!")
+	_flash_until += 1600.0
+
+
+# Chat vocale: chi parla ha l'anello verde sotto i piedi e l'altoparlante sopra la testa (lo chiama main.gd)
+func set_speaking(id: String, speaking: bool) -> void:
+	var v: Array = _voice.get(id, [false, false])
+	_voice[id] = [speaking, v[1]]
+
+
+func set_voice_muted(id: String, muted: bool) -> void:
+	var v: Array = _voice.get(id, [false, false])
+	_voice[id] = [v[0], muted]
+
+
+func voice_of(id: String) -> Array:
+	return _voice.get(id, [false, false])
+
+
+# I nomi sopra le teste non si accavallano: dal più vicino alla telecamera, chi tocca un nome già messo sale
+# di quanto serve; quelli lontani da me si spengono un po'. Le scritte delle zone sotto un nome si fanno da parte
+func _declutter() -> void:
+	if camera == null:
+		return
+	# proiezione fatta a mano: va anche fuori dall'albero (test) e costa poco
+	var view := get_viewport().get_visible_rect().size if is_inside_tree() else Vector2(1280, 720)
+	var inv := camera.transform.affine_inverse() # la sala sta nell'origine: transform = global_transform
+	var focal := view.y / (2.0 * tan(deg_to_rad(camera.fov) / 2.0))
+	var project := func(p: Vector3) -> Vector3:
+		var c := inv * p
+		if c.z > -0.2:
+			return Vector3(0, 0, -1) # dietro la telecamera
+		return Vector3(c.x / -c.z * focal + view.x / 2.0, -c.y / -c.z * focal + view.y / 2.0, -c.z)
+	var cam := camera.position
+	var order: Array = _fighters.keys()
+	order.sort_custom(func(a, b):
+		if a == my_id or b == my_id:
+			return a == my_id
+		return _fighters[a].position.distance_squared_to(cam) < _fighters[b].position.distance_squared_to(cam))
+	var placed: Array[Rect2] = []
+	var me_at := _feet(my_id)
+	for id in order:
+		var f: Node3D = _fighters[id]
+		var s: Vector3 = project.call(f.position + Vector3(0.0, f.tag_base_height(), 0.0))
+		if s.z < 0.0:
+			continue
+		var ppm := focal / s.z # pixel per metro a quella distanza
+		var sz: Vector2 = f.tag_size() * ppm
+		var above: float = f.tag_above() * ppm
+		var rect := Rect2(Vector2(s.x, s.y) - sz / 2.0 - Vector2(0.0, above), sz + Vector2(0.0, above))
+		var lift := 0.0
+		for i in 6:
+			var hit := false
+			for o in placed:
+				if rect.intersects(o):
+					var up := rect.end.y - o.position.y + 2.0 # px per passarci sopra
+					rect.position.y -= up
+					lift += up / ppm
+					hit = true
+			if not hit:
+				break
+		placed.append(rect)
+		f.tag_lift_target = minf(lift, 1.6)
+		var dist := Vector2(f.position.x - me_at.x, f.position.z - me_at.z).length()
+		f.tag_fade = 1.0 if id == my_id else clampf(1.0 - (dist - TAG_FADE_NEAR) / (TAG_FADE_FAR - TAG_FADE_NEAR) * 0.55, 0.45, 1.0)
+	for key in _zones:
+		var z: Node3D = _zones[key]
+		z.dim_labels(func(l: Label3D) -> bool:
+			var s: Vector3 = project.call(z.transform * l.position)
+			if s.z < 0.0 or l.font == null:
+				return false
+			var sz := Vector2(l.font.get_string_size(l.text, HORIZONTAL_ALIGNMENT_LEFT, -1, l.font_size).x, l.font_size) * l.pixel_size * focal / s.z
+			var r := Rect2(Vector2(s.x, s.y) - sz / 2.0, sz)
+			for o in placed:
+				if r.intersects(o):
+					return true
+			return false)
 
 
 func _kick(amount: float) -> void:
@@ -352,11 +569,17 @@ func _process(delta: float) -> void:
 			_fighters_root.add_child(f)
 			f.setup(game, p, id == my_id)
 			_fighters[id] = f
+		var v: Array = _voice.get(id, [false, false])
+		_fighters[id].set_voice(v[0], v[1])
 		_fighters[id].apply(p, _now, yaw, delta)
+	props.update(_now, _fighters, delta)
+	_declutter_frame += 1
+	if _declutter_frame % 3 == 0:
+		_declutter()
 	_tick_zones(delta)
 	_tick_lights(delta)
 	_place_camera(delta)
-	if _countdown_left >= 0.0 or _now < _flash_until or _screen_sig == "":
+	if _countdown_left >= 0.0 or _now < _flash_until or _screen_sig == "" or not _last_basket.is_empty():
 		_update_screen()
 
 
@@ -485,6 +708,12 @@ func _place_camera(delta: float) -> void:
 	target.x = clampf(target.x, -half.x + 2.0, half.x - 2.0)
 	target.z = clampf(target.z, -half.y + 3.0, half.y - 1.0)
 	var zoom := 1.0 + far * 0.35
+	# nella zona giochi la telecamera si avvicina e guarda anche il canestro o la scacchiera
+	var interest := _interest_at(target)
+	if interest.w > 0.0:
+		var spot := Vector3(interest.x, 0.0, interest.z)
+		target = target.lerp(spot, 0.4 if interest.y > 0.0 else 0.45)
+		zoom *= lerpf(1.0, 0.78, interest.w)
 	var k := 1.0 - exp(-delta * CAM_FOLLOW) if _cam_ready else 1.0
 	_cam_ready = true
 	_focus = _focus.lerp(target, k)
@@ -507,6 +736,24 @@ func _place_camera(delta: float) -> void:
 		pos += Vector3(randf_range(-s, s), randf_range(-s, s), 0.0)
 		look += Vector3(randf_range(-s, s), randf_range(-s, s), 0.0) * 0.5
 	camera.transform = Transform3D(Basis.looking_at(look - pos, Vector3.UP), pos) # anche fuori dall'albero
+
+
+# Se il punto seguito è in campo o alla scacchiera: Vector4(x, 1 = canestro / 0 = scacchiera, z, peso 0..1)
+func _interest_at(at: Vector3) -> Vector4:
+	for key in _zones:
+		var z: Node3D = _zones[key]
+		if z.kind != "court" and z.kind != "chessboard":
+			continue
+		var d: float = maxf(absf(at.x - z.position.x), absf(at.z - z.position.z)) - z.radius
+		if d > 2.5:
+			continue
+		var w := clampf(1.0 - d / 2.5, 0.0, 1.0)
+		if z.kind == "court":
+			var hoop: Node3D = _nearest_zone("hoop", z.position)
+			var aim: Vector3 = (z.position + hoop.position) * 0.5 if hoop != null else z.position
+			return Vector4(aim.x, 1.0, aim.z, w)
+		return Vector4(z.position.x, 0.0, z.position.z, w)
+	return Vector4.ZERO
 
 
 # --- zone ---
@@ -536,6 +783,16 @@ func _sync_zones(zones: Array) -> void:
 		if kind == "ready":
 			_medallion = Vector2(node.position.x, node.position.z)
 			HallZone.set_param(_floor_mat, "medallion_center", _medallion)
+	# il canestro guarda il suo campo, il campo mette il fondo sotto il canestro
+	for key in _zones:
+		var z: Node3D = _zones[key]
+		if z.kind == "hoop":
+			var court: Node3D = _nearest_zone("court", z.position)
+			if court != null:
+				z.link(court.position)
+				court.link(z.position)
+			else:
+				z.link(z.position + Vector3(0, 0, 1)) # senza campo guarda la telecamera
 
 
 # L'anteprima di un'arena per il suo portale: l'immagine disegnata se c'è, se no la piantina in un SubViewport
@@ -663,7 +920,8 @@ func _build_back_wall(w: float, d: float) -> void:
 	while x < w / 2.0 + 5.0:
 		for side in [-1.0, 1.0]:
 			_column(Vector3(side * x, 0, z + 0.6))
-			var b := _bar(Vector3(1.5, 4.6, 0.06), Vector3(side * (x + 1.6), 5.2, z + 0.32), HallMaterials.banner_material(banner_colors[i % 2]))
+			var b := HallMaterials.banner(banner_colors[i % 2], 1.5, 4.6)
+			b.position = Vector3(side * (x + 1.6), 5.2, z + 0.36)
 			_room.add_child(b)
 			_room.add_child(_bar(Vector3(1.6, 0.12, 0.1), Vector3(side * (x + 1.6), 7.5, z + 0.35), HallMaterials.trim_gold()))
 			_room.add_child(_bar(Vector3(1.5, 0.08, 0.08), Vector3(side * (x + 1.6), 2.9, z + 0.36), HallMaterials.trim_gold()))
@@ -721,7 +979,10 @@ func _build_side_walls(w: float, d: float) -> void:
 			# sulla parete di sinistra stendardi lunghi
 			for k in 3:
 				var bz := 3.0 + k * 5.0
-				hinge.add_child(_bar(Vector3(0.06, 5.0, 1.8), Vector3(-side * 0.05 + 0.0, 5.0, bz), HallMaterials.banner_material(UI.PRIMARY if k % 2 == 0 else UI.ACCENT)))
+				var b := HallMaterials.banner(UI.PRIMARY if k % 2 == 0 else UI.ACCENT, 1.8, 5.0)
+				b.position = Vector3(-side * 0.1, 5.0, bz)
+				b.rotation.y = -side * PI / 2.0 # il quad guarda +z: lo giro verso il centro della sala
+				hinge.add_child(b)
 				hinge.add_child(_bar(Vector3(0.1, 0.12, 1.9), Vector3(-side * 0.08, 7.5, bz), HallMaterials.trim_gold()))
 
 
@@ -740,7 +1001,7 @@ func _build_board(hinge: Node3D, side: float, d: float) -> void:
 	q.size = Vector2(bw, bh)
 	board.mesh = q
 	board.material_override = HallMaterials.screen_material(_board_vp.get_texture())
-	var bz := minf(6.5, d * 0.36)
+	var bz := minf(2.6, d * 0.16) # verso il fondo: più avanti sulla parete di destra c'è il canestro
 	board.position = Vector3(-side * 0.1, 1.1 + bh / 2.0, bz)
 	board.rotation.y = -side * PI / 2.0
 	hinge.add_child(board)
@@ -869,6 +1130,8 @@ func screen_lines() -> Dictionary:
 		var left := _countdown_left - (float(Time.get_ticks_msec()) - _countdown_at)
 		title = "SI PARTE TRA %d" % maxi(1, ceili(left / 1000.0))
 		sub = "Restate nel cerchio!"
+	if _countdown_left < 0.0 and not _last_basket.is_empty() and float(Time.get_ticks_msec()) - float(_last_basket.at) < BASKET_NEWS_MS:
+		sub = "Canestro di %s: +%d%s" % [_last_basket.name, _last_basket.points, " (swish!)" if _last_basket.swish else ""]
 	if float(Time.get_ticks_msec()) < _flash_until:
 		big = _flash_text
 	return {"title": title, "main": main, "sub": sub, "big": big}
@@ -887,7 +1150,7 @@ func _update_screen() -> void:
 	var big: String = lines.big
 	_screen_big.visible = big != ""
 	_screen_big.text = big
-	_screen_big.add_theme_font_size_override("font_size", 330 if big.length() <= 2 else 150)
+	_screen_big.add_theme_font_size_override("font_size", 330 if big.length() <= 2 else (150 if big.length() <= 10 else 128))
 	_screen_main.visible = big == ""
 	_screen_sub.visible = big == ""
 	_screen_title.text = lines.title

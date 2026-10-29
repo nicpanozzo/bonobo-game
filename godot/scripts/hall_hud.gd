@@ -40,6 +40,9 @@ var _punch := 0.0
 var _need_card: PanelContainer
 var _need: Label
 var _hint: Label
+var _hoops_card: PanelContainer # i canestri di questa sala: i primi tre
+var _hoops_rows: VBoxContainer
+var _hoops_sig := "-"
 
 
 func _init() -> void:
@@ -111,6 +114,22 @@ func setup(game_data: Dictionary) -> void:
 	_lead_rules = _label("", UI.SIZE_NOTE, Color(1, 1, 1, 0.7))
 	_lead_rules.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	lead_box.add_child(_lead_rules)
+	# sotto: la classifica dei canestri della sala, solo quando qualcuno ne ha fatto uno
+	_hoops_card = _card(Color(0.04, 0.02, 0.1, 0.72), Color("ff7a1a"))
+	_hoops_card.visible = false
+	add_child(_hoops_card)
+	var hoops_box := VBoxContainer.new()
+	hoops_box.add_theme_constant_override("separation", 2)
+	_hoops_card.add_child(hoops_box)
+	var hoops_top := HBoxContainer.new()
+	hoops_top.alignment = BoxContainer.ALIGNMENT_END
+	hoops_top.add_theme_constant_override("separation", 6)
+	hoops_box.add_child(hoops_top)
+	hoops_top.add_child(_label("CANESTRI", UI.SIZE_NOTE, Color(1, 1, 1, 0.6)))
+	hoops_top.add_child(_icon(HallIcons.basketball(), 16))
+	_hoops_rows = VBoxContainer.new()
+	_hoops_rows.add_theme_constant_override("separation", 0)
+	hoops_box.add_child(_hoops_rows)
 	# al centro: il conto alla rovescia
 	_count = _label("", 190, UI.ACCENT)
 	_count.add_theme_color_override("font_outline_color", Color("3a1600"))
@@ -148,13 +167,14 @@ func on_snapshot(snap: Dictionary) -> void:
 	_lead_stage.text = stage_name(str(leading.get("stageId", "")))
 	_lead_rules.text = rules_text(snap.get("rules", {}) if snap.get("rules") is Dictionary else {}, str(leading.get("mode", "ffa")))
 	_lead_rules.visible = _lead_rules.text != ""
+	_update_hoops(snap.get("players", []) if snap.get("players") is Array else [])
 	var cd: Variant = snap.get("countdownMs")
 	_count_left = float(cd) if cd != null else -1.0
 	var need: Variant = snap.get("need")
 	_need.text = need_text(need, _count_left >= 0.0)
 	_need_card.visible = _need.text != ""
 	# si rifà la disposizione solo quando cambia qualcosa che ha una misura (30 snapshot al secondo)
-	var sig := "%s|%s|%s|%s|%s|%s" % [_list_sig, _need.text, _lead_mode.text, _lead_stage.text, _lead_rules.text, size]
+	var sig := "%s|%s|%s|%s|%s|%s|%s" % [_list_sig, _need.text, _lead_mode.text, _lead_stage.text, _lead_rules.text, size, _hoops_sig]
 	if sig != _layout_sig:
 		_layout_sig = sig
 		_layout()
@@ -242,8 +262,56 @@ static func controls_hint(s: Settings) -> String:
 	var move := "Frecce/WASD"
 	if s != null:
 		move = "%s %s %s %s" % [keys.call("up"), keys.call("left"), keys.call("down"), keys.call("right")]
-	return "Muoviti: %s  ·  Salta: %s  ·  %s spingi  ·  %s cambia colore sul piedistallo  ·  %s inchino" % [
+	return "Muoviti: %s  ·  Salta: %s  ·  %s spingi, tira (col pallone)  ·  %s prendi, cambia colore sul piedistallo  ·  %s inchino" % [
 		move, keys.call("jump"), keys.call("light"), keys.call("heavy"), keys.call("taunt")]
+
+
+# I primi tre per canestri fatti in questa sala (chi ne ha almeno uno): [{name, baskets, color, me}]
+static func hoop_leaders(players: Array, me := "") -> Array:
+	var list := []
+	for p in players:
+		if p is Dictionary and int(p.get("baskets", 0)) > 0:
+			list.append({"name": str(p.get("name", "")), "baskets": int(p.get("baskets", 0)), "color": p.get("color", 0xffffff), "me": str(p.get("id", "")) == me})
+	list.sort_custom(func(a, b): return a.baskets > b.baskets if a.baskets != b.baskets else a.name < b.name)
+	return list.slice(0, 3)
+
+
+func _update_hoops(players: Array) -> void:
+	var leaders := hoop_leaders(players, my_id)
+	var sig := JSON.stringify(leaders)
+	if sig == _hoops_sig:
+		return
+	_hoops_sig = sig
+	for c in _hoops_rows.get_children():
+		c.queue_free()
+	for i in leaders.size():
+		var r: Dictionary = leaders[i]
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 6)
+		var dot := ColorRect.new()
+		dot.color = Access.color(r.color)
+		dot.custom_minimum_size = Vector2(10, 10)
+		dot.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		row.add_child(dot)
+		var who := _label("%s" % r.name, UI.SIZE_NOTE if Phone.active else UI.SIZE_SMALL, UI.ACCENT if r.me else Color.WHITE)
+		who.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		who.clip_text = true
+		who.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		row.add_child(who)
+		row.add_child(_label(str(r.baskets), UI.SIZE_SMALL, Color("ffb04a")))
+		_hoops_rows.add_child(row)
+	_hoops_card.visible = not leaders.is_empty()
+
+
+func _icon(tex: Texture2D, px: int) -> TextureRect:
+	var t := TextureRect.new()
+	t.texture = tex
+	t.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	t.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	t.custom_minimum_size = Vector2(px, px)
+	t.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return t
 
 
 func _update_list(players: Array) -> void:
@@ -343,6 +411,10 @@ func _layout() -> void:
 	_lead_card.reset_size()
 	_lead_card.size.x = lead_w
 	_lead_card.position = Vector2(s.x - lead_w - m, m)
+	var hoops_w := minf(220.0 if not phone else 180.0, s.x * 0.28)
+	_hoops_card.reset_size()
+	_hoops_card.size.x = hoops_w
+	_hoops_card.position = Vector2(s.x - hoops_w - m, _lead_card.position.y + _lead_card.size.y + 10.0)
 	_count.size = Vector2(s.x * 0.4, s.y * 0.4)
 	_count.position = Vector2(s.x * 0.3, s.y * 0.18)
 	_hint.visible = not phone # sul telefono ci sono i tasti a schermo, e lo spazio in basso è loro

@@ -35,7 +35,17 @@ const ZONES := [
 	{"kind": "botRemove", "id": "bot-via", "x": -480, "z": 650, "r": 90, "label": "Manda via un bot"},
 	{"kind": "gong", "id": "gong", "x": 1250, "z": -720, "r": 90, "label": "Gong"},
 	{"kind": "throne", "id": "trono", "x": -1250, "z": -720, "r": 80, "label": "Trono del campione"},
+	{"kind": "court", "id": "campo", "x": 2100, "z": 0, "r": 600, "label": "Campo da basket"},
+	{"kind": "hoop", "id": "canestro", "x": 2542, "z": 0, "r": 23, "label": "Canestro"},
+	{"kind": "chessboard", "id": "scacchiera", "x": -2100, "z": 0, "r": 280, "label": "Scacchi giganti"},
+	{"kind": "rack", "id": "rastrelliera", "x": 1940, "z": -800, "r": 80, "label": "Palloni"},
 ]
+const WIDTH := 5400 # HALL.width: la zona giochi ai lati
+const HOOP := Vector3(2542, 305, 0) # centro del ferro, cm
+const CHESS_X := -2100
+const CHESS_SQUARE := 70
+const PIECES := {"king": [180, 27], "queen": [165, 26], "bishop": [135, 23], "knight": [120, 24], "rook": [110, 24], "pawn": [90, 20]} # h, r in cm
+const BACK_RANK := ["rook", "knight", "bishop", "queen", "king", "bishop", "knight", "rook"]
 
 const BOARD := [
 	{"name": "Nicola", "rating": 1312, "tier": "Silverback", "wins": 31, "matches": 44, "streak": 4},
@@ -55,7 +65,7 @@ static func player(id: String, name: String, character_id: String, color: int, x
 		"id": id, "name": name, "characterId": character_id, "skinId": "", "color": color,
 		"x": x, "y": 0.0, "z": z, "facing": 1, "moving": false, "onGround": true, "ready": false,
 		"modeVote": null, "stageVote": null, "bot": false, "away": false, "host": false, "emote": false,
-		"stunMs": 0, "throne": false,
+		"stunMs": 0, "throne": false, "holding": null, "baskets": 0,
 	}
 	p.merge(extra, true)
 	return p
@@ -69,12 +79,50 @@ static func snapshot(t: float, players: Array, extra := {}) -> Dictionary:
 		if p.stageVote != null:
 			votes.stage[p.stageVote] = int(votes.stage.get(p.stageVote, 0)) + 1
 	var snap := {
-		"t": t, "width": 3000, "depth": 1800, "zones": ZONES.duplicate(true), "players": players, "votes": votes,
+		"t": t, "width": WIDTH, "depth": 1800, "zones": ZONES.duplicate(true), "players": players, "votes": votes,
 		"leading": {"mode": "ffa", "stageId": "palco"}, "countdownMs": null, "need": null, "events": [],
-		"board": BOARD.duplicate(true), "rules": {"mode": "ffa", "stocks": 3, "timeLimitSec": 240, "friendlyFire": false, "teamCount": 2, "supremeSpeed": 1, "itemAmount": 2, "itemKinds": ["banana", "bong"]},
+		"board": BOARD.duplicate(true), "props": props(), "rules": {"mode": "ffa", "stocks": 3, "timeLimitSec": 240, "friendlyFire": false, "teamCount": 2, "supremeSpeed": 1, "itemAmount": 2, "itemKinds": ["banana", "bong"]},
 	}
 	snap.merge(extra, true)
 	return snap
+
+
+# Gli oggetti come li mette il server a inizio sala (makeProps in src/shared/hall.ts): tre palloni sulla
+# rastrelliera, due da spiaggia, i 32 pezzi degli scacchi coi bianchi verso la telecamera
+static func props() -> Array:
+	var out := []
+	for i in 3:
+		out.append(prop("ball-%d" % (i + 1), "basketball", 1860 + i * 40, 12, -800, 12))
+	out.append(prop("beach-1", "beachball", -400, 60, -300, 60))
+	out.append(prop("beach-2", "beachball", 400, 60, -300, 60))
+	for color in ["white", "black"]:
+		var side := 1 if color == "white" else -1
+		var c := "w" if color == "white" else "b"
+		for f in 8:
+			var kind: String = BACK_RANK[f]
+			var id := "chess-%s-%s" % [c, kind] if kind in ["king", "queen"] else "chess-%s-%s-%s" % [c, kind, "abcdefgh"[f]]
+			out.append(piece(id, kind, color, f, 3.5 * side))
+			out.append(piece("chess-%s-pawn-%s" % [c, "abcdefgh"[f]], "pawn", color, f, 2.5 * side))
+	return out
+
+
+static func prop(id: String, kind: String, x: float, y: float, z: float, r: float, extra := {}) -> Dictionary:
+	var p := {"id": id, "kind": kind, "x": x, "y": y, "z": z, "r": r, "yaw": 0.0, "spin": 0.0, "tilt": 0.0, "tiltDir": 0.0, "holder": null}
+	p.merge(extra, true)
+	return p
+
+
+static func piece(id: String, kind: String, color: String, file: int, rank: float) -> Dictionary:
+	var spec: Array = PIECES[kind]
+	return prop(id, "chess", CHESS_X + (file - 3.5) * CHESS_SQUARE, 0, rank * CHESS_SQUARE, spec[1],
+		{"piece": kind, "color": color, "h": spec[0], "yaw": 0.0 if color == "white" else PI})
+
+
+static func find(list: Array, id: String) -> Dictionary:
+	for p in list:
+		if p.id == id:
+			return p
+	return {}
 
 
 # Una serata tipo: sei amici e un bot, chi vota, chi è sul trono, chi salta sul trampolino
@@ -104,6 +152,62 @@ static func party(t: float, scene := "sala") -> Dictionary:
 			players[i].moving = false
 		players[3].emote = true
 		extra = {"countdownMs": 3200.0 if scene == "conto" else null, "need": null}
+	elif scene == "basket":
+		# partita al campo: Riccardo tira da tre in salto, il pallone è in volo sopra il ferro, gli altri guardano
+		var spots := [[1980, 330], [1700, -150], [1880, 60], [2250, -330], [1760, -420], [1620, 420], [2280, 380], [2080, 620]]
+		for i in players.size():
+			players[i].x = spots[i][0]
+			players[i].z = spots[i][1]
+			players[i].throne = false
+			players[i].away = false
+			players[i].y = 0.0
+			players[i].onGround = true
+			players[i].moving = false
+			players[i].ready = false
+		players[0].holding = "ball-2"
+		players[0].facing = 1
+		players[1].baskets = 4
+		players[2].baskets = 2
+		players[3].baskets = 7
+		players[2].y = 70.0
+		players[2].onGround = false
+		players[4].emote = true
+		var list: Array = extra.get("props", props())
+		var k := fposmod(t / 1400.0, 1.0) * 0.25 + 0.72 # la parte finale dell'arco, sopra il ferro
+		var from := Vector3(1900, 260, 120)
+		var to := HOOP + Vector3(-8, 0, 0)
+		var arc := from.lerp(to, k) + Vector3(0, sin(k * PI) * 260, 0)
+		var shot := find(list, "ball-1")
+		shot.merge({"x": arc.x, "y": arc.y, "z": arc.z, "yaw": 0.0, "spin": fposmod(t / 60.0, TAU)}, true)
+		var held := find(list, "ball-2")
+		held.merge({"x": players[0].x, "y": 195, "z": players[0].z, "holder": "p0"}, true)
+		var loose := find(list, "ball-3")
+		loose.merge({"x": 2300, "y": 12, "z": 300, "yaw": 1.0, "spin": t / 200.0}, true)
+		var beach := find(list, "beach-2")
+		beach.merge({"x": 1350, "y": 140, "z": 560, "spin": t / 500.0, "yaw": 0.4}, true)
+		extra = {"props": list, "need": null}
+	elif scene == "scacchi":
+		# alla scacchiera: qualche pezzo già per terra, il re nero sta cadendo
+		var spots := [[-1980, 520], [-2500, 520], [-1650, 120], [-2250, -480], [-1650, -300], [-2700 + 120, 80], [-1500, 520], [-2050, 640]]
+		for i in players.size():
+			players[i].x = spots[i][0]
+			players[i].z = spots[i][1]
+			players[i].throne = false
+			players[i].away = false
+			players[i].y = 0.0
+			players[i].onGround = true
+			players[i].moving = false
+		players[0].facing = -1
+		var list: Array = props()
+		var fallen := {"chess-w-pawn-e": [PI / 2, -PI / 2], "chess-b-pawn-d": [PI / 2, 0.4], "chess-b-knight-g": [PI / 2, -2.4], "chess-w-bishop-f": [PI / 2, 2.2], "chess-b-king": [0.95, -1.9]}
+		for id in fallen:
+			var pc := find(list, id)
+			pc.tilt = fallen[id][0]
+			pc.tiltDir = fallen[id][1]
+		find(list, "chess-w-pawn-e").z = -20
+		find(list, "chess-b-pawn-d").x = CHESS_X - 40
+		find(list, "chess-b-pawn-d").z = -40
+		extra = {"props": list, "need": null}
 	elif scene == "galleria":
 		players[0].x = -1200
 		players[0].z = -110

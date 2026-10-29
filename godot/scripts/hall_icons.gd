@@ -49,6 +49,58 @@ static func sparkle() -> Texture2D:
 		return Color(1, 1, 1, clampf(star + core, 0.0, 1.0)))
 
 
+# Pallone da basket (il font non ha 🏀): arancione con le cuciture nere, per i canestri sopra la testa e nell'HUD
+static func basketball() -> Texture2D:
+	return _make("basketball", func(p: Vector2) -> Color:
+		var d := p.length()
+		var a := clampf((0.94 - d) * 24.0, 0.0, 1.0)
+		var seam := minf(absf(p.x), absf(p.y))
+		seam = minf(seam, absf(Vector2(p.x + 1.15, p.y).length() - 0.85))
+		seam = minf(seam, absf(Vector2(p.x - 1.15, p.y).length() - 0.85))
+		var line := clampf((0.07 - seam) * 30.0, 0.0, 1.0)
+		var shade := clampf(1.0 - Vector2(p.x + 0.35, p.y + 0.4).length() * 0.6, 0.0, 1.0)
+		var orange := Color("c94a0c").lerp(Color("ff9a3c"), shade)
+		var c := orange.lerp(Color("1a0a04"), line)
+		c = c.lerp(Color("1a0a04"), clampf((d - 0.86) * 14.0, 0.0, 1.0)) # bordo scuro
+		return Color(c, a))
+
+
+# Altoparlante bianco su un tondo verde: chi sta parlando in voce (come Discord)
+static func speaker() -> Texture2D:
+	return _make("speaker", func(p: Vector2) -> Color:
+		var d := p.length()
+		var a := clampf((0.96 - d) * 24.0, 0.0, 1.0)
+		var body := _speaker_shape(p + Vector2(0.18, 0.0))
+		var waves := 0.0
+		for r in [0.32, 0.55]:
+			var q := p + Vector2(0.18, 0.0)
+			var ring := clampf((0.06 - absf(q.length() - r)) * 30.0, 0.0, 1.0)
+			waves = maxf(waves, ring * clampf((q.x - 0.05) * 10.0, 0.0, 1.0) * clampf((0.75 * q.x - absf(q.y) + 0.05) * 10.0, 0.0, 1.0))
+		var c := Color("3ba55d").lerp(Color.WHITE, maxf(body, waves))
+		return Color(c, a))
+
+
+# Microfono spento: altoparlante barrato su un tondo rosso
+static func muted() -> Texture2D:
+	return _make("muted", func(p: Vector2) -> Color:
+		var d := p.length()
+		var a := clampf((0.96 - d) * 24.0, 0.0, 1.0)
+		var body := _speaker_shape(p + Vector2(0.05, 0.0))
+		var slash := clampf((0.09 - _seg(p, Vector2(-0.55, -0.55), Vector2(0.55, 0.55))) * 30.0, 0.0, 1.0)
+		var c := Color("ed4245").lerp(Color.WHITE, maxf(body, slash))
+		return Color(c, a))
+
+
+# La sagoma dell'altoparlante: un quadratino e il cono che si apre a destra
+static func _speaker_shape(p: Vector2) -> float:
+	var box := 1.0 if absf(p.x + 0.28) < 0.12 and absf(p.y) < 0.14 else 0.0
+	var cone := 0.0
+	if p.x > -0.18 and p.x < 0.12:
+		var half := lerpf(0.14, 0.38, (p.x + 0.18) / 0.3)
+		cone = clampf((half - absf(p.y)) * 30.0, 0.0, 1.0)
+	return maxf(box, cone)
+
+
 # p va da (-1, -1) a (1, 1), y in giù come nelle immagini
 static func _make(key: String, shade: Callable) -> Texture2D:
 	if _cache.has(key):

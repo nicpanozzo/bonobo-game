@@ -103,13 +103,13 @@ func confetti(at: Vector3, dir: Vector3, amount := 90) -> void:
 
 
 # Scia di chi rimbalza sul trampolino: lo segue per un po'
-func trail(target: Node3D, col: Color, seconds := 0.9) -> void:
+func trail(target: Node3D, col: Color, seconds := 0.9, offset := Vector3(0, 0.9, 0)) -> void:
 	if target == null or _items.size() >= MAX_LIVE:
 		return
 	var p := _particles(30, 0.5, _material("glow", true))
 	p.one_shot = false
 	p.explosiveness = 0.0
-	p.position = Vector3(0, 0.9, 0)
+	p.position = offset
 	p.local_coords = false
 	p.direction = Vector3(0, -1, 0)
 	p.spread = 25.0

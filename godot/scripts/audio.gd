@@ -329,7 +329,39 @@ static func hall_cue(e: Dictionary) -> Dictionary:
 			return {"sound": "hallCancel", "volume": 0.8, "loud": true}
 		"go":
 			return {"sound": "goBlast", "loud": true}
+		# zona giochi: palloni e scacchi
+		"pickup":
+			return {"sound": "hallPickup", "volume": 0.7}
+		"throw":
+			return {"sound": "hallThrow", "volume": 0.8}
+		"basket":
+			# la retina e poi il pubblico con la sirena; da tre il boato più grosso
+			var three := int(e.get("points", 2)) >= 3
+			return {"sound": "hallNet", "then": "hallCheer3" if three else "hallCheer", "loud": true, "volume": 1.0}
+		"propHit":
+			return prop_hit_cue(str(e.get("surface", "")), str(e.get("kind", "")), float(e.get("speed", 0.0)))
+		"topple":
+			return {"sound": "hallTopple", "loud": true, "volume": 0.9}
+		"checkmate":
+			return {"sound": "hallCheckmate", "loud": true}
 	return {}
+
+
+# Il suono di un oggetto che sbatte: dove (surface, la scrive hall_view.gd nell'evento prima di noi), cosa, quanto forte
+static func prop_hit_cue(surface: String, kind: String, speed: float) -> Dictionary:
+	var k := clampf(speed / 1200.0, 0.15, 1.0) # cm/s: oltre 12 m/s è il colpo più forte
+	match surface:
+		"rim":
+			return {"sound": "hallRim", "volume": 0.4 + 0.6 * k, "pitch": 0.95 + k * 0.1, "loud": true}
+		"board", "wall":
+			return {"sound": "hallBoard", "volume": 0.35 + 0.65 * k, "loud": true}
+		"piece":
+			return {"sound": "hallChessThud", "volume": 0.4 + 0.6 * k, "loud": true}
+	if kind == "chess":
+		return {"sound": "hallChessThud", "volume": 0.4 + 0.6 * k, "loud": true}
+	if kind == "beachball":
+		return {"sound": "hallBeachBounce", "volume": 0.3 + 0.6 * k, "pitch": 0.9 + k * 0.2, "loud": true}
+	return {"sound": "hallBounce", "volume": 0.3 + 0.7 * k, "pitch": 0.9 + k * 0.25, "loud": true}
 
 
 func on_prematch_cue(cue: String) -> void:
@@ -1215,3 +1247,65 @@ func _build_sounds() -> void:
 	_sounds.hallCancel = make.call(0.5, func(s):
 		s.tone(0, "triangle", 587.33, 587.33, 0.15, 0.25)
 		s.tone(0.15, "triangle", 392, 370, 0.3, 0.25))
+	# Zona giochi. Pallone da basket sul parquet: un tonfo gommoso e il colpo del legno
+	_sounds.hallBounce = make.call(0.25, func(s):
+		s.tone(0, "sine", 150, 70, 0.14, 0.7)
+		s.noise(0, "lowpass", 1500, 200, 0.05, 0.5)
+		s.tone(0, "triangle", 420, 300, 0.05, 0.12))
+	# Pallone da spiaggia: plastica vuota, più acuto e molle
+	_sounds.hallBeachBounce = make.call(0.3, func(s):
+		s.tone(0, "sine", 230, 160, 0.18, 0.45)
+		s.noise(0, "lowpass", 800, 200, 0.08, 0.25))
+	# Il ferro: un metallo che suona, armonici storti che si spengono a tempi diversi
+	_sounds.hallRim = make.call(0.75, func(s):
+		s.noise(0, "highpass", 5000, 3000, 0.04, 0.35)
+		s.tone(0, "sine", 520, 515, 0.65, 0.25)
+		s.tone(0, "sine", 1340, 1330, 0.45, 0.16)
+		s.tone(0, "sine", 2110, 2100, 0.28, 0.1))
+	# Il tabellone: un colpo sordo di legno e vetro che vibra
+	_sounds.hallBoard = make.call(0.35, func(s):
+		s.noise(0, "lowpass", 900, 150, 0.18, 0.8)
+		s.tone(0, "sine", 120, 80, 0.22, 0.5)
+		s.noise(0.01, "bandpass", 2600, 2000, 0.12, 0.12))
+	# La retina: SWISH, un fruscio che sale
+	_sounds.hallNet = make.call(0.5, func(s):
+		s.noise(0, "bandpass", 2500, 6000, 0.32, 0.55)
+		s.noise(0.06, "highpass", 6000, 8000, 0.22, 0.2))
+	# Il pubblico e la sirena da palazzetto
+	_sounds.hallCheer = make.call(2.2, func(s):
+		s.noise(0, "bandpass", 600, 1100, 2.0, 0.55)
+		s.noise(0.1, "highpass", 3000, 2500, 1.6, 0.14)
+		for f in [233.08, 293.66, 349.23]:
+			s.tone(0.05, "sawtooth", f, f, 0.7, 0.1))
+	# Da tre: boato più lungo, due colpi di sirena e il fischio
+	_sounds.hallCheer3 = make.call(3.0, func(s):
+		s.noise(0, "bandpass", 500, 1200, 2.8, 0.7)
+		s.noise(0.1, "highpass", 3000, 2500, 2.4, 0.18)
+		for t in [0.05, 0.85]:
+			for f in [233.08, 293.66, 349.23, 466.16]:
+				s.tone(t, "sawtooth", f, f, 0.6, 0.09)
+		s.tone(0.3, "sine", 2400, 2650, 0.45, 0.12))
+	# Preso in mano: un "pop"; tirato: uno sbuffo d'aria
+	_sounds.hallPickup = make.call(0.15, func(s):
+		s.tone(0, "sine", 300, 500, 0.08, 0.3)
+		s.noise(0, "lowpass", 2000, 500, 0.04, 0.3))
+	_sounds.hallThrow = make.call(0.3, func(s):
+		s.noise(0, "bandpass", 800, 2500, 0.22, 0.45))
+	# Pezzo degli scacchi: legno pesante che batte; quando cade, il colpo e due rimbalzi più piccoli
+	_sounds.hallChessThud = make.call(0.3, func(s):
+		s.tone(0, "sine", 110, 55, 0.25, 0.7)
+		s.noise(0, "lowpass", 700, 120, 0.12, 0.6)
+		s.tone(0, "triangle", 300, 220, 0.06, 0.15))
+	_sounds.hallTopple = make.call(0.8, func(s):
+		for b in [[0.0, 1.0], [0.18, 0.5], [0.32, 0.25]]:
+			s.tone(b[0], "sine", 120, 55, 0.25, 0.7 * b[1])
+			s.noise(b[0], "lowpass", 900, 120, 0.12, 0.6 * b[1])
+		s.noise(0.05, "lowpass", 400, 150, 0.6, 0.12))
+	# Scacco matto: fanfara che sale e si apre in maggiore, timpano e piatto
+	_sounds.hallCheckmate = make.call(2.4, func(s):
+		var notes := [[392.0, 0.0, 0.15], [466.16, 0.16, 0.15], [587.33, 0.32, 0.15], [783.99, 0.5, 1.0], [987.77, 0.5, 1.0]]
+		for n in notes:
+			s.tone(n[1], "square", n[0], n[0], n[2], 0.1)
+			s.tone(n[1], "sawtooth", n[0] / 2.0, n[0] / 2.0, n[2], 0.07)
+		s.tone(0.5, "sine", 98, 90, 1.3, 0.6)
+		s.noise(0.5, "highpass", 7000, 5000, 1.2, 0.15))

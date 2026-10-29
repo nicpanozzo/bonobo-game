@@ -12,6 +12,15 @@ const LABEL_NEAR := 3.5 # metri: le scritte dei piedistalli e dei portali sono p
 const LABEL_FAR := 9.0 # e quasi spente oltre
 
 # Il colore di ogni modalità sulle pedane (colori del gioco, COLORS)
+# Basket: misure di riserva se game.json non ha ancora "hall" (si allineano a HALL in constants.ts)
+const RIM_HEIGHT := 3.05 # metri da terra del ferro
+const RIM_RADIUS := 0.23 # metri, raggio del ferro (la zona "hoop" ha r = raggio del ferro)
+const RIM_OFFSET := 0.38 # m dal tabellone al centro del ferro (HALL.rimOffset)
+const THREE_POINT := 6.0 # m dal punto sotto il ferro: oltre il canestro vale 3 (HALL.threePointRadius)
+const FIBA_HOOP := 1.575 # m dal fondo al centro del ferro, nel campo vero largo 15 m (lo shader del campo scala su questa)
+const FIBA_THREE := 6.75 # m, raggio della linea da tre nel campo vero
+const BOARD_BORDER := 0.06 # quota del lato della scacchiera occupata dalla cornice (chessboard_material)
+
 const MODE_COLORS := {"ffa": Color("f1c40f"), "teams": Color("3498db"), "flag": Color("2ecc71"), "race": Color("b06bff")}
 const BOT_ADD := Color("2ecc71")
 const BOT_REMOVE := Color("e74c3c")
@@ -41,6 +50,21 @@ var _seg_off: Material
 var _beam: MeshInstance3D # il fascio di luce dall'alto (si accende con qualcuno sopra)
 var _beam_power := 0.35
 var _fade_labels := false # le scritte si spengono da lontano (piedistalli e portali sono tanti)
+# Basket e scacchi
+var rim_height := RIM_HEIGHT # m
+var rim_radius := RIM_RADIUS # m
+var _court: MeshInstance3D # il parquet: si sposta sotto il canestro quando si sa dov'è (link)
+var _court_logo: Node3D
+var _court_size := Vector2(10.0, 9.33)
+var _net: MeshInstance3D
+var _led: Array[MeshInstance3D] = [] # la cornice del tabellone che lampeggia al canestro
+var _score_title: Label3D
+var _score_name: Label3D
+var _score_points: Label3D
+var _score_pop := 0.0
+var _board_frame_mat: Material
+var _dim := 0.0 # 0..1: le scritte si fanno da parte quando un nome di giocatore ci passa davanti
+var _dim_target := 0.0
 
 
 func setup(z: Dictionary, game: Dictionary, preview: Texture2D = null) -> void:
@@ -48,6 +72,8 @@ func setup(z: Dictionary, game: Dictionary, preview: Texture2D = null) -> void:
 	kind = str(z.get("kind", ""))
 	zone_id = str(z.get("id", ""))
 	radius = maxf(0.3, float(z.get("r", 100.0)) * CM)
+	if kind == "hoop":
+		rim_radius = clampf(float(z.get("r", RIM_RADIUS / CM)) * CM, 0.1, 1.0)
 	position = Vector3(float(z.get("x", 0.0)) * CM, 0.0, float(z.get("z", 0.0)) * CM)
 	name = "%s_%s" % [kind, zone_id.validate_node_name()]
 	votable = kind in ["mode", "stage", "fighter", "botAdd", "botRemove"]
@@ -61,6 +87,10 @@ func setup(z: Dictionary, game: Dictionary, preview: Texture2D = null) -> void:
 		"botAdd", "botRemove": _build_cage(text)
 		"gong": _build_gong(text)
 		"throne": _build_throne(text)
+		"hoop": _build_hoop(text)
+		"court": _build_court(text)
+		"chessboard": _build_chessboard(text)
+		"rack": _build_rack(text)
 		_: _build_generic(text)
 
 
@@ -81,20 +111,25 @@ func tick(delta: float, occupants: int, votes: int, leading: bool, ready_total :
 		var on := clampf(_occupied * 0.7 + _flash + (0.35 if leading else 0.0), 0.0, 1.0)
 		_beam.visible = on > 0.02
 		set_param(_beam.material_override, "intensity", _beam_power * on)
-	if _fade_labels and _title != null:
-		var k := clampf(1.0 - (my_distance - LABEL_NEAR) / (LABEL_FAR - LABEL_NEAR), 0.18, 1.0)
-		_title.modulate.a = k
-		_title.outline_modulate.a = k * 0.85
+	_dim = move_toward(_dim, _dim_target, delta * 4.0)
+	var keep := 1.0 - _dim * 0.8
+	if _title != null:
+		var k := clampf(1.0 - (my_distance - LABEL_NEAR) / (LABEL_FAR - LABEL_NEAR), 0.18, 1.0) if _fade_labels else 1.0
+		_title.modulate.a = k * keep
+		_title.outline_modulate.a = k * 0.85 * keep
+	if _count != null:
+		_count.modulate.a = keep
+		_count.outline_modulate.a = 0.8 * keep
 	match kind:
 		"mode", "stage":
 			_count.text = _votes_text(votes)
-			_count.modulate = UI.ACCENT if leading else Color(1, 1, 1, 0.9)
+			_count.modulate = Color(UI.ACCENT if leading else Color(1, 1, 1, 0.9), keep)
 			_count.scale = Vector3.ONE * (1.0 + _flash * 0.6)
 		"ready":
 			var fill := float(occupants) / maxf(1.0, float(ready_total))
 			set_param(_pad_mat, "fill", clampf(fill, 0.0, 1.0))
 			_count.text = "%d / %d" % [mini(occupants, ready_total), ready_total] if ready_total > 0 else ""
-			_count.modulate = UI.OK if ready_total > 0 and occupants >= ready_total else Color.WHITE
+			_count.modulate = Color(UI.OK if ready_total > 0 and occupants >= ready_total else Color.WHITE, keep)
 		"trampoline":
 			set_param(_bounce_mat, "bounce", _flash)
 		"botAdd", "botRemove":
@@ -109,11 +144,66 @@ func tick(delta: float, occupants: int, votes: int, leading: bool, ready_total :
 			_bounce.rotation.x = sin(_t * 9.0) * 0.22 * _flash
 			_bounce.rotation.z = sin(_t * 6.0) * 0.06 * _flash
 			set_param(_bounce_mat, "strike", _flash)
+		"hoop":
+			# la retina sobbalza, il tabellone lampeggia, il nome sul tabellino entra grande e si assesta
+			set_param(_net.material_override, "swish", _flash)
+			var blink := _flash * (0.5 + 0.5 * sin(_t * 26.0))
+			for m in _led:
+				set_param(m.material_override, "intensity", 1.6 + blink * 5.0)
+			_score_pop = maxf(0.0, _score_pop - delta * 2.5)
+			_score_name.scale = Vector3.ONE * (1.0 + sin(_score_pop * PI) * 0.35)
+			_score_points.scale = _score_name.scale
+		"chessboard":
+			set_param(_board_frame_mat, "intensity", 1.4 + _flash * 4.0 * (0.5 + 0.5 * sin(_t * 18.0)))
 
 
 # Un evento su questa zona: voto, rimbalzo, gong, trono
 func bang() -> void:
 	_flash = 1.0
+
+
+# hall_view.gd chiede se una scritta (titolo, voti) sta sotto il nome di un giocatore: allora si spegne un po'
+func dim_labels(covered: Callable) -> void:
+	var hit := false
+	for l in [_title, _count]:
+		if l != null and l.text != "" and l.billboard != BaseMaterial3D.BILLBOARD_DISABLED and covered.call(l):
+			hit = true
+	_dim_target = 1.0 if hit else 0.0
+
+
+# Canestro: il tabellino sopra il tabellone dice chi ha segnato e quanto, nel suo colore
+func score(who: String, points: int, col: Color, swish: bool) -> void:
+	bang()
+	_score_pop = 1.0
+	if _score_name == null:
+		return
+	_score_title.text = "SWISH!" if swish else "CANESTRO!"
+	_score_name.text = who
+	_score_name.modulate = col.lightened(0.25)
+	_score_points.text = "+%d" % points
+	_score_points.modulate = UI.ACCENT if points >= 3 else Color.WHITE
+
+
+# Il centro del ferro, coordinate della sala (metri)
+func rim_point() -> Vector3:
+	return position + basis * Vector3(0.0, rim_height, 0.0)
+
+
+# Il centro del tabellone (per capire se un pallone l'ha preso)
+func board_point() -> Vector3:
+	return position + basis * Vector3(0.0, rim_height + 0.4, -RIM_OFFSET)
+
+
+# Canestro e campo si guardano: il canestro gira il tabellone verso il campo, il campo mette il fondo sotto il
+# canestro (le righe dello shader sono in proporzione al campo vero, col ferro a FIBA_HOOP dal fondo)
+func link(other: Vector3) -> void:
+	var d := Vector2(other.x - position.x, other.z - position.z)
+	match kind:
+		"hoop":
+			if d.length() > 0.01:
+				rotation.y = atan2(d.x, d.y) # +z locale verso il campo
+		"court":
+			_place_court(Vector3(other.x, 0.0, other.z))
 
 
 func _votes_text(n: int) -> String:
@@ -345,9 +435,15 @@ func _build_trampoline(text: String) -> void:
 	_bounce.position.y = top
 	_bounce_mat = _bounce.material_override
 	add_child(_bounce)
-	var skirt := _cylinder(radius * 0.98, radius * 1.02, top - 0.04, HallMaterials.dark_metal(), 24)
-	skirt.position.y = (top - 0.04) / 2.0
+	# sotto il telo un anello e le gambe, non un cilindro pieno: il telo scende fino a 25 cm quando si salta
+	var skirt := _ring_mesh(radius, 0.07, HallMaterials.dark_metal())
+	skirt.position.y = top - 0.05
 	add_child(skirt)
+	for i in 6:
+		var a := i * TAU / 6.0
+		var leg := _cylinder(0.04, 0.05, top - 0.05, HallMaterials.dark_metal(), 6)
+		leg.position = Vector3(cos(a) * radius, (top - 0.05) / 2.0, sin(a) * radius)
+		add_child(leg)
 	var neon := _ring_mesh(radius * 1.02, 0.03, HallMaterials.neon(HallMaterials.BANANA, 2.6, 0.6))
 	neon.position.y = top - 0.06
 	add_child(neon)
@@ -418,7 +514,7 @@ func _build_gong(text: String) -> void:
 	_bounce = Node3D.new()
 	_bounce.position = Vector3(0.0, 2.7, -0.3)
 	add_child(_bounce)
-	var disc := _cylinder(r * 0.85, r * 0.85, 0.07, HallMaterials.gong_material(), 32)
+	var disc := _cylinder(r * 0.85, r * 0.85, 0.07, HallMaterials.gong_material(r * 0.85), 32)
 	disc.rotation.x = PI / 2.0
 	disc.position.y = -r * 0.98
 	_bounce_mat = disc.material_override
@@ -489,6 +585,273 @@ func _build_generic(text: String) -> void:
 	_title = label(text, 40, Color.WHITE, Color(0, 0, 0, 0.8))
 	_title.position.y = 1.2
 	add_child(_title)
+
+
+# --- basket e scacchi ---
+
+# Il canestro: palo imbottito, braccio, tabellone di vetro con la cornice di luci, ferro arancione, retina e il
+# tabellino col nome di chi ha segnato. Il ferro è nel punto della zona, alto rim_height; il tabellone sta dietro (-z)
+func _build_hoop(text: String) -> void:
+	color = Color("ff7a1a")
+	var hall: Dictionary = _game.get("hall", {}) if _game.get("hall") is Dictionary else {}
+	rim_height = float(hall.get("rimHeight", RIM_HEIGHT / CM)) * CM
+	var k := rim_radius / 0.23 # tabellone in proporzione al ferro, come quello vero (1,8 x 1,05 per un ferro da 23 cm)
+	var bw := 1.8 * k
+	var bh := 1.05 * k
+	var board_z := -float(hall.get("rimOffset", RIM_OFFSET / CM)) * CM
+	var board_y := rim_height - 0.15 * k + bh / 2.0
+	# il palo dietro, col piede imbottito nel colore del basket
+	var pole_z := board_z - 1.1 * k
+	var base := _box(Vector3(0.7 * k, 0.3, 0.9 * k), HallMaterials.dark_metal(true))
+	base.position = Vector3(0.0, 0.15, pole_z - 0.1 * k)
+	add_child(base)
+	var pad_mat := HallMaterials.velvet(Color("d9541a"))
+	var pole_h := board_y + bh * 0.25
+	var pole := _cylinder(0.09 * k, 0.11 * k, pole_h, HallMaterials.metal(), 12)
+	pole.position = Vector3(0.0, pole_h / 2.0, pole_z)
+	add_child(pole)
+	var sleeve := _cylinder(0.15 * k, 0.15 * k, 1.9, pad_mat, 12)
+	sleeve.position = Vector3(0.0, 1.45, pole_z)
+	add_child(sleeve)
+	for dy in [-0.22, 0.22]:
+		var arm := _box(Vector3(0.08 * k, 0.08 * k, absf(pole_z - board_z)), HallMaterials.metal(true))
+		arm.position = Vector3(0.0, board_y + dy * bh, (pole_z + board_z) / 2.0 - 0.03)
+		add_child(arm)
+	# tabellone: vetro con le righe, cornice di metallo e una striscia di luce che lampeggia al canestro
+	var glass := MeshInstance3D.new()
+	var q := QuadMesh.new()
+	q.size = Vector2(bw, bh)
+	glass.mesh = q
+	glass.material_override = HallMaterials.glass_material(true)
+	glass.position = Vector3(0.0, board_y, board_z)
+	glass.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(glass)
+	var frame_mat := HallMaterials.dark_metal(true)
+	var t := 0.05 * k
+	for side in [-1.0, 1.0]:
+		var hb := _box(Vector3(bw + t * 2.0, t, t * 1.4), frame_mat)
+		hb.position = Vector3(0.0, board_y + side * (bh / 2.0 + t / 2.0), board_z)
+		add_child(hb)
+		var vb := _box(Vector3(t, bh, t * 1.4), frame_mat)
+		vb.position = Vector3(side * (bw / 2.0 + t / 2.0), board_y, board_z)
+		add_child(vb)
+		var led_h := _box(Vector3(bw + t * 2.0, 0.025, 0.025), HallMaterials.neon(color, 1.6))
+		led_h.position = Vector3(0.0, board_y + side * (bh / 2.0 + t), board_z + t)
+		add_child(led_h)
+		_led.append(led_h)
+		var led_v := _box(Vector3(0.025, bh + t * 2.0, 0.025), HallMaterials.neon(color, 1.6))
+		led_v.position = Vector3(side * (bw / 2.0 + t), board_y, board_z + t)
+		add_child(led_v)
+		_led.append(led_v)
+	var glow := HallMaterials.halo(color, bw * 1.8, 0.35)
+	glow.position = Vector3(0.0, board_y, board_z - 0.1)
+	add_child(glow)
+	# il ferro con la staffa e la retina
+	var ring := MeshInstance3D.new()
+	var tm := TorusMesh.new()
+	tm.inner_radius = rim_radius - 0.018
+	tm.outer_radius = rim_radius + 0.018
+	tm.rings = 32
+	tm.ring_segments = 8
+	ring.mesh = tm
+	ring.material_override = HallMaterials.rim_material()
+	ring.position.y = rim_height
+	ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(ring)
+	var bracket := _box(Vector3(0.16 * k, 0.04, 0.2), HallMaterials.rim_material())
+	bracket.position = Vector3(0.0, rim_height - 0.01, board_z + 0.1)
+	add_child(bracket)
+	_net = HallMaterials.hoop_net(rim_radius, rim_radius * 1.9)
+	_net.position.y = rim_height
+	add_child(_net)
+	# il tabellino sopra il tabellone: chi ha segnato l'ultimo canestro
+	var sb_y := board_y + bh / 2.0 + 0.55 * k
+	var panel := _box(Vector3(bw * 0.95, 0.75 * k, 0.12), HallMaterials.dark_metal(true))
+	panel.position = Vector3(0.0, sb_y, board_z - 0.02)
+	add_child(panel)
+	var trim := _box(Vector3(bw * 0.95 + 0.06, 0.04, 0.14), HallMaterials.trim_gold())
+	trim.position = Vector3(0.0, sb_y - 0.375 * k, board_z - 0.02)
+	add_child(trim)
+	var trim_top := trim.duplicate()
+	trim_top.position.y = sb_y + 0.375 * k
+	add_child(trim_top)
+	_score_title = _flat_label(text.to_upper(), 34, UI.ACCENT, Vector3(0.0, sb_y + 0.2 * k, board_z + 0.05))
+	_score_name = _flat_label("Fai canestro!", 44, Color.WHITE, Vector3(-0.15 * k, sb_y - 0.1 * k, board_z + 0.05))
+	_score_points = _flat_label("", 60, UI.ACCENT, Vector3(bw * 0.36, sb_y - 0.08 * k, board_z + 0.05))
+	_score_name.pixel_size = 0.005 * k
+	_score_title.pixel_size = 0.004 * k
+	_score_points.pixel_size = 0.005 * k
+	# una luce dall'alto sul ferro
+	_beam = _light_beam(0.2, 1.6, rim_height + 3.2, Color(1.0, 0.75, 0.45))
+	_beam_power = 0.22
+	add_child(_beam)
+
+
+# Il mezzo campo: parquet laccato con le righe (HallMaterials.court_material) e il logo BONOBO.
+# Senza canestro accanto il fondo è verso il fondo della sala (-z); con link() si mette sotto il canestro
+func _build_court(text: String) -> void:
+	color = Color("ff7a1a")
+	_fade_labels = true
+	var hall: Dictionary = _game.get("hall", {}) if _game.get("hall") is Dictionary else {}
+	var three := float(hall.get("threePointRadius", THREE_POINT / CM)) * CM
+	# il campo vero è 15 x 14 m: qui largo quanto serve perché l'arco da tre sia quello del server
+	var w := three / FIBA_THREE * 15.0
+	_court_size = Vector2(w, w * 14.0 / 15.0)
+	_court = HallMaterials.court(_court_size, true)
+	_court.name = "Parquet"
+	add_child(_court)
+	# bordo d'oro attorno al parquet
+	_court_logo = Node3D.new()
+	add_child(_court_logo)
+	var logo := _flat_floor_label("BONOBO", 150, UI.PRIMARY, Color(1.0, 0.85, 0.4))
+	logo.pixel_size = _court_size.x / 15.0 * 0.011
+	_court_logo.add_child(logo)
+	var sub := _flat_floor_label(text.to_upper(), 40, Color(1, 1, 1, 0.75), Color(0, 0, 0, 0.6))
+	sub.pixel_size = _court_size.x / 15.0 * 0.009
+	sub.position.z = _court_size.x / 15.0 * 1.1
+	_court_logo.add_child(sub)
+	for side in [-1.0, 1.0]:
+		var ex := _box(Vector3(0.08, 0.04, _court_size.y + 0.16), HallMaterials.trim_gold())
+		ex.position = Vector3(side * (_court_size.x / 2.0 + 0.04), 0.02, 0.0)
+		ex.name = "EdgeX"
+		_court.add_child(ex)
+		var ez := _box(Vector3(_court_size.x + 0.16, 0.04, 0.08), HallMaterials.trim_gold())
+		ez.position = Vector3(0.0, 0.02, side * (_court_size.y / 2.0 + 0.04))
+		_court.add_child(ez)
+	_place_court(position + Vector3(0.0, 0.0, -_court_size.y / 2.0 + FIBA_HOOP * _court_size.x / 15.0))
+
+
+# Il parquet con il ferro (in coordinate della sala) a FIBA_HOOP dal fondo, girato verso il centro della zona
+func _place_court(hoop: Vector3) -> void:
+	if _court == null:
+		return
+	var s := _court_size.x / 15.0
+	var to_center := Vector2(position.x - hoop.x, position.z - hoop.z)
+	var dir := to_center.normalized() if to_center.length() > 0.01 else Vector2(0.0, 1.0)
+	var yaw := atan2(dir.x, dir.y) # +z locale del parquet: dal canestro verso metà campo
+	var mid := Vector2(hoop.x, hoop.z) + dir * (_court_size.y / 2.0 - FIBA_HOOP * s)
+	_court.rotation.y = yaw
+	_court.position = Vector3(mid.x - position.x, 0.012, mid.y - position.z).rotated(Vector3.UP, -rotation.y)
+	# il logo tra l'arco da tre e la metà campo
+	var logo_at := Vector2(hoop.x, hoop.z) + dir * ((FIBA_HOOP + FIBA_THREE) * s + (_court_size.y - (FIBA_HOOP + FIBA_THREE) * s) * 0.5)
+	_court_logo.position = Vector3(logo_at.x - position.x, 0.02, logo_at.y - position.z)
+	_court_logo.rotation.y = 0.0 # le scritte si leggono dalla telecamera, comunque sia girato il campo
+
+
+# La scacchiera gigante: 8 x 8 caselle di marmo con la cornice (HallMaterials.chessboard), i bordi d'oro,
+# le lettere e i numeri sul bordo, quattro colonnine con la gemma agli angoli. Bianco verso la telecamera (+z)
+func _build_chessboard(text: String) -> void:
+	color = Color("b06bff")
+	_fade_labels = true
+	var hall: Dictionary = _game.get("hall", {}) if _game.get("hall") is Dictionary else {}
+	var square := float(hall.get("chessSquare", radius * 2.0 / 8.0 / CM)) * CM
+	var inner := square * 8.0
+	var side := inner / (1.0 - 2.0 * BOARD_BORDER)
+	var slab := _box(Vector3(side + 0.1, 0.06, side + 0.1), HallMaterials.dark_metal(true))
+	slab.position.y = -0.02 # appena sotto: i pezzi stanno a y = 0 per il server
+	add_child(slab)
+	var board := HallMaterials.chessboard(side, BOARD_BORDER)
+	board.position.y = 0.012
+	add_child(board)
+	_board_frame_mat = HallMaterials.neon(color, 1.4)
+	for s in [-1.0, 1.0]:
+		var gx := _box(Vector3(0.07, 0.05, side + 0.14), HallMaterials.trim_gold())
+		gx.position = Vector3(s * (side / 2.0 + 0.05), 0.02, 0.0)
+		add_child(gx)
+		var gz := _box(Vector3(side + 0.14, 0.05, 0.07), HallMaterials.trim_gold())
+		gz.position = Vector3(0.0, 0.02, s * (side / 2.0 + 0.05))
+		add_child(gz)
+		var nx := _box(Vector3(0.03, 0.02, side + 0.2), _board_frame_mat)
+		nx.position = Vector3(s * (side / 2.0 + 0.11), 0.01, 0.0)
+		add_child(nx)
+		var nz := _box(Vector3(side + 0.2, 0.02, 0.03), _board_frame_mat)
+		nz.position = Vector3(0.0, 0.01, s * (side / 2.0 + 0.11))
+		add_child(nz)
+	# lettere delle colonne (a-h, da sinistra) e numeri delle traverse (1 davanti, verso la telecamera)
+	var edge := inner / 2.0 + side * BOARD_BORDER / 2.0
+	for i in 8:
+		var off := -inner / 2.0 + square * (i + 0.5)
+		for s in [-1.0, 1.0]:
+			var f := _flat_floor_label("abcdefgh"[i], 64, Color(1.0, 0.85, 0.45), Color(0.1, 0.03, 0.0, 0.8))
+			f.pixel_size = side * BOARD_BORDER * 0.011
+			f.position = Vector3(off, 0.03, s * edge)
+			add_child(f)
+			var r := _flat_floor_label(str(8 - i), 64, Color(1.0, 0.85, 0.45), Color(0.1, 0.03, 0.0, 0.8))
+			r.pixel_size = f.pixel_size
+			r.position = Vector3(s * edge, 0.03, off)
+			add_child(r)
+	# colonnine agli angoli con la gemma viola
+	for cx in [-1.0, 1.0]:
+		for cz in [-1.0, 1.0]:
+			var at := Vector3(cx * (side / 2.0 + 0.3), 0.0, cz * (side / 2.0 + 0.3))
+			var post := _cylinder(0.1, 0.14, 1.2, HallMaterials.marble(), 10)
+			post.position = at + Vector3(0, 0.6, 0)
+			add_child(post)
+			var cap := _cylinder(0.2, 0.14, 0.1, HallMaterials.trim_gold(), 10)
+			cap.position = at + Vector3(0, 1.25, 0)
+			add_child(cap)
+			var gem := _sphere(0.14, HallMaterials.neon(color, 3.0))
+			gem.position = at + Vector3(0, 1.42, 0)
+			add_child(gem)
+			var gh := HallMaterials.halo(color, 1.2, 0.5)
+			gh.position = gem.position
+			add_child(gh)
+	_title = label(text, 44, Color(1.0, 0.9, 0.6), Color(0.15, 0.05, 0.25, 0.9))
+	_title.position = Vector3(0.0, 1.6, -side / 2.0 - 0.4)
+	add_child(_title)
+	_beam = _light_beam(side * 0.15, side * 0.62, 9.0, Color(0.85, 0.7, 1.0))
+	_beam_power = 0.18
+	add_child(_beam)
+
+
+# La rastrelliera dei palloni (i palloni stanno a terra, per il server): una pedana bassa con due binari,
+# il cartello e una striscia arancione accesa
+func _build_rack(text: String) -> void:
+	color = Color("ff7a1a")
+	_fade_labels = true
+	var w := radius * 2.2
+	var plate := _box(Vector3(w, 0.03, 0.62), HallMaterials.dark_metal(true))
+	plate.position.y = 0.0
+	add_child(plate)
+	for side in [-1.0, 1.0]:
+		var rail := _box(Vector3(w, 0.06, 0.04), HallMaterials.metal(true))
+		rail.position = Vector3(0.0, 0.05, side * 0.14)
+		add_child(rail)
+		var post := _box(Vector3(0.06, 0.9, 0.06), HallMaterials.dark_metal(true))
+		post.position = Vector3(side * (w / 2.0 - 0.03), 0.45, -0.3)
+		add_child(post)
+	var sign := _box(Vector3(w, 0.32, 0.05), HallMaterials.dark_metal(true))
+	sign.position = Vector3(0.0, 0.95, -0.3)
+	add_child(sign)
+	var neon := _box(Vector3(w - 0.1, 0.03, 0.03), HallMaterials.neon(color, 2.2, 0.6))
+	neon.position = Vector3(0.0, 0.77, -0.27)
+	add_child(neon)
+	var l := _flat_label(text.to_upper(), 40, UI.ACCENT, Vector3(0.0, 0.95, -0.27))
+	l.pixel_size = 0.004
+	var pool := HallMaterials.light_pool(color, w * 1.4, 0.35)
+	pool.position.y = 0.02
+	add_child(pool)
+
+
+# Una scritta dritta (non girata verso la telecamera) che guarda +z: il tabellino del canestro
+func _flat_label(text: String, size: int, col: Color, at: Vector3) -> Label3D:
+	var l := label(text, size, col, Color(0, 0, 0, 0.85))
+	l.billboard = BaseMaterial3D.BILLBOARD_DISABLED
+	l.no_depth_test = false
+	l.position = at
+	add_child(l)
+	return l
+
+
+# Una scritta dipinta a terra, si legge dalla telecamera (+z)
+static func _flat_floor_label(text: String, size: int, col: Color, outline: Color) -> Label3D:
+	var l := label(text, size, col, outline)
+	l.billboard = BaseMaterial3D.BILLBOARD_DISABLED
+	l.no_depth_test = false
+	l.render_priority = 0
+	l.outline_render_priority = -1
+	l.rotation.x = -PI / 2.0
+	return l
 
 
 # --- pezzi ---

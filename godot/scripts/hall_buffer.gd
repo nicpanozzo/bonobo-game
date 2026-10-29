@@ -8,6 +8,7 @@ var own_id := "" # il proprio lottatore: ritardo più corto, si sente più pront
 var own_delay_ms := 50.0
 var teleport_cm := 400.0 # oltre questo salto tra due snapshot non si interpola (rientro, spinta enorme)
 var size := 20
+var angles: Array[String] = [] # altri campi da interpolare, angoli in radianti (oggetti: yaw, spin, tilt, tiltDir)
 
 var _frames: Array = [] # [{ t: ora del server, players: { id: HallPlayerState } }]
 var _offset := NAN # ora locale - ora del server, stimata
@@ -71,4 +72,7 @@ func _at(id: String, render_time: float) -> Dictionary:
 	out.y = lerpf(float(pa.y), float(pb.y), k)
 	out.z = lerpf(float(pa.z), float(pb.z), k)
 	out.vy = (float(pb.y) - float(pa.y)) / maxf(1.0, float(b.t) - float(a.t)) * 1000.0 # cm/s: sale o scende
+	for key in angles:
+		# lerp_angle: yaw che passa da PI a -PI e spin che ricomincia da 0 non fanno il giro lungo
+		out[key] = lerp_angle(float(pa.get(key, 0.0)), float(pb.get(key, 0.0)), k)
 	return out

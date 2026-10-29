@@ -31,7 +31,7 @@ func test_regole_della_stanza() -> void:
 
 func test_tasti_di_base() -> void:
 	var hint := Hud.controls_hint(null)
-	runner.check(hint.contains("J spingi") and hint.contains("K cambia colore") and hint.contains("T inchino"), hint)
+	runner.check(hint.contains("J spingi") and hint.contains("K prendi, cambia colore") and hint.contains("T inchino"), hint)
 	runner.check(hint.contains("Spazio"), "il salto: %s" % hint)
 
 
@@ -62,4 +62,32 @@ func test_lista_e_conto_sullo_schermo() -> void:
 	var lead_r := Rect2(h._lead_card.position, h._lead_card.size)
 	var need_r := Rect2(h._need_card.position, h._need_card.size)
 	runner.check(not list_r.intersects(lead_r) and not list_r.intersects(need_r) and not lead_r.intersects(need_r), "riquadri separati")
+	h.free()
+
+
+func test_tasti_dei_palloni_e_classifica_dei_canestri() -> void:
+	var hint := Hud.controls_hint(null)
+	runner.check(hint.contains("tira (col pallone)") and hint.contains("K prendi"), hint)
+	var players := [
+		Fake.player("a", "Anna", "default", 0xe74c3c, 0, 0, {"baskets": 2}),
+		Fake.player("b", "Bea", "default", 0x3498db, 0, 0, {"baskets": 5}),
+		Fake.player("c", "Ciro", "default", 0x2ecc71, 0, 0),
+		Fake.player("d", "Dino", "default", 0xf1c40f, 0, 0, {"baskets": 2}),
+		Fake.player("e", "Elio", "default", 0x9b59b6, 0, 0, {"baskets": 1}),
+	]
+	var top: Array = Hud.hoop_leaders(players, "a")
+	runner.check(top.size() == 3 and top[0].name == "Bea" and top[1].name == "Anna" and top[2].name == "Dino", "i primi tre: %s" % str(top))
+	runner.check(top[1].me and not top[0].me, "si vede chi sono io")
+	runner.check(Hud.hoop_leaders([Fake.player("c", "Ciro", "default", 0, 0, 0)]).is_empty(), "senza canestri niente classifica")
+	var h: Control = Hud.new()
+	runner.root.add_child(h)
+	h.size = Vector2(1280, 720)
+	h.setup(JSON.parse_string(FileAccess.get_file_as_string("res://data/game.json")))
+	h.on_snapshot(Fake.party(0.0))
+	runner.check(not h._hoops_card.visible, "nessun canestro: niente riquadro")
+	h.on_snapshot(Fake.party(33.0, "basket"))
+	runner.check(h._hoops_card.visible and h._hoops_rows.get_child_count() == 3, "i canestri della sala")
+	var lead_r := Rect2(h._lead_card.position, h._lead_card.size)
+	var hoops_r := Rect2(h._hoops_card.position, h._hoops_card.size)
+	runner.check(not lead_r.intersects(hoops_r), "sotto il riquadro della modalità")
 	h.free()
