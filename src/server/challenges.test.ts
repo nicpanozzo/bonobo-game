@@ -14,7 +14,8 @@ const DT = 1000 / TICK_RATE;
 function play(c: Challenge, player: "difficile" | ((me: Fighter, target: Fighter, tick: number) => ReturnType<typeof emptyInput>)): ChallengeRun {
   const match = new Match({ stageId: c.stage, rules: { mode: "training" } });
   const bots = new Bots();
-  const me = typeof player === "string" ? bots.add(match, player)! : (match.addPlayer("me", "Me"), "me");
+  // Chi gioca la sfida è Bonobo, il lottatore di base; il bersaglio è il bot di sempre, Bonobot (#383)
+  const me = typeof player === "string" ? bots.add(match, player, "default")! : (match.addPlayer("me", "Me"), "me");
   const target = bots.add(match, c.bot)!;
   match.reset();
   match.setPercent(target, c.botPercent);
@@ -35,7 +36,7 @@ function juggler(me: Fighter, target: Fighter, tick: number) {
   const input = emptyInput();
   const dx = target.x - me.x;
   const dy = target.y - me.y;
-  if (Math.abs(dx) > 20) input[dx > 0 ? "right" : "left"] = true;
+  if (Math.abs(dx) > 10) input[dx > 0 ? "right" : "left"] = true; // stretto: il corpo di Bonobot, il bot di base (#383), è più sottile
   if (target.onGround) {
     input.up = Math.abs(dx) < 70;
     input.heavy = tick % 2 === 0 && !me.attack && Math.abs(dx) < 70; // premuto e lasciato: niente colpo caricato

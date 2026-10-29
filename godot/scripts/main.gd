@@ -501,6 +501,8 @@ func _on_connected() -> void:
 		data.rules = params.rules # contano solo se la stanza è nuova
 	if params.get("bot", "") != "":
 		data.bot = params.bot
+		if str(params.get("botChar", "")) != "":
+			data.botCharacterId = params.botChar # il lottatore del bot (#383); senza, il server mette Bonobot
 	if _token != "" and _token_room == str(params.room):
 		data.token = _token # dopo una caduta di rete: rientra nello stesso lottatore se il posto è tenuto (#107)
 	# Versione e protocollo (E2): un protocollo diverso viene rifiutato con refused, una versione diversa no.

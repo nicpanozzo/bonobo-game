@@ -12,13 +12,13 @@ describe("parseJoin", () => {
   });
 
   it("tiene i campi giusti e ripulisce il codice stanza", () => {
-    const data = parseJoin({ room: "Serata-1!", name: "Luca", characterId: "egiainuso", stageId: "palco", bot: "facile" });
-    assert.deepEqual(data, { room: "serata-1", name: "Luca", characterId: "egiainuso", skinId: undefined, team: undefined, stageId: "palco", rules: undefined, bot: "facile", token: undefined, version: undefined, protocol: undefined });
+    const data = parseJoin({ room: "Serata-1!", name: "Luca", characterId: "egiainuso", stageId: "palco", bot: "facile", botCharacterId: "elvedeo" });
+    assert.deepEqual(data, { room: "serata-1", name: "Luca", characterId: "egiainuso", skinId: undefined, team: undefined, stageId: "palco", rules: undefined, bot: "facile", botCharacterId: "elvedeo", token: undefined, version: undefined, protocol: undefined });
   });
 
   it("ignora i campi del tipo sbagliato", () => {
-    const data = parseJoin({ room: 7, name: { a: 1 }, characterId: 3, stageId: [], rules: "tante", bot: null });
-    assert.deepEqual(data, { room: "lobby", name: "", characterId: undefined, skinId: undefined, team: undefined, stageId: undefined, rules: undefined, bot: undefined, token: undefined, version: undefined, protocol: undefined });
+    const data = parseJoin({ room: 7, name: { a: 1 }, characterId: 3, stageId: [], rules: "tante", bot: null, botCharacterId: 5 });
+    assert.deepEqual(data, { room: "lobby", name: "", characterId: undefined, skinId: undefined, team: undefined, stageId: undefined, rules: undefined, bot: undefined, botCharacterId: undefined, token: undefined, version: undefined, protocol: undefined });
   });
 
   it("taglia le stringhe enormi", () => {

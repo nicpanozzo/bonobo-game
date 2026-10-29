@@ -252,3 +252,24 @@ func test_arene_nascoste_fuori_dalla_lobby() -> void:
 	for id in ids:
 		runner.check(id.begins_with("casuale-") or not lobby.game.stages[id].get("hidden", false), "%s non è nascosta" % id)
 	lobby.free()
+
+
+# Il lottatore del bot (#383): si sceglie sotto "Bot", parte da Bonobot e va al server con la scelta
+func test_lottatore_del_bot() -> void:
+	var lobby := _lobby(false)
+	runner.check(not lobby._bot_char_box.visible, "senza bot il selettore non c'è")
+	runner.check(lobby._bot_char_ids[lobby._bot_char.selected] == Lobby.BOT_CHARACTER_ID, "parte da Bonobot")
+	lobby._bot.select(1) # il manichino
+	lobby._sync_rules()
+	runner.check(lobby._bot_char_box.visible, "con un bot si sceglie il suo lottatore")
+	var c := _last_choice(lobby, lobby._submit)
+	runner.check(c.bot == "manichino" and c.botChar == "bonobot", "manichino Bonobot: %s %s" % [c.bot, c.botChar])
+	lobby._bot_char.select(lobby._bot_char_ids.find("elvedeo"))
+	lobby._bot.select(4)
+	c = _last_choice(lobby, lobby._submit)
+	runner.check(c.bot == "difficile" and c.botChar == "elvedeo", "bot difficile Elvedeo: %s %s" % [c.bot, c.botChar])
+	lobby.free()
+	var again := _lobby(false, {"botChar": "lampione"}, "bot")
+	runner.check(again._bot_char_box.visible, "contro un bot il selettore c'è subito")
+	runner.check(again._bot_char_ids[again._bot_char.selected] == "lampione", "ricorda l'ultima scelta")
+	again.free()

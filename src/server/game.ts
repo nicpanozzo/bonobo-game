@@ -70,7 +70,7 @@ export function attachGame(io: Server<ClientToServer, ServerToClient>, deps: Gam
       if (room) return;
       const data = parseJoin(raw);
       if (!data) return;
-      const { room: code, characterId, stageId, rules, bot } = data;
+      const { room: code, characterId, stageId, rules, bot, botCharacterId } = data;
       const refusal = checkProtocol(data.protocol);
       if (refusal) {
         socket.emit("refused", refusal);
@@ -111,7 +111,7 @@ export function attachGame(io: Server<ClientToServer, ServerToClient>, deps: Gam
         rooms.set(code, r);
         r.onClose = () => rooms.delete(code);
         const kind = parseBotKind(bot);
-        if (kind) bots.add(r.match, kind);
+        if (kind) bots.add(r.match, kind, botCharacterId);
       }
       if (r.isFull) {
         socket.emit("roomFull");
