@@ -1,8 +1,8 @@
 // Test della validazione dei messaggi in arrivo (#105): niente di quello che arriva dalla rete deve far cadere il server
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { NET_LIMITS, TRAINING } from "../shared/constants";
-import { parseInput, parseJoin, parseRoomCode, parseTraining, sanitizeName } from "./validate";
+import { NET_LIMITS, TRAINING, VOICE } from "../shared/constants";
+import { parseInput, parseJoin, parseRoomCode, parseTraining, parseVoiceSignal, parseVoiceState, sanitizeName } from "./validate";
 
 const JUNK: unknown[] = [null, undefined, 42, "ciao", true, [], [1, 2], () => 1];
 
@@ -134,3 +134,39 @@ describe("parseTraining", () => {
   });
 });
 
+
+describe("parseVoiceSignal", () => {
+  it("tiene tipo, destinatario e dati, e nient'altro (il mittente lo mette il server)", () => {
+    assert.deepEqual(parseVoiceSignal({ kind: "offer", data: "v=0", to: "AbC_12-xyz", from: "falso" }), { kind: "offer", data: "v=0", to: "AbC_12-xyz" });
+    for (const kind of ["answer", "ice", "bye"]) assert.equal(parseVoiceSignal({ kind, data: "", to: "b" })?.kind, kind);
+  });
+
+  it("scarta tipi sconosciuti, destinatari strani e dati non di testo", () => {
+    for (const junk of JUNK) assert.equal(parseVoiceSignal(junk), null);
+    assert.equal(parseVoiceSignal({ kind: "hack", data: "", to: "b" }), null);
+    assert.equal(parseVoiceSignal({ kind: "toString", data: "", to: "b" }), null);
+    for (const to of [undefined, 7, "", "con spazi", "x".repeat(33), "a/b"]) assert.equal(parseVoiceSignal({ kind: "ice", data: "", to }), null);
+    for (const data of [undefined, 7, { sdp: "v=0" }, ["v=0"]]) assert.equal(parseVoiceSignal({ kind: "ice", data, to: "b" }), null);
+  });
+
+  it("scarta i dati oltre VOICE.maxSignalBytes, contati in byte e non in caratteri", () => {
+    assert.ok(parseVoiceSignal({ kind: "offer", data: "x".repeat(VOICE.maxSignalBytes), to: "b" }));
+    assert.equal(parseVoiceSignal({ kind: "offer", data: "x".repeat(VOICE.maxSignalBytes + 1), to: "b" }), null);
+    assert.equal(parseVoiceSignal({ kind: "offer", data: "è".repeat(VOICE.maxSignalBytes / 2 + 1), to: "b" }), null);
+  });
+});
+
+describe("parseVoiceState", () => {
+  it("solo booleani veri: il resto vale false", () => {
+    assert.deepEqual(parseVoiceState({ on: true, muted: true, deafened: false }), { on: true, muted: true, deafened: false });
+    assert.deepEqual(parseVoiceState({ on: "sì", muted: 1, deafened: null }), { on: false, muted: false, deafened: false });
+  });
+
+  it("chi non sente nessuno è anche silenziato", () => {
+    assert.deepEqual(parseVoiceState({ on: true, muted: false, deafened: true }), { on: true, muted: true, deafened: true });
+  });
+
+  it("scarta ciò che non è un oggetto", () => {
+    for (const junk of JUNK) assert.equal(parseVoiceState(junk), null);
+  });
+});

@@ -1,8 +1,8 @@
 // Tutto quello che arriva dalla rete è sconosciuto (#105): un client vecchio, buggato o malevolo
 // può mandare null, numeri, array o stringhe enormi. Queste funzioni restituiscono dati puliti
 // o null, così i gestori di index.ts non si fidano mai di quello che ricevono.
-import { NET_LIMITS, TRAINING } from "../shared/constants";
-import type { InputState, MatchRules } from "../shared/types";
+import { NET_LIMITS, TRAINING, VOICE } from "../shared/constants";
+import type { InputState, MatchRules, VoiceSignal } from "../shared/types";
 
 export interface JoinData {
   room: string;
@@ -96,6 +96,25 @@ export function parseTraining(raw: unknown): TrainingData | null {
     typeof raw.percent === "number" && Number.isFinite(raw.percent) ? Math.max(0, Math.min(TRAINING.maxPercent, Math.round(raw.percent))) : undefined;
   const speed = typeof raw.speed === "number" && TRAINING.speeds.includes(raw.speed) ? raw.speed : undefined;
   return { percent, speed, reset: raw.reset === true };
+}
+
+// Chat vocale: il server gira il messaggio così com'è, quindi controlla solo tipo, destinatario e dimensione.
+// "to" è un id di giocatore (id di socket, 20 caratteri base64url): qualunque altra cosa non è nessuno
+const VOICE_KINDS: readonly VoiceSignal["kind"][] = ["offer", "answer", "ice", "bye"];
+export function parseVoiceSignal(raw: unknown): (VoiceSignal & { to: string }) | null {
+  if (!isObject(raw)) return null;
+  const { kind, data, to } = raw;
+  if (typeof kind !== "string" || !(VOICE_KINDS as readonly string[]).includes(kind)) return null;
+  if (typeof to !== "string" || !/^[A-Za-z0-9_-]{1,32}$/.test(to)) return null;
+  if (typeof data !== "string" || Buffer.byteLength(data) > VOICE.maxSignalBytes) return null;
+  return { kind: kind as VoiceSignal["kind"], data, to };
+}
+
+// Solo booleani; chi non sente nessuno non parla neanche (come su Discord), così gli altri lo vedono silenziato
+export function parseVoiceState(raw: unknown): { on: boolean; muted: boolean; deafened: boolean } | null {
+  if (!isObject(raw)) return null;
+  const deafened = raw.deafened === true;
+  return { on: raw.on === true, muted: raw.muted === true || deafened, deafened };
 }
 
 // Caratteri invisibili o che girano il testo (controllo, larghezza zero, RTL, mezze emoji tagliate dal limite

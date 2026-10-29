@@ -5,10 +5,10 @@ import type { AddressInfo } from "node:net";
 import { after, before, test } from "node:test";
 import { Server } from "socket.io";
 import { io as connect, type Socket } from "socket.io-client";
-import { HALL, MAX_PLAYERS_PER_ROOM, NET_LIMITS, PREMATCH, PROTOCOL_VERSION, TICK_RATE } from "../shared/constants";
+import { HALL, MAX_PLAYERS_PER_ROOM, NET_LIMITS, PREMATCH, PROTOCOL_VERSION, TICK_RATE, VOICE } from "../shared/constants";
 import { emptyInput } from "../shared/physics";
-import type { ClientToServer, GameSnapshot, HallSnapshot, HallZone, InputState, ServerToClient } from "../shared/types";
-import { attachGame, type GameDeps } from "./game";
+import type { ClientToServer, GameSnapshot, HallSnapshot, HallZone, InputState, ServerToClient, VoiceState } from "../shared/types";
+import { attachGame, type GameDeps, turnFromEnv } from "./game";
 import type { Room } from "./Room";
 import { SERVER_VERSION } from "./version";
 
@@ -475,4 +475,201 @@ test("sala: il bot chiesto da chi crea la stanza aspetta nella sala e poi gioca 
   }
   assert.ok(pressed, "il bot cammina verso A");
   a.disconnect();
+});
+
+// Chat vocale: il server fa solo da centralino (offerte, risposte e candidati ICE), l'audio va da browser a browser
+type VoiceMsg = Parameters<ServerToClient["voice"]>[0];
+type VoiceConfig = Parameters<ServerToClient["voiceConfig"]>[0];
+const voiceInbox = (c: Client) => {
+  const got: VoiceMsg[] = [];
+  c.on("voice", (m) => got.push(m));
+  return got;
+};
+const nextVoice = (c: Client) => new Promise<VoiceMsg>((resolve) => c.once("voice", resolve));
+// Welcome e voiceConfig insieme, controllando che la configurazione arrivi subito dopo il welcome
+function joinVoice(c: Client, data: Parameters<ClientToServer["join"]>[0]) {
+  return new Promise<{ welcome: Welcome; config: VoiceConfig }>((resolve, reject) => {
+    c.once("welcome", (welcome) => {
+      c.once("voiceConfig", (config) => resolve({ welcome, config }));
+      c.once("snapshot", () => reject(new Error("snapshot prima di voiceConfig")));
+      c.once("hall", () => reject(new Error("hall prima di voiceConfig")));
+    });
+    c.emit("join", data);
+  });
+}
+
+test("voce: offerta, risposta e candidati passano all'altro giocatore con il mittente vero", LIMIT, async () => {
+  const a = await client();
+  const b = await client();
+  const wa = (await joinVoice(a, { room: "voce", name: "A" })).welcome;
+  const wb = (await joinVoice(b, { room: "voce", name: "B" })).welcome;
+  const offer = nextVoice(b);
+  // Il from scritto dal client non conta: lo mette il server
+  (a as unknown as { emit: (e: string, d: unknown) => void }).emit("voice", { kind: "offer", data: "v=0 offerta", to: wb.id, from: "qualcun-altro" });
+  assert.deepEqual(await offer, { kind: "offer", data: "v=0 offerta", from: wa.id });
+  const answer = nextVoice(a);
+  b.emit("voice", { kind: "answer", data: "v=0 risposta", to: wa.id });
+  assert.deepEqual(await answer, { kind: "answer", data: "v=0 risposta", from: wb.id });
+  const ice = nextVoice(b);
+  a.emit("voice", { kind: "ice", data: '{"candidate":"candidate:1 1 udp 1 1.2.3.4 5 typ host"}', to: wb.id });
+  assert.deepEqual(await ice, { kind: "ice", data: '{"candidate":"candidate:1 1 udp 1 1.2.3.4 5 typ host"}', from: wa.id });
+  a.disconnect();
+  b.disconnect();
+});
+
+test("voce: niente messaggi verso un'altra stanza, un id finto, se stessi o prima di entrare", LIMIT, async () => {
+  const a = await client();
+  const b = await client();
+  const other = await client();
+  const outside = await client();
+  outside.emit("voice", { kind: "offer", data: "fuori", to: "chiunque" });
+  const wa = (await joinVoice(a, { room: "voce-chiusa", name: "A" })).welcome;
+  const wb = (await joinVoice(b, { room: "voce-chiusa", name: "B" })).welcome;
+  const wo = (await joinVoice(other, { room: "voce-altrove", name: "C" })).welcome;
+  const inOther = voiceInbox(other);
+  const inA = voiceInbox(a);
+  const inB = voiceInbox(b);
+  outside.emit("voice", { kind: "offer", data: "fuori", to: wb.id });
+  a.emit("voice", { kind: "offer", data: "altra stanza", to: wo.id });
+  a.emit("voice", { kind: "offer", data: "finto", to: "nessuno-con-questo-id" });
+  a.emit("voice", { kind: "offer", data: "a me", to: wa.id });
+  // Lo stesso socket arriva in ordine: quando passa questo, gli altri sono già stati scartati
+  const marker = nextVoice(b);
+  a.emit("voice", { kind: "bye", data: "", to: wb.id });
+  await marker;
+  await sleep(50);
+  assert.deepEqual(inOther, []);
+  assert.deepEqual(inA, []);
+  assert.deepEqual(inB.map((m) => m.data), [""]);
+  for (const c of [a, b, other, outside]) c.disconnect();
+});
+
+test("voce: messaggi sbagliati o troppo grossi si scartano e il socket resta acceso", LIMIT, async () => {
+  const a = await client();
+  const b = await client();
+  await joinVoice(a, { room: "voce-brutta", name: "A" });
+  const wb = (await joinVoice(b, { room: "voce-brutta", name: "B" })).welcome;
+  const inB = voiceInbox(b);
+  const bad = a as unknown as { emit: (event: string, ...args: unknown[]) => void };
+  for (const raw of [null, 7, "offer", [wb.id], { kind: "hack", data: "", to: wb.id }, { kind: "offer", data: 42, to: wb.id }, { kind: "offer", data: "", to: 42 }])
+    bad.emit("voice", raw);
+  bad.emit("voice", { kind: "offer", data: "x".repeat(VOICE.maxSignalBytes + 1), to: wb.id });
+  for (const raw of [null, "on", [true]]) bad.emit("voiceState", raw);
+  const marker = nextVoice(b);
+  a.emit("voice", { kind: "offer", data: "buona", to: wb.id });
+  await marker;
+  assert.deepEqual(inB.map((m) => m.data), ["buona"]);
+  assert.ok(a.connected);
+  a.disconnect();
+  b.disconnect();
+});
+
+test("voce: voiceConfig subito dopo il welcome, con STUN e chi è già in voce", LIMIT, async () => {
+  const a = await client();
+  const { config } = await joinVoice(a, { room: "voce-config", name: "A" });
+  assert.deepEqual(config, { iceServers: [{ urls: VOICE.stunUrls }], states: [] });
+  const mine = new Promise<VoiceState>((resolve) => a.once("voiceState", resolve));
+  a.emit("voiceState", { on: true, muted: true, deafened: false });
+  const state = await mine;
+  assert.deepEqual(state, { id: a.id, on: true, muted: true, deafened: false }, "lo stato torna anche a chi l'ha mandato");
+  const b = await client();
+  assert.deepEqual((await joinVoice(b, { room: "voce-config", name: "B" })).config.states, [state]);
+  a.disconnect();
+  b.disconnect();
+});
+
+test("voce: nelle stanze con la sala d'attesa funziona allo stesso modo", LIMIT, async () => {
+  const a = await client();
+  const b = await client();
+  const { welcome, config } = await joinVoice(a, { room: "voce-sala", name: "A", hall: true });
+  assert.deepEqual([welcome.phase, config.states], ["hall", []]);
+  const wb = (await joinVoice(b, { room: "voce-sala", name: "B" })).welcome;
+  const offer = nextVoice(b);
+  a.emit("voice", { kind: "offer", data: "dalla sala", to: wb.id });
+  assert.deepEqual(await offer, { kind: "offer", data: "dalla sala", from: welcome.id });
+  a.disconnect();
+  b.disconnect();
+});
+
+test("voce: TURN dall'ambiente arriva ai client, ma nome utente e password non finiscono nei log", LIMIT, async () => {
+  assert.equal(turnFromEnv({}), undefined);
+  assert.equal(turnFromEnv({ TURN_URL: " , " }), undefined);
+  const turn = turnFromEnv({ TURN_URL: "turn:turn.example.org:3478, turns:turn.example.org:5349?transport=tcp", TURN_USERNAME: "bonobo", TURN_CREDENTIAL: "segretissima" });
+  assert.deepEqual(turn, { urls: ["turn:turn.example.org:3478", "turns:turn.example.org:5349?transport=tcp"], username: "bonobo", credential: "segretissima" });
+
+  const logged: string[] = [];
+  const original = { log: console.log, error: console.error, warn: console.warn };
+  const record = (...args: unknown[]) => logged.push(args.map(String).join(" "));
+  Object.assign(console, { log: record, error: record, warn: record });
+  try {
+    const server = await startServer({ turn });
+    const a = await client(server.url);
+    const { config } = await joinVoice(a, { room: "voce-turn", name: "A" });
+    assert.deepEqual(config.iceServers, [{ urls: VOICE.stunUrls }, turn]);
+    a.disconnect();
+    await until(() => !server.rooms.has("voce-turn"));
+  } finally {
+    Object.assign(console, original);
+  }
+  assert.ok(logged.length > 0, "il server ha scritto qualcosa");
+  assert.ok(!logged.some((l) => l.includes("segretissima") || l.includes("bonobo")), "credenziali nei log");
+});
+
+test("voce: chi esce o cade esce anche dalla voce; chi rientra riparte senza voce", LIMIT, async () => {
+  const server = await startServer({ reconnectHoldMs: 2000 });
+  const a = await client(server.url);
+  const b = await client(server.url);
+  const c = await client(server.url);
+  const wa = (await joinVoice(a, { room: "voce-uscite", name: "A" })).welcome;
+  await joinVoice(b, { room: "voce-uscite", name: "B" });
+  const cId = (await joinVoice(c, { room: "voce-uscite", name: "C" })).welcome.id; // c.id sparisce quando si scollega
+  const seen: VoiceState[] = [];
+  b.on("voiceState", (s) => seen.push(s));
+  const stateOf = (id: string) => [...seen].reverse().find((s) => s.id === id);
+  a.emit("voiceState", { on: true, muted: false, deafened: false });
+  c.emit("voiceState", { on: true, muted: false, deafened: true });
+  await until(() => stateOf(wa.id)?.on === true && stateOf(cId)?.on === true);
+  assert.deepEqual(stateOf(cId), { id: cId, on: true, muted: true, deafened: true });
+
+  // Uscita vera: on false a tutti e via dall'elenco
+  c.disconnect();
+  await until(() => stateOf(cId)?.on === false);
+  // Caduta di rete: il posto è tenuto, ma la voce si chiude subito così gli altri possono ricollegarsi dopo
+  a.io.engine.close();
+  await until(() => stateOf(wa.id)?.on === false);
+  const a2 = await client(server.url);
+  const back = await joinVoice(a2, { room: "voce-uscite", name: "A", token: wa.token });
+  assert.equal(back.welcome.resumed, true);
+  assert.deepEqual(back.config.states, []);
+  // Rientrato, torna in voce con lo stesso id
+  a2.emit("voiceState", { on: true, muted: false, deafened: false });
+  await until(() => stateOf(wa.id)?.on === true);
+  // Ripetere lo stesso stato non manda niente di nuovo
+  const before = seen.length;
+  a2.emit("voiceState", { on: true, muted: false, deafened: false });
+  a2.emit("voiceState", { on: true, muted: true, deafened: false });
+  await until(() => stateOf(wa.id)?.muted === true);
+  assert.equal(seen.length, before + 1);
+  a2.disconnect();
+  b.disconnect();
+});
+
+test("voce: chi manda troppi messaggi viene limitato", LIMIT, async () => {
+  const a = await client();
+  const b = await client();
+  await joinVoice(a, { room: "voce-raffica", name: "A" });
+  const wb = (await joinVoice(b, { room: "voce-raffica", name: "B" })).welcome;
+  const inB = voiceInbox(b);
+  let states = 0;
+  b.on("voiceState", () => states++);
+  for (let i = 0; i < VOICE.signalBurst * 3; i++) a.emit("voice", { kind: "ice", data: String(i), to: wb.id });
+  for (let i = 0; i < VOICE.statesPerSecond * 5; i++) a.emit("voiceState", { on: true, muted: i % 2 === 0, deafened: false });
+  await until(() => inB.length >= VOICE.signalBurst);
+  await sleep(150);
+  // Passano il primo blocco e i pochi gettoni tornati nel frattempo, non tutta la raffica
+  assert.ok(inB.length < VOICE.signalBurst * 2, `passati ${inB.length} messaggi`);
+  assert.ok(states <= VOICE.statesPerSecond + 1, `passati ${states} cambi di stato`);
+  assert.ok(a.connected, "un picco breve non chiude il socket");
+  a.disconnect();
+  b.disconnect();
 });

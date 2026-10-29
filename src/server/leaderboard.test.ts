@@ -48,7 +48,7 @@ describe("classifica a punti", () => {
     try {
       await fn(path.join(dir, "classifica.json"));
     } finally {
-      await rm(dir, { recursive: true, force: true });
+      await rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 }); // un salvataggio ancora in corso può riscrivere la cartella mentre la si toglie
     }
   };
 

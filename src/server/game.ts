@@ -2,14 +2,14 @@
 // Separato da index.ts (HTTP e avvio) così i test possono accenderlo su un server vero (E4 passo 2).
 
 import type { Server, Socket } from "socket.io";
-import { HALL, NET_LIMITS, ROOM_IDLE_MS } from "../shared/constants";
-import type { ClientToServer, ServerToClient } from "../shared/types";
+import { HALL, NET_LIMITS, ROOM_IDLE_MS, VOICE } from "../shared/constants";
+import type { ClientToServer, IceServer, ServerToClient, VoiceState } from "../shared/types";
 import { botCharacter, Bots, parseBotKind } from "./bot";
 import { discordHooks } from "./discord";
 import type { Leaderboard } from "./leaderboard";
 import { clientIp, Flood, IpLimits, TokenBucket } from "./rateLimit";
 import { combineHooks, Room } from "./Room";
-import { parseInput, parseJoin, parseTraining, sanitizeName } from "./validate";
+import { parseInput, parseJoin, parseTraining, parseVoiceSignal, parseVoiceState, sanitizeName } from "./validate";
 import { checkProtocol, ROOM_FULL, SERVER_VERSION, TOO_MANY_ROOMS } from "./version";
 
 export interface GameDeps {
@@ -18,7 +18,19 @@ export interface GameDeps {
   limits?: Partial<typeof NET_LIMITS>; // per i test: limiti diversi da quelli di constants.ts
   roomIdleMs?: number;
   reconnectHoldMs?: number; // per i test: posto tenuto più corto di RECONNECT_HOLD_MS
+  turn?: IceServer; // server TURN per la chat vocale (index.ts lo legge dall'ambiente con turnFromEnv)
 }
+
+// TURN dall'ambiente: TURN_URL (anche più indirizzi separati da virgola), TURN_USERNAME, TURN_CREDENTIAL.
+// Senza TURN_URL niente TURN: la voce passa solo dove STUN basta
+export function turnFromEnv(env: Record<string, string | undefined>): IceServer | undefined {
+  const urls = (env.TURN_URL ?? "").split(",").map((u) => u.trim()).filter(Boolean);
+  if (urls.length === 0) return undefined;
+  return { urls, ...(env.TURN_USERNAME && { username: env.TURN_USERNAME }), ...(env.TURN_CREDENTIAL && { credential: env.TURN_CREDENTIAL }) };
+}
+
+// Stato di chi esce dalla voce: agli altri basta on false per chiudere il collegamento
+const voiceOff = (id: string): VoiceState => ({ id, on: false, muted: false, deafened: false });
 
 // Collega il gioco al server Socket.IO e restituisce le stanze aperte (per /health e per i test)
 export function attachGame(io: Server<ClientToServer, ServerToClient>, deps: GameDeps = {}): Map<string, Room> {
@@ -29,6 +41,22 @@ export function attachGame(io: Server<ClientToServer, ServerToClient>, deps: Gam
   // Chi controlla ogni lottatore: dopo una riconnessione il lottatore (playerId) passa a un socket nuovo (#107)
   const owners = new Map<string, Socket<ClientToServer, ServerToClient>>();
   const replaced = new Set<string>(); // socket vecchi chiusi perché il loro giocatore è rientrato da un altro
+  // Chi è nella chat vocale di ogni stanza (assente = fuori). Per oggetto Room e non per codice: una stanza chiusa
+  // si porta via il suo elenco, e una nuova con lo stesso codice parte vuota
+  const voices = new WeakMap<Room, Map<string, VoiceState>>();
+  const voicesOf = (r: Room) => {
+    let states = voices.get(r);
+    if (!states) voices.set(r, (states = new Map()));
+    return states;
+  };
+  // Il giocatore esce dalla voce (uscito, caduto o rientrato da un altro socket): gli altri chiudono il collegamento
+  const leaveVoice = (r: Room, id: string) => {
+    if (voicesOf(r).delete(id)) io.to(r.code).emit("voiceState", voiceOff(id));
+  };
+  // L'audio va da browser a browser: il server dà gli indirizzi STUN (e TURN se c'è) e chi è già in voce
+  const iceServers: IceServer[] = [{ urls: [...VOICE.stunUrls] }, ...(deps.turn ? [deps.turn] : [])];
+  const sendVoiceConfig = (socket: Socket<ClientToServer, ServerToClient>, r: Room) =>
+    socket.emit("voiceConfig", { iceServers, states: [...voicesOf(r).values()] });
 
   // Una stanza dove nessun umano preme tasti da troppo si chiude come una vuota: chi è dentro viene scollegato
   const sweep = setInterval(() => {
@@ -93,7 +121,10 @@ export function attachGame(io: Server<ClientToServer, ServerToClient>, deps: Gam
         owners.set(playerId, socket);
         socket.join(code);
         r.resumePlayer(playerId);
+        // Il client rientrato riparte senza voce: i collegamenti di prima sono morti col socket vecchio
+        leaveVoice(r, playerId);
         socket.emit("welcome", { id: playerId, room: code, stageId: r.stage.id, rules: r.rules, stage: r.stage, token, resumed: true, serverVersion: SERVER_VERSION, hall: !!r.hall, phase: r.phase });
+        sendVoiceConfig(socket, r);
         console.log(`[${code}] rientra ${playerId}`);
         return;
       }
@@ -135,6 +166,7 @@ export function attachGame(io: Server<ClientToServer, ServerToClient>, deps: Gam
       owners.set(playerId, socket);
       const fresh = r.seats.issue(playerId);
       socket.emit("welcome", { id: playerId, room: code, stageId: r.stage.id, rules: r.rules, stage: r.stage, token: fresh, resumed: false, serverVersion: SERVER_VERSION, hall: !!r.hall, phase: r.phase });
+      sendVoiceConfig(socket, r);
       console.log(`[${code}] entra ${playerId}`);
     });
 
@@ -170,11 +202,41 @@ export function attachGame(io: Server<ClientToServer, ServerToClient>, deps: Gam
       if (cmd.percent !== undefined) for (const f of room.match.players) if (f.id !== playerId) room.match.setPercent(f.id, cmd.percent);
     });
 
+    // Chat vocale: il server fa solo da centralino tra due giocatori della stessa stanza.
+    // Il mittente è sempre quello di questo socket, mai quello scritto dal client; i bot non hanno socket, quindi niente voce
+    const voiceBucket = new TokenBucket(VOICE.signalsPerSecond, VOICE.signalBurst, Date.now());
+    const voiceStateBucket = new TokenBucket(VOICE.statesPerSecond, VOICE.statesPerSecond, Date.now());
+    socket.on("voice", (raw: unknown) => {
+      if (!room || !allow(voiceBucket)) return;
+      const signal = parseVoiceSignal(raw);
+      if (!signal || signal.to === playerId) return;
+      const target = owners.get(signal.to);
+      if (!target?.rooms.has(room.code)) return;
+      target.emit("voice", { kind: signal.kind, data: signal.data, from: playerId });
+    });
+    socket.on("voiceState", (raw: unknown) => {
+      if (!room || !allow(voiceStateBucket)) return;
+      const next = parseVoiceState(raw);
+      if (!next) return;
+      if (!next.on) {
+        leaveVoice(room, playerId);
+        return;
+      }
+      const states = voicesOf(room);
+      const prev = states.get(playerId);
+      if (prev && prev.muted === next.muted && prev.deafened === next.deafened) return; // niente di nuovo da dire
+      const state: VoiceState = { id: playerId, ...next };
+      states.set(playerId, state);
+      io.to(room.code).emit("voiceState", state);
+    });
+
     socket.on("disconnect", (reason) => {
       perIp.disconnect(ip);
       if (replaced.delete(socket.id)) return;
       if (owners.get(playerId) === socket) owners.delete(playerId);
       if (!room || rooms.get(room.code) !== room) return;
+      // Fuori dalla voce sia chi esce sia chi cade: al rientro il client si ricollega da capo
+      leaveVoice(room, playerId);
       // Chi esce apposta (il client chiude il namespace) libera subito il posto;
       // chi perde la rete lo ritrova tenuto per RECONNECT_HOLD_MS (#107)
       if (reason !== "client namespace disconnect" && reason !== "server namespace disconnect") {
