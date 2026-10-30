@@ -1294,6 +1294,88 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       down: { type: "counter", name: "Mangia!", startupMs: 60, windowMs: 400, endLagMs: 480, minDamage: 8, multiplier: 1.3, range: 70, height: 60, baseKnockback: 480, knockbackGrowth: 9, angleDeg: 38 },
     },
   },
+
+  // Inventato da Claude per Davide: un bonobo piccoletto e pieno di sé che dirige l'orchestra, e combatte dirigendo.
+  // Frac con le code, criniera bianca, piedi nudi e una bacchetta enorme con la punta d'oro. Scheda: docs/mosse/opus.md;
+  // pezzi e animazioni col codice (tools/rig/genera_pezzi_opus.py, animazioni_opus.py, genera_oggetti_opus.py)
+  opus: {
+    id: "opus",
+    name: "Maestro Opus",
+    strikeColor: "#ffd77a", // scia dei colpi: la punta d'oro della bacchetta
+    quotes: { taunt: "Grazie, grazie, troppo gentili!", ko: "Che stonatura!", victory: "Bis! Bis!", supreme: "Gran Finale!" },
+    // Pose chiave agganciate ai tempi del server (animazioni_opus.py): il fotogramma 0 dei colpi è già la carica,
+    // e da hitFrame ad activeEnd la punta della bacchetta resta nella zona finché il colpo prende (#506)
+    sprite: {
+      dir: "assets/characters/opus",
+      frameWidth: 380, // largo e alto: la bacchetta tesa arriva lontano, anche sopra la testa
+      frameHeight: 380,
+      footY: 296, // sotto i piedi c'è posto per il corpo di chi è appeso al bordo
+      scale: 0.5,
+      animations: {
+        idle: { fps: 12, loop: true }, // tiene il tempo con la bacchetta, la sinistra sul fianco
+        walk: { fps: 24, loop: true }, // passetti impettiti, la bacchetta batte a ogni passo
+        dash: { fps: 24, loop: true }, // piegato in avanti, la bacchetta come una lancia
+        jump: { fps: 24, loop: false },
+        fall: { fps: 24, loop: true }, // a braccia aperte, code del frac e criniera che salgono
+        doubleJump: { fps: 24, loop: false }, // piroetta con la bacchetta tesa
+        land: { fps: 24, loop: false },
+        hit: { fps: 24, loop: false },
+        tumble: { fps: 24, loop: true },
+        ledge: { fps: 12, loop: true },
+        climb: { fps: 24, loop: false },
+        taunt: { fps: 12, loop: false }, // l'inchino al pubblico
+        shield: { fps: 12, loop: true },
+        grabbed: { fps: 12, loop: true },
+        grab: { fps: 24, loop: false, hitFrame: 2 },
+        throw: { fps: 24, loop: false, hitFrame: 0 },
+        light: { fps: 24, loop: false, hitFrame: 2, activeEnd: 3 }, // stoccata di bacchetta
+        heavy: { fps: 24, loop: false, hitFrame: 7, activeEnd: 9 }, // Fortissimo, a due mani
+        lightUp: { fps: 24, loop: false, hitFrame: 2, activeEnd: 3 },
+        lightDown: { fps: 24, loop: false, hitFrame: 2, activeEnd: 3 },
+        lightAir: { fps: 24, loop: false, hitFrame: 2, activeEnd: 4 },
+        heavyUp: { fps: 24, loop: false, hitFrame: 7, activeEnd: 9 }, // Crescendo, bacchetta al cielo
+        heavyDown: { fps: 24, loop: false, hitFrame: 6, activeEnd: 8 }, // spaccata, colpisce dai due lati
+        heavyAir: { fps: 24, loop: false, hitFrame: 6, activeEnd: 8 },
+        recovery: { fps: 24, loop: false, hitFrame: 0, activeEnd: 4 },
+        specialNeutral: { fps: 24, loop: false, hitFrame: 5 }, // Staccato: la nota parte dalla punta
+        specialSide: { fps: 24, loop: false, hitFrame: 4, activeEnd: 8 }, // Glissando: in scivolata finché dura lo scatto
+        specialDown: { fps: 24, loop: false, hitFrame: 2, activeEnd: 8 }, // Fermata: la pausa, poi il "tutti"
+        supreme: { fps: 24, loop: false, hitFrame: 24, activeEnd: 25 }, // Gran Finale: liana, capriola, colpo, inchino
+      },
+    },
+    // leggero e svolazzante: veloce, salta alto e cade piano, ma vola via presto
+    stats: { weight: 0.85, speed: 1.08, airSpeed: 1.12, jump: 1.15, gravity: 0.88 },
+    // il corpo che si può colpire, misurato sulla sagoma del fermo (#243): stretto, ma la criniera lo fa alto
+    hurtbox: { width: 29, height: 100 },
+    // i colpi normali con la bacchetta (#384 D2): il leggero è una stoccata svelta e corta di danno,
+    // il pesante ("Fortissimo") parte un po' prima ma fa meno male: è piccolo.
+    // Le zone sono dove arriva la punta della bacchetta (#243, tools/sprite/zone_dei_colpi.py)
+    attacks: {
+      light: { damage: 4, cooldownMs: 250, range: 67, height: 30, boxX: 8, boxY: -73 },
+      heavy: { damage: 12, startupMs: 230, cooldownMs: 720, range: 71, height: 44, boxX: 0, boxY: -59 },
+      lightUp: { range: 54, height: 48, boxX: -28, boxY: -136 },
+      lightDown: { range: 78, height: 24, boxX: 0, boxY: -24 },
+      lightAir: { range: 70, height: 50, boxX: 2, boxY: -82 },
+      heavyUp: { range: 80, height: 64, boxX: -36, boxY: -142 },
+      heavyDown: { range: 80, height: 30, boxX: 0, boxY: -34 },
+      heavyAir: { range: 68, height: 60, boxX: 0, boxY: -62 },
+      dashAttack: { range: 71, height: 44, boxX: 0, boxY: -59 },
+    },
+    specials: {
+      // note d'oro che partono dalla punta della bacchetta, un po' su e un po' giù a turno: due in volo insieme
+      neutral: {
+        type: "projectile", name: "Staccato", startupMs: 200, cooldownMs: 480, speed: 640, gravity: 0, spreadDeg: [4, -6, 10, -2], lifeMs: 950, maxAlive: 2,
+        range: 26, height: 26, damage: 5, baseKnockback: 210, knockbackGrowth: 3.5, angleDeg: 30, color: 0xf4c64f,
+        sprite: { path: "assets/characters/opus/proiettili/nota.png", frameWidth: 72, frameHeight: 72, fps: 12, scale: 0.5 },
+      },
+      // scivola in avanti sulle ginocchia con la bacchetta tesa come un fioretto
+      side: { type: "dash", name: "Glissando", startupMs: 110, durationMs: 280, speed: 880, endLagMs: 300, range: 52, height: 40, damage: 9, baseKnockback: 360, knockbackGrowth: 8, angleDeg: 35, boxY: -48 },
+      // la mano aperta: "silenzio!". Chi lo colpisce nella pausa si prende l'attacco del tutti
+      down: { type: "counter", name: "Fermata", startupMs: 50, windowMs: 420, endLagMs: 460, minDamage: 8, multiplier: 1.35, range: 64, height: 64, baseKnockback: 460, knockbackGrowth: 9, angleDeg: 40 },
+    },
+    // salta alla liana e la tira: dall'alto cade un pianoforte a coda. Dopo il puff scappa via un pianoforte piccolo
+    supreme: communityDrop("opus", "pianoforte", "Gran Finale", { label: "Pianoforte" }),
+  },
 };
 
 // Un id sconosciuto (o mancante) diventa il personaggio base
