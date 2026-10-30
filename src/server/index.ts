@@ -5,11 +5,12 @@ import express from "express";
 import { Server } from "socket.io";
 import { NET_LIMITS, PING_INTERVAL_MS, PING_TIMEOUT_MS } from "../shared/constants";
 import type { ClientToServer, ServerToClient } from "../shared/types";
-import { attachGame } from "./game";
+import { attachGame, turnFromEnv } from "./game";
 import { health } from "./health";
 import { Leaderboard, leaderboardPage } from "./leaderboard";
 
 const PORT = Number(process.env.PORT) || 3000;
+const BOARD_PAGE_ROWS = 50; // righe della classifica a punti nella pagina e nel JSON
 const GAME_PAGE_URL = "https://nicpanozzo.github.io/bonobo-game/godot/"; // come PAGES_URL in host.ts
 
 const app = express();
@@ -37,14 +38,21 @@ app.get("/health", (_req, res) => {
 const leaderboard = new Leaderboard(process.env.LEADERBOARD_FILE || path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../data/classifica.json"));
 void leaderboard.load();
 app.get("/classifica", (_req, res) => {
-  res.type("html").send(leaderboardPage(leaderboard.week()));
+  res.type("html").send(leaderboardPage(leaderboard.week(), leaderboard.board(BOARD_PAGE_ROWS)));
 });
+// I JSON li legge anche il gioco web da github.io, un altro dominio: senza questo il browser li blocca
 app.get("/classifica.json", (_req, res) => {
-  res.json(leaderboard.week());
+  res.set("Access-Control-Allow-Origin", "*").json(leaderboard.week());
+});
+app.get("/classifica/punti.json", (_req, res) => {
+  res.set("Access-Control-Allow-Origin", "*").json({ board: leaderboard.board(BOARD_PAGE_ROWS), updatedAt: Date.now() });
 });
 
 // Stanze e messaggi dei giocatori: src/server/game.ts
-const rooms = attachGame(io, { leaderboard, discordWebhookUrl: process.env.DISCORD_WEBHOOK_URL });
+// Chat vocale: TURN facoltativo per chi è dietro reti chiuse. Si scrive solo se c'è, mai nome utente o password
+const turn = turnFromEnv(process.env);
+if (turn) console.log(`[voce] TURN configurato: ${[turn.urls].flat().length} indirizzi`);
+const rooms = attachGame(io, { leaderboard, discordWebhookUrl: process.env.DISCORD_WEBHOOK_URL, turn });
 
 // Un errore sfuggito (in un gancio asincrono, in una libreria) non spegne il server per tutti: si registra e si va avanti.
 // Solo se la porta non si apre non c'è niente da tenere acceso. host.ts ha un suo gestore che lo spiega a chi ospita.

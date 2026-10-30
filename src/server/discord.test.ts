@@ -1,9 +1,14 @@
 // Test delle statistiche e del messaggio per Discord (#18): nessuna rete, solo eventi finti.
 import assert from "node:assert/strict";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { describe, it } from "node:test";
+import { RATING } from "../shared/constants";
 import { sanitizeRules } from "../shared/rules";
 import type { GameEvent } from "../shared/types";
-import { discordHooks, escapeMarkdown, formatResult, funTitles } from "./discord";
+import { discordHooks, escapeMarkdown, formatResult, funTitles, ratingChanges } from "./discord";
+import { Leaderboard } from "./leaderboard";
 import { TokenBucket } from "./rateLimit";
 import { MatchStats } from "./stats";
 
@@ -95,5 +100,83 @@ describe("limite dei post sul Discord", () => {
     } finally {
       globalThis.fetch = realFetch;
     }
+  });
+});
+
+describe("punti in classifica a fine partita", () => {
+  const end = (winnerId: string, winnerTeam = 0) => ({ type: "matchEnd" as const, winnerId, winnerTeam, durationMs: 1000 });
+  const fakeRoom = (mode: "ffa" | "teams" = "ffa") => {
+    const sent: { event: string; data: unknown }[] = [];
+    const room = { rules: sanitizeRules({ mode }), broadcast: (event: string, data: unknown) => sent.push({ event, data }) };
+    return { room: room as never, sent };
+  };
+  const withBoard = async (fn: (lb: Leaderboard) => Promise<void> | void) => {
+    const dir = await mkdtemp(path.join(tmpdir(), "discord-"));
+    try {
+      const lb = new Leaderboard(path.join(dir, "classifica.json"));
+      await lb.load();
+      await fn(lb);
+      await lb.flush();
+    } finally {
+      await rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 }); // un salvataggio ancora in corso può riscrivere la cartella mentre la si toglie
+    }
+  };
+
+  it("manda a tutta la stanza i punti di ogni umano, con l'id del suo lottatore", async () => {
+    await withBoard((lb) => {
+      const { room, sent } = fakeRoom();
+      const fighters = [{ id: "s1", name: "Luca", team: 0 }, { id: "bot", name: "Bonobot", team: 0 }, { id: "s2", name: "Marta", team: 0 }] as never;
+      discordHooks(undefined, (id) => id === "bot", lb).onMatchEnd?.(room, end("s1"), fighters);
+      assert.deepEqual(sent, [
+        {
+          event: "ratings",
+          data: {
+            changes: [
+              { id: "s1", name: "Luca", rating: RATING.start + RATING.k / 2, delta: RATING.k / 2, tier: lb.board(1)[0].tier, rank: 1 },
+              { id: "s2", name: "Marta", rating: RATING.start - RATING.k / 2, delta: -RATING.k / 2, tier: lb.board(2)[1].tier, rank: 2 },
+            ],
+          },
+        },
+      ]);
+    });
+  });
+
+  it("a squadre segna le squadre e la modalità: i compagni prendono gli stessi punti", async () => {
+    await withBoard((lb) => {
+      const { room, sent } = fakeRoom("teams");
+      const fighters = [
+        { id: "a", name: "A", team: 1 },
+        { id: "b", name: "B", team: 1 },
+        { id: "c", name: "C", team: 2 },
+        { id: "d", name: "D", team: 2 },
+      ] as never;
+      discordHooks(undefined, () => false, lb).onMatchEnd?.(room, end("a", 1), fighters);
+      const { changes } = sent[0].data as { changes: { id: string; delta: number }[] };
+      assert.deepEqual(changes.map((c) => c.delta), [RATING.k / 2, RATING.k / 2, -RATING.k / 2, -RATING.k / 2]);
+    });
+  });
+
+  it("con meno di due umani la partita non conta e non arrivano punti", async () => {
+    await withBoard((lb) => {
+      const { room, sent } = fakeRoom();
+      const fighters = [{ id: "s1", name: "Luca", team: 0 }, { id: "bot", name: "Bonobot", team: 0 }] as never;
+      discordHooks(undefined, (id) => id === "bot", lb).onMatchEnd?.(room, end("s1"), fighters);
+      assert.deepEqual(sent, []);
+      assert.deepEqual(lb.board(10), []);
+    });
+  });
+
+  it("due umani con lo stesso nome: i punti vanno solo al primo", () => {
+    const changes = ratingChanges([{ id: "x", name: "Luca" }, { id: "y", name: "luca" }], [{ name: "Luca", rating: 1016, delta: 16, tier: "t", rank: 1 }]);
+    assert.deepEqual(changes.map((c) => c.id), ["x"]);
+  });
+
+  it("il messaggio sul Discord aggiunge i punti a ogni riga", () => {
+    const s = new MatchStats();
+    const players = [{ id: "a", name: "Luca", team: 0, stocks: 1 }, { id: "b", name: "Marta", team: 0, stocks: 0 }];
+    const points = new Map([["a", 16], ["b", -16]]);
+    const lines = formatResult(end("a"), players, (id) => s.get(id), sanitizeRules({}), (id) => points.get(id)).split("\n");
+    assert.match(lines[1], /^👑 Luca: .*, \+16 punti$/);
+    assert.match(lines[2], /^• Marta: .*, -16 punti$/);
   });
 });

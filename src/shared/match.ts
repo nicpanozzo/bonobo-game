@@ -25,6 +25,7 @@ export interface MatchOptions {
   rules?: Partial<MatchRules>;
   items?: boolean; // false = niente oggetti anche dove ci sarebbero (es. i test di bilanciamento dei personaggi, #302)
   prematch?: boolean; // true = prima si aspetta che tutti siano pronti, poi 3, 2, 1 (il server; mai in Allenamento)
+  autoRestart?: boolean; // false = a fine partita si resta fermi finché qualcuno chiede la rivincita (le stanze con la sala d'attesa)
 }
 
 export type MatchEndEvent = Extract<GameEvent, { type: "matchEnd" }>;
@@ -50,6 +51,7 @@ export class Match {
   private items: ItemWorld | null; // oggetti (#17): solo in Tutti contro tutti e Squadre
   private projectiles: ProjectileWorld = createProjectileWorld(); // proiettili delle speciali (E10)
   private prematch: Prematch | null; // attesa e conto alla rovescia prima di ogni partita, null = si comincia subito
+  private autoRestart: boolean;
 
   constructor(options: MatchOptions = {}) {
     this.rules = sanitizeRules(options.rules);
@@ -65,6 +67,7 @@ export class Match {
     const amount = ITEM_AMOUNTS[rules.itemAmount];
     const withItems = options.items !== false && (rules.mode === "ffa" || rules.mode === "teams") && amount.maxOnStage > 0 && rules.itemKinds.length > 0;
     this.prematch = options.prematch && rules.mode !== "training" ? new Prematch() : null;
+    this.autoRestart = options.autoRestart !== false;
     this.items = withItems ? createItemWorld(seedOf(this.stage.id), { everyMs: amount.everyMs, maxOnStage: amount.maxOnStage, kinds: rules.itemKinds }) : null;
   }
 
@@ -199,6 +202,11 @@ export class Match {
   // Pre-partita: id è pronto (o non più). I bot lo sono da quando entrano
   setReady(id: string, ready: boolean) {
     if (this.fighters.has(id)) this.prematch?.setReady(id, ready);
+  }
+
+  // La partita è finita (c'è un vincitore) e non è ancora ricominciata
+  get ended(): boolean {
+    return this.winnerId !== null;
   }
 
   // In attesa o al conto alla rovescia: la partita vera non è ancora cominciata
@@ -365,7 +373,7 @@ export class Match {
   private updateMatch(list: Fighter[], dt: number) {
     if (this.winnerId) {
       this.restartTimer -= dt;
-      if (this.restartTimer <= 0) this.nextMatch();
+      if (this.restartTimer <= 0 && this.autoRestart) this.nextMatch();
       return;
     }
     if (list.length >= 2) this.matchTimeMs += dt; // il tempo corre solo quando c'è qualcuno contro cui giocare

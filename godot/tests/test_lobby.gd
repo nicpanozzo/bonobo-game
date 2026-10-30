@@ -7,9 +7,11 @@ const Lobby := preload("res://scripts/lobby.gd")
 const FighterPose := preload("res://scripts/fighter_pose.gd")
 
 
-func _lobby(start_join: bool, params := {}, start_kind := "") -> Control:
+# hall: la lobby della sala d'attesa 3D (quella del gioco); i test di prima provano quella con modalità e arena
+func _lobby(start_join: bool, params := {}, start_kind := "", hall := false) -> Control:
 	var game: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/game.json"))
 	var lobby: Control = Lobby.new()
+	lobby.hall = hall
 	runner.root.add_child(lobby)
 	var p := {"name": "Nic", "room": "vecchia", "server": "http://localhost:3000"}
 	p.merge(params, true)
@@ -97,6 +99,42 @@ func test_scheda_del_lottatore() -> void:
 	runner.check(lobby._big_moves.text.begins_with("Speciali: Schizzo"), lobby._big_moves.text)
 	runner.check(lobby._summary.text.ends_with("Capt. OrsoBlu"), "e nel riassunto: %s" % lobby._summary.text)
 	lobby.free()
+
+
+# Senza una scelta salvata si parte da un lottatore disegnato (Bonobot), non dal rettangolo del bonobo
+# fatto col codice; una scelta salvata vince sempre, anche se è proprio il bonobo
+func test_lottatore_di_partenza() -> void:
+	var lobby := _lobby(false)
+	runner.check(lobby._character == "bonobot", "senza scelta: Bonobot, non %s" % lobby._character)
+	runner.check(lobby._summary.text.ends_with("Bonobot"), "e nel riassunto: %s" % lobby._summary.text)
+	lobby.free()
+	lobby = _lobby(false, {"char": ""})
+	runner.check(lobby._character == "bonobot", "profilo salvato senza lottatore: Bonobot")
+	lobby.free()
+	lobby = _lobby(false, {"char": "default"})
+	runner.check(lobby._character == "default", "la scelta salvata resta: %s" % lobby._character)
+	lobby.free()
+	lobby = _lobby(false, {"char": "elvedeo"})
+	runner.check(lobby._character == "elvedeo" and lobby._big_name.text == "Elvedeo", "anche un altro: %s" % lobby._big_name.text)
+	lobby.free()
+	var game := {"defaultCharacterId": "default", "characters": {"default": {}, "tizio": {"sprite": {}}}}
+	runner.check(Lobby.default_fighter(game) == "tizio", "senza Bonobot il primo disegnato")
+	runner.check(Lobby.default_fighter({"defaultCharacterId": "default", "characters": {"default": {}}}) == "default", "senza disegni il bonobo")
+
+
+# Le pagine stanno in uno schermo da 1280x720 senza scorrere: la prima creando, la seconda entrando con la squadra
+func test_pagine_senza_scorrere() -> void:
+	for kind in ["create", "bot", "join"]:
+		var lobby := _lobby(false, {}, kind, true)
+		lobby.size = Vector2(1280, 720)
+		var scroll: ScrollContainer = lobby.find_children("*", "ScrollContainer", true, false)[0]
+		var bars: Array = scroll.get_parent().get_children().filter(func(c): return c != scroll)
+		var room: float = 720.0 - bars.reduce(func(acc, c): return acc + c.get_combined_minimum_size().y, 0.0)
+		for page in ["match", "fighter"]:
+			lobby._show_page(page, false)
+			var need: float = lobby._pages[page].get_combined_minimum_size().y + Lobby.PAGE_TOP + UI.GAP_L
+			runner.check(need <= room, "%s, %s: serve %d, c'è %d" % [kind, page, need, room])
+		lobby.free()
 
 
 func test_skin_del_lottatore() -> void:
@@ -273,3 +311,37 @@ func test_lottatore_del_bot() -> void:
 	runner.check(again._bot_char_box.visible, "contro un bot il selettore c'è subito")
 	runner.check(again._bot_char_ids[again._bot_char.selected] == "lampione", "ricorda l'ultima scelta")
 	again.free()
+
+
+# Sala d'attesa 3D: creando, modalità e arena si votano in sala; restano le regole e i passi sono Partita → Lottatore
+func test_con_la_sala_niente_modalita_ne_arena() -> void:
+	var lobby := _lobby(false, {"rules": {"mode": "training", "stocks": 4}}, "", true)
+	runner.check(lobby.flow() == ["match", "fighter"], "creando con la sala niente arena: %s" % [lobby.flow()])
+	runner.check(not lobby._mode_cards.visible and not lobby._mode_heading.visible, "le schede delle modalità non si vedono")
+	runner.check(lobby._hall_note.visible, "e c'è la nota sulla sala")
+	runner.check(lobby._stocks_box.visible and lobby._time_box.visible and lobby._items_box.visible, "vite, tempo e oggetti restano")
+	runner.check(lobby._mode_id() == "ffa", "l'allenamento salvato in sala non c'è: %s" % lobby._mode_id())
+	runner.check(_bot_id(lobby) == "", "e niente manichino messo da solo")
+	runner.check(lobby._summary.text.contains("in sala"), "il riassunto lo dice: %s" % lobby._summary.text)
+	lobby._forward()
+	runner.check(lobby._page == "fighter" and lobby._next_button.text == "In sala!", "da Partita al Lottatore: %s" % lobby._next_button.text)
+	var c := _last_choice(lobby, lobby._forward)
+	runner.check(c.get("hall") == true, "la scelta chiede la sala: %s" % [c])
+	runner.check(c.rules.stocks == 4 and c.rules.mode == "ffa", "con le regole di chi crea: %s" % [c.rules])
+	lobby.free()
+
+
+func test_con_la_sala_contro_un_bot_ed_entrando() -> void:
+	var lobby := _lobby(false, {}, "bot", true)
+	runner.check(lobby.flow() == ["match", "fighter"], "contro un bot si va in sala anche lui")
+	var c := _last_choice(lobby, lobby._submit)
+	runner.check(c.hall == true and c.bot == Lobby.QUICK_BOT, "il bot lo aggiunge la sala: %s %s" % [c.hall, c.bot])
+	lobby._set_kind("join")
+	lobby._room.text = "serata"
+	runner.check(lobby._team_box.visible, "entrando la squadra si sceglie ancora")
+	c = _last_choice(lobby, lobby._submit)
+	runner.check(c.hall == true and c.room == "serata", "entrando col link: %s" % [c])
+	lobby.free()
+	var old := _lobby(false)
+	runner.check(_last_choice(old, old._submit).get("hall") == false, "senza la sala la scelta non la chiede")
+	old.free()
