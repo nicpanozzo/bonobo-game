@@ -1,4 +1,4 @@
-# Il menu opzioni, a schede: Audio, Comandi, Video (E14, solo nell'app) e Accessibilità.
+# Il menu opzioni, a schede: Audio, Voce (chat vocale), Comandi, Video (E14, solo nell'app) e Accessibilità.
 # Lo aprono la lobby e il menu di pausa. I comandi hanno due schede, Tastiera e Pad (E6).
 extends Control
 
@@ -20,6 +20,16 @@ var _undo := {} # tasti prima dell'ultimo spostamento, per Annulla
 var _pages := {} # "audio", "keys", "video", "access" -> contenuto della scheda
 var _page_tabs := {} # stesse chiavi -> pulsante della scheda
 var _reset_keys: Button
+var _voice_waiting := "" # azione della voce (ptt, mute, deafen) che aspetta il tasto nuovo
+var _voice_keys := {} # azione della voce -> pulsante del tasto
+var _voice_notice: Label
+var _voice_meter: LevelMeter
+var _voice_test: Button
+var _voice_devices: OptionButton
+var _voice_modes := {} # "vad"/"ptt" -> pulsante
+# Tasti che il gioco usa già fuori dalle azioni (musica, rivincita, pausa...): la voce non li prende
+const VOICE_KEYS_HINT := "Clicca un tasto e premi quello nuovo: valgono anche in partita, dove il riquadro non ha pulsanti."
+const VOICE_RESERVED := [KEY_ESCAPE, KEY_M, KEY_R, KEY_P, KEY_F11, KEY_ENTER, KEY_KP_ENTER, KEY_TAB]
 
 
 func setup(s: Settings) -> void:
@@ -35,7 +45,7 @@ func setup(s: Settings) -> void:
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	top.add_child(title)
 	_box.add_child(top)
-	var pages := [["audio", "Audio", _audio_page()], ["keys", "Comandi", _keys_page()], ["video", "Video", _video_page()]]
+	var pages := [["audio", "Audio", _audio_page()], ["voice", "Voce", _voice_page()], ["keys", "Comandi", _keys_page()], ["video", "Video", _video_page()]]
 	pages.append(["touch", "Touch", _touch_page()])
 	pages.append(["access", "Accessibilità", _access_page()])
 	for page in pages:
@@ -63,8 +73,19 @@ func setup(s: Settings) -> void:
 	UI.keep_focus(self, done)
 
 
+# Apre il menu su una scheda (il riquadro della voce apre "voice")
+func open_page(id: String) -> void:
+	if _pages.has(id):
+		_show_page(id)
+
+
 # Una scheda alla volta: Audio, Comandi, Video o Accessibilità
 func _show_page(id: String) -> void:
+	if id != "voice":
+		_stop_voice_test()
+		if _voice_waiting != "":
+			_voice_waiting = ""
+			_draw_voice_keys()
 	for p in _pages:
 		_pages[p].visible = p == id
 		UI.set_selected(_page_tabs[p], p == id)
@@ -111,6 +132,8 @@ func _keys_page() -> VBoxContainer:
 		settings.save()))
 	page.add_child(tabs)
 	_keys.add_theme_constant_override("h_separation", UI.GAP_M)
+	# Col testo grande le tredici righe dei tasti devono stare in 720 pixel: righe attaccate
+	_keys.add_theme_constant_override("v_separation", 4 if Access.text_scale <= 1.0 else 0)
 	page.add_child(_keys)
 	_notice.add_theme_constant_override("separation", UI.GAP_L)
 	_notice.custom_minimum_size = Vector2(0, 36)
@@ -214,6 +237,8 @@ func _set_notice(text: String, color := UI.TEXT, can_undo := false) -> void:
 	if can_undo:
 		var b := UI.button("Annulla", func():
 			settings.bindings = _undo.keys
+			settings.voice_keys = _undo.get("voice", settings.voice_keys)
+			_draw_voice_keys()
 			settings.pad_bindings = _undo.pad
 			settings.save()
 			_set_notice("")
@@ -222,6 +247,7 @@ func _set_notice(text: String, color := UI.TEXT, can_undo := false) -> void:
 
 
 func close() -> void:
+	_stop_voice_test()
 	queue_free()
 	closed.emit()
 
@@ -240,6 +266,8 @@ func _volume_row(key: String, text: String) -> HBoxContainer:
 	slider.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(slider)
 	value.custom_minimum_size = Vector2(40, 0)
+	value.add_theme_font_override("font", UI.numbers(UI.WEIGHT_BOLD, false))
+	value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	row.add_child(value)
 	return row
 
@@ -274,6 +302,8 @@ func _draw_keys() -> void:
 				_waiting = {"action": action, "slot": slot}
 				_draw_keys())
 			b.custom_minimum_size = Vector2(110 if _pad else 160, 0)
+			if Access.text_scale > 1.0:
+				b.add_theme_font_size_override("font_size", Access.px(UI.SIZE_SMALL - 1))
 			b.clip_text = true
 			# Spazio e invio non arrivano al pulsante (li prende _input come tasti da assegnare),
 			# ma il pad ci si muove sopra e lo preme con A
@@ -296,12 +326,13 @@ func _pad_name() -> String:
 
 
 func _assign(code: int) -> void:
-	_undo = {"keys": settings.bindings.duplicate(true), "pad": settings.pad_bindings.duplicate(true)}
+	_undo = {"keys": settings.bindings.duplicate(true), "pad": settings.pad_bindings.duplicate(true), "voice": settings.voice_keys.duplicate(true)}
 	var from := settings.assign(_waiting.action, _waiting.slot, code, _pad)
 	_waiting = {}
 	if from != "":
 		var name := Settings.pad_label(code, Settings.pad_kind(_pad_name())) if _pad else Settings.key_label(code)
-		_set_notice("%s tolto da %s" % [name, Settings.LABELS[from]], UI.ACCENT, true)
+		_set_notice("%s tolto da %s" % [name, Settings.action_label(from)], UI.ACCENT, true)
+		_draw_voice_keys() # il tasto poteva essere della voce
 	else:
 		_set_notice("")
 	_draw_keys()
@@ -310,6 +341,8 @@ func _assign(code: int) -> void:
 # I tasti premuti mentre il menu è aperto servono solo qui. In attesa di un tasto
 # si accetta solo il dispositivo della scheda aperta; Esc e Canc valgono per entrambe.
 func _input(event: InputEvent) -> void:
+	if _voice_waiting != "" and _voice_key_input(event):
+		return
 	if _pad and not _waiting.is_empty():
 		var code := _pad_code(event)
 		if code >= 0:
@@ -349,3 +382,242 @@ func _pad_code(event: InputEvent) -> int:
 	if event is InputEventJoypadMotion and absf(event.axis_value) > settings.stick_deadzone:
 		return Settings.axis_input(event.axis, event.axis_value > 0)
 	return -1
+
+
+# ---- Scheda Voce (chat vocale) ----
+
+func _voice_page() -> VBoxContainer:
+	var page := VBoxContainer.new()
+	page.add_theme_constant_override("separation", UI.GAP_S + 1)
+	var vc := VoiceChat.current
+	var on_web := vc != null and vc.supported
+	var save := func(key: String, value: Variant) -> void:
+		settings.voice[key] = value
+		settings.save()
+	if not on_web:
+		var why := UI.label("La chat vocale funziona nel browser: apri il gioco dal link della stanza.", UI.SIZE_SMALL, UI.WARN)
+		why.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		page.add_child(why)
+	# Modalità: a voce (come Discord) o col tasto
+	var mode_row := HBoxContainer.new()
+	mode_row.add_theme_constant_override("separation", UI.GAP_S)
+	var mode_l := UI.label("Parli")
+	mode_l.custom_minimum_size = Vector2(140, 0)
+	mode_row.add_child(mode_l)
+	for m in [["vad", "Quando parli"], ["ptt", "Col tasto premuto"]]:
+		var b := UI.button(m[1], func():
+			save.call("mode", m[0])
+			_draw_voice_modes())
+		b.disabled = not on_web
+		_voice_modes[m[0]] = b
+		mode_row.add_child(b)
+	page.add_child(mode_row)
+	# Tasti: come nella scheda Comandi, un clic e poi il tasto nuovo
+	var keys_row := HBoxContainer.new()
+	keys_row.add_theme_constant_override("separation", UI.GAP_S)
+	var keys_l := UI.label("Tasti")
+	keys_l.custom_minimum_size = Vector2(140, 0)
+	keys_row.add_child(keys_l)
+	for a in Settings.VOICE_KEY_DEFAULTS:
+		var cell := VBoxContainer.new()
+		cell.add_theme_constant_override("separation", 0)
+		cell.add_child(UI.note(Settings.VOICE_LABELS[a]))
+		var b := UI.small_button("", func():
+			_voice_waiting = a
+			_set_voice_notice("Premi il tasto nuovo. Canc lo toglie, Esc annulla.")
+			_draw_voice_keys())
+		b.custom_minimum_size = Vector2(150, 0)
+		b.clip_text = true
+		b.disabled = not on_web
+		_voice_keys[a] = b
+		cell.add_child(b)
+		keys_row.add_child(cell)
+	page.add_child(keys_row)
+	_voice_notice = UI.note(VOICE_KEYS_HINT)
+	page.add_child(_voice_notice)
+	# Sensibilità con il misuratore dal vivo: la tacca è la soglia, la barra diventa verde quando passi
+	var sens := HBoxContainer.new()
+	var sens_l := UI.label("Sensibilità")
+	sens_l.custom_minimum_size = Vector2(140, 0)
+	sens.add_child(sens_l)
+	var meter_box := VBoxContainer.new()
+	meter_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	meter_box.add_theme_constant_override("separation", 2)
+	_voice_meter = LevelMeter.new()
+	_voice_meter.custom_minimum_size = Vector2(0, 12)
+	_voice_meter.threshold = float(settings.voice.vad_threshold)
+	meter_box.add_child(_voice_meter)
+	var slider := UI.slider(roundf(float(settings.voice.vad_threshold) * 100.0), func(v: float):
+		_voice_meter.threshold = v / 100.0
+		_voice_meter.queue_redraw()
+		save.call("vad_threshold", v / 100.0))
+	slider.editable = on_web
+	meter_box.add_child(slider)
+	sens.add_child(meter_box)
+	_voice_test = UI.small_button("Prova il microfono", _toggle_voice_test)
+	_voice_test.disabled = not on_web
+	_voice_test.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	sens.add_child(_voice_test)
+	page.add_child(sens)
+	page.add_child(UI.note("Nella prova ti senti in cuffia: senza cuffie abbassa il volume, se no fischia."))
+	# Microfono
+	var dev_row := HBoxContainer.new()
+	var dev_l := UI.label("Microfono")
+	dev_l.custom_minimum_size = Vector2(140, 0)
+	dev_row.add_child(dev_l)
+	_voice_devices = OptionButton.new()
+	_voice_devices.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_voice_devices.clip_text = true
+	_voice_devices.disabled = not on_web
+	_voice_devices.item_selected.connect(func(i: int):
+		var id: String = _voice_devices.get_item_metadata(i)
+		if vc != null:
+			vc.set_input_device(id)
+		else:
+			save.call("device", id))
+	dev_row.add_child(_voice_devices)
+	page.add_child(dev_row)
+	_fill_voice_devices()
+	# Volume delle voci degli altri, fino al 200%
+	var vol := HBoxContainer.new()
+	var vol_l := UI.label("Volume delle voci")
+	vol_l.custom_minimum_size = Vector2(140, 0)
+	vol.add_child(vol_l)
+	var vol_value := UI.label("%d%%" % roundi(float(settings.voice.volume) * 100.0))
+	var vol_slider := UI.slider(roundf(float(settings.voice.volume) * 100.0), func(v: float):
+		vol_value.text = "%d%%" % roundi(v)
+		save.call("volume", v / 100.0), 200.0, 5.0)
+	vol_slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vol_slider.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	vol_slider.editable = on_web
+	vol.add_child(vol_slider)
+	vol_value.custom_minimum_size = Vector2(52, 0)
+	vol_value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	vol.add_child(vol_value)
+	page.add_child(vol)
+	var toggles := [
+		["auto_join", "Entra in voce appena entri in una stanza"],
+		["spatial", "In sala chi è lontano si sente più piano"],
+		["sounds", "Bip quando qualcuno entra, esce o spegne il microfono"],
+	]
+	for t in toggles:
+		var c := UI.toggle(t[1], bool(settings.voice[t[0]]), func(on: bool): save.call(t[0], on))
+		c.disabled = not on_web
+		page.add_child(c)
+	_draw_voice_modes()
+	_draw_voice_keys()
+	if vc != null:
+		vc.levels_changed.connect(_on_voice_levels)
+		vc.devices_changed.connect(_fill_voice_devices)
+		vc.refresh_devices()
+	return page
+
+
+func _draw_voice_modes() -> void:
+	for m in _voice_modes:
+		UI.set_selected(_voice_modes[m], m == str(settings.voice.mode))
+
+
+func _draw_voice_keys() -> void:
+	for a in _voice_keys:
+		var b: Button = _voice_keys[a]
+		var label := settings.voice_key_label(a)
+		b.text = "Premi un tasto..." if _voice_waiting == a else (label if label != "" else "—")
+		b.remove_theme_color_override("font_color")
+		if _voice_waiting == a:
+			b.add_theme_color_override("font_color", UI.ACCENT)
+
+
+func _set_voice_notice(text: String, color := UI.LILAC) -> void:
+	if _voice_notice != null:
+		_voice_notice.text = text if text != "" else VOICE_KEYS_HINT
+		_voice_notice.add_theme_color_override("font_color", color)
+
+
+# Un tasto mentre la voce ne aspetta uno: true se l'ha preso
+func _voice_key_input(event: InputEvent) -> bool:
+	var key := event as InputEventKey
+	if key == null or not key.pressed or key.echo:
+		return false
+	get_viewport().set_input_as_handled()
+	var code := key.physical_keycode if key.physical_keycode != 0 else key.keycode
+	var action := _voice_waiting
+	if code == KEY_ESCAPE:
+		_voice_waiting = ""
+		_set_voice_notice("")
+	elif code in [KEY_DELETE, KEY_BACKSPACE]:
+		_voice_waiting = ""
+		settings.assign_voice(action, 0)
+		_set_voice_notice("")
+	elif code in VOICE_RESERVED:
+		_set_voice_notice("%s lo usa già il gioco: scegline un altro" % Settings.key_label(code), WARN)
+		return true
+	else:
+		_voice_waiting = ""
+		var from := settings.assign_voice(action, code)
+		_set_voice_notice("%s tolto da %s" % [Settings.key_label(code), Settings.action_label(from)] if from != "" else "", UI.ACCENT)
+		if from != "" and not from.begins_with(Settings.VOICE_PREFIX):
+			_draw_keys() # la scheda Comandi perde quel tasto
+	_draw_voice_keys()
+	return true
+
+
+func _toggle_voice_test() -> void:
+	var vc := VoiceChat.current
+	if vc == null:
+		return
+	vc.test_mic(not vc.testing)
+	_voice_test.text = "Ferma la prova" if vc.testing else "Prova il microfono"
+
+
+func _stop_voice_test() -> void:
+	var vc := VoiceChat.current
+	if vc != null and vc.testing:
+		vc.test_mic(false)
+	if _voice_test != null:
+		_voice_test.text = "Prova il microfono"
+
+
+func _on_voice_levels() -> void:
+	var vc := VoiceChat.current
+	if vc == null or _voice_meter == null:
+		return
+	_voice_meter.level = float(vc.levels.get(vc.my_id, 0.0))
+	_voice_meter.queue_redraw()
+
+
+func _fill_voice_devices() -> void:
+	if _voice_devices == null:
+		return
+	_voice_devices.clear()
+	_voice_devices.add_item("Quello di sistema")
+	_voice_devices.set_item_metadata(0, "")
+	var chosen := str(settings.voice.device)
+	var vc := VoiceChat.current
+	var list: Array = vc.devices if vc != null else []
+	for d in list:
+		if not d is Dictionary or str(d.get("id", "")) in ["", "default"]:
+			continue
+		_voice_devices.add_item(str(d.get("label", "Microfono")))
+		_voice_devices.set_item_metadata(_voice_devices.item_count - 1, str(d.id))
+		if str(d.id) == chosen:
+			_voice_devices.select(_voice_devices.item_count - 1)
+	if list.is_empty():
+		_voice_devices.add_item("(gli altri compaiono dopo il primo permesso)")
+		_voice_devices.set_item_disabled(1, true)
+		_voice_devices.set_item_metadata(1, "")
+
+
+# Il misuratore del microfono: barra del livello, tacca della soglia, verde quando la supera
+class LevelMeter extends Control:
+	var level := 0.0
+	var threshold := 0.45
+
+	func _draw() -> void:
+		var r := Rect2(Vector2.ZERO, size)
+		draw_rect(r, UI.FIELD, true)
+		var over := level > threshold
+		draw_rect(Rect2(Vector2.ZERO, Vector2(size.x * clampf(level, 0.0, 1.0), size.y)), UI.MINT if over else UI.LILAC.darkened(0.2), true)
+		var tx := size.x * clampf(threshold, 0.0, 1.0)
+		draw_line(Vector2(tx, -2), Vector2(tx, size.y + 2), UI.BANANA, 3.0)
+		draw_rect(r, UI.INK, false, 2.0)

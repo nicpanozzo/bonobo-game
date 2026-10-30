@@ -87,6 +87,20 @@ const TOUCH_DEFAULTS := {
 	"left_handed": false, # levetta a destra e tasti a sinistra
 	"screen": 0, # Phone.AUTO, PHONE o COMPUTER: la modalità telefono, con menu e scritte più grandi
 }
+# Chat vocale (voice.gd): si applicano subito, anche a chiamata in corso
+const VOICE_DEFAULTS := {
+	"auto_join": false, # entra in voce da solo appena entri in una stanza (il microfono si chiede solo allora)
+	"mode": "vad", # "vad" parla e basta (a voce), "ptt" solo col tasto premuto: in partita le mani sono sui tasti
+	"vad_threshold": 0.45, # soglia della voce, livello da 0 (-60 dB) a 1 (0 dB)
+	"device": "", # id del microfono nel browser, "" = quello di sistema
+	"volume": 1.0, # volume delle voci degli altri, da 0 a 2 (200%)
+	"spatial": true, # in sala chi è lontano si sente più piano e da destra o sinistra
+	"sounds": true, # i bip di entrata, uscita e microfono
+}
+# I tasti della voce, fuori da ACTIONS perché non vanno al server. N e B: M è già la musica
+const VOICE_KEY_DEFAULTS := {"ptt": [KEY_V], "mute": [KEY_N], "deafen": [KEY_B]}
+const VOICE_LABELS := {"ptt": "Parla (tieni premuto)", "mute": "Microfono sì/no", "deafen": "Audio sì/no"}
+const VOICE_PREFIX := "voice:" # assign() dice "voice:ptt" quando toglie un tasto alla voce
 
 var master := 0.8
 var sfx := 0.7
@@ -104,6 +118,10 @@ var access := {} # come ACCESS_DEFAULTS
 var touch := {} # come TOUCH_DEFAULTS
 var p2_pad := -1 # il pad del secondo giocatore sullo stesso schermo (second_player.gd): il primo non lo legge. Non si salva
 var medals := {} # sfide (E15): id → {"medal": 1-3, "best": punteggio migliore}, sezione [medals]
+var voice := {} # come VOICE_DEFAULTS
+var voice_keys := {} # come VOICE_KEY_DEFAULTS
+var voice_volumes := {} # nome del giocatore → volume da 0 a 2: per nome perché l'id cambia a ogni stanza
+var voice_muted := {} # nome → true: silenziato solo per me
 
 var _defaults := {}
 var _path := PATH
@@ -155,6 +173,26 @@ func _init(audio_defaults: Dictionary, path := PATH) -> void:
 				for other in ACTIONS:
 					if other != a:
 						all[other] = all[other].filter(func(k): return not all[a].has(k))
+	for k in VOICE_DEFAULTS:
+		var v: Variant = cfg.get_value("voice", k) if cfg.has_section_key("voice", k) else null
+		if v != null and (typeof(v) == typeof(VOICE_DEFAULTS[k]) or (v is int and VOICE_DEFAULTS[k] is float)):
+			voice[k] = float(v) if VOICE_DEFAULTS[k] is float else v
+	for k in VOICE_KEY_DEFAULTS:
+		var keys: Variant = cfg.get_value("voice_keys", k) if cfg.has_section_key("voice_keys", k) else null
+		if keys is Array and keys.all(func(c): return c is int):
+			voice_keys[k] = keys.slice(0, MAX_KEYS)
+		elif keys == null: # mai salvato: V, N o B già dati a un'azione del gioco restano a lei
+			voice_keys[k] = voice_keys[k].filter(func(c): return not _game_key_used(c))
+	var vols: Variant = cfg.get_value("voice", "volumes", {}) if cfg.has_section_key("voice", "volumes") else {}
+	if vols is Dictionary:
+		for n in vols:
+			if vols[n] is float or vols[n] is int:
+				voice_volumes[str(n)] = clampf(float(vols[n]), 0.0, 2.0)
+	var mutes: Variant = cfg.get_value("voice", "muted", {}) if cfg.has_section_key("voice", "muted") else {}
+	if mutes is Dictionary:
+		for n in mutes:
+			if mutes[n] == true:
+				voice_muted[str(n)] = true
 	first_run_done = cfg.get_value("first_run", "done", false) == true
 	var p: Variant = cfg.get_value("profile", "last", {})
 	if p is Dictionary:
@@ -176,6 +214,8 @@ func reset(notify := true) -> void:
 	video = VIDEO_DEFAULTS.duplicate()
 	access = ACCESS_DEFAULTS.duplicate()
 	touch = TOUCH_DEFAULTS.duplicate()
+	voice = VOICE_DEFAULTS.duplicate() # i volumi per giocatore restano, come le medaglie
+	voice_keys = VOICE_KEY_DEFAULTS.duplicate(true)
 	reset_bindings(false, false)
 	reset_bindings(true, false)
 	if notify:
@@ -188,6 +228,9 @@ func reset_bindings(pad: bool, notify := true) -> void:
 		pad_bindings = DEFAULT_PAD_BINDINGS.duplicate(true)
 	else:
 		bindings = DEFAULT_BINDINGS.duplicate(true)
+		# I tasti del gioco tornano quelli di default: un tasto della voce spostato lì lascia il posto
+		for a in voice_keys:
+			voice_keys[a] = voice_keys[a].filter(func(k): return not _game_key_used(k))
 	if notify:
 		save()
 
@@ -209,6 +252,12 @@ func save() -> void:
 		cfg.set_value("access", k, access[k])
 	for k in touch:
 		cfg.set_value("touch", k, touch[k])
+	for k in voice:
+		cfg.set_value("voice", k, voice[k])
+	cfg.set_value("voice", "volumes", voice_volumes)
+	cfg.set_value("voice", "muted", voice_muted)
+	for k in voice_keys:
+		cfg.set_value("voice_keys", k, voice_keys[k])
 	cfg.set_value("profile", "last", profile)
 	cfg.set_value("first_run", "done", first_run_done)
 	for id in medals:
@@ -282,6 +331,11 @@ func assign(action: String, slot: int, code: int, pad := false) -> String:
 		if a != action and code != none and all[a].has(code):
 			taken_from = a
 		all[a] = all[a].filter(func(k): return k != code)
+	if not pad and code != none: # anche la voce cede il tasto
+		for a in voice_keys:
+			if voice_keys[a].has(code):
+				taken_from = VOICE_PREFIX + a
+			voice_keys[a] = voice_keys[a].filter(func(k): return k != code)
 	var list: Array = all[action]
 	if code != none:
 		if slot < list.size():
@@ -293,6 +347,52 @@ func assign(action: String, slot: int, code: int, pad := false) -> String:
 	all[action] = list.slice(0, MAX_PAD if pad else MAX_KEYS)
 	save()
 	return taken_from
+
+
+# Un tasto per la voce (Parla, Microfono, Audio), come assign(): se era di un'altra azione lì si toglie.
+# code = 0 toglie il tasto. Restituisce da dove l'ha preso (un'azione del gioco o "voice:...")
+func assign_voice(action: String, code: int) -> String:
+	var taken_from := ""
+	if code != 0:
+		for a in ACTIONS:
+			if bindings[a].has(code):
+				taken_from = a
+			bindings[a] = bindings[a].filter(func(k): return k != code)
+		for a in voice_keys:
+			if a != action and voice_keys[a].has(code):
+				taken_from = VOICE_PREFIX + a
+			voice_keys[a] = voice_keys[a].filter(func(k): return k != code)
+	voice_keys[action] = [code] if code != 0 else []
+	save()
+	return taken_from
+
+
+# Un tasto della voce premuto (solo tastiera: sul pad i pulsanti sono tutti del gioco)
+func voice_pressed(action: String) -> bool:
+	for k in voice_keys.get(action, []):
+		if Input.is_physical_key_pressed(k):
+			return true
+	return false
+
+
+func _game_key_used(code: int) -> bool:
+	for a in ACTIONS:
+		if bindings[a].has(code):
+			return true
+	return false
+
+
+# Nome da mostrare di un'azione del gioco o della voce ("voice:ptt")
+static func action_label(action: String) -> String:
+	if action.begins_with(VOICE_PREFIX):
+		return "Voce: " + str(VOICE_LABELS.get(action.trim_prefix(VOICE_PREFIX), action)).to_lower()
+	return str(LABELS.get(action, action))
+
+
+# Il primo tasto di un'azione della voce, da scrivere negli avvisi ("Premi V per parlare"); "" se non ce l'ha
+func voice_key_label(action: String) -> String:
+	var keys: Array = voice_keys.get(action, [])
+	return key_label(int(keys[0])) if not keys.is_empty() else ""
 
 
 # Che pad è: cambiano i nomi dei pulsanti, non la loro posizione (Godot usa quella di SDL)

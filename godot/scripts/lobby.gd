@@ -4,6 +4,8 @@
 #   3 Lottatore: ritratto, statistiche e mosse, la griglia e il tuo nome, poi "Combatti!"
 # In alto le briciole dicono a che punto sei; Indietro, Esc o B tornano al passo prima (dal primo, al titolo).
 # L'indirizzo del server è in "Avanzate" sotto Entra: il link incollato lo porta già con sé.
+# Sala d'attesa 3D: creando una stanza (anche contro un bot) modalità e arena si votano camminando nella sala,
+# quindi qui restano solo le regole di chi crea (vite, tempo, oggetti) e i passi sono Partita → Lottatore.
 extends Control
 
 signal join_requested(choice: Dictionary)
@@ -14,6 +16,7 @@ signal back_requested # Indietro, Esc o B dal primo passo: torna al titolo (E14)
 const FighterPose := preload("res://scripts/fighter_pose.gd")
 const FighterPreview := preload("res://scripts/fighter_preview.gd")
 const TeamPicker := preload("res://scripts/team_picker.gd")
+const MenuTile := preload("res://scripts/menu_tile.gd")
 const MAX_SEED := 999999 # come stageGenerator.ts: "casuale-<seme>" e "corsa-<seme>"
 # Modalità: id, nome, spiegazione sulla scheda
 const MODES := [
@@ -31,8 +34,6 @@ const RANDOM_NAMES := ["Bonobo", "Scimmione", "Banana", "Liana", "Gorilla", "Bab
 const BOTS := [["", "Nessun bot"], ["manichino", "Manichino"], ["facile", "Bot facile"], ["semplice", "Bot"], ["difficile", "Bot difficile"]]
 const BOT_CHARACTER_ID := "bonobot" # il lottatore dei bot se non se ne sceglie un altro, come BOT_CHARACTER_ID in src/server/bot.ts (#383)
 const STAT_BARS := [["speed", "Vel.", "Velocità"], ["jump", "Salto", "Salto"], ["weight", "Peso", "Peso"]] # barre sotto il ritratto (E11)
-const BAR_W := 44.0 # larghezza delle barre nei riquadri, pixel
-const BIG_BAR_W := 200.0 # larghezza delle barre nella scheda del lottatore scelto, pixel
 const QUICK_BOT := "semplice" # "Contro un bot" quando nelle regole non ne è scelto nessuno
 # I tre modi di cominciare, nella prima pagina: id, titolo, spiegazione
 const KINDS := [
@@ -40,21 +41,34 @@ const KINDS := [
 	["join", "Entra con un link", "Un amico ha già creato la stanza"],
 	["bot", "Contro un bot", "Da solo, contro il computer"],
 ]
+const KIND_MARKS := {"create": "NEW", "join": "LINK", "bot": "CPU"} # la sigla sullo sfondo delle piastrelle (menu_tile.gd)
 const PAGE_NAMES := {"match": "Partita", "stage": "Arena", "fighter": "Lottatore"}
+const HALL_MODES := ["ffa", "teams", "flag", "race"] # modalità che si votano in sala (HallMode in types.ts)
+const HALL_NOTE := "Modalità e arena si scelgono nella sala d'attesa, camminando: sali su una pedana o entra in un portale. Qui decidi le regole."
 const PAGE_W := 1010.0 # larghezza del contenuto delle pagine, pixel
-const PAGE_TOP := 16 # spazio sopra il titolo della pagina, pixel
+const PAGE_TOP := 14 # spazio sopra il titolo della pagina, pixel
+const PAGE_TITLE := 34 # il titolo della pagina, pixel: un po' più piccolo di quello del gioco, la pagina deve stare in 720
 const BIG_STAGE := Vector2(560, 315) # anteprima grande dell'arena (16:9), pixel
-const BIG_FACE := Vector2(300, 224) # anteprima grande del lottatore, pixel
+const BIG_CARD_W := 380.0 # la colonna del lottatore scelto, pixel
+const BIG_FACE := Vector2(BIG_CARD_W, 316) # la vetrina del lottatore scelto, pixel
+const BIG_FACE_ZOOM := 1.35 # l'anteprima animata ingrandita di tanto: il lottatore è grande come nei picchiaduro
+const NAME_PLATE_H := 46.0 # la targa col nome in fondo alla vetrina, pixel
+const TEAM_CHIP_W := 112.0 # i pulsanti delle squadre, pixel
+const PHONE_TEAM_CHIP_W := 96.0
+const PHONE_HALL_NOTE := "Modalità e arena si votano camminando nella sala d'attesa: qui decidi le regole."
 const ROOM_HINT := "Incolla il link che ti hanno mandato: server e stanza si mettono da soli."
 const PHONE_MARGIN := 20.0 # sul telefono (Phone) le pagine arrivano fino a qui dai bordi, pixel
-const PHONE_FACE := Vector2(250, 150) # sul telefono l'anteprima del lottatore è più bassa: la griglia resta in vista
+const PHONE_FACE := Vector2(270, 206) # sul telefono la vetrina è più piccola: la griglia resta in vista
+const PHONE_FACE_ZOOM := 0.95
 const PHONE_CARD_W := 270.0 # sul telefono la scheda del lottatore scelto, più stretta
-const FIGHTER_CARD := Vector2(98, 134) # riquadro di un lottatore nella griglia, pixel
+const FIGHTER_CARD := Vector2(94, 106) # riquadro di un lottatore nella griglia, pixel: sei per riga
+const PHONE_FIGHTER_CARD := Vector2(66, 76) # sul telefono sette per riga: tutti in due righe
 # Il colore del badge di ogni compagnia del lore (#13); i nomi arrivano da game.json (CREWS in characters.ts)
 const CREW_COLORS := {"cuamm": Color("c0392b"), "cologna": Color("d35400"), "schio": Color("27ae60"), "lolhardcore": Color("8e44ad")}
 
 var game: Dictionary
 var room_link: Callable # stanza -> link da mandare agli amici
+var hall := true # si entra nella sala d'attesa 3D (main.gd manda hall nel join); false = la lobby di prima, con modalità e arena
 
 var _name := LineEdit.new()
 var _room := LineEdit.new() # Entra: nome della stanza o link incollato
@@ -101,6 +115,8 @@ var _creating: bool: # si crea una stanza nuova (anche contro un bot), invece di
 var _kind_cards := {} # id -> riquadro nella prima pagina
 var _kind_boxes := {} # id -> parte della prima pagina che si vede solo con quel modo
 var _rules_box: Control
+var _mode_heading: Label # "Modalità": con la sala si nasconde insieme alle schede
+var _hall_note: Label # creando con la sala: modalità e arena si votano là
 var _bot_label: Label
 var _pages := {} # match/stage/fighter -> pagina
 var _page := "match"
@@ -131,25 +147,8 @@ func setup(game_data: Dictionary, params: Dictionary, link: Callable, start_kind
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	if Phone.active:
 		_page_w = minf(PAGE_W, get_viewport_rect().size.x - PHONE_MARGIN * 2)
-	var bg := ColorRect.new()
-	bg.color = UI.BG
-	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	add_child(bg)
-	# sopra al fondo una luce calda che scende dall'alto, appena accennata: la lobby non è un foglio piatto
-	var sky := Gradient.new()
-	sky.colors = PackedColorArray([Color(UI.BORDER, 0.35), Color(UI.BORDER, 0.0)])
-	var light := GradientTexture2D.new()
-	light.gradient = sky
-	light.fill = GradientTexture2D.FILL_RADIAL
-	light.fill_from = Vector2(0.5, 0.0)
-	light.fill_to = Vector2(1.1, 0.9)
-	var glow := TextureRect.new()
-	glow.texture = light
-	glow.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	glow.stretch_mode = TextureRect.STRETCH_SCALE
-	glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	glow.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	add_child(glow)
+	# Il fondo animato dei menu: strisce diagonali lente e retino negli angoli (UI.backdrop)
+	add_child(UI.backdrop())
 	var root := VBoxContainer.new()
 	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	root.add_theme_constant_override("separation", 0)
@@ -163,7 +162,7 @@ func setup(game_data: Dictionary, params: Dictionary, link: Callable, start_kind
 	# Le pagine partono dall'alto e non dal centro: così il titolo non salta quando cambia il contenuto
 	var body := MarginContainer.new()
 	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	body.add_theme_constant_override("margin_top", PAGE_TOP)
+	body.add_theme_constant_override("margin_top", PAGE_TOP / 2 if Phone.active else PAGE_TOP)
 	body.add_theme_constant_override("margin_bottom", UI.GAP_L)
 	scroll.add_child(body)
 	var pages := VBoxContainer.new()
@@ -182,7 +181,7 @@ func setup(game_data: Dictionary, params: Dictionary, link: Callable, start_kind
 
 # In alto: Indietro, le briciole dei passi, Opzioni e Crediti
 func _top_bar() -> Control:
-	var bar := _bar()
+	var bar := _bar(true)
 	var row: HBoxContainer = bar.get_child(0)
 	_back_button = UI.small_button("‹ Indietro", _back)
 	row.add_child(_back_button)
@@ -206,7 +205,7 @@ func _top_bar() -> Control:
 
 # In basso: la versione, il riassunto delle scelte e il pulsante per andare avanti
 func _bottom_bar() -> Control:
-	var bar := _bar()
+	var bar := _bar(false)
 	var row: HBoxContainer = bar.get_child(0)
 	row.add_child(UI.note(UI.version_text(game), 0.5))
 	_summary = UI.label("", UI.SIZE_SMALL, Color(UI.TEXT, 0.8))
@@ -220,14 +219,22 @@ func _bottom_bar() -> Control:
 	return bar
 
 
-# Una striscia scura a tutta larghezza con una riga dentro
-func _bar() -> PanelContainer:
+# Una striscia d'inchiostro a tutta larghezza con una riga dentro, il filo giallo verso la pagina
+func _bar(top: bool) -> PanelContainer:
 	var bar := PanelContainer.new()
 	var style := StyleBoxFlat.new()
-	style.bg_color = UI.CARD
-	style.set_content_margin_all(UI.GAP_L)
+	style.bg_color = Color(UI.INK, 0.92)
+	style.set_content_margin_all(UI.GAP_M if Phone.active else UI.GAP_L)
 	style.content_margin_left = 24
 	style.content_margin_right = 24
+	style.border_color = UI.BANANA
+	if top:
+		style.border_width_bottom = 3
+	else:
+		style.border_width_top = 3
+	style.shadow_color = Color(UI.INK, 0.5)
+	style.shadow_size = 1
+	style.shadow_offset = Vector2(0, 6 if top else -6)
 	bar.add_theme_stylebox_override("panel", style)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", UI.GAP_M)
@@ -244,8 +251,10 @@ func _match_page(params: Dictionary) -> Control:
 	cards.add_theme_constant_override("separation", UI.GAP_L)
 	for k in KINDS:
 		var id: String = k[0]
-		var b := UI.choice_card(k[1], k[2], func(): _set_kind(id))
-		b.custom_minimum_size = Vector2(0, 64 if Phone.active else 92)
+		var b: Button = MenuTile.new().setup(k[1], k[2], KIND_MARKS.get(id, ""), func(): _set_kind(id))
+		b.custom_minimum_size = Vector2(0, 50 if Phone.active else 86)
+		if Phone.active: # sul telefono la spiegazione non ci sta: resta il nome, grande
+			b.detail_label.visible = false
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		_kind_cards[id] = b
 		cards.add_child(b)
@@ -277,6 +286,7 @@ func _match_page(params: Dictionary) -> Control:
 		_msg.show()))
 	create.add_child(row)
 	_msg = UI.label("Manda il link agli amici: chi lo apre entra nella tua stessa partita.", UI.SIZE_NOTE, Color(UI.TEXT, 0.7))
+	_msg.visible = not Phone.active # sul telefono compare quando si copia il link: lo spazio serve alle regole
 	create.add_child(_msg)
 	# Il server sul proprio computer invece che su Render: chi ospita gioca senza latenza
 	if HostServer.available():
@@ -334,9 +344,16 @@ func _match_page(params: Dictionary) -> Control:
 	# Regole e bot: contano solo per chi crea la stanza (anche contro un bot)
 	var rules_box := VBoxContainer.new()
 	rules_box.add_theme_constant_override("separation", UI.GAP_S)
-	rules_box.add_child(UI.heading("Modalità"))
+	_mode_heading = UI.heading("Modalità")
+	rules_box.add_child(_mode_heading)
+	_hall_note = UI.note(PHONE_HALL_NOTE if Phone.active else HALL_NOTE)
+	_hall_note.autowrap_mode = TextServer.AUTOWRAP_WORD
+	rules_box.add_child(_hall_note)
 	var saved: Dictionary = params.get("rules", {}) if params.get("rules") is Dictionary else {}
-	_mode_i = maxi(0, MODES.map(func(m): return m[0]).find(saved.get("mode", "ffa")))
+	var saved_mode := str(saved.get("mode", "ffa"))
+	if hall and not HALL_MODES.has(saved_mode):
+		saved_mode = "ffa" # l'Allenamento in sala non c'è: sta in "Da solo"
+	_mode_i = maxi(0, MODES.map(func(m): return m[0]).find(saved_mode))
 	_mode_cards.add_theme_constant_override("separation", UI.GAP_M)
 	for m in MODES:
 		var id: String = m[0]
@@ -352,8 +369,16 @@ func _match_page(params: Dictionary) -> Control:
 	rules_box.add_child(gap)
 	# Vite, tempo e bot con le frecce, uno per riga: col pad su e giù si passa dall'uno all'altro,
 	# sinistra e destra cambiano il valore
-	var rules := VBoxContainer.new()
-	rules.add_theme_constant_override("separation", UI.GAP_S)
+	# Su due colonne, così la pagina sta tutta in uno schermo: a sinistra vite, tempo, squadre e bot,
+	# a destra suprema, oggetti e fuoco amico
+	var rules := HBoxContainer.new()
+	rules.add_theme_constant_override("separation", 24)
+	var col_a := VBoxContainer.new()
+	var col_b := VBoxContainer.new()
+	for col in [col_a, col_b]:
+		col.add_theme_constant_override("separation", UI.GAP_S)
+		col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		rules.add_child(col)
 	for n in range(1, 6):
 		_stocks.add_item(str(n))
 	_stocks.select(clampi(int(saved.get("stocks", 3)) - 1, 0, 4))
@@ -365,38 +390,37 @@ func _match_page(params: Dictionary) -> Control:
 	_bot.select(maxi(0, BOTS.map(func(x): return x[0]).find(str(params.get("bot", "")))))
 	_stocks_label = UI.heading("Vite")
 	_stocks_box = _labeled(_stocks_label, _stocks)
-	rules.add_child(_stocks_box)
+	col_a.add_child(_stocks_box)
 	_time_box = _labeled(UI.heading("Tempo"), _time)
-	rules.add_child(_time_box)
+	col_a.add_child(_time_box)
 	# Squadre (#409): da 2 a maxTeams; in Bandiera sono sempre due e il selettore non c'è
 	for n in range(2, int(game.get("maxTeams", 2)) + 1):
 		_team_count.add_item("%d squadre" % n)
 	_team_count.select(clampi(int(saved.get("teamCount", 2)) - 2, 0, _team_count.item_count() - 1))
 	_team_count_box = _labeled(UI.heading("Squadre"), _team_count)
-	rules.add_child(_team_count_box)
+	col_a.add_child(_team_count_box)
 	_team_count.item_selected.connect(func(_i): _sync_rules())
 	_bot_label = UI.heading("Bot")
-	rules.add_child(_labeled(_bot_label, _bot))
+	col_a.add_child(_labeled(_bot_label, _bot))
 	# Senza scelta Bonobot, come il server (bot.ts, BOT_CHARACTER_ID)
 	_bot_char_ids = game.characters.keys()
 	for id in _bot_char_ids:
 		_bot_char.add_item(str(game.characters[id].name))
 	var wanted := str(params.get("botChar", BOT_CHARACTER_ID))
 	_bot_char.select(maxi(0, _bot_char_ids.find(wanted if game.characters.has(wanted) else BOT_CHARACTER_ID)))
-	_bot_char_box = _labeled(UI.heading("Lottatore del bot"), _bot_char)
-	rules.add_child(_bot_char_box)
+	_bot_char_box = _labeled(UI.heading("Lottatore bot"), _bot_char)
+	col_a.add_child(_bot_char_box)
 	_bot_char.item_selected.connect(func(_i): _update_summary())
 	_ff.text = "Fuoco amico"
 	_ff.button_pressed = bool(saved.get("friendlyFire", false))
 	_ff.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	_ff.custom_minimum_size = Vector2(374, 0) # l'interruttore finisce dove finiscono le frecce
-	rules.add_child(_ff)
+	_ff.custom_minimum_size = Vector2(130 + UI.GAP_M + 238, 0) # l'interruttore finisce dove finiscono le frecce
 	# Suprema e oggetti: i valori stanno nel server (constants.ts), qui solo le scelte
 	var speeds: Array = game.get("supremeSpeeds", [])
 	for sp in speeds:
 		_supreme_speed.add_item(sp.label)
 	_supreme_speed.select(maxi(0, speeds.map(func(sp): return float(sp.mult)).find(float(saved.get("supremeSpeed", 1)))))
-	rules.add_child(_labeled(UI.heading("Suprema"), _supreme_speed))
+	col_b.add_child(_labeled(UI.heading("Suprema"), _supreme_speed))
 	var items_box := VBoxContainer.new()
 	items_box.add_theme_constant_override("separation", UI.GAP_S)
 	var amounts: Array = game.get("itemAmounts", [])
@@ -406,11 +430,14 @@ func _match_page(params: Dictionary) -> Control:
 	_item_amount.item_selected.connect(func(_i): _sync_rules())
 	items_box.add_child(_labeled(UI.heading("Oggetti"), _item_amount))
 	var kinds_row := HFlowContainer.new()
-	kinds_row.add_theme_constant_override("h_separation", UI.GAP_M)
+	kinds_row.add_theme_constant_override("h_separation", UI.GAP_S if Phone.active else UI.GAP_M)
+	kinds_row.add_theme_constant_override("v_separation", 0 if Phone.active else UI.GAP_S)
 	var saved_kinds = saved.get("itemKinds")
 	var items_spec: Dictionary = game.get("items", {})
 	for k in game.get("droppableItems", []):
 		var c := CheckButton.new()
+		if Phone.active: # sul telefono più piccoli: la pagina sta in uno schermo
+			c.add_theme_font_size_override("font_size", Access.px(UI.SIZE_SMALL))
 		c.text = str(items_spec.get(k, {}).get("name", k))
 		c.button_pressed = not (saved_kinds is Array) or (saved_kinds as Array).has(k)
 		if k == "fungoTeemo" and saved_kinds is Array and (saved_kinds as Array).has("funghetti"):
@@ -419,8 +446,14 @@ func _match_page(params: Dictionary) -> Control:
 		kinds_row.add_child(c)
 	items_box.add_child(kinds_row)
 	_items_box = items_box
-	rules.add_child(items_box)
-	rules_box.add_child(rules)
+	col_b.add_child(items_box)
+	col_a.add_child(_ff)
+	# Le regole su un pannello a inchiostro col nastro giallo, come i menu sopra la partita
+	var rules_panel := PanelContainer.new()
+	rules_panel.add_theme_stylebox_override("panel", UI.panel_box(Color(UI.GRAPE, 0.9), 10 if Phone.active else 18))
+	UI.decorate_panel(rules_panel)
+	rules_panel.add_child(rules)
+	rules_box.add_child(rules_panel)
 	_course_note = UI.label("In Corsa si gioca su un percorso lungo, nuovo a ogni stanza: vince chi arriva prima al traguardo.", UI.SIZE_SMALL, Color(UI.TEXT, 0.7))
 	_course_note.autowrap_mode = TextServer.AUTOWRAP_WORD
 	rules_box.add_child(_course_note)
@@ -459,7 +492,7 @@ func _set_mode(id: String) -> void:
 func _set_kind(kind: String, focus := true) -> void:
 	_kind = kind
 	for id in _kind_cards:
-		UI.set_selected(_kind_cards[id], id == kind)
+		_kind_cards[id].set_selected(id == kind)
 		if _kind_boxes.has(id):
 			_kind_boxes[id].visible = id == kind
 	_rules_box.visible = kind != "join"
@@ -493,7 +526,7 @@ func _sync_rules() -> void:
 	_stocks_box.visible = not race and not training
 	_time_box.visible = not training
 	_stocks_label.text = "PUNTI" if mode == "flag" else "VITE"
-	if training and _bot.selected == 0:
+	if training and _bot.selected == 0 and not _creating_in_hall():
 		_bot.select(1) # in palestra serve qualcuno da colpire: il manichino
 	_course_note.visible = race
 	_bot_label.text = "AVVERSARIO" if _kind == "bot" else "BOT (SE VUOI)"
@@ -503,8 +536,27 @@ func _sync_rules() -> void:
 		var n := i + 1
 		var word := ("punto" if n == 1 else "punti") if mode == "flag" else ("vita" if n == 1 else "vite")
 		_stocks.set_item_text(i, "%d %s" % [n, word])
+	if _creating_in_hall():
+		# La modalità la vota la sala: si vedono tutte le regole che potrebbero servire
+		_ff.visible = true
+		_team_count_box.visible = true
+		_items_box.visible = true
+		_stocks_box.visible = true
+		_time_box.visible = true
+		_course_note.visible = false
+		_stocks_label.text = "VITE"
+		for i in 5:
+			_stocks.set_item_text(i, "%d %s" % [i + 1, "vita" if i == 0 else "vite"])
+	_mode_heading.visible = not _creating_in_hall()
+	_mode_cards.visible = not _creating_in_hall()
+	_hall_note.visible = _creating_in_hall()
 	_update_crumbs()
 	_update_summary()
+
+
+# Si crea una stanza (anche contro un bot) che parte dalla sala d'attesa
+func _creating_in_hall() -> bool:
+	return hall and _creating
 
 
 # --- Pagina 2: Arena ---
@@ -522,7 +574,13 @@ func _stage_page(params: Dictionary) -> Control:
 	var big_w := minf(BIG_STAGE.x, _page_w - 24 - 2 * 170 - UI.GAP_M)
 	_big_stage.custom_minimum_size = BIG_STAGE * big_w / BIG_STAGE.x
 	left.add_child(_big_stage)
+	# Il nome dell'arena su una targa rossa storta, come quello del lottatore
 	_big_stage_name = UI.header("")
+	_big_stage_name.add_theme_color_override("font_color", UI.PAPER)
+	var plate := UI.button_box(UI.PUNCH, false, 12)
+	plate.shadow_offset = Vector2(5, 6)
+	_big_stage_name.add_theme_stylebox_override("normal", plate)
+	_big_stage_name.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	left.add_child(_big_stage_name)
 	_stages.columns = 2
 	_stages.add_theme_constant_override("h_separation", UI.GAP_M)
@@ -596,65 +654,88 @@ func _fighter_page(params: Dictionary) -> Control:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 24)
 	page.add_child(row)
-	# A sinistra il lottatore scelto, in grande
-	var card := PanelContainer.new()
-	var card_w := PHONE_CARD_W if Phone.active else 340.0
-	card.custom_minimum_size = Vector2(card_w, 0)
-	row.add_child(card)
+	# A sinistra il lottatore scelto, in grande come nei picchiaduro: la vetrina col nome sulla targa
+	var card_w := PHONE_CARD_W if Phone.active else BIG_CARD_W
 	var left := VBoxContainer.new()
+	left.custom_minimum_size = Vector2(card_w, 0)
 	left.add_theme_constant_override("separation", UI.GAP_S)
-	card.add_child(left)
-	# L'anteprima: il lottatore intero sotto un faro, con le frecce del carosello delle skin ai lati
-	var stage := Control.new()
+	row.add_child(left)
+	var stage := Showcase.new()
 	stage.custom_minimum_size = PHONE_FACE if Phone.active else BIG_FACE
 	left.add_child(stage)
+	# L'anteprima animata (fighter_preview.gd) ingrandita: riempie la vetrina e il lottatore sta in piedi sulla targa
 	_big_face = FighterPreview.new()
-	_big_face.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var zoom := PHONE_FACE_ZOOM if Phone.active else BIG_FACE_ZOOM
+	_big_face.scale = Vector2(zoom, zoom)
 	stage.add_child(_big_face)
+	stage.resized.connect(func():
+		_big_face.position = Vector2(0, -NAME_PLATE_H * 0.55)
+		_big_face.size = stage.size / zoom)
+	_big_name = Label.new()
+	_big_name.add_theme_font_override("font", UI.display())
+	_big_name.add_theme_font_size_override("font_size", Access.px(UI.SIZE_HEADER if Phone.active else UI.SIZE_TITLE - 4))
+	_big_name.add_theme_color_override("font_color", UI.PAPER)
+	_big_name.add_theme_color_override("font_outline_color", UI.INK)
+	_big_name.add_theme_constant_override("outline_size", 10)
+	_big_name.add_theme_color_override("font_shadow_color", UI.INK)
+	_big_name.add_theme_constant_override("shadow_offset_x", 2)
+	_big_name.add_theme_constant_override("shadow_offset_y", 4)
+	_big_name.add_theme_constant_override("shadow_outline_size", 10)
+	_big_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_big_name.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_big_name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	_big_name.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+	_big_name.offset_top = -NAME_PLATE_H * Access.text_scale - 4
+	_big_name.offset_bottom = -6
+	_big_name.offset_left = 26
+	_big_name.offset_right = -26
+	stage.add_child(_big_name)
+	stage.name_label = _big_name
 	_skin_arrows.clear()
 	for side in [-1, 1]:
 		var arrow := UI.small_button("◀" if side < 0 else "▶", func(): _next_skin(side))
 		arrow.tooltip_text = "Skin precedente" if side < 0 else "Skin successiva"
 		arrow.custom_minimum_size = Vector2(40, 48)
 		var preset := Control.PRESET_CENTER_LEFT if side < 0 else Control.PRESET_CENTER_RIGHT
-		arrow.set_anchors_and_offsets_preset(preset, Control.PRESET_MODE_MINSIZE, 4)
+		arrow.set_anchors_and_offsets_preset(preset, Control.PRESET_MODE_MINSIZE, 8)
+		arrow.position.y -= NAME_PLATE_H / 2.0
 		stage.add_child(arrow)
 		_skin_arrows.append(arrow)
 	_big_skins = HBoxContainer.new()
 	_big_skins.alignment = BoxContainer.ALIGNMENT_CENTER
 	_big_skins.add_theme_constant_override("separation", UI.GAP_S)
 	left.add_child(_big_skins)
-	_big_name = UI.header("")
-	_big_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	left.add_child(_big_name)
 	_big_crews = HFlowContainer.new()
 	_big_crews.alignment = FlowContainer.ALIGNMENT_CENTER
 	_big_crews.add_theme_constant_override("h_separation", UI.GAP_S)
 	left.add_child(_big_crews)
 	_big_stats = VBoxContainer.new()
-	_big_stats.add_theme_constant_override("separation", UI.GAP_S)
+	_big_stats.add_theme_constant_override("separation", 3 if Phone.active else UI.GAP_S)
 	left.add_child(_big_stats)
 	_big_moves = UI.note("")
 	_big_moves.autowrap_mode = TextServer.AUTOWRAP_WORD
-	_big_moves.custom_minimum_size = Vector2(card_w - 40, 0)
+	_big_moves.custom_minimum_size = Vector2(card_w - 10, 0)
+	_big_moves.visible = not Phone.active # sul telefono non ci sta: le mosse sono nel menu di pausa
 	left.add_child(_big_moves)
 	# A destra la griglia e il tuo nome
 	var right := VBoxContainer.new()
 	right.add_theme_constant_override("separation", UI.GAP_S)
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(right)
-	# Sei colonne sul computer; sul telefono quante ne stanno accanto alla scheda
-	_chars.columns = mini(6, int((_page_w - card_w - 24 - 80 + UI.GAP_M) / (FIGHTER_CARD.x + UI.GAP_M))) # 80: i margini della scheda
-	_chars.add_theme_constant_override("h_separation", UI.GAP_M)
-	_chars.add_theme_constant_override("v_separation", UI.GAP_M)
+	var cell := PHONE_FIGHTER_CARD if Phone.active else FIGHTER_CARD
+	var gap_x := UI.GAP_S + 3
+	# Sei colonne sul computer; sul telefono quante ne stanno accanto alla vetrina
+	_chars.columns = clampi(int((_page_w - card_w - 24 + gap_x) / (cell.x + gap_x)), 1, 7)
+	_chars.add_theme_constant_override("h_separation", gap_x)
+	_chars.add_theme_constant_override("v_separation", gap_x)
 	right.add_child(_chars)
-	_character = params.get("char", game.defaultCharacterId)
+	_character = str(params.get("char", ""))
 	if not game.characters.has(_character):
-		_character = game.defaultCharacterId
+		_character = default_fighter(game) # nessuna scelta salvata: un lottatore disegnato, non il rettangolo
 	_skin = str(params.get("skin", ""))
 	_draw_chars()
 	var gap := Control.new()
-	gap.custom_minimum_size = Vector2(0, UI.GAP_L)
+	gap.custom_minimum_size = Vector2(0, 2)
 	right.add_child(gap)
 	right.add_child(UI.heading("Il tuo nome"))
 	_name.max_length = 16
@@ -663,6 +744,7 @@ func _fighter_page(params: Dictionary) -> Control:
 	_name.text_submitted.connect(func(_t): _forward())
 	_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var name_row := HBoxContainer.new()
+	name_row.add_theme_constant_override("separation", UI.GAP_M)
 	name_row.add_child(_name)
 	name_row.add_child(UI.button("Nome a caso", func():
 		_name.text = "%s%d" % [RANDOM_NAMES[randi() % RANDOM_NAMES.size()], randi() % 100]))
@@ -673,20 +755,30 @@ func _fighter_page(params: Dictionary) -> Control:
 	team_box.add_theme_constant_override("separation", UI.GAP_S)
 	team_box.add_child(UI.heading("La tua squadra"))
 	_team_picker = TeamPicker.new()
-	_team_picker.setup(game, int(game.get("maxTeams", 2)), clampi(int(params.get("team", 0)), 0, int(game.get("maxTeams", 2)))) # _sync_team_picker la riduce alle squadre delle regole
+	_team_picker.setup(game, int(game.get("maxTeams", 2)), clampi(int(params.get("team", 0)), 0, int(game.get("maxTeams", 2))), true, PHONE_TEAM_CHIP_W if Phone.active else TEAM_CHIP_W) # _sync_team_picker la riduce alle squadre delle regole
 	_team_picker.chosen.connect(func(_t): _update_summary())
 	team_box.add_child(_team_picker)
 	_team_note = UI.note("")
 	_team_note.autowrap_mode = TextServer.AUTOWRAP_WORD
+	_team_note.visible = not Phone.active
 	team_box.add_child(_team_note)
-	var team_gap := Control.new()
-	team_gap.custom_minimum_size = Vector2(0, UI.GAP_M)
-	team_box.add_child(team_gap)
 	_team_box = team_box
 	right.add_child(team_box)
 	right.move_child(team_box, 0)
 	_show_big_fighter()
 	return page
+
+
+# Il lottatore che si vede quando non c'è una scelta salvata: Bonobot (il lottatore dei bot) se è disegnato,
+# se no il primo con lo spritesheet. Il bonobo fatto col codice (un rettangolo) solo se non c'è altro
+static func default_fighter(game_data: Dictionary) -> String:
+	var chars: Dictionary = game_data.get("characters", {})
+	var drawn := chars.keys().filter(func(id): return chars[id].get("sprite") is Dictionary)
+	if drawn.has(BOT_CHARACTER_ID):
+		return BOT_CHARACTER_ID
+	if not drawn.is_empty():
+		return str(drawn[0])
+	return str(game_data.get("defaultCharacterId", ""))
 
 
 # Quante squadre mostra la fila dei colori, e se si vede: chi crea vede le squadre delle sue regole,
@@ -696,7 +788,8 @@ func _sync_team_picker() -> void:
 		return
 	var mode := _mode_id()
 	var joining := _kind == "join"
-	_team_box.visible = joining or mode == "teams" or mode == "flag"
+	# In sala la squadra la fa il voto: chi crea entra in quella automatica
+	_team_box.visible = joining or ((mode == "teams" or mode == "flag") and not _creating_in_hall())
 	var count := 2
 	if joining:
 		count = int(game.get("maxTeams", 2))
@@ -709,28 +802,55 @@ func _sync_team_picker() -> void:
 func _draw_chars() -> void:
 	for c in _chars.get_children():
 		c.queue_free()
+	var cell := PHONE_FIGHTER_CARD if Phone.active else FIGHTER_CARD
 	for id in game.characters:
 		var c: Dictionary = game.characters[id]
 		var b := Button.new()
-		b.custom_minimum_size = FIGHTER_CARD
-		b.tooltip_text = stats_text(c)
+		b.custom_minimum_size = cell
+		b.tooltip_text = "%s\n%s" % [c.name, stats_text(c)]
 		UI.set_selected(b, id == _character)
 		var v := VBoxContainer.new()
 		v.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		v.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		v.offset_top = 4
+		v.offset_bottom = -4
+		v.add_theme_constant_override("separation", 0)
 		b.add_child(v)
-		v.add_child(_face(c, Vector2(56, 52)))
-		var l := UI.label(c.name, UI.SIZE_SMALL)
+		var face := _face(c, Vector2(cell.x - 10, cell.y - 30))
+		face.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		v.add_child(face)
+		# Il nome su una striscia d'inchiostro in fondo al riquadro, come le schede dei picchiaduro
+		var l := UI.label(c.name, UI.SIZE_NOTE if Phone.active else UI.SIZE_SMALL)
+		l.add_theme_font_override("font", UI.font(UI.WEIGHT_BOLD))
 		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		l.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		l.clip_text = true
+		var strip := StyleBoxFlat.new()
+		strip.bg_color = Color(UI.INK, 0.75)
+		strip.content_margin_left = 3
+		strip.content_margin_right = 3
+		l.add_theme_stylebox_override("normal", strip)
+		l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		v.add_child(l)
-		v.add_child(_stat_bars(c))
 		var n_skins: int = c.get("skins", {}).size()
 		if n_skins > 0: # chi ha delle skin lo dice nell'angolo del riquadro (#339)
-			var tag := UI.label("+%d skin" % n_skins, UI.SIZE_NOTE - 2, UI.ACCENT)
+			var tag := UI.label(("+%d" if Phone.active else "+%d skin") % n_skins, UI.SIZE_NOTE - 3, UI.INK)
+			tag.add_theme_font_override("font", UI.font(UI.WEIGHT_BLACK))
+			var pill := UI.button_box(UI.BANANA, false, 2, UI.SKEW)
+			pill.content_margin_left = 6
+			pill.content_margin_right = 6
+			pill.content_margin_top = 0
+			pill.content_margin_bottom = 0
+			pill.shadow_offset = Vector2(1, 2)
+			pill.set_border_width_all(2)
+			tag.add_theme_stylebox_override("normal", pill)
 			tag.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT, Control.PRESET_MODE_MINSIZE, 4)
 			tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			b.add_child(tag)
+		# Il gettone "TU" sul riquadro scelto, come quello del giocatore nei picchiaduro
+		b.draw.connect(func():
+			if b.get_meta("id", "") == _character:
+				_draw_token(b))
 		b.set_meta("id", id)
 		b.pressed.connect(func():
 			_character = id
@@ -740,20 +860,30 @@ func _draw_chars() -> void:
 		_chars.add_child(b)
 
 
+# Il gettone del giocatore: una targhetta rossa storta con "TU", nell'angolo in alto a sinistra
+func _draw_token(b: Control) -> void:
+	var f := UI.display()
+	var px := Access.px(13)
+	var tw := f.get_string_size("TU", HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
+	var r := Rect2(Vector2(-4, -6), Vector2(tw + 14, px + 6))
+	UI.draw_plate(b, r, UI.PUNCH, 6.0, UI.INK, 2.0, Vector2(2, 2))
+	b.draw_string(f, Vector2(r.position.x + 7, r.end.y - 4), "TU", HORIZONTAL_ALIGNMENT_LEFT, -1, px, UI.PAPER)
+
+
 # Il disegno del lottatore: il ritratto (E11 passo C), o il primo fotogramma dello spritesheet,
-# o un rettangolo del colore del gioco per chi non ha ancora un disegno
+# o la sua iniziale a inchiostro per chi non ha ancora un disegno (il bonobo fatto col codice)
 func _face(c: Dictionary, size: Vector2) -> Control:
 	var tex := face_texture(c)
 	if tex == null:
-		var boxc := CenterContainer.new()
-		boxc.custom_minimum_size = size
-		boxc.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var r := ColorRect.new()
-		r.color = UI.PRIMARY
-		r.custom_minimum_size = Vector2(size.x * 0.45, size.y * 0.85)
-		r.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		boxc.add_child(r)
-		return boxc
+		var letter := UI.label(str(c.get("name", "?")).left(1).to_upper(), roundi(size.y * 0.7), UI.PUNCH)
+		letter.add_theme_font_override("font", UI.display())
+		letter.add_theme_color_override("font_outline_color", UI.INK)
+		letter.add_theme_constant_override("outline_size", 8)
+		letter.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		letter.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		letter.custom_minimum_size = size
+		letter.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		return letter
 	var pic := TextureRect.new()
 	pic.texture = tex
 	pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -797,11 +927,20 @@ func _show_big_fighter(side := 0) -> void:
 		var value: float = float(stats.get(s[0], 1.0))
 		var r := HBoxContainer.new()
 		r.add_theme_constant_override("separation", UI.GAP_M)
-		var l := UI.label(s[2], UI.SIZE_SMALL, Color(UI.TEXT, 0.8))
-		l.custom_minimum_size = Vector2(76, 0)
+		var l := UI.heading(s[2])
+		l.custom_minimum_size = Vector2(70 if Phone.active else 84, 0)
 		r.add_child(l)
-		r.add_child(_bar_track(value, BIG_BAR_W, 10))
-		r.add_child(UI.label("%d%%" % roundi(value * 100), UI.SIZE_SMALL, Color(UI.TEXT, 0.8)))
+		var bar := StatBar.new()
+		bar.fill = stat_fill(value, game.get("characterStats", {}))
+		bar.custom_minimum_size = Vector2(0, 14)
+		bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		r.add_child(bar)
+		var n := UI.label("%d%%" % roundi(value * 100), UI.SIZE_SMALL, UI.PAPER)
+		n.add_theme_font_override("font", UI.numbers())
+		n.custom_minimum_size = Vector2(46, 0)
+		n.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		r.add_child(n)
 		_big_stats.add_child(r)
 	_big_moves.text = moves_text(c)
 	_update_summary()
@@ -863,36 +1002,66 @@ static func moves_text(c: Dictionary) -> String:
 	return text
 
 
-# Le tre barre sotto il nome: a metà è Bonobot, il metro (statistiche a 1)
-func _stat_bars(c: Dictionary) -> Control:
-	var rows := VBoxContainer.new()
-	rows.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	rows.add_theme_constant_override("separation", 1)
-	var stats: Dictionary = c.get("stats", {})
-	for s in STAT_BARS:
-		var row := HBoxContainer.new()
-		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		row.alignment = BoxContainer.ALIGNMENT_CENTER
-		var l := UI.label(s[1], 11, Color(UI.TEXT, 0.7))
-		l.custom_minimum_size = Vector2(38, 0)
-		row.add_child(l)
-		row.add_child(_bar_track(float(stats.get(s[0], 1.0)), BAR_W, 6))
-		rows.add_child(row)
-	return rows
+# La vetrina del lottatore scelto: una lastra storta scura con le linee di velocità, il nome enorme e
+# trasparente sullo sfondo e in fondo la targa rossa su cui sta il nome (name_label, un figlio)
+class Showcase extends Control:
+	const UIx := preload("res://scripts/ui.gd")
+	var name_label: Label
+
+	func _ready() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _draw() -> void:
+		var w := size.x
+		var h := size.y
+		if w <= 0.0 or h <= 0.0:
+			return
+		var lean := 22.0
+		var back := Rect2(Vector2(lean / 2.0 + 2.0, 2.0), Vector2(w - lean - 10.0, h - 10.0))
+		UIx.draw_plate(self, back, UIx.GRAPE.darkened(0.25), lean, UIx.INK, 3.0, Vector2(6, 7))
+		# Linee di velocità in diagonale, più fitte in alto: la vetrina si muove anche da ferma
+		for i in 7:
+			var x := back.position.x + 30.0 + i * (back.size.x - 40.0) / 6.0
+			draw_line(Vector2(x + 18.0, back.position.y + 8.0), Vector2(x - 40.0, back.end.y - 60.0), Color(UIx.LILAC, 0.05), 6.0)
+		# Il nome enorme e trasparente, dietro al lottatore
+		if name_label != null and name_label.text != "":
+			var f := UIx.display()
+			var word := name_label.text.to_upper()
+			var px := 96
+			var tw := f.get_string_size(word, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
+			if tw > back.size.x - 20.0:
+				px = maxi(30, int(px * (back.size.x - 20.0) / tw))
+				tw = f.get_string_size(word, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
+			draw_string(f, Vector2(w / 2.0 - tw / 2.0, back.position.y + px * 0.95), word, HORIZONTAL_ALIGNMENT_LEFT, -1, px, Color(UIx.PAPER, 0.06))
+		# La targa del nome
+		var plate := Rect2(Vector2(18.0, h - 54.0), Vector2(w - 44.0, 46.0))
+		if name_label != null: # la targa sta sotto il nome, anche col testo grande
+			plate = Rect2(Vector2(18.0, name_label.position.y - 1.0), Vector2(w - 44.0, name_label.size.y + 2.0))
+		UIx.draw_plate(self, plate, UIx.PUNCH, 16.0, UIx.INK, 3.0, Vector2(5, 6))
+		var stripe := Rect2(plate.position + Vector2(4, 5), Vector2(10, plate.size.y - 10))
+		UIx.draw_plate(self, stripe, UIx.BANANA, 16.0 * stripe.size.y / plate.size.y, UIx.INK, 0.0)
 
 
-func _bar_track(value: float, width: float, height: float) -> Control:
-	var track := ColorRect.new()
-	track.color = UI.BORDER
-	track.custom_minimum_size = Vector2(width, height)
-	track.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	track.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var fill := ColorRect.new()
-	fill.color = UI.ACCENT
-	fill.size = Vector2(maxf(2.0, width * stat_fill(value, game.get("characterStats", {}))), height)
-	fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	track.add_child(fill)
-	return track
+# Una barra delle statistiche: binario incavato storto, riempito di giallo, con le tacche ogni quinto;
+# fill da 0 a 1 (stat_fill: a metà è Bonobot, il metro)
+class StatBar extends Control:
+	const UIx := preload("res://scripts/ui.gd")
+	var fill := 0.5
+
+	func _ready() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _draw() -> void:
+		var lean := size.y * 0.6
+		var r := Rect2(Vector2(lean / 2.0, 0), size - Vector2(lean, 0))
+		UIx.draw_plate(self, r, UIx.BORDER.darkened(0.25), lean, UIx.INK, 0.0)
+		var on := Rect2(r.position, Vector2(maxf(4.0, r.size.x * clampf(fill, 0.0, 1.0)), r.size.y))
+		UIx.draw_plate(self, on, UIx.BANANA, lean, UIx.INK, 0.0)
+		draw_line(on.position + Vector2(lean / 2.0, 2), Vector2(on.end.x + lean / 2.0 - 2.0, on.position.y + 2), Color(1, 1, 1, 0.35), 2.0)
+		for i in range(1, 5):
+			var x := r.position.x + r.size.x * i / 5.0
+			draw_line(Vector2(x + lean / 2.0, 0), Vector2(x - lean / 2.0, r.size.y), Color(UIx.INK, 0.55), 2.0)
+		UIx.draw_plate(self, r, Color.TRANSPARENT, lean, UIx.INK, 2.0)
 
 
 # --- Passi, briciole e riassunto ---
@@ -900,20 +1069,18 @@ func _bar_track(value: float, width: float, height: float) -> Control:
 # Contenitore di una pagina, con il suo titolo
 func _page_box(text: String) -> VBoxContainer:
 	var page := VBoxContainer.new()
-	page.add_theme_constant_override("separation", UI.GAP_M)
+	page.add_theme_constant_override("separation", UI.GAP_S + 1 if Phone.active else UI.GAP_M)
 	if Phone.active:
 		return page # sul telefono il titolo lo dicono già le briciole in alto: lo spazio serve alle scelte
 	var t := UI.title(text)
+	t.add_theme_font_size_override("font_size", Access.px(PAGE_TITLE))
 	page.add_child(t)
-	var gap := Control.new()
-	gap.custom_minimum_size = Vector2(0, UI.GAP_S)
-	page.add_child(gap)
 	return page
 
 
 # I passi di questa partita: l'arena si sceglie solo creando una stanza e mai in Corsa (il percorso è generato)
 func flow() -> Array:
-	if _kind == "join" or _mode_id() == "race":
+	if _kind == "join" or _creating_in_hall() or _mode_id() == "race":
 		return ["match", "fighter"]
 	return ["match", "stage", "fighter"]
 
@@ -923,7 +1090,7 @@ func _show_page(page: String, focus := true) -> void:
 	for p in _pages:
 		_pages[p].visible = p == page
 	var last: bool = flow().back() == page
-	_next_button.text = ("Entra!" if _kind == "join" else "Combatti!") if last else "Avanti ›"
+	_next_button.text = ("Entra!" if _kind == "join" else ("In sala!" if _creating_in_hall() else "Combatti!")) if last else "Avanti ›"
 	_back_button.text = "‹ Menu" if page == "match" else "‹ Indietro"
 	_update_crumbs()
 	UI.fade_in(_pages[page])
@@ -1007,20 +1174,21 @@ func _update_crumbs() -> void:
 	var at := steps.find(_page)
 	for i in steps.size():
 		if i > 0:
-			_crumbs.add_child(UI.label("›", UI.SIZE_BODY, Color(UI.TEXT, 0.4)))
+			_crumbs.add_child(UI.label("›", UI.SIZE_BIG, Color(UI.LILAC, 0.5)))
+		# Una targhetta storta per passo: gialla quella di adesso, viola quelle fatte, incavate le prossime
 		var b := Button.new()
-		b.flat = true
+		var fill := UI.BANANA if i == at else (UI.GRAPE_HI if i < at else UI.FIELD.lightened(0.05))
 		for state in ["normal", "hover", "pressed", "disabled", "focus"]:
-			var empty := StyleBoxEmpty.new()
-			empty.set_content_margin_all(UI.GAP_S)
-			b.add_theme_stylebox_override(state, empty) # stessa altezza, scelto o no
+			var box := UI.button_box(fill.lightened(0.12) if state == "hover" and i < at else fill, false, 6)
+			box.content_margin_top = 2
+			box.content_margin_bottom = 2
+			b.add_theme_stylebox_override(state, box) # stessa altezza, scelto o no
 		b.focus_mode = Control.FOCUS_NONE # col pad si va avanti e indietro con A e B
-		b.text = "%d  %s" % [i + 1, PAGE_NAMES[steps[i]]]
-		var color := UI.ACCENT if i == at else (UI.TEXT if i < at else Color(UI.TEXT, 0.4))
+		b.text = "%d  %s" % [i + 1, PAGE_NAMES[steps[i]].to_upper()]
+		var color := UI.INK if i == at else (UI.PAPER if i < at else Color(UI.LILAC, 0.55))
 		for state in ["font_color", "font_hover_color", "font_pressed_color", "font_disabled_color"]:
 			b.add_theme_color_override(state, color)
-		if i == at:
-			b.add_theme_font_override("font", UI.font(UI.WEIGHT_BOLD))
+		b.add_theme_font_size_override("font_size", Access.px(UI.SIZE_BODY))
 		b.disabled = i >= at
 		var step: String = steps[i]
 		b.pressed.connect(func(): _show_page(step))
@@ -1040,7 +1208,13 @@ func _update_summary() -> void:
 			parts.append("Entri in " + target if target != "" else "Entri in una stanza")
 		"bot":
 			parts.append(("Contro: " + str(BOTS[_bot.selected][1]) if _bot.selected > 0 else "Contro un bot") + " (%s)" % _bot_char_name())
-	if _kind != "join":
+	if _creating_in_hall():
+		var rules := _stocks.get_item_text(_stocks.selected)
+		if TIMES[_time.selected][0] > 0:
+			rules += ", " + _time.get_item_text(_time.selected)
+		parts.append(rules)
+		parts.append("modalità e arena in sala")
+	elif _kind != "join":
 		var mode := _mode_id()
 		var rules := str(MODES[_mode_i][1])
 		if _team_count_box.visible:
@@ -1181,6 +1355,7 @@ func _choice(bot: String) -> Dictionary:
 		"bot": "manichino" if mode == "training" and bot == "" else bot, # conta solo se la stanza è nuova
 		"botChar": str(_bot_char_ids[_bot_char.selected]) if _bot_char.selected >= 0 and _bot_char.selected < _bot_char_ids.size() else BOT_CHARACTER_ID,
 		"kind": _kind, # per tornare alla stessa scheda dopo la partita
+		"hall": hall, # la stanza nuova parte dalla sala d'attesa 3D (main.gd lo manda nel join)
 		"host": _hosting_new(), # ricordato per la prossima volta; il server vero lo mette _host_and_join
 	}
 

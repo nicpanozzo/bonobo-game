@@ -50,6 +50,7 @@
 | `sfx/shield_*.ogg` (scudo colpito: impactGlass_light 000-002) | Kenney ([kenney.nl](https://kenney.nl)); normalizzati da Claude Code per Riccardo (GiovannifRana), #448 | [Kenney: Impact Sounds](https://kenney.nl/assets/impact-sounds) | CC0 |
 | `sfx/shieldBreak_*.ogg` (scudo rotto: impactGlass_heavy 000, 001, 004) | Kenney ([kenney.nl](https://kenney.nl)); normalizzati da Claude Code per Riccardo (GiovannifRana), #448 | [Kenney: Impact Sounds](https://kenney.nl/assets/impact-sounds) | CC0 |
 | `godot/assets/fx/` (texture delle particelle degli effetti: sbuffi e fiamme a tre toni, alone, #470) | Claude Code per Riccardo (GiovannifRana), generate col codice da `tools/fx/texture_particelle.py` | fatto da noi | CC0 |
-| `godot/assets/fonts/Nunito.ttf` (font dei menu e dell'HUD) | The Nunito Project Authors | [google/fonts](https://github.com/google/fonts/tree/main/ofl/nunito) | SIL Open Font License 1.1 (`godot/assets/fonts/OFL.txt`) |
+| `godot/assets/fonts/LilitaOne.ttf` (font dei titoli, dei pulsanti e dei numeri grandi) | Juan Montoreano | [google/fonts](https://github.com/google/fonts/tree/main/ofl/lilitaone) | SIL Open Font License 1.1, nome riservato "Lilita" (`godot/assets/fonts/OFL-LilitaOne.txt`) |
+| `godot/assets/fonts/Rubik.ttf`, `Rubik-Italic.ttf` (font dei testi e dell'HUD; ridotti ai caratteri latini con `pyftsubset`) | The Rubik Project Authors | [google/fonts](https://github.com/google/fonts/tree/main/ofl/rubik) | SIL Open Font License 1.1 (`godot/assets/fonts/OFL-Rubik.txt`) |
 | `godot/assets/icon/` (icona dell'app, tre bonobo) | Claude Code per Nicola, disegnata a mano in SVG (`icon.svg`), `icon.png` esportata a 1024 px | fatto da noi | CC0 |
 

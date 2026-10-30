@@ -450,3 +450,32 @@ describe("bot", () => {
     }
   });
 });
+
+// Sala d'attesa: i bot della sala entrano in ogni partita nuova già come lottatori, con lo stesso id
+describe("bot della sala d'attesa", () => {
+  it("adopt fa di un lottatore già in partita un bot pronto; reset scorda quelli della partita prima", () => {
+    const bots = new Bots();
+    const old = new Match({ prematch: true });
+    old.addPlayer("bot-sala-1", "Bot");
+    bots.adopt(old, "bot-sala-1", "semplice");
+    assert.ok(bots.isBot("bot-sala-1"));
+    bots.reset();
+    assert.ok(!bots.isBot("bot-sala-1"));
+
+    const match = new Match({ prematch: true });
+    match.addPlayer("a", "A");
+    match.addPlayer("bot-sala-2", "Bot", "orsoblu");
+    bots.adopt(match, "bot-sala-2", "semplice");
+    assert.deepEqual(match.snapshot([], 0).prematch?.ready, ["bot-sala-2"], "il bot non fa aspettare");
+    const bot = match.players.find((p) => p.id === "bot-sala-2")!;
+    assert.equal(bot.dashByTap, false);
+    match.setReady("a", true);
+    let moved = false;
+    for (let i = 0; i < 10 * TICK_RATE && !moved; i++) {
+      bots.tick(match);
+      match.step(DT);
+      moved = bot.input.left || bot.input.right;
+    }
+    assert.ok(moved, "dopo il VIA decide i suoi tasti");
+  });
+});

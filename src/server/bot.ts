@@ -85,6 +85,18 @@ export class Bots {
     if (match.isFull) return null;
     const id = `bot-${kind}-${++this.count}`;
     match.addPlayer(id, BOT_NAMES[kind], botCharacter(characterId));
+    this.adopt(match, id, kind);
+    return id;
+  }
+
+  // Sala d'attesa: i bot della sala entrano in ogni partita nuova già come lottatori (stesso id).
+  // Si scordano quelli della partita prima
+  reset() {
+    this.bots.clear();
+  }
+
+  // Un lottatore già in partita diventa un bot di questo tipo: da qui in poi i suoi tasti li decide tick()
+  adopt(match: Match, id: string, kind: BotKind) {
     match.setReady(id, true); // il bot non fa aspettare nessuno nel pre-partita
     // Lo scatto col doppio tocco (#199) i bot non lo usano: i loro tocchi brevi lo farebbero partire per sbaglio
     const fighter = match.players.find((p) => p.id === id);
@@ -93,7 +105,6 @@ export class Bots {
     if (fighter) fighter.shortHop = false;
     const gunner = !!fighter?.team && ![...this.bots.keys()].some((b) => match.players.find((p) => p.id === b)?.team === fighter.team);
     this.bots.set(id, { gunner, kind, ticks: 0, attacks: 0, hold: emptyInput(), last: emptyInput(), dropping: false, ledgeTicks: 0, getups: 0, shieldTicks: 0, specialTicks: 0, threats: 0 });
-    return id;
   }
 
   // Prima di ogni passo di fisica: ogni bot decide i suoi tasti

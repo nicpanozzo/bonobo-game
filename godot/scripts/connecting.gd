@@ -7,6 +7,7 @@ signal cancelled
 var _title := UI.header("")
 var _detail := UI.label("", UI.SIZE_BODY, Color(UI.TEXT, 0.8))
 var _cancel: Button
+var _dots := Control.new()
 
 
 func setup() -> void:
@@ -14,7 +15,19 @@ func setup() -> void:
 	var parts := UI.overlay(520)
 	add_child(parts[0])
 	var box: VBoxContainer = parts[1]
-	box.add_child(_title)
+	var top := HBoxContainer.new()
+	top.add_theme_constant_override("separation", UI.GAP_L)
+	_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top.add_child(_title)
+	# Tre lastre gialle che si accendono una dopo l'altra: si vede che il gioco non è fermo
+	_dots.custom_minimum_size = Vector2(78, 0)
+	_dots.draw.connect(func():
+		var t := Time.get_ticks_msec() / 160.0
+		for i in 3:
+			var on := 1.0 if Access.calm else clampf(1.0 - absf(fmod(t - i, 4.0) - 1.0), 0.25, 1.0)
+			UI.draw_plate(_dots, Rect2(4 + i * 24, _dots.size.y / 2 - 8, 16, 16), Color(UI.BANANA, on), 6.0, UI.INK, 2.0))
+	top.add_child(_dots)
+	box.add_child(top)
 	_detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	box.add_child(_detail)
 	var actions := HBoxContainer.new()
@@ -32,6 +45,10 @@ func show_text(title: String, detail := "") -> void:
 	_title.text = title
 	_detail.text = detail
 	_detail.visible = detail != ""
+
+
+func _process(_delta: float) -> void:
+	_dots.queue_redraw()
 
 
 # Esc o B prima del menu di pausa di main.gd (che ascolta in _unhandled_key_input)

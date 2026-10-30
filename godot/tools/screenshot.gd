@@ -10,7 +10,7 @@ var _out := "user://screenshots"
 var _game: Dictionary
 var _world: Node2D # nella partita finta: riceve uno snapshot a ogni frame
 var _hud: Control
-const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre", "lobby_regole", "musica", "tetris", "pacman", "bassanese", "bologna_piazza", "bologna_torri", "bologna_crollo", "bologna_zuffa", "oggetti", "prepartita_attesa", "prepartita_vs", "prepartita_conto", "fine_partita"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
+const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre", "lobby_regole", "musica", "tetris", "pacman", "bassanese", "bologna_piazza", "bologna_torri", "bologna_crollo", "bologna_zuffa", "oggetti", "prepartita_attesa", "prepartita_vs", "prepartita_conto", "fine_partita", "sala", "sala_conto", "sala_galleria", "sala_via", "sala_basket", "sala_scacchi"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
 var _index := -1
 var _frame := 0
 var _failed := false
@@ -25,6 +25,10 @@ var _pre_fighters := 0 # quanti lottatori nella partita finta del pre-partita (0
 var _pre_view: Control
 var _end_on := false # la partita finta finita: GAME!, vincitore e classifica coi premi (results_view.gd)
 var _results: Control
+var _hall_view: Node3D # la sala d'attesa 3D finta: riceve uno snapshot a ogni frame
+var _hall_hud: Control
+var _hall_scene := "sala" # quale serata finta (tests/hall_fake.gd): sala, conto, galleria
+var _only: Array = [] # --only=sala,sala_basket: si scattano solo queste (per provare in fretta)
 var _bologna: Dictionary = {} # le fasi di Bologna (#433): {ms, cam, zoom, spots}, vuoto nelle altre partite
 # Bologna in quattro momenti: l'auto in piazza, l'ingorgo sotto le torri, la Garisenda che cade coi mattoni, la polvere
 const BOLOGNA_SHOTS := {
@@ -39,6 +43,8 @@ func _initialize() -> void:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--out="):
 			_out = arg.trim_prefix("--out=")
+		if arg.begins_with("--only="):
+			_only = arg.trim_prefix("--only=").split(",")
 	DirAccess.make_dir_recursive_absolute(_out)
 	_game = JSON.parse_string(FileAccess.get_file_as_string("res://data/game.json"))
 	root.theme = load("res://scripts/ui.gd").theme()
@@ -55,6 +61,25 @@ func _process(_delta: float) -> bool:
 			_pre_view.on_snapshot(snap)
 		if _results != null:
 			_results.on_snapshot(snap)
+	if _hall_view != null:
+		var hall: Dictionary = load("res://tests/hall_fake.gd").party(_frame * 33.0, _hall_scene)
+		if _frame == 18:
+			hall.events = [{"type": "vote", "id": "p1", "what": "mode", "value": "ffa"}, {"type": "bounce", "id": "p5"}, {"type": "gong", "id": "p2"}, {"type": "pick", "id": "p2", "characterId": "orsoblu", "skinId": ""}]
+			if _hall_scene == "conto":
+				hall.events = [{"type": "countdown", "ms": 3200}]
+		if _frame == 18 and _hall_scene == "basket":
+			hall.events = [{"type": "basket", "id": "p2", "prop": "ball-1", "points": 3, "swish": true}, {"type": "throw", "id": "p2", "prop": "ball-1"}]
+		if _frame == 18 and _hall_scene == "scacchi":
+			hall.events = [{"type": "topple", "prop": "chess-b-king", "by": "p0"}, {"type": "checkmate", "id": "p0", "color": "black"}]
+		if _hall_scene == "basket" and _frame == 2:
+			_hall_view.set_speaking("p1", true)
+			_hall_view.set_voice_muted("p3", true)
+		if _frame == 24 and _hall_scene == "via":
+			hall.events = [{"type": "go", "mode": "ffa", "stageId": "palco"}]
+		for e in hall.events:
+			_hall_view.on_event(e)
+		_hall_view.on_snapshot(hall)
+		_hall_hud.on_snapshot(hall)
 	if _frame < SHOT_FRAME:
 		return false
 	var name: String = SHOTS[_index]
@@ -77,11 +102,15 @@ func _next() -> void:
 	for c in root.get_children():
 		c.queue_free()
 	_index += 1
+	while not _only.is_empty() and _index < SHOTS.size() and not _only.has(SHOTS[_index]):
+		_index += 1
 	_frame = 0
 	_world = null
 	_hud = null
 	_pre_view = null
 	_results = null
+	_hall_view = null
+	_hall_hud = null
 	if _index < SHOTS.size():
 		call("_" + SHOTS[_index])
 
@@ -329,3 +358,50 @@ static func is_blank(image: Image) -> bool:
 			if not p.is_equal_approx(first):
 				return false
 	return true
+
+
+# La sala d'attesa 3D (hall_view.gd) con le sue scritte (hall_hud.gd), da una serata finta
+func _sala() -> void:
+	_hall_scene = "sala"
+	_add_hall()
+
+
+func _sala_conto() -> void:
+	_hall_scene = "conto"
+	_add_hall()
+
+
+func _sala_galleria() -> void:
+	_hall_scene = "galleria"
+	_add_hall()
+
+
+# Il via: coriandoli dai cannoni e la telecamera che si alza
+func _sala_via() -> void:
+	_hall_scene = "via"
+	_add_hall()
+
+
+# La zona giochi: il campo da basket con un tiro da tre in volo, e la scacchiera gigante con lo scacco matto
+func _sala_basket() -> void:
+	_hall_scene = "basket"
+	_add_hall()
+
+
+func _sala_scacchi() -> void:
+	_hall_scene = "scacchi"
+	_add_hall()
+
+
+func _add_hall() -> void:
+	_hall_view = load("res://scripts/hall_view.gd").new()
+	root.add_child(_hall_view)
+	_hall_view.setup(_game, "p0")
+	var layer := CanvasLayer.new()
+	root.add_child(layer)
+	_hall_hud = load("res://scripts/hall_hud.gd").new()
+	layer.add_child(_hall_hud)
+	_hall_hud.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_hall_hud.setup(_game)
+	_hall_hud.my_id = "p0"
+	_hall_hud.room_code = "ci"

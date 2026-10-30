@@ -4,8 +4,9 @@
 import { DISCORD_LIMITS, TEAM_NAMES } from "../shared/constants";
 import type { MatchEndEvent } from "../shared/match";
 import type { Fighter } from "../shared/physics";
-import type { MatchRules } from "../shared/types";
+import type { MatchRules, RatingChange } from "../shared/types";
 import type { Leaderboard } from "./leaderboard";
+import { nameKey } from "./rating";
 import { TokenBucket } from "./rateLimit";
 import type { RoomHooks } from "./Room";
 import { MatchStats, type PlayerStats } from "./stats";
@@ -20,8 +21,14 @@ export interface Player {
 // Il server è pubblico e i nomi li sceglie chiunque: nel canale restano testo, mai grassetti, spoiler o link cliccabili
 export const escapeMarkdown = (text: string) => text.replace(/[\\*_~|`<>:[\]()]/g, (c) => `\\${c}`);
 
-// Il messaggio per il canale: chi ha vinto e una riga per giocatore
-export function formatResult(result: MatchEndEvent, named: readonly Player[], stats: (id: string) => PlayerStats, rules: MatchRules): string {
+// Il messaggio per il canale: chi ha vinto e una riga per giocatore (con i punti in classifica, se contano)
+export function formatResult(
+  result: MatchEndEvent,
+  named: readonly Player[],
+  stats: (id: string) => PlayerStats,
+  rules: MatchRules,
+  points: (id: string) => number | undefined = () => undefined,
+): string {
   const players = named.map((p) => ({ ...p, name: escapeMarkdown(p.name) }));
   const winner = players.find((p) => p.id === result.winnerId);
   const minutes = Math.floor(result.durationMs / 60000);
@@ -41,6 +48,8 @@ export function formatResult(result: MatchEndEvent, named: readonly Player[], st
       const s = stats(p.id);
       const parts = [`${s.kos} KO`, `${Math.round(s.damageDealt)}% inflitti`, s.falls === 1 ? "1 caduta" : `${s.falls} cadute`];
       if (s.selfDestructs) parts.push(`${s.selfDestructs} da solo`);
+      const delta = points(p.id);
+      if (delta !== undefined) parts.push(`${delta >= 0 ? "+" : ""}${delta} punti`);
       return `${p.id === result.winnerId ? "👑" : "•"} ${p.name}: ${parts.join(", ")}`;
     });
   const titles = funTitles(players, stats);
@@ -98,15 +107,35 @@ export function discordHooks(
     onMatchEnd: (room, result, fighters: readonly Fighter[]) => {
       const humans = fighters.filter((f) => !isBot(f.id));
       if (humans.length < 2) return;
-      leaderboard?.record({
+      const results = leaderboard?.record({
         t: Date.now(),
+        mode: room.rules.mode,
         players: humans.map((f) => {
           const s = stats.get(f.id);
           const won = result.winnerTeam > 0 ? f.team === result.winnerTeam : f.id === result.winnerId;
-          return { name: f.name, won, kos: s.kos, falls: s.falls, damageDealt: s.damageDealt };
+          return { name: f.name, won, kos: s.kos, falls: s.falls, damageDealt: s.damageDealt, ...(f.team > 0 ? { team: f.team } : {}) };
         }),
       });
-      if (webhookUrl && posts.take(Date.now())) void postToDiscord(webhookUrl, formatResult(result, fighters, (id) => stats.get(id), room.rules));
+      const changes = results ? ratingChanges(humans, results) : [];
+      if (changes.length) room.broadcast("ratings", { changes });
+      const points = new Map(changes.map((c) => [c.id, c.delta]));
+      if (webhookUrl && posts.take(Date.now()))
+        void postToDiscord(webhookUrl, formatResult(result, fighters, (id) => stats.get(id), room.rules, (id) => points.get(id)));
     },
   };
+}
+
+// La classifica conta per nome, la schermata dei risultati per lottatore: si ritrova l'id di ognuno.
+// Due umani con lo stesso nome contano come uno solo (rating.ts): i punti vanno al primo
+export function ratingChanges(fighters: readonly { id: string; name: string }[], results: readonly { name: string; rating: number; delta: number; tier: string; rank: number | null }[]): RatingChange[] {
+  const byName = new Map(results.map((r) => [nameKey(r.name), r]));
+  const out: RatingChange[] = [];
+  for (const f of fighters) {
+    const key = nameKey(f.name);
+    const r = byName.get(key);
+    if (!r) continue;
+    byName.delete(key);
+    out.push({ id: f.id, name: f.name, rating: r.rating, delta: r.delta, tier: r.tier, rank: r.rank });
+  }
+  return out;
 }

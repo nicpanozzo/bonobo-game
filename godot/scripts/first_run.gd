@@ -26,11 +26,9 @@ func setup(s: Settings) -> void:
 	_pad = not Input.get_connected_joypads().is_empty()
 	_touch = not _pad and (DisplayServer.is_touchscreen_available() or Phone.active)
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	var bg := ColorRect.new()
-	bg.color = UI.BG
-	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	add_child(bg)
-	var parts := UI.overlay(560)
+	add_child(UI.backdrop())
+	var parts := UI.overlay(600)
+	parts[0].color = Color(0, 0, 0, 0.2) # sopra il fondo dei menu basta un velo: le strisce si vedono
 	add_child(parts[0])
 	_box = parts[1]
 	var top := HBoxContainer.new()
