@@ -1842,6 +1842,8 @@ func _draw_items(now: int) -> void:
 		_item_pos[it.id] = pos
 		seen[it.id] = true
 		var spin := now / 1000.0 * 14.0 if it.thrown else 0.0
+		if holder == null and not it.thrown and absf(float(it.get("vy", 0.0))) < 1.0:
+			pos.y = _rest_y(pos) # fermo su una scala: sul gradino che ha sotto, non sospeso sulla rampa
 		# Il funghetto piantato (#302): chi l'ha piantato lo vede, gli altri appena appena
 		var owner: Variant = it.get("owner")
 		var alpha := 1.0 if owner == null or owner == my_id else 0.13
@@ -1862,6 +1864,27 @@ func _draw_items(now: int) -> void:
 		if not seen.has(id):
 			_item_pos.erase(id)
 			_shrooms.erase(id)
+
+
+# Dove si disegna un oggetto fermo a terra in pos. Sulle scale (piattaforme in pendenza disegnate a gradini) la fisica
+# lo posa sulla rampa liscia, che tocca solo lo spigolo di ogni gradino: si disegna invece sulla pedata sotto di lui
+func _rest_y(pos: Vector2) -> float:
+	for p in stage.get("platforms", []):
+		if p.get("y2") == null or pos.x < float(p.x) or pos.x > float(p.x) + float(p.width):
+			continue
+		if absf(PredictMovement.surface_y(p, pos.x) - pos.y) < 3.0:
+			return stair_top(p, pos.x)
+	return pos.y
+
+
+# La pedata del gradino sotto x, con gli stessi gradini di _draw_stairs e _draw_skinned_platform
+static func stair_top(p: Dictionary, x: float) -> float:
+	var rise := absf(float(p.y2) - float(p.y))
+	var n := maxi(2, int(rise / 14.0))
+	var step := float(p.width) / n
+	var i := clampi(int((x - float(p.x)) / step), 0, n - 1)
+	var x0 := float(p.x) + step * i
+	return maxf(PredictMovement.surface_y(p, x0), PredictMovement.surface_y(p, x0 + step))
 
 
 # Il fungo di Teemo piazzato (#419): da quando è a terra, quanto lo vede chi guarda. Chi l'ha lanciato e la sua squadra
