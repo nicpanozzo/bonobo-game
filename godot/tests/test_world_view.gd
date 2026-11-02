@@ -364,3 +364,15 @@ func test_oggetti_integrati_con_l_arena() -> void:
 	runner.check(WorldView.in_pick_range(Vector2(530, 560), feet, 40.0, 64.0), "a 30 px lo si raccoglie: contorno chiaro")
 	runner.check(not WorldView.in_pick_range(Vector2(560, 560), feet, 40.0, 64.0), "a 60 px no")
 	runner.check(not WorldView.in_pick_range(Vector2(500, 420), feet, 40.0, 64.0), "sulla piattaforma sopra no")
+
+
+# Gli oggetti fermi su una scala si disegnano sulla pedata del gradino sotto, non sospesi sulla rampa
+func test_oggetti_sulle_scale() -> void:
+	var p := {"x": 0.0, "y": 100.0, "y2": 156.0, "width": 80.0} # 56 px di dislivello: 4 gradini larghi 20
+	for x in [2.0, 10.0, 19.0, 30.0, 55.0, 79.0]:
+		var ramp := PredictMovement.surface_y(p, x)
+		var top := WorldView.stair_top(p, x)
+		runner.check(top >= ramp - 0.01 and top <= ramp + 14.0 + 0.01, "x %s: la pedata %s sta sotto la rampa %s di al massimo un gradino" % [x, top, ramp])
+	runner.check(is_equal_approx(WorldView.stair_top(p, 10.0), 114.0), "il primo gradino ha la pedata alla fine del suo tratto di rampa")
+	var down := {"x": 0.0, "y": 156.0, "y2": 100.0, "width": 80.0} # la scala che sale verso destra
+	runner.check(is_equal_approx(WorldView.stair_top(down, 70.0), 114.0), "anche nell'altro verso")
