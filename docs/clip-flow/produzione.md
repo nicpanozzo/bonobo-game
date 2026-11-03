@@ -146,3 +146,40 @@ Creato da `tools/flow/prompt_flow.py`, che non lo riscrive più: da qui si aggio
 | EG-A6 | Lancia: attacchi | da fare | | | | | |
 | EG-A7 | Lancia: lancio | da fare | | | | | |
 | EG-A8 | Martello | da fare | | | | | |
+
+## Pacchetto base
+
+Prompt in [`base.md`](base.md). Immagine = `riferimenti/personaggi/<id>.png`.
+
+| Codice | Clip | Stato | Tentativi | Modello | Crediti | Commento con l'mp4 | Note |
+|---|---|---|---|---|---|---|---|
+| GF-IMG | Giovanni fRana: immagine di partenza | da fare | | Nano Banana | 0 | | |
+| GF-B1 | Giovanni fRana: Movimento | da fare | | Veo 3.1 Lite | | | |
+| GF-B2 | Giovanni fRana: Colpi | da fare | | Veo 3.1 Lite | | | |
+| LE-IMG | Lendmar: immagine di partenza | da fare | | Nano Banana | 0 | | |
+| LE-B1 | Lendmar: Movimento | da fare | | Veo 3.1 Lite | | | |
+| LE-B2 | Lendmar: Colpi | da fare | | Veo 3.1 Lite | | | |
+| OB-IMG | Capt. OrsoBlu: immagine di partenza | fatta | | Nano Banana | 0 | | |
+| OB-B1 | Capt. OrsoBlu: Movimento | da fare | | Veo 3.1 Lite | | | |
+| OB-B2 | Capt. OrsoBlu: Colpi | da fare | | Veo 3.1 Lite | | | |
+| MA-IMG | Marcomunista: immagine di partenza | fatta | | Nano Banana | 0 | | |
+| MA-B1 | Marcomunista: Movimento | da fare | | Veo 3.1 Lite | | | |
+| MA-B2 | Marcomunista: Colpi | da fare | | Veo 3.1 Lite | | | |
+| LA-IMG | Lampione: immagine di partenza | da fare | | Nano Banana | 0 | | |
+| LA-B1 | Lampione: Movimento | da fare | | Veo 3.1 Lite | | | |
+| LA-B2 | Lampione: Colpi | da fare | | Veo 3.1 Lite | | | |
+| DM-IMG | Dr. Micelium: immagine di partenza | da fare | | Nano Banana | 0 | | |
+| DM-B1 | Dr. Micelium: Movimento | da fare | | Veo 3.1 Lite | | | |
+| DM-B2 | Dr. Micelium: Colpi | da fare | | Veo 3.1 Lite | | | |
+| EM-IMG | Electronmaster: immagine di partenza | da fare | | Nano Banana | 0 | | |
+| EM-B1 | Electronmaster: Movimento | da fare | | Veo 3.1 Lite | | | |
+| EM-B2 | Electronmaster: Colpi | da fare | | Veo 3.1 Lite | | | |
+| NG-IMG | Nonna Gina: immagine di partenza | da fare | | Nano Banana | 0 | | |
+| NG-B1 | Nonna Gina: Movimento | da fare | | Veo 3.1 Lite | | | |
+| NG-B2 | Nonna Gina: Colpi | da fare | | Veo 3.1 Lite | | | |
+| OP-IMG | Maestro Opus: immagine di partenza | da fare | | Nano Banana | 0 | | |
+| OP-B1 | Maestro Opus: Movimento | da fare | | Veo 3.1 Lite | | | |
+| OP-B2 | Maestro Opus: Colpi | da fare | | Veo 3.1 Lite | | | |
+| BB-IMG | Bonobot: immagine di partenza | da fare | | Nano Banana | 0 | | |
+| BB-B1 | Bonobot: Movimento | da fare | | Veo 3.1 Lite | | | |
+| BB-B2 | Bonobot: Colpi | da fare | | Veo 3.1 Lite | | | |
