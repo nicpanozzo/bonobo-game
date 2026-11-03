@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 334" width="120" height="334">
+  <!-- Spada al plasma v2: lama di energia a tre toni con la punta arrotondata, impugnatura a sezioni -->
+  <g id="lama">
+    <rect x="37" y="8" width="46" height="232" rx="23" fill="#4fd8ff" opacity="0.28"/>
+    <rect x="44" y="14" width="32" height="224" rx="16" fill="#4fd8ff"/>
+    <rect x="51" y="20" width="18" height="216" rx="9" fill="#f2fdff"/>
+    <rect x="54" y="30" width="5" height="150" rx="2.5" fill="#ffffff"/>
+  </g>
+  <g stroke="#1b1a22" stroke-width="4" stroke-linejoin="round" stroke-linecap="round">
+    <!-- l'emettitore: corona a tre alette, bocca scura e una gemma ambra -->
+    <path d="M34 250 L39 230 L47 236 L52 222 L68 222 L73 236 L81 230 L86 250 Z" fill="#cdd2da"/>
+    <path d="M60 222 L68 222 L73 236 L81 230 L86 250 L60 250 Z" fill="#959dab" stroke="none"/>
+    <path d="M34 250 L39 230 L47 236 L52 222 L68 222 L73 236 L81 230 L86 250 Z" fill="none"/>
+    <rect x="50" y="218" width="20" height="8" rx="3" fill="#2a2d35"/>
+    <path d="M60 232 L64 238 L60 244 L56 238 Z" fill="#f0a93a" stroke-width="2.5"/>
+    <!-- il collare sotto l'emettitore -->
+    <rect x="40" y="250" width="40" height="8" rx="2" fill="#7f8796"/>
+    <!-- la sezione alta: le feritoie e la scatola dell'interruttore -->
+    <rect x="43" y="258" width="34" height="20" fill="#bec4cd"/>
+    <rect x="62" y="258" width="15" height="20" fill="#8e96a3" stroke="none"/>
+    <rect x="43" y="258" width="34" height="20" fill="none"/>
+    <path d="M48 263 L48 273 M53 263 L53 273 M58 263 L58 273" fill="none" stroke-width="2.5"/>
+    <rect x="76" y="259" width="9" height="16" rx="2" fill="#5b6270"/>
+    <rect x="78" y="262" width="5" height="6" rx="1.5" fill="#f0a93a" stroke-width="2"/>
+    <!-- l'impugnatura: anelli di gomma tra costole di metallo -->
+    <rect x="44" y="278" width="32" height="34" fill="#a9b0ba"/>
+    <rect x="62" y="278" width="14" height="34" fill="#7e8693" stroke="none"/>
+    <rect x="44" y="278" width="32" height="34" fill="none"/>
+    <rect x="41" y="281" width="38" height="6" rx="3" fill="#2c2f38"/>
+    <rect x="41" y="292" width="38" height="6" rx="3" fill="#2c2f38"/>
+    <rect x="41" y="303" width="38" height="6" rx="3" fill="#2c2f38"/>
+    <!-- il riflesso piatto sul lato in luce -->
+    <path d="M47 260 L47 276 M47 280 L47 310" fill="none" stroke="#eef1f5" stroke-width="2.5"/>
+    <!-- il pomolo scanalato e l'anellino -->
+    <path d="M42 312 L78 312 L74 324 L46 324 Z" fill="#a1a9b4"/>
+    <path d="M60 312 L78 312 L74 324 L60 324 Z" fill="#7a828f" stroke="none"/>
+    <path d="M42 312 L78 312 L74 324 L46 324 Z" fill="none"/>
+    <path d="M52 314 L53 322 M60 314 L60 322 M68 314 L67 322" fill="none" stroke-width="2"/>
+    <circle cx="60" cy="328" r="4" fill="none" stroke-width="3"/>
+  </g>
+</svg>

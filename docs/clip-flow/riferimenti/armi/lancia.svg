@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 124 366" width="124" height="366">
+  <!-- Lancia di pietra v2: punta sfaccettata con incisioni, fascia rossa allacciata, zanne con la punta scura,
+       perline, piume a strisce, asta con le venature, fasce di cuoio cucite e puntale -->
+  <g stroke="#1b1a22" stroke-width="4" stroke-linejoin="round" stroke-linecap="round">
+    <!-- l'asta di legno con il tratto a spirale e le venature -->
+    <rect x="55" y="118" width="14" height="230" rx="5" fill="#8f6d46"/>
+    <g stroke="none" fill="#6a4e31">
+      <path d="M55 142 L69 128 L69 139 L55 153 Z"/><path d="M55 178 L69 164 L69 175 L55 189 Z"/>
+      <path d="M55 214 L69 200 L69 211 L55 225 Z"/><path d="M55 250 L69 236 L69 247 L55 261 Z"/>
+      <path d="M55 286 L69 272 L69 283 L55 297 Z"/>
+    </g>
+    <path d="M59 156 L59 170 M65 194 L65 206 M59 230 L59 244 M65 266 L65 278" fill="none" stroke="#b8946a" stroke-width="2"/>
+    <rect x="55" y="118" width="14" height="230" rx="5" fill="none"/>
+    <!-- le fasce di cuoio con le cuciture -->
+    <rect x="52" y="300" width="20" height="10" rx="2" fill="#4d3b2b"/>
+    <rect x="52" y="316" width="20" height="10" rx="2" fill="#4d3b2b"/>
+    <path d="M57 302 L57 308 M62 302 L62 308 M67 302 L67 308 M57 318 L57 324 M62 318 L62 324 M67 318 L67 324" fill="none" stroke="#c9a37a" stroke-width="1.6"/>
+    <!-- il puntale di metallo -->
+    <path d="M55 346 L69 346 L66 356 L62 364 L58 356 Z" fill="#a4aeb8"/>
+    <!-- la cordicella con le perline e le piume -->
+    <path d="M56 126 Q46 132 46 146 M68 126 Q80 132 80 146" fill="none" stroke-width="2.5"/>
+    <circle cx="46" cy="148" r="3.5" fill="#e8d7a8" stroke-width="2"/><circle cx="80" cy="148" r="3.5" fill="#b8402f" stroke-width="2"/>
+    <path d="M46 152 Q32 170 36 196 Q48 178 50 156 Z" fill="#2f6f9a"/>
+    <path d="M38 166 L46 162 M36 176 L46 172 M37 186 L45 182" fill="none" stroke="#1d2b3a" stroke-width="2"/>
+    <path d="M38 188 L36 196 L43 190 Z" fill="#1d2b3a"/>
+    <path d="M80 152 Q94 172 88 198 Q78 180 76 156 Z" fill="#2f6f9a"/>
+    <path d="M88 168 L80 164 M89 178 L80 174 M88 188 L81 184" fill="none" stroke="#1d2b3a" stroke-width="2"/>
+    <path d="M86 190 L88 198 L82 192 Z" fill="#1d2b3a"/>
+    <!-- le due zanne d'osso, con l'ombra sotto e la punta scura -->
+    <path d="M51 110 Q26 112 12 88 Q30 98 48 96 Z" fill="#efe2c4"/>
+    <path d="M51 110 Q28 111 15 93 Q30 104 49 104 Z" fill="#cbb894" stroke="none"/>
+    <path d="M51 110 Q26 112 12 88 Q30 98 48 96 Z" fill="none"/>
+    <path d="M12 88 L18 92 L16 96 Z" fill="#5e4a33" stroke-width="2"/>
+    <path d="M73 110 Q98 112 112 88 Q94 98 76 96 Z" fill="#efe2c4"/>
+    <path d="M73 110 Q96 111 109 93 Q94 104 75 104 Z" fill="#cbb894" stroke="none"/>
+    <path d="M73 110 Q98 112 112 88 Q94 98 76 96 Z" fill="none"/>
+    <path d="M112 88 L106 92 L108 96 Z" fill="#5e4a33" stroke-width="2"/>
+    <!-- la fascia di stoffa rossa con il laccio incrociato -->
+    <rect x="50" y="94" width="24" height="28" rx="4" fill="#c2452f"/>
+    <rect x="62" y="94" width="12" height="28" rx="4" fill="#92321f" stroke="none"/>
+    <rect x="50" y="94" width="24" height="28" rx="4" fill="none"/>
+    <path d="M51 100 L73 112 M73 100 L51 112 M51 110 L73 120" fill="none" stroke="#e9c58c" stroke-width="2.2"/>
+    <!-- la punta di pietra a foglia: due facce, la costola, il filo chiaro e le incisioni -->
+    <path d="M62 2 L94 58 Q80 86 62 98 Q44 86 30 58 Z" fill="#bcc6cf"/>
+    <path d="M62 2 L94 58 Q80 86 62 98 Z" fill="#8995a1" stroke="none"/>
+    <path d="M62 2 L94 58 Q80 86 62 98 Q44 86 30 58 Z" fill="none"/>
+    <path d="M62 12 L62 92" fill="none" stroke-width="2.5"/>
+    <path d="M58 14 L36 56" fill="none" stroke="#eef2f5" stroke-width="2.5"/>
+    <path d="M46 52 L54 58 L46 64 M78 52 L70 58 L78 64 M50 72 L56 76 L50 80 M74 72 L68 76 L74 80 M57 36 L62 40 L67 36" fill="none" stroke="#5f6a76" stroke-width="2.5"/>
+  </g>
+</svg>
