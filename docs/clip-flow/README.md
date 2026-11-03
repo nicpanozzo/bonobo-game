@@ -82,28 +82,39 @@ Le clip del personaggio non aspettano questo passo: solo quelle delle armi.
 
 `tools/sprite/dal_video.py`: da una clip combinata alle strisce PNG del gioco. Prende il posto dei tagli scritti a mano personaggio per personaggio (`bradipo_dal_video.py`, `elvedeo_dai_video.py`, ...), che restano per rifare gli asset vecchi.
 
-**Uso:**
+**Uso** (fatto il 3/11, PR #541):
 ```bash
-python3 tools/sprite/dal_video.py <codice> <video.mp4> <cartella di lavoro>   # es. BR-04 BR-04_aerei-a.mp4 /tmp/br04
+python3 tools/sprite/dal_video.py <codice> <video.mp4> <cartella di lavoro>            # prova: scrive solo nella cartella
+python3 tools/sprite/dal_video.py <codice> <video.mp4> <cartella di lavoro> --scrivi   # anche negli asset del gioco
+python3 tools/sprite/dal_video.py EG-04 EG-04_leggeri-a.mp4 /tmp/eg04 --skin animato   # misure di una skin
 ```
 
-**Cosa deve fare:**
+Nella cartella di lavoro: `out/<stato>.png`, `foglio.png` (il foglio di controllo da mettere nella PR) e `resoconto.json` (fotogrammi usati, `hitFrame` proposto, dove va ogni stato, avvisi). Ci mette circa un minuto a clip.
+
+**Cosa controllare nel resoconto:**
+- **avvisi `pausa non trovata`:** la mossa è tagliata dai secondi previsti. Guarda il foglio e, se serve, correggi i fotogrammi in `tools/sprite/flow_tagli.json`;
+- **avvisi `diviso in parti uguali`:** due stati nella stessa mossa (`turn+skid`, `tumble+prone+getup`). Il confine è a metà: controllalo sempre;
+- **`hitFrame_proposto`:** vale solo per gli attacchi. È il fotogramma in cui il disegno arriva più lontano dal centro; va confermato con `zone_dei_colpi.py`.
+
+**Limiti noti:** la polvere staccata dai piedi si toglie, quella attaccata ai piedi no (meglio rigenerare la clip). La scala viene dal fermo che il personaggio ha già nel gioco (`idle.png`): un personaggio senza `idle.png` va prima sistemato a mano.
+
+**Cosa fa dentro** (per chi lo modifica):
 1. **Sapere cosa c'è nella clip** importando `clips_of()` da `tools/flow/prompt_flow.py`: stati, secondi previsti, personaggio.
 2. **Scontornare** il verde `#17B03B`:
-   - verde in HSV di OpenCV: H 38-88, S ≥ 70, V ≥ 50;
-   - apertura 3×3; si tiene il pezzo più grande più quelli sopra 400 px (artigli staccati), il resto è polvere;
-   - despill: il canale verde non supera max(rosso, blu) + 10. **Più forte sui pixel scuri**: le mani quasi nere prendono il riflesso verde;
-   - via le macchie grigie poco sature sotto i piedi (polvere).
+   - quanto è verde un pixel: verde meno il massimo fra rosso e blu, come `bradipo_dal_video.py`; i bordi mescolati si ripuliscono;
+   - si tiene il pezzo più grande più quelli sopra 400 px (artigli staccati); i pezzi staccati grigi all'altezza dei piedi sono polvere e si tolgono;
+   - despill: il canale verde non supera max(rosso, blu) + 8, **+ 2 sui pixel scuri** (le mani quasi nere prendevano il riflesso verde).
 3. **Trovare le mosse:** per ogni fotogramma la differenza di sagoma dal fotogramma 0 (pixel diversi / pixel della sagoma). Sotto 0,2 per almeno 6 fotogrammi = pausa nella posa. Le mosse sono i tratti fra le pause, in ordine. Prova del 3/11: con questa soglia la clip di Bradipo si divide da sola nelle 3 mosse.
-4. **Se le mosse trovate non sono quante previste,** usare i secondi della tabella del prompt (± 0,5 s) e scriverlo nel resoconto. Correzioni a mano in `tools/sprite/flow_tagli.json`: `{"BR-01": {"turn": [117, 146], "skid": [147, 181]}}`. Serve anche per due stati nella stessa mossa (`turn+skid`, `tumble+prone+getup`).
-5. **Normalizzare** come `bradipo_dal_video.py`: fotogramma, `footY` e `scale` del personaggio da `characters.ts`; modo "world" a terra, "feet" in aria; contorno chiaro di 2 px; PNG a 256 colori se supera 1 MB.
+4. **Se le mosse trovate non sono quante previste,** si tengono le mosse trovate che toccano la finestra prevista di una mossa sola; le altre si tagliano dai secondi della tabella (± 0,25 s), con un avviso. Correzioni a mano in `tools/sprite/flow_tagli.json`: `{"BR-01": {"turn": [117, 146], "skid": [147, 181]}}`. Serve anche per due stati nella stessa mossa (`turn+skid`, `tumble+prone+getup`).
+5. **Normalizzare** come `bradipo_dal_video.py`: fotogramma e `footY` del personaggio da `godot/data/game.json`, scala presa dall'altezza del suo `idle.png`; modo "world" a terra, "feet" in aria; contorno chiaro di 2 px; PNG a 256 colori.
 6. **Scrivere:**
    - gli stati che il gioco conosce già (`OPTIONAL_ANIMATION_NAMES` e obbligatori in `characters.ts`) vanno in `public/assets/characters/<id>/<stato>.png`;
    - gli stati che il gioco **non conosce ancora** (quelli nuovi di #531 e quelli delle armi) vanno in `public/assets/characters/<id>/in-attesa/<stato>.png`, che il controllo dei nomi non guarda. Si spostano quando il gioco li conosce;
-   - `throwForward` diventa anche `throw` finché i 4 lanci non sono separati nel gioco.
+   - `throwForward` diventa anche `throw` finché i 4 lanci non sono separati nel gioco;
+   - la PR che aggiunge file in `public/assets/` aggiunge anche la riga in `public/assets/CREDITS.md` (una per cartella basta, per esempio `characters/bradipo/in-attesa/`), se no `npm test` fallisce.
 7. **Resoconto:** un foglio di controllo PNG per clip (8 fotogrammi per stato, su grigio) da mettere nella PR, e per ogni stato fotogrammi usati e `hitFrame` proposto (il fotogramma in cui mano, piede o arma arriva più lontano; per le zone `zone_dei_colpi.py`).
 
-**Fatto quando:** lo script taglia le due clip di prova del 3/11 (chiedile a Riccardo) e una clip vera del passo 3; `npm test` passa (crediti in `public/assets/CREDITS.md`, file sotto i 5 MB).
+**Fatto (3/11, PR #541):** taglia le due clip di prova di Bradipo, che sono `BR-01`. Una si divide da sola in 3 mosse; nell'altra trova la prima mossa e taglia le altre due dai secondi, con l'avviso. Il primo taglio vero dell'ondata 1 lo conferma.
 
 ### Passi 3-6 · Le ondate
 
