@@ -1,6 +1,6 @@
 # Uso: python3 tools/sprite/foglio_a_colori.py <foglio.png> <cartella di uscita>
 # I lottatori dai fogli delle pose a colori di @Marcomunista: Bradipo Giallo (#335) e Marcomunista (#352). 24 pose in
-# una griglia 6×4 col nome sotto, come quello di Egiainuso (egiainuso_dal_foglio.py), ma colorato. Qui non basta prendere il tratto scuro: si
+# una griglia 6×4 col nome sotto, come quello di Egiainuso (#178), ma colorato. Qui non basta prendere il tratto scuro: si
 # toglie il fondo bianco riempiendolo dai bordi, così la faccia bianca (chiusa dal tratto) resta. Poi un
 # contorno chiaro per i fondali scuri e un PNG per stato nel formato a cartella (E7), con i piedi allineati.
 # Il foglio non va nella repo: si passa da fuori. Servono Pillow, numpy e scipy.

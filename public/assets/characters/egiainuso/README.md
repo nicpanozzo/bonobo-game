@@ -2,49 +2,25 @@
 
 L'omino col cappellino e lo zaino del foglio delle pose di @Marcomunista ([#178](https://github.com/nicpanozzo/bonobo-game/issues/178)). Il nome era della creatura blu sulla barchetta, che ora si chiama Capt. OrsoBlu (`../orsoblu/`).
 
-## Sprite: formato a cartella (E7)
+## Sprite: animazioni dal video (E7)
 
-- **Una posa per stato**, ritagliata dal foglio. La corsa alterna due pose (`Walk` e `Run`). Non ci sono animazioni vere, come per la versione provvisoria di Elvedeo.
-- Fotogrammi da **318×238 px** con i piedi a 194 (`footY`) e `scale: 0.5`: nel gioco l'omino è alto poco più della hitbox (44×88).
+Le animazioni vengono dal video di tutte le mosse fatto da Nicola con Google Flow (il prompt e i riferimenti sono quelli del flusso di Bradipo Giallo), con le pose del foglio di Marco come riferimento. Prima era una skin ("Animato") accanto alle pose ferme ritagliate dal foglio: le pose ferme sono state tolte e l'animato è diventato lo sprite di base.
+
+- **Una striscia per stato**, fotogrammi da **400×330 px** coi piedi a 290 (`footY`) e `scale: 0.5`.
+- La speciale neutra è lo sputo.
 - **Eccezione alla style guide:** è un disegno a tratto nero su fondo bianco, non illustrato a 2 toni. Per leggersi sui fondali scuri ha un **contorno chiaro**, e la faccia è riempita di bianco.
 - `portrait.png`: testa e cappellino, per lobby e HUD.
 
-| Stato | Posa del foglio |
-|---|---|
-| `idle` | Idle |
-| `walk` | Walk, Run |
-| `dash` | Dash |
-| `jump`, `fall` | Jump, Fall |
-| `land` | Crouch |
-| `light`, `lightUp`, `lightDown`, `lightAir` | Side Tilt, Up Tilt, Down Tilt, Neutral Air |
-| `heavy`, `heavyUp`, `heavyDown`, `heavyAir` | Side Smash, Up Smash, Down Smash, Forward Air |
-| `recovery` | Up Air |
-| `shield`, `grab`, `throw` | Shield, Grab, Throw (forward) |
-| `supreme` | Final Smash |
-| `hit` | non c'è: il fermo piegato all'indietro |
-
-Gli altri stati (doppio salto, lanciato, bordo, provocazione...) usano il ripiego di `ANIMATION_FALLBACK`. Le pose *Pummel*, *Throw (back)*, *Back Air* e *Down Air* per ora non hanno uno stato.
-
 ## Rifarlo
-
-```bash
-python3 tools/sprite/egiainuso_dal_foglio.py <foglio.png> public/assets/characters/egiainuso
-npm run export:godot
-```
-
-Il foglio originale non è nella repo: è nella #178. Se cambia la misura dei fotogrammi, lo script la stampa: va ricopiata in `characters.ts`.
-
-## Da chiedere a Marco
-
-- Il foglio l'hai fatto tu o con un generatore di immagini? Con che licenza lo dai al gioco?
-- Che statistiche (velocità, salto, peso) e che mosse speciali vuoi per Egiainuso?
-- Ci sono animazioni vere in arrivo, con più fotogrammi per mossa?
-
-## Skin "Animato"
-
-In `skins/animato/`: le animazioni vere, dal video di tutte le mosse fatto da Nicola con Google Flow (il prompt e i riferimenti sono quelli del flusso di Bradipo Giallo). Una striscia per stato, fotogrammi da 400×330 px coi piedi a 290 e `scale: 0.5`. La speciale neutra è lo sputo. Per rifarla:
 
 ```bash
 python3 tools/sprite/egiainuso_dal_video.py <video.mp4> <cartella di lavoro>
 npm run export:godot
 ```
+
+Se cambia la misura dei fotogrammi, va ricopiata in `characters.ts`.
+
+## Da chiedere a Marco
+
+- Il foglio l'hai fatto tu o con un generatore di immagini? Con che licenza lo dai al gioco?
+- Che statistiche (velocità, salto, peso) e che mosse speciali vuoi per Egiainuso?
