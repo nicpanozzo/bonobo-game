@@ -569,20 +569,34 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       side: { type: "dash", name: "Remata", startupMs: 120, durationMs: 300, speed: 760, endLagMs: 320, range: 46, height: 50, damage: 10, baseKnockback: 380, knockbackGrowth: 8, angleDeg: 30 },
       down: { ...CHARGE_EXAMPLE, name: "Colpo di remo" },
     },
+    // OrsoBlu v2 (Nicola, 3/11/2026): il capitano burbero con la barchetta in spalla, dalle prime 4 clip di Google Flow
+    // tagliate con tools/sprite/dal_video.py (OB-01, 02, 03, 07; tagli a mano in flow_tagli.json). Incompleto apposta:
+    // si mette nel gioco quel che c'è. Provvisori finché non arriva il pacchetto base (docs/clip-flow/base.md):
+    // light è la spinta della speciale neutra, heavy la barca alzata, hit l'atterraggio pesante, fall un pezzo del salto.
+    // La catena nelle speciali è disegnata da Flow: la fisica dell'ancora (appeso, arrampicata) è ancora da fare.
     sprite: {
-      path: "assets/characters/orsoblu/orsoblu.png",
-      frameWidth: 64,
-      frameHeight: 96,
-      columns: 6,
-      filter: "nearest", // pixel art: senza sfumare i pixel
+      dir: "assets/characters/orsoblu",
+      frameWidth: 360,
+      frameHeight: 300,
+      footY: 280,
+      scale: 0.5,
       animations: {
-        idle: { row: 0, frames: 4, fps: 4, loop: true },
-        walk: { row: 1, frames: 6, fps: 10, loop: true },
-        jump: { row: 2, frames: 2, fps: 8, loop: false },
-        fall: { row: 3, frames: 2, fps: 6, loop: true },
-        light: { row: 4, frames: 3, fps: 20, loop: false },
-        heavy: { row: 5, frames: 4, fps: 8, loop: false }, // il colpo di remo cade quando la hitbox si attiva (startupMs)
-        hit: { row: 6, frames: 2, fps: 10, loop: true },
+        idle: { fps: 8, loop: true },
+        walk: { fps: 18, loop: true }, // la marcia a passi rigidi
+        jump: { fps: 18, loop: false },
+        fall: { fps: 8, loop: true },
+        light: { fps: 24, loop: false, hitFrame: 6 },
+        heavy: { fps: 24, loop: false, hitFrame: 14 },
+        hit: { fps: 18, loop: false },
+        jumpSquat: { fps: 24, loop: false },
+        land: { fps: 24, loop: false },
+        doubleJump: { fps: 30, loop: false }, // la capriola con la barca
+        taunt: { fps: 18, loop: false }, // fischietto e dito puntato: insulta tutti
+        heavyUp: { fps: 24, loop: false, hitFrame: 14 }, // la barca a ombrello
+        shield: { fps: 12, loop: true }, // sotto la barca come una tartaruga
+        recovery: { fps: 24, loop: false, hitFrame: 6 }, // lancia l'ancora in alto
+        specialSide: { fps: 24, loop: false, hitFrame: 10 }, // teleferica verso l'ancora
+        specialNeutral: { fps: 24, loop: false, hitFrame: 8 }, // ancora avanti e strattone
       },
     },
   },

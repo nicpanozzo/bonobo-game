@@ -438,6 +438,15 @@ OVR_BASE = {
     "drmicelium": {"heavy": "he pulls back for half a second, then thrusts one open palm forward in a calm, powerful strike"},
 }
 
+# Clip già generate con prompt scritti fuori da questo script (OrsoBlu v2, 3/11/2026): servono solo allo script di
+# taglio, che ne legge stati e secondi. (codice: personaggio, slug, titolo, tabella (stato, da s, a s, nome))
+FATTE = {
+    "OB-01": ("orsoblu", "ancora-a", "Ancora A", [("recovery", .5, 2, "lancia l'ancora"), ("anchorHang", 3, 5, "appeso che oscilla"), ("anchorClimb", 6, 7.5, "si arrampica")]),
+    "OB-02": ("orsoblu", "ancora-b", "Ancora B", [("specialSide", .5, 2, "teleferica"), ("doubleJump", 3, 4.5, "capriola"), ("specialNeutral", 5.5, 7, "ancora avanti e strattone")]),
+    "OB-03": ("orsoblu", "marcia", "Marcia, fischietto, salto", [("walk", .5, 2, "marcia"), ("taunt", 3, 4.5, "fischietto e dito puntato"), ("jumpSquat+jump+fall+land", 5.5, 7.5, "salto")]),
+    "OB-07": ("orsoblu", "remo-barca", "Remo e barca", [("heavy", .5, 2, "remata"), ("heavyUp", 3, 4.5, "barca a ombrello"), ("shield", 5.5, 7.5, "sotto la barca")]),
+}
+
 BASE_CLIPS = [  # (codice, slug, titolo, mosse)
     ("B1", "movimento", "Movimento", ["movimento"]),
     ("B2", "colpi", "Colpi", ["light", "heavy", "hit"]),
