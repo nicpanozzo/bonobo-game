@@ -834,18 +834,18 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       },
     },
     // il corpo che si può colpire, misurato sulla sagoma del fermo (#243)
-    hurtbox: { width: 41, height: 92 },
+    hurtbox: { width: 38, height: 94 },
     // le zone dei colpi dove arriva il disegno (#243, tools/sprite/zone_dei_colpi.py)
     attacks: {
-      light: { range: 48, height: 30, boxX: 0, boxY: -56 },
-      heavy: { range: 78, height: 44, boxX: 0, boxY: -52 },
-      lightUp: { range: 54, height: 48, boxX: 0, boxY: -88 },
-      lightDown: { range: 43, height: 24, boxX: 0, boxY: -26 },
-      lightAir: { range: 38, height: 50, boxX: 0, boxY: -75 },
-      heavyUp: { range: 80, height: 64, boxX: -12, boxY: -93 },
-      heavyDown: { range: 62, height: 30, boxX: -6, boxY: -30 },
-      heavyAir: { range: 64, height: 60, boxX: 0, boxY: -64 },
-      dashAttack: { range: 75, height: 44, boxX: 2, boxY: -52 },
+      light: { range: 52, height: 30, boxX: 0, boxY: -68 },
+      heavy: { range: 91, height: 44, boxX: 4, boxY: -70 },
+      lightUp: { range: 54, height: 48, boxX: -42, boxY: -108 },
+      lightDown: { range: 50, height: 24, boxX: 0, boxY: -24 },
+      lightAir: { range: 57, height: 50, boxX: 0, boxY: -73 },
+      heavyUp: { range: 80, height: 64, boxX: -54, boxY: -108 },
+      heavyDown: { range: 63, height: 30, boxX: 0, boxY: -32 },
+      heavyAir: { range: 47, height: 60, boxX: -9, boxY: -64 },
+      dashAttack: { range: 75, height: 44, boxX: 20, boxY: -70 },
     },
   },
   // Lottatori dalle schede della community (#13), compilate a ottobre 2026 nella cartella Drive del gruppo.
