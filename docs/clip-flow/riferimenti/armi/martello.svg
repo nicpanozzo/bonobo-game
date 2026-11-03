@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-6 0 236 368" width="236" height="368">
+  <!-- Martello a razzo v3 (più dettagli): testa cromata a piastre con rivetti, pannello inciso, luce bianca con le
+       testate, razzo con griglia e ugello a cerchi, alette ambra a strisce, asta con anelli, presa fasciata, pomolo affilato -->
+  <path d="M40 60 Q22 40 0 50 Q12 60 -2 70 Q14 74 0 90 Q24 92 40 84 Z" fill="#ff8a2a"/>
+  <path d="M40 64 Q26 56 12 60 Q20 68 10 72 Q20 76 12 82 Q28 84 40 80 Z" fill="#ffd35a"/>
+  <g stroke="#1b1a22" stroke-width="4" stroke-linejoin="round" stroke-linecap="round">
+    <!-- l'asta lunga e sottile con gli anelli -->
+    <rect x="106" y="118" width="11" height="140" fill="#c3c8cf"/>
+    <rect x="112" y="118" width="5" height="140" fill="#8c939d" stroke="none"/>
+    <rect x="106" y="118" width="11" height="140" fill="none"/>
+    <path d="M108.5 124 L108.5 190" fill="none" stroke="#eef1f5" stroke-width="2"/>
+    <rect x="104" y="150" width="15" height="6" rx="2" fill="#7f8690"/>
+    <rect x="104" y="196" width="15" height="14" rx="2" fill="#3d424a"/>
+    <path d="M106 201 L117 201 M106 205 L117 205" fill="none" stroke="#6b717b" stroke-width="1.6"/>
+    <!-- la presa bassa: manicotto chiaro con le strisce di gomma e gli accenti arancio -->
+    <rect x="100" y="256" width="23" height="44" rx="5" fill="#eef1f5"/>
+    <rect x="113" y="256" width="10" height="44" fill="#b9c0c9" stroke="none"/>
+    <rect x="100" y="256" width="23" height="44" rx="5" fill="none"/>
+    <path d="M102 266 L121 270 M102 276 L121 280 M102 286 L121 290" fill="none" stroke="#9aa1ab" stroke-width="2"/>
+    <path d="M96 262 L100 258 L100 280 L94 276 Z" fill="#f0a030"/>
+    <path d="M127 262 L123 258 L123 280 L129 276 Z" fill="#f0a030"/>
+    <rect x="100" y="250" width="23" height="7" rx="2" fill="#f0a030"/>
+    <!-- il pomolo: lama scura affilata, col filo chiaro -->
+    <path d="M98 300 L125 300 L130 330 L111 366 L92 330 Z" fill="#4b5059"/>
+    <path d="M111 300 L125 300 L130 330 L111 366 Z" fill="#33373e" stroke="none"/>
+    <path d="M98 300 L125 300 L130 330 L111 366 L92 330 Z" fill="none"/>
+    <path d="M96 330 L111 362" fill="none" stroke="#8a919b" stroke-width="2"/>
+    <path d="M111 306 L111 350" fill="none" stroke="#6b717b" stroke-width="2.5"/>
+    <!-- il giunto a sfera -->
+    <path d="M100 100 L124 100 L118 118 L105 118 Z" fill="#9aa1ab"/>
+    <circle cx="111.5" cy="118" r="8" fill="#c3c8cf"/>
+    <circle cx="109" cy="115.5" r="2.2" fill="#eef1f5" stroke="none"/>
+    <!-- il corpo del razzo, con la griglia di sfogo e le alette ambra a strisce -->
+    <rect x="36" y="44" width="44" height="56" rx="10" fill="#9aa1ab"/>
+    <rect x="36" y="74" width="44" height="26" fill="#737a85" stroke="none"/>
+    <rect x="36" y="44" width="44" height="56" rx="10" fill="none"/>
+    <path d="M48 54 L48 66 M54 54 L54 66 M60 54 L60 66 M66 54 L66 66" fill="none" stroke-width="2.2"/>
+    <path d="M40 46 L56 20 L88 26 L82 46 Z" fill="#f0a030"/>
+    <path d="M58 24 L86 29 L82 46 L66 46 Z" fill="#c97e1c" stroke="none"/>
+    <path d="M40 46 L56 20 L88 26 L82 46 Z" fill="none"/>
+    <path d="M52 40 L60 26 M64 42 L70 28" fill="none" stroke="#7d4a10" stroke-width="2.2"/>
+    <path d="M44 98 L62 116 L80 110 L78 98 Z" fill="#f0a030"/>
+    <path d="M58 104 L64 110" fill="none" stroke="#7d4a10" stroke-width="2.2"/>
+    <!-- l'ugello a cerchi -->
+    <rect x="28" y="56" width="12" height="32" rx="3" fill="#5c626c"/>
+    <path d="M28 64 L40 64 M28 72 L40 72 M28 80 L40 80" fill="none" stroke-width="2"/>
+    <!-- il corpo centrale cromato, con la giuntura in diagonale e i rivetti -->
+    <rect x="74" y="28" width="86" height="80" rx="14" fill="#c9ced5"/>
+    <path d="M76 76 L158 76 L158 94 Q158 108 144 108 L88 108 Q74 108 74 94 Z" fill="#949ba5" stroke="none"/>
+    <rect x="74" y="28" width="86" height="80" rx="14" fill="none"/>
+    <path d="M80 34 L80 70" fill="none" stroke="#eef1f5" stroke-width="2.5"/>
+    <path d="M84 66 L100 92" fill="none" stroke-width="2.5"/>
+    <g fill="#7a818b" stroke-width="1.8"><circle cx="84" cy="98" r="3"/><circle cx="120" cy="100" r="3"/><circle cx="150" cy="98" r="3"/></g>
+    <!-- il pannello scuro inciso a X -->
+    <path d="M84 36 L150 36 L150 60 L96 60 Q84 60 84 50 Z" fill="#4b5059"/>
+    <path d="M98 44 L104 50 M104 44 L98 50 M112 50 L118 56 M118 50 L112 56 M128 44 L134 50 M134 44 L128 50 M140 50 L146 56 M146 50 L140 56" fill="none" stroke="#7d848f" stroke-width="2.2"/>
+    <!-- la striscia di luce bianca con le testate -->
+    <rect x="102" y="70" width="52" height="13" rx="3" fill="#5b6270"/>
+    <rect x="106" y="72" width="44" height="9" rx="2.5" fill="#f6f9fd" stroke-width="2"/>
+    <!-- la faccia d'urto: blocco arrotondato con le prese scure, i bulloni esagonali e il riflesso -->
+    <rect x="152" y="14" width="56" height="108" rx="22" fill="#d3d7dd"/>
+    <path d="M154 72 L206 72 L206 100 Q206 122 184 122 L174 122 Q152 122 152 100 Z" fill="#9ca3ad" stroke="none"/>
+    <rect x="152" y="14" width="56" height="108" rx="22" fill="none"/>
+    <path d="M166 16 L166 120 M194 16 L194 120" fill="none" stroke-width="3"/>
+    <path d="M158 30 L158 60" fill="none" stroke="#f3f5f8" stroke-width="2.5"/>
+    <rect x="170" y="28" width="20" height="18" rx="3" fill="#4b5059"/>
+    <rect x="170" y="86" width="20" height="18" rx="3" fill="#4b5059"/>
+    <path d="M180 59 L186 62.5 L186 69.5 L180 73 L174 69.5 L174 62.5 Z" fill="#8a919b" stroke-width="2.2"/>
+    <path d="M200 40 L203 46 M200 92 L203 98" fill="none" stroke-width="2"/>
+  </g>
+  <rect x="100" y="66" width="56" height="20" rx="6" fill="#ffffff" opacity="0.25"/>
+</svg>
