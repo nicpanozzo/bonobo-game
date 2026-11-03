@@ -786,8 +786,9 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
   },
 
   // Omino col cappellino e lo zaino, dal foglio delle pose di @Marcomunista (#178): ha preso il nome Egiainuso,
-  // che prima era di Capt. OrsoBlu. Una posa per stato (due per la corsa), ritagliate da
-  // tools/sprite/egiainuso_dal_foglio.py; un'eccezione alla style guide come Elvedeo (vedi il suo README).
+  // che prima era di Capt. OrsoBlu. Animato dal video di tutte le mosse fatto da Nicola con Google Flow
+  // (tools/sprite/egiainuso_dal_video.py); le pose ferme del foglio sono state tolte. Un'eccezione alla style guide
+  // come Elvedeo (vedi il suo README).
   egiainuso: {
     id: "egiainuso",
     name: "Egiainuso",
@@ -799,73 +800,37 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     },
     sprite: {
       dir: "assets/characters/egiainuso",
-      frameWidth: 318,
-      frameHeight: 238,
-      footY: 194,
-      scale: 0.5, // il foglio è disegnato grande come un disegno a 2x
+      frameWidth: 400, // largo e alto: l'aura della suprema e lo sputo escono dal corpo
+      frameHeight: 330,
+      footY: 290,
+      scale: 0.5, // alto poco più della hitbox, come le vecchie pose del foglio
       animations: {
-        idle: { fps: 1, loop: true },
-        walk: { fps: 6, loop: true }, // passo e corsa del foglio, alternati
-        jump: { fps: 1, loop: false },
-        fall: { fps: 1, loop: false },
-        light: { fps: 1, loop: false }, // "Side Tilt"
-        heavy: { fps: 1, loop: false }, // "Side Smash"
-        hit: { fps: 1, loop: false }, // nel foglio non c'è: il fermo piegato all'indietro
-        land: { fps: 1, loop: false }, // "Crouch"
-        dash: { fps: 1, loop: false },
-        lightUp: { fps: 1, loop: false },
-        lightDown: { fps: 1, loop: false },
-        lightAir: { fps: 1, loop: false }, // "Neutral Air"
-        heavyUp: { fps: 1, loop: false },
-        heavyDown: { fps: 1, loop: false },
-        heavyAir: { fps: 1, loop: false }, // "Forward Air"
-        recovery: { fps: 1, loop: false }, // "Up Air"
-        shield: { fps: 1, loop: false },
-        grab: { fps: 1, loop: false },
-        throw: { fps: 1, loop: false }, // "Throw (forward)"
-        supreme: { fps: 1, loop: false }, // "Final Smash"
-      },
-    },
-    skins: {
-      // Dal video di tutte le mosse fatto da Nicola con Google Flow (tools/sprite/egiainuso_dal_video.py): stesso
-      // omino del foglio ma animato, e la speciale neutra è lo sputo
-      animato: {
-        name: "Animato",
-        sprite: {
-          dir: "assets/characters/egiainuso/skins/animato",
-          frameWidth: 400, // largo e alto: l'aura della suprema e lo sputo escono dal corpo
-          frameHeight: 330,
-          footY: 290,
-          scale: 0.5, // alto come le pose del foglio
-          animations: {
-            idle: { fps: 10, loop: true },
-            walk: { fps: 14, loop: true },
-            dash: { fps: 14, loop: true },
-            jump: { fps: 18, loop: false },
-            fall: { fps: 1, loop: true },
-            doubleJump: { fps: 24, loop: false }, // la capriola
-            tumble: { fps: 18, loop: true },
-            land: { fps: 24, loop: false },
-            hit: { fps: 16, loop: false },
-            taunt: { fps: 12, loop: false }, // le guance gonfie
-            shield: { fps: 8, loop: true },
-            light: { fps: 24, loop: false, hitFrame: 2 },
-            heavy: { fps: 24, loop: false, hitFrame: 3 },
-            lightUp: { fps: 24, loop: false, hitFrame: 2 },
-            heavyUp: { fps: 24, loop: false, hitFrame: 3 },
-            lightDown: { fps: 24, loop: false, hitFrame: 2 },
-            heavyDown: { fps: 24, loop: false, hitFrame: 1 },
-            lightAir: { fps: 24, loop: false, hitFrame: 0 },
-            heavyAir: { fps: 24, loop: false, hitFrame: 2 },
-            recovery: { fps: 24, loop: false, hitFrame: 0 },
-            grab: { fps: 24, loop: false, hitFrame: 1 },
-            throw: { fps: 24, loop: false, hitFrame: 0 },
-            specialNeutral: { fps: 24, loop: false, hitFrame: 4 }, // Sputo: gonfia le guance e sputa
-            specialSide: { fps: 24, loop: false, hitFrame: 1 }, // Scatto
-            specialDown: { fps: 24, loop: false, hitFrame: 2 }, // Contrattacco: il lampo e il pugno
-            supreme: { fps: 24, loop: true }, // l'aura nera a zig-zag
-          },
-        },
+        idle: { fps: 10, loop: true },
+        walk: { fps: 14, loop: true },
+        dash: { fps: 14, loop: true },
+        jump: { fps: 18, loop: false },
+        fall: { fps: 1, loop: true },
+        doubleJump: { fps: 24, loop: false }, // la capriola
+        tumble: { fps: 18, loop: true },
+        land: { fps: 24, loop: false },
+        hit: { fps: 16, loop: false },
+        taunt: { fps: 12, loop: false }, // le guance gonfie
+        shield: { fps: 8, loop: true },
+        light: { fps: 24, loop: false, hitFrame: 2 },
+        heavy: { fps: 24, loop: false, hitFrame: 3 },
+        lightUp: { fps: 24, loop: false, hitFrame: 2 },
+        heavyUp: { fps: 24, loop: false, hitFrame: 3 },
+        lightDown: { fps: 24, loop: false, hitFrame: 2 },
+        heavyDown: { fps: 24, loop: false, hitFrame: 1 },
+        lightAir: { fps: 24, loop: false, hitFrame: 0 },
+        heavyAir: { fps: 24, loop: false, hitFrame: 2 },
+        recovery: { fps: 24, loop: false, hitFrame: 0 },
+        grab: { fps: 24, loop: false, hitFrame: 1 },
+        throw: { fps: 24, loop: false, hitFrame: 0 },
+        specialNeutral: { fps: 24, loop: false, hitFrame: 4 }, // Sputo: gonfia le guance e sputa
+        specialSide: { fps: 24, loop: false, hitFrame: 1 }, // Scatto
+        specialDown: { fps: 24, loop: false, hitFrame: 2 }, // Contrattacco: il lampo e il pugno
+        supreme: { fps: 24, loop: true }, // l'aura nera a zig-zag
       },
     },
     // il corpo che si può colpire, misurato sulla sagoma del fermo (#243)

@@ -4,7 +4,7 @@
 # 1. scontorno col colore: il verde dello sfondo va via, i bordi si ripuliscono togliendo il verde mescolato; lo sputo
 #    verde chiaro resta, schiarito e velato, come smear;
 # 2. rimpicciolito all'altezza delle pose del foglio (#178), contorno chiaro, un PNG a strisce per stato in
-#    public/assets/characters/egiainuso/skins/animato con i piedi allineati (footY).
+#    public/assets/characters/egiainuso con i piedi allineati (footY).
 # Il video non va nella repo. Servono ffmpeg, Pillow, numpy e scipy, solo per rifarlo.
 import os, subprocess, sys
 import numpy as np
@@ -12,7 +12,7 @@ from PIL import Image
 from scipy import ndimage as ndi
 
 VIDEO, WORK = sys.argv[1], sys.argv[2]
-OUT = os.path.join(os.path.dirname(__file__), "../../public/assets/characters/egiainuso/skins/animato")
+OUT = os.path.join(os.path.dirname(__file__), "../../public/assets/characters/egiainuso")
 FW, FH, FOOT_Y = 400, 330, 290  # fotogramma e piedi: copiati in characters.ts (alto per l'aura della suprema)
 SCALE = 0.476  # l'omino fermo nel video è alto 393 px, nel foglio 187
 GROUND, CENTER = 603, 620  # dove tocca terra e il centro del fermo, nel video
