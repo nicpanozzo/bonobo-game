@@ -6,7 +6,7 @@
 // Toccando terra, prendendo un colpo o dopo maxHangMs la catena si lascia. Il disegno di catena e ancora è di Godot.
 
 import { getCharacter } from "../characters";
-import { ANCHOR, FIGHTER } from "../constants";
+import { ANCHOR, ARREMBAGGIO, FIGHTER } from "../constants";
 import { platformSurfaceY } from "./stage";
 import { arcadeSolids } from "./arcade";
 import { attackSpecFor, bodyBox, canBeHit, launch, startAttack } from "./attacks";
@@ -236,6 +236,8 @@ export function hookFighters(fighters: Fighter[], ctx: PhysicsContext): void {
       t.vx = Math.sign(f.x - t.x) * a.pullSpeed;
       t.vy = -a.pullLift;
       t.hitstunTimer = a.pullHitstunMs;
+      t.boardedBy = f.id; // ora il colpo di OrsoBlu vale l'arrembaggio (#557)
+      t.boardedMs = ARREMBAGGIO.windowMs;
       break;
     }
   }

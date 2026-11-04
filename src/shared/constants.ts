@@ -152,6 +152,14 @@ export const JAB = {
   ] as AttackSpec[],
 };
 
+// Arrembaggio, la combo di Capt. OrsoBlu (#557): chi è appena stato tirato a bordo dall'ancora (Tutti a bordo!,
+// ANCHOR.pull*) e viene colpito da lui con jab, pesante, attacco in corsa o Avanti tutta! vola più lontano
+export const ARREMBAGGIO = {
+  windowMs: 700, // ms dopo lo strattone dell'ancora in cui il colpo di OrsoBlu vale l'arrembaggio
+  knockbackMult: 1.35, // il colpo che chiude l'arrembaggio spinge di più
+  kinds: ["light", "heavy", "dashAttack", "specialSide"] as AttackKind[],
+};
+
 // Rialzata al volo (tech di Smash e Brawlhalla): lanciati da un colpo, premere scudo poco prima di toccare terra
 // fa rialzare subito, fermi o rotolando nella direzione tenuta, invece di restare storditi a terra
 export const TECH = {

@@ -423,6 +423,8 @@ export interface CharacterSpec {
   skins?: Record<string, SkinSpec>; // aspetti alternativi da scegliere nella lobby (#339)
   sprite?: SpriteSheetSpec | SpriteFolderSpec; // senza sprite si disegna il rettangolo colorato
   stats?: Partial<CharacterStats>; // quelle che mancano valgono 1
+  // La combo su misura del personaggio (#557): nome e come si fa, per la lista mosse in pausa. La regola è in physics/
+  combo?: { name: string; text: string };
   specials?: Partial<SpecialSet>; // quelle che mancano sono DEFAULT_SPECIALS (E10)
   supreme?: SupremeSpec; // senza, la suprema di base (ATTACKS.supreme, #101)
   companion?: CompanionSpec; // un compagno che lo segue da solo (#369)
@@ -546,6 +548,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     id: "orsoblu",
     name: "Capt. OrsoBlu",
     crews: ["cuamm", "lolhardcore"],
+    combo: { name: "Arrembaggio", text: "Tutti a bordo! lo tira a te: subito jab, pesante o Avanti tutta! e vola più lontano" },
     // Zone dei colpi sul disegno di OB-B2 (tools/sprite/zone_dei_colpi.py)
     attacks: {
       light: { range: 67, height: 30, boxX: 1, boxY: -75 },

@@ -9852,6 +9852,10 @@
         "cuamm",
         "lolhardcore"
       ],
+      "combo": {
+        "name": "Arrembaggio",
+        "text": "Tutti a bordo! lo tira a te: subito jab, pesante o Avanti tutta! e vola più lontano"
+      },
       "attacks": {
         "light": {
           "range": 67,

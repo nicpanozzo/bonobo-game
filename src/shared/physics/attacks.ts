@@ -1,7 +1,7 @@
 // Attacchi: inizio, finestra attiva, hitbox e cosa succede a chi viene colpito.
 
 import { characterStats, getCharacter, hurtboxOf, SPECIAL_KINDS, specialAttackSpec, specialsFor, supremeAttackSpec, type SpecialSlot, type TweakableAttack } from "../characters";
-import { ATTACKS, FIGHTER, HITSTOP, HITSTUN_PER_KNOCKBACK, JAB, MICELIO, POWERUP, SMASH_CHARGE, type AttackSpec } from "../constants";
+import { ARREMBAGGIO, ATTACKS, FIGHTER, HITSTOP, HITSTUN_PER_KNOCKBACK, JAB, MICELIO, POWERUP, SMASH_CHARGE, type AttackSpec } from "../constants";
 import type { AttackKind, SpecialKind } from "../types";
 import { biteBox, biting, chooseBiter, hitPets } from "./companion";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
@@ -234,7 +234,10 @@ export function launch(target: Fighter, attacker: Fighter, kind: AttackKind, x: 
   chargeFromHit(attacker, target, spec.damage); // #101
   // Colpo ad area (#102): si vola via dal centro di chi colpisce
   const dir = spec.outward ? ((Math.sign(target.x - hitOrigin(attacker).x) || attacker.facing) as 1 | -1) : attacker.facing;
-  const knockback = (spec.baseKnockback + spec.knockbackGrowth * target.percent) / characterStats(target.characterId).weight; // E11
+  // Arrembaggio di OrsoBlu (#557): il colpo dopo lo strattone dell'ancora spinge di più
+  const boarded = target.boardedMs > 0 && target.boardedBy === attacker.id && ARREMBAGGIO.kinds.includes(kind);
+  target.boardedMs = 0;
+  const knockback = ((spec.baseKnockback + spec.knockbackGrowth * target.percent) / characterStats(target.characterId).weight) * (boarded ? ARREMBAGGIO.knockbackMult : 1); // E11
   const angle = ((kind === "supreme" ? snatch(attacker, target, spec.angleDeg) : spec.angleDeg) * Math.PI) / 180; // snaack di Lampione (#358) tira e schiaccia
   target.vx = dir * Math.cos(angle) * knockback;
   target.vy = -Math.sin(angle) * knockback;

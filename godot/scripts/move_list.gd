@@ -34,6 +34,10 @@ static func rows(game: Dictionary, character_id: String, keys: Dictionary) -> Ar
 		["Pesante in aria", k.call("heavy") + " saltando", "il colpo forte in aria"],
 		["Attacco in corsa", "%s + %s" % [k.call("run"), k.call("heavy")], "il pesante mentre corri: scivoli avanti colpendo"],
 	]
+	# La combo su misura del personaggio (#557)
+	var combo: Dictionary = c.get("combo", {}) if c.get("combo") is Dictionary else {}
+	if not combo.is_empty():
+		attacks.append([str(combo.get("name", "Combo")), "combo", str(combo.get("text", ""))])
 	var specials := []
 	var sp: Dictionary = c.get("specials", {})
 	var slots := [["neutral", k.call("special"), "da fermo"], ["side", "%s/%s + %s" % [k.call("left"), k.call("right"), k.call("special")], "con una direzione"], ["down", plus.call("down", "special"), "con giù"]]
