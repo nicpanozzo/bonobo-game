@@ -13,8 +13,8 @@ Per ogni personaggio che non ha ancora disegni da Flow: **un'immagine di partenz
 
 | Giorno | Personaggio | Immagine di partenza da | Clip | Prima di generare |
 |---|---|---|---|---|
-| 1 | [Giovanni fRana](#giovannifrana) | i fogli personaggio di @Marcomunista in #528 (scegline uno) o lo sprite di oggi | [GF-B1](#gf-b1), [GF-B2](#gf-b2) | Quale aspetto: nei riferimenti di Marco (#528) ce ne sono almeno tre. Lo decidono Nicola e Riccardo; la descrizione qui è quella di oggi (calciatore con gli occhiali). |
-| 1 | [Lendmar](#lendmar) | il riferimento di @Marcomunista in #536 | [LE-B1](#le-b1), [LE-B2](#le-b2) | Confermare che il riferimento di Marco (#536) va bene, e allineare a quello i colori qui sopra. |
+| 1 | [Giovanni fRana](#giovannifrana) | il foglio sprite di @Marcomunista nell'ultimo commento di #528 (3/11), scelto da Nicola il 4/11 | [GF-B1](#gf-b1), [GF-B2](#gf-b2) | Aspettare l'ok di Riccardo (@GiovannifRana) in #528 sul foglio scelto da Nicola. |
+| 1 | [Lendmar](#lendmar) | il foglio sprite di @Marcomunista in #536, approvato da Nicola il 4/11 | [LE-B1](#le-b1), [LE-B2](#le-b2) | - |
 | 2 | [Capt. OrsoBlu](#orsoblu) | l'immagine di partenza nuova, già fatta su Flow il 3/11 (progetto "nov 03 - 23:37"): va salvata nella repo | [OB-B1](#ob-b1), [OB-B2](#ob-b2) | - |
 | 2 | [Marcomunista](#marcomunista) | `riferimenti/personaggi/marcomunista.png` (già nella repo) | [MA-B1](#ma-b1), [MA-B2](#ma-b2) | - |
 | 3 | [Lampione](#lampione) | lo sprite di oggi (scheda della community, #13) | [LA-B1](#la-b1), [LA-B2](#la-b2) | - |
@@ -28,18 +28,18 @@ Per ogni personaggio che non ha ancora disegni da Flow: **un'immagine di partenz
 
 ## Giorno 1 · Giovanni fRana
 
-**Prima di generare:** Quale aspetto: nei riferimenti di Marco (#528) ce ne sono almeno tre. Lo decidono Nicola e Riccardo; la descrizione qui è quella di oggi (calciatore con gli occhiali).
+**Prima di generare:** Aspettare l'ok di Riccardo (@GiovannifRana) in #528 sul foglio scelto da Nicola.
 
 ### Immagine di partenza · `riferimenti/personaggi/giovannifrana.png`
 
-Da: i fogli personaggio di @Marcomunista in #528 (scegline uno) o lo sprite di oggi. Strumento immagini di Flow (Nano Banana), 16:9, 1 risultato; allega il riferimento se c'è.
+Da: il foglio sprite di @Marcomunista nell'ultimo commento di #528 (3/11), scelto da Nicola il 4/11. Strumento immagini di Flow (Nano Banana), 16:9, 1 risultato; allega il riferimento se c'è.
 
 ```text
 Draw one original character for a 2D fighting video game, full body, standing in a relaxed fighting stance, side view in three-quarters, facing right. If an image is attached, it only shows who the character is: keep the look, the clothes and the colors, but redraw everything in the style below.
 
 STYLE: 2D hand-drawn cartoon illustration for a fighting video game: thick black ink outlines of even thickness, flat colors with one hard-edged shadow tone, clean round shapes, a very expressive face, normal body proportions with the head not oversized. Not 3D, not a render, no gradients, no realistic textures.
 
-CHARACTER: a very tall, lanky young man, a good-natured and absent-minded footballer. Light skin (#F1C9A8), brown curtain haircut parted in the middle (#6B4A2F), thin rectangular glasses, a gentle dopey smile. A blue football shirt (#2F7BD6) with a white number 9, white football shorts (#F2F2F2), blue football socks (#2F7BD6) pulled up to the knees, black football boots (#222222). Long thin arms and legs. Nothing else on him.
+CHARACTER: a sturdy, broad-shouldered young man, a relaxed and cheerful beach brawler. Light tanned skin (#E8B98F), thick messy curly dark brown hair (#3B2618), a short dark brown beard (#3B2618), a confident grin. A short-sleeved red Hawaiian shirt (#C0392B) with big cream-yellow hibiscus flowers (#F1C40F), unbuttoned at the collar. Knee-length beige cargo shorts (#C8B48A). White sneakers (#EDEDED) with short white socks. Bare forearms. Nothing else on him.
 
 FRAMING: full body, the character is about two thirds of the image height, in the middle of the image, feet a little above the bottom edge. Nothing cut off.
 
@@ -62,7 +62,7 @@ BACKGROUND: one solid flat chroma-key green (#17B03B) filling the whole image. N
 ```text
 STYLE: 2D hand-drawn cartoon animation for a fighting video game, exactly the art style of the reference image: thick black ink outlines, flat cel shading with one shadow tone, clean shapes. Not 3D, not a render, no realistic fur or textures.
 
-CHARACTER (must stay identical in every frame, same proportions, same colors, same face): the character from the reference image, a very tall, lanky young man, a good-natured and absent-minded footballer. Light skin (#F1C9A8), brown curtain haircut parted in the middle (#6B4A2F), thin rectangular glasses, a gentle dopey smile. A blue football shirt (#2F7BD6) with a white number 9, white football shorts (#F2F2F2), blue football socks (#2F7BD6) pulled up to the knees, black football boots (#222222). Long thin arms and legs. Nothing else on him.
+CHARACTER (must stay identical in every frame, same proportions, same colors, same face): the character from the reference image, a sturdy, broad-shouldered young man, a relaxed and cheerful beach brawler. Light tanned skin (#E8B98F), thick messy curly dark brown hair (#3B2618), a short dark brown beard (#3B2618), a confident grin. A short-sleeved red Hawaiian shirt (#C0392B) with big cream-yellow hibiscus flowers (#F1C40F), unbuttoned at the collar. Knee-length beige cargo shorts (#C8B48A). White sneakers (#EDEDED) with short white socks. Bare forearms. Nothing else on him.
 
 SHOT: side view in three-quarters, full body always inside the frame, the character faces right unless the action says otherwise. Locked-off static camera: no camera movement, no zoom, no cuts, no slow motion. The character stays the same size as in the reference image.
 
@@ -70,7 +70,7 @@ ACTION: From 0 s to 0.5 s he stands still exactly in the pose of the reference i
 
 BACKGROUND: one solid flat chroma-key green (#17B03B) filling the whole frame for the whole clip. No floor, no ground line, no shadow, no dust clouds, no smoke, no particles, no sky, no props.
 
-AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, a ball, a beard, a different shirt, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech.
+AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, a ball, a football shirt, glasses, a cigarette, sandals, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech.
 ```
 
 ### GF-B2
@@ -86,33 +86,31 @@ AVOID: changing the character's colors, face or proportions, extra arms, legs, f
 ```text
 STYLE: 2D hand-drawn cartoon animation for a fighting video game, exactly the art style of the reference image: thick black ink outlines, flat cel shading with one shadow tone, clean shapes. Not 3D, not a render, no realistic fur or textures.
 
-CHARACTER (must stay identical in every frame, same proportions, same colors, same face): the character from the reference image, a very tall, lanky young man, a good-natured and absent-minded footballer. Light skin (#F1C9A8), brown curtain haircut parted in the middle (#6B4A2F), thin rectangular glasses, a gentle dopey smile. A blue football shirt (#2F7BD6) with a white number 9, white football shorts (#F2F2F2), blue football socks (#2F7BD6) pulled up to the knees, black football boots (#222222). Long thin arms and legs. Nothing else on him.
+CHARACTER (must stay identical in every frame, same proportions, same colors, same face): the character from the reference image, a sturdy, broad-shouldered young man, a relaxed and cheerful beach brawler. Light tanned skin (#E8B98F), thick messy curly dark brown hair (#3B2618), a short dark brown beard (#3B2618), a confident grin. A short-sleeved red Hawaiian shirt (#C0392B) with big cream-yellow hibiscus flowers (#F1C40F), unbuttoned at the collar. Knee-length beige cargo shorts (#C8B48A). White sneakers (#EDEDED) with short white socks. Bare forearms. Nothing else on him.
 
 SHOT: side view in three-quarters, full body always inside the frame, the character faces right unless the action says otherwise. Locked-off static camera: no camera movement, no zoom, no cuts, no slow motion. The character stays the same size as in the reference image.
 
-ACTION: 3 short separate moves, each one followed by a pause in the starting pose. Every single strike snaps out and is pulled straight back in less than half a second: he never holds a limb stretched out. From 0 s to 0.5 s he stands still exactly in the pose of the reference image. Attack 1, from 0.5 s to 2 s: one quick little kick forward with the front foot, as if passing a ball. From 2 s to 3 s he is back in exactly the pose of the reference image and holds perfectly still, without moving at all. Attack 2, from 3 s to 4.5 s: he pulls one long leg back for half a second, then kicks forward with full power like a penalty shot, and steps back. From 4.5 s to 5.5 s he is back in exactly the pose of the reference image and holds perfectly still, without moving at all. Move 3, from 5.5 s to 7.5 s: he is struck hard by an invisible blow: his head and body snap backward, then he recovers. From 7.5 s to the end of the clip he is back in exactly the pose of the reference image and holds perfectly still.
+ACTION: 3 short separate moves, each one followed by a pause in the starting pose. Every single strike snaps out and is pulled straight back in less than half a second: he never holds a limb stretched out. From 0 s to 0.5 s he stands still exactly in the pose of the reference image. Attack 1, from 0.5 s to 2 s: one quick straight jab forward with the front fist. From 2 s to 3 s he is back in exactly the pose of the reference image and holds perfectly still, without moving at all. Attack 2, from 3 s to 4.5 s: he pulls his fist back for half a second, then throws one big swinging punch forward with his whole body, and steps back. From 4.5 s to 5.5 s he is back in exactly the pose of the reference image and holds perfectly still, without moving at all. Move 3, from 5.5 s to 7.5 s: he is struck hard by an invisible blow: his head and body snap backward, then he recovers. From 7.5 s to the end of the clip he is back in exactly the pose of the reference image and holds perfectly still.
 
 BACKGROUND: one solid flat chroma-key green (#17B03B) filling the whole frame for the whole clip. No floor, no ground line, no shadow, no dust clouds, no smoke, no particles, no sky, no props.
 
-AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, a ball, a beard, a different shirt, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech.
+AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, a ball, a football shirt, glasses, a cigarette, sandals, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech.
 ```
 
 <a id="lendmar"></a>
 
 ## Giorno 1 · Lendmar
 
-**Prima di generare:** Confermare che il riferimento di Marco (#536) va bene, e allineare a quello i colori qui sopra.
-
 ### Immagine di partenza · `riferimenti/personaggi/lendmar.png`
 
-Da: il riferimento di @Marcomunista in #536. Strumento immagini di Flow (Nano Banana), 16:9, 1 risultato; allega il riferimento se c'è.
+Da: il foglio sprite di @Marcomunista in #536, approvato da Nicola il 4/11. Strumento immagini di Flow (Nano Banana), 16:9, 1 risultato; allega il riferimento se c'è.
 
 ```text
 Draw one original character for a 2D fighting video game, full body, standing in a relaxed fighting stance, side view in three-quarters, facing right. If an image is attached, it only shows who the character is: keep the look, the clothes and the colors, but redraw everything in the style below.
 
 STYLE: 2D hand-drawn cartoon illustration for a fighting video game: thick black ink outlines of even thickness, flat colors with one hard-edged shadow tone, clean round shapes, a very expressive face, normal body proportions with the head not oversized. Not 3D, not a render, no gradients, no realistic textures.
 
-CHARACTER: a skinny, pale young man with an emo look, always irritated and sulky. Very pale skin (#F3DCCB), straight jet-black hair (#17151A) with a long side fringe over one eye, black eyeliner, a frown. A black long-sleeved top (#2B2930), black skinny jeans (#1E1D22), dark grey sneakers (#3A3A40). Thin arms and legs. Nothing else on him.
+CHARACTER: a lean young man dressed all in black, serious and a bit grim. Light skin (#EAC9AE), short dark brown hair (#2A1E18), thick frowning eyebrows, a stern stare. A tall black brimless cap (#141414), slightly crooked. A black long-sleeved button-up shirt (#1A1A1A) tucked into black trousers (#141414) with a black belt and a dull silver buckle (#8A8A8A). Black lace-up boots (#0E0E0E). Nothing else on him.
 
 FRAMING: full body, the character is about two thirds of the image height, in the middle of the image, feet a little above the bottom edge. Nothing cut off.
 
@@ -135,7 +133,7 @@ BACKGROUND: one solid flat chroma-key green (#17B03B) filling the whole image. N
 ```text
 STYLE: 2D hand-drawn cartoon animation for a fighting video game, exactly the art style of the reference image: thick black ink outlines, flat cel shading with one shadow tone, clean shapes. Not 3D, not a render, no realistic fur or textures.
 
-CHARACTER (must stay identical in every frame, same proportions, same colors, same face): the character from the reference image, a skinny, pale young man with an emo look, always irritated and sulky. Very pale skin (#F3DCCB), straight jet-black hair (#17151A) with a long side fringe over one eye, black eyeliner, a frown. A black long-sleeved top (#2B2930), black skinny jeans (#1E1D22), dark grey sneakers (#3A3A40). Thin arms and legs. Nothing else on him.
+CHARACTER (must stay identical in every frame, same proportions, same colors, same face): the character from the reference image, a lean young man dressed all in black, serious and a bit grim. Light skin (#EAC9AE), short dark brown hair (#2A1E18), thick frowning eyebrows, a stern stare. A tall black brimless cap (#141414), slightly crooked. A black long-sleeved button-up shirt (#1A1A1A) tucked into black trousers (#141414) with a black belt and a dull silver buckle (#8A8A8A). Black lace-up boots (#0E0E0E). Nothing else on him.
 
 SHOT: side view in three-quarters, full body always inside the frame, the character faces right unless the action says otherwise. Locked-off static camera: no camera movement, no zoom, no cuts, no slow motion. The character stays the same size as in the reference image.
 
@@ -143,7 +141,7 @@ ACTION: From 0 s to 0.5 s he stands still exactly in the pose of the reference i
 
 BACKGROUND: one solid flat chroma-key green (#17B03B) filling the whole frame for the whole clip. No floor, no ground line, no shadow, no dust clouds, no smoke, no particles, no sky, no props.
 
-AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, colorful clothes, a smile, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech.
+AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, colorful clothes, a smile, a fringe over the eyes, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech.
 ```
 
 ### LE-B2
@@ -159,7 +157,7 @@ AVOID: changing the character's colors, face or proportions, extra arms, legs, f
 ```text
 STYLE: 2D hand-drawn cartoon animation for a fighting video game, exactly the art style of the reference image: thick black ink outlines, flat cel shading with one shadow tone, clean shapes. Not 3D, not a render, no realistic fur or textures.
 
-CHARACTER (must stay identical in every frame, same proportions, same colors, same face): the character from the reference image, a skinny, pale young man with an emo look, always irritated and sulky. Very pale skin (#F3DCCB), straight jet-black hair (#17151A) with a long side fringe over one eye, black eyeliner, a frown. A black long-sleeved top (#2B2930), black skinny jeans (#1E1D22), dark grey sneakers (#3A3A40). Thin arms and legs. Nothing else on him.
+CHARACTER (must stay identical in every frame, same proportions, same colors, same face): the character from the reference image, a lean young man dressed all in black, serious and a bit grim. Light skin (#EAC9AE), short dark brown hair (#2A1E18), thick frowning eyebrows, a stern stare. A tall black brimless cap (#141414), slightly crooked. A black long-sleeved button-up shirt (#1A1A1A) tucked into black trousers (#141414) with a black belt and a dull silver buckle (#8A8A8A). Black lace-up boots (#0E0E0E). Nothing else on him.
 
 SHOT: side view in three-quarters, full body always inside the frame, the character faces right unless the action says otherwise. Locked-off static camera: no camera movement, no zoom, no cuts, no slow motion. The character stays the same size as in the reference image.
 
@@ -167,7 +165,7 @@ ACTION: 3 short separate moves, each one followed by a pause in the starting pos
 
 BACKGROUND: one solid flat chroma-key green (#17B03B) filling the whole frame for the whole clip. No floor, no ground line, no shadow, no dust clouds, no smoke, no particles, no sky, no props.
 
-AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, colorful clothes, a smile, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech.
+AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, colorful clothes, a smile, a fringe over the eyes, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech.
 ```
 
 <a id="orsoblu"></a>

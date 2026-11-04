@@ -341,17 +341,17 @@ BASE = {
     # day: giorno del piano; look: com'è fatto, in inglese, senza il prefisso; da_fare: cosa manca prima di generare
     "giovannifrana": dict(
         code="GF", name="Giovanni fRana", day=1, style="gioco",
-        look="a very tall, lanky young man, a good-natured and absent-minded footballer. Light skin (#F1C9A8), brown curtain haircut parted in the middle (#6B4A2F), thin rectangular glasses, a gentle dopey smile. A blue football shirt (#2F7BD6) with a white number 9, white football shorts (#F2F2F2), blue football socks (#2F7BD6) pulled up to the knees, black football boots (#222222). Long thin arms and legs. Nothing else on him.",
-        avoid="a ball, a beard, a different shirt",
-        source="i fogli personaggio di @Marcomunista in #528 (scegline uno) o lo sprite di oggi",
-        da_fare="Quale aspetto: nei riferimenti di Marco (#528) ce ne sono almeno tre. Lo decidono Nicola e Riccardo; la descrizione qui è quella di oggi (calciatore con gli occhiali).",
+        look="a sturdy, broad-shouldered young man, a relaxed and cheerful beach brawler. Light tanned skin (#E8B98F), thick messy curly dark brown hair (#3B2618), a short dark brown beard (#3B2618), a confident grin. A short-sleeved red Hawaiian shirt (#C0392B) with big cream-yellow hibiscus flowers (#F1C40F), unbuttoned at the collar. Knee-length beige cargo shorts (#C8B48A). White sneakers (#EDEDED) with short white socks. Bare forearms. Nothing else on him.",
+        avoid="a ball, a football shirt, glasses, a cigarette, sandals",
+        source="il foglio sprite di @Marcomunista nell'ultimo commento di #528 (3/11), scelto da Nicola il 4/11",
+        da_fare="Aspettare l'ok di Riccardo (@GiovannifRana) in #528 sul foglio scelto da Nicola.",
     ),
     "lendmar": dict(
         code="LE", name="Lendmar", day=1, style="gioco",
-        look="a skinny, pale young man with an emo look, always irritated and sulky. Very pale skin (#F3DCCB), straight jet-black hair (#17151A) with a long side fringe over one eye, black eyeliner, a frown. A black long-sleeved top (#2B2930), black skinny jeans (#1E1D22), dark grey sneakers (#3A3A40). Thin arms and legs. Nothing else on him.",
-        avoid="colorful clothes, a smile",
-        source="il riferimento di @Marcomunista in #536",
-        da_fare="Confermare che il riferimento di Marco (#536) va bene, e allineare a quello i colori qui sopra.",
+        look="a lean young man dressed all in black, serious and a bit grim. Light skin (#EAC9AE), short dark brown hair (#2A1E18), thick frowning eyebrows, a stern stare. A tall black brimless cap (#141414), slightly crooked. A black long-sleeved button-up shirt (#1A1A1A) tucked into black trousers (#141414) with a black belt and a dull silver buckle (#8A8A8A). Black lace-up boots (#0E0E0E). Nothing else on him.",
+        avoid="colorful clothes, a smile, a fringe over the eyes",
+        source="il foglio sprite di @Marcomunista in #536, approvato da Nicola il 4/11",
+        da_fare="",
     ),
     "orsoblu": dict(
         code="OB", name="Capt. OrsoBlu", day=2, style="gioco",
@@ -422,8 +422,8 @@ OVR_BASE = {
         "heavy": "he pulls back for half a second, then dives forward with both gloved fists together like a goalkeeper punching the ball away, and steps back",
     },
     "giovannifrana": {
-        "light": "one quick little kick forward with the front foot, as if passing a ball",
-        "heavy": "he pulls one long leg back for half a second, then kicks forward with full power like a penalty shot, and steps back",
+        "light": "one quick straight jab forward with the front fist",
+        "heavy": "he pulls his fist back for half a second, then throws one big swinging punch forward with his whole body, and steps back",
     },
     "lendmar": {"heavy": "he pulls back for half a second, scowling, then throws one angry, powerful punch forward with his whole body"},
     "nonnagina": {
