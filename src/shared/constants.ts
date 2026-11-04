@@ -221,7 +221,8 @@ export const ANCHOR = {
   minLength: 56, // pixel: arrampicandosi non si va più vicini di così
   upAngleDeg: 72, // solo su: quasi in verticale, un po' in avanti
   diagAngleDeg: 45, // su + una direzione: in diagonale da quella parte
-  forwardAngleDeg: 10, // la speciale neutra (Tutti a bordo!): quasi dritta in avanti, appena in su
+  forwardAngleDeg: 6, // la speciale neutra (Tutti a bordo!): quasi dritta in avanti, appena in su
+  forwardY: 50, // pixel sopra i piedi da cui parte quella in avanti: all'altezza del petto, così prende chi ha davanti
   throwLift: 260, // pixel/s verso l'alto al lancio: il lancio frena la caduta
   maxThrows: 2, // lanci prima di toccare terra, aggrapparsi a un bordo o essere colpiti
   gripY: 80, // pixel sopra i piedi dove le mani tengono la catena
@@ -237,6 +238,11 @@ export const ANCHOR = {
   zipSpeed: 1400, // pixel/s di Avanti tutta!: da appeso, Speciale riavvolge la catena e sfreccia verso l'ancora
   zipEndSpeed: 260, // pixel/s che restano arrivati in cima: abbastanza per salire sul bordo, non per volare via
   zipEndLagMs: 120, // ms dopo la teleferica prima di poter attaccare di nuovo
+  // Tutti a bordo!: l'ancora in volo che prende qualcuno lo tira verso OrsoBlu e torna in mano
+  pullDamage: 6, // percentuale
+  pullSpeed: 760, // pixel/s verso di lui
+  pullLift: 260, // pixel/s verso l'alto, così non striscia per terra
+  pullHitstunMs: 320, // ms senza controlli mentre arriva: il tempo per colpirlo
 };
 
 // Statistiche dei personaggi (E11, #13): moltiplicatori dei numeri di FIGHTER in characters.ts.

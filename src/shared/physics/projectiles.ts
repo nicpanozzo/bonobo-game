@@ -8,6 +8,7 @@ import type { ProjectileState, PuddleState, SpecialKind } from "../types";
 import { bodyBox, canBeHit, launch, overlap } from "./attacks";
 import type { Fighter, PhysicsContext } from "./fighter";
 import { hitShield } from "./shield";
+import { platformSurfaceY } from "./stage";
 import { counterAbsorbs } from "./specials";
 
 export interface Projectile extends ProjectileState {
@@ -85,7 +86,9 @@ export function stepProjectiles(fighters: Fighter[], dtMs: number, ctx: PhysicsC
     const box = boxOf(p, sp);
     const z = ctx.stage.blastZone;
     if (p.ageMs >= sp.lifeMs || p.x < z.left || p.x > z.right || p.y < z.top || p.y > z.bottom) end(p, "expired");
-    else if (ctx.stage.solids.some((s) => overlap(box, { x: s.x, y: s.y, w: s.width, h: s.height }))) {
+    else if (sp.rests && settle(p, sp, box, ctx, dt)) {
+      if (!p.spent) hitFighter(p, sp, boxOf(p, sp), fighters, byId, ctx, end);
+    } else if (ctx.stage.solids.some((s) => overlap(box, { x: s.x, y: s.y, w: s.width, h: s.height }))) {
       if (p.slick) dropPuddle(world, p, ctx);
       end(p, "wall");
     }
@@ -210,6 +213,33 @@ const specOf = (p: Projectile): ProjectileSpecial => {
 };
 
 // Il rettangolo del proiettile: range × height intorno al centro
+// La mina (#547): toccando la cima di un blocco o una piattaforma scendendo ci si posa sopra e si resta ferma.
+// true se è posata (o lo era già); un muro di lato la ferma soltanto
+function settle(p: Projectile, sp: ProjectileSpecial, box: ReturnType<typeof boxOf>, ctx: PhysicsContext, dt: number): boolean {
+  const bottom = p.y + sp.height / 2;
+  const prevBottom = bottom - p.vy * dt;
+  for (const s of ctx.stage.solids) {
+    if (p.x < s.x || p.x > s.x + s.width) {
+      if (overlap(box, { x: s.x, y: s.y, w: s.width, h: s.height })) p.vx = 0;
+      continue;
+    }
+    if (p.vy >= 0 && bottom >= s.y && prevBottom <= s.y + 1) return rest(p, sp, s.y, dt);
+  }
+  for (const q of ctx.stage.platforms) {
+    if (p.x < q.x || p.x > q.x + q.width) continue;
+    const y = platformSurfaceY(q, p.x);
+    if (p.vy >= 0 && bottom >= y && prevBottom <= y + 1) return rest(p, sp, y, dt);
+  }
+  return false;
+}
+
+function rest(p: Projectile, sp: ProjectileSpecial, y: number, dt: number): true {
+  p.y = y - sp.height / 2;
+  p.vx = 0;
+  p.vy = -sp.gravity * dt; // al prossimo passo la gravità la riporta a zero: resta dov'è
+  return true;
+}
+
 const boxOf = (p: Projectile, sp: ProjectileSpecial) => ({ x: p.x - sp.range / 2, y: p.y - sp.height / 2, w: sp.range, h: sp.height });
 
 // Per lo snapshot: solo quello che serve al client

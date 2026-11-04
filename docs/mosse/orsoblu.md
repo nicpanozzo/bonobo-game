@@ -17,7 +17,7 @@ Un orso blu capitano di mare, **burbero e pignolo**, che tratta l'arena come la 
 | Laterale | **Avanti tutta!** | Da appeso: riavvolge la catena e sfreccia verso l'ancora come su una teleferica, travolgendo chi c'è in mezzo, poi si aggrappa al bordo. Da libero: spallata in avanti. |
 | Neutra | **Tutti a bordo!** | La stessa ancora sparata dritta in avanti: se prende qualcuno lo tira verso il capitano. |
 
-**Nel gioco da #547** (`src/shared/physics/anchor.ts`, numeri in `ANCHOR` di `constants.ts`): Pesante + su in aria spara l'ancora (solo su quasi in verticale, su + direzione in diagonale), 2 lanci prima di toccare terra, sgancio da solo dopo 3 s, Scudo lascia andare, un colpo stacca; arrampicandosi fino a uno spigolo ci si aggrappa al bordo. Da provare al playtest: spinta extra staccandosi nel punto più alto. Avanti tutta! è la speciale laterale: da appeso sfreccia verso l'ancora già attiva (poi resta appeso in cima, col Salto si fa la fionda), da libero è la spallata. Tutti a bordo! (Speciale neutra) spara l'ancora quasi dritta in avanti: in aria ci si appende a muri e bordi davanti, da terra la catena tira fin lì (Nicola, 4/11/2026). Tirare a sé chi viene preso è ancora da fare.
+**Nel gioco da #547** (`src/shared/physics/anchor.ts`, numeri in `ANCHOR` di `constants.ts`): Pesante + su in aria spara l'ancora (solo su quasi in verticale, su + direzione in diagonale), 2 lanci prima di toccare terra, sgancio da solo dopo 3 s, Scudo lascia andare, un colpo stacca; arrampicandosi fino a uno spigolo ci si aggrappa al bordo. Da provare al playtest: spinta extra staccandosi nel punto più alto. Avanti tutta! è la speciale laterale: da appeso sfreccia verso l'ancora già attiva (poi resta appeso in cima, col Salto si fa la fionda), da libero è la spallata. Tutti a bordo! (Speciale neutra) spara l'ancora quasi dritta in avanti: in aria ci si appende a muri e bordi davanti, da terra la catena tira fin lì (Nicola, 4/11/2026). Se l'ancora prende qualcuno lo tira verso di lui (6%).
 
 **Ancora e catena le disegna il gioco** (come l'aquila di Elvedeo): nelle clip lui mima il lancio e stringe una catena invisibile, "nothing is drawn". Servono a parte gli sprite di ancora, catena e mina.
 
@@ -25,7 +25,7 @@ Un orso blu capitano di mare, **burbero e pignolo**, che tratta l'arena come la 
 
 | Stato | Cosa fa |
 |---|---|
-| specialDown, **Mina di bordo** | posa a terra una piccola mina navale coi baffi; esplode quando qualcuno ci passa sopra. Una alla volta |
+| specialDown, **Mina di bordo** (nel gioco da #547, disegno provvisorio: un pallino scuro) | posa a terra una piccola mina navale coi baffi; esplode quando qualcuno ci passa sopra. Una alla volta |
 | supreme, **Tempesta!** (nel gioco da #547, suprema "storm": rollio, onde, pioggia e timone provvisori disegnati da Godot) | l'arena rolla come una nave nella tempesta, tutti scivolano tranne lui, piantato al timone a gambe larghe, che insulta tutti a nuvolette ("Mozzi d'acqua dolce!", "Sacchi di sardine!", "Branco di triglie lesse!"). Timone e nuvolette li disegna il gioco |
 | light / lightUp / lightDown / lightAir | scappellotto col berretto / botta di cannocchiale in alto / calcio di stivale alle caviglie / giravolta col cannocchiale |
 | heavy / heavyUp / heavyDown / heavyAir | colpo di remo / barchetta sopra la testa come un ombrello / barchetta sbattuta a terra come una campana, dai due lati / mulinello col remo |

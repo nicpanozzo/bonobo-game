@@ -204,6 +204,7 @@ export interface ProjectileSpecial extends SpecialBase, SpecialHit {
   sprite?: ProjectileSprite; // in Godot il proiettile è questo disegno animato (il Piccione di Elvedeo)
   spawnX?: number; // pixel davanti al centro da cui parte (negativo: dietro); senza, davanti alle mani
   spawnY?: number; // pixel sopra i piedi da cui parte; senza, SPECIAL_MOVES.projectileY (il Piccione: dalla spalla)
+  rests?: boolean; // cadendo si posa su blocchi e piattaforme e resta lì finché qualcuno la tocca (la Mina di bordo di OrsoBlu)
 }
 // L'aquila della suprema "spin" (l'Elefante di Elvedeo): un proiettile tirato con la Speciale mentre si gira, una volta
 // sola. Chi tocca lo afferra, lo porta in volo per carryMs e lo molla con i numeri del colpo (damage, knockback...)
@@ -612,7 +613,9 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       // la neutra spara l'ancora dritta in avanti (#547, anchor.ts): di questi numeri contano solo nome e tempi
       neutral: { type: "projectile", name: "Tutti a bordo!", startupMs: 200, cooldownMs: 500, speed: 900, gravity: 0, lifeMs: 550, maxAlive: 2, range: 20, height: 12, damage: 4, baseKnockback: 180, knockbackGrowth: 3, angleDeg: 25, color: 0x6ec8ff },
       side: { type: "dash", name: "Avanti tutta!", startupMs: 120, durationMs: 300, speed: 760, endLagMs: 320, range: 46, height: 50, damage: 10, baseKnockback: 380, knockbackGrowth: 8, angleDeg: 30 },
-      down: { ...CHARGE_EXAMPLE, name: "Colpo di remo" },
+      // Mina di bordo (#547): posata a terra davanti a lui, esplode sotto chi la tocca e lo sbalza in alto. Una alla volta.
+      // Disegno provvisorio: il pallino scuro dei proiettili
+      down: { type: "projectile", name: "Mina di bordo", startupMs: 250, cooldownMs: 600, speed: 0, gravity: 1800, lifeMs: 15000, maxAlive: 1, rests: true, spawnX: 36, spawnY: 14, range: 30, height: 22, damage: 12, baseKnockback: 420, knockbackGrowth: 6, angleDeg: 80, color: 0x2f3440 },
     },
     // OrsoBlu v2 (Nicola, 3/11/2026): il capitano burbero con la barchetta in spalla, dalle prime 4 clip di Google Flow
     // tagliate con tools/sprite/dal_video.py (OB-01, 02, 03, 07; tagli a mano in flow_tagli.json). Incompleto apposta:
