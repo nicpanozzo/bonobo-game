@@ -2,6 +2,7 @@
 
 import { characterStats } from "../characters";
 import { ATTACKS, BONG, DASH, DODGE, FIGHTER, FLAG, FUNGO, HITSTUN_AIR_DRAG, POWERUP, RECOVERY, SLICK, SPORE } from "../constants";
+import { anchorSpec, throwAnchor } from "./anchor";
 import { attackSpecFor, startAttack } from "./attacks";
 import { endDash, stepDash } from "./dash";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
@@ -80,6 +81,11 @@ export function applyControls(f: Fighter, dt: number, ctx: PhysicsContext): void
 
   // Recupero (#11): in aria, K premuto tenendo su. Vince sul salto se i due tasti arrivano insieme.
   if (!f.onGround && !f.attack && !f.recoveryUsed && f.input.up && pressed(f, "heavy")) {
+    // Capt. OrsoBlu (#547) al posto della spinta spara l'ancora, se non è già fuori
+    if (anchorSpec(f.characterId)) {
+      if (!f.anchor) throwAnchor(f, dir, ctx);
+      return;
+    }
     f.vy = -RECOVERY.speed;
     f.vx = dir * RECOVERY.drift;
     f.recoveryUsed = true;

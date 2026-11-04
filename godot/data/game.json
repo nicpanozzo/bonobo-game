@@ -284,6 +284,26 @@
     "speed": 1050,
     "drift": 300
   },
+  "anchor": {
+    "throwSpeed": 1900,
+    "retractSpeed": 2600,
+    "maxLength": 400,
+    "minLength": 56,
+    "upAngleDeg": 72,
+    "diagAngleDeg": 45,
+    "throwLift": 260,
+    "maxThrows": 2,
+    "gripY": 80,
+    "pumpAccel": 1100,
+    "climbSpeed": 300,
+    "lowerSpeed": 300,
+    "maxSwingSpeed": 1150,
+    "swingDrag": 0.25,
+    "releaseBoost": 420,
+    "maxHangMs": 3000,
+    "hookStepPx": 8,
+    "platformGrabPx": 8
+  },
   "ledge": {
     "hangOffsetY": 56
   },
@@ -9823,6 +9843,7 @@
         "cuamm",
         "lolhardcore"
       ],
+      "anchor": {},
       "stats": {
         "speed": 0.9,
         "airSpeed": 0.95,
@@ -10093,6 +10114,18 @@
             "loop": false,
             "frames": 12,
             "src": "jumpSquat"
+          },
+          "anchorHang": {
+            "fps": 18,
+            "loop": true,
+            "frames": 58,
+            "src": "anchorHang"
+          },
+          "anchorClimb": {
+            "fps": 24,
+            "loop": true,
+            "frames": 41,
+            "src": "anchorClimb"
           }
         }
       },
@@ -10446,6 +10479,18 @@
             "loop": false,
             "frames": 6,
             "src": "land"
+          },
+          "anchorHang": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "ledge"
+          },
+          "anchorClimb": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "ledge"
           }
         }
       },
@@ -10924,6 +10969,18 @@
             "loop": false,
             "frames": 2,
             "src": "land"
+          },
+          "anchorHang": {
+            "fps": 12,
+            "loop": false,
+            "frames": 3,
+            "src": "jump"
+          },
+          "anchorClimb": {
+            "fps": 12,
+            "loop": false,
+            "frames": 3,
+            "src": "jump"
           }
         }
       },
@@ -11292,6 +11349,18 @@
             "loop": false,
             "frames": 1,
             "src": "land"
+          },
+          "anchorHang": {
+            "fps": 1,
+            "loop": false,
+            "frames": 1,
+            "src": "jump"
+          },
+          "anchorClimb": {
+            "fps": 1,
+            "loop": false,
+            "frames": 1,
+            "src": "jump"
           }
         }
       },
@@ -11512,6 +11581,18 @@
                 "loop": false,
                 "frames": 4,
                 "src": "land"
+              },
+              "anchorHang": {
+                "fps": 18,
+                "loop": false,
+                "frames": 4,
+                "src": "jump"
+              },
+              "anchorClimb": {
+                "fps": 18,
+                "loop": false,
+                "frames": 4,
+                "src": "jump"
               }
             }
           },
@@ -11864,6 +11945,18 @@
             "loop": false,
             "frames": 6,
             "src": "land"
+          },
+          "anchorHang": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "ledge"
+          },
+          "anchorClimb": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "ledge"
           }
         }
       },
@@ -12100,6 +12193,18 @@
                 "loop": false,
                 "frames": 6,
                 "src": "land"
+              },
+              "anchorHang": {
+                "fps": 12,
+                "loop": true,
+                "frames": 24,
+                "src": "ledge"
+              },
+              "anchorClimb": {
+                "fps": 12,
+                "loop": true,
+                "frames": 24,
+                "src": "ledge"
               }
             }
           },
@@ -12529,6 +12634,18 @@
             "loop": false,
             "frames": 2,
             "src": "land"
+          },
+          "anchorHang": {
+            "fps": 18,
+            "loop": false,
+            "frames": 4,
+            "src": "jump"
+          },
+          "anchorClimb": {
+            "fps": 18,
+            "loop": false,
+            "frames": 4,
+            "src": "jump"
           }
         }
       },
@@ -12733,6 +12850,18 @@
                 "loop": false,
                 "frames": 1,
                 "src": "land"
+              },
+              "anchorHang": {
+                "fps": 1,
+                "loop": false,
+                "frames": 1,
+                "src": "jump"
+              },
+              "anchorClimb": {
+                "fps": 1,
+                "loop": false,
+                "frames": 1,
+                "src": "jump"
               }
             }
           },
@@ -13194,6 +13323,18 @@
             "loop": false,
             "frames": 6,
             "src": "land"
+          },
+          "anchorHang": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "ledge"
+          },
+          "anchorClimb": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "ledge"
           }
         }
       },
@@ -13624,6 +13765,18 @@
             "loop": false,
             "frames": 3,
             "src": "land"
+          },
+          "anchorHang": {
+            "fps": 24,
+            "loop": false,
+            "frames": 5,
+            "src": "jump"
+          },
+          "anchorClimb": {
+            "fps": 24,
+            "loop": false,
+            "frames": 5,
+            "src": "jump"
           }
         }
       },
@@ -14035,6 +14188,18 @@
             "loop": false,
             "frames": 6,
             "src": "land"
+          },
+          "anchorHang": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "ledge"
+          },
+          "anchorClimb": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "ledge"
           }
         }
       },
@@ -14454,6 +14619,18 @@
             "loop": false,
             "frames": 6,
             "src": "land"
+          },
+          "anchorHang": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "ledge"
+          },
+          "anchorClimb": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "ledge"
           }
         }
       },
@@ -14882,6 +15059,18 @@
             "loop": false,
             "frames": 6,
             "src": "land"
+          },
+          "anchorHang": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "ledge"
+          },
+          "anchorClimb": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "ledge"
           }
         }
       },
@@ -15328,6 +15517,18 @@
             "loop": false,
             "frames": 6,
             "src": "land"
+          },
+          "anchorHang": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "ledge"
+          },
+          "anchorClimb": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "ledge"
           }
         },
         "rig": "assets/characters/nonnagina/rig/godot.json"
@@ -15757,6 +15958,18 @@
             "loop": false,
             "frames": 6,
             "src": "land"
+          },
+          "anchorHang": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "ledge"
+          },
+          "anchorClimb": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "ledge"
           }
         }
       },

@@ -108,7 +108,7 @@ func on_server(p: Dictionary, now_ms: float, shown := Vector2(NAN, NAN)) -> void
 	var key := "%s/%s" % [_stage.get("id", ""), p.characterId]
 	if key != _movement_key:
 		var character: Dictionary = _game.characters.get(p.characterId, _game.characters[_game.defaultCharacterId])
-		_movement = PredictMovement.new(_game, character.stats, _stage.get("solids", []), _stage.get("platforms", []), character.get("recovery", {}), character.get("attacks", {}))
+		_movement = PredictMovement.new(_game, character.stats, _stage.get("solids", []), _stage.get("platforms", []), character.get("recovery", {}), character.get("attacks", {}), character.has("anchor"))
 		_movement_key = key
 	var pr: Dictionary = p.predict
 	# Lo stato del server è quello dopo il tick locale seq + ticks - 1
@@ -200,6 +200,9 @@ static func predictable(p: Dictionary, stage: Dictionary, t := -1.0) -> bool:
 		return false
 	# Alla postazione (#433) si sta fermi e i tasti guidano lei: decide il server, come per chi è assente
 	if p.get("ledge") != null or p.get("grabbedBy") != null or p.get("station") != null:
+		return false
+	# L'ancora di Capt. OrsoBlu (#547): in volo o appesi decide il server
+	if p.get("anchor") != null:
 		return false
 	# Col fiore (#231) si va più piano: il port non lo sa, si torna allo stato del server finché dura
 	if p.get("powerup") != null:

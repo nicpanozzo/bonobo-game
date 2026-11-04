@@ -259,6 +259,15 @@ function decideSimple(self: Fighter, players: readonly Fighter[], stage: StageSp
     const toX = homeX(stage, self.x, self.y);
     input.left = toX < self.x;
     input.right = toX > self.x;
+    // Appeso all'ancora di Capt. OrsoBlu (#547): si dondola verso il palco e ci si arrampica; sopra il palco
+    // e con lo slancio giusto si salta via. Arrampicandosi fino allo spigolo ci si aggrappa al bordo
+    if (self.anchor?.phase === "hold" || self.anchor?.phase === "climb") {
+      const home = groundUnder(stage, toX);
+      if (home && self.y < home.y - 20 && Math.sign(self.vx) === Math.sign(toX - self.x)) tap("jump");
+      else input.up = true;
+      return input;
+    }
+    if (self.anchor) return input; // l'ancora è in volo: si aspetta dove arriva
     if (self.vy > 0 && !self.hitstun) {
       if (self.jumpsLeft > 0) tap("jump");
       else if (!self.recoveryUsed && !mem.last.heavy) {

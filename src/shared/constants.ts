@@ -212,6 +212,29 @@ export const RECOVERY = {
   drift: 300, // velocità orizzontale verso la direzione tenuta, pixel/s
 };
 
+// L'ancora-ragnatela di Capt. OrsoBlu (#547): il suo recupero spara l'ancora, che si pianta in blocchi e
+// piattaforme; appeso si dondola come un pendolo con la catena tesa. Numeri provvisori, da rivedere al playtest (#22)
+export const ANCHOR = {
+  throwSpeed: 1900, // pixel/s dell'ancora in volo
+  retractSpeed: 2600, // pixel/s dell'ancora che torna in mano quando non trova niente
+  maxLength: 400, // pixel di catena al massimo: oltre, l'ancora torna indietro
+  minLength: 56, // pixel: arrampicandosi non si va più vicini di così
+  upAngleDeg: 72, // solo su: quasi in verticale, un po' in avanti
+  diagAngleDeg: 45, // su + una direzione: in diagonale da quella parte
+  throwLift: 260, // pixel/s verso l'alto al lancio: il lancio frena la caduta
+  maxThrows: 2, // lanci prima di toccare terra, aggrapparsi a un bordo o essere colpiti
+  gripY: 80, // pixel sopra i piedi dove le mani tengono la catena
+  pumpAccel: 1100, // pixel/s² orizzontali tenendo avanti o indietro: lo slancio del pendolo
+  climbSpeed: 300, // pixel/s di catena accorciata tenendo su
+  lowerSpeed: 300, // pixel/s di catena allungata tenendo giù
+  maxSwingSpeed: 1150, // pixel/s al massimo appesi
+  swingDrag: 0.25, // frazione della velocità persa ogni secondo appesi
+  releaseBoost: 420, // pixel/s in più verso l'alto staccandosi col salto
+  maxHangMs: 3000, // ms appesi prima di lasciare la catena da soli
+  hookStepPx: 8, // pixel tra un controllo e l'altro dell'ancora in volo, così non passa attraverso le piattaforme sottili
+  platformGrabPx: 8, // pixel sopra o sotto una piattaforma sottile in cui l'ancora si pianta
+};
+
 // Statistiche dei personaggi (E11, #13): moltiplicatori dei numeri di FIGHTER in characters.ts.
 // Il limite tiene i personaggi diversi ma senza che uno rompa le arene o il bilanciamento.
 export const CHARACTER_STATS = {

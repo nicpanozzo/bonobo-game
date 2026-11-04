@@ -302,6 +302,7 @@ export class Match {
         ...(f.inputSeq >= 0 && { predict: predictionState(f) }),
         ...(f.pet && f.pet.koMs <= 0 && { companion: companionState(f)! }),
         ...(f.station !== undefined && { station: f.station }), // #433
+        ...(f.anchor && { anchor: { x: Math.round(f.anchor.x), y: Math.round(f.anchor.y), phase: f.anchor.phase } }), // #547
       });
     }
     const teamScores = this.rules.mode === "flag" ? { ...this.scores } : null;
