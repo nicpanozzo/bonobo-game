@@ -916,6 +916,7 @@ func _show_big_fighter(side := 0) -> void:
 	_draw_skins(skins)
 	_big_face.show_look(FighterPose.look(game, _character, _skin), side)
 	_big_name.text = str(c.name)
+	(_big_name.get_parent() as Control).queue_redraw() # la vetrina ridisegna il nome grande sullo sfondo
 	for child in _big_crews.get_children():
 		child.queue_free()
 	for crew in c.get("crews", []):
