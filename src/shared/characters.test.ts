@@ -123,7 +123,9 @@ function specialProblems(sp: SpecialSpec): string[] {
   if (!(damage >= 0 && damage <= 30)) out.push(`danno ${damage}, fuori da 0-30`);
   switch (sp.type) {
     case "projectile":
-      for (const k of ["startupMs", "cooldownMs", "speed", "lifeMs", "maxAlive"] as const) positive(k, sp[k]);
+      // Una mina che si posa (rests) può partire ferma: cade e resta lì
+      for (const k of ["startupMs", "cooldownMs", "lifeMs", "maxAlive"] as const) positive(k, sp[k]);
+      if (!(sp.speed > 0 || (sp.rests && sp.speed === 0))) out.push(`speed = ${sp.speed}`);
       if (!(sp.gravity >= 0)) out.push(`gravity = ${sp.gravity}`);
       break;
     case "dash":

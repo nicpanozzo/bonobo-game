@@ -9,7 +9,7 @@ import { getCharacter } from "../characters";
 import { ANCHOR, FIGHTER } from "../constants";
 import { platformSurfaceY } from "./stage";
 import { arcadeSolids } from "./arcade";
-import { attackSpecFor, startAttack } from "./attacks";
+import { attackSpecFor, bodyBox, canBeHit, launch, startAttack } from "./attacks";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
 
 export type AnchorSpec = typeof ANCHOR;
@@ -46,7 +46,7 @@ export function throwAnchor(f: Fighter, dir: number, ctx: PhysicsContext, forwar
   if (!f.onGround && f.anchorThrows >= a.maxThrows) return;
   if (dir !== 0) f.facing = dir as 1 | -1;
   const angle = ((forward ? a.forwardAngleDeg : dir === 0 ? a.upAngleDeg : a.diagAngleDeg) * Math.PI) / 180;
-  f.anchor = { x: gripX(f), y: gripY(f, a), phase: "fly" };
+  f.anchor = { x: gripX(f), y: forward ? f.y - a.forwardY : gripY(f, a), phase: "fly" };
   f.anchorVx = f.facing * Math.cos(angle) * a.throwSpeed;
   f.anchorVy = -Math.sin(angle) * a.throwSpeed;
   if (!f.onGround) {
@@ -216,5 +216,27 @@ export function tightenAnchor(f: Fighter): void {
   if (out > 0) {
     f.vx -= out * ux;
     f.vy -= out * uy;
+  }
+}
+
+// Tutti a bordo! (#547): l'ancora in volo che tocca un avversario lo tira verso chi l'ha lanciata e torna in mano.
+// Dopo che tutti si sono mossi, prima dei colpi
+export function hookFighters(fighters: Fighter[], ctx: PhysicsContext): void {
+  for (const f of fighters) {
+    const h = f.anchor;
+    if (h?.phase !== "fly") continue;
+    const a = anchorSpec(f.characterId) ?? ANCHOR;
+    for (const t of fighters) {
+      if (t === f || !canBeHit(t) || t.away || (ctx.canHit && !ctx.canHit(f, t))) continue;
+      const b = bodyBox(t);
+      if (h.x < b.x || h.x > b.x + b.w || h.y < b.y || h.y > b.y + b.h) continue;
+      h.phase = "back";
+      if (t.shielding) break; // lo scudo la respinge
+      launch(t, f, "specialNeutral", Math.round(h.x), Math.round(h.y), ctx, undefined, { damage: a.pullDamage, baseKnockback: 0, knockbackGrowth: 0, angleDeg: 0 });
+      t.vx = Math.sign(f.x - t.x) * a.pullSpeed;
+      t.vy = -a.pullLift;
+      t.hitstunTimer = a.pullHitstunMs;
+      break;
+    }
   }
 }

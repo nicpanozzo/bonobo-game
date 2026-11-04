@@ -222,6 +222,24 @@ describe("ancora di Capt. OrsoBlu", () => {
     assert.ok(f.x > 900, `arrivato vicino al muro (${f.x.toFixed(0)})`);
   });
 
+  it("Tutti a bordo!: l'ancora in avanti che prende qualcuno lo tira verso OrsoBlu", () => {
+    const { ctx, f } = setup();
+    const o = createFighter({ id: "o", name: "O", characterId: "default", color: 0, team: 0, index: 1, stocks: 3 }, stage);
+    f.facing = 1;
+    o.x = f.x + 200;
+    o.y = f.y;
+    o.onGround = false;
+    press(f, { special: true });
+    for (let i = 0; i < 20 && o.percent === 0; i++) {
+      o.vx = o.vy = 0;
+      stepWorld([f, o], DT, ctx);
+      press(f, {});
+    }
+    assert.equal(o.percent, ANCHOR.pullDamage);
+    assert.ok(o.vx < 0, "va verso di lui");
+    assert.equal(f.anchor?.phase, "back", "l'ancora torna in mano");
+  });
+
   it("chi non ha l'ancora fa il recupero di sempre", () => {
     const { ctx, f } = setup("default");
     run(f, ctx, 1, { up: true, heavy: true });
@@ -232,3 +250,51 @@ describe("ancora di Capt. OrsoBlu", () => {
 });
 
 const onRopePhase = (f: Fighter) => f.anchor?.phase === "hold" || f.anchor?.phase === "climb";
+
+describe("Mina di bordo di Capt. OrsoBlu", () => {
+  const ground: StageSpec = { ...stage, id: "pavimento" };
+  function onFloor() {
+    const ctx: PhysicsContext = { stage: ground, events: [] };
+    const f = createFighter({ id: "p", name: "P", characterId: "orsoblu", color: 0, team: 0, index: 0, stocks: 3 }, ground);
+    const o = createFighter({ id: "o", name: "O", characterId: "default", color: 0, team: 0, index: 1, stocks: 3 }, ground);
+    f.x = 500;
+    o.x = 900;
+    for (const x of [f, o]) {
+      x.y = 1200;
+      x.onGround = true;
+    }
+    return { ctx, f, o };
+  }
+
+  it("giù + speciale posa la mina a terra, che resta ferma", () => {
+    const { ctx, f, o } = onFloor();
+    f.facing = 1;
+    press(f, { down: true, special: true });
+    for (let i = 0; i < 60; i++) {
+      stepWorld([f, o], DT, ctx);
+      press(f, {});
+    }
+    const mine = ctx.projectiles?.list[0];
+    assert.ok(mine, "c'è la mina");
+    assert.ok(Math.abs(mine.y + 11 - 1200) < 1, `posata sul pavimento (${mine.y})`);
+    assert.equal(mine.vx, 0);
+    run(f, ctx, 60);
+    assert.equal(ctx.projectiles?.list.length, 1, "non sparisce da sola subito");
+  });
+
+  it("chi ci passa sopra salta in aria", () => {
+    const { ctx, f, o } = onFloor();
+    f.facing = 1;
+    press(f, { down: true, special: true });
+    for (let i = 0; i < 40; i++) {
+      stepWorld([f, o], DT, ctx);
+      press(f, {});
+    }
+    const mine = ctx.projectiles!.list[0];
+    o.x = mine.x;
+    stepWorld([f, o], DT, ctx);
+    assert.equal(o.percent, 12);
+    assert.ok(o.vy < 0, "sbalzato in alto");
+    assert.equal(ctx.projectiles!.list.length, 0);
+  });
+});

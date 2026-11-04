@@ -291,7 +291,8 @@
     "minLength": 56,
     "upAngleDeg": 72,
     "diagAngleDeg": 45,
-    "forwardAngleDeg": 10,
+    "forwardAngleDeg": 6,
+    "forwardY": 50,
     "throwLift": 260,
     "maxThrows": 2,
     "gripY": 80,
@@ -306,7 +307,11 @@
     "platformGrabPx": 8,
     "zipSpeed": 1400,
     "zipEndSpeed": 260,
-    "zipEndLagMs": 120
+    "zipEndLagMs": 120,
+    "pullDamage": 6,
+    "pullSpeed": 760,
+    "pullLift": 260,
+    "pullHitstunMs": 320
   },
   "ledge": {
     "hangOffsetY": 56
@@ -9908,19 +9913,24 @@
           "angleDeg": 30
         },
         "down": {
-          "type": "charge",
-          "name": "Colpo di remo",
-          "minMs": 200,
-          "maxMs": 1200,
-          "maxMultiplier": 1.8,
-          "activeMs": 100,
-          "endLagMs": 350,
-          "range": 50,
-          "height": 50,
-          "damage": 10,
-          "baseKnockback": 400,
-          "knockbackGrowth": 10,
-          "angleDeg": 42
+          "type": "projectile",
+          "name": "Mina di bordo",
+          "startupMs": 250,
+          "cooldownMs": 600,
+          "speed": 0,
+          "gravity": 1800,
+          "lifeMs": 15000,
+          "maxAlive": 1,
+          "rests": true,
+          "spawnX": 36,
+          "spawnY": 14,
+          "range": 30,
+          "height": 22,
+          "damage": 12,
+          "baseKnockback": 420,
+          "knockbackGrowth": 6,
+          "angleDeg": 80,
+          "color": 3093568
         }
       },
       "sprite": {
@@ -10177,15 +10187,15 @@
           "cooldownMs": 740
         },
         "specialDown": {
-          "baseKnockback": 400,
-          "knockbackGrowth": 10,
-          "angleDeg": 42,
-          "range": 50,
-          "height": 50,
-          "damage": 10,
-          "startupMs": 200,
-          "activeMs": 100,
-          "cooldownMs": 1650
+          "baseKnockback": 420,
+          "knockbackGrowth": 6,
+          "angleDeg": 80,
+          "range": 30,
+          "height": 22,
+          "damage": 12,
+          "startupMs": 250,
+          "activeMs": 0,
+          "cooldownMs": 600
         }
       },
       "supremeAttack": {

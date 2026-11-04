@@ -21,7 +21,7 @@
 //   anchor.ts    l'ancora-ragnatela di Capt. OrsoBlu (#547)
 
 import { isArcade, playPacman, playTetris, stepArcade } from "./arcade";
-import { onRope, stepHook, swingAnchor, tightenAnchor } from "./anchor";
+import { hookFighters, onRope, stepHook, swingAnchor, tightenAnchor } from "./anchor";
 import { resolveHits, tryStartAttack, updateAttack } from "./attacks";
 import { stepBassanese } from "./bassanese";
 import { stepCompanion } from "./companion";
@@ -203,6 +203,7 @@ export function stepWorld(fighters: Fighter[], dtMs: number, ctx: PhysicsContext
   swapTripInput(tripping);
   for (const f of tripping) if (f.powerupMs <= 0) f.powerup = null;
   for (const f of fighters) if (!f.away) tryGrabLedge(f, fighters, ctx);
+  hookFighters(fighters, ctx); // l'ancora di OrsoBlu che prende qualcuno lo tira (#547)
   for (const f of fighters) stepCompanion(f, dtMs, ctx); // il beagle di Lampione (#369)
   resolveHits(fighters, ctx);
   stepProjectiles(fighters, dtMs, ctx);
