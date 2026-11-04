@@ -573,7 +573,8 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     // E10: uno schizzo d'acqua veloce e corto, una remata in avanti e un colpo di remo da caricare
     // TODO community: nomi e numeri provvisori, da confermare con @MauroGrecchi (#37)
     specials: {
-      neutral: { type: "projectile", name: "Schizzo", startupMs: 200, cooldownMs: 500, speed: 900, gravity: 0, lifeMs: 550, maxAlive: 2, range: 20, height: 12, damage: 4, baseKnockback: 180, knockbackGrowth: 3, angleDeg: 25, color: 0x6ec8ff },
+      // la neutra spara l'ancora dritta in avanti (#547, anchor.ts): di questi numeri contano solo nome e tempi
+      neutral: { type: "projectile", name: "Tutti a bordo!", startupMs: 200, cooldownMs: 500, speed: 900, gravity: 0, lifeMs: 550, maxAlive: 2, range: 20, height: 12, damage: 4, baseKnockback: 180, knockbackGrowth: 3, angleDeg: 25, color: 0x6ec8ff },
       side: { type: "dash", name: "Avanti tutta!", startupMs: 120, durationMs: 300, speed: 760, endLagMs: 320, range: 46, height: 50, damage: 10, baseKnockback: 380, knockbackGrowth: 8, angleDeg: 30 },
       down: { ...CHARGE_EXAMPLE, name: "Colpo di remo" },
     },

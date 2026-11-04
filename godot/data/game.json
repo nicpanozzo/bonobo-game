@@ -291,6 +291,7 @@
     "minLength": 56,
     "upAngleDeg": 72,
     "diagAngleDeg": 45,
+    "forwardAngleDeg": 10,
     "throwLift": 260,
     "maxThrows": 2,
     "gripY": 80,
@@ -9857,7 +9858,7 @@
       "specials": {
         "neutral": {
           "type": "projectile",
-          "name": "Schizzo",
+          "name": "Tutti a bordo!",
           "startupMs": 200,
           "cooldownMs": 500,
           "speed": 900,

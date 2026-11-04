@@ -38,20 +38,24 @@ export function hookable(x: number, y: number, ctx: PhysicsContext, a: AnchorSpe
   return false;
 }
 
-// Il lancio, al posto del recupero comune. dir: la direzione tenuta (-1, 0, 1)
-export function throwAnchor(f: Fighter, dir: number, ctx: PhysicsContext): void {
+// Il lancio, al posto del recupero comune (in alto) o della speciale neutra (forward: dritto in avanti, anche da
+// terra). dir: la direzione tenuta (-1, 0, 1)
+export function throwAnchor(f: Fighter, dir: number, ctx: PhysicsContext, forward = false): void {
   const a = anchorSpec(f.characterId);
-  if (!a) return;
+  if (!a || f.anchor) return;
+  if (!f.onGround && f.anchorThrows >= a.maxThrows) return;
   if (dir !== 0) f.facing = dir as 1 | -1;
-  const angle = ((dir === 0 ? a.upAngleDeg : a.diagAngleDeg) * Math.PI) / 180;
+  const angle = ((forward ? a.forwardAngleDeg : dir === 0 ? a.upAngleDeg : a.diagAngleDeg) * Math.PI) / 180;
   f.anchor = { x: gripX(f), y: gripY(f, a), phase: "fly" };
   f.anchorVx = f.facing * Math.cos(angle) * a.throwSpeed;
   f.anchorVy = -Math.sin(angle) * a.throwSpeed;
-  f.anchorThrows += 1;
-  f.recoveryUsed = f.anchorThrows >= a.maxThrows; // i bot e la predizione guardano questo
-  f.vy = Math.min(f.vy, -a.throwLift);
-  f.jumpRising = false;
-  startAttack(f, "recovery", ctx); // l'animazione del lancio e il colpetto del braccio
+  if (!f.onGround) {
+    f.anchorThrows += 1;
+    f.recoveryUsed = f.anchorThrows >= a.maxThrows; // i bot e la predizione guardano questo
+    f.vy = Math.min(f.vy, -a.throwLift);
+    f.jumpRising = false;
+  }
+  startAttack(f, forward ? "specialNeutral" : "recovery", ctx); // l'animazione del lancio (e per il recupero il colpetto del braccio)
 }
 
 export function releaseAnchor(f: Fighter): void {
@@ -93,7 +97,9 @@ export function stepHook(f: Fighter, dtMs: number, ctx: PhysicsContext): void {
       h.phase = "hold";
       f.anchorLen = Math.max(a.minLength, Math.min(a.maxLength, Math.hypot(hx - h.x, hy - h.y)));
       f.anchorMs = 0;
-      if (f.attack === "recovery") {
+      // Lanciata da terra: la catena tira subito verso l'ancora, come Avanti tutta! (a terra non si dondola)
+      if (f.onGround) f.anchorZip = true;
+      if (f.attack === "recovery" || f.attack === "specialNeutral") {
         f.attack = null; // piantata: da appeso si può già attaccare
         f.attackActive = false;
         f.cooldownTimer = 0;
@@ -116,7 +122,7 @@ export function swingAnchor(f: Fighter, dtMs: number, ctx: PhysicsContext): bool
   const h = f.anchor!;
   const a = anchorSpec(f.characterId) ?? ANCHOR;
   f.anchorMs += dtMs;
-  if (f.hitstun || f.onGround || f.anchorMs >= a.maxHangMs || !hookable(h.x, h.y, ctx, a)) {
+  if (f.hitstun || (f.onGround && !f.anchorZip) || f.anchorMs >= a.maxHangMs || !hookable(h.x, h.y, ctx, a)) {
     releaseAnchor(f);
     return false;
   }

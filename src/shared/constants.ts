@@ -221,6 +221,7 @@ export const ANCHOR = {
   minLength: 56, // pixel: arrampicandosi non si va più vicini di così
   upAngleDeg: 72, // solo su: quasi in verticale, un po' in avanti
   diagAngleDeg: 45, // su + una direzione: in diagonale da quella parte
+  forwardAngleDeg: 10, // la speciale neutra (Tutti a bordo!): quasi dritta in avanti, appena in su
   throwLift: 260, // pixel/s verso l'alto al lancio: il lancio frena la caduta
   maxThrows: 2, // lanci prima di toccare terra, aggrapparsi a un bordo o essere colpiti
   gripY: 80, // pixel sopra i piedi dove le mani tengono la catena

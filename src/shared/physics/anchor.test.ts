@@ -193,6 +193,35 @@ describe("ancora di Capt. OrsoBlu", () => {
     assert.ok(o.percent > 0, "preso dalla teleferica");
   });
 
+  it("Tutti a bordo!: la speciale neutra spara l'ancora in avanti e in aria si appende al muro", () => {
+    const { ctx, f } = setup();
+    ctx.stage = { ...stage, solids: [...stage.solids, { x: 900, y: 200, width: 60, height: 800 }] };
+    f.facing = 1;
+    run(f, ctx, 1, { special: true });
+    assert.equal(f.anchor?.phase, "fly");
+    assert.equal(f.attack, "specialNeutral");
+    assert.ok(Math.abs(f.anchorVy) < Math.abs(f.anchorVx) / 4, "quasi orizzontale");
+    for (let i = 0; i < 30 && f.anchor?.phase === "fly"; i++) run(f, ctx, 1);
+    assert.equal(f.anchor?.phase, "hold");
+    assert.ok(f.anchor!.x >= 900 && f.anchor!.x <= 910, "piantata nel muro");
+    run(f, ctx, 20);
+    assert.ok(f.anchor, "dondola appeso al muro");
+  });
+
+  it("da terra la speciale neutra pianta l'ancora e la catena lo tira fin lì", () => {
+    const ctx: PhysicsContext = { stage: { ...stage, solids: [...stage.solids, { x: 1000, y: 900, width: 60, height: 300 }] }, events: [] };
+    const f = createFighter({ id: "p", name: "P", characterId: "orsoblu", color: 0, team: 0, index: 0, stocks: 3 }, ctx.stage);
+    f.x = 700;
+    f.y = 1200; // in piedi sul pavimento, il muro 300 px avanti
+    f.facing = 1;
+    run(f, ctx, 1); // si posa
+    run(f, ctx, 1, { special: true });
+    for (let i = 0; i < 30 && f.anchor?.phase === "fly"; i++) run(f, ctx, 1);
+    assert.ok(f.anchorZip, "si parte verso l'ancora");
+    for (let i = 0; i < 40 && f.anchor; i++) run(f, ctx, 1);
+    assert.ok(f.x > 900, `arrivato vicino al muro (${f.x.toFixed(0)})`);
+  });
+
   it("chi non ha l'ancora fa il recupero di sempre", () => {
     const { ctx, f } = setup("default");
     run(f, ctx, 1, { up: true, heavy: true });
