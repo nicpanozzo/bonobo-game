@@ -14010,27 +14010,27 @@
         "scale": 0.5,
         "animations": {
           "idle": {
-            "fps": 12,
+            "fps": 24,
             "loop": true,
-            "frames": 24,
+            "frames": 46,
             "src": "idle"
           },
           "walk": {
             "fps": 24,
             "loop": true,
-            "frames": 8,
+            "frames": 47,
             "src": "walk"
           },
           "jump": {
             "fps": 24,
             "loop": false,
-            "frames": 7,
+            "frames": 16,
             "src": "jump"
           },
           "fall": {
             "fps": 24,
             "loop": true,
-            "frames": 12,
+            "frames": 18,
             "src": "fall"
           },
           "light": {
@@ -14082,7 +14082,7 @@
           "land": {
             "fps": 24,
             "loop": false,
-            "frames": 6,
+            "frames": 10,
             "src": "land"
           },
           "lightUp": {
@@ -14230,8 +14230,8 @@
           "jumpSquat": {
             "fps": 24,
             "loop": false,
-            "frames": 6,
-            "src": "land"
+            "frames": 17,
+            "src": "jumpSquat"
           },
           "anchorHang": {
             "fps": 12,
