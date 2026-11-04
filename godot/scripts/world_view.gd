@@ -3412,7 +3412,7 @@ func _draw_anchor(p: Dictionary) -> void:
 	draw_line(tip - dir * 22.0, tip + dir * 4.0, dark, 6.0)
 	draw_line(tip - dir * 16.0 - side * 9.0, tip - dir * 16.0 + side * 9.0, dark, 4.0)
 	draw_circle(tip - dir * 24.0, 4.5, dark)
-	for s in [-1.0, 1.0]:
-		var bend := tip + side * s * 11.0 - dir * 6.0
+	for s: float in [-1.0, 1.0]:
+		var bend: Vector2 = tip + side * s * 11.0 - dir * 6.0
 		draw_line(tip + dir * 2.0, bend, dark, 5.0)
 		draw_line(bend, bend - dir * 7.0 + side * s * 3.0, dark, 4.0)
