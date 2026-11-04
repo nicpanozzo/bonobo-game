@@ -8,7 +8,7 @@ import { basename, dirname, extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { SpriteFolderSpec } from "../src/shared/characters";
 import { CHARACTERS, CREWS, DEFAULT_CHARACTER_ID, isSpriteFolder, resolvedAnimations, SPECIAL_KINDS, SPECIAL_SLOTS, specialAttackSpec, specialsFor, spriteStatePath, supremeAttackSpec } from "../src/shared/characters";
-import { ANCHOR, ATTACKS, AUDIO, BONG, CAMERA, FUNGHI, FUNGO, HALL, COLORS, EFFECTS, FIGHTER, INPUT, ITEM_AMOUNTS, ITEM_RULES, LEDGE, MICELIO, NET, PAD, POWERUP, PREMATCH, PROTOCOL_VERSION, RUMBLE, SHIELD, SPORE, SUPREME_SPEEDS, TEAM_COLORS, TEAM_NAMES, VOICE, WORLD } from "../src/shared/constants";
+import { ANCHOR, ATTACKS, AUDIO, BONG, CAMERA, FUNGHI, FUNGO, HALL, COLORS, EFFECTS, FIGHTER, INPUT, ITEM_AMOUNTS, ITEM_RULES, LEDGE, BELT, MICELIO, NET, PAD, POWERUP, PREMATCH, PROTOCOL_VERSION, RUMBLE, SHIELD, SPORE, SUPREME_SPEEDS, TEAM_COLORS, TEAM_NAMES, VOICE, WORLD } from "../src/shared/constants";
 import { RECONNECT, RECONNECT_HOLD_MS } from "../src/shared/constants";
 import { COLORS_COLORBLIND, MAX_TEAMS, TEAM_COLORS_COLORBLIND } from "../src/shared/constants";
 import { BASSANESE, PACMAN, TETRIS, TRAINING } from "../src/shared/constants";
@@ -266,6 +266,7 @@ const data = {
   challenges: CHALLENGES, // sfide con medaglie (E15 passo 3)
   camera: CAMERA,
   pad: PAD, // bottoni sonori dell'arena musicale (#423)
+  belt: BELT, // nastri trasportatori della Fabbrica
   tetris: TETRIS, // il power-up Tetris (#427)
   station: STATION, // postazioni: bombarda e munizioni (#433)
   pacman: PACMAN, // il power-up Pac-Man (#427)

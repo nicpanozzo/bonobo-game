@@ -2,7 +2,7 @@
 // Tutto dipende solo dal tempo dell'arena (ctx.timeMs): il client Godot rifà gli stessi
 // calcoli in world_view.gd e disegna gli elementi senza riceverne le posizioni.
 
-import { FIGHTER, HAZARD, HITSTOP, HITSTUN_PER_KNOCKBACK, PAD, STATION, TICK_RATE, WIND } from "../constants";
+import { FIGHTER, HAZARD, HITSTOP, HITSTUN_PER_KNOCKBACK, PACK, PAD, STATION, TICK_RATE, WIND } from "../constants";
 import type { Hazard, Jet, MovingPlatform, SoundPad } from "../stages";
 import type { Fighter, PhysicsContext } from "./fighter";
 import { chargeFromHit } from "./supreme";
@@ -233,6 +233,18 @@ export function landOnMover(f: Fighter, prevY: number, dtMs: number, ctx: Physic
   return -1;
 }
 
+// L'impacchettatrice (La Fabbrica): fermo dentro la scatola, senza lancio. Si cade e si scivola sui nastri come prima
+function packFighter(f: Fighter, ms: number): void {
+  f.stunTimer = ms;
+  f.stunned = true;
+  f.packed = true;
+  f.vx = 0;
+  f.attack = null;
+  f.attackActive = false;
+  f.shielding = false;
+  f.hazardTimer = ms + PACK.immuneMs;
+}
+
 const canBeHurt = (f: Fighter) => !f.eliminated && !f.respawning && !f.invulnerable && f.hazardTimer === 0;
 
 // Le trappole accese colpiscono chi le tocca. Il KO resta a chi ha colpito per ultimo:
@@ -255,6 +267,11 @@ export function resolveHazards(fighters: Fighter[], ctx: PhysicsContext): void {
       if (h.travel && f.y > r.y + r.height + HAZARD.travelFeetPx) continue;
       f.percent = Math.min(999, f.percent + h.damage);
       chargeFromHit(null, f, h.damage); // #101: la trappola carica solo chi la prende
+      if (h.pack) {
+        packFighter(f, h.pack.baseMs + h.pack.perPercentMs * f.percent);
+        ctx.events.push({ type: "hazard", id: f.id, index, damage: h.damage, percent: f.percent, knockback: 0, x: Math.round(f.x), y: Math.round(f.y - FIGHTER.height / 2) });
+        continue;
+      }
       const knockback = h.knockback + h.knockbackGrowth * f.percent;
       const angle = (h.angleDeg * Math.PI) / 180;
       // La trappola che viaggia (#229) lancia nella direzione in cui va; le altre lontano dal loro centro

@@ -10,7 +10,7 @@ var _out := "user://screenshots"
 var _game: Dictionary
 var _world: Node2D # nella partita finta: riceve uno snapshot a ogni frame
 var _hud: Control
-const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre", "lobby_regole", "musica", "tetris", "pacman", "bassanese", "bologna_piazza", "bologna_torri", "bologna_crollo", "bologna_zuffa", "oggetti", "prepartita_attesa", "prepartita_vs", "prepartita_conto", "fine_partita", "sala", "sala_conto", "sala_galleria", "sala_via", "sala_basket", "sala_scacchi"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
+const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre", "lobby_regole", "musica", "tetris", "pacman", "bassanese", "bologna_piazza", "bologna_torri", "bologna_crollo", "bologna_zuffa", "oggetti", "prepartita_attesa", "prepartita_vs", "prepartita_conto", "fine_partita", "sala", "sala_conto", "sala_galleria", "sala_via", "sala_basket", "sala_scacchi", "fabbrica"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
 var _index := -1
 var _frame := 0
 var _failed := false
@@ -29,6 +29,13 @@ var _hall_view: Node3D # la sala d'attesa 3D finta: riceve uno snapshot a ogni f
 var _hall_hud: Control
 var _hall_scene := "sala" # quale serata finta (tests/hall_fake.gd): sala, conto, galleria
 var _only: Array = [] # --only=sala,sala_basket: si scattano solo queste (per provare in fretta)
+# Le arene a tema (theme_stage.gd): {id, ms, cam, zoom, x, y, pads, packed, events}, vuoto nelle altre partite
+var _theme_shot: Dictionary = {}
+const THEME_SHOTS := {
+	# La Fabbrica: sirena del cambio di verso, le due leve appena tirate (TURBO!) e uno impacchettato sul nastro
+	"fabbrica": {"ms": 13300, "cam": Vector2(640, 380), "zoom": 1.0, "x": [180, 300, 860, 1010, 440], "y": [560, 560, 560, 560, 410],
+		"pads": [12650, 12700], "packed": 2, "hazard": 2},
+}
 var _bologna: Dictionary = {} # le fasi di Bologna (#433): {ms, cam, zoom, spots}, vuoto nelle altre partite
 # Bologna in quattro momenti: l'auto in piazza, l'ingorgo sotto le torri, la Garisenda che cade coi mattoni, la polvere
 const BOLOGNA_SHOTS := {
@@ -56,6 +63,9 @@ func _process(_delta: float) -> bool:
 	if _world != null:
 		var snap := _snapshot(_frame)
 		_world.on_snapshot(snap)
+		if not _theme_shot.is_empty(): # le arene a tema guardano gli eventi (la scatola della Fabbrica)
+			for e in snap.get("events", []):
+				_world.on_event(e)
 		_hud.on_snapshot(snap)
 		if _pre_view != null:
 			_pre_view.on_snapshot(snap)
@@ -259,11 +269,14 @@ func _partita() -> void:
 	var world: Node2D = load("res://scripts/world_view.gd").new()
 	root.add_child(world)
 	world.setup(_game)
-	world.set_stage("bologna" if not _bologna.is_empty() else ("musica" if _music else _game.defaultStageId))
+	world.set_stage(str(_theme_shot.id) if not _theme_shot.is_empty() else ("bologna" if not _bologna.is_empty() else ("musica" if _music else _game.defaultStageId)))
 	world.my_id = "p0"
 	var cam := Camera2D.new()
 	cam.position = _bologna.cam if not _bologna.is_empty() else Vector2(640, 430)
 	cam.zoom = Vector2.ONE * (float(_bologna.zoom) if not _bologna.is_empty() else 1.4)
+	if not _theme_shot.is_empty():
+		cam.position = _theme_shot.cam
+		cam.zoom = Vector2.ONE * float(_theme_shot.zoom)
 	root.add_child(cam)
 	cam.make_current()
 	_hud = load("res://scripts/hud.gd").new()
@@ -303,6 +316,24 @@ func _snapshot(frame: int) -> Dictionary:
 		"projectiles": [{"id": 1, "ownerId": "p0", "kind": "specialNeutral", "characterId": "default", "x": 500, "y": 470, "vx": 560, "vy": -120}]}
 	if not _pre.is_empty():
 		snap.prematch = _pre
+	if not _theme_shot.is_empty():
+		# Il tempo dell'arena fermo e quello dello snapshot che va con l'orologio: la foto è sempre allo stesso istante
+		# anche se sotto xvfb i frame sono lenti (sample_stage_ms guarda l'orologio vero)
+		_theme_shot.t0 = _theme_shot.get("t0", Time.get_ticks_msec())
+		snap.t = Time.get_ticks_msec() - int(_theme_shot.t0) + 16
+		snap.stageMs = int(_theme_shot.ms)
+		snap.projectiles = []
+		for i in players.size():
+			players[i].x = _theme_shot.x[i]
+			players[i].y = _theme_shot.y[i]
+			players[i].shielding = false
+		if _theme_shot.has("pads"):
+			snap.pads = _theme_shot.pads
+		if _theme_shot.has("packed"):
+			var who: Dictionary = players[int(_theme_shot.packed)]
+			who.stunned = true
+			if frame < 3:
+				snap.events = [{"type": "hazard", "id": who.id, "index": int(_theme_shot.hazard), "damage": 4, "percent": 40, "knockback": 0, "x": who.x, "y": who.y - 44}]
 	if _music:
 		snap.pads = [8800, 8800, 8800] # tutti e tre premuti da poco: la Meraviglia
 	if _pacman_on:
@@ -391,6 +422,13 @@ func _sala_basket() -> void:
 func _sala_scacchi() -> void:
 	_hall_scene = "scacchi"
 	_add_hall()
+
+
+# Le arene a tema: una funzione per foto, tutte uguali
+func _fabbrica() -> void:
+	_theme_shot = THEME_SHOTS.fabbrica.duplicate()
+	_theme_shot.id = "fabbrica"
+	_partita()
 
 
 func _add_hall() -> void:

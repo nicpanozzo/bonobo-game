@@ -97,6 +97,7 @@ var _life: RefCounted = preload("res://scripts/stage_life.gd").new() # sfondo vi
 var _crowd: RefCounted = StageCrowd.new() # i flash dei turisti a ogni KO (#433)
 var _water: RefCounted = preload("res://scripts/stage_water.gd").new() # getti, fontane e vento (#325)
 var _wonder: RefCounted = preload("res://scripts/wonder_stage.gd").new() # l'arena musicale che balla a tempo (#423)
+var _theme: RefCounted = preload("res://scripts/theme_stage.gd").new() # le arene a tema: Fabbrica, Diluvio, Palco
 var _arcade: RefCounted = preload("res://scripts/arcade_view.gd").new() # pezzi e blocchi del power-up Tetris (#427)
 var _bassanese: RefCounted = preload("res://scripts/bassanese_view.gd").new() # Chiama Bassanese
 const BassaneseView := preload("res://scripts/bassanese_view.gd")
@@ -401,6 +402,7 @@ func set_stage_spec(spec: Dictionary) -> void:
 	_crowd.setup(spec)
 	_water.life = _life
 	_wonder.setup(spec)
+	_theme.setup(spec, game)
 	_arcade.setup(game)
 	_stations.setup(spec, game)
 	_supreme_view.stage = spec
@@ -763,6 +765,7 @@ func on_snapshot(snap: Dictionary) -> void:
 
 
 func on_event(e: Dictionary) -> void:
+	_theme.on_event(e, Time.get_ticks_msec()) # l'arena a tema guarda KO e trappole (la scatola della Fabbrica)
 	if not _crowd.is_empty(): # il pubblico fotografa i KO e i colpi forti (#433)
 		_crowd.flash(StageCrowd.flashes_for(e, float(game.effects.get("shakeFromKnockback", INF))), Time.get_ticks_msec())
 	match e.type:
@@ -1572,6 +1575,7 @@ func _draw() -> void:
 	var t_stage := buffer.sample_stage_ms(Time.get_ticks_msec())
 	_t_draw = t_stage
 	_wonder.draw_back(self, t_stage, view_rect, _pads_pressed, Time.get_ticks_msec()) # solo nelle arene col brano (#423)
+	_theme.draw_back(self, t_stage, view_rect, _pads_pressed, Time.get_ticks_msec()) # le arene a tema, disegnate col codice
 	var view_center := view_rect.get_center()
 	# Quello che si vede davvero, dalla telecamera: view_rect lo aggiorna main.gd solo mentre si gioca (#433)
 	var shown := visible_rect(get_global_transform_with_canvas(), get_viewport_rect())
@@ -1617,7 +1621,9 @@ func _draw() -> void:
 		_piece_alpha = StageMotion.piece_alpha(s, t_stage, _prize_team) # pezzi a tempo (#433): sfumano entrando e uscendo
 		if _piece_alpha <= 0.0:
 			continue
-		if skin.is_empty():
+		if _theme.draw_solid(self, s, t_stage, _pads_pressed):
+			pass
+		elif skin.is_empty():
 			draw_rect(Rect2(s.x, s.y, s.width, s.height), _faded(_palette.solid))
 			draw_rect(Rect2(s.x, s.y, s.width, 6), _faded(_palette.solidEdge))
 			_wonder.draw_floor(self, s, t_stage, _pads_pressed, _pad_fx) # la tastiera del pianoforte (#423)
@@ -1632,7 +1638,9 @@ func _draw() -> void:
 		_piece_alpha = StageMotion.piece_alpha(p, t_stage, _prize_team)
 		if _piece_alpha <= 0.0:
 			continue
-		if not skin.is_empty():
+		if _theme.draw_platform(self, p, t_stage):
+			pass
+		elif not skin.is_empty():
 			_draw_skinned_platform(p, skin)
 		elif p.get("y2") != null:
 			_draw_stairs(p, _faded(_palette.platform))
@@ -1674,6 +1682,7 @@ func _draw() -> void:
 				_draw_fighter(p, now)
 				_draw_strike(p, now)
 
+	_theme.draw_over_fighters(self, _sampled, now) # la scatola della Fabbrica sopra chi è impacchettato
 	_supreme_view.view_rect = view_rect
 	_speech.view_rect = view_rect
 	_draw_puddles(now)
@@ -1723,6 +1732,7 @@ func _draw() -> void:
 		draw_line(Vector2(s.x, s.y) - tip, Vector2(s.x, s.y) + tip, c, 4.0)
 
 	_wonder.draw_front(self, t_stage, view_rect, _pads_pressed) # coriandoli e scritta della Meraviglia (#423)
+	_theme.draw_front(self, t_stage, view_rect, _pads_pressed) # le scritte delle arene a tema
 	if _flash > 0:
 		draw_rect(view_rect.grow(40), Color(1, 1, 1, 0.45 * _flash / float(game.effects.flashMs)))
 	_draw_screen_kos() # il KO sullo schermo, davanti a tutto (#470 fase 4)
@@ -2536,6 +2546,8 @@ func _draw_elements(t: float) -> void:
 		if m.get("kind", "") == "campana": # la campana appesa tra le torri di Bologna (#433)
 			BolognaHazards.draw_bell(self, m, pos, StageMotion.swing_angle(m.swing, t + float(m.get("offsetMs", 0))), t, _stage_light())
 			continue
+		if _theme.draw_mover(self, m, pos, t): # le arene a tema disegnano le loro
+			continue
 		if _mover_sprites.has(mi):
 			_draw_mover_sprite(_mover_sprites[mi], m, pos, t)
 			continue
@@ -2550,7 +2562,8 @@ func _draw_elements(t: float) -> void:
 		_water.draw_hub_foam(self, _stage_light(), st, t)
 	var pads: Array = stage.get("pads") if stage.get("pads") is Array else []
 	for i in pads.size():
-		_draw_pad(pads[i], _pads_pressed[i] if i < _pads_pressed.size() else null, t)
+		if not _theme.draw_pad(self, pads[i], _pads_pressed[i] if i < _pads_pressed.size() else null, t): # le leve della Fabbrica
+			_draw_pad(pads[i], _pads_pressed[i] if i < _pads_pressed.size() else null, t)
 	var hazards: Array = stage.get("hazards") if stage.get("hazards") != null else []
 	for i in hazards.size():
 		var h: Dictionary = hazards[i]
@@ -2576,6 +2589,8 @@ func _draw_hazard(h: Dictionary, on: bool, t: float, index := -1) -> void:
 	var warn := HazardFx.warn_progress(h, t) # l'avviso prima di accendersi (#433), la fisica non cambia
 	if warn >= 0.0:
 		HazardFx.draw_warning(self, h, r, warn, t, view_rect)
+	if _theme.draw_hazard(self, h, r, on, t): # le arene a tema disegnano le loro (le impacchettatrici della Fabbrica)
+		return
 	match h.kind:
 		"ciclista":
 			_draw_cyclist(h, r, t, index)
@@ -2755,7 +2770,7 @@ func _pad_fx(m: Dictionary, t: float) -> Dictionary:
 
 # Bottone sonoro (#423): una base scura e un tasto colorato che sporge. Appena premuto si abbassa e brilla;
 # finché si ricarica è grigio e una barra si riempie, carico pulsa piano col suo colore
-const PAD_COLORS := {"accordo": 0xffb74d, "piatto": 0x81c784, "cassa": 0x4fc3f7}
+const PAD_COLORS := {"accordo": 0xffb74d, "piatto": 0x81c784, "cassa": 0x4fc3f7, "leva": 0xe53935}
 
 
 func _draw_pad(p: Dictionary, pressed_at: Variant, t: float) -> void:

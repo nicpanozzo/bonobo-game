@@ -213,6 +213,10 @@ static func predictable(p: Dictionary, stage: Dictionary, t := -1.0) -> bool:
 	for j in stage.get("jets", []) if stage.get("jets") is Array else []:
 		if float(p.x) > float(j.x) - 30 and float(p.x) < float(j.x) + float(j.width) + 30 and float(p.y) > float(j.y) - float(j.height) - 40:
 			return false
+	# Sui nastri della Fabbrica il port non sa della spinta (applyBelts in physics/belts.ts): decide il server
+	for b in stage.get("belts", []) if stage.get("belts") is Array else []:
+		if absf(float(p.y) - float(b.y)) < 6.0 and float(p.x) > float(b.x) - 30 and float(p.x) < float(b.x) + float(b.width) + 30:
+			return false
 	for flag in ["hitstun", "respawning", "eliminated", "away", "shielding", "stunned", "carrier"]:
 		if p.get(flag, false):
 			return false

@@ -147,6 +147,9 @@ export function loseStock(f: Fighter, ctx: PhysicsContext): void {
   f.attackActive = false;
   f.hitstunTimer = 0;
   f.hitstun = false;
+  f.stunTimer = 0; // spedito fuori dalla Fabbrica dentro la scatola: si ricompare liberi
+  f.stunned = false;
+  f.packed = false;
   f.lastHitById = null;
   if (!SUPREME.keepOnKo) f.supreme = 0; // #101
   f.anchor = undefined; // l'ancora di OrsoBlu (#547) resta in mano
