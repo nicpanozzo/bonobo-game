@@ -653,6 +653,17 @@ export const PACK = {
   immuneMs: 1500, // ms dopo l'uscita in cui non si viene impacchettati di nuovo
 };
 
+// Il Diluvio (src/shared/floodStage.ts): quanto in fretta sale il mare e quanto si vede sopra di lui
+export const FLOOD = {
+  startMs: 6000, // ms di partita prima che il mare cominci a salire
+  pxPerS: 24, // pixel/s all'inizio
+  accelPxPerS2: 0.1, // pixel/s²: sale sempre un po' più in fretta, chi aspetta in basso viene preso
+  stepMs: 250, // ms tra uno scalino e l'altro della zona di espulsione (la vista dell'arena cambia così spesso)
+  skyPx: 1700, // pixel tra la superficie e il cielo che fa KO: chi scappa troppo in alto esce
+  respawnPx: 760, // pixel sopra la superficie del punto di ritorno
+  drownPx: 60, // pixel sotto la superficie oltre i quali un pezzo sommerso sparisce
+};
+
 // Nastri trasportatori della Fabbrica (src/shared/physics/belts.ts): velocità e verso stanno nei dati dell'arena
 export const BELT = {
   turboMult: 2, // con due leve tirate insieme il nastro va a questa velocità per la durata delle leve

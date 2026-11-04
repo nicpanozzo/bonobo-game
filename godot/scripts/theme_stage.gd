@@ -7,6 +7,7 @@ extends RefCounted
 
 const SCRIPTS := {
 	"fabbrica": preload("res://scripts/factory_stage.gd"),
+	"isole": preload("res://scripts/flood_stage.gd"), # Il Diluvio
 }
 
 var current: RefCounted = null

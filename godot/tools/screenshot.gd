@@ -10,7 +10,7 @@ var _out := "user://screenshots"
 var _game: Dictionary
 var _world: Node2D # nella partita finta: riceve uno snapshot a ogni frame
 var _hud: Control
-const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre", "lobby_regole", "musica", "tetris", "pacman", "bassanese", "bologna_piazza", "bologna_torri", "bologna_crollo", "bologna_zuffa", "oggetti", "prepartita_attesa", "prepartita_vs", "prepartita_conto", "fine_partita", "sala", "sala_conto", "sala_galleria", "sala_via", "sala_basket", "sala_scacchi", "fabbrica"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
+const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre", "lobby_regole", "musica", "tetris", "pacman", "bassanese", "bologna_piazza", "bologna_torri", "bologna_crollo", "bologna_zuffa", "oggetti", "prepartita_attesa", "prepartita_vs", "prepartita_conto", "fine_partita", "sala", "sala_conto", "sala_galleria", "sala_via", "sala_basket", "sala_scacchi", "fabbrica", "diluvio"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
 var _index := -1
 var _frame := 0
 var _failed := false
@@ -35,6 +35,8 @@ const THEME_SHOTS := {
 	# La Fabbrica: sirena del cambio di verso, le due leve appena tirate (TURBO!) e uno impacchettato sul nastro
 	"fabbrica": {"ms": 13300, "cam": Vector2(640, 380), "zoom": 1.0, "x": [180, 300, 860, 1010, 440], "y": [560, 560, 560, 560, 410],
 		"pads": [12650, 12700], "packed": 2, "hazard": 2},
+	# Il Diluvio a metà scalata: il mare che sale, i relitti, una zattera e una cima larga; uno è appena finito in acqua
+	"diluvio": {"id": "isole", "ms": 85400, "cam": Vector2(640, 6560), "zoom": 0.8, "x": [290, 590, 830, 960, 480], "y": [6480, 6360, 6480, 6720, 6600]},
 }
 var _bologna: Dictionary = {} # le fasi di Bologna (#433): {ms, cam, zoom, spots}, vuoto nelle altre partite
 # Bologna in quattro momenti: l'auto in piazza, l'ingorgo sotto le torri, la Garisenda che cade coi mattoni, la polvere
@@ -277,6 +279,9 @@ func _partita() -> void:
 	if not _theme_shot.is_empty():
 		cam.position = _theme_shot.cam
 		cam.zoom = Vector2.ONE * float(_theme_shot.zoom)
+		# Come main.gd: il mondo sa cosa inquadra la telecamera (le arene a tema disegnano solo lì)
+		var seen := Vector2(_game.world.width, _game.world.height) / cam.zoom
+		world.view_rect = Rect2(cam.position - seen / 2.0, seen)
 	root.add_child(cam)
 	cam.make_current()
 	_hud = load("res://scripts/hud.gd").new()
@@ -428,6 +433,11 @@ func _sala_scacchi() -> void:
 func _fabbrica() -> void:
 	_theme_shot = THEME_SHOTS.fabbrica.duplicate()
 	_theme_shot.id = "fabbrica"
+	_partita()
+
+
+func _diluvio() -> void:
+	_theme_shot = THEME_SHOTS.diluvio.duplicate()
 	_partita()
 
 

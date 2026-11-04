@@ -348,7 +348,7 @@ describe("arene", () => {
     const editor = await loadEditor();
     for (const base of [...Object.values(STAGES), generateStage(3), generateStage(17)]) {
       // Eccezione (#433): l'editor rifà le partenze a coppie simmetriche e non conosce quelle di squadra (né fasi e pezzi a tempo)
-      if (base.spawns.some((s) => s.team !== undefined)) continue;
+      if (base.spawns.some((s) => s.team !== undefined) || base.rise) continue; // né il mare che sale del Diluvio
       const model = { ...base, id: "nuova", name: "Nuova arena" };
       const spec = editor.toStageSpec(model);
       assert.deepEqual(editor.problems(spec, stageCheckData(), Object.keys(STAGES)), [], base.id);

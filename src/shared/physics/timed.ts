@@ -2,7 +2,7 @@
 // del tempo dell'arena, e fasi che cambiano zone di espulsione e punto di ritorno. Dipende solo da ctx.timeMs:
 // Godot rifà gli stessi calcoli (piece_on in predict/movement.gd, piece_alpha in stage_motion.gd).
 
-import type { StagePhase, StageSpec, TimeWindows } from "../stages";
+import type { StagePhase, StageRise, StageSpec, TimeWindows } from "../stages";
 
 // Se un pezzo c'è all'istante timeMs: senza finestre sempre, altrimenti solo dentro una [da, a)
 export function pieceOn(p: { on?: TimeWindows }, timeMs: number): boolean {
@@ -26,7 +26,7 @@ export function phaseAt(stage: StageSpec, timeMs: number): StagePhase | undefine
 
 // Un'arena cambia nel tempo se ha fasi o blocchi e piattaforme a tempo (trappole e getti si saltano dove si usano)
 export function stageIsTimed(stage: StageSpec): boolean {
-  return !!stage.phases?.length || stage.solids.some((s) => s.on || s.forLeader) || stage.platforms.some((p) => p.on || p.forLeader);
+  return !!stage.phases?.length || !!stage.rise || stage.solids.some((s) => s.on || s.forLeader) || stage.platforms.some((p) => p.on || p.forLeader);
 }
 
 interface ViewCache {
@@ -35,6 +35,7 @@ interface ViewCache {
   platforms: boolean[];
   phase: number;
   leader: number; // la squadra del premio con cui è fatta la vista
+  step: number; // Il Diluvio: lo scalino del mare con cui è fatta la vista
   view: StageSpec;
 }
 
@@ -53,12 +54,13 @@ export function stageAt(stage: StageSpec, timeMs: number, leader = 0): StageSpec
   const base = baseStage(stage);
   let c = caches.get(base);
   if (!c) {
-    c = { timed: stageIsTimed(base), solids: [], platforms: [], phase: -2, leader: 0, view: base };
+    c = { timed: stageIsTimed(base), solids: [], platforms: [], phase: -2, leader: 0, step: -1, view: base };
     caches.set(base, c);
   }
   if (!c.timed) return base;
   const phase = phaseIndexAt(base, timeMs);
-  let same = phase === c.phase && leader === c.leader;
+  const step = base.rise ? riseStep(base.rise, timeMs) : 0;
+  let same = phase === c.phase && leader === c.leader && step === c.step;
   same = track(base.solids, c.solids, timeMs, leader) && same;
   same = track(base.platforms, c.platforms, timeMs, leader) && same;
   if (same) return c.view;
@@ -71,7 +73,15 @@ export function stageAt(stage: StageSpec, timeMs: number, leader = 0): StageSpec
     blastZone: p?.blastZone ?? base.blastZone,
     respawn: p?.respawn ?? base.respawn,
   };
+  if (base.rise) {
+    // Il mare è salito: zone di espulsione e punto di ritorno salgono con lui
+    const up = riseOffset(base.rise, step * base.rise.stepMs);
+    const z = view.blastZone;
+    view.blastZone = { ...z, top: z.top - up, bottom: z.bottom - up };
+    view.respawn = { x: view.respawn.x, y: view.respawn.y - up };
+  }
   bases.set(view, base);
+  c.step = step;
   c.phase = phase;
   c.leader = leader;
   c.view = view;
@@ -90,4 +100,30 @@ function track(pieces: { on?: TimeWindows; forLeader?: number }[], seen: boolean
     }
   }
   return same;
+}
+
+// Lo scalino del mare (Il Diluvio): la vista cambia una volta ogni stepMs, non a ogni passo
+export function riseStep(r: NonNullable<StageSpec["rise"]>, timeMs: number): number {
+  return Math.floor(Math.max(0, timeMs) / r.stepMs);
+}
+
+// Dove sta la superficie del mare all'istante timeMs (a scalini, come la zona di espulsione)
+export function waterAt(stage: StageSpec, timeMs: number): number | null {
+  const r = baseStage(stage).rise;
+  return r ? r.waterY - riseOffset(r, riseStep(r, timeMs) * r.stepMs) : null;
+}
+
+// Di quanto è salito il mare all'istante timeMs (pixel, verso l'alto), senza scalini
+export function riseOffset(r: StageRise, timeMs: number): number {
+  const s = Math.max(0, timeMs - r.startMs) / 1000;
+  return Math.min(r.maxPx, r.pxPerS * s + 0.5 * (r.accelPxPerS2 ?? 0) * s * s);
+}
+
+// L'istante (ms) in cui il mare è salito di px; Infinity se non ci arriva mai
+export function riseTimeMs(r: StageRise, px: number): number {
+  if (px <= 0) return 0;
+  if (px > r.maxPx) return Infinity;
+  const a = r.accelPxPerS2 ?? 0;
+  const s = a > 0 ? (-r.pxPerS + Math.sqrt(r.pxPerS * r.pxPerS + 2 * a * px)) / a : px / r.pxPerS;
+  return r.startMs + s * 1000;
 }

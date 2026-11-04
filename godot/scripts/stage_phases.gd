@@ -22,9 +22,16 @@ static func active(stage: Dictionary, t: float) -> Dictionary:
 # L'arena con i campi della fase attiva al posto dei suoi: camera (campo per campo) e blastZone
 static func effective_stage(stage: Dictionary, t: float) -> Dictionary:
 	var phase := active(stage, t)
-	if phase.is_empty():
+	var rise: Variant = stage.get("rise")
+	if phase.is_empty() and not (rise is Dictionary):
 		return stage
 	var out := stage.duplicate()
+	if rise is Dictionary: # Il Diluvio: la zona di espulsione sale col mare, la telecamera non scende sotto la superficie
+		var up := rise_offset(rise, floorf(maxf(t, 0.0) / float(rise.stepMs)) * float(rise.stepMs))
+		var z: Dictionary = stage.blastZone
+		out.blastZone = {"left": z.left, "right": z.right, "top": float(z.top) - up, "bottom": float(z.bottom) - up}
+		if phase.is_empty():
+			return out
 	if phase.get("camera") is Dictionary:
 		var cam: Dictionary = stage.get("camera") if stage.get("camera") is Dictionary else {}
 		var merged := cam.duplicate()
@@ -76,3 +83,14 @@ static func prize_banner(stage: Dictionary, t: float, prize_team: int, banner_ms
 	if since < 0.0 or since >= banner_ms:
 		return {}
 	return {"text": "PONTEGGI PER LA SQUADRA %d!" % prize_team, "alpha": clampf((banner_ms - since) / 400.0, 0.0, 1.0)}
+
+
+# Il Diluvio: di quanto è salito il mare a t (ms), come riseOffset in physics/timed.ts
+static func rise_offset(r: Dictionary, t: float) -> float:
+	var s := maxf(0.0, t - float(r.startMs)) / 1000.0
+	return minf(float(r.maxPx), float(r.pxPerS) * s + 0.5 * float(r.get("accelPxPerS2", 0.0)) * s * s)
+
+
+# Dove sta la superficie del mare a t, senza scalini (per il disegno)
+static func water_y(r: Dictionary, t: float) -> float:
+	return float(r.waterY) - rise_offset(r, t)
