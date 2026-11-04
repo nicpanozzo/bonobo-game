@@ -366,7 +366,26 @@ export interface RewindSupreme {
   stunRadius: number;
   stunMs: number;
 }
-export type SupremeSpec = DropSupreme | SpinSupreme | GrabSupreme | BurstSupreme | InfectSupreme | RewindSupreme;
+// Suprema "storm" (#547), Tempesta! di Capt. OrsoBlu: dopo windupMs (afferra il timone) per durationMs l'arena rolla
+// come una nave: tutti gli altri scivolano di lato avanti e indietro, un giro ogni rollPeriodMs, fino a rollSpeed
+// pixel/s a terra (in aria la spinta è rollAirAccel pixel/s²). A ogni fine rollio un'onda colpisce chi è a terra e
+// lo spinge da quella parte. Lui resta piantato al timone, imbersagliabile. Camminando contro il rollio si resiste
+export interface StormSupreme {
+  type: "storm";
+  name: string; // come si chiama nei menu
+  windupMs: number;
+  durationMs: number;
+  endLagMs: number;
+  rollPeriodMs: number; // un giro completo: a destra e poi a sinistra
+  rollSpeed: number; // pixel/s di scivolata a terra nel punto più forte
+  rollAirAccel: number; // pixel/s² in aria
+  damage: number; // per ogni onda
+  baseKnockback: number;
+  knockbackGrowth: number;
+  angleDeg: number;
+  insults: string[]; // le nuvolette che lancia a tutti (solo disegno)
+}
+export type SupremeSpec = DropSupreme | SpinSupreme | GrabSupreme | BurstSupreme | InfectSupreme | RewindSupreme | StormSupreme;
 
 export type SpecialSpec = ProjectileSpecial | DashSpecial | ChargeSpecial | CounterSpecial;
 export type SpecialSet = Record<SpecialSlot, SpecialSpec>;
@@ -564,6 +583,23 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     id: "orsoblu",
     name: "Capt. OrsoBlu",
     crews: ["cuamm", "lolhardcore"],
+    // Tempesta! (#547, scheda di Nicola del 3/11/2026): l'arena rolla, tutti scivolano tranne lui al timone che insulta.
+    // Timone e nuvolette li disegna Godot finché non c'è la clip; numeri provvisori
+    supreme: {
+      type: "storm",
+      name: "Tempesta",
+      windupMs: 500,
+      durationMs: 4800,
+      endLagMs: 400,
+      rollPeriodMs: 1600,
+      rollSpeed: 300,
+      rollAirAccel: 900,
+      damage: 4,
+      baseKnockback: 300,
+      knockbackGrowth: 4,
+      angleDeg: 35,
+      insults: ["Mozzi d'acqua dolce!", "Sacchi di sardine!", "Branco di triglie lesse!", "Tu! Lava il ponte!"],
+    },
     // L'ancora-ragnatela (#547): il recupero spara l'ancora, appeso dondola, si arrampica e si stacca con lo slancio.
     // Da appeso la speciale laterale riavvolge la catena e sfreccia verso l'ancora (Avanti tutta!, anchor.ts); da libero è la spallata
     anchor: {},
@@ -1465,6 +1501,10 @@ function toSupremeAttack(sp: SupremeSpec | undefined): AttackSpec | null {
   if (sp.type === "rewind") {
     // niente colpo: torna indietro e stordisce (stepRewinds in physics/supreme.ts)
     return { damage: 0, baseKnockback: 0, knockbackGrowth: 0, angleDeg: 0, startupMs: sp.windupMs, activeMs: 100, cooldownMs: sp.windupMs + 100 + sp.endLagMs, range: 0, height: 0 };
+  }
+  if (sp.type === "storm") {
+    // niente colpo corpo a corpo: rollio e onde (stepStorms in physics/supreme.ts)
+    return { damage: 0, baseKnockback: 0, knockbackGrowth: 0, angleDeg: 0, startupMs: sp.windupMs, activeMs: sp.durationMs, cooldownMs: sp.windupMs + sp.durationMs + sp.endLagMs, range: 0, height: 0 };
   }
   if (sp.type === "burst") {
     // niente colpo corpo a corpo: colpiscono i proiettili (supremeMelee in physics/supreme.ts)

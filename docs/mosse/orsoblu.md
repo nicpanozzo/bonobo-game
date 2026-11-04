@@ -26,7 +26,7 @@ Un orso blu capitano di mare, **burbero e pignolo**, che tratta l'arena come la 
 | Stato | Cosa fa |
 |---|---|
 | specialDown, **Mina di bordo** | posa a terra una piccola mina navale coi baffi; esplode quando qualcuno ci passa sopra. Una alla volta |
-| supreme, **Tempesta!** | l'arena rolla come una nave nella tempesta, tutti scivolano tranne lui, piantato al timone a gambe larghe, che insulta tutti a nuvolette ("Mozzi d'acqua dolce!", "Sacchi di sardine!", "Branco di triglie lesse!"). Timone e nuvolette li disegna il gioco |
+| supreme, **Tempesta!** (nel gioco da #547, suprema "storm": rollio, onde, pioggia e timone provvisori disegnati da Godot) | l'arena rolla come una nave nella tempesta, tutti scivolano tranne lui, piantato al timone a gambe larghe, che insulta tutti a nuvolette ("Mozzi d'acqua dolce!", "Sacchi di sardine!", "Branco di triglie lesse!"). Timone e nuvolette li disegna il gioco |
 | light / lightUp / lightDown / lightAir | scappellotto col berretto / botta di cannocchiale in alto / calcio di stivale alle caviglie / giravolta col cannocchiale |
 | heavy / heavyUp / heavyDown / heavyAir | colpo di remo / barchetta sopra la testa come un ombrello / barchetta sbattuta a terra come una campana, dai due lati / mulinello col remo |
 | dashAttack | si tuffa a pancia in giù sulla barchetta e scivola come uno slittino |
