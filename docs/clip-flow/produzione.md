@@ -29,10 +29,10 @@ Creato da `tools/flow/prompt_flow.py`, che non lo riscrive più: da qui si aggio
 
 | Codice | Clip | Stato | Tentativi | Modello | Crediti | Commento con l'mp4 | Note |
 |---|---|---|---|---|---|---|---|
-| BR-01 | Fermo | da fare | | | | | |
+| BR-01 | Fermo | tagliata | 2 | | | in chat il 3/11 (prova) | tentativo 1 tenuto; taglio a mano di turn e skid in `flow_tagli.json`; stati in `bradipo/in-attesa/` |
 | BR-02 | Salti | da fare | | | | | |
 | BR-03 | Attacchi in corsa | da fare | | | | | |
-| BR-04 | Aerei A | consegnata | 1 | | | in chat il 4/11 (passo 0) | arco bianco nell'aereo su, polvere all'atterraggio; da decidere se tenerla |
+| BR-04 | Aerei A | tagliata | 1 | | | in chat il 4/11 (passo 0) | tenuta (Riccardo, 4/11): arco bianco e polvere tolti con `--pulisci`; l'aereo avanti è più su e giù che in avanti |
 | BR-05 | Aerei B | da fare | | | | | |
 | BR-06 | Recupero | da fare | | | | | |
 | BR-07 | Presa | da fare | | | | | |

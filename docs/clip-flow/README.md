@@ -103,6 +103,10 @@ Nella cartella di lavoro: `out/<stato>.png`, `foglio.png` (il foglio di controll
 - **avvisi `diviso in parti uguali`:** due stati nella stessa mossa (`turn+skid`, `tumble+prone+getup`). Il confine è a metà: controllalo sempre;
 - **`hitFrame_proposto`:** vale solo per gli attacchi. È il fotogramma in cui il disegno arriva più lontano dal centro; va confermato con `zone_dei_colpi.py`.
 
+**Due opzioni in più (4/11):**
+- `--pulisci` toglie gli archi bianchi dei fendenti e la polvere grigia ai piedi che Flow disegna nonostante l'AVOID. Non è perfetto: guarda il foglio e, se resta troppo, rigenera la clip;
+- `--passo 2` tiene un fotogramma ogni due (12 fps): strisce grandi la metà. Va bene per quasi tutti gli stati; per i colpi rapidi meglio tenerli tutti.
+
 **Limiti noti:** la polvere staccata dai piedi si toglie, quella attaccata ai piedi no (meglio rigenerare la clip). La scala viene dal fermo che il personaggio ha già nel gioco (`idle.png`): un personaggio senza `idle.png` va prima sistemato a mano.
 
 **Cosa fa dentro** (per chi lo modifica):
