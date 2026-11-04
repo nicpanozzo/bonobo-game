@@ -6,6 +6,10 @@ Proposto da Riccardo (@GiovannifRana), scritto da Claude il 3/11/2026 dopo le pr
 
 **Se sei un agente:** leggi prima [Per gli agenti](#per-gli-agenti), poi il passo che ti è stato dato.
 
+## Prima una base per tutti (Nicola, 3/11/2026)
+
+Prima delle ondate qui sotto, ogni personaggio che non ha ancora disegni da Flow riceve il **pacchetto base**: un'immagine di partenza nuova e due clip Lite (movimento; leggero, pesante, colpito) che coprono le 7 animazioni obbligatorie, 20 crediti a personaggio. Sono 10 personaggi, 2 al giorno coi 50 crediti giornalieri. Poi un giro con le animazioni che si vedono di più (corsa, speciale firma, provocazione), poi le ondate. Prompt, ordine e cosa manca: [`base.md`](base.md).
+
 ## In breve
 
 | | |
@@ -25,6 +29,7 @@ docs/clip-flow/
 ├── README.md                  questo piano
 ├── produzione.md              il foglio di produzione: una riga per clip, si aggiorna a ogni PR
 ├── immagini-partenza.md       generato: i 16 prompt delle immagini con le armi
+├── base.md                    generato: il pacchetto base dei personaggi senza Flow
 ├── prompt/<personaggio>.md    generato: tutti i prompt delle clip, pronti da incollare
 └── riferimenti/
     ├── personaggi/<id>.png    il fermo del gioco su verde in 16:9: prima e ultima immagine delle clip

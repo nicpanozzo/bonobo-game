@@ -24,7 +24,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.normpath(os.path.join(HERE, "../.."))
 sys.dont_write_bytecode = True  # niente __pycache__ in tools/flow
 sys.path.insert(0, os.path.join(ROOT, "tools/flow"))
-from prompt_flow import CHARS, FPS, clips_of  # noqa: E402
+from prompt_flow import BASE, CHARS, FPS, base_clips, clips_of  # noqa: E402
 
 SOGLIA = 0.2  # differenza di sagoma dal fotogramma 0 sotto cui il personaggio è "nella posa" (prova del 3/11)
 PAUSA_MIN = 6  # fotogrammi di fila nella posa per contare come pausa (un quarto di secondo)
@@ -51,14 +51,16 @@ def args():
 
 
 def clip_info(code):
+    """Il personaggio e la clip: dalle ondate (CHARS) o dal pacchetto base (BASE, codici XX-B1, XX-B2)."""
     pref = code.split("-")[0]
-    cid = next((k for k, c in CHARS.items() if c["code"] == pref), None)
-    if not cid:
+    found = [(k, clips_of) for k, c in CHARS.items() if c["code"] == pref] + [(k, base_clips) for k, c in BASE.items() if c["code"] == pref]
+    if not found:
         die(f"nessun personaggio col codice {pref} in tools/flow/prompt_flow.py")
-    clip = next((c for c in clips_of(cid) if c[0] == code), None)
-    if not clip:
-        die(f"nessuna clip {code} per {cid}")
-    return cid, clip
+    for cid, of in found:
+        clip = next((c for c in of(cid) if c[0] == code), None)
+        if clip:
+            return cid, clip
+    die(f"nessuna clip {code} per {found[0][0]}")
 
 
 def sprite_spec(cid, skin):
