@@ -156,12 +156,12 @@ Prompt in [`base.md`](base.md). Immagine = `riferimenti/personaggi/<id>.png`.
 | GF-IMG | Giovanni fRana: immagine di partenza | da fare | | Nano Banana | 0 | | |
 | GF-B1 | Giovanni fRana: Movimento | da fare | | Veo 3.1 Lite | | | |
 | GF-B2 | Giovanni fRana: Colpi | da fare | | Veo 3.1 Lite | | | |
-| LE-IMG | Lendmar: immagine di partenza | da fare | | Nano Banana | 0 | | |
-| LE-B1 | Lendmar: Movimento | da fare | | Veo 3.1 Lite | | | |
-| LE-B2 | Lendmar: Colpi | da fare | | Veo 3.1 Lite | | | |
+| LE-IMG | Lendmar: immagine di partenza | fatta | 1 | Nano Banana | 0 | | dal foglio di Marco in #536, col fez |
+| LE-B1 | Lendmar: Movimento | nel gioco | 1 | Veo 3.1 Lite | 10 | | progetto Flow "nov 04 - 17:56"; in alto il video taglia la testa: salto e caduta accorciati in flow_tagli.json |
+| LE-B2 | Lendmar: Colpi | generata | 1 | Veo 3.1 Lite | 10 | | |
 | OB-IMG | Capt. OrsoBlu: immagine di partenza | fatta | | Nano Banana | 0 | | |
 | OB-B1 | Capt. OrsoBlu: Movimento | da fare | | Veo 3.1 Lite | | | |
-| OB-B2 | Capt. OrsoBlu: Colpi | da fare | | Veo 3.1 Lite | | | |
+| OB-B2 | Capt. OrsoBlu: Colpi | generata | 1 | Veo 3.1 Lite | 10 | | progetto Flow "nov 03 - 23:37" |
 | MA-IMG | Marcomunista: immagine di partenza | fatta | | Nano Banana | 0 | | |
 | MA-B1 | Marcomunista: Movimento | da fare | | Veo 3.1 Lite | | | |
 | MA-B2 | Marcomunista: Colpi | da fare | | Veo 3.1 Lite | | | |

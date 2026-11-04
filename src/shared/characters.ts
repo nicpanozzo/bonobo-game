@@ -1213,7 +1213,16 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     id: "lendmar",
     name: "Lendmar",
     crews: ["lolhardcore"],
-    sprite: communitySprite("lendmar"),
+    // Movimento dalla clip Flow LE-B1 (pacchetto base, 4/11/2026; tools/sprite/dal_video.py, tagli in flow_tagli.json):
+    // fermo, camminata, salto, caduta, atterraggio. I colpi restano quelli disegnati col codice finché non arriva LE-B2.
+    sprite: {
+      ...communitySprite("lendmar"),
+      animations: fromRest({
+        ...communitySprite("lendmar").animations,
+        idle: { fps: 24, loop: true }, // 46 fotogrammi del video: respiro lento
+        jumpSquat: { fps: 24, loop: false },
+      }),
+    },
     // TODO community: la scheda non ha statistiche; magro, quindi leggero e scattante
     stats: { weight: 0.95, speed: 1.05 },
     // dalla scheda: "IRA", si arrabbia e tira merda scivolosa da tutte le parti (#358): tre raffiche della sua speciale neutra, e dove cade restano pozze
