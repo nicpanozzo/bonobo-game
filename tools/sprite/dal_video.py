@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Uso: python3 tools/sprite/dal_video.py <codice> <video.mp4> <cartella di lavoro> [--skin <nome>] [--scrivi]
+# Uso: python3 tools/sprite/dal_video.py <codice> <video.mp4> <cartella di lavoro> [--skin <nome>] [--scrivi] [--pulisci] [--passo 2]
 # Esempio: python3 tools/sprite/dal_video.py BR-01 BR-01_fermo.mp4 /tmp/br01
 #
 # Lo script di taglio unico per le clip di Google Flow (#539, passo 2; il piano è docs/clip-flow/README.md).
@@ -30,7 +30,9 @@ SOGLIA = 0.2  # differenza di sagoma dal fotogramma 0 sotto cui il personaggio �
 PAUSA_MIN = 6  # fotogrammi di fila nella posa per contare come pausa (un quarto di secondo)
 FERMO_MIN = 12  # oppure: mezzo secondo senza muoversi...
 MOTO_MAX = 0.03  # ...cioè sagoma che cambia meno del 3% da un fotogramma all'altro...
-SOGLIA_FERMO = 0.35  # ...in una posa non troppo diversa da quella di partenza
+SOGLIA_FERMO = 0.25  # ...in una posa poco diversa da quella di partenza (non 0,35: la provocazione di BR-01 tiene le corna a 0,35)
+PASSO = 1  # --passo 2: un fotogramma ogni due (12 fps), strisce grandi la metà
+PULISCI = False  # --pulisci: toglie archi bianchi e polvere (vedi pulisci)
 MOSSA_MIN = 4  # un tratto più corto non è una mossa (un tremolio)
 MARGINE = 12  # fotogrammi di tolleranza attorno ai secondi previsti, quando non si trovano le pause
 BG = np.array([23, 176, 59], np.float32)  # il verde dello sfondo
@@ -47,9 +49,12 @@ def die(msg):
 def args():
     a = sys.argv[1:]
     if len(a) < 3:
-        die("uso: dal_video.py <codice> <video.mp4> <cartella di lavoro> [--skin <nome>] [--scrivi]")
+        die("uso: dal_video.py <codice> <video.mp4> <cartella di lavoro> [--skin <nome>] [--scrivi] [--pulisci] [--passo 2]")
     code, video, work = a[:3]
     skin = a[a.index("--skin") + 1] if "--skin" in a else None
+    global PULISCI, PASSO
+    PULISCI = "--pulisci" in a
+    PASSO = int(a[a.index("--passo") + 1]) if "--passo" in a else 1
     return code.upper(), video, work, skin, "--scrivi" in a
 
 
@@ -123,6 +128,8 @@ def cut(p):
             if ys.max() > foot - 40 and float(sat[lab == k].mean()) < 0.18:
                 drop.append(k)
         a[np.isin(lab, drop)] = 0
+    if PULISCI:
+        a = pulisci(p, a)
     aa = np.maximum(a, 1e-3)[..., None]
     c = np.where(a[..., None] > 0.97, p, (p - (1 - aa) * BG) / aa)  # toglie il verde mescolato ai bordi
     c = np.clip(c, 0, 255)
@@ -131,6 +138,48 @@ def cut(p):
     room = np.where(lum < 70, 2, 8)
     c[..., 1] = np.minimum(c[..., 1], np.maximum(c[..., 0], c[..., 2]) + room)
     return np.dstack([c, a * 255]), a > 0.5
+
+
+def pulisci(p, a):
+    """--pulisci: toglie gli effetti che Flow disegna nonostante l'AVOID (BR-04, 4/11): gli archi bianchi
+    dei fendenti, col loro contorno sottile, e la polvere grigia attaccata ai piedi."""
+    lum = p.mean(-1)
+    sat = (p.max(-1) - p.min(-1)) / np.maximum(p.max(-1), 1)
+    fg = a > 0.3
+    if not fg.any():
+        return a
+    ys = np.nonzero(fg)[0]
+    # arco: bianco puro in pezzi grandi (gli occhi e le facce color crema sono più piccoli o meno bianchi)
+    white = fg & (lum > 225) & (sat < 0.04)
+    lab, n = ndi.label(white)
+    arc = np.zeros_like(fg)
+    for k in range(1, n + 1):
+        part = lab == k
+        if part.sum() > 800:
+            arc |= part
+    if arc.any():
+        near = ndi.binary_dilation(arc, iterations=8)
+        kept = fg & ~arc
+        thick = ndi.binary_opening(kept, iterations=4)  # il contorno dell'arco è una linea sottile, il corpo no
+        a = np.where(arc | (near & kept & ~thick), 0, a)
+        fg = a > 0.3
+    # polvere: grigio medio poco saturo all'altezza dei piedi (gli artigli sono più chiari e contornati)
+    feet = ys.max()
+    rows = np.arange(a.shape[0])[:, None]
+    dust = (a > 0.3) & (sat < 0.1) & (lum > 150) & (lum < 205) & (rows > feet - 60)
+    dust = ndi.binary_opening(dust, iterations=1)
+    a = np.where(dust, 0, a)
+    if dust.any():  # il contorno della polvere: le linee sottili rimaste vicino alla polvere tolta
+        fg = a > 0.3
+        near = ndi.binary_dilation(dust, iterations=6) & (rows > feet - 60)
+        a = np.where(near & fg & ~ndi.binary_opening(fg, iterations=3), 0, a)
+    # quello che resta staccato dal corpo (pezzi di contorno, sbuffi) se ne va
+    lab, n = ndi.label(a > 0.3)
+    if n > 1:
+        sizes = ndi.sum(np.ones_like(a), lab, range(1, n + 1))
+        big = int(np.argmax(sizes)) + 1
+        a = np.where((lab > 0) & (lab != big) & np.isin(lab, [i + 1 for i, s in enumerate(sizes) if s < 1500]), 0, a)
+    return a
 
 
 def small(mask):
@@ -302,7 +351,7 @@ def main():
     known, report, rows = known_states(), {"codice": code, "clip": title, "personaggio": cid, "scala": round(scale, 4), "avvisi": notes, "stati": {}}, []
     c0 = np.array([xs.mean() * 2, ys.mean() * 2])
     for s, (a, b) in plan.items():
-        idx = list(range(max(0, a - 1), min(len(masks), b + 2)))
+        idx = list(range(max(0, a - 1), min(len(masks), b + 2)))[::PASSO]
         mode = "feet" if IN_ARIA.match(s) else "world"
         strip, edge = [], False
         reach = []
@@ -315,7 +364,7 @@ def main():
         save(np.concatenate(strip, 1), os.path.join(work, "out", f"{s}.png"))
         hit = int(np.argmax(reach))
         dest = "nel gioco" if s in known else "in-attesa"
-        report["stati"][s] = {"fotogrammi_video": [idx[0], idx[-1]], "fotogrammi": len(strip), "fps": FPS, "modo": mode, "hitFrame_proposto": hit, "va_in": dest}
+        report["stati"][s] = {"fotogrammi_video": [idx[0], idx[-1]], "fotogrammi": len(strip), "fps": FPS // PASSO, "modo": mode, "hitFrame_proposto": hit, "va_in": dest}
         if edge:
             notes.append(f"{s}: il disegno tocca il bordo del fotogramma, va allargato")
         rows.append((s, strip))
