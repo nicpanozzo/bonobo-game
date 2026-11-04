@@ -9988,6 +9988,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 7,
+            "startFrame": 5,
             "frames": 27,
             "src": "light"
           },
@@ -10038,6 +10039,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 7,
+            "startFrame": 5,
             "frames": 27,
             "src": "light"
           },
@@ -10045,6 +10047,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 7,
+            "startFrame": 5,
             "frames": 27,
             "src": "light"
           },
@@ -10052,6 +10055,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 7,
+            "startFrame": 5,
             "frames": 27,
             "src": "light"
           },
@@ -10099,6 +10103,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 7,
+            "startFrame": 5,
             "frames": 27,
             "src": "light"
           },
@@ -10106,6 +10111,7 @@
             "fps": 24,
             "loop": false,
             "hitFrame": 7,
+            "startFrame": 5,
             "frames": 27,
             "src": "light"
           },
@@ -14340,16 +14346,16 @@
       },
       "attacks": {
         "light": {
-          "range": 37,
+          "range": 54,
           "height": 30,
-          "boxX": -4,
-          "boxY": -76
+          "boxX": 0,
+          "boxY": -81
         },
         "heavy": {
-          "range": 49,
+          "range": 54,
           "height": 44,
-          "boxX": -16,
-          "boxY": -51
+          "boxX": 0,
+          "boxY": -88
         },
         "lightUp": {
           "range": 54,
@@ -14388,10 +14394,10 @@
           "boxY": -87
         },
         "dashAttack": {
-          "range": 41,
+          "range": 54,
           "height": 44,
-          "boxX": -8,
-          "boxY": -51
+          "boxX": 0,
+          "boxY": -88
         }
       },
       "portrait": "assets/characters/lendmar/portrait.png",

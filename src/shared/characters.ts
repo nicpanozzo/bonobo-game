@@ -639,7 +639,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         walk: { fps: 18, loop: true }, // la marcia a passi rigidi
         jump: { fps: 18, loop: false },
         fall: { fps: 8, loop: true },
-        light: { fps: 24, loop: false, hitFrame: 7 },
+        light: { fps: 24, loop: false, hitFrame: 7, startFrame: 5 }, // i primi fotogrammi sono ancora la guardia
         heavy: { fps: 24, loop: false, hitFrame: 17 },
         hit: { fps: 24, loop: false },
         jumpSquat: { fps: 24, loop: false },
@@ -1247,15 +1247,15 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     hurtbox: { width: 30, height: 106 },
     // le zone dei colpi dove arriva il disegno (#243, tools/sprite/zone_dei_colpi.py)
     attacks: {
-      light: { range: 37, height: 30, boxX: -4, boxY: -76 },
-      heavy: { range: 49, height: 44, boxX: -16, boxY: -51 },
+      light: { range: 54, height: 30, boxX: 0, boxY: -81 },
+      heavy: { range: 54, height: 44, boxX: 0, boxY: -88 },
       lightUp: { range: 54, height: 48, boxX: -18, boxY: -124 },
       lightDown: { range: 64, height: 24, boxX: 0, boxY: -34 },
       lightAir: { range: 54, height: 50, boxX: 0, boxY: -89 },
       heavyUp: { range: 80, height: 64, boxX: -34, boxY: -128 },
       heavyDown: { range: 68, height: 30, boxX: 0, boxY: -36 },
       heavyAir: { range: 52, height: 60, boxX: 0, boxY: -87 },
-      dashAttack: { range: 41, height: 44, boxX: -8, boxY: -51 },
+      dashAttack: { range: 54, height: 44, boxX: 0, boxY: -88 },
     },
   },
 
