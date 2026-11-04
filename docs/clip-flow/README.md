@@ -10,6 +10,16 @@ Proposto da Riccardo (@GiovannifRana), scritto da Claude il 3/11/2026 dopo le pr
 
 Prima delle ondate qui sotto, ogni personaggio che non ha ancora disegni da Flow riceve il **pacchetto base**: un'immagine di partenza nuova e due clip Lite (movimento; leggero, pesante, colpito) che coprono le 7 animazioni obbligatorie, 20 crediti a personaggio. Sono 10 personaggi, 2 al giorno coi 50 crediti giornalieri. Poi un giro con le animazioni che si vedono di più (corsa, speciale firma, provocazione), poi le ondate. Prompt, ordine e cosa manca: [`base.md`](base.md).
 
+## L'obiettivo: pezzi riusabili per combo e oggetti (Nicola, 4/11/2026)
+
+Ogni clip si fa pensando a dove deve arrivare il gioco: **combo personalizzate** e **oggetti generici divisi per categoria**. Vale per chiunque lavori sulle animazioni, umano o agente. Il ragionamento completo è nel documento [Animazioni base per combo e oggetti](https://claude.ai/artifact/3AzkHTLNL2HVnzgxSTFD23).
+
+- **Ogni colpo parte e finisce nella stessa guardia** dell'immagine di partenza, con tre fasi leggibili (carica, colpo, ritorno) e mai due colpi nella stessa finestra di tempo: così i colpi si incatenano in qualsiasi ordine.
+- **Il personaggio resta tutto dentro l'inquadratura**, con margine su ogni lato anche in cima al salto e a braccio teso: una testa tagliata non si recupera.
+- **Gli oggetti si dividono per presa, non per oggetto:** lancio, impugnatura, sparo, consumo, peso, cavalcatura. Un oggetto nuovo sceglie la sua categoria e non costa clip nuove.
+- **Pose con oggetto = segnaposto magenta (#FF00FF)** in mano (o sgabello magenta per la cavalcatura): lo script ne ricava punto e angolo della mano, il gioco ci disegna l'oggetto vero. Da provare prima su una clip sola.
+- **Prima si rifinisce quel che c'è** (OrsoBlu, Lendmar, Marcomunista), poi si allarga agli altri.
+
 ## In breve
 
 | | |
