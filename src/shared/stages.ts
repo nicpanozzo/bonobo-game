@@ -6,6 +6,7 @@ import { generateCourse, seedFromCourseId } from "./courseGenerator";
 import { generateStage, seedFromStageId } from "./stageGenerator";
 import { SALA_PROVE } from "./music/sala-prove";
 import { songMovers } from "./musicStage";
+import { floodStage } from "./floodStage";
 
 export interface Rect {
   x: number; // bordo sinistro, pixel
@@ -431,6 +432,7 @@ export interface StageSpec {
   jets?: Jet[]; // getti d'acqua a tempo che spingono in alto (#253)
   belts?: Belt[]; // nastri trasportatori (La Fabbrica)
   phases?: StagePhase[]; // l'arena cambia a fasi durante la partita (#433), in ordine di startMs
+  rise?: StageRise; // Il Diluvio: il mare sale e si porta dietro zone di espulsione, punto di ritorno e telecamera
   prizeAtMs?: number; // premio (#433): a questo tempo dell'arena si congela la squadra in testa ai punti torre; i pezzi con forLeader ci sono solo per lei
   prizeShowMs?: number; // tempo dell'arena a cui il client annuncia il premio (senza, prizeAtMs)
   itemSpots?: ItemSpot[]; // zone dove gli oggetti cadono più spesso (#253)
@@ -442,6 +444,18 @@ export interface StageSpec {
   // Nascosta (#408): resta nella repo e il server la avvia ancora per id, ma la lobby non la mostra e non può essere
   // l'arena predefinita. Per rimetterla in gioco basta togliere il campo.
   hidden?: boolean;
+}
+
+// Il Diluvio: da startMs il mare sale di pxPerS (più accelPxPerS2 col passare del tempo) fino a maxPx, e con lui salgono
+// zone di espulsione e punto di ritorno (stageAt in physics/timed.ts, a scalini di stepMs). Il mare è il fondo della zona
+// di espulsione: toccarlo è KO. waterY è dove sta la superficie all'inizio
+export interface StageRise {
+  startMs: number;
+  pxPerS: number;
+  accelPxPerS2?: number;
+  maxPx: number;
+  stepMs: number;
+  waterY: number;
 }
 
 // Il brano di un'arena musicale (#423): public/assets/music/<id>.ogg, suonato in giro allineato al tempo dell'arena
@@ -569,38 +583,9 @@ export const STAGES: Record<string, StageSpec> = {
     },
   },
 
-  // Due isole con un vuoto in mezzo e un ponte sottile sopra: chi cade nel buco perde una vita.
-  // TODO community: un nome e un posto nostro per quest'arena (#14)
-  isole: {
-    id: "isole",
-    name: "Le Isole",
-    solids: [
-      { x: 200, y: 560, width: 340, height: 90 },
-      { x: 740, y: 560, width: 340, height: 90 },
-    ],
-    platforms: [
-      { x: 540, width: 200, y: 450 },
-      { x: 260, width: 180, y: 410 },
-      { x: 840, width: 180, y: 410 },
-      { x: 560, width: 160, y: 300 },
-    ],
-    blastZone: { left: -250, right: WORLD.width + 250, top: -350, bottom: WORLD.height + 200 },
-    spawns: [
-      { x: 370, y: 560 },
-      { x: 910, y: 560 },
-      { x: 270, y: 560 },
-      { x: 1010, y: 560 },
-      { x: 470, y: 560 },
-      { x: 810, y: 560 },
-      { x: 320, y: 560 },
-      { x: 960, y: 560 },
-    ],
-    respawn: { x: WORLD.width / 2, y: 170 },
-    colors: { sky: 0x123047, solid: 0x2f5d3a, solidEdge: 0x7cbf6a, platform: 0xe8d9a8 },
-
-    // Più lenta e morbida, da isola. TODO community: un pezzo del canale da rifare?
-    music: { bpm: 108, chords: ["C", "Am", "F", "G"], lead: "triangle" },
-  },
+  // Il Diluvio (ex Le Isole): il mare sale per tutta la partita, la telecamera con lui; si combatte arrampicandosi sui
+  // relitti fino all'Arca. Toccare il mare è KO. Pezzi generati in src/shared/floodStage.ts
+  isole: floodStage(),
 
   // La Fabbrica di banane: un capannone a cartone animato dove tutto scorre. I due pavimenti sono nastri trasportatori che
   // all'inizio portano verso la fossa col forno in mezzo; ogni 14 s, dopo la sirena, girano verso i bordi, poi di nuovo

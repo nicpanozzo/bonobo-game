@@ -990,7 +990,7 @@ func _frame_fighters(delta: float) -> void:
 # L'arena con le zone di espulsione e la telecamera della fase attiva (#433). Zoom e pavimento
 # non saltano al cambio di fase: si avvicinano ai nuovi valori in CAMERA.phaseBlendMs.
 func _phased_stage(delta: float) -> Dictionary:
-	if not (world.stage.get("phases") is Array):
+	if not (world.stage.get("phases") is Array) and not (world.stage.get("rise") is Dictionary): # il Diluvio sale senza fasi
 		return world.stage
 	var stage := StagePhases.effective_stage(world.stage, world.buffer.sample_stage_ms(Time.get_ticks_msec()))
 	var own: Dictionary = stage.get("camera") if stage.get("camera") is Dictionary else {}

@@ -26,7 +26,7 @@ const SKIN_MATERIAL := {
 # Le arene a tinta unita: [materiale dei solidi, materiale delle piattaforme]
 const STAGE_MATERIAL := {
 	"palco": ["wood", "wood"], "palestra": ["wood", "wood"], "musica": ["wood", "wood"],
-	"isole": ["grass", "dust"], "fabbrica": ["metal", "metal"],
+	"isole": ["grass", "wood"], "fabbrica": ["metal", "metal"],
 	"padova": ["stone", "stone"], "padova-palazzo": ["stone", "stone"], "bologna": ["stone", "wood"],
 }
 

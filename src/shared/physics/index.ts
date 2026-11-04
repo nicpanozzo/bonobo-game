@@ -194,7 +194,7 @@ export function stepWorld(fighters: Fighter[], dtMs: number, ctx: PhysicsContext
   // Pezzi a tempo e fasi (#433): da qui in poi ctx.stage è l'arena com'è adesso (la stessa, se non cambia)
   const view = stageAt(ctx.stage, ctx.timeMs, freezePrize(ctx));
   if (view !== ctx.stage) {
-    const shrinks = view.blastZone.bottom < ctx.stage.blastZone.bottom;
+    const shrinks = view.blastZone.bottom < ctx.stage.blastZone.bottom && !view.rise; // il Diluvio sale da solo: chi è sotto è in mare
     remapLedges(fighters, ctx.stage, view);
     ctx.stage = view;
     if (shrinks) liftOutOfZone(fighters, ctx); // la zuffa di Bologna stringe il fondo: chi è già sotto non è un KO

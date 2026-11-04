@@ -1050,6 +1050,11 @@ func _build_sounds() -> void:
 		s.noise(0, "highpass", 4000, 1500, 0.18, 0.35)
 		s.noise(0.12, "lowpass", 800, 100, 0.3, 0.8)
 		s.tone(0.12, "sine", 140, 50, 0.3, 0.6))
+	# Il tuono del Diluvio: uno schiocco e poi il brontolio che rotola lontano
+	_sounds.thunder = make.call(2.2, func(s):
+		s.noise(0, "highpass", 3000, 800, 0.12, 0.35)
+		s.noise(0.05, "lowpass", 600, 60, 2.0, 0.8)
+		s.tone(0.05, "sine", 70, 35, 1.6, 0.35))
 	# Rotolata dal bordo: un fruscio che scende
 	_sounds.roll = make.call(0.3, func(s): s.noise(0, "bandpass", 900, 350, 0.26, 0.4))
 	# Scudo colpito (#109): un "tonk" metallico e corto
