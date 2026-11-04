@@ -12,7 +12,7 @@ import { ANCHOR, ATTACKS, AUDIO, BONG, CAMERA, FUNGHI, FUNGO, HALL, COLORS, EFFE
 import { RECONNECT, RECONNECT_HOLD_MS } from "../src/shared/constants";
 import { COLORS_COLORBLIND, MAX_TEAMS, TEAM_COLORS_COLORBLIND } from "../src/shared/constants";
 import { BASSANESE, PACMAN, TETRIS, TRAINING } from "../src/shared/constants";
-import { STATION } from "../src/shared/constants";
+import { GROOVE, STATION } from "../src/shared/constants";
 import { DASH, DODGE, GAME_SPEED, RECOVERY, TICK_RATE } from "../src/shared/constants";
 import { predictionTraces } from "../src/shared/predictionTraces";
 import { HITSTOP, SMASH_CHARGE, SUPREME } from "../src/shared/constants";
@@ -257,6 +257,7 @@ const data = {
   hall: HALL, // sala d'attesa: misure di campo, canestro, scacchiera e tempi (src/shared/hall.ts)
   voice: VOICE, // chat vocale
   audio: AUDIO,
+  groove: GROOVE, // il battito del Groove di Bradipo (#557)
   audioFiles,
   input: INPUT,
   rumble: RUMBLE,

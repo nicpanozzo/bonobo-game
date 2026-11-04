@@ -2453,6 +2453,18 @@ func _draw_supreme_ready(p: Dictionary, now: float, height: float) -> void:
 		draw_circle(Vector2(p.x, p.y) + f.pos, f.r, Color(SUPREME_GOLD.lightened(0.3), 0.8 * float(f.a)))
 
 
+# Groove di Bradipo Giallo (#557): un anello giallo ai piedi pulsa sui battiti della musica dell'arena, gli stessi
+# che usa il server (stageMs e bpm): colpire mentre pulsa fa più danno
+func _draw_groove(p: Dictionary, height: float) -> void:
+	var bpm := float(stage.get("music", {}).get("bpm", game.audio.musicBpm))
+	var beat := 60000.0 / bpm
+	var phase := fmod(buffer.sample_stage_ms(Time.get_ticks_msec()), beat)
+	var k := clampf(1.0 - minf(phase, beat - phase) / (float(game.groove.windowMs) * 2.0), 0.0, 1.0)
+	if k <= 0.0:
+		return
+	draw_arc(Vector2(p.x, p.y - 4), height * (0.32 + 0.08 * k), 0, TAU, 32, Color(1.0, 0.85, 0.29, 0.75 * k), 3.0)
+
+
 # Il fumo: sbuffi grigio-verdi che salgono lenti dalla testa e si allargano, sempre gli stessi per lo stesso istante
 # level (#302): quanto si è fatti col bong; il fumo diventa più fitto, grande e mosso. 0 = il fiore, fumo leggero
 func _draw_power_smoke(p: Dictionary, now: float, height: float, level: float = 0.0) -> void:
@@ -3037,6 +3049,8 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 	_supreme_ready[p.id] = ready
 	if ready:
 		_draw_supreme_ready(p, now, fh)
+	if character.get("groove", false):
+		_draw_groove(p, fh) # il battito del Groove di Bradipo (#557)
 	var charge := float(p.get("charge", 0.0))
 	if charge > 0.0:
 		_draw_charge(Vector2(p.x, p.y - fh / 2), charge, now)

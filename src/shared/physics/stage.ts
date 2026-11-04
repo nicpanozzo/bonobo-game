@@ -123,6 +123,7 @@ function land(f: Fighter, y: number) {
   f.recoveryUsed = false;
   f.helpless = false;
   f.airDodgeUsed = false;
+  f.airPops = 0; // il Piano quinquennale di Marcomunista riparte (#557)
   f.ledgeGrabs = 0;
   f.anchorThrows = 0; // l'ancora di OrsoBlu (#547)
 }

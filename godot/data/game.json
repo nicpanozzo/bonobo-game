@@ -536,6 +536,21 @@
     "announcerMaxWaitMs": 1500,
     "announcerTimeWarningMs": 10000
   },
+  "groove": {
+    "windowMs": 100,
+    "damageMult": 1.3,
+    "kinds": [
+      "light",
+      "heavy",
+      "lightUp",
+      "lightDown",
+      "lightAir",
+      "heavyUp",
+      "heavyDown",
+      "heavyAir",
+      "dashAttack"
+    ]
+  },
   "audioFiles": {
     "sfx": {
       "crowdCheer": [
@@ -9965,15 +9980,15 @@
         "scale": 0.5,
         "animations": {
           "idle": {
-            "fps": 8,
+            "fps": 12,
             "loop": true,
-            "frames": 13,
+            "frames": 20,
             "src": "idle"
           },
           "walk": {
-            "fps": 18,
+            "fps": 24,
             "loop": true,
-            "frames": 28,
+            "frames": 50,
             "src": "walk"
           },
           "jump": {
@@ -10133,9 +10148,9 @@
             "src": "heavy"
           },
           "dash": {
-            "fps": 18,
+            "fps": 24,
             "loop": true,
-            "frames": 28,
+            "frames": 50,
             "src": "walk"
           },
           "supreme": {
@@ -10176,7 +10191,7 @@
           "jumpSquat": {
             "fps": 24,
             "loop": false,
-            "frames": 12,
+            "frames": 13,
             "src": "jumpSquat"
           },
           "anchorHang": {
@@ -10693,6 +10708,11 @@
       "crews": [
         "cuamm"
       ],
+      "combo": {
+        "name": "Capra e cavaliere",
+        "text": "Incornata: se prende, il Piccione parte da solo e insegue chi vola via"
+      },
+      "pigeonChase": true,
       "stats": {
         "speed": 0.95,
         "airSpeed": 0.9,
@@ -11178,6 +11198,11 @@
       "crews": [
         "lolhardcore"
       ],
+      "combo": {
+        "name": "Scivolone",
+        "text": "Sputo, poi presa: chi è bagnato si afferra da più lontano e il lancio lo fa scivolare più in là"
+      },
+      "spitWet": true,
       "specials": {
         "neutral": {
           "type": "projectile",
@@ -12483,6 +12508,11 @@
       "crews": [
         "lolhardcore"
       ],
+      "combo": {
+        "name": "Groove",
+        "text": "colpisci a tempo con la musica, quando l'anello giallo pulsa sotto di te: il colpo fa più danno"
+      },
+      "groove": true,
       "sprite": {
         "dir": "assets/characters/bradipo",
         "frameWidth": 320,
@@ -12492,7 +12522,7 @@
         "drawnSmear": true,
         "animations": {
           "idle": {
-            "fps": 8,
+            "fps": 12,
             "loop": true,
             "frames": 15,
             "src": "idle"
@@ -13406,6 +13436,11 @@
         "cuamm",
         "cologna"
       ],
+      "combo": {
+        "name": "Piano quinquennale",
+        "text": "lancia in alto e salta: ogni colpo in aria che prende ti tiene su, fino a tre di fila"
+      },
+      "airPop": true,
       "sprite": {
         "dir": "assets/characters/marcomunista",
         "frameWidth": 400,
@@ -13414,7 +13449,7 @@
         "scale": 0.5,
         "animations": {
           "idle": {
-            "fps": 8,
+            "fps": 12,
             "loop": true,
             "frames": 8,
             "src": "idle"

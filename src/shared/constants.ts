@@ -160,6 +160,30 @@ export const ARREMBAGGIO = {
   kinds: ["light", "heavy", "dashAttack", "specialSide"] as AttackKind[],
 };
 
+// Piano quinquennale, la combo di Marcomunista (#557): leggero e a gravità bassa, ogni suo colpo in aria che prende
+// lo rimette un po' in su, così resta in aria e allunga la catena (lo stallo in aria dei platform fighter)
+export const PIANO_QUINQUENNALE = {
+  popVy: -260, // pixel/s: chi colpisce in aria sale almeno così (negativo = in su)
+  maxPops: 3, // colpi che lo rialzano prima di toccare terra: poi cade come sempre
+  kinds: ["lightAir", "heavyAir"] as AttackKind[],
+};
+
+// Groove, la combo di Bradipo Giallo (#557): il bassista picchia a tempo. Un suo colpo che prende vicino a un battito
+// della musica dell'arena (StageSpec.music.bpm, sennò AUDIO.musicBpm) fa più danno; Godot fa pulsare il battito sotto di lui
+export const GROOVE = {
+  windowMs: 100, // ms prima o dopo il battito in cui il colpo è a tempo
+  damageMult: 1.3, // danno del colpo a tempo
+  kinds: ["light", "heavy", "lightUp", "lightDown", "lightAir", "heavyUp", "heavyDown", "heavyAir", "dashAttack"] as AttackKind[],
+};
+
+// Scivolone, la combo di Egiainuso (#557): chi prende il suo Sputo resta bagnato per un po'. La presa di Egiainuso
+// arriva più lontano su chi è bagnato, e il lancio che segue lo fa scivolare via più lontano
+export const SCIVOLONE = {
+  wetMs: 2500, // ms in cui si resta bagnati dallo sputo
+  grabReachPx: 40, // pixel in più della presa di Egiainuso verso chi è bagnato
+  throwMult: 1.25, // knockback del lancio di chi è bagnato
+};
+
 // Rialzata al volo (tech di Smash e Brawlhalla): lanciati da un colpo, premere scudo poco prima di toccare terra
 // fa rialzare subito, fermi o rotolando nella direzione tenuta, invece di restare storditi a terra
 export const TECH = {

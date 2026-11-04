@@ -425,6 +425,10 @@ export interface CharacterSpec {
   stats?: Partial<CharacterStats>; // quelle che mancano valgono 1
   // La combo su misura del personaggio (#557): nome e come si fa, per la lista mosse in pausa. La regola è in physics/
   combo?: { name: string; text: string };
+  airPop?: boolean; // i suoi colpi in aria a segno lo rialzano (PIANO_QUINQUENNALE, Marcomunista)
+  groove?: boolean; // i suoi colpi a tempo con la musica fanno più danno (GROOVE, Bradipo Giallo)
+  pigeonChase?: boolean; // l'Incornata che prende fa partire il Piccione verso chi vola via (Capra e cavaliere, Elvedeo)
+  spitWet?: boolean; // il suo Sputo bagna chi prende: presa più lunga e lancio più forte (SCIVOLONE, Egiainuso)
   specials?: Partial<SpecialSet>; // quelle che mancano sono DEFAULT_SPECIALS (E10)
   supreme?: SupremeSpec; // senza, la suprema di base (ATTACKS.supreme, #101)
   companion?: CompanionSpec; // un compagno che lo segue da solo (#369)
@@ -600,8 +604,8 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       footY: 280,
       scale: 0.5,
       animations: {
-        idle: { fps: 8, loop: true },
-        walk: { fps: 18, loop: true }, // la marcia a passi rigidi
+        idle: { fps: 12, loop: true }, // OB-B1: il respiro
+        walk: { fps: 24, loop: true }, // OB-B1: due passi al secondo, come nel video
         jump: { fps: 18, loop: false },
         fall: { fps: 8, loop: true },
         light: { fps: 24, loop: false, hitFrame: 7, startFrame: 5 }, // i primi fotogrammi sono ancora la guardia
@@ -740,6 +744,8 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     id: "elvedeo",
     name: "Elvedeo",
     crews: ["cuamm"],
+    combo: { name: "Capra e cavaliere", text: "Incornata: se prende, il Piccione parte da solo e insegue chi vola via" },
+    pigeonChase: true,
     // con la capra è più grosso e pesante, ma la capra corre e salta bene
     stats: { weight: 1.15, speed: 0.95, airSpeed: 0.9, jump: 0.95 },
     // il piccione che parte dalla spalla, l'incornata della capra, il calcione caricato
@@ -827,6 +833,8 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     id: "egiainuso",
     name: "Egiainuso",
     crews: ["lolhardcore"],
+    combo: { name: "Scivolone", text: "Sputo, poi presa: chi è bagnato si afferra da più lontano e il lancio lo fa scivolare più in là" },
+    spitWet: true,
     // TODO community: statistiche e mosse speciali di base, da decidere con @Marcomunista
     specials: {
       // al posto del tiro di base sputa (Nicola, 25 ottobre 2026): i numeri del Tiro, più piccolo e del colore della saliva
@@ -984,6 +992,8 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     name: "Bradipo Giallo",
     quotes: { supreme: "DEMACIAA!" }, // il fumetto della suprema, con la sua voce (voice/supreme.ogg)
     crews: ["lolhardcore"],
+    combo: { name: "Groove", text: "colpisci a tempo con la musica, quando l'anello giallo pulsa sotto di te: il colpo fa più danno" },
+    groove: true,
     // Dal video di tutte le mosse fatto da Nicola con Google Flow (tools/sprite/bradipo_dal_video.py): la Bassline col
     // basso e DEMACIAAA che gira in piedi come la E di Garen, brandendo il basso. Era la skin "Bassista": dal #506 è
     // l'aspetto di base, perché le zone dei colpi qui sotto sono misurate su questi disegni
@@ -996,7 +1006,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       scale: 0.5, // alto come le pose del foglio
       drawnSmear: true, // gli archi rosa dei colpi sono nei fotogrammi
       animations: {
-        idle: { fps: 8, loop: true },
+        idle: { fps: 12, loop: true }, // OB-B1: il respiro
         walk: { fps: 14, loop: true },
         dash: { fps: 14, loop: true },
         jump: { fps: 18, loop: false },
@@ -1110,6 +1120,8 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     name: "Marcomunista",
     quotes: { taunt: "Viva il comunismo!" }, // il suo tormentone; la scheda e la #352 non dicono altro
     crews: ["cuamm", "cologna"],
+    combo: { name: "Piano quinquennale", text: "lancia in alto e salta: ogni colpo in aria che prende ti tiene su, fino a tre di fila" },
+    airPop: true,
     // Animato dalla GIF di arti marziali di Nicola (tools/sprite/marcomunista_dalla_gif.py), con l'energia verde come scia;
     // corsa e scatto restano le pose del suo foglio (#352), allargate al fotogramma nuovo
     sprite: {
@@ -1119,7 +1131,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       footY: 222,
       scale: 0.5, // alto come le pose del foglio
       animations: {
-        idle: { fps: 8, loop: true }, // respira, le braccia si aprono appena
+        idle: { fps: 12, loop: true }, // OB-B1: il respiro // respira, le braccia si aprono appena
         walk: { fps: 6, loop: true }, // passo e corsa del foglio, alternati
         dash: { fps: 1, loop: false },
         jump: { fps: 24, loop: false },
