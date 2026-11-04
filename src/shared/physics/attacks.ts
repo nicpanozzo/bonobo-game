@@ -9,6 +9,7 @@ import { clearStun, hitShield } from "./shield";
 import { counterHit, isCountering, tryStartSpecial } from "./specials";
 import { chasePigeon } from "./projectiles";
 import { chargeFromHit, hitOrigin, infect, snatch, spinRehit, supremeMelee, tryStartSupreme } from "./supreme";
+import { genreAt, genreKnockback } from "./genre";
 
 export function tryStartAttack(f: Fighter, ctx: PhysicsContext): void {
   if (f.hitstun || f.attack || f.helpless || f.dodgeTimer > 0) return;
@@ -248,7 +249,7 @@ export function launch(target: Fighter, attacker: Fighter, kind: AttackKind, x: 
   const boarded = target.boardedMs > 0 && target.boardedBy === attacker.id && ARREMBAGGIO.kinds.includes(kind);
   const wet = target.wetMs > 0 && target.wetBy === attacker.id && kind.startsWith("throw"); // lo Scivolone di Egiainuso
   target.boardedMs = 0;
-  const knockback = ((spec.baseKnockback + spec.knockbackGrowth * target.percent) / characterStats(target.characterId).weight) * (boarded ? ARREMBAGGIO.knockbackMult : 1) * (wet ? SCIVOLONE.throwMult : 1); // E11
+  const knockback = ((spec.baseKnockback + spec.knockbackGrowth * target.percent) / characterStats(target.characterId).weight) * (boarded ? ARREMBAGGIO.knockbackMult : 1) * (wet ? SCIVOLONE.throwMult : 1) * genreKnockback(genreAt(ctx.stage, ctx.timeMs ?? 0, ctx.padsMs)); // E11; col metal del Palco si vola più lontano
   const angle = ((kind === "supreme" ? snatch(attacker, target, spec.angleDeg) : spec.angleDeg) * Math.PI) / 180; // snaack di Lampione (#358) tira e schiaccia
   target.vx = dir * Math.cos(angle) * knockback;
   target.vy = -Math.sin(angle) * knockback;

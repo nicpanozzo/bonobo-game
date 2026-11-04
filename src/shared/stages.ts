@@ -1,7 +1,7 @@
 // Le arene. Aggiungerne una = un blocco qui (e, se ha uno sfondo, una cartella in public/assets/stages/<id>/).
 // La fisica legge solo questi dati, il client li disegna: un'arena non ha codice suo.
 
-import { BOLOGNA, WORLD } from "./constants";
+import { AUDIO, BOLOGNA, WORLD } from "./constants";
 import { generateCourse, seedFromCourseId } from "./courseGenerator";
 import { generateStage, seedFromStageId } from "./stageGenerator";
 import { SALA_PROVE } from "./music/sala-prove";
@@ -15,6 +15,8 @@ export interface Rect {
   height: number;
   on?: TimeWindows; // pezzo a tempo (#433): c'è solo dentro queste finestre del tempo dell'arena; senza, sempre
   forLeader?: number; // premio (#433): c'è solo se questa squadra era in testa ai punti torre a prizeAtMs (in pareggio nessuno)
+  genre?: Genre; // Il Palco: c'è solo mentre suona questo genere
+  beat?: number; // Il Palco, con genre "techno": c'è solo nei giri di GENRE.technoBlinkBeats battiti di questa parità (0 o 1)
 }
 
 // Finestre [da ms, a ms) del tempo dell'arena (#433): fuori il pezzo non c'è, niente ci sta sopra, fa male o spinge
@@ -28,6 +30,21 @@ export interface ThinPlatform {
   y2?: number; // piattaforma inclinata (#246): altezza dell'estremità destra (y è la sinistra), come una scala
   on?: TimeWindows; // pezzo a tempo (#433), come quello dei blocchi pieni
   forLeader?: number; // premio (#433), come quello dei blocchi pieni
+  genre?: Genre; // Il Palco, come quello dei blocchi pieni
+  beat?: number;
+}
+
+// Il Palco: i generi musicali che cambiano le regole (physics/genre.ts). metal: si colpisce più forte e partono le
+// fiamme; reggae: gravità da luna; techno: le piattaforme della techno si accendono e spengono a tempo
+export type Genre = "metal" | "reggae" | "techno";
+
+// Senza dischi il DJ cambia genere da solo ogni everyMs da startMs, in quest'ordine; un disco (pad con effect.genre) lo impone
+// per effect.durationMs. beatMs: la durata di un battito, per il lampeggio della techno
+export interface StageGenres {
+  startMs: number; // prima, la prova del suono: nessun genere finché qualcuno non mette un disco
+  order: Genre[];
+  everyMs: number;
+  beatMs: number;
 }
 
 // Piattaforma sottile che si muove (ascensore, montacarichi). La posizione dipende solo dal
@@ -101,6 +118,7 @@ export interface PadEffect {
   on?: boolean; // le accende tutte, anche fuori dalle loro note
   dy?: number; // le sposta in verticale di tanto (negativo = su), entrando e uscendo dolcemente
   flip?: boolean; // leva della Fabbrica: inverte i nastri trasportatori (belts) con questo group; due leve insieme = turbo
+  genre?: Genre; // disco del Palco: impone questo genere per durationMs (vince l'ultimo premuto)
 }
 
 // Nastro trasportatore (La Fabbrica): una striscia di superficie che sposta chi ci sta sopra a terra. Il verso si
@@ -432,6 +450,7 @@ export interface StageSpec {
   jets?: Jet[]; // getti d'acqua a tempo che spingono in alto (#253)
   belts?: Belt[]; // nastri trasportatori (La Fabbrica)
   phases?: StagePhase[]; // l'arena cambia a fasi durante la partita (#433), in ordine di startMs
+  genres?: StageGenres; // Il Palco: il genere che suona cambia le regole (physics/genre.ts)
   rise?: StageRise; // Il Diluvio: il mare sale e si porta dietro zone di espulsione, punto di ritorno e telecamera
   prizeAtMs?: number; // premio (#433): a questo tempo dell'arena si congela la squadra in testa ai punti torre; i pezzi con forLeader ci sono solo per lei
   prizeShowMs?: number; // tempo dell'arena a cui il client annuncia il premio (senza, prizeAtMs)
@@ -559,14 +578,34 @@ const BOLOGNA_BUS = busRuns(1885, 400, 1100, [-600, 2400], BOLOGNA.busFirstMs, B
 
 export const STAGES: Record<string, StageSpec> = {
   // L'arena di partenza: un palco principale e tre piattaforme sottili
+  // Il Palco, cambio di genere: un concerto dove il genere che suona cambia le regole (physics/genre.ts). Dopo 12 s di
+  // prova del suono il DJ cambia genere da solo ogni 18 s; i tre dischi (sulle casse e in consolle: ci si salta sopra o si colpiscono) lo impongono
+  // per 12 s. Metal: i colpi lanciano più lontano e dal bordo del palco partono colonne di fiamme. Reggae: gravità da
+  // luna. Techno: compaiono le piattaforme della techno, che si scambiano ogni 4 battiti a tempo con lo strobo.
   palco: {
     id: "palco",
     name: "Il Palco",
     solids: [MAIN],
     platforms: [
-      { x: 340, width: 200, y: 420 },
-      { x: 740, width: 200, y: 420 },
-      { x: 540, width: 200, y: 290 },
+      { x: 340, width: 200, y: 420 }, // la cassa di sinistra, col disco del metal
+      { x: 740, width: 200, y: 420 }, // la cassa di destra, col disco del reggae
+      { x: 540, width: 200, y: 290 }, // la consolle del DJ, col disco della techno
+      // Le piattaforme della techno: a turno ogni GENRE.technoBlinkBeats battiti, solo mentre suona la techno
+      { x: 110, width: 130, y: 400, genre: "techno", beat: 0 },
+      { x: 1040, width: 130, y: 400, genre: "techno", beat: 0 },
+      { x: 360, width: 130, y: 250, genre: "techno", beat: 1 },
+      { x: 790, width: 130, y: 250, genre: "techno", beat: 1 },
+    ],
+    genres: { startMs: 12000, order: ["metal", "reggae", "techno"], everyMs: 18000, beatMs: 60000 / AUDIO.musicBpm }, // a tempo con la musica di sempre
+    pads: [
+      { x: 410, y: 420, width: 60, sound: "metal", cooldownMs: 14000, effect: { group: "genere", durationMs: 12000, genre: "metal" } },
+      { x: 810, y: 420, width: 60, sound: "reggae", cooldownMs: 14000, effect: { group: "genere", durationMs: 12000, genre: "reggae" } },
+      { x: 610, y: 290, width: 60, sound: "techno", cooldownMs: 14000, effect: { group: "genere", durationMs: 12000, genre: "techno" } },
+    ],
+    hazards: [
+      // Le fiamme del metal: colonne ai due bordi del palco, a tempo, con l'avviso prima
+      { kind: "pirotecnica", genre: "metal", x: 262, y: 400, width: 44, height: 160, damage: 6, knockback: 520, knockbackGrowth: 3, angleDeg: 80, periodMs: 3200, activeMs: 700, warnMs: 1000 },
+      { kind: "pirotecnica", genre: "metal", x: 974, y: 400, width: 44, height: 160, damage: 6, knockback: 520, knockbackGrowth: 3, angleDeg: 80, periodMs: 3200, activeMs: 700, warnMs: 1000, offsetMs: 1600 },
     ],
     blastZone: { left: -250, right: WORLD.width + 250, top: -350, bottom: WORLD.height + 200 },
     spawns: [0.3, 0.7, 0.45, 0.55, 0.2, 0.8, 0.37, 0.63].map((f) => ({ x: MAIN.x + MAIN.width * f, y: MAIN.y })),
@@ -574,11 +613,7 @@ export const STAGES: Record<string, StageSpec> = {
     colors: { sky: 0x1d2b3a, solid: 0x5a3d26, solidEdge: 0x8b6a45, platform: 0xa0a8b8 },
     // Un concerto di notte: cielo e città, tralicci con i fari, il pubblico sotto al palco
     art: {
-      layers: [
-        { file: "sfondo-0.png", parallax: 0.15 },
-        { file: "sfondo-1.png", parallax: 0.45 },
-        { file: "sfondo-2.png", parallax: 0.75 },
-      ],
+      layers: [], // il concerto lo disegna godot/scripts/concert_stage.gd, a seconda del genere che suona
       preview: "anteprima.png",
     },
   },

@@ -745,6 +745,7 @@ func on_snapshot(snap: Dictionary) -> void:
 	predictor.stage_ms = float(snap.get("stageMs", 0)) # pezzi a tempo (#433)
 	_prize_team = int(snap.get("prizeTeam", 0)) # premio (#433)
 	predictor.prize_team = _prize_team
+	predictor.pads_pressed = _pads_pressed # Il Palco: il genere che suona
 	for p in snap.players:
 		_load_character(_look(p))
 		if p.id == my_id:

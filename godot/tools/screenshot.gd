@@ -10,7 +10,7 @@ var _out := "user://screenshots"
 var _game: Dictionary
 var _world: Node2D # nella partita finta: riceve uno snapshot a ogni frame
 var _hud: Control
-const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre", "lobby_regole", "musica", "tetris", "pacman", "bassanese", "bologna_piazza", "bologna_torri", "bologna_crollo", "bologna_zuffa", "oggetti", "prepartita_attesa", "prepartita_vs", "prepartita_conto", "fine_partita", "sala", "sala_conto", "sala_galleria", "sala_via", "sala_basket", "sala_scacchi", "fabbrica", "diluvio"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
+const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre", "lobby_regole", "musica", "tetris", "pacman", "bassanese", "bologna_piazza", "bologna_torri", "bologna_crollo", "bologna_zuffa", "oggetti", "prepartita_attesa", "prepartita_vs", "prepartita_conto", "fine_partita", "sala", "sala_conto", "sala_galleria", "sala_via", "sala_basket", "sala_scacchi", "fabbrica", "diluvio", "palco_metal", "palco_reggae", "palco_techno"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
 var _index := -1
 var _frame := 0
 var _failed := false
@@ -37,6 +37,10 @@ const THEME_SHOTS := {
 		"pads": [12650, 12700], "packed": 2, "hazard": 2},
 	# Il Diluvio a metà scalata: il mare che sale, i relitti, una zattera e una cima larga; uno è appena finito in acqua
 	"diluvio": {"id": "isole", "ms": 85400, "cam": Vector2(640, 6560), "zoom": 0.8, "x": [290, 590, 830, 960, 480], "y": [6480, 6360, 6480, 6720, 6600]},
+	# Il Palco nei tre generi: il metal con le fiamme ai bordi, il reggae con la luna e uno in volo, la techno coi neon
+	"palco_metal": {"id": "palco", "ms": 12900, "cam": Vector2(640, 380), "zoom": 1.0, "x": [380, 560, 760, 900, 640], "y": [560, 560, 560, 420, 290]},
+	"palco_reggae": {"id": "palco", "ms": 31000, "cam": Vector2(640, 380), "zoom": 1.0, "x": [380, 560, 760, 900, 640], "y": [560, 330, 560, 420, 200]},
+	"palco_techno": {"id": "palco", "ms": 49100, "cam": Vector2(640, 380), "zoom": 0.9, "x": [380, 170, 760, 1100, 640], "y": [560, 400, 560, 400, 290]},
 }
 var _bologna: Dictionary = {} # le fasi di Bologna (#433): {ms, cam, zoom, spots}, vuoto nelle altre partite
 # Bologna in quattro momenti: l'auto in piazza, l'ingorgo sotto le torri, la Garisenda che cade coi mattoni, la polvere
@@ -438,6 +442,21 @@ func _fabbrica() -> void:
 
 func _diluvio() -> void:
 	_theme_shot = THEME_SHOTS.diluvio.duplicate()
+	_partita()
+
+
+func _palco_metal() -> void:
+	_theme_shot = THEME_SHOTS.palco_metal.duplicate()
+	_partita()
+
+
+func _palco_reggae() -> void:
+	_theme_shot = THEME_SHOTS.palco_reggae.duplicate()
+	_partita()
+
+
+func _palco_techno() -> void:
+	_theme_shot = THEME_SHOTS.palco_techno.duplicate()
 	_partita()
 
 

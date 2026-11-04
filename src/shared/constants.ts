@@ -671,6 +671,14 @@ export const BELT = {
   warnMs: 2000, // ms prima del cambio di verso automatico in cui suona la sirena (disegno e suono nel client)
 };
 
+// Il Palco (src/shared/physics/genre.ts): cosa cambia ogni genere musicale
+export const GENRE = {
+  metalKnockbackMult: 1.25, // col metal i colpi lanciano più lontano di tanto
+  reggaeGravityMult: 0.55, // col reggae la gravità è da luna: si salta più in alto e si cade piano
+  technoBlinkBeats: 4, // con la techno le piattaforme della techno si scambiano ogni tanti battiti
+  warnMs: 2000, // ms prima del cambio automatico di genere in cui il DJ lo annuncia (disegno e suono nel client)
+};
+
 // Postazioni (#433, src/shared/physics/stations.ts): bombarda e munizioni, come in Lovers in a Dangerous Spacetime.
 // Valgono quando la postazione nei dati dell'arena non dice altro
 export const STATION = {
