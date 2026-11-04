@@ -2,9 +2,9 @@
 // Piena, il tasto suprema lancia la mossa e la barra torna a 0. La mossa di ogni personaggio
 // arriva a parte (Bonobot: #102); finché non c'è, tutti usano ATTACKS.supreme.
 
-import { getCharacter, specialsFor, supremeAttackSpec, type BurstSupreme, type DropSupreme, type GrabSupreme, type InfectSupreme, type RewindSupreme, type SpinSupreme } from "../characters";
+import { getCharacter, specialsFor, supremeAttackSpec, type BurstSupreme, type DropSupreme, type GrabSupreme, type InfectSupreme, type RewindSupreme, type SpinSupreme, type StormSupreme } from "../characters";
 import { ATTACKS, FIGHTER, GRAB, MICELIO, SPORE, SUPREME } from "../constants";
-import { canBeHit, isSpecialKind, startAttack } from "./attacks";
+import { canBeHit, isSpecialKind, launch, startAttack } from "./attacks";
 import type { StageSpec } from "../stages";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
 import { fire } from "./projectiles";
@@ -102,8 +102,44 @@ function burstOf(characterId: string): BurstSupreme | null {
   return sp?.type === "burst" ? sp : null;
 }
 
-// La suprema colpisce col suo rettangolo? Non la "burst", che colpisce coi proiettili, né la "rewind", che stordisce
-export const supremeMelee = (characterId: string) => !burstOf(characterId) && !rewindOf(characterId);
+// La suprema colpisce col suo rettangolo? Non la "burst", che colpisce coi proiettili, né la "rewind", che stordisce,
+// né la "storm", che colpisce con le onde
+export const supremeMelee = (characterId: string) => !burstOf(characterId) && !rewindOf(characterId) && !stormOf(characterId);
+
+function stormOf(characterId: string): StormSupreme | null {
+  const sp = getCharacter(characterId).supreme;
+  return sp?.type === "storm" ? sp : null;
+}
+
+// Il rollio della "storm" a t ms dalla fine della presa del timone: da -1 (verso sinistra) a 1 (verso destra).
+// Godot (supreme_storm_view.gd) rifà lo stesso conto per inclinare l'arena
+export const stormRoll = (sp: StormSupreme, t: number) => Math.sin((2 * Math.PI * t) / sp.rollPeriodMs);
+// Quale onda: cambia a ogni fine rollio (i punti più inclinati)
+const stormWave = (sp: StormSupreme, t: number) => Math.floor((t - sp.rollPeriodMs / 4) / (sp.rollPeriodMs / 2));
+
+// Tempesta! (#547): chi la fa resta al timone, gli altri scivolano col rollio e prendono le onde.
+// Dopo che tutti si sono mossi, come le altre spinte dell'arena
+export function stepStorms(fighters: Fighter[], dtMs: number, ctx: PhysicsContext): void {
+  for (const f of fighters) {
+    const sp = f.attack === "supreme" ? stormOf(f.characterId) : null;
+    if (!sp || f.attackTimer < sp.windupMs || f.attackTimer > sp.windupMs + sp.durationMs) continue;
+    const t = f.attackTimer - sp.windupMs;
+    const roll = stormRoll(sp, t);
+    const wave = t >= sp.rollPeriodMs / 4 && stormWave(sp, t) !== stormWave(sp, t - dtMs);
+    for (const o of fighters) {
+      if (o === f || !canBeHit(o) || o.away || o.ledge || o.grabbedBy || o.station !== undefined) continue;
+      if (ctx.canHit && !ctx.canHit(f, o)) continue;
+      if (!o.onGround) {
+        o.vx += roll * sp.rollAirAccel * (dtMs / 1000);
+        continue;
+      }
+      o.x += roll * sp.rollSpeed * (dtMs / 1000); // a terra si scivola: camminando contro si resiste
+      if (!wave || o.shielding) continue;
+      launch(o, f, "supreme", Math.round(o.x), Math.round(o.y - FIGHTER.height / 2), ctx, undefined, sp);
+      o.vx = Math.sign(roll) * Math.abs(o.vx); // l'onda spinge dalla parte del rollio, non dove guarda lui
+    }
+  }
+}
 
 // L'aquila dell'Elefante di Elvedeo: mentre la "spin" gira, la Speciale la tira una volta sola. Gli altri tasti
 // durante la suprema non fanno niente, e la Speciale premuta dopo la prima si consuma senza effetto
@@ -275,5 +311,6 @@ export function supremeReach(characterId: string): number {
   if (own?.type === "burst") return own.speed * 0.6; // dove cadono più o meno i proiettili
   if (own?.type === "infect") return FIGHTER.width / 2 + own.reach;
   if (own?.type === "rewind") return own.stunRadius;
+  if (own?.type === "storm") return 500; // tutta l'arena rolla: conviene quando gli altri sono vicini al bordo
   return (ATTACKS.supreme.boxX ?? FIGHTER.width / 2) + ATTACKS.supreme.range;
 }

@@ -19,6 +19,7 @@ var enabled := true # opzione "Predizione" (video.predict) e velocità normale n
 var smooth_ms := 100.0
 var max_replay_ticks := 30
 var teleport_distance := 300.0
+var storm := false # Tempesta! di Capt. OrsoBlu in corso (#547): il rollio sposta tutti, il port non lo sa
 var items_present := false # oggetti nell'arena: leggero e pesante li lascia decidere al server
 var puddles: Array = [] # pozze scivolose dell'ultimo snapshot (#13): sopra si scivola, il port non lo sa
 var blocks: Array = [] # blocchi del Tetris dell'ultimo snapshot (#427): il port non li conosce
@@ -102,7 +103,7 @@ func on_server(p: Dictionary, now_ms: float, shown := Vector2(NAN, NAN)) -> void
 		_advance(now_ms)
 		before = _position(now_ms) + _decayed_error(now_ms)
 	_server = p
-	_active = enabled and predictable(p, _stage, stage_ms) and not near_puddle(p, puddles) and not near_blocks(p, blocks) and not _pressed_action_since(int(p.predict.seq) if p.get("predict") is Dictionary else 0)
+	_active = enabled and not storm and predictable(p, _stage, stage_ms) and not near_puddle(p, puddles) and not near_blocks(p, blocks) and not _pressed_action_since(int(p.predict.seq) if p.get("predict") is Dictionary else 0)
 	if not _active:
 		return
 	var key := "%s/%s" % [_stage.get("id", ""), p.characterId]

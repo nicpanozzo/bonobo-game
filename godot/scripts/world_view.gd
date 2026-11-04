@@ -151,6 +151,7 @@ const SpeechBubbles := preload("res://scripts/speech_bubbles.gd")
 var _spin_view: Node2D # i vortici della suprema che gira (DEMACIAAA di Bradipo Giallo, #358)
 var _grab_view: Node2D # il braccio della suprema che afferra (snaack di Lampione, #358)
 var _burst_view: Node2D # la vampata della suprema a raffiche (IRA di Lendmar, #358)
+var _storm_view: Node2D # Tempesta! di Capt. OrsoBlu (#547): pioggia, timone, insulti e arena che rolla
 var _rewind_view: Node2D # l'orologio della suprema che torna indietro (…COSA? di Marcomunista, #358)
 
 
@@ -188,6 +189,10 @@ func setup(game_data: Dictionary) -> void:
 	_rewind_view.fighter_height = float(game.fighter.height)
 	_rewind_view.where = _spin_view.where
 	add_child(_rewind_view)
+	_storm_view = preload("res://scripts/supreme_storm_view.gd").new()
+	_storm_view.fighter_height = float(game.fighter.height)
+	_storm_view.where = _spin_view.where
+	add_child(_storm_view)
 	_high_overlay = ColorRect.new()
 	var fatto := ShaderMaterial.new()
 	fatto.shader = load("res://shaders/fatto.gdshader")
@@ -358,6 +363,7 @@ func reset() -> void:
 	_grab_view.clear()
 	_burst_view.clear()
 	_rewind_view.clear()
+	_storm_view.clear()
 	my_id = ""
 	predictor.reset()
 	set_stage(game.defaultStageId)
@@ -900,6 +906,7 @@ func on_event(e: Dictionary) -> void:
 					_grab_view.start(e.id, game.characters.get(p.characterId, {}))
 					_burst_view.start(e.id, game.characters.get(p.characterId, {}))
 					_rewind_view.start(e.id, game.characters.get(p.characterId, {}))
+					_storm_view.start(e.id, game.characters.get(p.characterId, {}))
 					_speech.say(e.id, SpeechBubbles.quote(game.characters.get(p.characterId, {}), "supreme"))
 		"dash":
 			# Scatto (#199): uno sbuffo di polvere dove parte e uno un po' indietro
@@ -1533,6 +1540,13 @@ func _process(delta: float) -> void:
 	_flash = maxf(0.0, _flash - delta * 1000.0)
 	_shake = maxf(0.0, _shake - fx.shakeDecay * delta)
 	position = Vector2(randf_range(-_shake, _shake), randf_range(-_shake, _shake)) if _shake > 0 else Vector2.ZERO
+	# Tempesta! (#547): l'arena rolla intorno al suo centro, come una nave (niente con meno scossa e lampi)
+	var tilt: float = 0.0 if Access.calm else _storm_view.tilt()
+	rotation = tilt
+	if tilt != 0.0:
+		var pivot := Vector2(stage_width(), world_height()) / 2.0
+		position += pivot - pivot.rotated(tilt)
+	predictor.storm = _storm_view.active() # il rollio sposta anche chi gioca: decide il server
 	queue_redraw()
 
 

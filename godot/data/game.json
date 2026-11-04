@@ -9847,6 +9847,26 @@
         "cuamm",
         "lolhardcore"
       ],
+      "supreme": {
+        "type": "storm",
+        "name": "Tempesta",
+        "windupMs": 500,
+        "durationMs": 4800,
+        "endLagMs": 400,
+        "rollPeriodMs": 1600,
+        "rollSpeed": 300,
+        "rollAirAccel": 900,
+        "damage": 4,
+        "baseKnockback": 300,
+        "knockbackGrowth": 4,
+        "angleDeg": 35,
+        "insults": [
+          "Mozzi d'acqua dolce!",
+          "Sacchi di sardine!",
+          "Branco di triglie lesse!",
+          "Tu! Lava il ponte!"
+        ]
+      },
       "anchor": {},
       "stats": {
         "speed": 0.9,
@@ -10168,7 +10188,17 @@
           "cooldownMs": 1650
         }
       },
-      "supremeAttack": null,
+      "supremeAttack": {
+        "damage": 0,
+        "baseKnockback": 0,
+        "knockbackGrowth": 0,
+        "angleDeg": 0,
+        "startupMs": 500,
+        "activeMs": 4800,
+        "cooldownMs": 5700,
+        "range": 0,
+        "height": 0
+      },
       "skins": {}
     },
     "bonobot": {
