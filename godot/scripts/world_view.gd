@@ -119,7 +119,6 @@ var _supreme_ready := {} # id giocatore -> true se aveva la suprema pronta all'u
 var _holding := {} # id di chi tiene qualcuno con la presa (#109), dall'ultimo snapshot
 var _palette := {} # colori dell'arena già convertiti (stage.colors), per non rifarlo a ogni frame
 var _variants := {} # id giocatore -> variante di colore (0 = originale), ricalcolata a ogni snapshot (E11)
-const AnchorChain := preload("res://scripts/anchor_chain.gd")
 const StageMotion := preload("res://scripts/stage_motion.gd")
 const ArcadeView := preload("res://scripts/arcade_view.gd")
 const FighterPose := preload("res://scripts/fighter_pose.gd")
