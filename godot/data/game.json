@@ -970,6 +970,12 @@
     "feetTolerancePx": 2,
     "warnMs": 2000
   },
+  "genre": {
+    "metalKnockbackMult": 1.25,
+    "reggaeGravityMult": 0.55,
+    "technoBlinkBeats": 4,
+    "warnMs": 2000
+  },
   "tetris": {
     "ms": 9000,
     "cellPx": 40,
@@ -1511,6 +1517,115 @@
           "x": 540,
           "width": 200,
           "y": 290
+        },
+        {
+          "x": 110,
+          "width": 130,
+          "y": 400,
+          "genre": "techno",
+          "beat": 0
+        },
+        {
+          "x": 1040,
+          "width": 130,
+          "y": 400,
+          "genre": "techno",
+          "beat": 0
+        },
+        {
+          "x": 360,
+          "width": 130,
+          "y": 250,
+          "genre": "techno",
+          "beat": 1
+        },
+        {
+          "x": 790,
+          "width": 130,
+          "y": 250,
+          "genre": "techno",
+          "beat": 1
+        }
+      ],
+      "genres": {
+        "startMs": 12000,
+        "order": [
+          "metal",
+          "reggae",
+          "techno"
+        ],
+        "everyMs": 18000,
+        "beatMs": 454.54545454545456
+      },
+      "pads": [
+        {
+          "x": 410,
+          "y": 420,
+          "width": 60,
+          "sound": "metal",
+          "cooldownMs": 14000,
+          "effect": {
+            "group": "genere",
+            "durationMs": 12000,
+            "genre": "metal"
+          }
+        },
+        {
+          "x": 810,
+          "y": 420,
+          "width": 60,
+          "sound": "reggae",
+          "cooldownMs": 14000,
+          "effect": {
+            "group": "genere",
+            "durationMs": 12000,
+            "genre": "reggae"
+          }
+        },
+        {
+          "x": 610,
+          "y": 290,
+          "width": 60,
+          "sound": "techno",
+          "cooldownMs": 14000,
+          "effect": {
+            "group": "genere",
+            "durationMs": 12000,
+            "genre": "techno"
+          }
+        }
+      ],
+      "hazards": [
+        {
+          "kind": "pirotecnica",
+          "genre": "metal",
+          "x": 262,
+          "y": 400,
+          "width": 44,
+          "height": 160,
+          "damage": 6,
+          "knockback": 520,
+          "knockbackGrowth": 3,
+          "angleDeg": 80,
+          "periodMs": 3200,
+          "activeMs": 700,
+          "warnMs": 1000
+        },
+        {
+          "kind": "pirotecnica",
+          "genre": "metal",
+          "x": 974,
+          "y": 400,
+          "width": 44,
+          "height": 160,
+          "damage": 6,
+          "knockback": 520,
+          "knockbackGrowth": 3,
+          "angleDeg": 80,
+          "periodMs": 3200,
+          "activeMs": 700,
+          "warnMs": 1000,
+          "offsetMs": 1600
         }
       ],
       "blastZone": {
@@ -1564,20 +1679,7 @@
         "platform": 10528952
       },
       "art": {
-        "layers": [
-          {
-            "file": "sfondo-0.png",
-            "parallax": 0.15
-          },
-          {
-            "file": "sfondo-1.png",
-            "parallax": 0.45
-          },
-          {
-            "file": "sfondo-2.png",
-            "parallax": 0.75
-          }
-        ],
+        "layers": [],
         "preview": "anteprima.png"
       }
     },

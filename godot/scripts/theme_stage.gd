@@ -1,4 +1,4 @@
-# Le arene a tema (La Fabbrica, Le Isole, Il Palco): ognuna ha uno script suo che la disegna viva, nello stile di Sala
+# Le arene a tema (La Fabbrica, Il Diluvio, Il Palco): ognuna ha uno script suo che la disegna viva, nello stile di Sala
 # Prove (wonder_stage.gd), tutto col codice e tutto dal tempo dell'arena. Questo script sceglie quello giusto dall'id
 # dell'arena e passa le chiamate di world_view.gd e audio.gd. Le funzioni draw_* che tornano bool dicono se il pezzo
 # l'ha disegnato il tema (true) o se world_view.gd deve fare il disegno di sempre (false).
@@ -8,6 +8,7 @@ extends RefCounted
 const SCRIPTS := {
 	"fabbrica": preload("res://scripts/factory_stage.gd"),
 	"isole": preload("res://scripts/flood_stage.gd"), # Il Diluvio
+	"palco": preload("res://scripts/concert_stage.gd"), # cambio di genere
 }
 
 var current: RefCounted = null

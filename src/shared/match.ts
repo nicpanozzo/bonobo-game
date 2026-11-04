@@ -85,7 +85,7 @@ export class Match {
 
   // L'arena com'è adesso (#433): senza pezzi a tempo è la stessa di stage, con loro solo quelli che ci sono ora
   get currentStage(): StageSpec {
-    return stageAt(this.stage, this.ctx.timeMs ?? 0, prizeLeader(this.ctx));
+    return stageAt(this.stage, this.ctx.timeMs ?? 0, prizeLeader(this.ctx), this.ctx.padsMs);
   }
 
   // team: la squadra chiesta (#409); se non c'è in queste regole si entra in quella con meno giocatori

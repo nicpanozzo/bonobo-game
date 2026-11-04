@@ -33,14 +33,17 @@ func test_il_palco_ha_tre_strati_le_altre_arene_no() -> void:
 	var game := _game()
 	var w: Node2D = WorldView.new()
 	w.setup(game)
-	w.set_stage_spec(game.stages.palco)
+	# Il Palco ora è disegnato col codice (concert_stage.gd): gli strati si provano coi suoi disegni di prima
+	var palco: Dictionary = game.stages.palco.duplicate(true)
+	palco.art.layers = [{"file": "sfondo-0.png", "parallax": 0.15}, {"file": "sfondo-1.png", "parallax": 0.45}, {"file": "sfondo-2.png", "parallax": 0.75}]
+	w.set_stage_spec(palco)
 	runner.check(w._layers.size() == 3, "tre strati: %d" % w._layers.size())
 	runner.check(w._layers[0][1] < w._layers[2][1], "dal più lontano al più vicino")
 	runner.check((w._layers[0][0] as Texture2D).get_size() == Vector2(1920, 1080), "1920×1080")
 	w.set_stage_spec(game.stages.isole)
 	runner.check(w._layers.is_empty() and w._foreground.is_empty(), "Le Isole restano con i colori")
 	# Un file che manca non rompe niente: si vede il colore del cielo
-	var spec: Dictionary = game.stages.palco.duplicate(true)
+	var spec: Dictionary = palco.duplicate(true)
 	spec.art.layers.append({"file": "non-esiste.png", "parallax": 0.9})
 	spec.art.foreground = {"file": "non-esiste.png", "parallax": 1.0}
 	w.set_stage_spec(spec)
