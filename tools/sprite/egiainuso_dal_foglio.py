@@ -1,7 +1,6 @@
 # Uso: python3 tools/sprite/egiainuso_dal_foglio.py <foglio.png> [cartella di uscita]
 # Il nuovo Egiainuso (#178) dal foglio delle pose di @Marcomunista: 24 pose in una griglia 6×4, con il nome sotto.
-# Ritaglia ogni posa, toglie il fondo bianco, riempie di bianco le parti chiuse (la faccia), aggiunge un
-# contorno chiaro perché il tratto nero si legga sui fondali scuri (docs/stile-grafico.md) e scrive un PNG per
+# Ritaglia ogni posa, toglie il fondo bianco, riempie di bianco le parti chiuse (la faccia) e scrive un PNG per
 # stato nel formato a cartella (E7), con i piedi allineati. Il foglio non va nella repo: si passa da fuori.
 # Servono Pillow, numpy e scipy (pip install pillow numpy scipy).
 import json, os, sys
@@ -96,9 +95,10 @@ def pose_images(sheet):
                 face |= region
         face = ndimage.binary_dilation(face, iterations=1) & ~(alpha > 0.6)
         sil = (alpha > 0.15) | face
-        rim = ndimage.binary_dilation(sil, iterations=RIM_PX) & ~sil
+        # niente contorno chiaro attorno al corpo: in gioco sembrava uno scontorno sbagliato
+        rim = np.zeros_like(sil)
         h, w = crop_g.shape
-        # sotto: contorno chiaro e faccia; sopra: il tratto, con il suo alfa
+        # sotto: la faccia; sopra: il tratto, con il suo alfa
         base_c = np.zeros((h, w, 3), dtype=np.float32)
         base_a = np.zeros((h, w), dtype=np.float32)
         base_c[rim], base_a[rim] = RIM, 200 / 255.0
