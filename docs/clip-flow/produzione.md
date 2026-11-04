@@ -32,7 +32,7 @@ Creato da `tools/flow/prompt_flow.py`, che non lo riscrive più: da qui si aggio
 | BR-01 | Fermo | da fare | | | | | |
 | BR-02 | Salti | da fare | | | | | |
 | BR-03 | Attacchi in corsa | da fare | | | | | |
-| BR-04 | Aerei A | da fare | | | | | |
+| BR-04 | Aerei A | consegnata | 1 | | | in chat il 4/11 (passo 0) | arco bianco nell'aereo su, polvere all'atterraggio; da decidere se tenerla |
 | BR-05 | Aerei B | da fare | | | | | |
 | BR-06 | Recupero | da fare | | | | | |
 | BR-07 | Presa | da fare | | | | | |

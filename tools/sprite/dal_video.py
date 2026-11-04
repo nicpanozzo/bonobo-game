@@ -28,6 +28,9 @@ from prompt_flow import BASE, CHARS, FATTE, FPS, base_clips, clips_of  # noqa: E
 
 SOGLIA = 0.2  # differenza di sagoma dal fotogramma 0 sotto cui il personaggio è "nella posa" (prova del 3/11)
 PAUSA_MIN = 6  # fotogrammi di fila nella posa per contare come pausa (un quarto di secondo)
+FERMO_MIN = 12  # oppure: mezzo secondo senza muoversi...
+MOTO_MAX = 0.03  # ...cioè sagoma che cambia meno del 3% da un fotogramma all'altro...
+SOGLIA_FERMO = 0.35  # ...in una posa non troppo diversa da quella di partenza
 MOSSA_MIN = 4  # un tratto più corto non è una mossa (un tremolio)
 MARGINE = 12  # fotogrammi di tolleranza attorno ai secondi previsti, quando non si trovano le pause
 BG = np.array([23, 176, 59], np.float32)  # il verde dello sfondo
@@ -139,6 +142,18 @@ def find_moves(masks):
     base = max(1, int(m0.sum()))
     diff = np.array([float((m ^ m0).sum()) / base for m in masks])
     rest = diff < SOGLIA
+    # pausa anche se è ferma in una posa un po' diversa da quella di partenza (BR-04, 4/11: guardia coi pugni alti,
+    # differenza 0,21): sagoma quasi uguale al fotogramma prima per FERMO_MIN fotogrammi di fila, non troppo lontana
+    moto = np.array([0.0] + [float((masks[i] ^ masks[i - 1]).sum()) / base for i in range(1, len(masks))])
+    fermo = moto < MOTO_MAX
+    k = 0
+    while k < len(fermo):
+        j = k
+        while j < len(fermo) and fermo[j]:
+            j += 1
+        if j - k >= FERMO_MIN and diff[k:j].max() < SOGLIA_FERMO:
+            rest[k:j] = True
+        k = j + 1
     runs, i = [], 0
     while i < len(rest):
         j = i
