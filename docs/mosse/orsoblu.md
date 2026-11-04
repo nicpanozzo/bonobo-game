@@ -17,7 +17,7 @@ Un orso blu capitano di mare, **burbero e pignolo**, che tratta l'arena come la 
 | Laterale | **Avanti tutta!** | Da appeso: riavvolge la catena e sfreccia verso l'ancora come su una teleferica, travolgendo chi c'è in mezzo, poi si aggrappa al bordo. Da libero: spallata in avanti. |
 | Neutra | **Tutti a bordo!** | La stessa ancora sparata dritta in avanti: se prende qualcuno lo tira verso il capitano. |
 
-**Nel gioco da #547** (`src/shared/physics/anchor.ts`, numeri in `ANCHOR` di `constants.ts`): Pesante + su in aria spara l'ancora (solo su quasi in verticale, su + direzione in diagonale), 2 lanci prima di toccare terra, sgancio da solo dopo 3 s, Scudo lascia andare, un colpo stacca; arrampicandosi fino a uno spigolo ci si aggrappa al bordo. Da provare al playtest: spinta extra staccandosi nel punto più alto. Avanti tutta! da appeso arriva nella PR dopo.
+**Nel gioco da #547** (`src/shared/physics/anchor.ts`, numeri in `ANCHOR` di `constants.ts`): Pesante + su in aria spara l'ancora (solo su quasi in verticale, su + direzione in diagonale), 2 lanci prima di toccare terra, sgancio da solo dopo 3 s, Scudo lascia andare, un colpo stacca; arrampicandosi fino a uno spigolo ci si aggrappa al bordo. Da provare al playtest: spinta extra staccandosi nel punto più alto. Avanti tutta! è la speciale laterale: da appeso sfreccia verso l'ancora già attiva (poi resta appeso in cima, col Salto si fa la fionda), da libero è la spallata.
 
 **Ancora e catena le disegna il gioco** (come l'aquila di Elvedeo): nelle clip lui mima il lancio e stringe una catena invisibile, "nothing is drawn". Servono a parte gli sprite di ancora, catena e mina.
 

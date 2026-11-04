@@ -564,7 +564,8 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     id: "orsoblu",
     name: "Capt. OrsoBlu",
     crews: ["cuamm", "lolhardcore"],
-    // L'ancora-ragnatela (#547): il recupero spara l'ancora, appeso dondola, si arrampica e si stacca con lo slancio
+    // L'ancora-ragnatela (#547): il recupero spara l'ancora, appeso dondola, si arrampica e si stacca con lo slancio.
+    // Da appeso la speciale laterale riavvolge la catena e sfreccia verso l'ancora (Avanti tutta!, anchor.ts); da libero è la spallata
     anchor: {},
     // Con la barchetta addosso è un po' più pesante e lento di Bonobot (E11)
     // TODO community: statistiche provvisorie, da confermare con @MauroGrecchi
@@ -573,7 +574,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     // TODO community: nomi e numeri provvisori, da confermare con @MauroGrecchi (#37)
     specials: {
       neutral: { type: "projectile", name: "Schizzo", startupMs: 200, cooldownMs: 500, speed: 900, gravity: 0, lifeMs: 550, maxAlive: 2, range: 20, height: 12, damage: 4, baseKnockback: 180, knockbackGrowth: 3, angleDeg: 25, color: 0x6ec8ff },
-      side: { type: "dash", name: "Remata", startupMs: 120, durationMs: 300, speed: 760, endLagMs: 320, range: 46, height: 50, damage: 10, baseKnockback: 380, knockbackGrowth: 8, angleDeg: 30 },
+      side: { type: "dash", name: "Avanti tutta!", startupMs: 120, durationMs: 300, speed: 760, endLagMs: 320, range: 46, height: 50, damage: 10, baseKnockback: 380, knockbackGrowth: 8, angleDeg: 30 },
       down: { ...CHARGE_EXAMPLE, name: "Colpo di remo" },
     },
     // OrsoBlu v2 (Nicola, 3/11/2026): il capitano burbero con la barchetta in spalla, dalle prime 4 clip di Google Flow

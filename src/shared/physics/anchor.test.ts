@@ -155,6 +155,44 @@ describe("ancora di Capt. OrsoBlu", () => {
     assert.equal(f.anchor, undefined);
   });
 
+  it("Avanti tutta!: da appeso la speciale sfreccia verso l'ancora, già attiva, e poi resta appeso in cima", () => {
+    const { ctx, f } = setup();
+    f.x = 400; // in diagonale sotto il soffitto: la catena è lunga
+    f.y = 480;
+    hook(f, ctx, { right: true });
+    assert.equal(f.anchor?.phase, "hold");
+    const before = ropeLen(f);
+    run(f, ctx, 1, { special: true });
+    assert.equal(f.attack, "specialSide");
+    assert.equal(f.attackActive, true, "travolge subito chi c'è in mezzo");
+    assert.ok(f.anchorZip);
+    for (let i = 0; i < 40 && f.anchorZip; i++) run(f, ctx, 1);
+    assert.equal(f.anchorZip, false);
+    assert.ok(before - ANCHOR.minLength > 150, "è partito lontano");
+    assert.ok(Math.abs(ropeLen(f) - ANCHOR.minLength) < 30, `arrivato in cima (${ropeLen(f).toFixed(0)} px)`);
+    assert.equal(f.attack, null);
+    assert.ok(f.anchor, "resta appeso");
+  });
+
+  it("Avanti tutta! colpisce chi sta lungo la catena", () => {
+    const { ctx, f } = setup();
+    f.x = 400;
+    f.y = 480;
+    hook(f, ctx, { right: true });
+    const o = createFighter({ id: "o", name: "O", characterId: "default", color: 0, team: 0, index: 1, stocks: 3 }, stage);
+    const t = 0.5; // a metà strada tra le mani e l'ancora
+    o.x = f.x + (f.anchor!.x - f.x) * t;
+    o.y = f.y + (f.anchor!.y + ANCHOR.gripY - f.y) * t;
+    o.onGround = false;
+    press(f, { special: true });
+    for (let i = 0; i < 30; i++) {
+      o.vx = o.vy = 0; // fermo a mezz'aria
+      stepWorld([f, o], DT, ctx);
+      press(f, {});
+    }
+    assert.ok(o.percent > 0, "preso dalla teleferica");
+  });
+
   it("chi non ha l'ancora fa il recupero di sempre", () => {
     const { ctx, f } = setup("default");
     run(f, ctx, 1, { up: true, heavy: true });

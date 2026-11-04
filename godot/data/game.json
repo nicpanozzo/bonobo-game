@@ -302,7 +302,10 @@
     "releaseBoost": 420,
     "maxHangMs": 3000,
     "hookStepPx": 8,
-    "platformGrabPx": 8
+    "platformGrabPx": 8,
+    "zipSpeed": 1400,
+    "zipEndSpeed": 260,
+    "zipEndLagMs": 120
   },
   "ledge": {
     "hangOffsetY": 56
@@ -9871,7 +9874,7 @@
         },
         "side": {
           "type": "dash",
-          "name": "Remata",
+          "name": "Avanti tutta!",
           "startupMs": 120,
           "durationMs": 300,
           "speed": 760,

@@ -85,6 +85,7 @@ export interface Fighter extends PlayerState {
   anchorVy: number;
   anchorLen: number; // pixel di catena tra l'ancora piantata e le mani
   anchorMs: number; // ms appesi all'ancora
+  anchorZip: boolean; // Avanti tutta! in corso (#547): si sfreccia verso l'ancora
   anchorThrows: number; // lanci dell'ancora da quando si è toccato terra, il bordo o si è stati colpiti
   pacDir?: { x: number; y: number }; // da Pac-Man (#427): dove si va, una sola tra x e y è -1 o 1
   pacPellets?: number; // da Pac-Man: palline mangiate in questa forma (piccola 1, grande PACMAN.bigPelletValue), accelerano
@@ -256,6 +257,7 @@ export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
     anchorLen: 0,
     anchorMs: 0,
     anchorThrows: 0,
+    anchorZip: false,
     anchor: undefined, // esplicito: resetForMatch copia anche questo e toglie l'ancora rimasta
   };
 }

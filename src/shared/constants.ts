@@ -233,6 +233,9 @@ export const ANCHOR = {
   maxHangMs: 3000, // ms appesi prima di lasciare la catena da soli
   hookStepPx: 8, // pixel tra un controllo e l'altro dell'ancora in volo, così non passa attraverso le piattaforme sottili
   platformGrabPx: 8, // pixel sopra o sotto una piattaforma sottile in cui l'ancora si pianta
+  zipSpeed: 1400, // pixel/s di Avanti tutta!: da appeso, Speciale riavvolge la catena e sfreccia verso l'ancora
+  zipEndSpeed: 260, // pixel/s che restano arrivati in cima: abbastanza per salire sul bordo, non per volare via
+  zipEndLagMs: 120, // ms dopo la teleferica prima di poter attaccare di nuovo
 };
 
 // Statistiche dei personaggi (E11, #13): moltiplicatori dei numeri di FIGHTER in characters.ts.
