@@ -26,6 +26,7 @@ import { resolveHits, tryStartAttack, updateAttack } from "./attacks";
 import { stepBassanese } from "./bassanese";
 import { stepCompanion } from "./companion";
 import { applyJets, carryRider, resolveHazards } from "./elements";
+import { applyBelts } from "./belts";
 import { pressPads } from "./pads";
 import { tickBuffer, type Fighter, type PhysicsContext } from "./fighter";
 import { grabbing, inGrab, resolveGrabs, stepGrabs } from "./grab";
@@ -45,6 +46,7 @@ import { freezePrize, stepStations, useStation } from "./stations";
 
 export * from "./fighter";
 export { resolveHits } from "./attacks";
+export { beltVelocity } from "./belts";
 export { floodPhase, hazardActive, hazardRect, jetPhase, moverHere, moverOn, moverPlace, moverPosition, padFx, travelDirection, travelPhase, type FloodPhase, type JetPhase, type TravelPhase } from "./elements";
 export { swingAngle } from "./elements";
 export { ledgesOf } from "./ledge";
@@ -213,6 +215,7 @@ export function stepWorld(fighters: Fighter[], dtMs: number, ctx: PhysicsContext
   resolveGrabs(fighters, ctx); // dopo i colpi: un colpo nello stesso tick vince sulla presa
   resolveHazards(fighters, ctx);
   applyJets(fighters, ctx, dtMs); // getti d'acqua (#253)
+  applyBelts(fighters, ctx, dtMs); // nastri trasportatori della Fabbrica
   pressPads(fighters, ctx, firstEvent); // bottoni sonori (#423)
   stepArcade(fighters, dtMs, ctx); // pezzi del Tetris e bocconi di Pac-Man (#427)
   stepBassanese(fighters, dtMs, ctx); // il Bassanese chiamato col telefono

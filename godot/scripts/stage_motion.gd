@@ -137,6 +137,35 @@ static func pad_fx(m: Dictionary, t: float, pads: Array, pressed: Array, ramp_ms
 	return fx
 
 
+# Nastri trasportatori della Fabbrica: come beltLevers/beltAutoDir/beltVelocity in physics/belts.ts
+static func belt_levers(b: Dictionary, t: float, pads: Array, pressed: Array) -> int:
+	var group: String = str(b.get("group", ""))
+	if group == "":
+		return 0
+	var n := 0
+	for i in mini(pads.size(), pressed.size()):
+		var p: Dictionary = pads[i]
+		if pressed[i] == null or not p.effect.get("flip", false) or str(p.effect.group) != group:
+			continue
+		var since := t - float(pressed[i])
+		if since >= 0.0 and since < float(p.effect.durationMs):
+			n += 1
+	return n
+
+
+static func belt_auto_dir(b: Dictionary, t: float) -> int:
+	var every: float = float(b.get("flipEveryMs", 0))
+	if every <= 0.0:
+		return int(b.dir)
+	return int(b.dir) if posmod(int(floorf(t / every)), 2) == 0 else -int(b.dir)
+
+
+static func belt_velocity(b: Dictionary, t: float, pads: Array, pressed: Array, turbo_mult: float) -> float:
+	var levers := belt_levers(b, t, pads, pressed)
+	var dir := belt_auto_dir(b, t) * (-1 if levers > 0 else 1)
+	return dir * float(b.speed) * (turbo_mult if levers >= 2 else 1.0)
+
+
 # Bottone sonoro: quanto è carico da 0 (appena premuto) a 1 (si può premere), come padReady() in physics/pads.ts
 static func pad_charge(p: Dictionary, pressed_at: Variant, t: float) -> float:
 	if pressed_at == null:

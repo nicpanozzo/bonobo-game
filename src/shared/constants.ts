@@ -623,6 +623,19 @@ export const PAD = {
   landTolerancePx: 4, // px: chi atterra con i piedi fin qui dalla superficie del bottone lo preme
 };
 
+// L'impacchettatrice della Fabbrica (hazard con pack, physics/elements.ts): chi ci finisce sotto resta chiuso in una scatola
+export const PACK = {
+  mashMs: 90, // ms tolti alla scatola per ogni tasto appena premuto da chi ci è dentro
+  immuneMs: 1500, // ms dopo l'uscita in cui non si viene impacchettati di nuovo
+};
+
+// Nastri trasportatori della Fabbrica (src/shared/physics/belts.ts): velocità e verso stanno nei dati dell'arena
+export const BELT = {
+  turboMult: 2, // con due leve tirate insieme il nastro va a questa velocità per la durata delle leve
+  feetTolerancePx: 2, // px: con i piedi fin qui dalla superficie del nastro ci si è sopra
+  warnMs: 2000, // ms prima del cambio di verso automatico in cui suona la sirena (disegno e suono nel client)
+};
+
 // Postazioni (#433, src/shared/physics/stations.ts): bombarda e munizioni, come in Lovers in a Dangerous Spacetime.
 // Valgono quando la postazione nei dati dell'arena non dice altro
 export const STATION = {

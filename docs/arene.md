@@ -233,6 +233,10 @@ jets: [{ x: 930, y: 690, width: 60, height: 300, speed: 1300, periodMs: 9000, wa
 itemSpots: [{ x: 740, y: 690, width: 440, weight: 3 }],
 ```
 
+### Nastri trasportatori (`belts`) e impacchettatrice (`pack`): La Fabbrica
+
+Un nastro è una striscia sopra un blocco pieno che sposta chi ci sta sopra a terra (`speed` px/s nel verso `dir`). Con `flipEveryMs` cambia verso da solo, e i bottoni con `effect.flip` dello stesso `group` lo invertono per `effect.durationMs`: due insieme lo mandano al doppio (`BELT.turboMult`). Una trappola con `pack` non lancia: chiude chi tocca in una scatola (stordito per `baseMs + perPercentMs × percentuale`, i tasti premuti lo accorciano di `PACK.mashMs`) e il nastro se lo porta via. Logica in `src/shared/physics/belts.ts` e `elements.ts`; il disegno della Fabbrica è in `godot/scripts/factory_stage.gd`, scelto da `theme_stage.gd` in base all'id dell'arena.
+
 ### Pezzi a tempo (`on`): blocchi, piattaforme, trappole e getti che arrivano e se ne vanno (#433)
 
 Ogni blocco pieno, piattaforma sottile, trappola e getto può avere `on: [[da, a], ...]`: finestre `[da, a)` del **tempo dell'arena** in ms, dall'inizio della partita (non a giro, a differenza di `on` delle piattaforme mobili). Fuori dalle finestre il pezzo non c'è: non ci si sta sopra, non si sbatte, non fa male e non spinge. Chi ci stava sopra cade, chi era appeso al suo spigolo si stacca. Senza `on` il pezzo c'è sempre.

@@ -736,6 +736,7 @@ func _setup_stage(data: Dictionary) -> void:
 	audio.stage_pads = world.stage.get("pads", []) if world.stage.get("pads") is Array else [] # la Meraviglia (#423)
 	audio.stage_crowd = world.has_crowd() # il pubblico che fotografa i KO (#433)
 	audio.stage_movers = world.stage.get("movers", []) if world.stage.get("movers") is Array else [] # la campana che dondola (#433)
+	audio.set_stage_theme(world.stage) # le arene a tema: la sirena e le impacchettatrici della Fabbrica
 	camera.position = Vector2.ZERO
 	_cam_zoom = 1.0
 	_phase_cam = {}

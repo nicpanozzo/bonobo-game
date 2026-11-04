@@ -49,6 +49,8 @@ var stage_movers: Array = [] # piattaforme mobili dell'arena: la campana di Bolo
 var _swings := {} # indice della piattaforma -> ultimo estremo dell'altalena sentito
 var stage_pads: Array = [] # bottoni sonori dell'arena (#423): servono per sentire quando arriva la Meraviglia
 var _wonder_on := false
+var _theme: RefCounted = preload("res://scripts/theme_stage.gd").new() # arene a tema: suoni senza eventi (la sirena della Fabbrica)
+var _theme_ms := -1.0 # tempo dell'arena dell'ultimo snapshot sentito dal tema
 const WAKA_MS := 270
 const BASS_NOTES := [1.0, 1.189, 1.335, 1.498, 1.782] # la Bassline: Mi, Sol, La, Si, Re della pentatonica minore (pitch)
 var _waka_at := 0 # Pac-Man (#427): quando è suonato l'ultimo "waka" (ms dell'orologio)
@@ -381,6 +383,12 @@ func on_prematch_cue(cue: String) -> void:
 
 
 # Dallo snapshot l'annunciatore sente solo il tempo: "Dieci secondi!" quando scende sotto la soglia
+# L'arena a tema della partita (theme_stage.gd): i suoi suoni a tempo ripartono da capo
+func set_stage_theme(spec: Dictionary) -> void:
+	_theme.setup(spec, game)
+	_theme_ms = -1.0
+
+
 func on_snapshot(data: Dictionary) -> void:
 	var left: float = data.timeLeftMs if data.get("timeLeftMs") != null else -1.0
 	var warning: float = game.audio.get("announcerTimeWarningMs", 10000)
@@ -443,6 +451,11 @@ func on_snapshot(data: Dictionary) -> void:
 			if cue != "":
 				_play(cue, {"x": float(j.x) + float(j.width) / 2.0})
 		_jets[i] = jp
+	# Le arene a tema: la sirena prima che i nastri cambino verso, le impacchettatrici, il turbo
+	var pressed: Array = data.get("pads", []) if data.get("pads") is Array else []
+	for cue: Array in _theme.cues(_theme_ms, stage_ms, pressed):
+		_play(str(cue[0]), {"x": float(cue[1])})
+	_theme_ms = stage_ms
 	# La Meraviglia dell'arena musicale (#423): i tre bottoni attivi insieme, un arpeggio che sale quando comincia
 	var wonder_now: bool = WonderStage.wonder(stage_ms, stage_pads, data.get("pads", []) if data.get("pads") is Array else [])[0] > 0.0
 	if wonder_now and not _wonder_on:
@@ -1019,6 +1032,24 @@ func _build_sounds() -> void:
 	_sounds.pad_piatto = make.call(0.9, func(s):
 		s.noise(0, "highpass", 9000, 5000, 0.85, 0.45)
 		s.noise(0, "bandpass", 4000, 3000, 0.3, 0.25))
+	# La Fabbrica: la leva (uno scatto metallico e un clang), la sirena prima del cambio di verso dei nastri, il turbo
+	# che parte (un motore che sale) e l'impacchettatrice che scende (sbuffo idraulico e tonfo di cartone)
+	_sounds.pad_leva = make.call(0.5, func(s):
+		s.noise(0, "bandpass", 3000, 1500, 0.05, 0.6)
+		s.tone(0.05, "square", 180, 120, 0.12, 0.3)
+		s.tone(0.05, "triangle", 900, 880, 0.35, 0.18))
+	_sounds.siren = make.call(1.9, func(s):
+		for k in 3:
+			s.tone(k * 0.6, "sawtooth", 520, 880, 0.3, 0.12)
+			s.tone(k * 0.6 + 0.3, "sawtooth", 880, 520, 0.3, 0.12))
+	_sounds.turbo = make.call(1.2, func(s):
+		s.tone(0, "sawtooth", 60, 240, 1.1, 0.25)
+		s.tone(0, "square", 120, 480, 1.1, 0.08)
+		s.noise(0, "bandpass", 400, 2000, 1.1, 0.2))
+	_sounds.pressa = make.call(0.6, func(s):
+		s.noise(0, "highpass", 4000, 1500, 0.18, 0.35)
+		s.noise(0.12, "lowpass", 800, 100, 0.3, 0.8)
+		s.tone(0.12, "sine", 140, 50, 0.3, 0.6))
 	# Rotolata dal bordo: un fruscio che scende
 	_sounds.roll = make.call(0.3, func(s): s.noise(0, "bandpass", 900, 350, 0.26, 0.4))
 	# Scudo colpito (#109): un "tonk" metallico e corto

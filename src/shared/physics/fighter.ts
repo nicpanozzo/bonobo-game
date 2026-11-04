@@ -42,6 +42,7 @@ export interface Fighter extends PlayerState {
   shieldDropTimer: number; // ms fermi dopo averlo abbassato
   shieldStunTimer: number; // ms fermi sullo scudo dopo un colpo parato
   stunTimer: number; // ms storditi dopo la rottura dello scudo
+  packed: boolean; // chiuso in una scatola dall'impacchettatrice della Fabbrica: è uno stordimento da cui si esce premendo i tasti
   holding: string | null; // id di chi si tiene con la presa (#109)
   grabLagTimer: number; // ms fermi per la presa: avvio, finestra attiva e attesa se va a vuoto
   grabTimer: number; // per chi è tenuto: ms prima di liberarsi da solo (i tasti premuti lo accorciano)
@@ -227,6 +228,7 @@ export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
     shieldDropTimer: 0,
     shieldStunTimer: 0,
     stunTimer: 0,
+    packed: false,
     holding: null,
     grabLagTimer: 0,
     grabTimer: 0,
