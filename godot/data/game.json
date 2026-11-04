@@ -9852,6 +9852,26 @@
         "cuamm",
         "lolhardcore"
       ],
+      "attacks": {
+        "light": {
+          "range": 67,
+          "height": 30,
+          "boxX": 1,
+          "boxY": -75
+        },
+        "heavy": {
+          "range": 78,
+          "height": 44,
+          "boxX": 0,
+          "boxY": -82
+        },
+        "dashAttack": {
+          "range": 75,
+          "height": 44,
+          "boxX": 2,
+          "boxY": -82
+        }
+      },
       "supreme": {
         "type": "storm",
         "name": "Tempesta",
@@ -14320,16 +14340,16 @@
       },
       "attacks": {
         "light": {
-          "range": 58,
+          "range": 37,
           "height": 30,
-          "boxX": 0,
-          "boxY": -72
+          "boxX": -4,
+          "boxY": -76
         },
         "heavy": {
-          "range": 51,
+          "range": 49,
           "height": 44,
-          "boxX": 0,
-          "boxY": -56
+          "boxX": -16,
+          "boxY": -51
         },
         "lightUp": {
           "range": 54,
@@ -14368,10 +14388,10 @@
           "boxY": -87
         },
         "dashAttack": {
-          "range": 51,
+          "range": 41,
           "height": 44,
-          "boxX": 0,
-          "boxY": -56
+          "boxX": -8,
+          "boxY": -51
         }
       },
       "portrait": "assets/characters/lendmar/portrait.png",
