@@ -89,7 +89,7 @@ python3 tools/sprite/dal_video.py <codice> <video.mp4> <cartella di lavoro> --sc
 python3 tools/sprite/dal_video.py EG-04 EG-04_leggeri-a.mp4 /tmp/eg04 --skin animato   # misure di una skin
 ```
 
-Nella cartella di lavoro: `out/<stato>.png`, `foglio.png` (il foglio di controllo da mettere nella PR) e `resoconto.json` (fotogrammi usati, `hitFrame` proposto, dove va ogni stato, avvisi). Ci mette circa un minuto a clip.
+Nella cartella di lavoro: `out/<stato>.png`, `foglio.png` (il foglio di controllo da mettere nella PR), `resoconto.json` (fotogrammi usati, `hitFrame` proposto, dove va ogni stato, avvisi) e `qualita.md` (la bozza della sezione [Qualità](#qualità-passo-fisso), con gli avvisi già dentro). Ci mette circa un minuto a clip.
 
 **Cosa controllare nel resoconto:**
 - **avvisi `pausa non trovata`:** la mossa è tagliata dai secondi previsti. Guarda il foglio e, se serve, correggi i fotogrammi in `tools/sprite/flow_tagli.json`;
@@ -125,12 +125,13 @@ Nella cartella di lavoro: `out/<stato>.png`, `foglio.png` (il foglio di controll
 | 5 | **Marcomunista** [`prompt/marcomunista.md`](prompt/marcomunista.md) | 29 | dicembre-gennaio |
 | 6 | **Egiainuso** [`prompt/egiainuso.md`](prompt/egiainuso.md) | 29 | gennaio-febbraio |
 
-Ogni ondata ha tre parti, che possono fare persone diverse:
+Ogni ondata ha quattro parti, che possono fare persone diverse:
 1. **Generare** le clip (sotto "Generare una clip") e consegnarle nell'issue.
 2. **Tagliarle** con lo script del passo 2: una PR a settimana per personaggio, `Parte di #539`, coi fogli di controllo.
 3. **Aggiornare** `produzione.md` nella stessa PR.
+4. **Scrivere la Qualità** nella stessa PR: cosa è venuto peggio e dove si è scesi a compromessi (sotto, [Qualità](#qualità-passo-fisso)).
 
-**Fatto quando:** tutte le clip dell'ondata sono `tagliata` in `produzione.md`, gli stati che il gioco conosce si vedono in allenamento (screenshot nella PR) e la CI è verde.
+**Fatto quando:** tutte le clip dell'ondata sono `tagliata` in `produzione.md`, ogni clip ha la sua riga in [Qualità](produzione.md#qualità) (anche solo "niente da segnalare"), gli stati che il gioco conosce si vedono in allenamento (screenshot nella PR) e la CI è verde.
 
 **Le schede mosse** di Marcomunista ed Egiainuso sono proposte di Riccardo e Claude: prima di generare la loro ondata, chiedi a Marco (@Marcomunista) se va bene, come dice [docs/community.md](../community.md). Cambiare una mossa = cambiare `OVR` in `prompt_flow.py`.
 
@@ -180,6 +181,26 @@ Si tiene se:
 - **I video non vanno nella repo.** Si allegano a un **commento dell'issue #539**, fino a 5 clip per commento, con una riga per clip: codice, tentativo, modello, crediti scalati, se l'hai tenuta.
 - Chi genera aggiorna `produzione.md` (stato `consegnata`, tentativi, modello, crediti, link al commento) nella PR del taglio, oppure lo scrive nel commento e lo aggiorna chi taglia.
 
+## Qualità (passo fisso)
+
+**Ogni PR del flusso** (immagini di partenza, taglio, prompt corretti, personaggi nuovi da Flow) dice cosa è venuto **peggio del resto** e dove si è **scesi a compromessi**. Serve a chi rifà una clip, a chi sceglie cosa rigenerare quando avanzano crediti e a chi gioca e vede qualcosa di strano: senza, i difetti si scoprono di nuovo ogni volta. Proposta di Nicola, 4/11/2026.
+
+**Cosa si scrive** (una riga per problema, con la clip o lo stato):
+- il personaggio che cambia nella clip (faccia, colori, proporzioni, arma);
+- una mossa tagliata dai secondi invece che dalla pausa, o un confine diviso a metà (`turn+skid`);
+- una mossa poco leggibile, troppo corta o troppo lunga, un `hitFrame` non confermato;
+- una posa riusata da un altro stato, una clip tenuta anche se una mossa è sbagliata;
+- scontorno: riflesso verde, buchi, polvere attaccata ai piedi, bordo del fotogramma;
+- una scelta fatta per risparmiare (Lite invece di Fast, meno tentativi, una mossa tolta);
+- quello che resta diverso dal resto del personaggio (grandezza, stile, contorno).
+
+**Dove si scrive:**
+1. **Nella PR**, una sezione `## Qualità` (lo script la prepara in `qualita.md`: gli avvisi ci sono già, il resto lo vede chi guarda il foglio).
+2. **In [`produzione.md`](produzione.md#qualità)**, nella tabella Qualità, così resta dopo il merge. Quando un problema si risolve, la riga non si cancella: si scrive `risolto in #NNN` in "Come si rimedia".
+3. **Nel README del personaggio** (`public/assets/characters/<id>/README.md`), sezione `## Qualità`, solo per quello che finisce davvero nel gioco: è lì che guarda chi lavora su quel personaggio.
+
+**Formato:** `| Clip | Cosa è venuto peggio o il compromesso | Perché si è accettato | Come si rimedia |`. Se una clip è venuta bene, si scrive "niente da segnalare": una riga vuota vuol dire "non controllato".
+
 ## Le regole dei prompt (imparate il 3/11)
 
 Valgono per ogni prompt nuovo o cambiato in `prompt_flow.py`:
@@ -222,7 +243,9 @@ Valgono per ogni prompt nuovo o cambiato in `prompt_flow.py`:
 - stile del gioco: [docs/stile-grafico.md](../stile-grafico.md);
 - un taglio fatto a mano da imitare: `tools/sprite/bradipo_dal_video.py`.
 
-**Quando ti fermi:** scrivi nell'issue dove sei arrivato (quali codici), aggiorna `produzione.md` e pusha.
+**Ogni PR** ha la sezione `## Qualità` (vedi [Qualità](#qualità-passo-fisso)) e le stesse righe in `produzione.md`. Non nascondere un difetto per far sembrare finita un'ondata: scriverlo è parte del compito.
+
+**Quando ti fermi:** scrivi nell'issue dove sei arrivato (quali codici), aggiorna `produzione.md` (anche la Qualità) e pusha.
 
 ## Domande aperte
 

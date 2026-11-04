@@ -13,6 +13,8 @@
 # 5. in <cartella>/out le strisce, <cartella>/foglio.png il foglio di controllo da mettere nella PR,
 #    <cartella>/resoconto.json fotogrammi usati e hitFrame proposto. Con --scrivi le strisce vanno anche negli asset:
 #    gli stati che il gioco conosce in public/assets/characters/<id>/, gli altri in .../<id>/in-attesa/.
+# 6. <cartella>/qualita.md: la bozza della sezione "Qualità" (avvisi già scritti, il resto da completare guardando
+#    il foglio), da copiare nella PR e in docs/clip-flow/produzione.md (vedi "Qualità" nel README del piano).
 # Correzioni a mano dei fotogrammi: tools/sprite/flow_tagli.json, {"BR-01": {"turn": [117, 146]}} (fotogrammi del video).
 # Il video non va nella repo. Servono ffmpeg, Pillow, numpy e scipy, solo per rifarlo.
 import json, os, re, subprocess, sys
@@ -323,6 +325,26 @@ def main():
         print(f"  {s:14} fotogrammi {v['fotogrammi_video'][0]}-{v['fotogrammi_video'][1]} ({v['fotogrammi']}), {v['modo']}, hitFrame {v['hitFrame_proposto']}, {v['va_in']}")
     for n in notes:
         print("  ! " + n)
+    write_quality(work, code, title, notes)
+    print(f"  bozza della sezione Qualità: {os.path.join(work, 'qualita.md')} (da completare guardando il foglio)")
+
+
+def write_quality(work, code, title, notes):
+    """La bozza delle righe "Qualità": gli avvisi sono già problemi o compromessi, il resto lo vede solo chi guarda."""
+    rows = [f"| {code} | {n} | | |" for n in notes]
+    text = [
+        f"## Qualità · {code} {title}",
+        "",
+        "Cosa è venuto peggio del resto o dove si è scesi a compromessi. Gli avvisi dello script sono già qui;",
+        "aggiungi quello che vedi nel foglio (personaggio che cambia, mossa poco leggibile, posa riusata, riflesso verde,",
+        "polvere, hitFrame da confermare...). Se non c'è niente, scrivi \"niente da segnalare\" e lascia la riga.",
+        "",
+        "| Clip | Cosa è venuto peggio o il compromesso | Perché si è accettato | Come si rimedia |",
+        "|---|---|---|---|",
+        *(rows or [f"| {code} | | | |"]),
+        "",
+    ]
+    open(os.path.join(work, "qualita.md"), "w").write("\n".join(text))
 
 
 if __name__ == "__main__":
