@@ -584,6 +584,12 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     id: "orsoblu",
     name: "Capt. OrsoBlu",
     crews: ["cuamm", "lolhardcore"],
+    // Zone dei colpi sul disegno di OB-B2 (tools/sprite/zone_dei_colpi.py)
+    attacks: {
+      light: { range: 67, height: 30, boxX: 1, boxY: -75 },
+      heavy: { range: 78, height: 44, boxX: 0, boxY: -82 },
+      dashAttack: { range: 75, height: 44, boxX: 2, boxY: -82 },
+    },
     // Tempesta! (#547, scheda di Nicola del 3/11/2026): l'arena rolla, tutti scivolano tranne lui al timone che insulta.
     // Timone e nuvolette li disegna Godot finché non c'è la clip; numeri provvisori
     supreme: {
@@ -617,10 +623,10 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       // Disegno provvisorio: il pallino scuro dei proiettili
       down: { type: "projectile", name: "Mina di bordo", startupMs: 250, cooldownMs: 600, speed: 0, gravity: 1800, lifeMs: 15000, maxAlive: 1, rests: true, spawnX: 36, spawnY: 14, range: 30, height: 22, damage: 12, baseKnockback: 420, knockbackGrowth: 6, angleDeg: 80, color: 0x2f3440 },
     },
-    // OrsoBlu v2 (Nicola, 3/11/2026): il capitano burbero con la barchetta in spalla, dalle prime 4 clip di Google Flow
+    // OrsoBlu v2 (Nicola, 3/11/2026): il capitano burbero con la barchetta in spalla, dalle clip di Google Flow
     // tagliate con tools/sprite/dal_video.py (OB-01, 02, 03, 07; tagli a mano in flow_tagli.json). Incompleto apposta:
-    // si mette nel gioco quel che c'è. Provvisori finché non arriva il pacchetto base (docs/clip-flow/base.md):
-    // light è la spinta della speciale neutra, heavy la barca alzata, hit l'atterraggio pesante, fall un pezzo del salto.
+    // si mette nel gioco quel che c'è. light, heavy e hit dalla clip base OB-B2 (4/11/2026): jab, pugno lungo, colpito.
+    // Provvisorio finché non arriva OB-B1: fall è un pezzo del salto.
     // Appeso all'ancora e arrampicata sulla catena (#547): la catena e l'ancora le disegna Godot.
     sprite: {
       dir: "assets/characters/orsoblu",
@@ -633,9 +639,9 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         walk: { fps: 18, loop: true }, // la marcia a passi rigidi
         jump: { fps: 18, loop: false },
         fall: { fps: 8, loop: true },
-        light: { fps: 24, loop: false, hitFrame: 6 },
-        heavy: { fps: 24, loop: false, hitFrame: 14 },
-        hit: { fps: 18, loop: false },
+        light: { fps: 24, loop: false, hitFrame: 7 },
+        heavy: { fps: 24, loop: false, hitFrame: 17 },
+        hit: { fps: 24, loop: false },
         jumpSquat: { fps: 24, loop: false },
         land: { fps: 24, loop: false },
         doubleJump: { fps: 30, loop: false }, // la capriola con la barca
@@ -1213,14 +1219,18 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     id: "lendmar",
     name: "Lendmar",
     crews: ["lolhardcore"],
-    // Movimento dalla clip Flow LE-B1 (pacchetto base, 4/11/2026; tools/sprite/dal_video.py, tagli in flow_tagli.json):
-    // fermo, camminata, salto, caduta, atterraggio. I colpi restano quelli disegnati col codice finché non arriva LE-B2.
+    // Pacchetto base Flow (4/11/2026; tools/sprite/dal_video.py, tagli in flow_tagli.json): movimento da LE-B1
+    // (fermo, camminata, salto, caduta, atterraggio), colpi da LE-B2. Nella clip c'è un pugno solo: leggero e pesante
+    // sono lo stesso pugno, il pesante con la carica intera. Gli altri colpi restano quelli disegnati col codice.
     sprite: {
       ...communitySprite("lendmar"),
       animations: fromRest({
         ...communitySprite("lendmar").animations,
         idle: { fps: 24, loop: true }, // 46 fotogrammi del video: respiro lento
         jumpSquat: { fps: 24, loop: false },
+        light: { fps: 24, loop: false, hitFrame: 11 },
+        heavy: { fps: 24, loop: false, hitFrame: 27 },
+        hit: { fps: 24, loop: false },
       }),
     },
     // TODO community: la scheda non ha statistiche; magro, quindi leggero e scattante
@@ -1237,15 +1247,15 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     hurtbox: { width: 30, height: 106 },
     // le zone dei colpi dove arriva il disegno (#243, tools/sprite/zone_dei_colpi.py)
     attacks: {
-      light: { range: 58, height: 30, boxX: 0, boxY: -72 },
-      heavy: { range: 51, height: 44, boxX: 0, boxY: -56 },
+      light: { range: 37, height: 30, boxX: -4, boxY: -76 },
+      heavy: { range: 49, height: 44, boxX: -16, boxY: -51 },
       lightUp: { range: 54, height: 48, boxX: -18, boxY: -124 },
       lightDown: { range: 64, height: 24, boxX: 0, boxY: -34 },
       lightAir: { range: 54, height: 50, boxX: 0, boxY: -89 },
       heavyUp: { range: 80, height: 64, boxX: -34, boxY: -128 },
       heavyDown: { range: 68, height: 30, boxX: 0, boxY: -36 },
       heavyAir: { range: 52, height: 60, boxX: 0, boxY: -87 },
-      dashAttack: { range: 51, height: 44, boxX: 0, boxY: -56 },
+      dashAttack: { range: 41, height: 44, boxX: -8, boxY: -51 },
     },
   },
 
