@@ -1,14 +1,15 @@
 // L'ancora-ragnatela di Capt. OrsoBlu (#547). Il suo recupero (Pesante + su in aria) spara l'ancora: solo su
 // quasi in verticale, su + una direzione in diagonale. Se si pianta in un blocco o in una piattaforma lui resta
 // appeso e dondola come un pendolo con la catena tesa: avanti e indietro danno slancio, su si arrampica, giù si
-// cala, Salto si stacca con lo slancio e una spinta, Scudo lascia andare, Leggero e Pesante fanno l'attacco in aria.
+// cala, Salto si stacca con lo slancio e una spinta, Scudo lascia andare, Leggero e Pesante fanno l'attacco in aria,
+// Speciale fa Avanti tutta!: riavvolge la catena e sfreccia verso l'ancora travolgendo chi c'è in mezzo.
 // Toccando terra, prendendo un colpo o dopo maxHangMs la catena si lascia. Il disegno di catena e ancora è di Godot.
 
 import { getCharacter } from "../characters";
 import { ANCHOR, FIGHTER } from "../constants";
 import { platformSurfaceY } from "./stage";
 import { arcadeSolids } from "./arcade";
-import { startAttack } from "./attacks";
+import { attackSpecFor, startAttack } from "./attacks";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
 
 export type AnchorSpec = typeof ANCHOR;
@@ -37,25 +38,30 @@ export function hookable(x: number, y: number, ctx: PhysicsContext, a: AnchorSpe
   return false;
 }
 
-// Il lancio, al posto del recupero comune. dir: la direzione tenuta (-1, 0, 1)
-export function throwAnchor(f: Fighter, dir: number, ctx: PhysicsContext): void {
+// Il lancio, al posto del recupero comune (in alto) o della speciale neutra (forward: dritto in avanti, anche da
+// terra). dir: la direzione tenuta (-1, 0, 1)
+export function throwAnchor(f: Fighter, dir: number, ctx: PhysicsContext, forward = false): void {
   const a = anchorSpec(f.characterId);
-  if (!a) return;
+  if (!a || f.anchor) return;
+  if (!f.onGround && f.anchorThrows >= a.maxThrows) return;
   if (dir !== 0) f.facing = dir as 1 | -1;
-  const angle = ((dir === 0 ? a.upAngleDeg : a.diagAngleDeg) * Math.PI) / 180;
+  const angle = ((forward ? a.forwardAngleDeg : dir === 0 ? a.upAngleDeg : a.diagAngleDeg) * Math.PI) / 180;
   f.anchor = { x: gripX(f), y: gripY(f, a), phase: "fly" };
   f.anchorVx = f.facing * Math.cos(angle) * a.throwSpeed;
   f.anchorVy = -Math.sin(angle) * a.throwSpeed;
-  f.anchorThrows += 1;
-  f.recoveryUsed = f.anchorThrows >= a.maxThrows; // i bot e la predizione guardano questo
-  f.vy = Math.min(f.vy, -a.throwLift);
-  f.jumpRising = false;
-  startAttack(f, "recovery", ctx); // l'animazione del lancio e il colpetto del braccio
+  if (!f.onGround) {
+    f.anchorThrows += 1;
+    f.recoveryUsed = f.anchorThrows >= a.maxThrows; // i bot e la predizione guardano questo
+    f.vy = Math.min(f.vy, -a.throwLift);
+    f.jumpRising = false;
+  }
+  startAttack(f, forward ? "specialNeutral" : "recovery", ctx); // l'animazione del lancio (e per il recupero il colpetto del braccio)
 }
 
 export function releaseAnchor(f: Fighter): void {
   f.anchor = undefined;
   f.anchorMs = 0;
+  f.anchorZip = false;
 }
 
 // Si riprendono i lanci: a terra, aggrappati al bordo, colpiti, al rientro
@@ -91,7 +97,9 @@ export function stepHook(f: Fighter, dtMs: number, ctx: PhysicsContext): void {
       h.phase = "hold";
       f.anchorLen = Math.max(a.minLength, Math.min(a.maxLength, Math.hypot(hx - h.x, hy - h.y)));
       f.anchorMs = 0;
-      if (f.attack === "recovery") {
+      // Lanciata da terra: la catena tira subito verso l'ancora, come Avanti tutta! (a terra non si dondola)
+      if (f.onGround) f.anchorZip = true;
+      if (f.attack === "recovery" || f.attack === "specialNeutral") {
         f.attack = null; // piantata: da appeso si può già attaccare
         f.attackActive = false;
         f.cooldownTimer = 0;
@@ -114,7 +122,7 @@ export function swingAnchor(f: Fighter, dtMs: number, ctx: PhysicsContext): bool
   const h = f.anchor!;
   const a = anchorSpec(f.characterId) ?? ANCHOR;
   f.anchorMs += dtMs;
-  if (f.hitstun || f.onGround || f.anchorMs >= a.maxHangMs || !hookable(h.x, h.y, ctx, a)) {
+  if (f.hitstun || (f.onGround && !f.anchorZip) || f.anchorMs >= a.maxHangMs || !hookable(h.x, h.y, ctx, a)) {
     releaseAnchor(f);
     return false;
   }
@@ -133,6 +141,15 @@ export function swingAnchor(f: Fighter, dtMs: number, ctx: PhysicsContext): bool
   }
   const dt = dtMs / 1000;
   const dir = (f.input.right ? 1 : 0) - (f.input.left ? 1 : 0);
+  // Avanti tutta! Speciale da appeso: la speciale laterale, già attiva, lungo la catena
+  if (!f.anchorZip && !f.attack && pressed(f, "special")) {
+    startAttack(f, "specialSide", ctx);
+    f.attackTimer = attackSpecFor(f).startupMs; // parte già attiva: il lancio della catena c'è già stato
+    f.attackActive = true; // colpisce già in questo tick
+    f.facing = (Math.sign(h.x - f.x) || f.facing) as 1 | -1;
+    f.anchorZip = true;
+  }
+  if (f.anchorZip) return zip(f, h, a, dt);
   // Il calcio in oscillazione: l'attacco in aria, qualunque direzione si tenga (su e giù servono alla catena)
   if (!f.attack && f.cooldownTimer === 0 && (pressed(f, "light") || pressed(f, "heavy"))) {
     startAttack(f, pressed(f, "light") ? "lightAir" : "heavyAir", ctx);
@@ -155,6 +172,30 @@ export function swingAnchor(f: Fighter, dtMs: number, ctx: PhysicsContext): bool
     f.vy *= a.maxSwingSpeed / speed;
   }
   if (dir !== 0 && !f.attack) f.facing = dir as 1 | -1;
+  return true;
+}
+
+// La teleferica: si va dritti verso l'ancora, la catena si accorcia con lui. Arrivati in cima resta un po' di
+// spinta verso l'ancora e si torna appesi; vicino a uno spigolo ci si aggrappa al bordo (tryGrabLedge)
+function zip(f: Fighter, h: { x: number; y: number }, a: AnchorSpec, dt: number): boolean {
+  const dx = h.x - gripX(f);
+  const dy = h.y - gripY(f, a);
+  const d = Math.hypot(dx, dy) || 1;
+  if (d - a.zipSpeed * dt <= a.minLength) {
+    f.anchorZip = false;
+    f.anchorLen = a.minLength;
+    f.vx = (dx / d) * a.zipEndSpeed;
+    f.vy = (dy / d) * a.zipEndSpeed;
+    if (f.attack === "specialSide") {
+      f.attack = null;
+      f.attackActive = false;
+      f.cooldownTimer = a.zipEndLagMs;
+    }
+    return true;
+  }
+  f.anchorLen = d - a.zipSpeed * dt;
+  f.vx = (dx / d) * a.zipSpeed;
+  f.vy = (dy / d) * a.zipSpeed;
   return true;
 }
 

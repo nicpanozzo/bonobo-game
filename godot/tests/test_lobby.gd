@@ -96,7 +96,7 @@ func test_scheda_del_lottatore() -> void:
 	var b: Button = lobby._card(lobby._chars, "orsoblu")
 	b.pressed.emit()
 	runner.check(lobby._big_name.text == "Capt. OrsoBlu" and lobby._character == "orsoblu", "cambia con il riquadro")
-	runner.check(lobby._big_moves.text.begins_with("Speciali: Schizzo"), lobby._big_moves.text)
+	runner.check(lobby._big_moves.text.begins_with("Speciali: Tutti a bordo!"), lobby._big_moves.text)
 	runner.check(lobby._summary.text.ends_with("Capt. OrsoBlu"), "e nel riassunto: %s" % lobby._summary.text)
 	lobby.free()
 

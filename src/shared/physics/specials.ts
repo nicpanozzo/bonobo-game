@@ -5,6 +5,7 @@
 import { SPECIAL_KINDS, specialsFor, type SpecialSlot } from "../characters";
 import { SPECIAL_MOVES } from "../constants";
 import type { SpecialKind } from "../types";
+import { anchorSpec, throwAnchor } from "./anchor";
 import { launch, startAttack } from "./attacks";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
 import { aliveOf, fire } from "./projectiles";
@@ -16,6 +17,11 @@ const specOf = (f: Fighter, kind: SpecialKind) => specialsFor(f.characterId)[SLO
 export function tryStartSpecial(f: Fighter, ctx: PhysicsContext): void {
   const slot: SpecialSlot = f.input.down ? "down" : f.input.left !== f.input.right ? "side" : "neutral";
   const kind = SPECIAL_KINDS[slot];
+  // Capt. OrsoBlu (#547): la neutra è l'ancora sparata dritta in avanti, da terra o in aria (Tutti a bordo!)
+  if (slot === "neutral" && anchorSpec(f.characterId)) {
+    consume(f, "special");
+    return throwAnchor(f, 0, ctx, true);
+  }
   const sp = specialsFor(f.characterId)[slot];
   if (sp.type === "dash") {
     if (!f.onGround && f.airDashUsed) return; // in aria una volta sola fino all'atterraggio

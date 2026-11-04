@@ -175,7 +175,7 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
 
   if (f.onGround && f.hitstun) f.vx *= 0.8; // attrito quando si atterra stordito
 
-  if (onRope(f) && f.onGround) f.anchor = undefined; // toccata terra si lascia la catena
+  if (onRope(f) && f.onGround && !f.anchorZip) f.anchor = undefined; // toccata terra si lascia la catena
   stepHook(f, dtMs, ctx); // l'ancora in volo parte dalle mani dove sono ora
 
   if (outOfBlastZone(f, ctx)) loseStock(f, ctx);
