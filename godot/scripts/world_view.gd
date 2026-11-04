@@ -80,6 +80,7 @@ const StageCollapse := preload("res://scripts/stage_collapse.gd")
 const HazardFx := preload("res://scripts/hazard_fx.gd")
 const BolognaHazards := preload("res://scripts/bologna_hazards.gd") # auto, ingorgo, mattoni e polvere di Bologna (#433)
 const StageCrowd := preload("res://scripts/stage_crowd.gd")
+const AnchorChain := preload("res://scripts/anchor_chain.gd") # le maglie della catena di Capt. OrsoBlu (#547)
 var _t_draw := 0.0 # il tempo dell'arena del frame che si sta disegnando (#378, per i ganci dentro le decorazioni)
 var _prize_team := 0 # premio (#433): la squadra in testa ai punti torre, dallo snapshot; i pezzi con forLeader ci sono solo per lei
 var _collapse := {} # la torre che crolla dell'arena (#433), art.collapse, o vuoto
@@ -3063,6 +3064,9 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 			var c := Color.from_hsv(fmod(now / 2000.0 + k / 3.0, 1.0), 0.7, 1.0)
 			draw_circle(Vector2(p.x + cos(a) * 22.0, p.y - fh - 14.0 + sin(a) * 6.0), 5.0, c)
 
+	if p.get("anchor") is Dictionary:
+		_draw_anchor(p) # l'ancora-ragnatela di Capt. OrsoBlu (#547)
+
 	# Appeso al bordo (#110): il braccio arriva fino allo spigolo, sopra la testa.
 	# Chi ha l'animazione ledge nello spritesheet (#171) ha già la mano disegnata sullo spigolo.
 	var own_hang: bool = _textures.has(character.id) and FighterPose.has_own(character.sprite.animations, "ledge")
@@ -3381,3 +3385,34 @@ func _draw_offscreen_markers() -> void:
 
 static func _color(n: Variant) -> Color:
 	return Color.hex((int(n) << 8) | 0xff)
+
+
+# L'ancora di Capt. OrsoBlu (#547): la catena dalle mani alla punta, a maglie, e l'ancora girata verso dove va.
+# Tesa quando è piantata, un po' molle in volo e di ritorno
+func _draw_anchor(p: Dictionary) -> void:
+	var a: Dictionary = p.anchor
+	var hand := Vector2(float(p.x), float(p.y) - float(game.anchor.gripY))
+	var tip := Vector2(float(a.x), float(a.y))
+	var alpha := FighterPose.away_alpha(p)
+	var sag := 0.0 if str(a.phase) in ["hold", "climb"] else 18.0
+	var links := AnchorChain.links(hand, tip, sag)
+	var iron := Color(0.24, 0.25, 0.29, alpha)
+	var shine := Color(0.62, 0.64, 0.7, alpha)
+	for i in links.size():
+		var l: Dictionary = links[i]
+		var c: Vector2 = l.at
+		var d: Vector2 = l.dir
+		var w := 3.0 if i % 2 == 0 else 1.8 # maglie di piatto e di taglio, alternate
+		draw_line(c - d * 5.0, c + d * 5.0, iron, w + 2.0)
+		draw_line(c - d * 4.0, c + d * 4.0, shine, maxf(1.0, w - 1.0))
+	var dir := (tip - hand).normalized() if tip.distance_to(hand) > 1.0 else Vector2.UP
+	var side := Vector2(-dir.y, dir.x)
+	var dark := Color(0.12, 0.13, 0.16, alpha)
+	# fusto, ceppo trasversale vicino all'anello e marre a uncino in punta
+	draw_line(tip - dir * 22.0, tip + dir * 4.0, dark, 6.0)
+	draw_line(tip - dir * 16.0 - side * 9.0, tip - dir * 16.0 + side * 9.0, dark, 4.0)
+	draw_circle(tip - dir * 24.0, 4.5, dark)
+	for s: float in [-1.0, 1.0]:
+		var bend: Vector2 = tip + side * s * 11.0 - dir * 6.0
+		draw_line(tip + dir * 2.0, bend, dark, 5.0)
+		draw_line(bend, bend - dir * 7.0 + side * s * 3.0, dark, 4.0)

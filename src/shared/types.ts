@@ -82,7 +82,16 @@ export interface PlayerState {
   powerupMs: number; // ms che restano del potenziamento, 0 se nessuno
   predict?: PredictionState; // E17: solo per chi manda InputState.seq
   companion?: CompanionState; // il compagno che lo segue (#369, il beagle di Lampione); manca se non ne ha
+  anchor?: AnchorState; // l'ancora di Capt. OrsoBlu (#547): in volo, piantata o di ritorno; manca se è in mano
   station?: number; // indice della postazione che sta usando (#433, stage.stations): fermo, i tasti guidano lei; manca se nessuna
+}
+
+// L'ancora-ragnatela di Capt. OrsoBlu (#547): dove sta la sua punta. fly: in volo, back: torna in mano senza
+// aver trovato niente, hold: piantata e lui appeso che dondola, climb: piantata e lui che si arrampica
+export interface AnchorState {
+  x: number;
+  y: number;
+  phase: "fly" | "back" | "hold" | "climb";
 }
 
 // Il compagno di un lottatore (#369): dove è e dove guarda

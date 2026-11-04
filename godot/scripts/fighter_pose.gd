@@ -185,6 +185,10 @@ static func animation_for(p: Dictionary, holding := false) -> String:
 		# Lo stato del colpo preciso (lightUp, heavyAir, recovery...): chi non l'ha disegnato mostra il ripiego.
 		# L'attacco dal bordo (#110) non ha uno stato suo: usa il colpo leggero
 		return "light" if p.attack == "ledgeAttack" else str(p.attack)
+	# Appeso all'ancora di Capt. OrsoBlu (#547): dondola o si arrampica sulla catena
+	var anchor: Variant = p.get("anchor")
+	if anchor is Dictionary and str(anchor.get("phase", "")) in ["hold", "climb"]:
+		return "anchorClimb" if anchor.phase == "climb" else "anchorHang"
 	var ledge := str(p.get("ledge", ""))
 	if ledge == "hang":
 		return "ledge" # appeso al bordo (#110)

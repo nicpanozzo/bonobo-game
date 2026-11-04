@@ -10,7 +10,7 @@ Dalle prime 4 clip fatte su Google Flow (Veo 3.1 Lite), tagliate con `tools/spri
 |---|---|
 | OB-03 | `idle`, `walk`, `taunt`, `jumpSquat`, `jump`, `fall`, `land`, `hit` |
 | OB-07 | `heavy`, `heavyUp`, `shield` |
-| OB-01 | `recovery`, e in `in-attesa/` `anchorHang` e `anchorClimb`, per quando ci sarà la fisica dell'ancora |
+| OB-01 | `recovery`, `anchorHang` (appeso all'ancora) e `anchorClimb` (arrampicata sulla catena, #547) |
 | OB-02 | `specialSide`, `doubleJump`, `specialNeutral`, `light` |
 
 I fotogrammi presi a mano sono in `tools/sprite/flow_tagli.json`. I video non sono nella repo: se servono, chiedili a Nicola.

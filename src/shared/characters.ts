@@ -1,7 +1,7 @@
 // I personaggi giocabili. Aggiungerne uno = un blocco qui e una cartella in public/assets/characters/<id>/.
 // Cambiano aspetto e statistiche (E11 passo B); le mosse proprie arrivano con le speciali (E10).
 
-import { CHARACTER_STATS, CHARGE_EXAMPLE, DEFAULT_SPECIALS, FIGHTER, RECOVERY, type AttackSpec } from "./constants";
+import { ANCHOR, CHARACTER_STATS, CHARGE_EXAMPLE, DEFAULT_SPECIALS, FIGHTER, RECOVERY, type AttackSpec } from "./constants";
 import type { AttackKind, SpecialKind } from "./types";
 
 // Gli stati che ogni lottatore con sprite deve avere
@@ -35,6 +35,8 @@ export const OPTIONAL_ANIMATION_NAMES = [
   "specialDown",
   "dashAttack", // attacco in corsa: senza disegno, la posa del pesante
   "jumpSquat", // preparazione al salto (#384 A3): senza disegno, la posa dell'atterraggio
+  "anchorHang", // appeso all'ancora di Capt. OrsoBlu (#547): senza disegno, la posa appesa al bordo
+  "anchorClimb", // arrampicata sulla catena: senza disegno, la posa appesa all'ancora
 ] as const;
 export type OptionalAnimationName = (typeof OPTIONAL_ANIMATION_NAMES)[number];
 export type SpriteState = AnimationName | OptionalAnimationName;
@@ -68,6 +70,8 @@ export const ANIMATION_FALLBACK: Record<OptionalAnimationName, SpriteState> = {
   specialSide: "special",
   specialDown: "special",
   jumpSquat: "land", // e chi non ha nemmeno quella resta fermo (idle)
+  anchorHang: "ledge",
+  anchorClimb: "anchorHang",
 };
 
 export interface SpriteAnimation {
@@ -402,6 +406,7 @@ export interface CharacterSpec {
   specials?: Partial<SpecialSet>; // quelle che mancano sono DEFAULT_SPECIALS (E10)
   supreme?: SupremeSpec; // senza, la suprema di base (ATTACKS.supreme, #101)
   companion?: CompanionSpec; // un compagno che lo segue da solo (#369)
+  anchor?: Partial<typeof ANCHOR>; // il recupero spara un'ancora a cui appendersi (#547, Capt. OrsoBlu); i numeri che mancano sono ANCHOR
   recovery?: Partial<AttackSpec & typeof RECOVERY>; // numeri propri del recupero (#11): quelli che mancano restano i soliti
   quotes?: CharacterQuotes; // le battute della scheda, scritte in un fumetto (solo disegno, Godot)
   strikeColor?: string; // colore della scia dei suoi colpi, "#rrggbb" (#384 B2); senza, bianca o arancio per i pesanti
@@ -559,6 +564,8 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     id: "orsoblu",
     name: "Capt. OrsoBlu",
     crews: ["cuamm", "lolhardcore"],
+    // L'ancora-ragnatela (#547): il recupero spara l'ancora, appeso dondola, si arrampica e si stacca con lo slancio
+    anchor: {},
     // Con la barchetta addosso è un po' più pesante e lento di Bonobot (E11)
     // TODO community: statistiche provvisorie, da confermare con @MauroGrecchi
     stats: { weight: 1.05, speed: 0.9, airSpeed: 0.95, jump: 0.95 },
@@ -573,7 +580,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     // tagliate con tools/sprite/dal_video.py (OB-01, 02, 03, 07; tagli a mano in flow_tagli.json). Incompleto apposta:
     // si mette nel gioco quel che c'è. Provvisori finché non arriva il pacchetto base (docs/clip-flow/base.md):
     // light è la spinta della speciale neutra, heavy la barca alzata, hit l'atterraggio pesante, fall un pezzo del salto.
-    // La catena nelle speciali è disegnata da Flow: la fisica dell'ancora (appeso, arrampicata) è ancora da fare.
+    // Appeso all'ancora e arrampicata sulla catena (#547): la catena e l'ancora le disegna Godot.
     sprite: {
       dir: "assets/characters/orsoblu",
       frameWidth: 360,
@@ -597,6 +604,8 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         recovery: { fps: 24, loop: false, hitFrame: 6 }, // lancia l'ancora in alto
         specialSide: { fps: 24, loop: false, hitFrame: 10 }, // teleferica verso l'ancora
         specialNeutral: { fps: 24, loop: false, hitFrame: 8 }, // ancora avanti e strattone
+        anchorHang: { fps: 18, loop: true }, // appeso all'ancora che dondola (#547)
+        anchorClimb: { fps: 24, loop: true }, // si tira su lungo la catena
       },
     },
   },

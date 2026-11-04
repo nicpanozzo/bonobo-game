@@ -18,8 +18,10 @@
 //   timed.ts     pezzi a tempo e fasi dell'arena (#433)
 //   stations.ts  postazioni: bombarda e munizioni (#433)
 //   bassanese.ts il Bassanese chiamato col telefono
+//   anchor.ts    l'ancora-ragnatela di Capt. OrsoBlu (#547)
 
 import { isArcade, playPacman, playTetris, stepArcade } from "./arcade";
+import { onRope, stepHook, swingAnchor, tightenAnchor } from "./anchor";
 import { resolveHits, tryStartAttack, updateAttack } from "./attacks";
 import { stepBassanese } from "./bassanese";
 import { stepCompanion } from "./companion";
@@ -141,9 +143,16 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
     f.prevInput = f.input;
     return;
   }
-  tryComboSupreme(f, ctx); // Speciale + Pesante con la barra piena: anche sopra la speciale appena partita
+  // Appesi all'ancora (#547): il pendolo prende il posto dei controlli e della gravità
+  const swinging = swingAnchor(f, dtMs, ctx);
+  if (swinging) {
+    endDash(f);
+    f.jumpRising = false;
+  } else tryComboSupreme(f, ctx); // Speciale + Pesante con la barra piena: anche sopra la speciale appena partita
   // Durante la presa, sullo scudo o storditi niente controlli né attacchi
-  if (!grabbing(f, dtMs, ctx) && !specialing(f, dtMs, ctx) && !stepLag(f, dtMs, ctx) && !holdShield(f, dtMs, ctx)) {
+  if (swinging) {
+    // niente: i tasti li ha già letti swingAnchor
+  } else if (!grabbing(f, dtMs, ctx) && !specialing(f, dtMs, ctx) && !stepLag(f, dtMs, ctx) && !holdShield(f, dtMs, ctx)) {
     applyControls(f, dt, ctx);
     tryStartAttack(f, ctx);
     if (!f.hitstun) stepDrop(f, dtMs);
@@ -152,18 +161,22 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
     f.jumpRising = false; // il salto corto vale solo per la spinta del salto
     stepDrop(f, dtMs, true);
   }
-  applyGravity(f, dt);
+  if (!swinging) applyGravity(f, dt);
 
   const prevY = f.y;
   const wasOnGround = f.onGround;
   f.x += f.vx * dt;
   f.y += f.vy * dt;
+  tightenAnchor(f); // la catena tesa riporta le mani sul cerchio del pendolo
 
   collideWithStage(f, prevY, ctx, dtMs);
   if (f.onGround && !wasOnGround) startLanding(f); // #384 A3
   landTech(f, wasOnGround, ctx);
 
   if (f.onGround && f.hitstun) f.vx *= 0.8; // attrito quando si atterra stordito
+
+  if (onRope(f) && f.onGround) f.anchor = undefined; // toccata terra si lascia la catena
+  stepHook(f, dtMs, ctx); // l'ancora in volo parte dalle mani dove sono ora
 
   if (outOfBlastZone(f, ctx)) loseStock(f, ctx);
 

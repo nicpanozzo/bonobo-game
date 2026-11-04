@@ -247,6 +247,8 @@ export function launch(target: Fighter, attacker: Fighter, kind: AttackKind, x: 
   // Chi viene colpito può di nuovo usare il recupero (#11)
   target.recoveryUsed = false;
   target.helpless = false;
+  target.anchor = undefined; // un colpo stacca dall'ancora di OrsoBlu e la riporta in mano (#547)
+  target.anchorThrows = 0;
   clearStun(target);
   if (kind === "supreme") infect(attacker, target, ctx); // il filo di Kirschner di Dr. Micelium (#358)
   ctx.events.push({

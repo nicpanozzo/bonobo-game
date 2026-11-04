@@ -81,6 +81,11 @@ export interface Fighter extends PlayerState {
   shortHop: boolean; // lasciare presto il salto lo accorcia (i bot no: tengono il tasto un tick solo)
   inputSeq: number; // E17: InputState.seq dell'input in uso, -1 se il client non lo manda
   inputTicks: number; // tick giocati con quell'input
+  anchorVx: number; // l'ancora in volo (#547): pixel/s
+  anchorVy: number;
+  anchorLen: number; // pixel di catena tra l'ancora piantata e le mani
+  anchorMs: number; // ms appesi all'ancora
+  anchorThrows: number; // lanci dell'ancora da quando si è toccato terra, il bordo o si è stati colpiti
   pacDir?: { x: number; y: number }; // da Pac-Man (#427): dove si va, una sola tra x e y è -1 o 1
   pacPellets?: number; // da Pac-Man: palline mangiate in questa forma (piccola 1, grande PACMAN.bigPelletValue), accelerano
 }
@@ -246,6 +251,12 @@ export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
     pet: null,
     supremeRate: s.supremeRate ?? 1,
     supremeBusyMs: 0,
+    anchorVx: 0,
+    anchorVy: 0,
+    anchorLen: 0,
+    anchorMs: 0,
+    anchorThrows: 0,
+    anchor: undefined, // esplicito: resetForMatch copia anche questo e toglie l'ancora rimasta
   };
 }
 
