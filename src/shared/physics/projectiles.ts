@@ -3,7 +3,7 @@
 // pieni, i lottatori, lo scudo e i proiettili degli altri (si annullano a vicenda).
 
 import { getCharacter, SPECIAL_KINDS, specialsFor, type ProjectileSpecial, type SpecialSlot, type SupremeEagle } from "../characters";
-import { FIGHTER, HITSTOP, SLICK, SPECIAL_MOVES } from "../constants";
+import { FIGHTER, HITSTOP, SCIVOLONE, SLICK, SPECIAL_MOVES } from "../constants";
 import type { ProjectileState, PuddleState, SpecialKind } from "../types";
 import { bodyBox, canBeHit, launch, overlap } from "./attacks";
 import type { Fighter, PhysicsContext } from "./fighter";
@@ -150,6 +150,10 @@ function hitFighter(
     }
     // Il colpo vola nella direzione del proiettile, non in quella in cui guarda chi l'ha tirato
     launch(t, { ...owner, facing: dir }, p.kind, x, y, ctx);
+    if (getCharacter(owner.characterId).spitWet) {
+      t.wetBy = owner.id; // lo Sputo di Egiainuso bagna (#557)
+      t.wetMs = SCIVOLONE.wetMs;
+    }
     t.hitstopTimer = Math.max(t.hitstopTimer, Math.min(HITSTOP.maxMs, HITSTOP.baseMs + HITSTOP.perDamageMs * sp.damage));
     end(p, "hit");
     return;
@@ -267,3 +271,15 @@ export const onPuddle = (f: Fighter, ctx: PhysicsContext): boolean =>
   f.onGround && (ctx.projectiles?.puddles ?? []).some((q) => q.ownerId !== f.id && Math.abs(f.y - q.y) < 2 && Math.abs(f.x - q.x) < q.width / 2 + FIGHTER.width / 4);
 
 export const puddleStates = (world: ProjectileWorld): PuddleState[] => world.puddles.map(({ id, ownerId, x, y, width }) => ({ id, ownerId, x, y, width }));
+
+// Capra e cavaliere di Elvedeo (#557): dopo l'Incornata il Piccione parte da solo verso il petto di chi è stato colpito,
+// se non ce n'è già uno in volo
+export function chasePigeon(f: Fighter, target: Fighter, ctx: PhysicsContext): void {
+  const sp = specialsFor(f.characterId).neutral;
+  if (sp.type !== "projectile" || aliveOf(f, ctx) >= sp.maxAlive) return;
+  const dx = target.x - f.x;
+  const dy = target.y - FIGHTER.height / 2 - (f.y - (sp.spawnY ?? SPECIAL_MOVES.projectileY));
+  const len = Math.hypot(dx, dy) || 1;
+  f.facing = (Math.sign(dx) || f.facing) as 1 | -1;
+  fire(f, SPECIAL_KINDS.neutral, sp, ctx, { vx: (dx / len) * sp.speed, vy: (dy / len) * sp.speed });
+}

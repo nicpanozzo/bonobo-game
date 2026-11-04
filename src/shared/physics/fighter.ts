@@ -89,6 +89,9 @@ export interface Fighter extends PlayerState {
   anchorThrows: number; // lanci dell'ancora da quando si è toccato terra, il bordo o si è stati colpiti
   boardedBy?: string; // chi l'ha tirato a bordo con l'ancora (l'Arrembaggio di OrsoBlu, #557)
   boardedMs: number; // ms in cui il suo colpo vale l'arrembaggio
+  airPops: number; // colpi in aria che l'hanno già rialzato da quando ha lasciato terra (Marcomunista, #557)
+  wetBy?: string; // chi l'ha bagnato con lo Sputo (lo Scivolone di Egiainuso, #557)
+  wetMs: number; // ms in cui resta bagnato
   pacDir?: { x: number; y: number }; // da Pac-Man (#427): dove si va, una sola tra x e y è -1 o 1
   pacPellets?: number; // da Pac-Man: palline mangiate in questa forma (piccola 1, grande PACMAN.bigPelletValue), accelerano
 }
@@ -262,6 +265,9 @@ export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
     anchorZip: false,
     boardedBy: undefined,
     boardedMs: 0,
+    airPops: 0,
+    wetBy: undefined,
+    wetMs: 0,
     anchor: undefined, // esplicito: resetForMatch copia anche questo e toglie l'ancora rimasta
   };
 }

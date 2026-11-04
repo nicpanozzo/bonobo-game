@@ -2,7 +2,7 @@
 // Chi tiene dà colpetti col leggero o lancia nella direzione tenuta; chi è tenuto preme tasti per liberarsi.
 // Il triangolo: l'attacco batte la presa (un colpo nello stesso tick vince), la presa batte lo scudo.
 
-import { GRAB } from "../constants";
+import { GRAB, SCIVOLONE } from "../constants";
 import type { AttackKind, InputState } from "../types";
 import { attackBox, attackSpecFor, bodyBox, canBeHit, launch, overlap, startAttack } from "./attacks";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
@@ -49,6 +49,9 @@ function canStartGrab(f: Fighter): boolean {
 
 // Dopo i colpi: la presa attiva afferra il più vicino nel suo rettangolo. Chi è appena stato colpito
 // (o ha perso la presa perché colpito) non entra: il colpo nello stesso tick vince
+// Scivolone di Egiainuso (#557): t è bagnato dallo Sputo di f
+export const wetted = (f: Fighter, t: Fighter): boolean => t.wetMs > 0 && t.wetBy === f.id;
+
 export function resolveGrabs(fighters: Fighter[], ctx: PhysicsContext): void {
   for (const f of fighters) {
     if (f.attack !== "grab" || !f.attackActive || inGrab(f) || f.hitstunTimer > 0) continue;
@@ -57,7 +60,7 @@ export function resolveGrabs(fighters: Fighter[], ctx: PhysicsContext): void {
     for (const t of fighters) {
       if (t === f || !canBeHit(t) || inGrab(t) || t.hitstunTimer > 0 || t.ledge !== null) continue;
       if (ctx.canHit && !ctx.canHit(f, t)) continue;
-      if (!overlap(box, bodyBox(t))) continue;
+      if (!overlap(wetted(f, t) ? { ...box, x: box.x - SCIVOLONE.grabReachPx / 2, w: box.w + SCIVOLONE.grabReachPx } : box, bodyBox(t))) continue;
       if (!best || Math.abs(t.x - f.x) < Math.abs(best.x - f.x)) best = t;
     }
     if (best) connect(f, best, ctx);

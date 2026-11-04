@@ -86,6 +86,7 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
   f.cooldownTimer = Math.max(0, f.cooldownTimer - dtMs);
   f.hitstunTimer = Math.max(0, f.hitstunTimer - dtMs);
   f.boardedMs = Math.max(0, f.boardedMs - dtMs);
+  f.wetMs = Math.max(0, f.wetMs - dtMs);
   f.invulnerableTimer = Math.max(0, f.invulnerableTimer - dtMs);
   f.dropTimer = Math.max(0, f.dropTimer - dtMs);
   f.dodgeTimer = Math.max(0, f.dodgeTimer - dtMs);
