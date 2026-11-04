@@ -2,10 +2,11 @@
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { ANCHOR, TICK_RATE } from "../constants";
+import { ANCHOR, ARREMBAGGIO, TICK_RATE } from "../constants";
 import { getStage, type StageSpec } from "../stages";
 import type { InputState } from "../types";
 import { hookable } from "./anchor";
+import { launch } from "./attacks";
 import { createFighter, emptyInput, stepWorld, type Fighter, type PhysicsContext } from "./index";
 
 const DT = 1000 / TICK_RATE;
@@ -238,6 +239,41 @@ describe("ancora di Capt. OrsoBlu", () => {
     assert.equal(o.percent, ANCHOR.pullDamage);
     assert.ok(o.vx < 0, "va verso di lui");
     assert.equal(f.anchor?.phase, "back", "l'ancora torna in mano");
+  });
+
+  it("Arrembaggio (#557): lo strattone dell'ancora segna chi è a bordo, e il colpo dopo di OrsoBlu lo spinge di più", () => {
+    const { ctx, f } = setup();
+    const mk = (id: string) => createFighter({ id, name: id, characterId: "default", color: 0, team: 0, index: 1, stocks: 3 }, stage);
+    const o = mk("o");
+    f.facing = 1;
+    o.x = f.x + 200;
+    o.y = f.y;
+    o.onGround = false;
+    press(f, { special: true });
+    for (let i = 0; i < 20 && o.percent === 0; i++) {
+      o.vx = o.vy = 0;
+      stepWorld([f, o], DT, ctx);
+      press(f, {});
+    }
+    assert.equal(o.boardedBy, "p");
+    assert.ok(o.boardedMs > 0 && o.boardedMs <= ARREMBAGGIO.windowMs);
+    // Lo stesso pesante su chi è a bordo e su chi non lo è, alla stessa percentuale
+    const plain = mk("x");
+    plain.percent = o.percent;
+    launch(plain, f, "heavy", 0, 0, ctx);
+    launch(o, f, "heavy", 0, 0, ctx);
+    assert.ok(Math.abs(o.vx) > Math.abs(plain.vx) * 1.3, "l'arrembaggio spinge di più");
+    assert.equal(o.boardedMs, 0, "vale una volta sola");
+    // Il colpo di qualcun altro non vale l'arrembaggio
+    const other = mk("y");
+    other.boardedBy = "p";
+    other.boardedMs = 300;
+    other.percent = plain.percent;
+    const x = mk("z");
+    x.percent = plain.percent;
+    launch(other, x, "heavy", 0, 0, ctx);
+    launch(plain, x, "heavy", 0, 0, ctx);
+    assert.equal(Math.round(other.vx), Math.round(plain.vx));
   });
 
   it("chi non ha l'ancora fa il recupero di sempre", () => {

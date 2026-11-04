@@ -39,6 +39,15 @@ func test_corsa_e_attacco_in_corsa() -> void:
 	runner.check(Settings.DEFAULT_BINDINGS.run == [KEY_SHIFT], "la corsa sta su Maiusc")
 
 
+
+func test_combo_su_misura() -> void:
+	var game := _game()
+	var rows := _all(MoveList.rows(game, "orsoblu", {}))
+	var combo: Array = rows.filter(func(r): return r[0] == "Arrembaggio")
+	runner.check(combo.size() == 1 and combo[0][1] == "combo", "la combo di OrsoBlu nella lista: %s" % [combo])
+	var plain := _all(MoveList.rows(game, "bonobot", {}))
+	runner.check(plain.filter(func(r): return r[1] == "combo").is_empty(), "chi non ha una combo sua non ne mostra")
+
 func test_ogni_personaggio_ha_la_sua_lista() -> void:
 	var game := _game()
 	for id in game.characters:
