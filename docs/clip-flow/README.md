@@ -69,6 +69,8 @@ Ogni passo è un compito a sé. Chi lo prende lo scrive nell'issue #539 (`Prendo
 
 **Fatto quando:** la clip è nell'issue e lo script (o chi la guarda fotogramma per fotogramma) trova le due mosse separate da una pausa ferma. Allora valgono le regole di questo piano. Se non si ferma, si passa a **un attacco per clip**: si cambia `WINDOWS` e `SETS` in `prompt_flow.py` e il conto sale a circa 140 clip.
 
+**Fatto (4/11):** fra i due attacchi Bradipo si ferma per circa 1 secondo, ma in guardia coi pugni alti invece che nella posa di partenza. Lo script ora riconosce anche le pause in una posa diversa (mezzo secondo fermo) e divide la clip da solo. **Le regole del piano restano.** Difetti della clip: un arco bianco nell'aereo su e polvere all'atterraggio, nonostante l'AVOID. L'aereo avanti è venuto più "su e giù" che "in avanti".
+
 ### Passo 1 · Le 16 immagini di partenza con le armi (chi ha Flow)
 
 **Cosa serve:** i prompt in [`immagini-partenza.md`](immagini-partenza.md); le immagini in `riferimenti/personaggi/` e `riferimenti/armi/`.
