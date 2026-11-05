@@ -19,6 +19,7 @@
 //   stations.ts  postazioni: bombarda e munizioni (#433)
 //   bassanese.ts il Bassanese chiamato col telefono
 //   anchor.ts    l'ancora-ragnatela di Capt. OrsoBlu (#547)
+//   gear.ts      oggetti per categoria: ciabatte, petardi, caffè, brownie
 
 import { isArcade, playPacman, playTetris, stepArcade } from "./arcade";
 import { hookFighters, onRope, stepHook, swingAnchor, tightenAnchor } from "./anchor";
@@ -32,6 +33,7 @@ import { genreAt, genreGravity } from "./genre";
 import { tickBuffer, type Fighter, type PhysicsContext } from "./fighter";
 import { grabbing, inGrab, resolveGrabs, stepGrabs } from "./grab";
 import { swapTripInput, tickPowerup } from "./items";
+import { fly, quakes } from "./gear";
 import { holdLedge, remapLedges, tryGrabLedge } from "./ledge";
 import { applyControls, applyGravity, startLanding, stepDrop, stepLag, tickCoyote } from "./movement";
 import { holdShield } from "./shield";
@@ -167,6 +169,7 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
     stepDrop(f, dtMs, true);
   }
   if (!swinging) applyGravity(f, dt, genreGravity(genreAt(ctx.stage, ctx.timeMs ?? 0, ctx.padsMs))); // col reggae del Palco si vola
+  fly(f, dt); // la moka a razzo: tenendo il salto si sale (gear.ts)
 
   const prevY = f.y;
   const wasOnGround = f.onGround;
@@ -222,4 +225,5 @@ export function stepWorld(fighters: Fighter[], dtMs: number, ctx: PhysicsContext
   stepArcade(fighters, dtMs, ctx); // pezzi del Tetris e bocconi di Pac-Man (#427)
   stepBassanese(fighters, dtMs, ctx); // il Bassanese chiamato col telefono
   stepStations(fighters, dtMs, ctx, firstEvent); // postazioni e palle di mortadella (#433), dopo colpi e prese
+  quakes(fighters, ctx, firstEvent); // il gigante del brownie della nonna fa tremare la terra quando atterra (gear.ts)
 }

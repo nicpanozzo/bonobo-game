@@ -984,6 +984,74 @@ export const FUNGO = {
   bounceVy: 420, // pixel/s verso l'alto del rimbalzo
 };
 
+// Oggetti per categoria (Nicola, 5 novembre 2026): due per categoria, ognuno con la sua versione rara che fa una cosa
+// particolare (meccaniche alla The Binding of Isaac). Un blocco per oggetto; le categorie sono in ItemSpec.category
+export const GEAR = {
+  // Lancio: la ciabatta vola tesa e veloce; quella della mamma insegue l'avversario più vicino
+  ciabatta: {
+    throwSpeed: 1250, // pixel/s in avanti: più tesa della banana
+    throwLift: 120, // pixel/s verso l'alto: quasi dritta
+    throwUpSpeed: 1150, // pixel/s tenendo su
+    gravityMult: 0.55, // in volo cade piano
+  },
+  ciabattaMamma: {
+    homingMs: 1800, // ms in cui insegue, poi cade come le altre
+    speed: 900, // pixel/s mentre insegue
+    turnDegPerSec: 300, // gradi al secondo di virata verso il bersaglio
+  },
+  // Lancio: il petardo si accende quando lo si lancia o lo si posa, si attacca a chi o a dove tocca e scoppia
+  petardo: {
+    fuseMs: 1600, // ms di miccia dal lancio
+    radius: 95, // pixel: raggio dello scoppio, dal centro al punto più vicino del corpo
+    damage: 15, // percentuale dello scoppio (prende anche chi l'ha lanciato, come le bombe di Isaac)
+    knockback: 560, // pixel/s di lancio di base
+    knockbackGrowth: 6, // pixel/s in più per ogni punto di percentuale
+    angleDeg: 55, // angolo di lancio, dal centro dello scoppio verso fuori
+    // Il petardo a grappolo: lo scoppio sparge petardini che scoppiano a loro volta
+    clusterCount: 4, // petardini sparsi dallo scoppio
+    clusterSpeed: 520, // pixel/s dei petardini
+    clusterLift: 520, // pixel/s verso l'alto dei petardini
+    clusterFuseMs: 700, // ms di miccia dei petardini, più clusterStepMs per ognuno dopo il primo
+    clusterStepMs: 120,
+    clusterRadius: 60, // pixel: raggio dello scoppio di un petardino
+    clusterDamage: 7, // percentuale di un petardino
+    clusterKnockback: 380, // pixel/s di lancio di base di un petardino
+  },
+  // Consumo: il caffè fa andare più svelti; la moka a razzo fa volare tenendo il salto
+  caffe: {
+    ms: 8000, // ms di effetto
+    speedMult: 1.3, // velocità orizzontale
+    attackSpeedMult: 1.25, // velocità degli attacchi normali
+  },
+  moka: {
+    ms: 7000, // ms di volo
+    speedMult: 1.2, // velocità orizzontale
+    thrust: 2600, // pixel/s² verso l'alto tenendo il salto
+    maxRise: 520, // pixel/s massimi di salita
+  },
+  // Consumo: il brownie spaziale, come le pillole di Isaac, sale dopo un po' con un effetto a sorpresa
+  brownie: {
+    delayMs: 2500, // ms in cui non succede niente
+    effectMs: 8000, // ms dell'effetto
+    nonnaMs: 11000, // ms del brownie della nonna: sempre gigante, e quando atterra fa tremare la terra
+    sleepMs: 2200, // ms addormentati, l'effetto peggiore: fermi e colpibili come con lo scudo rotto
+  },
+  // Gigante e mini, dal brownie
+  size: {
+    giant: 1.5, // scala del corpo da giganti
+    giantDamageMult: 1.35, // danno dei colpi dati
+    giantKnockbackMult: 0.7, // frazione del volo preso: si è pesanti
+    giantSpeedMult: 0.9,
+    mini: 0.6, // scala del corpo da mini
+    miniDamageMult: 0.75,
+    miniKnockbackMult: 1.35,
+    miniSpeedMult: 1.3,
+    quakeRadius: 220, // pixel: chi è a terra così vicino a un gigante della nonna che atterra salta via
+    quakeDamage: 5, // percentuale della scossa
+    quakeVy: 620, // pixel/s verso l'alto della scossa
+  },
+};
+
 // Il filo di Kirschner di Dr. Micelium (#358): chi è infettato dalle spore va più piano, lui picchia più forte.
 // Sono potenziamenti come quelli degli oggetti (powerup "spore" e "micelio"), così il client li vede nello snapshot
 export const SPORE = {

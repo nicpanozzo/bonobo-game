@@ -1,7 +1,7 @@
 // Lo stato completo di un lottatore sul server: quello che vedono i client (PlayerState)
 // più i timer interni che non viaggiano in rete.
 
-import { DASH, FIGHTER, INPUT, SHIELD } from "../constants";
+import { DASH, FIGHTER, GEAR, INPUT, SHIELD } from "../constants";
 import type { StageSpec } from "../stages";
 import type { GameEvent, InputState, PlayerState, SpecialKind } from "../types";
 import type { ArcadeWorld } from "./arcade";
@@ -95,6 +95,7 @@ export interface Fighter extends PlayerState {
   wetMs: number; // ms in cui resta bagnato
   pacDir?: { x: number; y: number }; // da Pac-Man (#427): dove si va, una sola tra x e y è -1 o 1
   pacPellets?: number; // da Pac-Man: palline mangiate in questa forma (piccola 1, grande PACMAN.bigPelletValue), accelerano
+  brownieNext?: string; // il brownie spaziale mangiato: l'effetto che salirà finita l'attesa (gear.ts)
 }
 
 // Quello che serve alla fisica oltre ai lottatori: l'arena e dove scrivere gli eventi
@@ -109,6 +110,13 @@ export interface PhysicsContext {
   arcade?: ArcadeWorld; // pezzi e blocchi dei power-up arcade (#427): nasce col primo pezzo
   stations?: StationWorld; // postazioni dell'arena (#433): nasce al primo passo
   bassanese?: BassaneseWorld; // i Bassanesi chiamati col telefono: nasce con la prima chiamata
+}
+
+// Gigante o mini dal brownie (gear.ts): il corpo da colpire e i colpi crescono o calano con lui
+export function bodyScale(f: Pick<Fighter, "powerup">): number {
+  if (f.powerup === "gigante" || f.powerup === "colosso") return GEAR.size.giant;
+  if (f.powerup === "mini") return GEAR.size.mini;
+  return 1;
 }
 
 export const emptyInput = (): InputState => ({

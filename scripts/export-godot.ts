@@ -8,7 +8,7 @@ import { basename, dirname, extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { SpriteFolderSpec } from "../src/shared/characters";
 import { CHARACTERS, CREWS, DEFAULT_CHARACTER_ID, isSpriteFolder, resolvedAnimations, SPECIAL_KINDS, SPECIAL_SLOTS, specialAttackSpec, specialsFor, spriteStatePath, supremeAttackSpec } from "../src/shared/characters";
-import { ANCHOR, ATTACKS, AUDIO, BONG, CAMERA, FUNGHI, FUNGO, HALL, COLORS, EFFECTS, FIGHTER, INPUT, ITEM_AMOUNTS, ITEM_RULES, LEDGE, BELT, GENRE, MICELIO, NET, PAD, POWERUP, PREMATCH, PROTOCOL_VERSION, RUMBLE, SHIELD, SPORE, SUPREME_SPEEDS, TEAM_COLORS, TEAM_NAMES, VOICE, WORLD } from "../src/shared/constants";
+import { ANCHOR, ATTACKS, AUDIO, BONG, CAMERA, FUNGHI, FUNGO, GEAR, HALL, COLORS, EFFECTS, FIGHTER, INPUT, ITEM_AMOUNTS, ITEM_RULES, LEDGE, BELT, GENRE, MICELIO, NET, PAD, POWERUP, PREMATCH, PROTOCOL_VERSION, RUMBLE, SHIELD, SPORE, SUPREME_SPEEDS, TEAM_COLORS, TEAM_NAMES, VOICE, WORLD } from "../src/shared/constants";
 import { RECONNECT, RECONNECT_HOLD_MS } from "../src/shared/constants";
 import { COLORS_COLORBLIND, MAX_TEAMS, TEAM_COLORS_COLORBLIND } from "../src/shared/constants";
 import { BASSANESE, PACMAN, TETRIS, TRAINING } from "../src/shared/constants";
@@ -18,7 +18,7 @@ import { predictionTraces } from "../src/shared/predictionTraces";
 import { HITSTOP, SMASH_CHARGE, SUPREME } from "../src/shared/constants";
 import { LESSONS, TUTORIAL_BOT, TUTORIAL_STAGE_ID } from "../src/shared/tutorial";
 import { CHALLENGES } from "../src/shared/challenges";
-import { DROPPABLE_ITEMS, ITEMS } from "../src/shared/items";
+import { DROPPABLE_ITEMS, ITEM_CATEGORIES, ITEMS } from "../src/shared/items";
 import { DEFAULT_STAGE_ID, STAGES, stageArtFiles } from "../src/shared/stages";
 import { stageCheckData } from "../src/shared/stageCheck";
 import { RANDOM_STAGE_ART } from "../src/shared/stageGenerator";
@@ -282,6 +282,8 @@ const data = {
   bong: BONG, // #302
   funghi: FUNGHI, // #302
   fungo: FUNGO, // il fungo di Teemo (#419)
+  gear: GEAR, // oggetti per categoria (gear.ts)
+  itemCategories: ITEM_CATEGORIES, // le categorie degli oggetti, in ordine per la lobby
   spore: SPORE, // #358
   micelio: MICELIO, // #358
   colors: COLORS,
