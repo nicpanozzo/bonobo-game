@@ -3,7 +3,7 @@
 
 import type { Server, Socket } from "socket.io";
 import { HALL, NET_LIMITS, ROOM_IDLE_MS, VOICE } from "../shared/constants";
-import type { ClientToServer, IceServer, ServerToClient, VoiceState } from "../shared/types";
+import type { ClientToServer, IceServer, MatchRules, ServerToClient, VoiceState } from "../shared/types";
 import { botCharacter, Bots, parseBotKind } from "./bot";
 import { discordHooks } from "./discord";
 import type { Leaderboard } from "./leaderboard";
@@ -140,17 +140,18 @@ export function attachGame(io: Server<ClientToServer, ServerToClient>, deps: Gam
         const discord = discordHooks(deps.discordWebhookUrl, (id) => bots.isBot(id), deps.leaderboard);
         const kind = parseBotKind(bot);
         // Sala d'attesa: i suoi bot entrano in ogni partita nuova; giocano come il bot scelto dal creatore (mai fermi)
-        const hallKind = kind === "facile" || kind === "difficile" ? kind : "semplice";
+        // Il livello si cambia poi dal computer della sala (#567): si legge a ogni partita nuova
         const hallBots = {
-          onMatchBuilt: (_room: Room, match: Room["match"], botIds: string[]) => {
+          onMatchBuilt: (built: Room, match: Room["match"], botIds: string[]) => {
             bots.reset();
-            for (const id of botIds) bots.adopt(match, id, hallKind);
+            for (const id of botIds) bots.adopt(match, id, built.hallBotLevel);
           },
         };
         const board = () => deps.leaderboard?.board(HALL.boardRows) ?? [];
         r = new Room(code, io, { stageId, rules, prematch: true, hall: data.hall, board }, combineHooks(bots.hooks, discord, hallBots), deps.reconnectHoldMs);
         rooms.set(code, r);
         r.onClose = () => rooms.delete(code);
+        if (r.hall) r.hallBotLevel = kind === "facile" || kind === "difficile" ? kind : "semplice";
         if (kind && r.hall) r.hall.addBot(botCharacter(botCharacterId));
         else if (kind) bots.add(r.match, kind, botCharacterId);
       }
@@ -181,6 +182,13 @@ export function attachGame(io: Server<ClientToServer, ServerToClient>, deps: Gam
     // A partita finita: tutti nella sala d'attesa (solo nelle stanze con la sala)
     socket.on("hall", () => {
       if (room && allow(rematchBucket)) room.requestHall();
+    });
+    // Computer della sala (#567): regole e livello dei bot della prossima partita, ripuliti da Room e sanitizeRules
+    socket.on("hallRules", (raw: unknown) => {
+      if (!room || !allow(rematchBucket) || typeof raw !== "object" || raw === null) return;
+      const data = raw as { rules?: unknown; botLevel?: unknown };
+      const rules = typeof data.rules === "object" && data.rules !== null && !Array.isArray(data.rules) ? (data.rules as Partial<MatchRules>) : undefined;
+      room.setHallRules(playerId, rules, data.botLevel);
     });
     // Pre-partita: Pronto (o non più); conta solo finché la partita non è cominciata
     socket.on("ready", (raw: unknown) => {

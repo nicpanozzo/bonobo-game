@@ -750,6 +750,9 @@ export const HALL = {
   cageRadius: 90, // cm: le due gabbie dei bot (chiama / manda via)
   gongRadius: 90, // cm: dentro si suona il gong col tasto leggero
   throneRadius: 80, // cm: il trono del campione
+  computerX: 600, // cm: il computer delle regole (#567), davanti a destra
+  computerZ: 650, // cm
+  computerRadius: 90, // cm: dentro, il colpo leggero apre la schermata delle regole
   shoveLift: 320, // cm/s verso l'alto di chi viene spinto: vola via invece di scivolare
   collideHeight: 120, // cm di differenza d'altezza oltre cui due giocatori non si urtano (si salta sopra)
   boardRefreshMs: 10_000, // ogni quanto il server rilegge la classifica per il tabellone (non a ogni snapshot)

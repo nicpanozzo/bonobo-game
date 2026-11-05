@@ -209,6 +209,43 @@ test("sala → partita: voti, cerchio, stage e poi snapshot con modalità, arena
   assert.equal(snap.prematch?.phase, "starting");
 });
 
+test("sala: dal computer chiunque cambia regole e bot della prossima partita, la modalità resta del voto (#567)", () => {
+  const built: Match[] = [];
+  const { room, sent, names } = hallRoom({ onMatchBuilt: (_r, match) => built.push(match) }, { rules: { stocks: 3, teamCount: 3 } });
+  room.addPlayer("a", "Marta");
+  room.addPlayer("b", "Luca");
+  room.setHallRules("b", { mode: "race", stocks: 5, timeLimitSec: 180, friendlyFire: true, teamCount: 4, supremeSpeed: 2, itemAmount: 0, itemKinds: ["bomba", "nonEsiste"] as never }, "difficile");
+  room.setHallRules("intruso", { stocks: 1 }, "facile"); // chi non è nella sala non cambia niente
+  play(room, 100);
+  const snap = sent.filter((s) => s.event === "hall").pop()!.data as HallSnapshot;
+  assert.equal(snap.rules.stocks, 5);
+  assert.equal(snap.rules.mode, "ffa", "la modalità la decidono le pedane");
+  assert.equal(snap.botLevel, "difficile");
+  assert.ok(sent.some((s) => s.event === "hall" && (s.data as HallSnapshot).events.some((e) => e.type === "rules" && e.id === "b")));
+  walkInto(room, "a", "mode", "teams");
+  walkInto(room, "a", "ready");
+  walkInto(room, "b", "ready");
+  play(room, HALL.countdownMs + 200);
+  const stage = sent[names().indexOf("stage")].data as { rules: { mode: string; stocks: number; timeLimitSec: number; friendlyFire: boolean; teamCount: number; supremeSpeed: number; itemAmount: number } };
+  assert.equal(stage.rules.mode, "teams");
+  assert.equal(stage.rules.stocks, 5);
+  assert.equal(stage.rules.timeLimitSec, 180);
+  assert.equal(stage.rules.friendlyFire, true);
+  assert.equal(stage.rules.teamCount, 4);
+  assert.equal(stage.rules.supremeSpeed, 2);
+  assert.equal(stage.rules.itemAmount, 0);
+  assert.equal(room.hallBotLevel, "difficile");
+  assert.equal(built.length, 1);
+});
+
+test("sala: il numero di squadre scelto in lobby resta anche se chi crea non sceglie Squadre", () => {
+  const { room, sent } = hallRoom({}, { rules: { mode: "ffa", teamCount: 3 } });
+  room.addPlayer("a", "Marta");
+  play(room, 100);
+  const snap = sent.filter((s) => s.event === "hall").pop()!.data as HallSnapshot;
+  assert.equal(snap.rules.teamCount, 3);
+});
+
 function toMatch(room: Room) {
   room.addPlayer("a", "Marta");
   room.addPlayer("b", "Luca");

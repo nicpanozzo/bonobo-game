@@ -11,6 +11,7 @@ import { DEFAULT_STAGE_ID, STAGES } from "./stages";
 import type {
   BoardRow,
   ChessPiece,
+  HallBotLevel,
   HallEvent,
   HallMode,
   HallPlayerState,
@@ -68,6 +69,8 @@ export function hallLayout(): HallZone[] {
   zones.push({ kind: "trampoline", id: "trampolino-destra", x: 620, z: 250, r: HALL.trampolineRadius, label: "Trampolino" });
   zones.push({ kind: "botAdd", id: "bot-chiama", x: -720, z: 650, r: HALL.cageRadius, label: "Chiama un bot" });
   zones.push({ kind: "botRemove", id: "bot-via", x: -480, z: 650, r: HALL.cageRadius, label: "Manda via un bot" });
+  // Il computer delle regole (#567): davanti a destra, simmetrico alle gabbie dei bot
+  zones.push({ kind: "computer", id: "computer", x: HALL.computerX, z: HALL.computerZ, r: HALL.computerRadius, label: "Regole della partita" });
   zones.push({ kind: "gong", id: "gong", x: 1250, z: -720, r: HALL.gongRadius, label: "Gong" });
   zones.push({ kind: "throne", id: "trono", x: -1250, z: -720, r: HALL.throneRadius, label: "Trono del campione" });
   // court: quadrato di lato 2r; hoop: centro del ferro (r = raggio del ferro), dentro il campo;
@@ -419,7 +422,12 @@ export class Hall {
     return this.flush();
   }
 
-  snapshot(t: number, events: HallEvent[], board: BoardRow[], rules: MatchRules): HallSnapshot {
+  // Qualcuno ha cambiato le regole dal computer: lo vedono tutti nella sala
+  rulesChanged(id: string) {
+    if (this.players.has(id)) this.events.push({ type: "rules", id });
+  }
+
+  snapshot(t: number, events: HallEvent[], board: BoardRow[], rules: MatchRules, botLevel?: HallBotLevel): HallSnapshot {
     const votes: HallSnapshot["votes"] = { mode: {}, stage: {} };
     for (const p of this.voters()) {
       if (p.modeVote) votes.mode[p.modeVote] = (votes.mode[p.modeVote] ?? 0) + 1;
@@ -464,6 +472,7 @@ export class Hall {
       board,
       props: this.props.map(propState),
       rules: { ...rules, mode: leading.mode },
+      ...(botLevel ? { botLevel } : {}),
     };
   }
 
@@ -528,6 +537,11 @@ export class Hall {
     if (this.inZone(p, "gong") && this.gongCooldown <= 0) {
       this.gongCooldown = HALL.gongCooldownMs;
       this.events.push({ type: "gong", id: p.id });
+    }
+    // Sul computer il colpo leggero apre la schermata delle regole, non spinge nessuno
+    if (!p.bot && this.inZone(p, "computer")) {
+      this.events.push({ type: "computer", id: p.id });
+      return;
     }
     const targets: string[] = [];
     for (const t of this.players.values()) {
