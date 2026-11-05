@@ -96,6 +96,8 @@ export interface Fighter extends PlayerState {
   pacDir?: { x: number; y: number }; // da Pac-Man (#427): dove si va, una sola tra x e y è -1 o 1
   pacPellets?: number; // da Pac-Man: palline mangiate in questa forma (piccola 1, grande PACMAN.bigPelletValue), accelerano
   brownieNext?: string; // il brownie spaziale mangiato: l'effetto che salirà finita l'attesa (gear.ts)
+  carrying?: string; // l'oggetto pesante sopra la testa o il mezzo che si cavalca (ride.ts), per movimento e salto
+  rideChargeMs?: number; // ms che restano dello scatto in sella (ride.ts)
 }
 
 // Quello che serve alla fisica oltre ai lottatori: l'arena e dove scrivere gli eventi

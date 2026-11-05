@@ -20,7 +20,7 @@ Ogni oggetto ha una **classe di frequenza** proporzionata a quanto cambia la par
 | Classe | Peso | Per cosa | Oggetti |
 | --- | --- | --- | --- |
 | comune | 8 | piccolo vantaggio, da lanciare | Banana, Ciabatta, Caffè |
-| normale | 4 | vantaggio a tempo o con un rischio | Fungo di Teemo, Bong, Petardo, Brownie spaziale |
+| normale | 4 | vantaggio a tempo o con un rischio | Fungo di Teemo, Bong, Petardo, Brownie spaziale, Cassa, Lavatrice, Monopattino, Carrello della spesa |
 | raro | 2 | cambia uno scontro | Fiore, Chiama Bassanese, tutte le versioni rare |
 | rarissimo | 1 | cambia la partita per diversi secondi | Tetris, Pac-Man |
 | mai | 0 | non cade dal cielo | Funghetto piantato, Funghetti (messi da parte, #419) |
@@ -52,9 +52,14 @@ alla The Binding of Isaac. Logica in `physics/gear.ts`, numeri in `GEAR`, disegn
 | Lancio | Petardo | normale | Lanciato o posato si accende: si attacca a chi o a dove tocca e dopo 1,6 s scoppia (15%), anche addosso a chi l'ha acceso. Acceso non si riprende. | Petardo a grappolo (raro) | Lo scoppio sparge quattro petardini che scoppiano a loro volta (7%). |
 | Consumo | Caffè | comune | 8 s più veloci, anche negli attacchi. | Moka a razzo (raro) | 7 s in cui tenendo il salto si vola. |
 | Consumo | Brownie spaziale | normale | Per 2,5 s niente, poi un effetto a sorpresa per 8 s: gigante, mini, caffè, comandi invertiti o sonno (2,2 s addormentati). | Brownie della nonna (raro) | Sempre gigante per 11 s, con la corona, e ogni atterraggio fa tremare la terra: chi è a terra vicino salta via (5%). |
+| Peso | Cassa | normale | Sopra la testa: si va al 60% e si salta meno. Scagliata (J o K) vola corta e pesante, 13%, e si rompe dove colpisce o atterra lasciando un oggetto della stanza. | Cassa d'oro (raro) | Ne escono tre oggetti. |
+| Peso | Lavatrice | normale | Scagliata (16%) atterra e va in centrifuga per 4,5 s: chi la tocca prende un colpetto (3%) ogni 0,3 s, tranne chi l'ha scagliata. Mentre gira non si raccoglie. | Lavatrice impazzita (raro) | In centrifuga per 6,5 s salta addosso all'avversario più vicino. |
+| Cavalcatura | Monopattino | normale | Ci si sale sopra: a terra si va 1,5 volte più svelti e chi si tocca andando forte viene investito (9%). J scatta in avanti, K fa scendere e il monopattino va avanti da solo colpendo chi trova. | Monopattino a razzo (raro) | Va sempre avanti da solo, in aria si plana; dopo 6 s il razzo scoppia sotto i piedi e sbalza in alto chi guida. |
+| Cavalcatura | Carrello della spesa | normale | Chi si investe finisce dentro, stordito, e viaggia col carrello. J lo catapulta in avanti (9%); da solo dopo 2,6 s, o se qualcuno lo colpisce. | Carrello da tre (raro) | Ne tiene tre ed è più veloce. |
 
 Da giganti il corpo e i colpi sono 1,5 volte più grandi, i colpi fanno più male e si vola meno; da mini il contrario.
-Impugnatura e sparo arrivano nella PR successiva, peso e cavalcatura in un'altra.
+Impugnatura e sparo arrivano nella PR successiva. Peso e cavalcatura sono in `physics/ride.ts` (numeri in `RIDE`,
+disegno in `godot/scripts/ride_view.gd`): chi porta un pesante o cavalca non viene predetto dal client, decide il server.
 
 ## Il Fungo di Teemo (idea di Riccardo, #419)
 
