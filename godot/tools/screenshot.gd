@@ -10,7 +10,7 @@ var _out := "user://screenshots"
 var _game: Dictionary
 var _world: Node2D # nella partita finta: riceve uno snapshot a ogni frame
 var _hud: Control
-const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre", "lobby_regole", "musica", "tetris", "pacman", "bassanese", "bologna_piazza", "bologna_torri", "bologna_crollo", "bologna_zuffa", "oggetti", "prepartita_attesa", "prepartita_vs", "prepartita_conto", "fine_partita", "sala", "sala_conto", "sala_galleria", "sala_via", "sala_basket", "sala_scacchi", "fabbrica", "diluvio", "palco_metal", "palco_reggae", "palco_techno"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
+const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre", "lobby_regole", "musica", "tetris", "pacman", "bassanese", "bologna_piazza", "bologna_torri", "bologna_crollo", "bologna_zuffa", "oggetti", "prepartita_attesa", "prepartita_vs", "prepartita_conto", "fine_partita", "sala", "sala_conto", "sala_galleria", "sala_via", "sala_basket", "sala_scacchi", "sala_computer", "sala_regole", "fabbrica", "diluvio", "palco_metal", "palco_reggae", "palco_techno"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
 var _index := -1
 var _frame := 0
 var _failed := false
@@ -90,6 +90,8 @@ func _process(_delta: float) -> bool:
 		if _hall_scene == "basket" and _frame == 2:
 			_hall_view.set_speaking("p1", true)
 			_hall_view.set_voice_muted("p3", true)
+		if _frame == 18 and _hall_scene == "computer":
+			hall.events = [{"type": "rules", "id": "p2"}]
 		if _frame == 24 and _hall_scene == "via":
 			hall.events = [{"type": "go", "mode": "ffa", "stageId": "palco"}]
 		for e in hall.events:
@@ -431,6 +433,24 @@ func _sala_basket() -> void:
 func _sala_scacchi() -> void:
 	_hall_scene = "scacchi"
 	_add_hall()
+
+
+# Il computer delle regole (#567): la scrivania col monitor e, sopra la sala, la schermata che apre
+func _sala_computer() -> void:
+	_hall_scene = "computer"
+	_add_hall()
+
+
+func _sala_regole() -> void:
+	_hall_scene = "computer"
+	_add_hall()
+	var layer := CanvasLayer.new()
+	layer.layer = 5
+	root.add_child(layer)
+	var panel: Control = load("res://scripts/hall_rules_panel.gd").new()
+	layer.add_child(panel)
+	var snap: Dictionary = load("res://tests/hall_fake.gd").party(0.0, "computer")
+	panel.setup(_game, Settings.new({"master": 0.8, "sfx": 0.7, "music": 0.35}, "user://ci_regole.cfg"), snap.rules, "difficile")
 
 
 # Le arene a tema: una funzione per foto, tutte uguali

@@ -11,6 +11,7 @@ const HallZone := preload("res://scripts/hall_zone.gd")
 const HallFx := preload("res://scripts/hall_fx.gd")
 const HallIcons := preload("res://scripts/hall_icons.gd")
 const HallProps := preload("res://scripts/hall_props.gd")
+const HallHud := preload("res://scripts/hall_hud.gd")
 const StagePreview := preload("res://scripts/stage_preview.gd")
 
 const CM := 0.01 # metri per centimetro dello snapshot
@@ -156,6 +157,11 @@ func on_snapshot(snap: Dictionary) -> void:
 		_countdown_left = -1.0
 	_update_screen()
 	_update_board(snap.get("board", []) if snap.get("board") is Array else [])
+	# il computer delle regole (#567) mostra quelle della prossima partita
+	var pc: Node3D = _zones.get(_first_key("computer"))
+	if pc != null:
+		var lead: Dictionary = snap.get("leading", {}) if snap.get("leading") is Dictionary else {}
+		pc.show_rules(HallHud.rules_text(snap.get("rules", {}) if snap.get("rules") is Dictionary else {}, str(lead.get("mode", "ffa"))))
 	# gli eventi rimasti in attesa del giocatore (entrato o bot appena chiamato)
 	if not _pending.is_empty():
 		var again := _pending
@@ -242,6 +248,14 @@ func _fx_for(e: Dictionary) -> void:
 			_kick(0.7)
 			_pulse = 1.0
 			_flash("GONG!")
+		"computer", "rules":
+			# il computer delle regole (#567): si accende quando qualcuno lo apre o cambia le regole
+			var z: Node3D = _zones.get(_first_key("computer"))
+			if z != null:
+				z.bang()
+				fx.sparkles(z.position + Vector3(0, 1.6, -z.radius), z.color.lightened(0.3), 18, 0.6)
+				if str(e.get("type", "")) == "rules":
+					fx.floater(z.position + Vector3(0, 3.0, 0), "%s ha cambiato le regole" % _name_of(id), z.color.lightened(0.4), 56, 0.8, 1.6)
 		"throne":
 			var z: Node3D = _zones.get(_first_key("throne"))
 			var tp: Vector3 = z.position if z != null else at

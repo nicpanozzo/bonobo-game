@@ -55,6 +55,15 @@ func setup(s: Settings, room_link: String, report := {}) -> void:
 	UI.keep_focus(self, resume_button)
 
 
+# In sala (#567): "Regole della partita" sotto Opzioni, apre la schermata del computer (main.gd)
+func add_rules_button(open_rules: Callable) -> void:
+	var b := UI.button("Regole della partita", func():
+		queue_free()
+		open_rules.call())
+	_options_button.add_sibling(b)
+	UI.juice(b)
+
+
 # Chat vocale: entrare, uscire e spegnere il microfono anche in partita, dove il riquadro è senza pulsanti
 # (soprattutto sul telefono, che non ha i tasti N e B). Solo nel browser e dentro una stanza
 func _add_voice_row(box: VBoxContainer) -> void:
