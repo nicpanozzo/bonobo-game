@@ -610,30 +610,30 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       scale: 0.5,
       animations: {
         idle: { fps: 12, loop: true }, // OB-B1: il respiro
-        walk: { fps: 24, loop: true }, // OB-B1: due passi al secondo, come nel video
+        walk: { fps: 8, loop: true }, // OB-B1: due passi al secondo, come nel video
         jump: { fps: 18, loop: false },
         fall: { fps: 8, loop: true },
-        light: { fps: 24, loop: false, hitFrame: 7, startFrame: 5 }, // i primi fotogrammi sono ancora la guardia
-        heavy: { fps: 24, loop: false, hitFrame: 17 },
-        hit: { fps: 24, loop: false },
+        light: { fps: 12, loop: false, hitFrame: 3, startFrame: 2 }, // i primi fotogrammi sono ancora la guardia
+        heavy: { fps: 8, loop: false, hitFrame: 5 },
+        hit: { fps: 12, loop: false },
         jumpSquat: { fps: 24, loop: false },
         land: { fps: 24, loop: false },
-        doubleJump: { fps: 30, loop: false }, // la capriola con la barca
-        taunt: { fps: 18, loop: false }, // fischietto e dito puntato: insulta tutti
-        heavyUp: { fps: 24, loop: false, hitFrame: 14 }, // la barca a ombrello
-        shield: { fps: 12, loop: true }, // sotto la barca come una tartaruga
+        doubleJump: { fps: 10, loop: false }, // la capriola con la barca
+        taunt: { fps: 6, loop: false }, // fischietto e dito puntato: insulta tutti
+        heavyUp: { fps: 8, loop: false, hitFrame: 4 }, // la barca a ombrello
+        shield: { fps: 4, loop: true }, // sotto la barca come una tartaruga
         recovery: { fps: 24, loop: false, hitFrame: 6 }, // lancia l'ancora in alto
-        specialSide: { fps: 24, loop: false, hitFrame: 10 }, // teleferica verso l'ancora
-        specialNeutral: { fps: 24, loop: false, hitFrame: 8 }, // ancora avanti e strattone
-        anchorHang: { fps: 18, loop: true }, // appeso all'ancora che dondola (#547)
-        anchorClimb: { fps: 24, loop: true }, // si tira su lungo la catena
+        specialSide: { fps: 8, loop: false, hitFrame: 3 }, // teleferica verso l'ancora
+        specialNeutral: { fps: 8, loop: false, hitFrame: 2 }, // ancora avanti e strattone
+        anchorHang: { fps: 6, loop: true }, // appeso all'ancora che dondola (#547)
+        anchorClimb: { fps: 12, loop: true }, // si tira su lungo la catena
         // OB-B3 (5/11/2026): tolti i fotogrammi in cui il braccio restava fermo, per non allungare i colpi
-        lightUp: { fps: 30, loop: false, hitFrame: 5 }, // pugno in alto guardando su
-        lightDown: { fps: 30, loop: false, hitFrame: 10 }, // spazzata bassa con la mano
-        heavyDown: { fps: 30, loop: false, hitFrame: 14 }, // si carica accucciato e spazza ai due lati
+        lightUp: { fps: 15, loop: false, hitFrame: 2 }, // pugno in alto guardando su
+        lightDown: { fps: 15, loop: false, hitFrame: 5 }, // spazzata bassa con la mano
+        heavyDown: { fps: 15, loop: false, hitFrame: 7 }, // si carica accucciato e spazza ai due lati
         // OB-B4 (5/11/2026): i colpi in aria. La stella a braccia e gambe aperte e la martellata a due pugni
-        lightAir: { fps: 24, loop: false, hitFrame: 20, startFrame: 14, activeEnd: 30 },
-        heavyAir: { fps: 24, loop: false, hitFrame: 23, startFrame: 4, activeEnd: 26 }, // i pugni scendono da sopra la testa
+        lightAir: { fps: 12, loop: false, hitFrame: 10, startFrame: 7, activeEnd: 15 },
+        heavyAir: { fps: 12, loop: false, hitFrame: 11, startFrame: 1, activeEnd: 12 }, // i pugni scendono da sopra la testa
       },
     },
   },
@@ -1206,10 +1206,11 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       ...communitySprite("lendmar"),
       animations: fromRest({
         ...communitySprite("lendmar").animations,
-        idle: { fps: 24, loop: true }, // 46 fotogrammi del video: respiro lento
+        walk: { fps: 12, loop: true }, // un fotogramma ogni due (tools/sprite/dirada_strisce.py)
+        idle: { fps: 12, loop: true }, // 46 fotogrammi del video: respiro lento
         jumpSquat: { fps: 24, loop: false },
-        light: { fps: 24, loop: false, hitFrame: 11 },
-        heavy: { fps: 24, loop: false, hitFrame: 27 },
+        light: { fps: 8, loop: false, hitFrame: 3 },
+        heavy: { fps: 8, loop: false, hitFrame: 9 },
         hit: { fps: 24, loop: false },
       }),
     },
