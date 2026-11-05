@@ -302,6 +302,7 @@ export class Match {
         ...(f.inputSeq >= 0 && { predict: predictionState(f) }),
         ...(f.pet && f.pet.koMs <= 0 && { companion: companionState(f)! }),
         ...(f.station !== undefined && { station: f.station }), // #433
+        ...(f.wetMs > 0 && { wet: true }), // lo Scivolone di Egiainuso (#557)
         ...(f.anchor && { anchor: { x: Math.round(f.anchor.x), y: Math.round(f.anchor.y), phase: f.anchor.phase } }), // #547
       });
     }
