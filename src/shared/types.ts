@@ -207,7 +207,7 @@ export interface ItemState {
   heldBy: string | null; // chi lo tiene in mano
   thrown: boolean; // lanciato: colpisce chi tocca
   owner?: string; // il funghetto piantato (#302): chi l'ha piantato, solo lui lo vede bene
-  load?: number; // il bong in carica (#302), da 0 a 1; assente se non lo si carica
+  load?: number; // il bong in carica (#302) o la miccia del petardo che brucia, da 0 a 1; assente se non lo si carica
 }
 
 // Regole della partita, scelte da chi crea la stanza (#17). Default in src/shared/rules.ts
@@ -257,6 +257,10 @@ export type GameEvent =
   | { type: "powerUp"; itemId: number; id: string; kind: string; x: number; y: number } // id consuma l'oggetto e si potenzia (#231)
   | { type: "powerEnd"; id: string; kind: string } // il potenziamento di id finisce
   | { type: "bassanese"; phase: "call" | "leave"; id: string; x: number; y: number } // Chiama Bassanese: id ha chiamato
+  // Oggetti per categoria (gear.ts): kind è l'oggetto, id chi lo usa (o chi lo prende addosso), r un raggio in pixel.
+  // fuse = si accende la miccia, stick = il petardo si attacca a id, boom = scoppia (raggio r), quake = il gigante della
+  // nonna atterra e fa tremare la terra (raggio r). Le PR delle altre categorie aggiungono le loro fasi qui
+  | { type: "gear"; phase: "fuse" | "stick" | "boom" | "quake"; kind: string; id: string; x: number; y: number; r?: number }
   | { type: "tetris"; phase: "spawn" | "move" | "rotate" | "drop" | "land" | "line"; id: string; x: number; y: number; width?: number } // il pezzo di Tetris di id (#427); line: esplode una riga larga width pixel, x e y al centro
   // Il bong (#302): load = comincia a caricarlo, smoke = soffia la nuvola (centro x,y, verso dir, danno), stun = troppo fatto, crolla
   | { type: "bong"; phase: "load" | "smoke" | "stun"; id: string; x: number; y: number; dir?: 1 | -1; damage?: number }
