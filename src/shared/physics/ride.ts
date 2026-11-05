@@ -33,6 +33,15 @@ export const isMount = (kind: string) => !!ITEMS[kind]?.mount;
 // La lavatrice in centrifuga non si raccoglie (items.ts)
 export const spinning = (item: Item) => ((item as RideItem).spinMs ?? 0) > 0;
 
+// Per lo snapshot (ItemState.load): quanta centrifuga resta alla lavatrice o quanto razzo al monopattino, da 1 a 0
+export function rideLoad(item: Item): number | undefined {
+  const it = item as RideItem;
+  const spec = ITEMS[item.kind];
+  if (spinning(item)) return Math.round(((it.spinMs ?? 0) / (spec.washer === "matta" ? RIDE.washer.crazySpinMs : RIDE.washer.spinMs)) * 100) / 100;
+  if (spec.mount === "razzo" && it.fuelMs !== undefined) return Math.round((Math.max(0, it.fuelMs) / RIDE.rocket.fuelMs) * 100) / 100;
+  return undefined;
+}
+
 // Chi porta un pesante o cavalca (Fighter.carrying), per movimento e salto. Si aggiorna dopo input e passo degli oggetti
 export function markCarriers(world: ItemWorld, fighters: Fighter[]): void {
   for (const f of fighters) {

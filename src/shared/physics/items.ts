@@ -12,7 +12,7 @@ import type { ItemState } from "../types";
 import { endArcade, isArcade, startArcade } from "./arcade";
 import { bodyBox } from "./attacks";
 import { callBassanese } from "./bassanese";
-import { carried, markCarriers, mountInput, spinning, stepRideItem } from "./ride";
+import { carried, markCarriers, mountInput, rideLoad, spinning, stepRideItem } from "./ride";
 import { brownieKicksIn, eatBrownie, fuseLoad, itemGravityMult, lit, onThrow, stepGearItem, stickTo } from "./gear";
 import { moverHere, moverPlace } from "./elements";
 import { chargeFromHit } from "./supreme";
@@ -627,4 +627,5 @@ export const itemStates = (world: ItemWorld): ItemState[] =>
     ...(i.ownerId ? { owner: i.ownerId } : {}),
     ...(ITEMS[i.kind].bong && (i.loadMs ?? -1) >= 0 ? { load: Math.round((Math.min(i.loadMs!, BONG.loadMs) / BONG.loadMs) * 100) / 100 } : {}),
     ...(lit(i) ? { load: fuseLoad(i) } : {}),
+    ...(rideLoad(i) !== undefined ? { load: rideLoad(i) } : {}), // centrifuga e razzo (ride.ts)
   }));

@@ -208,6 +208,7 @@ export interface ItemState {
   thrown: boolean; // lanciato: colpisce chi tocca
   owner?: string; // il funghetto piantato (#302): chi l'ha piantato, solo lui lo vede bene
   load?: number; // il bong in carica (#302) o la miccia del petardo che brucia, da 0 a 1; assente se non lo si carica
+  // anche (ride.ts): la centrifuga che resta alla lavatrice o il razzo che resta al monopattino, da 1 a 0
 }
 
 // Regole della partita, scelte da chi crea la stanza (#17). Default in src/shared/rules.ts
