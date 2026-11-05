@@ -557,6 +557,9 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     attacks: {
       light: { range: 67, height: 30, boxX: 1, boxY: -75 },
       heavy: { range: 78, height: 44, boxX: 0, boxY: -82 },
+      lightUp: { range: 54, height: 48, boxX: 0, boxY: -118 }, // OB-B3
+      lightDown: { range: 42, height: 24, boxX: -1, boxY: -24 },
+      heavyDown: { range: 73, height: 30, boxX: 0, boxY: -38 },
       lightAir: { range: 62, height: 50, boxX: 0, boxY: -92 }, // OB-B4: la stella
       heavyAir: { range: 50, height: 60, boxX: 0, boxY: -94 }, // OB-B4: la martellata
       dashAttack: { range: 75, height: 44, boxX: 2, boxY: -82 },
@@ -624,6 +627,10 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         specialNeutral: { fps: 24, loop: false, hitFrame: 8 }, // ancora avanti e strattone
         anchorHang: { fps: 18, loop: true }, // appeso all'ancora che dondola (#547)
         anchorClimb: { fps: 24, loop: true }, // si tira su lungo la catena
+        // OB-B3 (5/11/2026): tolti i fotogrammi in cui il braccio restava fermo, per non allungare i colpi
+        lightUp: { fps: 30, loop: false, hitFrame: 5 }, // pugno in alto guardando su
+        lightDown: { fps: 30, loop: false, hitFrame: 10 }, // spazzata bassa con la mano
+        heavyDown: { fps: 30, loop: false, hitFrame: 14 }, // si carica accucciato e spazza ai due lati
         // OB-B4 (5/11/2026): i colpi in aria. La stella a braccia e gambe aperte e la martellata a due pugni
         lightAir: { fps: 24, loop: false, hitFrame: 20, startFrame: 14, activeEnd: 30 },
         heavyAir: { fps: 24, loop: false, hitFrame: 23, startFrame: 4, activeEnd: 26 }, // i pugni scendono da sopra la testa

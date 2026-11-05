@@ -444,6 +444,7 @@ FATTE = {
     "OB-01": ("orsoblu", "ancora-a", "Ancora A", [("recovery", .5, 2, "lancia l'ancora"), ("anchorHang", 3, 5, "appeso che oscilla"), ("anchorClimb", 6, 7.5, "si arrampica")]),
     "OB-02": ("orsoblu", "ancora-b", "Ancora B", [("specialSide", .5, 2, "teleferica"), ("doubleJump", 3, 4.5, "capriola"), ("specialNeutral", 5.5, 7, "ancora avanti e strattone")]),
     "OB-03": ("orsoblu", "marcia", "Marcia, fischietto, salto", [("walk", .5, 2, "marcia"), ("taunt", 3, 4.5, "fischietto e dito puntato"), ("jumpSquat+jump+fall+land", 5.5, 7.5, "salto")]),
+    "OB-B3": ("orsoblu", "colpi-bassi", "Colpi in alto e in basso", [("lightUp", .5, 2, "pugno in alto"), ("lightDown", 3, 4.5, "spazzata bassa"), ("heavyDown", 5.5, 7.5, "spazzata ai due lati")]),
     "OB-07": ("orsoblu", "remo-barca", "Remo e barca", [("heavy", .5, 2, "remata"), ("heavyUp", 3, 4.5, "barca a ombrello"), ("shield", 5.5, 7.5, "sotto la barca")]),
     "OB-B4": ("orsoblu", "colpi-in-aria", "Colpi in aria", [("lightAir", .5, 2, "stella a braccia e gambe aperte"), ("heavyAir", 3, 4.5, "martellata a due pugni")]),
 }
