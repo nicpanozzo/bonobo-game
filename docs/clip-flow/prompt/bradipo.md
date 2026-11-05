@@ -63,7 +63,7 @@ ACTION: 3 short separate moves, each one followed by a pause in the starting pos
 
 BACKGROUND: one solid flat chroma-key green (#17B03B) filling the whole frame for the whole clip. No floor, no ground line, no shadow, no dust clouds, no smoke, no particles, no sky, no props.
 
-AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, extra claws, a tail, clothes other than the black t-shirt, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, any part of the character cut off by or touching the edges of the frame, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech.
+AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, extra claws, a tail, clothes other than the black t-shirt, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, any part of the character cut off by or touching the edges of the frame, a treadmill, a floor or any object under his feet, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech.
 ```
 
 ## BR-02
@@ -91,7 +91,7 @@ ACTION: 3 short separate moves, each one followed by a pause in the starting pos
 
 BACKGROUND: one solid flat chroma-key green (#17B03B) filling the whole frame for the whole clip. No floor, no ground line, no shadow, no dust clouds, no smoke, no particles, no sky, no props.
 
-AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, extra claws, a tail, clothes other than the black t-shirt, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, any part of the character cut off by or touching the edges of the frame, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech.
+AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, extra claws, a tail, clothes other than the black t-shirt, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, any part of the character cut off by or touching the edges of the frame, a treadmill, a floor or any object under his feet, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech.
 ```
 
 ## BR-03
@@ -118,7 +118,7 @@ ACTION: 2 short separate moves, each one followed by a pause in the starting pos
 
 BACKGROUND: one solid flat chroma-key green (#17B03B) filling the whole frame for the whole clip. No floor, no ground line, no shadow, no dust clouds, no smoke, no particles, no sky, no props.
 
-AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, extra claws, a tail, clothes other than the black t-shirt, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, any part of the character cut off by or touching the edges of the frame, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech.
+AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, extra claws, a tail, clothes other than the black t-shirt, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, any part of the character cut off by or touching the edges of the frame, a treadmill, a floor or any object under his feet, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech.
 ```
 
 ## BR-04
@@ -145,7 +145,7 @@ ACTION: 2 short separate moves, each one followed by a pause in the starting pos
 
 BACKGROUND: one solid flat chroma-key green (#17B03B) filling the whole frame for the whole clip. No floor, no ground line, no shadow, no dust clouds, no smoke, no particles, no sky, no props.
 
-AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, extra claws, a tail, clothes other than the black t-shirt, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, any part of the character cut off by or touching the edges of the frame, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech.
+AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, extra claws, a tail, clothes other than the black t-shirt, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, any part of the character cut off by or touching the edges of the frame, a treadmill, a floor or any object under his feet, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech.
 ```
 
 ## BR-05
@@ -172,7 +172,7 @@ ACTION: 2 short separate moves, each one followed by a pause in the starting pos
 
 BACKGROUND: one solid flat chroma-key green (#17B03B) filling the whole frame for the whole clip. No floor, no ground line, no shadow, no dust clouds, no smoke, no particles, no sky, no props.
 
-AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, extra claws, a tail, clothes other than the black t-shirt, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, any part of the character cut off by or touching the edges of the frame, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech.
+AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, extra claws, a tail, clothes other than the black t-shirt, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, any part of the character cut off by or touching the edges of the frame, a treadmill, a floor or any object under his feet, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech.
 ```
 
 ## BR-06
@@ -199,7 +199,7 @@ ACTION: 2 short separate moves, each one followed by a pause in the starting pos
 
 BACKGROUND: one solid flat chroma-key green (#17B03B) filling the whole frame for the whole clip. No floor, no ground line, no shadow, no dust clouds, no smoke, no particles, no sky, no props.
 
-AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, extra claws, a tail, clothes other than the black t-shirt, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, any part of the character cut off by or touching the edges of the frame, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech.
+AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, extra claws, a tail, clothes other than the black t-shirt, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, any part of the character cut off by or touching the edges of the frame, a treadmill, a floor or any object under his feet, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech.
 ```
 
 ## BR-07
@@ -226,7 +226,7 @@ ACTION: 2 short separate moves, each one followed by a pause in the starting pos
 
 BACKGROUND: one solid flat chroma-key green (#17B03B) filling the whole frame for the whole clip. No floor, no ground line, no shadow, no dust clouds, no smoke, no particles, no sky, no props.
 
-AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, extra claws, a tail, clothes other than the black t-shirt, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, any part of the character cut off by or touching the edges of the frame, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech.
+AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, extra claws, a tail, clothes other than the black t-shirt, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, any part of the character cut off by or touching the edges of the frame, a treadmill, a floor or any object under his feet, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech.
 ```
 
 ## BR-08
@@ -253,7 +253,7 @@ ACTION: 2 short separate moves, each one followed by a pause in the starting pos
 
 BACKGROUND: one solid flat chroma-key green (#17B03B) filling the whole frame for the whole clip. No floor, no ground line, no shadow, no dust clouds, no smoke, no particles, no sky, no props.
 
-AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, extra claws, a tail, clothes other than the black t-shirt, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, any part of the character cut off by or touching the edges of the frame, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech.
+AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, extra claws, a tail, clothes other than the black t-shirt, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, any part of the character cut off by or touching the edges of the frame, a treadmill, a floor or any object under his feet, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech.
 ```
 
 ## BR-09
@@ -280,7 +280,7 @@ ACTION: 2 short separate moves, each one followed by a pause in the starting pos
 
 BACKGROUND: one solid flat chroma-key green (#17B03B) filling the whole frame for the whole clip. No floor, no ground line, no shadow, no dust clouds, no smoke, no particles, no sky, no props.
 
-AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, extra claws, a tail, clothes other than the black t-shirt, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, any part of the character cut off by or touching the edges of the frame, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech.
+AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, extra claws, a tail, clothes other than the black t-shirt, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, any part of the character cut off by or touching the edges of the frame, a treadmill, a floor or any object under his feet, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech.
 ```
 
 ## BR-10
@@ -307,7 +307,7 @@ ACTION: 2 short separate moves, each one followed by a pause in the starting pos
 
 BACKGROUND: one solid flat chroma-key green (#17B03B) filling the whole frame for the whole clip. No floor, no ground line, no shadow, no dust clouds, no smoke, no particles, no sky, no props.
 
-AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, extra claws, a tail, clothes other than the black t-shirt, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, any part of the character cut off by or touching the edges of the frame, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech.
+AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, extra claws, a tail, clothes other than the black t-shirt, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, any part of the character cut off by or touching the edges of the frame, a treadmill, a floor or any object under his feet, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech.
 ```
 
 ## BR-11
@@ -334,7 +334,7 @@ ACTION: 2 short separate moves, each one followed by a pause in the starting pos
 
 BACKGROUND: one solid flat chroma-key green (#17B03B) filling the whole frame for the whole clip. No floor, no ground line, no shadow, no dust clouds, no smoke, no particles, no sky, no props.
 
-AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, extra claws, a tail, clothes other than the black t-shirt, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, any part of the character cut off by or touching the edges of the frame, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech.
+AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, extra claws, a tail, clothes other than the black t-shirt, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, any part of the character cut off by or touching the edges of the frame, a treadmill, a floor or any object under his feet, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech.
 ```
 
 ## BR-12
@@ -360,7 +360,7 @@ ACTION: one move, then back to the starting pose. From 0 s to 0.5 s he stands st
 
 BACKGROUND: one solid flat chroma-key green (#17B03B) filling the whole frame for the whole clip. No floor, no ground line, no shadow, no dust clouds, no smoke, no particles, no sky, no props.
 
-AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, extra claws, a tail, clothes other than the black t-shirt, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, any part of the character cut off by or touching the edges of the frame, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech.
+AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, extra claws, a tail, clothes other than the black t-shirt, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, any part of the character cut off by or touching the edges of the frame, a treadmill, a floor or any object under his feet, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech.
 ```
 
 ## BR-13
@@ -387,7 +387,7 @@ ACTION: 2 short separate moves, each one followed by a pause in the starting pos
 
 BACKGROUND: one solid flat chroma-key green (#17B03B) filling the whole frame for the whole clip. No floor, no ground line, no shadow, no dust clouds, no smoke, no particles, no sky, no props.
 
-AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, extra claws, a tail, clothes other than the black t-shirt, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, any part of the character cut off by or touching the edges of the frame, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech.
+AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, extra claws, a tail, clothes other than the black t-shirt, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, any part of the character cut off by or touching the edges of the frame, a treadmill, a floor or any object under his feet, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech.
 ```
 
 ## BR-14
@@ -414,7 +414,7 @@ ACTION: a plain flat medium-grey block (#808080, no texture) fills the right thi
 
 BACKGROUND: one solid flat chroma-key green (#17B03B) filling the whole frame for the whole clip. No floor, no ground line, no shadow, no dust clouds, no smoke, no particles, no sky, no props except the grey block described above.
 
-AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, extra claws, a tail, clothes other than the black t-shirt, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, any part of the character cut off by or touching the edges of the frame, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech.
+AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, extra claws, a tail, clothes other than the black t-shirt, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, any part of the character cut off by or touching the edges of the frame, a treadmill, a floor or any object under his feet, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech.
 ```
 
 ## BR-A1
@@ -440,11 +440,11 @@ WEAPON (must stay identical in every frame): the plasma sword from the reference
 
 SHOT: side view in three-quarters, the character faces right unless the action says otherwise. FRAMING RULE: the whole character (head, hat, hands, feet and everything he carries) always stays completely inside the frame with a wide margin of empty green on every side, even at the top of a jump and at the full reach of a strike; no part of him is ever cut off by or touches the edges of the frame. Locked-off static camera: no camera movement, no zoom, no cuts, no slow motion. The character stays the same size as in the reference image.
 
-ACTION: 3 short separate moves with the sword, each one followed by a pause in the starting pose. Every single strike snaps out and is pulled straight back in less than half a second: he never holds a limb stretched out. From 0 s to 0.5 s he stands still exactly in the pose of the reference image. Move 1, from 0.5 s to 2 s: he stands in guard holding the sword steady, breathing calmly. From 2 s to 3 s he is back in exactly the pose of the reference image and holds perfectly still, without moving at all. Move 2, from 3 s to 4.5 s: he walks on the spot, like on a treadmill, four steps, holding the sword steady. From 4.5 s to 5.5 s he is back in exactly the pose of the reference image and holds perfectly still, without moving at all. Attack 3, from 5.5 s to 7.5 s: he jumps straight up; at the top he swings the sword in one quick full circle around himself, then lands on the same spot. From 7.5 s to the end of the clip he is back in exactly the pose of the reference image and holds perfectly still.
+ACTION: 3 short separate moves with the sword, each one followed by a pause in the starting pose. Every single strike snaps out and is pulled straight back in less than half a second: he never holds a limb stretched out. From 0 s to 0.5 s he stands still exactly in the pose of the reference image. Move 1, from 0.5 s to 2 s: he stands in guard holding the sword steady, breathing calmly. From 2 s to 3 s he is back in exactly the pose of the reference image and holds perfectly still, without moving at all. Move 2, from 3 s to 4.5 s: he walks on the spot, without moving forward, four steps, holding the sword steady. From 4.5 s to 5.5 s he is back in exactly the pose of the reference image and holds perfectly still, without moving at all. Attack 3, from 5.5 s to 7.5 s: he jumps straight up; at the top he swings the sword in one quick full circle around himself, then lands on the same spot. From 7.5 s to the end of the clip he is back in exactly the pose of the reference image and holds perfectly still.
 
 BACKGROUND: one solid flat chroma-key green (#17B03B) filling the whole frame for the whole clip. No floor, no ground line, no shadow, no dust clouds, no smoke, no particles, no sky, no props.
 
-AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, extra claws, a tail, clothes other than the black t-shirt, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, any part of the character cut off by or touching the edges of the frame, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech. The weapon never changes shape, color or size, never disappears or duplicates, and stays in the same hand. No muzzle flashes, bullets, lasers, sparks, trails, flames or glow effects coming from the weapon.
+AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, extra claws, a tail, clothes other than the black t-shirt, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, any part of the character cut off by or touching the edges of the frame, a treadmill, a floor or any object under his feet, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech. The weapon never changes shape, color or size, never disappears or duplicates, and stays in the same hand. No muzzle flashes, bullets, lasers, sparks, trails, flames or glow effects coming from the weapon.
 ```
 
 ## BR-A2
@@ -473,7 +473,7 @@ ACTION: 2 short separate moves with the sword, each one followed by a pause in t
 
 BACKGROUND: one solid flat chroma-key green (#17B03B) filling the whole frame for the whole clip. No floor, no ground line, no shadow, no dust clouds, no smoke, no particles, no sky, no props.
 
-AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, extra claws, a tail, clothes other than the black t-shirt, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, any part of the character cut off by or touching the edges of the frame, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech. The weapon never changes shape, color or size, never disappears or duplicates, and stays in the same hand. No muzzle flashes, bullets, lasers, sparks, trails, flames or glow effects coming from the weapon.
+AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, extra claws, a tail, clothes other than the black t-shirt, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, any part of the character cut off by or touching the edges of the frame, a treadmill, a floor or any object under his feet, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech. The weapon never changes shape, color or size, never disappears or duplicates, and stays in the same hand. No muzzle flashes, bullets, lasers, sparks, trails, flames or glow effects coming from the weapon.
 ```
 
 ## BR-A3
@@ -499,11 +499,11 @@ WEAPON (must stay identical in every frame): the energy pistol from the referenc
 
 SHOT: side view in three-quarters, the character faces right unless the action says otherwise. FRAMING RULE: the whole character (head, hat, hands, feet and everything he carries) always stays completely inside the frame with a wide margin of empty green on every side, even at the top of a jump and at the full reach of a strike; no part of him is ever cut off by or touches the edges of the frame. Locked-off static camera: no camera movement, no zoom, no cuts, no slow motion. The character stays the same size as in the reference image.
 
-ACTION: 3 short separate moves with the pistol, each one followed by a pause in the starting pose. Every single strike snaps out and is pulled straight back in less than half a second: he never holds a limb stretched out. From 0 s to 0.5 s he stands still exactly in the pose of the reference image. Move 1, from 0.5 s to 2 s: he stands in guard holding the pistol steady, breathing calmly. From 2 s to 3 s he is back in exactly the pose of the reference image and holds perfectly still, without moving at all. Move 2, from 3 s to 4.5 s: he walks on the spot, like on a treadmill, four steps, holding the pistol steady. From 4.5 s to 5.5 s he is back in exactly the pose of the reference image and holds perfectly still, without moving at all. Attack 3, from 5.5 s to 7.5 s: he jumps straight up; at the top he points the pistol diagonally down in front of him and his wrist jerks once as if firing, then lands on the same spot. From 7.5 s to the end of the clip he is back in exactly the pose of the reference image and holds perfectly still.
+ACTION: 3 short separate moves with the pistol, each one followed by a pause in the starting pose. Every single strike snaps out and is pulled straight back in less than half a second: he never holds a limb stretched out. From 0 s to 0.5 s he stands still exactly in the pose of the reference image. Move 1, from 0.5 s to 2 s: he stands in guard holding the pistol steady, breathing calmly. From 2 s to 3 s he is back in exactly the pose of the reference image and holds perfectly still, without moving at all. Move 2, from 3 s to 4.5 s: he walks on the spot, without moving forward, four steps, holding the pistol steady. From 4.5 s to 5.5 s he is back in exactly the pose of the reference image and holds perfectly still, without moving at all. Attack 3, from 5.5 s to 7.5 s: he jumps straight up; at the top he points the pistol diagonally down in front of him and his wrist jerks once as if firing, then lands on the same spot. From 7.5 s to the end of the clip he is back in exactly the pose of the reference image and holds perfectly still.
 
 BACKGROUND: one solid flat chroma-key green (#17B03B) filling the whole frame for the whole clip. No floor, no ground line, no shadow, no dust clouds, no smoke, no particles, no sky, no props.
 
-AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, extra claws, a tail, clothes other than the black t-shirt, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, any part of the character cut off by or touching the edges of the frame, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech. The weapon never changes shape, color or size, never disappears or duplicates, and stays in the same hand. No muzzle flashes, bullets, lasers, sparks, trails, flames or glow effects coming from the weapon.
+AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, extra claws, a tail, clothes other than the black t-shirt, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, any part of the character cut off by or touching the edges of the frame, a treadmill, a floor or any object under his feet, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech. The weapon never changes shape, color or size, never disappears or duplicates, and stays in the same hand. No muzzle flashes, bullets, lasers, sparks, trails, flames or glow effects coming from the weapon.
 ```
 
 ## BR-A4
@@ -532,7 +532,7 @@ ACTION: 2 short separate moves with the pistol, each one followed by a pause in 
 
 BACKGROUND: one solid flat chroma-key green (#17B03B) filling the whole frame for the whole clip. No floor, no ground line, no shadow, no dust clouds, no smoke, no particles, no sky, no props.
 
-AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, extra claws, a tail, clothes other than the black t-shirt, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, any part of the character cut off by or touching the edges of the frame, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech. The weapon never changes shape, color or size, never disappears or duplicates, and stays in the same hand. No muzzle flashes, bullets, lasers, sparks, trails, flames or glow effects coming from the weapon.
+AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, extra claws, a tail, clothes other than the black t-shirt, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, any part of the character cut off by or touching the edges of the frame, a treadmill, a floor or any object under his feet, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech. The weapon never changes shape, color or size, never disappears or duplicates, and stays in the same hand. No muzzle flashes, bullets, lasers, sparks, trails, flames or glow effects coming from the weapon.
 ```
 
 ## BR-A5
@@ -558,11 +558,11 @@ WEAPON (must stay identical in every frame): the stone spear from the reference 
 
 SHOT: side view in three-quarters, the character faces right unless the action says otherwise. FRAMING RULE: the whole character (head, hat, hands, feet and everything he carries) always stays completely inside the frame with a wide margin of empty green on every side, even at the top of a jump and at the full reach of a strike; no part of him is ever cut off by or touches the edges of the frame. Locked-off static camera: no camera movement, no zoom, no cuts, no slow motion. The character stays the same size as in the reference image.
 
-ACTION: 3 short separate moves with the spear, each one followed by a pause in the starting pose. Every single strike snaps out and is pulled straight back in less than half a second: he never holds a limb stretched out. From 0 s to 0.5 s he stands still exactly in the pose of the reference image. Move 1, from 0.5 s to 2 s: he stands in guard holding the spear steady, breathing calmly. From 2 s to 3 s he is back in exactly the pose of the reference image and holds perfectly still, without moving at all. Move 2, from 3 s to 4.5 s: he walks on the spot, like on a treadmill, four steps, holding the spear steady. From 4.5 s to 5.5 s he is back in exactly the pose of the reference image and holds perfectly still, without moving at all. Attack 3, from 5.5 s to 7.5 s: he jumps straight up; at the top he thrusts the spear straight down below him, pulls it back, and lands on the same spot. From 7.5 s to the end of the clip he is back in exactly the pose of the reference image and holds perfectly still.
+ACTION: 3 short separate moves with the spear, each one followed by a pause in the starting pose. Every single strike snaps out and is pulled straight back in less than half a second: he never holds a limb stretched out. From 0 s to 0.5 s he stands still exactly in the pose of the reference image. Move 1, from 0.5 s to 2 s: he stands in guard holding the spear steady, breathing calmly. From 2 s to 3 s he is back in exactly the pose of the reference image and holds perfectly still, without moving at all. Move 2, from 3 s to 4.5 s: he walks on the spot, without moving forward, four steps, holding the spear steady. From 4.5 s to 5.5 s he is back in exactly the pose of the reference image and holds perfectly still, without moving at all. Attack 3, from 5.5 s to 7.5 s: he jumps straight up; at the top he thrusts the spear straight down below him, pulls it back, and lands on the same spot. From 7.5 s to the end of the clip he is back in exactly the pose of the reference image and holds perfectly still.
 
 BACKGROUND: one solid flat chroma-key green (#17B03B) filling the whole frame for the whole clip. No floor, no ground line, no shadow, no dust clouds, no smoke, no particles, no sky, no props.
 
-AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, extra claws, a tail, clothes other than the black t-shirt, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, any part of the character cut off by or touching the edges of the frame, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech. The weapon never changes shape, color or size, never disappears or duplicates, and stays in the same hand. No muzzle flashes, bullets, lasers, sparks, trails, flames or glow effects coming from the weapon.
+AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, extra claws, a tail, clothes other than the black t-shirt, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, any part of the character cut off by or touching the edges of the frame, a treadmill, a floor or any object under his feet, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech. The weapon never changes shape, color or size, never disappears or duplicates, and stays in the same hand. No muzzle flashes, bullets, lasers, sparks, trails, flames or glow effects coming from the weapon.
 ```
 
 ## BR-A6
@@ -591,7 +591,7 @@ ACTION: 2 short separate moves with the spear, each one followed by a pause in t
 
 BACKGROUND: one solid flat chroma-key green (#17B03B) filling the whole frame for the whole clip. No floor, no ground line, no shadow, no dust clouds, no smoke, no particles, no sky, no props.
 
-AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, extra claws, a tail, clothes other than the black t-shirt, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, any part of the character cut off by or touching the edges of the frame, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech. The weapon never changes shape, color or size, never disappears or duplicates, and stays in the same hand. No muzzle flashes, bullets, lasers, sparks, trails, flames or glow effects coming from the weapon.
+AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, extra claws, a tail, clothes other than the black t-shirt, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, any part of the character cut off by or touching the edges of the frame, a treadmill, a floor or any object under his feet, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech. The weapon never changes shape, color or size, never disappears or duplicates, and stays in the same hand. No muzzle flashes, bullets, lasers, sparks, trails, flames or glow effects coming from the weapon.
 ```
 
 ## BR-A7
@@ -619,7 +619,7 @@ ACTION: one throw. From 0 s to 0.5 s he stands still exactly in the pose of the 
 
 BACKGROUND: one solid flat chroma-key green (#17B03B) filling the whole frame for the whole clip. No floor, no ground line, no shadow, no dust clouds, no smoke, no particles, no sky, no props.
 
-AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, extra claws, a tail, clothes other than the black t-shirt, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, any part of the character cut off by or touching the edges of the frame, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech. The weapon never changes shape, color or size, never duplicates and leaves the frame only when thrown, and stays in the same hand. No muzzle flashes, bullets, lasers, sparks, trails, flames or glow effects coming from the weapon.
+AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, extra claws, a tail, clothes other than the black t-shirt, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, any part of the character cut off by or touching the edges of the frame, a treadmill, a floor or any object under his feet, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech. The weapon never changes shape, color or size, never duplicates and leaves the frame only when thrown, and stays in the same hand. No muzzle flashes, bullets, lasers, sparks, trails, flames or glow effects coming from the weapon.
 ```
 
 ## BR-A8
@@ -645,9 +645,9 @@ WEAPON (must stay identical in every frame): the rocket hammer from the referenc
 
 SHOT: side view in three-quarters, the character faces right unless the action says otherwise. FRAMING RULE: the whole character (head, hat, hands, feet and everything he carries) always stays completely inside the frame with a wide margin of empty green on every side, even at the top of a jump and at the full reach of a strike; no part of him is ever cut off by or touches the edges of the frame. Locked-off static camera: no camera movement, no zoom, no cuts, no slow motion. The character stays the same size as in the reference image.
 
-ACTION: hammering. From 0 s to 0.5 s he stands still exactly in the pose of the reference image. From 0.5 s to 2.5 s he swings the hammer up over his head and down in front of him with both hands, striking the empty space in front of his feet, about twice per second. From 2.5 s to 4.5 s he keeps hammering the same way while walking on the spot, like on a treadmill. From 4.5 s to 6 s he keeps hammering during one jump straight up, and lands on the same spot. From 6 s to the end of the clip he is back in exactly the pose of the reference image, the hammer upright, and holds perfectly still. The rocket on the hammer never fires.
+ACTION: hammering. From 0 s to 0.5 s he stands still exactly in the pose of the reference image. From 0.5 s to 2.5 s he swings the hammer up over his head and down in front of him with both hands, striking the empty space in front of his feet, about twice per second. From 2.5 s to 4.5 s he keeps hammering the same way while walking on the spot, without moving forward. From 4.5 s to 6 s he keeps hammering during one jump straight up, and lands on the same spot. From 6 s to the end of the clip he is back in exactly the pose of the reference image, the hammer upright, and holds perfectly still. The rocket on the hammer never fires.
 
 BACKGROUND: one solid flat chroma-key green (#17B03B) filling the whole frame for the whole clip. No floor, no ground line, no shadow, no dust clouds, no smoke, no particles, no sky, no props.
 
-AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, extra claws, a tail, clothes other than the black t-shirt, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, any part of the character cut off by or touching the edges of the frame, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech. The weapon never changes shape, color or size, never disappears or duplicates, and stays in the same hand. No muzzle flashes, bullets, lasers, sparks, trails, flames or glow effects coming from the weapon.
+AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, extra claws, a tail, clothes other than the black t-shirt, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, any part of the character cut off by or touching the edges of the frame, a treadmill, a floor or any object under his feet, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech. The weapon never changes shape, color or size, never disappears or duplicates, and stays in the same hand. No muzzle flashes, bullets, lasers, sparks, trails, flames or glow effects coming from the weapon.
 ```

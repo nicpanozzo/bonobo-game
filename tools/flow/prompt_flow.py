@@ -25,7 +25,7 @@ STYLE = {
 SHOT = "SHOT: side view in three-quarters, the character faces right unless the action says otherwise. FRAMING RULE: the whole character (head, hat, hands, feet and everything he carries) always stays completely inside the frame with a wide margin of empty green on every side, even at the top of a jump and at the full reach of a strike; no part of him is ever cut off by or touches the edges of the frame. Locked-off static camera: no camera movement, no zoom, no cuts, no slow motion. The character stays the same size as in the reference image."
 BACKGROUND = "BACKGROUND: one solid flat chroma-key green (#17B03B) filling the whole frame for the whole clip. No floor, no ground line, no shadow, no dust clouds, no smoke, no particles, no sky, no props."
 BACKGROUND_BLOCK = BACKGROUND.replace("no props.", "no props except the grey block described above.")
-AVOID = "AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, {extra}, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, any part of the character cut off by or touching the edges of the frame, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech."
+AVOID = "AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, {extra}, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, any part of the character cut off by or touching the edges of the frame, a treadmill, a floor or any object under his feet, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech."
 AVOID_WEAPON = " The weapon never changes shape, color or size, never disappears or duplicates, and stays in the same hand. No muzzle flashes, bullets, lasers, sparks, trails, flames or glow effects coming from the weapon."
 ATTACK_RULE = "Every single strike snaps out and is pulled straight back in less than half a second: he never holds a limb stretched out."
 START = "From 0 s to 0.5 s he stands still exactly in the pose of the reference image."
@@ -87,13 +87,13 @@ WEAPONS = {
 
 M = {
     "idle": ("fermo", ["idle"], False, "he breathes calmly on the spot, shifting his weight slightly from one foot to the other"),
-    "walk": ("cammina", ["walk"], False, "he walks on the spot, like on a treadmill, four relaxed steps"),
+    "walk": ("cammina", ["walk"], False, "he walks on the spot, without moving forward, four relaxed steps"),
     "light": ("leggero", ["light"], True, "one quick straight punch forward with the front hand"),
-    "movimento": ("fermo, cammina, salto", ["idle", "walk", "jumpSquat", "jump", "fall", "land"], False, "From 0.5 s to 2.5 s he breathes calmly on the spot, shifting his weight slightly from one foot to the other. From 2.5 s to 4.5 s he walks on the spot, like on a treadmill, four relaxed steps. From 4.5 s to 5 s he is back in exactly the pose of the reference image. From 5 s to 5.5 s he bends his knees deeply (squash). From 5.5 s to 6.5 s he jumps straight up. From 6.5 s to 7.25 s he falls back down, arms out, legs ready, and at 7.25 s he lands on the same spot with a strong squash of the knees"),
+    "movimento": ("fermo, cammina, salto", ["idle", "walk", "jumpSquat", "jump", "fall", "land"], False, "From 0.5 s to 2.5 s he breathes calmly on the spot, shifting his weight slightly from one foot to the other. From 2.5 s to 4.5 s he walks on the spot, without moving forward, four relaxed steps. From 4.5 s to 5 s he is back in exactly the pose of the reference image. From 5 s to 5.5 s he bends his knees deeply (squash). From 5.5 s to 6.5 s he jumps straight up. From 6.5 s to 7.25 s he falls back down, arms out, legs ready, and at 7.25 s he lands on the same spot with a strong squash of the knees"),
     "crouch": ("accovacciato", ["crouch"], False, "he crouches down low on the spot, knees bent and head lowered, holds it for a moment, then stands up"),
     "taunt": ("provocazione", ["taunt"], False, "he waves one hand at an invisible opponent with a cheeky grin"),
     "turn_skid": ("si gira e frena", ["turn", "skid"], False, "he quickly turns around to face left and back to face right, then brakes hard on the spot as if stopping from a run, feet dug in, leaning back, arms out for balance"),
-    "corsa": ("cammina, corre, frena, si gira", ["walk", "dash", "skid", "turn"], False, "From 0.5 s to 2.5 s he walks on the spot, like on a treadmill, four relaxed steps. From 2.5 s to 4.5 s he runs on the spot, like on a treadmill, leaning forward, arms pumping. From 4.5 s to 5.5 s he brakes hard, feet dug in, leaning back, arms out for balance. From 5.5 s to 6.5 s he quickly turns around to face left and turns back to face right"),
+    "corsa": ("cammina, corre, frena, si gira", ["walk", "dash", "skid", "turn"], False, "From 0.5 s to 2.5 s he walks on the spot, without moving forward, four relaxed steps. From 2.5 s to 4.5 s he runs on the spot, without moving forward, leaning forward, arms pumping. From 4.5 s to 5.5 s he brakes hard and skids to a stop still facing right (he does NOT turn around yet), feet dug in, leaning back, arms out for balance. From 5.5 s to 6.5 s he quickly turns around to face left and turns back to face right"),
     "salto": ("salto completo", ["jumpSquat", "jump", "doubleJump", "fall", "land"], False, "From 0.5 s to 1 s he bends his knees deeply (squash). From 1 s to 2.5 s he jumps straight up. From 2.5 s to 3.5 s, at the top, he does a second jump in mid-air with a forward somersault. From 3.5 s to 5 s he falls back down, arms out, legs ready, and at 5 s he lands on the same spot with a strong squash of the knees"),
     "salti_ridotto": ("preparazione e atterraggio", ["jumpSquat", "land"], False, "he bends his knees deeply for a split second (squash), jumps straight up, falls back down to the same spot and lands with a strong squash of the knees"),
     "salti_doppio": ("preparazione, doppio salto, atterraggio", ["jumpSquat", "doubleJump", "land"], False, "he bends his knees deeply (squash), jumps straight up, does a second jump in mid-air, falls back down to the same spot and lands with a strong squash"),
@@ -295,7 +295,7 @@ VARIANTS = {"elvedeo": {"salti": ["salti_doppio", "airDodge", "helpless"], "recu
 
 W = {
     "idle": "he stands in guard holding the {w} steady, breathing calmly",
-    "walk": "he walks on the spot, like on a treadmill, four steps, holding the {w} steady",
+    "walk": "he walks on the spot, without moving forward, four steps, holding the {w} steady",
     "spadaAir": "he jumps straight up; at the top he swings the sword in one quick full circle around himself, then lands on the same spot",
     "spadaLight": "two quick horizontal slashes forward with the sword, one from left to right and one back from right to left, each pulled straight back",
     "spadaHeavy": "he raises the sword above his head with both hands for half a second, then one strong vertical slash downward in front of him, and returns to guard",
@@ -324,7 +324,7 @@ W_NAMES = {"spada": "sword", "pistola": "pistol", "lancia": "spear", "martello":
 
 def elvedeo_weapon(text):
     # Elvedeo è sempre in sella: si muove la capra
-    return (text.replace("he walks on the spot, like on a treadmill, four steps,", "the goat walks on the spot, like on a treadmill, four steps, while he keeps")
+    return (text.replace("he walks on the spot, without moving forward, four steps,", "the goat walks on the spot, without moving forward, four steps, while he keeps")
             .replace("he jumps straight up;", "the goat jumps straight up with him on its back;")
             .replace("then lands on the same spot", "then they land on the same spot").replace(", and lands on the same spot", ", and they land on the same spot")
             .replace("pushes him one step back, then he steps forward again", "pushes the goat one step back, then the goat steps forward again"))
@@ -518,7 +518,7 @@ def compose_weapon(cid, wc):
             text = text.replace("takes one step forward and throws", "leans forward in the saddle and throws")
         return text, [("lanciaThrow", 0.5, 2, "lancio")], True
     if kind == "martello":
-        walk = "while the goat walks on the spot, like on a treadmill" if cid == "elvedeo" else "while walking on the spot, like on a treadmill"
+        walk = "while the goat walks on the spot, without moving forward" if cid == "elvedeo" else "while walking on the spot, without moving forward"
         jump = "during one jump of the goat straight up, and they land" if cid == "elvedeo" else "during one jump straight up, and lands"
         text = ("ACTION: hammering. " + START + " From 0.5 s to 2.5 s he swings the hammer up over his head and down in front of him with both hands, striking the empty space in front of his feet, about twice per second. "
                 f"From 2.5 s to 4.5 s he keeps hammering the same way {walk}. From 4.5 s to 6 s he keeps hammering {jump} on the same spot. "
