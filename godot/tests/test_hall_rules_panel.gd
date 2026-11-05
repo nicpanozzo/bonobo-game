@@ -26,6 +26,12 @@ func test_le_regole_tornano_come_arrivano() -> void:
 	p.free()
 
 
+func test_i_bot_possono_stare_fermi() -> void:
+	var p := _panel({"stocks": 3}, "manichino")
+	runner.check(p.chosen_bot_level() == "manichino", "il livello manichino resta: %s" % p.chosen_bot_level())
+	p.free()
+
+
 func test_ogni_oggetto_ha_il_suo_interruttore() -> void:
 	var game = JSON.parse_string(FileAccess.get_file_as_string("res://data/game.json"))
 	var p := _panel({"stocks": 3})

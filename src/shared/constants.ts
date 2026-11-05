@@ -744,6 +744,7 @@ export const HALL = {
   countdownMs: 5000, // dal "tutti pronti" al via
   returnAfterMs: 12_000, // a fine partita, dopo tanto si torna da soli nella sala (se nessuno chiede la rivincita)
   minFighters: 2, // lottatori (bot compresi) per poter partire
+  soloDummyMs: 1500, // ms da solo nel cerchio dei pronti prima che la sala chiami un manichino fermo
   gongCooldownMs: 1500,
   sendEveryTicks: 2, // uno snapshot della sala ogni 2 passi (30 al secondo)
   boardRows: 10, // righe del tabellone della classifica in sala

@@ -477,6 +477,30 @@ test("sala: il bot chiesto da chi crea la stanza aspetta nella sala e poi gioca 
   a.disconnect();
 });
 
+test("sala: da solo nel cerchio arriva un manichino, si parte e in partita sta fermo", LIMIT, async () => {
+  const a = await client();
+  const w = await joinWith(a, { room: "sala-sola", name: "A", hall: true });
+  const room = rooms.get("sala-sola")!;
+  await walkOver(a, room, w.id, "ready");
+  fastForward(room, HALL.soloDummyMs + HALL.countdownMs + 200);
+  assert.equal(room.phase, "match");
+  const dummy = room.match.players.find((p) => p.id !== w.id)!;
+  assert.equal(dummy.name, "Manichino");
+  fastForward(room, PREMATCH.introMs + PREMATCH.countdownMs + 100);
+  for (let i = 0; i < TICK_RATE; i++) {
+    room.advance(TICK);
+    assert.ok(!dummy.input.left && !dummy.input.right && !dummy.input.light && !dummy.input.heavy, "il manichino non preme tasti");
+  }
+  a.disconnect();
+});
+
+test("sala: chi crea la stanza col manichino lo trova fermo in partita", LIMIT, async () => {
+  const a = await client();
+  await joinWith(a, { room: "sala-manichino", name: "A", hall: true, bot: "manichino" });
+  assert.equal(rooms.get("sala-manichino")!.hallBotLevel, "manichino");
+  a.disconnect();
+});
+
 // Chat vocale: il server fa solo da centralino (offerte, risposte e candidati ICE), l'audio va da browser a browser
 type VoiceMsg = Parameters<ServerToClient["voice"]>[0];
 type VoiceConfig = Parameters<ServerToClient["voiceConfig"]>[0];

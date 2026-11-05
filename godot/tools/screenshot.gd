@@ -10,7 +10,7 @@ var _out := "user://screenshots"
 var _game: Dictionary
 var _world: Node2D # nella partita finta: riceve uno snapshot a ogni frame
 var _hud: Control
-const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre", "lobby_regole", "musica", "tetris", "pacman", "bassanese", "bologna_piazza", "bologna_torri", "bologna_crollo", "bologna_zuffa", "oggetti", "oggetti_categorie", "oggetti_armi", "oggetti_pesanti", "prepartita_attesa", "prepartita_vs", "prepartita_conto", "fine_partita", "sala", "sala_conto", "sala_galleria", "sala_via", "sala_basket", "sala_scacchi", "sala_computer", "sala_regole", "fabbrica", "diluvio", "palco_metal", "palco_reggae", "palco_techno"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
+const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre", "lobby_regole", "musica", "tetris", "pacman", "bassanese", "bologna_piazza", "bologna_torri", "bologna_crollo", "bologna_zuffa", "oggetti", "oggetti_categorie", "oggetti_armi", "oggetti_pesanti", "prepartita_attesa", "prepartita_vs", "prepartita_conto", "fine_partita", "sala", "sala_conto", "sala_galleria", "sala_via", "sala_basket", "sala_scacchi", "sala_computer", "sala_regole", "sala_solo", "fabbrica", "diluvio", "palco_metal", "palco_reggae", "palco_techno"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
 var _index := -1
 var _frame := 0
 var _failed := false
@@ -560,6 +560,12 @@ func _sala_computer() -> void:
 	_add_hall()
 
 
+# Da soli nel cerchio arriva un manichino fermo e parte il conto alla rovescia
+func _sala_solo() -> void:
+	_hall_scene = "solo"
+	_add_hall()
+
+
 func _sala_regole() -> void:
 	_hall_scene = "computer"
 	_add_hall()
@@ -569,7 +575,7 @@ func _sala_regole() -> void:
 	var panel: Control = load("res://scripts/hall_rules_panel.gd").new()
 	layer.add_child(panel)
 	var snap: Dictionary = load("res://tests/hall_fake.gd").party(0.0, "computer")
-	panel.setup(_game, Settings.new({"master": 0.8, "sfx": 0.7, "music": 0.35}, "user://ci_regole.cfg"), snap.rules, "difficile")
+	panel.setup(_game, Settings.new({"master": 0.8, "sfx": 0.7, "music": 0.35}, "user://ci_regole.cfg"), snap.rules, "manichino")
 
 
 # Le arene a tema: una funzione per foto, tutte uguali

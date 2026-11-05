@@ -421,7 +421,7 @@ export interface HallSnapshot {
   rules: MatchRules; // regole della prossima partita (vite, tempo, oggetti), cambiabili dal computer: la modalità la decide il voto
   botLevel?: HallBotLevel; // come giocano i bot della sala; manca nei server di prima
 }
-export type HallBotLevel = "facile" | "semplice" | "difficile";
+export type HallBotLevel = "manichino" | "facile" | "semplice" | "difficile"; // manichino: fermi, per provare i colpi da soli
 // Punti guadagnati o persi a fine partita, per la schermata dei risultati
 export interface RatingChange {
   id: string;
