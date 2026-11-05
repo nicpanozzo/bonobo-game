@@ -302,7 +302,7 @@
     "maxSwingSpeed": 1150,
     "swingDrag": 0.25,
     "releaseBoost": 420,
-    "maxHangMs": 3000,
+    "maxHangMs": 4000,
     "hookStepPx": 8,
     "platformGrabPx": 8,
     "zipSpeed": 1400,
@@ -311,7 +311,13 @@
     "pullDamage": 6,
     "pullSpeed": 760,
     "pullLift": 260,
-    "pullHitstunMs": 320
+    "pullHitstunMs": 320,
+    "assistUpDeg": 30,
+    "assistDiagDeg": 25,
+    "assistForwardDeg": 8,
+    "assistStepPx": 16,
+    "releasePush": 180,
+    "platformHopPx": 40
   },
   "ledge": {
     "hangOffsetY": 56

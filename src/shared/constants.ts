@@ -264,7 +264,7 @@ export const ANCHOR = {
   maxSwingSpeed: 1150, // pixel/s al massimo appesi
   swingDrag: 0.25, // frazione della velocità persa ogni secondo appesi
   releaseBoost: 420, // pixel/s in più verso l'alto staccandosi col salto
-  maxHangMs: 3000, // ms appesi prima di lasciare la catena da soli
+  maxHangMs: 4000, // ms appesi prima di lasciare la catena da soli
   hookStepPx: 8, // pixel tra un controllo e l'altro dell'ancora in volo, così non passa attraverso le piattaforme sottili
   platformGrabPx: 8, // pixel sopra o sotto una piattaforma sottile in cui l'ancora si pianta
   zipSpeed: 1400, // pixel/s di Avanti tutta!: da appeso, Speciale riavvolge la catena e sfreccia verso l'ancora
@@ -275,6 +275,13 @@ export const ANCHOR = {
   pullSpeed: 760, // pixel/s verso di lui
   pullLift: 260, // pixel/s verso l'alto, così non striscia per terra
   pullHitstunMs: 320, // ms senza controlli mentre arriva: il tempo per colpirlo
+  // Mira aiutata: l'ancora va verso il punto agganciabile più vicino alla direzione del lancio, se c'è
+  assistUpDeg: 30, // gradi di tolleranza per il lancio in su
+  assistDiagDeg: 25, // gradi per quello in diagonale
+  assistForwardDeg: 8, // gradi per quello in avanti: stretto, così prende chi ha davanti
+  assistStepPx: 16, // pixel tra i punti di bordi e piattaforme che si provano
+  releasePush: 180, // pixel/s in più nella direzione tenuta staccandosi col salto
+  platformHopPx: 40, // pixel sopra una piattaforma sottile a cui si arriva salendoci dalla catena
 };
 
 // Statistiche dei personaggi (E11, #13): moltiplicatori dei numeri di FIGHTER in characters.ts.
