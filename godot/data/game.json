@@ -11881,20 +11881,20 @@
         "lightUp": {
           "range": 54,
           "height": 48,
-          "boxX": -27,
-          "boxY": -146
+          "boxX": 0,
+          "boxY": -118
         },
         "lightDown": {
-          "range": 78,
+          "range": 42,
           "height": 24,
-          "boxX": 18,
+          "boxX": -1,
           "boxY": -24
         },
         "heavyDown": {
-          "range": 96,
+          "range": 73,
           "height": 30,
           "boxX": 0,
-          "boxY": -30
+          "boxY": -38
         },
         "dashAttack": {
           "range": 75,
@@ -12076,7 +12076,7 @@
           "lightDown": {
             "fps": 30,
             "loop": false,
-            "hitFrame": 8,
+            "hitFrame": 10,
             "frames": 27,
             "src": "lightDown"
           },
