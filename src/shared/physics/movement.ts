@@ -7,6 +7,7 @@ import { attackSpecFor, startAttack } from "./attacks";
 import { endDash, stepDash } from "./dash";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
 import { gearSpeedMult } from "./gear";
+import { rideDrive, rideGravityMult, rideJumpMult, rideSpeedMult } from "./ride";
 import { onPuddle } from "./projectiles";
 import { attackMoveFactor } from "./supreme";
 
@@ -57,7 +58,7 @@ export function applyControls(f: Fighter, dt: number, ctx: PhysicsContext): void
     return;
   }
   const stats = characterStats(f.characterId);
-  const speed = (f.carrier ? FLAG.carrierSpeed : 1) * (f.powerup === "fiore" ? POWERUP.speedMult : f.powerup === "spore" ? SPORE.speedMult : f.powerup === "veleno" ? FUNGO.slowMult : gearSpeedMult(f)); // caffè, moka, gigante e mini (gear.ts); la bandiera pesa, il fiore rilassa (#231), le spore rallentano (#358), il veleno del fungo di Teemo (#419)
+  const speed = (f.carrier ? FLAG.carrierSpeed : 1) * (f.powerup === "fiore" ? POWERUP.speedMult : f.powerup === "spore" ? SPORE.speedMult : f.powerup === "veleno" ? FUNGO.slowMult : gearSpeedMult(f)) * rideSpeedMult(f); // pesanti e cavalcature (ride.ts); caffè, moka, gigante e mini (gear.ts); la bandiera pesa, il fiore rilassa (#231), le spore rallentano (#358), il veleno del fungo di Teemo (#419)
   // Durante un attacco da terra si resta fermi, in aria si mantiene lo slancio
   const dashSpeed = stepDash(f, dir, dt * 1000, ctx); // scatto e corsa (#199)
   if (f.onGround && dashSpeed !== null) {
@@ -79,6 +80,7 @@ export function applyControls(f: Fighter, dt: number, ctx: PhysicsContext): void
     f.vx = Math.abs(f.vx) <= slow ? 0 : f.vx - Math.sign(f.vx) * slow;
   }
   if (dir !== 0 && !f.attack) f.facing = dir as 1 | -1;
+  rideDrive(f); // lo scatto in sella e il monopattino a razzo spingono da soli (ride.ts)
 
   // Recupero (#11): in aria, K premuto tenendo su. Vince sul salto se i due tasti arrivano insieme.
   if (!f.onGround && !f.attack && !f.recoveryUsed && f.input.up && pressed(f, "heavy")) {
@@ -104,7 +106,7 @@ export function applyControls(f: Fighter, dt: number, ctx: PhysicsContext): void
     consume(f, "jump"); // una pressione = un salto solo
     const fromGround = f.onGround || f.coyoteTimer > 0; // appena scesi dal bordo vale ancora da terra
     ctx.events.push({ type: "jump", id: f.id, x: Math.round(f.x), y: Math.round(f.y), air: !fromGround });
-    f.vy = -(fromGround ? FIGHTER.jumpSpeed : FIGHTER.doubleJumpSpeed) * stats.jump;
+    f.vy = -(fromGround ? FIGHTER.jumpSpeed : FIGHTER.doubleJumpSpeed) * stats.jump * rideJumpMult(f); // pesanti e cavalcature (ride.ts)
     f.jumpsLeft -= 1;
     f.onGround = false;
     f.coyoteTimer = 0;
@@ -168,7 +170,7 @@ export function stepLag(f: Fighter, dtMs: number, ctx: PhysicsContext): boolean 
   consume(f, "jump"); // un'altra pressione durante la preparazione non fa il doppio salto appena staccati
   if (f.jumpSquatTimer > 0) return true;
   ctx.events.push({ type: "jump", id: f.id, x: Math.round(f.x), y: Math.round(f.y), air: false });
-  f.vy = -FIGHTER.jumpSpeed * characterStats(f.characterId).jump;
+  f.vy = -FIGHTER.jumpSpeed * characterStats(f.characterId).jump * rideJumpMult(f);
   f.jumpsLeft = FIGHTER.maxJumps - 1;
   f.onGround = false;
   f.coyoteTimer = 0;
@@ -219,6 +221,6 @@ export function applyGravity(f: Fighter, dt: number, mult = 1): void {
   const maxFall = fastFall ? FIGHTER.fastFallSpeed : FIGHTER.maxFallSpeed;
   // Fatti col bong si è più leggeri (#302), sempre di più finché non si soffia
   const high = f.powerup === "bong" ? BONG.gravityMult + (BONG.gravityMultMax - BONG.gravityMult) * (1 - f.powerupMs / BONG.highMs) : 1;
-  f.vy = Math.min(f.vy + FIGHTER.gravity * characterStats(f.characterId).gravity * high * mult * dt, f.hitstun ? Infinity : maxFall);
+  f.vy = Math.min(f.vy + FIGHTER.gravity * characterStats(f.characterId).gravity * high * mult * rideGravityMult(f) * dt, f.hitstun ? Infinity : maxFall);
   if (fastFall && !f.onGround && f.vy > 0) f.vy = Math.max(f.vy, maxFall * 0.8);
 }

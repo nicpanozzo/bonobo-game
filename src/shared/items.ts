@@ -1,4 +1,4 @@
-import { FUNGO, GEAR, ITEM_RARITY, PACMAN, POWERUP, TETRIS, type ItemRarity } from "./constants";
+import { FUNGO, GEAR, ITEM_RARITY, PACMAN, POWERUP, RIDE, TETRIS, type ItemRarity } from "./constants";
 
 // Oggetti che cadono nell'arena (#17 passo 3). Caduta, raccolta e lancio sono in
 // src/shared/physics/items.ts, i numeri comuni in ITEM_RULES (constants.ts).
@@ -37,6 +37,10 @@ export interface ItemSpec {
   throwSpec?: { throwSpeed: number; throwLift: number; throwUpSpeed: number; gravityMult: number }; // vola diverso dalla banana
   homing?: boolean; // lanciato insegue l'avversario più vicino (GEAR.ciabattaMamma)
   petardo?: "normale" | "grappolo" | "mini"; // si accende lanciato o posato, si attacca dove tocca e scoppia (GEAR.petardo)
+  crate?: number; // la cassa (physics/ride.ts): rotta lascia tanti oggetti della stanza
+  washer?: "normale" | "matta"; // la lavatrice (ride.ts): scagliata va in centrifuga; matta salta addosso agli avversari
+  mount?: "monopattino" | "razzo" | "carrello"; // ci si sale sopra (ride.ts, RIDE)
+  seats?: number; // il carrello: quanti ne tiene dentro
 }
 
 // TODO community: oggetti ispirati ai meme del canale, uno per issue
@@ -68,6 +72,15 @@ export const ITEMS: Record<string, ItemSpec> = {
   moka: { id: "moka", name: "Moka a razzo", damage: 0, knockback: 0, width: 22, height: 32, color: 0xb8bcc4, rarity: "raro", category: "consumo", rareOf: "caffe", consume: { powerup: "razzo", ms: GEAR.moka.ms } },
   brownie: { id: "brownie", name: "Brownie spaziale", damage: 0, knockback: 0, width: 24, height: 18, color: 0x5b3a24, rarity: "normale", category: "consumo", consume: { powerup: "brownie", ms: GEAR.brownie.delayMs } },
   brownieNonna: { id: "brownieNonna", name: "Brownie della nonna", damage: 0, knockback: 0, width: 28, height: 20, color: 0x7a4a2a, rarity: "raro", category: "consumo", rareOf: "brownie", consume: { powerup: "colosso", ms: GEAR.brownie.nonnaMs } },
+  // Pesanti e da cavalcare (physics/ride.ts, RIDE). TODO community: i nomi
+  cassa: { id: "cassa", name: "Cassa", damage: 13, knockback: 440, width: 40, height: 36, color: 0xa86b32, rarity: "normale", category: "peso", throwSpec: RIDE.heavy, crate: 1 },
+  cassaOro: { id: "cassaOro", name: "Cassa d'oro", damage: 13, knockback: 440, width: 40, height: 36, color: 0xf2c230, rarity: "raro", category: "peso", rareOf: "cassa", throwSpec: RIDE.heavy, crate: 3 },
+  lavatrice: { id: "lavatrice", name: "Lavatrice", damage: 16, knockback: 480, width: 42, height: 46, color: 0xe8ecef, rarity: "normale", category: "peso", throwSpec: RIDE.heavy, washer: "normale" },
+  lavatriceMatta: { id: "lavatriceMatta", name: "Lavatrice impazzita", damage: 16, knockback: 480, width: 42, height: 46, color: 0xff6fb5, rarity: "raro", category: "peso", rareOf: "lavatrice", throwSpec: RIDE.heavy, washer: "matta" },
+  monopattino: { id: "monopattino", name: "Monopattino", damage: 9, knockback: 400, width: 44, height: 30, color: 0x2ecc71, rarity: "normale", category: "cavalcatura", mount: "monopattino" },
+  monopattinoRazzo: { id: "monopattinoRazzo", name: "Monopattino a razzo", damage: 11, knockback: 460, width: 48, height: 30, color: 0xe74c3c, rarity: "raro", category: "cavalcatura", rareOf: "monopattino", mount: "razzo" },
+  carrello: { id: "carrello", name: "Carrello della spesa", damage: 10, knockback: 420, width: 50, height: 40, color: 0x95a5a6, rarity: "normale", category: "cavalcatura", mount: "carrello", seats: 1 },
+  carrelloTurbo: { id: "carrelloTurbo", name: "Carrello da tre", damage: 10, knockback: 420, width: 62, height: 42, color: 0xf39c12, rarity: "raro", category: "cavalcatura", rareOf: "carrello", mount: "carrello", seats: 3 },
 };
 
 // Gli oggetti che possono cadere dal cielo (rarity "mai" no), in ordine: si scelgono nelle regole della stanza

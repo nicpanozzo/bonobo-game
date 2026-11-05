@@ -259,8 +259,11 @@ export type GameEvent =
   | { type: "bassanese"; phase: "call" | "leave"; id: string; x: number; y: number } // Chiama Bassanese: id ha chiamato
   // Oggetti per categoria (gear.ts): kind è l'oggetto, id chi lo usa (o chi lo prende addosso), r un raggio in pixel.
   // fuse = si accende la miccia, stick = il petardo si attacca a id, boom = scoppia (raggio r), quake = il gigante della
-  // nonna atterra e fa tremare la terra (raggio r). Le PR delle altre categorie aggiungono le loro fasi qui
-  | { type: "gear"; phase: "fuse" | "stick" | "boom" | "quake"; kind: string; id: string; x: number; y: number; r?: number }
+  // nonna atterra e fa tremare la terra (raggio r). Le PR delle altre categorie aggiungono le loro fasi qui.
+  // Pesanti e cavalcature (ride.ts): break = la cassa si rompe, spin = la lavatrice parte in centrifuga, hop = salta,
+  // charge = id scatta in sella, ram = id viene investito, scoop = id finisce nel carrello, launch = id catapulta chi
+  // aveva nel carrello; boom vale anche per il monopattino a razzo che finisce il razzo
+  | { type: "gear"; phase: "fuse" | "stick" | "boom" | "quake" | "break" | "spin" | "hop" | "charge" | "ram" | "scoop" | "launch"; kind: string; id: string; x: number; y: number; r?: number }
   | { type: "tetris"; phase: "spawn" | "move" | "rotate" | "drop" | "land" | "line"; id: string; x: number; y: number; width?: number } // il pezzo di Tetris di id (#427); line: esplode una riga larga width pixel, x e y al centro
   // Il bong (#302): load = comincia a caricarlo, smoke = soffia la nuvola (centro x,y, verso dir, danno), stun = troppo fatto, crolla
   | { type: "bong"; phase: "load" | "smoke" | "stun"; id: string; x: number; y: number; dir?: 1 | -1; damage?: number }

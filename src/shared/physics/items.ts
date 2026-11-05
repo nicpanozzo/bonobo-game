@@ -12,6 +12,7 @@ import type { ItemState } from "../types";
 import { endArcade, isArcade, startArcade } from "./arcade";
 import { bodyBox } from "./attacks";
 import { callBassanese } from "./bassanese";
+import { carried, markCarriers, mountInput, spinning, stepRideItem } from "./ride";
 import { brownieKicksIn, eatBrownie, fuseLoad, itemGravityMult, lit, onThrow, stepGearItem, stickTo } from "./gear";
 import { moverHere, moverPlace } from "./elements";
 import { chargeFromHit } from "./supreme";
@@ -76,7 +77,7 @@ export function resetItems(world: ItemWorld): void {
 
 // Un funghetto piantato o un fungo di Teemo piazzato (ha un proprietario): non si raccoglie, scatta sugli avversari
 // e non conta tra gli oggetti che cadono
-const isPlanted = (i: Item) => !!ITEMS[i.kind].planted || (!!ITEMS[i.kind].shroom && i.ownerId !== undefined) || lit(i); // anche il petardo acceso
+const isPlanted = (i: Item) => !!ITEMS[i.kind].planted || (!!ITEMS[i.kind].shroom && i.ownerId !== undefined) || lit(i) || spinning(i); // anche il petardo acceso e la lavatrice in centrifuga (ride.ts)
 
 // Non si raccoglie né si lancia mentre si è occupati: colpiti, in attacco, in schivata o inermi dopo il recupero
 const busy = (f: Fighter) =>
@@ -113,6 +114,12 @@ export function handleItemInput(world: ItemWorld, fighters: Fighter[], ctx: Phys
       consumeAttackKeys(f);
       continue;
     }
+    // In sella (ride.ts): J scatta o catapulta chi è nel carrello, K scende
+    if (held && ITEMS[held.kind].mount) {
+      mountInput(held, f, pressed(f, "light"), ctx, fighters);
+      consumeAttackKeys(f);
+      continue;
+    }
     if (held) {
       throwItem(held, f, ctx);
       consumeAttackKeys(f);
@@ -135,6 +142,7 @@ export function handleItemInput(world: ItemWorld, fighters: Fighter[], ctx: Phys
       consumeAttackKeys(f);
     }
   }
+  markCarriers(world, fighters); // pesanti e cavalcature rallentano o accelerano già da questo passo (ride.ts)
 }
 
 // Un oggetto da consumare (#231): sparisce subito e dà il potenziamento; un altro fiore ricarica il tempo
@@ -424,6 +432,7 @@ export function stepItems(world: ItemWorld, fighters: Fighter[], dtMs: number, c
         item.vx = holder.vx;
         item.vy = holder.vy;
         if (spec.bong) loadBong(world, item, holder, dtMs, ctx);
+        carried(world, item, holder, fighters, dtMs, ctx); // sopra la testa o sotto i piedi (ride.ts)
         continue;
       }
       // Chi lo teneva è stato colpito o è uscito: l'oggetto cade dov'è
@@ -437,11 +446,13 @@ export function stepItems(world: ItemWorld, fighters: Fighter[], dtMs: number, c
     item.vy = Math.min(FIGHTER.maxFallSpeed, item.vy + FIGHTER.gravity * dt * (spec.shroom ? FUNGO.gravityMult : itemGravityMult(item))); // il fungo è pesante
     if (item.onGround) item.vx = Math.sign(item.vx) * Math.max(0, Math.abs(item.vx) - ITEM_RULES.groundFriction * dt);
     const prevY = item.y;
+    const wasThrown = item.thrown;
     item.x += item.vx * dt;
     item.y += item.vy * dt;
     land(item, prevY, spec.width / 2, dtMs, ctx);
 
     if (item.thrown) hitWithItem(item, fighters, ctx);
+    stepRideItem(world, item, fighters, dtMs, ctx, wasThrown); // cassa che si rompe, lavatrice in centrifuga (ride.ts)
     if (spec.shroom && item.onGround && item.plantBy) settleShroom(world, item);
     if (spec.planted) {
       item.armMs = Math.max(0, (item.armMs ?? 0) - dtMs);
@@ -456,6 +467,7 @@ export function stepItems(world: ItemWorld, fighters: Fighter[], dtMs: number, c
   }
 
   const z = ctx.stage.blastZone;
+  markCarriers(world, fighters);
   world.items = world.items.filter((i) => i.lifeMs > 0 && !(ITEMS[i.kind].bong && i.loadMs === Infinity) && i.x > z.left && i.x < z.right && i.y < z.bottom);
 }
 

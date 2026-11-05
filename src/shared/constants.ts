@@ -1055,6 +1055,74 @@ export const GEAR = {
   },
 };
 
+// Oggetti pesanti e da cavalcare (physics/ride.ts), come GEAR: due per categoria, ognuno con la sua versione rara
+export const RIDE = {
+  // Peso: si porta sopra la testa, si va piano e si salta poco; scagliato vola corto e cade pesante
+  heavy: {
+    speedMult: 0.6, // velocità orizzontale con l'oggetto sopra la testa
+    jumpMult: 0.72, // altezza del salto
+    throwSpeed: 720, // pixel/s in avanti
+    throwLift: 300, // pixel/s verso l'alto
+    throwUpSpeed: 900, // pixel/s tenendo su
+    gravityMult: 1.6, // in volo cade svelto
+  },
+  // La cassa si rompe dove colpisce o atterra e lascia uno (quella d'oro tre) degli oggetti della stanza
+  crate: {
+    popVy: 520, // pixel/s verso l'alto degli oggetti che escono
+    popVx: 260, // pixel/s di lato, sparsi
+  },
+  // La lavatrice scagliata atterra e va in centrifuga: chi la tocca prende piccoli colpi a ripetizione
+  washer: {
+    spinMs: 4500, // ms di centrifuga; intanto non si raccoglie
+    tickMs: 300, // ms tra un colpo e l'altro a chi la tocca
+    damage: 3, // percentuale di ogni colpo
+    knockback: 330, // pixel/s di lancio di base di ogni colpo
+    knockbackGrowth: 2, // pixel/s in più per ogni punto di percentuale
+    angleDeg: 70, // quasi in verticale: si viene sbatacchiati
+    reach: 14, // pixel attorno alla lavatrice in cui si viene presi
+    // Quella impazzita salta addosso all'avversario più vicino di chi l'ha scagliata
+    crazySpinMs: 6500,
+    hopEveryMs: 650, // ms tra un salto e l'altro, da ferma a terra
+    hopVx: 420, // pixel/s verso il bersaglio
+    hopVy: 640, // pixel/s verso l'alto
+  },
+  // Cavalcatura: ci si sale sopra, a terra si va più svelti e si investe chi si incontra
+  mount: {
+    speedMult: 1.5, // velocità orizzontale
+    jumpMult: 0.85, // altezza del salto
+    ramSpeed: 320, // pixel/s: sopra questa velocità chi si tocca viene investito
+    ramDamage: 8, // percentuale dell'investimento
+    ramKnockback: 430, // pixel/s di lancio di base
+    ramGrowth: 5, // pixel/s in più per ogni punto di percentuale
+    ramAngleDeg: 35,
+    ramCooldownMs: 500, // ms prima di poter investire di nuovo lo stesso
+    chargeSpeed: 950, // pixel/s dello scatto con J
+    chargeMs: 320, // ms di scatto
+    chargeCooldownMs: 1100, // ms tra uno scatto e l'altro
+    dismountSpeed: 820, // pixel/s del mezzo che scende e va avanti da solo con K (colpisce come un lancio)
+  },
+  // Il monopattino a razzo: va sempre avanti da solo, in aria plana, finito il razzo scoppia sotto i piedi
+  rocket: {
+    speed: 780, // pixel/s in avanti, sempre
+    gravityMult: 0.3, // in aria si cade piano
+    fuelMs: 6000, // ms di razzo, poi scoppia
+    boomRadius: 90, // pixel dello scoppio finale
+    boomDamage: 10,
+    boomKnockback: 520,
+  },
+  // Il carrello della spesa: chi si investe ci finisce dentro; J lo catapulta, da solo dopo holdMs
+  cart: {
+    speedMult: 1.35, // il carrello normale è meno svelto del monopattino
+    turboSpeedMult: 1.65, // quello da tre
+    holdMs: 2600, // ms al massimo dentro il carrello
+    catapultDamage: 9, // percentuale della catapulta
+    catapultKnockback: 720, // pixel/s di lancio di base
+    catapultGrowth: 6,
+    catapultAngleDeg: 50,
+    seatLift: 26, // pixel sopra i piedi del guidatore dove sta chi è dentro
+  },
+};
+
 // Il filo di Kirschner di Dr. Micelium (#358): chi è infettato dalle spore va più piano, lui picchia più forte.
 // Sono potenziamenti come quelli degli oggetti (powerup "spore" e "micelio"), così il client li vede nello snapshot
 export const SPORE = {
