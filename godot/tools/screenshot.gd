@@ -440,9 +440,9 @@ func _snapshot(frame: int) -> Dictionary:
 			{"id": 51, "kind": "monopattino", "x": 500, "y": 0, "vx": 0, "vy": 0, "heldBy": "p1", "thrown": false},
 			{"id": 52, "kind": "carrello", "x": 680, "y": 0, "vx": 0, "vy": 0, "heldBy": "p2", "thrown": false},
 			{"id": 53, "kind": "monopattinoRazzo", "x": 900, "y": 0, "vx": 0, "vy": 0, "heldBy": "p4", "thrown": false, "load": 0.7},
-			{"id": 54, "kind": "lavatrice", "x": 1060, "y": 560, "vx": 0, "vy": 0, "heldBy": null, "thrown": false, "load": 0.6},
+			{"id": 54, "kind": "lavatrice", "x": 1010, "y": 560, "vx": 0, "vy": 0, "heldBy": null, "thrown": false, "load": 0.6},
 			{"id": 55, "kind": "cassaOro", "x": 220, "y": 560, "vx": 0, "vy": 0, "heldBy": null, "thrown": false},
-			{"id": 56, "kind": "lavatriceMatta", "x": 1150, "y": 560, "vx": 0, "vy": 0, "heldBy": null, "thrown": false},
+			{"id": 56, "kind": "lavatriceMatta", "x": 1090, "y": 560, "vx": 0, "vy": 0, "heldBy": null, "thrown": false},
 		]
 		if frame % 24 == 2: # una cassa che si rompe ogni tanto, così nella foto ci sono sempre le schegge
 			snap.events = [{"type": "gear", "phase": "break", "kind": "cassa", "id": "p0", "x": 780, "y": 560}]
