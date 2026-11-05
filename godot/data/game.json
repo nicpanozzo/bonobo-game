@@ -14516,7 +14516,7 @@
         "drawnSmear": true,
         "animations": {
           "idle": {
-            "fps": 12,
+            "fps": 8,
             "loop": true,
             "frames": 15,
             "src": "idle"
@@ -15443,7 +15443,7 @@
         "scale": 0.5,
         "animations": {
           "idle": {
-            "fps": 12,
+            "fps": 8,
             "loop": true,
             "frames": 8,
             "src": "idle"
