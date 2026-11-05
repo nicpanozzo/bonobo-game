@@ -168,6 +168,13 @@ func on_event(e: Dictionary) -> void:
 				"fire": _play("cannonFire", {"x": e.x})
 				"boom": _play("tetrisLand", {"volume": 0.7, "x": e.x, "pitch": 0.7})
 				"load", "ammo": _play("tetrisMove", {"volume": 0.4, "x": e.x, "pitch": 0.5})
+		# Oggetti per categoria (gear.ts): miccia, aggancio, scoppio del petardo e scossa del gigante della nonna
+		"gear":
+			match str(e.phase):
+				"fuse": _play("bubbles", {"volume": 0.35, "x": e.x, "pitch": 2.2})
+				"stick": _play("grab", {"volume": 0.6, "x": e.x, "pitch": 1.3})
+				"boom": _play("cannonFire", {"x": e.x, "volume": 0.6 if e.kind == "petardino" else 1.0, "pitch": 1.4 if e.kind == "petardino" else 1.0})
+				"quake": _play("tetrisLand", {"x": e.x, "pitch": 0.5})
 		# Chiama Bassanese: il telefono che squilla
 		"bassanese":
 			if e.phase == "call":

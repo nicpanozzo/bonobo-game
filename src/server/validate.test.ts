@@ -35,6 +35,11 @@ describe("parseJoin", () => {
     assert.deepEqual({ ...data?.rules }, { stocks: 5, mode: "teams", items: true });
     assert.equal(Object.getPrototypeOf(data?.rules), Object.prototype);
   });
+
+  it("la lista degli oggetti scelti arriva, solo con le stringhe", () => {
+    const data = parseJoin({ room: "a", rules: { itemKinds: ["banana", 3, { a: 1 }, "ciabatta"] } });
+    assert.deepEqual(data?.rules?.itemKinds, ["banana", "ciabatta"]);
+  });
 });
 
 describe("versione del client (E2)", () => {
