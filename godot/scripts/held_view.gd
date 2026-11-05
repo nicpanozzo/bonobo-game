@@ -139,6 +139,8 @@ static func draw_powerup(ci: CanvasItem, p: Dictionary, now: float, fw: float, f
 
 # Gli eventi "gear" di held.ts; restituisce quanto far tremare lo schermo
 func on_event(e: Dictionary) -> float:
+	if not str(e.get("kind", "")) in KINDS: # le altre fasi di "gear" sono di gear_view.gd e ride_view.gd
+		return 0.0
 	match str(e.phase):
 		"zap":
 			zaps.append({"x": float(e.x), "y": float(e.y), "id": str(e.id), "age": 0.0})

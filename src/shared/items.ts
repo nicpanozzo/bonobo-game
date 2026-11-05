@@ -1,4 +1,4 @@
-import { FUNGO, GEAR, HELD, ITEM_RARITY, PACMAN, POWERUP, TETRIS, type ItemRarity } from "./constants";
+import { FUNGO, GEAR, HELD, ITEM_RARITY, PACMAN, POWERUP, RIDE, TETRIS, type ItemRarity } from "./constants";
 
 // Oggetti che cadono nell'arena (#17 passo 3). Caduta, raccolta e lancio sono in
 // src/shared/physics/items.ts, i numeri comuni in ITEM_RULES (constants.ts).
@@ -40,6 +40,10 @@ export interface ItemSpec {
   melee?: "scopa" | "ombrellone" | "pesce" | "anguilla"; // da impugnare: J fa le mosse normali più lunghe e forti (HELD)
   gun?: "pistola" | "idrante" | "sparabolle" | "triplo"; // da sparo: J spara (HELD)
   shot?: "goccia" | "bolla" | "rimbalzina"; // un colpo sparato: vola dritto, non si raccoglie (held.ts)
+  crate?: number; // la cassa (physics/ride.ts): rotta lascia tanti oggetti della stanza
+  washer?: "normale" | "matta"; // la lavatrice (ride.ts): scagliata va in centrifuga; matta salta addosso agli avversari
+  mount?: "monopattino" | "razzo" | "carrello"; // ci si sale sopra (ride.ts, RIDE)
+  seats?: number; // il carrello: quanti ne tiene dentro
 }
 
 // TODO community: oggetti ispirati ai meme del canale, uno per issue
@@ -83,6 +87,15 @@ export const ITEMS: Record<string, ItemSpec> = {
   goccia: { id: "goccia", name: "Goccia", damage: HELD.goccia.damage, knockback: HELD.goccia.knockback, width: 12, height: 12, color: 0x7fd3ff, rarity: "mai", shot: "goccia" },
   bolla: { id: "bolla", name: "Bolla", damage: 0, knockback: 0, width: 30, height: 30, color: 0xf2a6d8, rarity: "mai", shot: "bolla" },
   bollaRimbalzina: { id: "bollaRimbalzina", name: "Bolla rimbalzina", damage: 0, knockback: 0, width: 30, height: 30, color: 0xa66cf0, rarity: "mai", shot: "rimbalzina" },
+  // Pesanti e da cavalcare (physics/ride.ts, RIDE). TODO community: i nomi
+  cassa: { id: "cassa", name: "Cassa", damage: 13, knockback: 440, width: 40, height: 36, color: 0xa86b32, rarity: "normale", category: "peso", throwSpec: RIDE.heavy, crate: 1 },
+  cassaOro: { id: "cassaOro", name: "Cassa d'oro", damage: 13, knockback: 440, width: 40, height: 36, color: 0xf2c230, rarity: "raro", category: "peso", rareOf: "cassa", throwSpec: RIDE.heavy, crate: 3 },
+  lavatrice: { id: "lavatrice", name: "Lavatrice", damage: 16, knockback: 480, width: 42, height: 46, color: 0xe8ecef, rarity: "normale", category: "peso", throwSpec: RIDE.heavy, washer: "normale" },
+  lavatriceMatta: { id: "lavatriceMatta", name: "Lavatrice impazzita", damage: 16, knockback: 480, width: 42, height: 46, color: 0xff6fb5, rarity: "raro", category: "peso", rareOf: "lavatrice", throwSpec: RIDE.heavy, washer: "matta" },
+  monopattino: { id: "monopattino", name: "Monopattino", damage: 9, knockback: 400, width: 44, height: 30, color: 0x2ecc71, rarity: "normale", category: "cavalcatura", mount: "monopattino" },
+  monopattinoRazzo: { id: "monopattinoRazzo", name: "Monopattino a razzo", damage: 11, knockback: 460, width: 48, height: 30, color: 0xe74c3c, rarity: "raro", category: "cavalcatura", rareOf: "monopattino", mount: "razzo" },
+  carrello: { id: "carrello", name: "Carrello della spesa", damage: 10, knockback: 420, width: 50, height: 40, color: 0x95a5a6, rarity: "normale", category: "cavalcatura", mount: "carrello", seats: 1 },
+  carrelloTurbo: { id: "carrelloTurbo", name: "Carrello da tre", damage: 10, knockback: 420, width: 62, height: 42, color: 0xf39c12, rarity: "raro", category: "cavalcatura", rareOf: "carrello", mount: "carrello", seats: 3 },
 };
 
 // Gli oggetti che possono cadere dal cielo (rarity "mai" no), in ordine: si scelgono nelle regole della stanza

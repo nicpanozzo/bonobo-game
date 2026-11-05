@@ -173,7 +173,7 @@ describe("il fiore, oggetto da consumare (#231)", () => {
 
   it("cade secondo la sua classe di frequenza: più cambia la partita, più è raro", () => {
     const n = 100 * DROPPABLE_ITEMS.reduce((sum, k) => sum + itemWeight(k), 0); // 100 estrazioni per ogni punto di peso
-    const kinds = Array.from({ length: n }, (_, i) => pickKind((i + 0.5) / n)); // a metà di ogni passo: niente arrotondamenti sui bordi
+    const kinds = Array.from({ length: n }, (_, i) => pickKind((i + 0.5) / n)); // a metà di ogni passo: niente arrotondamenti sui confini
     const count = (kind: string) => kinds.filter((k) => k === kind).length;
     for (const k of DROPPABLE_ITEMS) assert.equal(count(k), 100 * ITEM_RARITY[ITEMS[k].rarity], k);
     assert.ok(count("banana") > count("bong") && count("bong") > count("fiore") && count("fiore") > count("tetris"));

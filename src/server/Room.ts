@@ -7,7 +7,8 @@ import { HALL, MAX_CATCHUP_TICKS, RECONNECT_HOLD_MS, SNAPSHOT_CLOCK_RESYNC_MS, R
 import { Hall, type HallChoice } from "../shared/hall";
 import { Match, type MatchEndEvent, type MatchOptions } from "../shared/match";
 import type { Fighter } from "../shared/physics";
-import type { BoardRow, ClientToServer, GameEvent, HallEvent, HallMode, InputState, MatchRules, ServerToClient } from "../shared/types";
+import { sanitizeRules } from "../shared/rules";
+import type { BoardRow, ClientToServer, GameEvent, HallBotLevel, HallEvent, HallMode, InputState, MatchRules, ServerToClient } from "../shared/types";
 import { Seats } from "./seats";
 
 export interface RoomOptions extends MatchOptions {
@@ -44,7 +45,8 @@ export class Room {
   readonly hall: Hall | null;
   private inHall: boolean;
   private hallEvents: HallEvent[] = [];
-  private creatorRules: MatchRules; // le regole di chi ha creato la stanza: la modalità la decide il voto
+  private creatorRules: MatchRules; // le regole della prossima partita dalla sala (all'inizio di chi l'ha creata, poi dal computer): la modalità la decide il voto
+  hallBotLevel: HallBotLevel = "semplice"; // come giocano i bot della sala (game.ts lo legge a ogni partita nuova)
   private boardRows: BoardRow[] = [];
   private boardAt = -Infinity; // clock dell'ultima lettura della classifica
   private board?: () => BoardRow[];
@@ -76,6 +78,8 @@ export class Room {
     this.current = new Match(matchOptions);
     this.creatorRules = this.current.rules;
     const mode = this.creatorRules.mode;
+    // In sala la modalità si vota: il numero di squadre scelto in lobby vale anche se chi crea non ha scelto Squadre
+    if (hall && mode !== "training") this.creatorRules = hallRules(matchOptions.rules, mode);
     this.hall = hall && mode !== "training" ? new Hall({ seed: code, defaultMode: mode as HallMode, defaultStageId: options.stageId }) : null;
     this.inHall = !!this.hall;
     this.board = board;
@@ -168,6 +172,14 @@ export class Room {
 
   requestRematch() {
     if (!this.inHall) this.match.requestRematch();
+  }
+
+  // Dal computer della sala (#567): regole e livello dei bot della prossima partita. Solo nella sala, solo chi c'è dentro
+  setHallRules(id: string, rules: Partial<MatchRules> | undefined, botLevel: unknown) {
+    if (!this.hall || !this.inHall || !this.hall.roster().some((p) => p.id === id && !p.bot)) return;
+    if (rules) this.creatorRules = hallRules(rules, this.creatorRules.mode);
+    if (botLevel === "facile" || botLevel === "semplice" || botLevel === "difficile") this.hallBotLevel = botLevel;
+    this.hall.rulesChanged(id);
   }
 
   // A partita finita, tutti tornano nella sala d'attesa (solo nelle stanze con la sala)
@@ -270,7 +282,7 @@ export class Room {
       this.boardRows = this.board();
       this.boardAt = this.clock;
     }
-    this.io.to(this.code).emit("hall", this.hall!.snapshot(this.clock, this.hallEvents, this.boardRows, this.creatorRules));
+    this.io.to(this.code).emit("hall", this.hall!.snapshot(this.clock, this.hallEvents, this.boardRows, this.creatorRules, this.hallBotLevel));
     this.hallEvents = [];
   }
 
@@ -300,4 +312,9 @@ export class Room {
     this.pendingEvents = [];
     this.sendHall();
   }
+}
+
+// Le regole per la sala: ripulite come in Squadre (così il numero di squadre resta), poi la modalità di prima
+function hallRules(raw: Partial<MatchRules> | undefined, mode: MatchRules["mode"]): MatchRules {
+  return { ...sanitizeRules({ ...raw, mode: "teams" }), mode };
 }

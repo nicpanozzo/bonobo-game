@@ -106,6 +106,8 @@ var _gear: RefCounted = GearView.new()
 const HeldView := preload("res://scripts/held_view.gd") # oggetti da impugnare e da sparo (physics/held.ts)
 var _held: RefCounted = HeldView.new()
 var _swinging := {} # id giocatore -> colpo attivo, per inclinare l'arma in mano
+const RideView := preload("res://scripts/ride_view.gd") # pesanti e cavalcature (physics/ride.ts)
+var _ride: RefCounted = RideView.new()
 var _stations: RefCounted = preload("res://scripts/station_view.gd").new() # postazioni e palle di mortadella (#433)
 var _ambient := Color.WHITE # luce del momento del giorno (#267): moltiplica strati e decorazioni, un po' il palco
 var _textures := {} # id personaggio -> Texture2D dello spritesheet (nel formato cartella, quella di idle)
@@ -739,6 +741,7 @@ func on_snapshot(snap: Dictionary) -> void:
 	buffer.push(snap.t, Time.get_ticks_msec(), snap.players, float(snap.get("stageMs", 0)))
 	_check_finish(snap) # il colpo che chiude la partita (#470): ora si sa con che velocità vola il bersaglio
 	predictor.items_present = not snap.get("items", []).is_empty()
+	predictor.riding = RideView.carrying(snap.get("items", []), my_id) # pesanti e cavalcature: decide il server
 	_puddles = snap.get("puddles", [])
 	_pads_pressed = snap.get("pads", []) if snap.get("pads") is Array else [] # bottoni sonori (#423)
 	_companions.on_snapshot(snap.players, game.characters)
@@ -833,7 +836,7 @@ func on_event(e: Dictionary) -> void:
 				_shake = maxf(_shake, 5.0)
 		"gear":
 			# Oggetti per categoria (gear.ts): scoppi del petardo e scosse del gigante; la miccia e l'aggancio fanno una scintilla
-			_shake = maxf(_shake, _gear.on_event(e))
+			_shake = maxf(_shake, maxf(_gear.on_event(e), _ride.on_event(e))) # e pesanti e cavalcature (ride_view.gd)
 			_shake = maxf(_shake, _held.on_event(e)) # scosse, getti, bolle scoppiate (held_view.gd)
 			if e.phase in ["fuse", "stick"]:
 				_sparks.append({"x": e.x, "y": float(e.y) - 10.0, "age": 0.0, "size": 14.0, "color": Color(1, 0.75, 0.3)})
@@ -1537,6 +1540,7 @@ func _process(delta: float) -> void:
 	_sparks = _aged(_sparks, dt_ms, fx.hitSparkMs)
 	_gear.step(dt_ms)
 	_held.step(dt_ms)
+	_ride.step(dt_ms)
 	_dust = _aged(_dust, dt_ms, fx.dustMs)
 	_beams = _aged(_beams, dt_ms, fx.koBeamMs)
 	for s in _shards:
@@ -1725,6 +1729,7 @@ func _draw() -> void:
 
 	_gear.draw(self) # scoppi dei petardi e scosse (gear_view.gd)
 	_held.draw(self, positions, float(game.fighter.height)) # scosse dell'anguilla, getti dell'idrante, bolle scoppiate
+	_ride.draw(self) # schegge delle casse, schiuma e polvere (ride_view.gd)
 	for s in _sparks:
 		var k: float = s.age / game.effects.hitSparkMs
 		var c: Color = s.color
@@ -1879,6 +1884,7 @@ func _draw_items(now: int) -> void:
 		if holder != null and positions.has(holder):
 			var rules: Dictionary = game.itemRules
 			target = positions[holder] + Vector2(_facings.get(holder, 1) * rules.holdOffsetX, -rules.holdOffsetY)
+			target = RideView.held_pos(str(it.kind), positions[holder], float(game.fighter.height), target) # pesanti sopra la testa, mezzi sotto i piedi
 		var pos: Vector2 = _item_pos.get(it.id, target)
 		pos = target if holder != null or pos.distance_to(target) > 200 else pos.lerp(target, 0.5)
 		_item_pos[it.id] = pos
@@ -2103,6 +2109,8 @@ func _draw_item(kind: String, base: Vector2, spin: float, load: float = -1.0, al
 		_draw_teemo(w, h, alpha)
 	elif GearView.draws(kind):
 		GearView.draw_item(self, kind, w, h, load, now, _ink, _light, GearView.is_rare(game, kind) and not glow)
+	elif RideView.draws(kind):
+		RideView.draw_item(self, kind, w, h, load, now, _ink, _light, GearView.is_rare(game, kind) and not glow)
 	else:
 		draw_rect(Rect2(-w / 2, -h / 2, w, h), _lit(_color(spec.color)))
 		draw_rect(Rect2(-w / 2, -h / 2, w, h), _ink, false, 2.0 * _ink_width)

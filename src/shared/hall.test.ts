@@ -70,7 +70,7 @@ describe("sala d'attesa: pianta", () => {
     assert.ok(hallStageIds().includes(RANDOM_STAGE_ZONE));
     assert.ok(!hallStageIds().includes("padova-palazzo"), "le arene nascoste restano fuori");
     assert.deepEqual(zones.filter((z) => z.kind === "fighter").map((z) => z.id), Object.keys(CHARACTERS));
-    for (const k of ["ready", "botAdd", "botRemove", "gong", "throne"] as const) assert.equal(zones.filter((z) => z.kind === k).length, 1);
+    for (const k of ["ready", "botAdd", "botRemove", "gong", "throne", "computer"] as const) assert.equal(zones.filter((z) => z.kind === k).length, 1);
     assert.equal(zones.filter((z) => z.kind === "trampoline").length, 2);
     for (const k of ["hoop", "court", "chessboard"] as const) assert.equal(zones.filter((z) => z.kind === k).length, 1);
     assert.equal(new Set(zones.map((z) => `${z.kind}:${z.id}`)).size, zones.length, "id unici");
@@ -418,6 +418,17 @@ describe("sala d'attesa: gong e trono", () => {
     run(hall, HALL.shoveCooldownMs);
     hall.setInput("a", keys({ light: true }));
     assert.ok(!hall.step(DT).some((e) => e.type === "gong"), "il gong si ricarica");
+  });
+
+  it("leggero sul computer apre le regole a chi lo preme e non spinge nessuno (#567)", () => {
+    const hall = twoHumans();
+    walkInto(hall, "a", zone(hall, "computer"));
+    hall.setInput("a", emptyInput());
+    run(hall, 300);
+    hall.setInput("a", keys({ light: true }));
+    const events = hall.step(DT);
+    assert.ok(events.some((e) => e.type === "computer" && e.id === "a"));
+    assert.ok(!events.some((e) => e.type === "shove"));
   });
 
   it("il primo sul trono si siede, chi arriva dopo glielo prende", () => {

@@ -387,6 +387,9 @@
     "cageRadius": 90,
     "gongRadius": 90,
     "throneRadius": 80,
+    "computerX": 600,
+    "computerZ": 650,
+    "computerRadius": 90,
     "shoveLift": 320,
     "collideHeight": 120,
     "boardRefreshMs": 10000,
@@ -1556,6 +1559,140 @@
       "color": 10906864,
       "rarity": "mai",
       "shot": "rimbalzina"
+    },
+    "cassa": {
+      "id": "cassa",
+      "name": "Cassa",
+      "damage": 13,
+      "knockback": 440,
+      "width": 40,
+      "height": 36,
+      "color": 11037490,
+      "rarity": "normale",
+      "category": "peso",
+      "throwSpec": {
+        "speedMult": 0.6,
+        "jumpMult": 0.72,
+        "throwSpeed": 720,
+        "throwLift": 300,
+        "throwUpSpeed": 900,
+        "gravityMult": 1.6
+      },
+      "crate": 1
+    },
+    "cassaOro": {
+      "id": "cassaOro",
+      "name": "Cassa d'oro",
+      "damage": 13,
+      "knockback": 440,
+      "width": 40,
+      "height": 36,
+      "color": 15909424,
+      "rarity": "raro",
+      "category": "peso",
+      "rareOf": "cassa",
+      "throwSpec": {
+        "speedMult": 0.6,
+        "jumpMult": 0.72,
+        "throwSpeed": 720,
+        "throwLift": 300,
+        "throwUpSpeed": 900,
+        "gravityMult": 1.6
+      },
+      "crate": 3
+    },
+    "lavatrice": {
+      "id": "lavatrice",
+      "name": "Lavatrice",
+      "damage": 16,
+      "knockback": 480,
+      "width": 42,
+      "height": 46,
+      "color": 15265007,
+      "rarity": "normale",
+      "category": "peso",
+      "throwSpec": {
+        "speedMult": 0.6,
+        "jumpMult": 0.72,
+        "throwSpeed": 720,
+        "throwLift": 300,
+        "throwUpSpeed": 900,
+        "gravityMult": 1.6
+      },
+      "washer": "normale"
+    },
+    "lavatriceMatta": {
+      "id": "lavatriceMatta",
+      "name": "Lavatrice impazzita",
+      "damage": 16,
+      "knockback": 480,
+      "width": 42,
+      "height": 46,
+      "color": 16740277,
+      "rarity": "raro",
+      "category": "peso",
+      "rareOf": "lavatrice",
+      "throwSpec": {
+        "speedMult": 0.6,
+        "jumpMult": 0.72,
+        "throwSpeed": 720,
+        "throwLift": 300,
+        "throwUpSpeed": 900,
+        "gravityMult": 1.6
+      },
+      "washer": "matta"
+    },
+    "monopattino": {
+      "id": "monopattino",
+      "name": "Monopattino",
+      "damage": 9,
+      "knockback": 400,
+      "width": 44,
+      "height": 30,
+      "color": 3066993,
+      "rarity": "normale",
+      "category": "cavalcatura",
+      "mount": "monopattino"
+    },
+    "monopattinoRazzo": {
+      "id": "monopattinoRazzo",
+      "name": "Monopattino a razzo",
+      "damage": 11,
+      "knockback": 460,
+      "width": 48,
+      "height": 30,
+      "color": 15158332,
+      "rarity": "raro",
+      "category": "cavalcatura",
+      "rareOf": "monopattino",
+      "mount": "razzo"
+    },
+    "carrello": {
+      "id": "carrello",
+      "name": "Carrello della spesa",
+      "damage": 10,
+      "knockback": 420,
+      "width": 50,
+      "height": 40,
+      "color": 9807270,
+      "rarity": "normale",
+      "category": "cavalcatura",
+      "mount": "carrello",
+      "seats": 1
+    },
+    "carrelloTurbo": {
+      "id": "carrelloTurbo",
+      "name": "Carrello da tre",
+      "damage": 10,
+      "knockback": 420,
+      "width": 62,
+      "height": 42,
+      "color": 15965202,
+      "rarity": "raro",
+      "category": "cavalcatura",
+      "rareOf": "carrello",
+      "mount": "carrello",
+      "seats": 3
     }
   },
   "itemRules": {
@@ -1609,12 +1746,20 @@
     "brownie",
     "brownieNonna",
     "caffe",
+    "carrello",
+    "carrelloTurbo",
+    "cassa",
+    "cassaOro",
     "ciabatta",
     "ciabattaMamma",
     "fiore",
     "fungoTeemo",
     "idrante",
+    "lavatrice",
+    "lavatriceMatta",
     "moka",
+    "monopattino",
+    "monopattinoRazzo",
     "ombrellone",
     "pacman",
     "pesce",
@@ -12277,6 +12422,18 @@
           "boxX": 0,
           "boxY": -38
         },
+        "lightAir": {
+          "range": 62,
+          "height": 50,
+          "boxX": 0,
+          "boxY": -92
+        },
+        "heavyAir": {
+          "range": 50,
+          "height": 60,
+          "boxX": 0,
+          "boxY": -94
+        },
         "dashAttack": {
           "range": 75,
           "height": 44,
@@ -12464,10 +12621,11 @@
           "lightAir": {
             "fps": 24,
             "loop": false,
-            "hitFrame": 7,
-            "startFrame": 5,
-            "frames": 27,
-            "src": "light"
+            "hitFrame": 20,
+            "startFrame": 14,
+            "activeEnd": 30,
+            "frames": 41,
+            "src": "lightAir"
           },
           "heavyUp": {
             "fps": 24,
@@ -12486,9 +12644,11 @@
           "heavyAir": {
             "fps": 24,
             "loop": false,
-            "hitFrame": 17,
-            "frames": 53,
-            "src": "heavy"
+            "hitFrame": 23,
+            "startFrame": 4,
+            "activeEnd": 26,
+            "frames": 35,
+            "src": "heavyAir"
           },
           "recovery": {
             "fps": 24,

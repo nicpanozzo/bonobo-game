@@ -553,13 +553,15 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     name: "Capt. OrsoBlu",
     crews: ["cuamm", "lolhardcore"],
     combo: { name: "Arrembaggio", text: "Tutti a bordo! lo tira a te: subito jab, pesante o Avanti tutta! e vola più lontano" },
-    // Zone dei colpi sul disegno di OB-B2 (tools/sprite/zone_dei_colpi.py)
+    // Zone dei colpi sul disegno di OB-B2 e OB-B4 (tools/sprite/zone_dei_colpi.py)
     attacks: {
       light: { range: 67, height: 30, boxX: 1, boxY: -75 },
       heavy: { range: 78, height: 44, boxX: 0, boxY: -82 },
       lightUp: { range: 54, height: 48, boxX: 0, boxY: -118 }, // OB-B3
       lightDown: { range: 42, height: 24, boxX: -1, boxY: -24 },
       heavyDown: { range: 73, height: 30, boxX: 0, boxY: -38 },
+      lightAir: { range: 62, height: 50, boxX: 0, boxY: -92 }, // OB-B4: la stella
+      heavyAir: { range: 50, height: 60, boxX: 0, boxY: -94 }, // OB-B4: la martellata
       dashAttack: { range: 75, height: 44, boxX: 2, boxY: -82 },
     },
     // Tempesta! (#547, scheda di Nicola del 3/11/2026): l'arena rolla, tutti scivolano tranne lui al timone che insulta.
@@ -629,6 +631,9 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         lightUp: { fps: 30, loop: false, hitFrame: 5 }, // pugno in alto guardando su
         lightDown: { fps: 30, loop: false, hitFrame: 10 }, // spazzata bassa con la mano
         heavyDown: { fps: 30, loop: false, hitFrame: 14 }, // si carica accucciato e spazza ai due lati
+        // OB-B4 (5/11/2026): i colpi in aria. La stella a braccia e gambe aperte e la martellata a due pugni
+        lightAir: { fps: 24, loop: false, hitFrame: 20, startFrame: 14, activeEnd: 30 },
+        heavyAir: { fps: 24, loop: false, hitFrame: 23, startFrame: 4, activeEnd: 26 }, // i pugni scendono da sopra la testa
       },
     },
   },

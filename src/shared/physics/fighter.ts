@@ -99,6 +99,8 @@ export interface Fighter extends PlayerState {
   heldKind?: string; // l'oggetto che ha in mano (items.ts lo aggiorna a ogni passo): le armi da impugnare cambiano i colpi (held.ts)
   meleeHits?: number; // colpi a segno con l'arma da impugnare in mano: arrivata ai suoi usi si rompe
   trappedBy?: string; // chi l'ha chiuso nella bolla dello sparabolle: a lui il KO se esce dall'alto
+  carrying?: string; // l'oggetto pesante sopra la testa o il mezzo che si cavalca (ride.ts), per movimento e salto
+  rideChargeMs?: number; // ms che restano dello scatto in sella (ride.ts)
 }
 
 // Quello che serve alla fisica oltre ai lottatori: l'arena e dove scrivere gli eventi

@@ -208,6 +208,7 @@ export interface ItemState {
   thrown: boolean; // lanciato: colpisce chi tocca
   owner?: string; // il funghetto piantato (#302): chi l'ha piantato, solo lui lo vede bene
   load?: number; // il bong in carica (#302) o la miccia del petardo che brucia, da 0 a 1; assente se non lo si carica
+  // anche (ride.ts): la centrifuga che resta alla lavatrice o il razzo che resta al monopattino, da 1 a 0
 }
 
 // Regole della partita, scelte da chi crea la stanza (#17). Default in src/shared/rules.ts
@@ -259,11 +260,14 @@ export type GameEvent =
   | { type: "bassanese"; phase: "call" | "leave"; id: string; x: number; y: number } // Chiama Bassanese: id ha chiamato
   // Oggetti per categoria (gear.ts): kind è l'oggetto, id chi lo usa (o chi lo prende addosso), r un raggio in pixel.
   // fuse = si accende la miccia, stick = il petardo si attacca a id, boom = scoppia (raggio r), quake = il gigante della
-  // nonna atterra e fa tremare la terra (raggio r). Le PR delle altre categorie aggiungono le loro fasi qui
+  // nonna atterra e fa tremare la terra (raggio r). Le PR delle altre categorie aggiungono le loro fasi qui.
+  // Pesanti e cavalcature (ride.ts): break = la cassa si rompe, spin = la lavatrice parte in centrifuga, hop = salta,
+  // charge = id scatta in sella, ram = id viene investito, scoop = id finisce nel carrello, launch = id catapulta chi
+  // aveva nel carrello; boom vale anche per il monopattino a razzo che finisce il razzo
   // Da impugnare e da sparo (held.ts): freeze = id congelato dal pesce, zap = la scossa dell'anguilla arriva a id partendo
   // da x, y; shot = id spara; jet = il getto dell'idrante da x, y lungo r pixel (negativo = verso sinistra); trap = id chiuso
-  // nella bolla; pop = una bolla o una goccia finisce in x, y; break = l'arma in mano a id si rompe o finisce i colpi
-  | { type: "gear"; phase: "fuse" | "stick" | "boom" | "quake" | "freeze" | "zap" | "shot" | "jet" | "trap" | "pop" | "break"; kind: string; id: string; x: number; y: number; r?: number }
+  // nella bolla; pop = una bolla o una goccia finisce in x, y; break vale anche per l'arma in mano a id che si rompe o finisce i colpi
+  | { type: "gear"; phase: "fuse" | "stick" | "boom" | "quake" | "break" | "spin" | "hop" | "charge" | "ram" | "scoop" | "launch" | "freeze" | "zap" | "shot" | "jet" | "trap" | "pop"; kind: string; id: string; x: number; y: number; r?: number }
   | { type: "tetris"; phase: "spawn" | "move" | "rotate" | "drop" | "land" | "line"; id: string; x: number; y: number; width?: number } // il pezzo di Tetris di id (#427); line: esplode una riga larga width pixel, x e y al centro
   // Il bong (#302): load = comincia a caricarlo, smoke = soffia la nuvola (centro x,y, verso dir, danno), stun = troppo fatto, crolla
   | { type: "bong"; phase: "load" | "smoke" | "stun"; id: string; x: number; y: number; dir?: 1 | -1; damage?: number }
@@ -317,7 +321,7 @@ export interface PrematchState {
 // Il server è l'arbitro anche qui: calcola dove sono tutti (src/shared/hall.ts) e manda HallSnapshot.
 // Coordinate in centimetri: x verso destra, z verso la telecamera (su = -z), y in alto; (0, 0, 0) al centro del pavimento.
 export type HallMode = "ffa" | "teams" | "flag" | "race";
-export type HallZoneKind = "mode" | "stage" | "fighter" | "ready" | "trampoline" | "botAdd" | "botRemove" | "gong" | "throne" | "hoop" | "court" | "chessboard" | "rack";
+export type HallZoneKind = "mode" | "stage" | "fighter" | "ready" | "trampoline" | "botAdd" | "botRemove" | "gong" | "throne" | "hoop" | "court" | "chessboard" | "rack" | "computer";
 export interface HallZone {
   kind: HallZoneKind;
   id: string; // mode: id della modalità; stage: id dell'arena o "casuale"; fighter: id del lottatore; gli altri: un nome unico
@@ -370,7 +374,9 @@ export type HallEvent =
   | { type: "basket"; id: string; prop: string; points: 2 | 3; swish: boolean } // canestro! id = chi ha tirato
   | { type: "propHit"; prop: string; speed: number } // un oggetto sbatte forte (pavimento, muro, ferro, altro oggetto): per il suono
   | { type: "topple"; prop: string; by: string | null } // un pezzo degli scacchi cade
-  | { type: "checkmate"; id: string; color: "white" | "black" }; // il re di color è caduto: scacco matto di id
+  | { type: "checkmate"; id: string; color: "white" | "black" } // il re di color è caduto: scacco matto di id
+  | { type: "computer"; id: string } // colpo leggero sul computer delle regole: a id si apre la schermata (#567)
+  | { type: "rules"; id: string }; // id ha cambiato le regole della partita dal computer
 // Una riga della classifica a punti (src/server/rating.ts)
 export interface BoardRow {
   name: string;
@@ -412,8 +418,10 @@ export interface HallSnapshot {
   events: HallEvent[];
   board: BoardRow[]; // i primi della classifica, per il tabellone della sala
   props: HallPropState[]; // palloni e pezzi degli scacchi
-  rules: MatchRules; // regole di chi ha creato la stanza (vite, tempo, oggetti): la modalità la decide il voto
+  rules: MatchRules; // regole della prossima partita (vite, tempo, oggetti), cambiabili dal computer: la modalità la decide il voto
+  botLevel?: HallBotLevel; // come giocano i bot della sala; manca nei server di prima
 }
+export type HallBotLevel = "facile" | "semplice" | "difficile";
 // Punti guadagnati o persi a fine partita, per la schermata dei risultati
 export interface RatingChange {
   id: string;
@@ -485,6 +493,9 @@ export interface ClientToServer {
   // Allenamento (#113): percentuale degli avversari, velocità dell'orologio (TRAINING.speeds), si ricomincia da capo.
   // Il server li accetta solo in una stanza "training" con un solo umano
   training: (data: { percent?: number; speed?: number; reset?: boolean }) => void;
+  // Dal computer della sala (#567): regole della prossima partita (senza modalità, che si vota) e livello dei bot.
+  // Lo accetta solo una stanza nella sala d'attesa; il server ripulisce tutto con sanitizeRules
+  hallRules: (data: { rules?: Partial<MatchRules>; botLevel?: HallBotLevel }) => void;
   hall: () => void; // a partita finita: tutti tornano nella sala d'attesa (solo nelle stanze con la sala)
   voice: (data: VoiceSignal & { to: string }) => void; // chat vocale: il server lo gira solo a "to", se è nella stessa stanza
   voiceState: (data: { on: boolean; muted: boolean; deafened: boolean }) => void;

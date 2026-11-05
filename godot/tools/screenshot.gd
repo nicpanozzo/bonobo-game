@@ -10,7 +10,7 @@ var _out := "user://screenshots"
 var _game: Dictionary
 var _world: Node2D # nella partita finta: riceve uno snapshot a ogni frame
 var _hud: Control
-const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre", "lobby_regole", "musica", "tetris", "pacman", "bassanese", "bologna_piazza", "bologna_torri", "bologna_crollo", "bologna_zuffa", "oggetti", "oggetti_categorie", "oggetti_armi", "prepartita_attesa", "prepartita_vs", "prepartita_conto", "fine_partita", "sala", "sala_conto", "sala_galleria", "sala_via", "sala_basket", "sala_scacchi", "fabbrica", "diluvio", "palco_metal", "palco_reggae", "palco_techno"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
+const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre", "lobby_regole", "musica", "tetris", "pacman", "bassanese", "bologna_piazza", "bologna_torri", "bologna_crollo", "bologna_zuffa", "oggetti", "oggetti_categorie", "oggetti_armi", "oggetti_pesanti", "prepartita_attesa", "prepartita_vs", "prepartita_conto", "fine_partita", "sala", "sala_conto", "sala_galleria", "sala_via", "sala_basket", "sala_scacchi", "sala_computer", "sala_regole", "fabbrica", "diluvio", "palco_metal", "palco_reggae", "palco_techno"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
 var _index := -1
 var _frame := 0
 var _failed := false
@@ -21,6 +21,7 @@ var _pacman_on := false # la partita finta con un Pac-Man e i fantasmini (#427)
 var _items_on := false # la partita finta con tutti gli oggetti in fila a terra
 var _held_on := false # i cinque principali con le armi da impugnare e da sparo (held_view.gd)
 var _gear_on := false # i cinque principali con gli oggetti per categoria (gear_view.gd)
+var _ride_on := false # i cinque principali con pesanti e cavalcature (ride_view.gd)
 var _bassanese_on := false # la partita finta col Bassanese che si guarda in giro e un telefono a terra
 var _pre: Dictionary = {} # pre-partita: lo stato messo in snapshot.prematch, vuoto nelle altre partite
 var _pre_fighters := 0 # quanti lottatori nella partita finta del pre-partita (0 = tutti)
@@ -92,6 +93,8 @@ func _process(_delta: float) -> bool:
 		if _hall_scene == "basket" and _frame == 2:
 			_hall_view.set_speaking("p1", true)
 			_hall_view.set_voice_muted("p3", true)
+		if _frame == 18 and _hall_scene == "computer":
+			hall.events = [{"type": "rules", "id": "p2"}]
 		if _frame == 24 and _hall_scene == "via":
 			hall.events = [{"type": "go", "mode": "ffa", "stageId": "palco"}]
 		for e in hall.events:
@@ -240,6 +243,16 @@ func _oggetti_armi() -> void:
 	_items_on = false
 	_gear_on = false
 	_held_on = true
+	_ride_on = false
+	_partita()
+
+
+# Pesanti e cavalcature: Bradipo con la cassa sopra la testa, Marcomunista in monopattino, OrsoBlu col carrello con
+# Egiainuso dentro, Elvedeo sul monopattino a razzo; a terra la lavatrice in centrifuga, la cassa d'oro e una cassa rotta
+func _oggetti_pesanti() -> void:
+	_gear_on = false
+	_ride_on = true
+	_held_on = false
 	_partita()
 
 
@@ -248,6 +261,7 @@ func _prepartita_attesa() -> void:
 	_items_on = false
 	_gear_on = false
 	_held_on = false
+	_ride_on = false
 	_pre = {"phase": "waiting", "leftMs": 0, "ready": ["p0", "p2", "p3"], "autoStartMs": 41000}
 	_pre_fighters = 0
 	_partita()
@@ -458,6 +472,30 @@ func _snapshot(frame: int) -> Dictionary:
 				{"type": "gear", "phase": "jet", "kind": "idrante", "id": players[2].id, "x": 700, "y": 520, "r": 300},
 				{"type": "gear", "phase": "zap", "kind": "anguilla", "id": players[3].id, "x": 760, "y": 520},
 			]
+	if _ride_on:
+		snap.projectiles = []
+		var core := [["bradipo", 340], ["marcomunista", 500], ["orsoblu", 680], ["egiainuso", 690], ["elvedeo", 900]]
+		for i in core.size():
+			var p: Dictionary = players[i]
+			p.characterId = core[i][0]
+			p.x = core[i][1]
+			p.shielding = false
+			p.charge = 0.0
+			p.powerup = null
+			p.facing = 1 if i < 4 else -1
+		players[3].stunned = true # Egiainuso dentro il carrello di OrsoBlu
+		players[3].y = float(players[2].y) - 26.0
+		snap.items = [
+			{"id": 50, "kind": "cassa", "x": 340, "y": 0, "vx": 0, "vy": 0, "heldBy": "p0", "thrown": false},
+			{"id": 51, "kind": "monopattino", "x": 500, "y": 0, "vx": 0, "vy": 0, "heldBy": "p1", "thrown": false},
+			{"id": 52, "kind": "carrello", "x": 680, "y": 0, "vx": 0, "vy": 0, "heldBy": "p2", "thrown": false},
+			{"id": 53, "kind": "monopattinoRazzo", "x": 900, "y": 0, "vx": 0, "vy": 0, "heldBy": "p4", "thrown": false, "load": 0.7},
+			{"id": 54, "kind": "lavatrice", "x": 1010, "y": 560, "vx": 0, "vy": 0, "heldBy": null, "thrown": false, "load": 0.6},
+			{"id": 55, "kind": "cassaOro", "x": 220, "y": 560, "vx": 0, "vy": 0, "heldBy": null, "thrown": false},
+			{"id": 56, "kind": "lavatriceMatta", "x": 1090, "y": 560, "vx": 0, "vy": 0, "heldBy": null, "thrown": false},
+		]
+		if frame % 24 == 2: # una cassa che si rompe ogni tanto, così nella foto ci sono sempre le schegge
+			snap.events = [{"type": "gear", "phase": "break", "kind": "cassa", "id": "p0", "x": 780, "y": 560}]
 	if _end_on:
 		snap.winnerId = "p1"
 		snap.timeLeftMs = 0
@@ -514,6 +552,24 @@ func _sala_basket() -> void:
 func _sala_scacchi() -> void:
 	_hall_scene = "scacchi"
 	_add_hall()
+
+
+# Il computer delle regole (#567): la scrivania col monitor e, sopra la sala, la schermata che apre
+func _sala_computer() -> void:
+	_hall_scene = "computer"
+	_add_hall()
+
+
+func _sala_regole() -> void:
+	_hall_scene = "computer"
+	_add_hall()
+	var layer := CanvasLayer.new()
+	layer.layer = 5
+	root.add_child(layer)
+	var panel: Control = load("res://scripts/hall_rules_panel.gd").new()
+	layer.add_child(panel)
+	var snap: Dictionary = load("res://tests/hall_fake.gd").party(0.0, "computer")
+	panel.setup(_game, Settings.new({"master": 0.8, "sfx": 0.7, "music": 0.35}, "user://ci_regole.cfg"), snap.rules, "difficile")
 
 
 # Le arene a tema: una funzione per foto, tutte uguali
