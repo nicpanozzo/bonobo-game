@@ -175,6 +175,14 @@ func on_event(e: Dictionary) -> void:
 				"stick": _play("grab", {"volume": 0.6, "x": e.x, "pitch": 1.3})
 				"boom": _play("cannonFire", {"x": e.x, "volume": 0.6 if e.kind == "petardino" else 1.0, "pitch": 1.4 if e.kind == "petardino" else 1.0})
 				"quake": _play("tetrisLand", {"x": e.x, "pitch": 0.5})
+				# Impugnatura e sparo (held.ts)
+				"freeze": _play("shieldBreak", {"volume": 0.5, "x": e.x, "pitch": 1.8})
+				"zap": _play("dizzy", {"volume": 0.5, "x": e.x, "pitch": 2.0})
+				"shot": _play("bubbles" if str(e.kind).begins_with("sparabolle") else "projectile", {"volume": 0.45, "x": e.x, "pitch": 1.6})
+				"jet": _play("whoosh", {"x": e.x, "pitch": 0.6})
+				"trap": _play("bubbles", {"volume": 0.6, "x": e.x, "pitch": 0.8})
+				"pop": _play("projectilePop", {"volume": 0.5, "x": e.x, "pitch": 1.5})
+				"break": _play("shieldBreak", {"volume": 0.4, "x": e.x, "pitch": 1.2})
 		# Chiama Bassanese: il telefono che squilla
 		"bassanese":
 			if e.phase == "call":

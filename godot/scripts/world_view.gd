@@ -103,6 +103,9 @@ var _bassanese: RefCounted = preload("res://scripts/bassanese_view.gd").new() # 
 const BassaneseView := preload("res://scripts/bassanese_view.gd")
 const GearView := preload("res://scripts/gear_view.gd") # oggetti per categoria (physics/gear.ts)
 var _gear: RefCounted = GearView.new()
+const HeldView := preload("res://scripts/held_view.gd") # oggetti da impugnare e da sparo (physics/held.ts)
+var _held: RefCounted = HeldView.new()
+var _swinging := {} # id giocatore -> colpo attivo, per inclinare l'arma in mano
 var _stations: RefCounted = preload("res://scripts/station_view.gd").new() # postazioni e palle di mortadella (#433)
 var _ambient := Color.WHITE # luce del momento del giorno (#267): moltiplica strati e decorazioni, un po' il palco
 var _textures := {} # id personaggio -> Texture2D dello spritesheet (nel formato cartella, quella di idle)
@@ -831,6 +834,7 @@ func on_event(e: Dictionary) -> void:
 		"gear":
 			# Oggetti per categoria (gear.ts): scoppi del petardo e scosse del gigante; la miccia e l'aggancio fanno una scintilla
 			_shake = maxf(_shake, _gear.on_event(e))
+			_shake = maxf(_shake, _held.on_event(e)) # scosse, getti, bolle scoppiate (held_view.gd)
 			if e.phase in ["fuse", "stick"]:
 				_sparks.append({"x": e.x, "y": float(e.y) - 10.0, "age": 0.0, "size": 14.0, "color": Color(1, 0.75, 0.3)})
 		"hazard":
@@ -1532,6 +1536,7 @@ func _process(delta: float) -> void:
 		_age_ko_specials()
 	_sparks = _aged(_sparks, dt_ms, fx.hitSparkMs)
 	_gear.step(dt_ms)
+	_held.step(dt_ms)
 	_dust = _aged(_dust, dt_ms, fx.dustMs)
 	_beams = _aged(_beams, dt_ms, fx.koBeamMs)
 	for s in _shards:
@@ -1683,6 +1688,7 @@ func _draw() -> void:
 		if p != null:
 			positions[id] = Vector2(p.x, p.y)
 			_facings[id] = p.facing
+			_swinging[id] = p.get("attackActive", false) and p.get("attack") != null
 			if not p.eliminated:
 				_alive.append(id)
 				_feed_particles(id, p)
@@ -1718,6 +1724,7 @@ func _draw() -> void:
 		draw_circle(Vector2(d.x + d.dx * (8 + 34 * kd), d.y - 4 - 10 * kd * absf(d.dx)), 4 + 7 * kd, dc)
 
 	_gear.draw(self) # scoppi dei petardi e scosse (gear_view.gd)
+	_held.draw(self, positions, float(game.fighter.height)) # scosse dell'anguilla, getti dell'idrante, bolle scoppiate
 	for s in _sparks:
 		var k: float = s.age / game.effects.hitSparkMs
 		var c: Color = s.color
@@ -1877,6 +1884,8 @@ func _draw_items(now: int) -> void:
 		_item_pos[it.id] = pos
 		seen[it.id] = true
 		var spin := now / 1000.0 * 14.0 if it.thrown else 0.0
+		if holder != null and HeldView.is_melee(it.kind): # l'arma in mano: appoggiata indietro, in avanti mentre colpisce
+			spin = float(_facings.get(holder, 1)) * (1.4 if _swinging.get(holder, false) else -0.35)
 		if holder == null and not it.thrown and absf(float(it.get("vy", 0.0))) < 1.0:
 			pos.y = _rest_y(pos) # fermo su una scala: sul gradino che ha sotto, non sospeso sulla rampa
 		# Il funghetto piantato (#302): chi l'ha piantato lo vede, gli altri appena appena
@@ -3133,6 +3142,7 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 
 	if not away:
 		GearView.draw_powerup(self, p, now, fw, fh, _font, game) # caffè, moka, brownie, sonno, gigante della nonna
+		HeldView.draw_powerup(self, p, now, fw, fh) # blocco di ghiaccio del pesce, bolla dello sparabolle
 	if p.get("anchor") is Dictionary:
 		_draw_anchor(p) # l'ancora-ragnatela di Capt. OrsoBlu (#547)
 

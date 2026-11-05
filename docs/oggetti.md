@@ -19,8 +19,8 @@ Ogni oggetto ha una **classe di frequenza** proporzionata a quanto cambia la par
 
 | Classe | Peso | Per cosa | Oggetti |
 | --- | --- | --- | --- |
-| comune | 8 | piccolo vantaggio, da lanciare | Banana, Ciabatta, Caffè |
-| normale | 4 | vantaggio a tempo o con un rischio | Fungo di Teemo, Bong, Petardo, Brownie spaziale |
+| comune | 8 | piccolo vantaggio, da lanciare | Banana, Ciabatta, Caffè, Pistola ad acqua |
+| normale | 4 | vantaggio a tempo o con un rischio | Fungo di Teemo, Bong, Petardo, Brownie spaziale, Scopa, Pesce surgelato, Sparabolle |
 | raro | 2 | cambia uno scontro | Fiore, Chiama Bassanese, tutte le versioni rare |
 | rarissimo | 1 | cambia la partita per diversi secondi | Tetris, Pac-Man |
 | mai | 0 | non cade dal cielo | Funghetto piantato, Funghetti (messi da parte, #419) |
@@ -52,9 +52,14 @@ alla The Binding of Isaac. Logica in `physics/gear.ts`, numeri in `GEAR`, disegn
 | Lancio | Petardo | normale | Lanciato o posato si accende: si attacca a chi o a dove tocca e dopo 1,6 s scoppia (15%), anche addosso a chi l'ha acceso. Acceso non si riprende. | Petardo a grappolo (raro) | Lo scoppio sparge quattro petardini che scoppiano a loro volta (7%). |
 | Consumo | Caffè | comune | 8 s più veloci, anche negli attacchi. | Moka a razzo (raro) | 7 s in cui tenendo il salto si vola. |
 | Consumo | Brownie spaziale | normale | Per 2,5 s niente, poi un effetto a sorpresa per 8 s: gigante, mini, caffè, comandi invertiti o sonno (2,2 s addormentati). | Brownie della nonna (raro) | Sempre gigante per 11 s, con la corona, e ogni atterraggio fa tremare la terra: chi è a terra vicino salta via (5%). |
+| Impugnatura | Scopa | normale | In mano, J fa le mosse normali del personaggio con 46 px di portata e 4% in più; si rompe dopo 12 colpi a segno. K la lancia. | Ombrellone (raro) | I colpi lanciano in alto e, tenendo il salto, si plana. |
+| Impugnatura | Pesce surgelato | normale | Colpi un po' più lunghi che congelano chi li prende per 1,3 s in un blocco di ghiaccio; 8 colpi. | Anguilla elettrica (raro) | La scossa ferma chi prende e salta a tutti quelli vicini (6%). |
+| Sparo | Pistola ad acqua | comune | J spara gocce che spingono (3%), 14 colpi, poi sparisce. | Idrante (raro) | Tenendo J per 0,7 s carica un getto lungo 900 px che prende tutti (16%); 3 getti. |
+| Sparo | Sparabolle | normale | J spara bolle lente: chi ne prende una ci resta chiuso e sale per 1,8 s, poi scoppia (5%). Colpirlo la fa scoppiare prima. 6 colpi. | Sparabolle triplo (raro) | Tre bolle a ventaglio che rimbalzano a terra. |
 
 Da giganti il corpo e i colpi sono 1,5 volte più grandi, i colpi fanno più male e si vola meno; da mini il contrario.
-Impugnatura e sparo arrivano nella PR successiva, peso e cavalcatura in un'altra.
+Impugnatura e sparo: logica in `physics/held.ts`, numeri in `HELD`, disegno in `godot/scripts/held_view.gd`; i colpi
+sparati (goccia, bolle) sono oggetti che non cadono mai dal cielo. Peso e cavalcatura arrivano in un'altra PR.
 
 ## Il Fungo di Teemo (idea di Riccardo, #419)
 

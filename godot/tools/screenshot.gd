@@ -10,7 +10,7 @@ var _out := "user://screenshots"
 var _game: Dictionary
 var _world: Node2D # nella partita finta: riceve uno snapshot a ogni frame
 var _hud: Control
-const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre", "lobby_regole", "musica", "tetris", "pacman", "bassanese", "bologna_piazza", "bologna_torri", "bologna_crollo", "bologna_zuffa", "oggetti", "oggetti_categorie", "prepartita_attesa", "prepartita_vs", "prepartita_conto", "fine_partita", "sala", "sala_conto", "sala_galleria", "sala_via", "sala_basket", "sala_scacchi", "fabbrica", "diluvio", "palco_metal", "palco_reggae", "palco_techno"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
+const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre", "lobby_regole", "musica", "tetris", "pacman", "bassanese", "bologna_piazza", "bologna_torri", "bologna_crollo", "bologna_zuffa", "oggetti", "oggetti_categorie", "oggetti_armi", "prepartita_attesa", "prepartita_vs", "prepartita_conto", "fine_partita", "sala", "sala_conto", "sala_galleria", "sala_via", "sala_basket", "sala_scacchi", "fabbrica", "diluvio", "palco_metal", "palco_reggae", "palco_techno"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
 var _index := -1
 var _frame := 0
 var _failed := false
@@ -19,6 +19,7 @@ var _music := false # la partita finta nell'arena musicale, durante la Meravigli
 var _tetris_on := false # la partita finta con uno che gioca a Tetris (#427)
 var _pacman_on := false # la partita finta con un Pac-Man e i fantasmini (#427)
 var _items_on := false # la partita finta con tutti gli oggetti in fila a terra
+var _held_on := false # i cinque principali con le armi da impugnare e da sparo (held_view.gd)
 var _gear_on := false # i cinque principali con gli oggetti per categoria (gear_view.gd)
 var _bassanese_on := false # la partita finta col Bassanese che si guarda in giro e un telefono a terra
 var _pre: Dictionary = {} # pre-partita: lo stato messo in snapshot.prematch, vuoto nelle altre partite
@@ -233,10 +234,20 @@ func _oggetti_categorie() -> void:
 	_partita()
 
 
+# Impugnatura e sparo: Bradipo colpisce con la scopa, Marcomunista plana con l'ombrellone, Egiainuso congelato dal pesce,
+# OrsoBlu spara il getto dell'idrante, Elvedeo chiuso in una bolla; a terra anguilla, pistola e sparabolle triplo
+func _oggetti_armi() -> void:
+	_items_on = false
+	_gear_on = false
+	_held_on = true
+	_partita()
+
+
 # Pre-partita: l'attesa dei Pronto, la presentazione col VS, il 2 del conto alla rovescia
 func _prepartita_attesa() -> void:
 	_items_on = false
 	_gear_on = false
+	_held_on = false
 	_pre = {"phase": "waiting", "leftMs": 0, "ready": ["p0", "p2", "p3"], "autoStartMs": 41000}
 	_pre_fighters = 0
 	_partita()
@@ -410,6 +421,43 @@ func _snapshot(frame: int) -> Dictionary:
 		]
 		if frame % 20 == 2: # uno scoppio di petardino ogni tanto, così nella foto c'è sempre la palla di fuoco
 			snap.events = [{"type": "gear", "phase": "boom", "kind": "petardino", "id": "p3", "x": 1000, "y": 470, "r": 60}]
+	if _held_on:
+		snap.projectiles = []
+		var core := [["bradipo", 420, ""], ["marcomunista", 560, ""], ["orsoblu", 680, ""], ["egiainuso", 820, "gelo"], ["elvedeo", 980, "bolla"]]
+		for i in core.size():
+			var p: Dictionary = players[i]
+			p.characterId = core[i][0]
+			p.x = core[i][1]
+			p.shielding = false
+			p.charge = 0.0
+			p.facing = -1 if i == 4 else 1
+			p.attack = null
+			p.attackActive = false
+			if core[i][2] != "":
+				p.powerup = core[i][2]
+				p.powerupMs = 1500
+		players[0].attack = "light1" # Bradipo colpisce con la scopa
+		players[0].attackActive = true
+		players[1].y = 380 # Marcomunista plana con l'ombrellone
+		players[1].onGround = false
+		players[4].y = 470 # Elvedeo sale nella bolla
+		players[4].onGround = false
+		snap.items = [
+			{"id": 50, "kind": "scopa", "x": 0, "y": 0, "vx": 0, "vy": 0, "heldBy": players[0].id, "thrown": false},
+			{"id": 51, "kind": "ombrellone", "x": 0, "y": 0, "vx": 0, "vy": 0, "heldBy": players[1].id, "thrown": false},
+			{"id": 52, "kind": "idrante", "x": 0, "y": 0, "vx": 0, "vy": 0, "heldBy": players[2].id, "thrown": false},
+			{"id": 53, "kind": "anguilla", "x": 260, "y": 560, "vx": 0, "vy": 0, "heldBy": null, "thrown": false},
+			{"id": 54, "kind": "pistola", "x": 320, "y": 560, "vx": 0, "vy": 0, "heldBy": null, "thrown": false},
+			{"id": 55, "kind": "sparabolleTriplo", "x": 1080, "y": 560, "vx": 0, "vy": 0, "heldBy": null, "thrown": false},
+			{"id": 56, "kind": "pesce", "x": 1140, "y": 560, "vx": 0, "vy": 0, "heldBy": null, "thrown": false},
+			{"id": 57, "kind": "bollaRimbalzina", "x": 900, "y": 380, "vx": -380, "vy": 0, "heldBy": null, "thrown": true},
+			{"id": 58, "kind": "goccia", "x": 380, "y": 500, "vx": 1300, "vy": 0, "heldBy": null, "thrown": true},
+		]
+		if frame % 12 == 2: # il getto dell'idrante e una scossa dell'anguilla, così nella foto ci sono sempre
+			snap.events = [
+				{"type": "gear", "phase": "jet", "kind": "idrante", "id": players[2].id, "x": 700, "y": 520, "r": 300},
+				{"type": "gear", "phase": "zap", "kind": "anguilla", "id": players[3].id, "x": 760, "y": 520},
+			]
 	if _end_on:
 		snap.winnerId = "p1"
 		snap.timeLeftMs = 0

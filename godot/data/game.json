@@ -1423,6 +1423,139 @@
         "powerup": "colosso",
         "ms": 11000
       }
+    },
+    "scopa": {
+      "id": "scopa",
+      "name": "Scopa",
+      "damage": 8,
+      "knockback": 340,
+      "width": 12,
+      "height": 58,
+      "color": 13148240,
+      "rarity": "normale",
+      "category": "impugnatura",
+      "melee": "scopa"
+    },
+    "ombrellone": {
+      "id": "ombrellone",
+      "name": "Ombrellone",
+      "damage": 9,
+      "knockback": 360,
+      "width": 16,
+      "height": 60,
+      "color": 15222844,
+      "rarity": "raro",
+      "category": "impugnatura",
+      "rareOf": "scopa",
+      "melee": "ombrellone"
+    },
+    "pesce": {
+      "id": "pesce",
+      "name": "Pesce surgelato",
+      "damage": 7,
+      "knockback": 320,
+      "width": 40,
+      "height": 16,
+      "color": 9418968,
+      "rarity": "normale",
+      "category": "impugnatura",
+      "melee": "pesce"
+    },
+    "anguilla": {
+      "id": "anguilla",
+      "name": "Anguilla elettrica",
+      "damage": 7,
+      "knockback": 320,
+      "width": 46,
+      "height": 14,
+      "color": 3968858,
+      "rarity": "raro",
+      "category": "impugnatura",
+      "rareOf": "pesce",
+      "melee": "anguilla"
+    },
+    "pistola": {
+      "id": "pistola",
+      "name": "Pistola ad acqua",
+      "damage": 6,
+      "knockback": 300,
+      "width": 30,
+      "height": 20,
+      "color": 3127272,
+      "rarity": "comune",
+      "category": "sparo",
+      "gun": "pistola"
+    },
+    "idrante": {
+      "id": "idrante",
+      "name": "Idrante",
+      "damage": 9,
+      "knockback": 360,
+      "width": 26,
+      "height": 32,
+      "color": 14169132,
+      "rarity": "raro",
+      "category": "sparo",
+      "rareOf": "pistola",
+      "gun": "idrante"
+    },
+    "sparabolle": {
+      "id": "sparabolle",
+      "name": "Sparabolle",
+      "damage": 5,
+      "knockback": 280,
+      "width": 30,
+      "height": 22,
+      "color": 15902424,
+      "rarity": "normale",
+      "category": "sparo",
+      "gun": "sparabolle"
+    },
+    "sparabolleTriplo": {
+      "id": "sparabolleTriplo",
+      "name": "Sparabolle triplo",
+      "damage": 6,
+      "knockback": 300,
+      "width": 34,
+      "height": 24,
+      "color": 10906864,
+      "rarity": "raro",
+      "category": "sparo",
+      "rareOf": "sparabolle",
+      "gun": "triplo"
+    },
+    "goccia": {
+      "id": "goccia",
+      "name": "Goccia",
+      "damage": 3,
+      "knockback": 260,
+      "width": 12,
+      "height": 12,
+      "color": 8377343,
+      "rarity": "mai",
+      "shot": "goccia"
+    },
+    "bolla": {
+      "id": "bolla",
+      "name": "Bolla",
+      "damage": 0,
+      "knockback": 0,
+      "width": 30,
+      "height": 30,
+      "color": 15902424,
+      "rarity": "mai",
+      "shot": "bolla"
+    },
+    "bollaRimbalzina": {
+      "id": "bollaRimbalzina",
+      "name": "Bolla rimbalzina",
+      "damage": 0,
+      "knockback": 0,
+      "width": 30,
+      "height": 30,
+      "color": 10906864,
+      "rarity": "mai",
+      "shot": "rimbalzina"
     }
   },
   "itemRules": {
@@ -1469,6 +1602,7 @@
     }
   ],
   "droppableItems": [
+    "anguilla",
     "banana",
     "bassanese",
     "bong",
@@ -1479,10 +1613,17 @@
     "ciabattaMamma",
     "fiore",
     "fungoTeemo",
+    "idrante",
     "moka",
+    "ombrellone",
     "pacman",
+    "pesce",
     "petardo",
     "petardoGrappolo",
+    "pistola",
+    "scopa",
+    "sparabolle",
+    "sparabolleTriplo",
     "tetris"
   ],
   "supremeSpeeds": [
