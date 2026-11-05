@@ -108,6 +108,9 @@ var _held: RefCounted = HeldView.new()
 var _swinging := {} # id giocatore -> colpo attivo, per inclinare l'arma in mano
 const RideView := preload("res://scripts/ride_view.gd") # pesanti e cavalcature (physics/ride.ts)
 var _ride: RefCounted = RideView.new()
+const ItemPose := preload("res://scripts/item_pose.gd") # pose con gli oggetti e punto della presa (docs/clip-flow/pose-oggetti.md)
+var _item_pose: RefCounted = ItemPose.new()
+var _hands := {} # id giocatore -> presa di questo frame {pos, angle, facing}, se il suo stato ha mani.json
 var _stations: RefCounted = preload("res://scripts/station_view.gd").new() # postazioni e palle di mortadella (#433)
 var _ambient := Color.WHITE # luce del momento del giorno (#267): moltiplica strati e decorazioni, un po' il palco
 var _textures := {} # id personaggio -> Texture2D dello spritesheet (nel formato cartella, quella di idle)
@@ -341,6 +344,7 @@ func reset() -> void:
 	_anims = {}
 	_air_jumps = {}
 	_taunts = {}
+	_item_pose.reset()
 	_sparks = []
 	_clouds = []
 	_poison_clouds = []
@@ -774,6 +778,7 @@ func on_snapshot(snap: Dictionary) -> void:
 
 
 func on_event(e: Dictionary) -> void:
+	_item_pose.on_event(e, Time.get_ticks_msec()) # lanci, consumi e spari: la posa con l'oggetto
 	_theme.on_event(e, Time.get_ticks_msec()) # l'arena a tema guarda KO e trappole (la scatola della Fabbrica)
 	if not _crowd.is_empty(): # il pubblico fotografa i KO e i colpi forti (#433)
 		_crowd.flash(StageCrowd.flashes_for(e, float(game.effects.get("shakeFromKnockback", INF))), Time.get_ticks_msec())
@@ -1687,6 +1692,7 @@ func _draw() -> void:
 		_sampled[my_id] = mine
 	_draw_sun_light(t_stage) # ombre a terra e luce dal lato del sole o della luna (#288), sotto i lottatori
 	_companions.draw(self, now) # dietro ai lottatori: il beagle di Lampione (#369)
+	_hands.clear()
 	for id in player_ids:
 		var p: Variant = _sampled.get(id)
 		if p != null:
@@ -1892,6 +1898,14 @@ func _draw_items(now: int) -> void:
 		var spin := now / 1000.0 * 14.0 if it.thrown else 0.0
 		if holder != null and HeldView.is_melee(it.kind): # l'arma in mano: appoggiata indietro, in avanti mentre colpisce
 			spin = float(_facings.get(holder, 1)) * (1.4 if _swinging.get(holder, false) else -0.35)
+		if holder != null and _hands.has(holder):
+			# Il disegno ha il punto della presa (pose con gli oggetti): l'oggetto sta lì, girato come il segnaposto
+			var spec: Dictionary = game.items.get(it.kind, {"width": 24, "height": 16})
+			var ht: Array = ItemPose.held_transform(str(it.kind), ItemPose.category(game, str(it.kind)), float(spec.width), float(spec.height), _hands[holder], ITEM_SCALE)
+			_item_pos[it.id] = ht[0]
+			seen[it.id] = true
+			_draw_item(it.kind, ht[0] + Vector2(0, float(spec.height) / 2.0 * ITEM_SCALE), ht[1], float(it.get("load", -1.0)), 1.0, 0.0, false, false, ht[2])
+			continue
 		if holder == null and not it.thrown and absf(float(it.get("vy", 0.0))) < 1.0:
 			pos.y = _rest_y(pos) # fermo su una scala: sul gradino che ha sotto, non sospeso sulla rampa
 		# Il funghetto piantato (#302): chi l'ha piantato lo vede, gli altri appena appena
@@ -2053,14 +2067,14 @@ func _draw_puddles(now: int) -> void:
 # Più grandi della loro scatola di gioco (ITEM_SCALE), così si riconoscono anche da lontano
 # A terra (lying) poggia sulla superficie e si inclina di rest attorno al punto di contatto (#498); glow disegna solo
 # il contorno chiaro di chi lo può raccogliere, sotto all'oggetto vero
-func _draw_item(kind: String, base: Vector2, spin: float, load: float = -1.0, alpha: float = 1.0, rest := 0.0, lying := false, glow := false) -> void:
+func _draw_item(kind: String, base: Vector2, spin: float, load: float = -1.0, alpha: float = 1.0, rest := 0.0, lying := false, glow := false, mirror := 1.0) -> void:
 	var spec: Dictionary = game.items.get(kind, {"width": 24, "height": 16, "color": 0xffffff})
 	var w: float = spec.width
 	var h: float = spec.height
 	if lying:
 		base += Vector2(0, 1.0 - float(ITEM_REST_LIFT.get(kind, 0.0)) * h * ITEM_SCALE) # un pixel dentro la superficie
 	var center := base + (Vector2(0, -h / 2) * ITEM_SCALE).rotated(rest)
-	draw_set_transform(center, spin + rest, Vector2.ONE * ITEM_SCALE)
+	draw_set_transform(center, spin + rest, Vector2(mirror, 1.0) * ITEM_SCALE) # mirror -1: in mano a chi guarda a sinistra
 	_ink = GLOW_INK if glow else item_ink(_color(spec.color))
 	_ink_width = GLOW_INK_WIDTH if glow else ITEM_INK_WIDTH
 	_light = Color.WHITE if kind in ARCADE_ITEMS else item_light(_sun, _palette.get("sky", Color.WHITE))
@@ -3359,6 +3373,12 @@ func _draw_sprite(p: Dictionary, character: Dictionary, now: float, react := Tra
 		since = taunted
 	elif name == "doubleJump":
 		since = air_jump # la capriola parte dal momento del doppio salto, non da quando la si disegna
+	# Con un oggetto in mano, lanciato o mangiato: la posa della sua categoria, se disegnata (item_pose.gd)
+	var held_pose: Array = _item_pose.pick(name, p, anims, _items, game, now)
+	if held_pose[0] != name:
+		name = held_pose[0]
+		if float(held_pose[1]) >= 0.0:
+			since = float(held_pose[1])
 	var new_attack: bool = p.attack != null and not bool(state.get("attacking", false))
 	if prev_name != name or new_attack:
 		state = {"name": name, "since": since, "kind": kind, "start": since}
@@ -3404,6 +3424,9 @@ func _draw_sprite(p: Dictionary, character: Dictionary, now: float, react := Tra
 		tint.b = outline_tint(OUTLINE_PX, fw * scale, src.size.x)
 	draw_texture_rect_region(texture, Rect2(-fw / 2, -foot_y, fw, fh), src, tint)
 	draw_set_transform(Vector2.ZERO)
+	var hand: Variant = ItemPose.hand_point(sheet, str(a.src), frame)
+	if hand != null: # la presa dell'oggetto in mano, per _draw_items
+		_hands[p.id] = ItemPose.hand_world(hand, p.x, p.y, p.facing, scale, react)
 
 
 # Il blu del modulate che chiede a palette.gdshader il contorno: 2 + spessore in texel / 8. Lo spessore è in pixel

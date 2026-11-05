@@ -12756,6 +12756,126 @@
             "loop": true,
             "frames": 41,
             "src": "anchorClimb"
+          },
+          "gripIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 20,
+            "src": "idle"
+          },
+          "gripWalk": {
+            "fps": 24,
+            "loop": true,
+            "frames": 50,
+            "src": "walk"
+          },
+          "gripLight": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 7,
+            "startFrame": 5,
+            "frames": 27,
+            "src": "light"
+          },
+          "gripHeavy": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 17,
+            "frames": 53,
+            "src": "heavy"
+          },
+          "aimIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 20,
+            "src": "idle"
+          },
+          "aimWalk": {
+            "fps": 24,
+            "loop": true,
+            "frames": 50,
+            "src": "walk"
+          },
+          "aimShoot": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 7,
+            "startFrame": 5,
+            "frames": 27,
+            "src": "light"
+          },
+          "aimCharge": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 17,
+            "frames": 53,
+            "src": "heavy"
+          },
+          "itemHold": {
+            "fps": 12,
+            "loop": true,
+            "frames": 20,
+            "src": "idle"
+          },
+          "itemThrow": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 7,
+            "startFrame": 5,
+            "frames": 27,
+            "src": "light"
+          },
+          "itemThrowUp": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 7,
+            "startFrame": 5,
+            "frames": 27,
+            "src": "light"
+          },
+          "itemEat": {
+            "fps": 18,
+            "loop": false,
+            "frames": 51,
+            "src": "taunt"
+          },
+          "carryIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 20,
+            "src": "idle"
+          },
+          "carryWalk": {
+            "fps": 24,
+            "loop": true,
+            "frames": 50,
+            "src": "walk"
+          },
+          "carryToss": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 7,
+            "startFrame": 5,
+            "frames": 27,
+            "src": "light"
+          },
+          "rideIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 20,
+            "src": "idle"
+          },
+          "rideDash": {
+            "fps": 24,
+            "loop": true,
+            "frames": 50,
+            "src": "walk"
+          },
+          "rideHop": {
+            "fps": 18,
+            "loop": false,
+            "frames": 10,
+            "src": "jump"
           }
         }
       },
@@ -13131,6 +13251,125 @@
             "loop": true,
             "frames": 24,
             "src": "ledge"
+          },
+          "gripIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "gripWalk": {
+            "fps": 24,
+            "loop": true,
+            "frames": 8,
+            "src": "walk"
+          },
+          "gripLight": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "startFrame": 1,
+            "frames": 10,
+            "src": "light"
+          },
+          "gripHeavy": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 8,
+            "startFrame": 1,
+            "frames": 18,
+            "src": "heavy"
+          },
+          "aimIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "aimWalk": {
+            "fps": 24,
+            "loop": true,
+            "frames": 8,
+            "src": "walk"
+          },
+          "aimShoot": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "startFrame": 1,
+            "frames": 10,
+            "src": "light"
+          },
+          "aimCharge": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 8,
+            "startFrame": 1,
+            "frames": 18,
+            "src": "heavy"
+          },
+          "itemHold": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "itemThrow": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 8,
+            "src": "throw"
+          },
+          "itemThrowUp": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 8,
+            "src": "throw"
+          },
+          "itemEat": {
+            "fps": 12,
+            "loop": false,
+            "frames": 24,
+            "src": "taunt"
+          },
+          "carryIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "carryWalk": {
+            "fps": 24,
+            "loop": true,
+            "frames": 8,
+            "src": "walk"
+          },
+          "carryToss": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 8,
+            "src": "throw"
+          },
+          "rideIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "rideDash": {
+            "fps": 24,
+            "loop": true,
+            "frames": 6,
+            "src": "dash"
+          },
+          "rideHop": {
+            "fps": 24,
+            "loop": false,
+            "frames": 7,
+            "src": "jump"
           }
         }
       },
@@ -13626,6 +13865,125 @@
             "loop": false,
             "frames": 3,
             "src": "jump"
+          },
+          "gripIdle": {
+            "fps": 10,
+            "loop": true,
+            "frames": 18,
+            "src": "idle"
+          },
+          "gripWalk": {
+            "fps": 18,
+            "loop": true,
+            "frames": 13,
+            "src": "walk"
+          },
+          "gripLight": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 4,
+            "activeEnd": 6,
+            "frames": 9,
+            "src": "light"
+          },
+          "gripHeavy": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 5,
+            "activeEnd": 6,
+            "frames": 11,
+            "src": "heavy"
+          },
+          "aimIdle": {
+            "fps": 10,
+            "loop": true,
+            "frames": 18,
+            "src": "idle"
+          },
+          "aimWalk": {
+            "fps": 18,
+            "loop": true,
+            "frames": 13,
+            "src": "walk"
+          },
+          "aimShoot": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 4,
+            "activeEnd": 6,
+            "frames": 9,
+            "src": "light"
+          },
+          "aimCharge": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 5,
+            "activeEnd": 6,
+            "frames": 11,
+            "src": "heavy"
+          },
+          "itemHold": {
+            "fps": 10,
+            "loop": true,
+            "frames": 18,
+            "src": "idle"
+          },
+          "itemThrow": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 4,
+            "frames": 7,
+            "src": "throw"
+          },
+          "itemThrowUp": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 4,
+            "frames": 7,
+            "src": "throw"
+          },
+          "itemEat": {
+            "fps": 12,
+            "loop": false,
+            "frames": 12,
+            "src": "taunt"
+          },
+          "carryIdle": {
+            "fps": 10,
+            "loop": true,
+            "frames": 18,
+            "src": "idle"
+          },
+          "carryWalk": {
+            "fps": 18,
+            "loop": true,
+            "frames": 13,
+            "src": "walk"
+          },
+          "carryToss": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 4,
+            "frames": 7,
+            "src": "throw"
+          },
+          "rideIdle": {
+            "fps": 10,
+            "loop": true,
+            "frames": 18,
+            "src": "idle"
+          },
+          "rideDash": {
+            "fps": 28,
+            "loop": true,
+            "frames": 13,
+            "src": "dash"
+          },
+          "rideHop": {
+            "fps": 12,
+            "loop": false,
+            "frames": 3,
+            "src": "jump"
           }
         }
       },
@@ -14011,6 +14369,114 @@
             "loop": false,
             "frames": 1,
             "src": "jump"
+          },
+          "gripIdle": {
+            "fps": 1,
+            "loop": true,
+            "frames": 1,
+            "src": "idle"
+          },
+          "gripWalk": {
+            "fps": 6,
+            "loop": true,
+            "frames": 2,
+            "src": "walk"
+          },
+          "gripLight": {
+            "fps": 1,
+            "loop": false,
+            "frames": 1,
+            "src": "light"
+          },
+          "gripHeavy": {
+            "fps": 1,
+            "loop": false,
+            "frames": 1,
+            "src": "heavy"
+          },
+          "aimIdle": {
+            "fps": 1,
+            "loop": true,
+            "frames": 1,
+            "src": "idle"
+          },
+          "aimWalk": {
+            "fps": 6,
+            "loop": true,
+            "frames": 2,
+            "src": "walk"
+          },
+          "aimShoot": {
+            "fps": 1,
+            "loop": false,
+            "frames": 1,
+            "src": "light"
+          },
+          "aimCharge": {
+            "fps": 1,
+            "loop": false,
+            "frames": 1,
+            "src": "heavy"
+          },
+          "itemHold": {
+            "fps": 1,
+            "loop": true,
+            "frames": 1,
+            "src": "idle"
+          },
+          "itemThrow": {
+            "fps": 1,
+            "loop": false,
+            "frames": 1,
+            "src": "throw"
+          },
+          "itemThrowUp": {
+            "fps": 1,
+            "loop": false,
+            "frames": 1,
+            "src": "throw"
+          },
+          "itemEat": {
+            "fps": 1,
+            "loop": true,
+            "frames": 1,
+            "src": "idle"
+          },
+          "carryIdle": {
+            "fps": 1,
+            "loop": true,
+            "frames": 1,
+            "src": "idle"
+          },
+          "carryWalk": {
+            "fps": 6,
+            "loop": true,
+            "frames": 2,
+            "src": "walk"
+          },
+          "carryToss": {
+            "fps": 1,
+            "loop": false,
+            "frames": 1,
+            "src": "throw"
+          },
+          "rideIdle": {
+            "fps": 1,
+            "loop": true,
+            "frames": 1,
+            "src": "idle"
+          },
+          "rideDash": {
+            "fps": 1,
+            "loop": false,
+            "frames": 1,
+            "src": "dash"
+          },
+          "rideHop": {
+            "fps": 1,
+            "loop": false,
+            "frames": 1,
+            "src": "jump"
           }
         }
       },
@@ -14239,6 +14705,121 @@
                 "src": "jump"
               },
               "anchorClimb": {
+                "fps": 18,
+                "loop": false,
+                "frames": 4,
+                "src": "jump"
+              },
+              "gripIdle": {
+                "fps": 10,
+                "loop": true,
+                "frames": 15,
+                "src": "idle"
+              },
+              "gripWalk": {
+                "fps": 14,
+                "loop": true,
+                "frames": 11,
+                "src": "walk"
+              },
+              "gripLight": {
+                "fps": 24,
+                "loop": false,
+                "hitFrame": 2,
+                "frames": 7,
+                "src": "light"
+              },
+              "gripHeavy": {
+                "fps": 24,
+                "loop": false,
+                "hitFrame": 3,
+                "frames": 10,
+                "src": "heavy"
+              },
+              "aimIdle": {
+                "fps": 10,
+                "loop": true,
+                "frames": 15,
+                "src": "idle"
+              },
+              "aimWalk": {
+                "fps": 14,
+                "loop": true,
+                "frames": 11,
+                "src": "walk"
+              },
+              "aimShoot": {
+                "fps": 24,
+                "loop": false,
+                "hitFrame": 2,
+                "frames": 7,
+                "src": "light"
+              },
+              "aimCharge": {
+                "fps": 24,
+                "loop": false,
+                "hitFrame": 3,
+                "frames": 10,
+                "src": "heavy"
+              },
+              "itemHold": {
+                "fps": 10,
+                "loop": true,
+                "frames": 15,
+                "src": "idle"
+              },
+              "itemThrow": {
+                "fps": 24,
+                "loop": false,
+                "hitFrame": 0,
+                "frames": 5,
+                "src": "throw"
+              },
+              "itemThrowUp": {
+                "fps": 24,
+                "loop": false,
+                "hitFrame": 0,
+                "frames": 5,
+                "src": "throw"
+              },
+              "itemEat": {
+                "fps": 12,
+                "loop": false,
+                "frames": 11,
+                "src": "taunt"
+              },
+              "carryIdle": {
+                "fps": 10,
+                "loop": true,
+                "frames": 15,
+                "src": "idle"
+              },
+              "carryWalk": {
+                "fps": 14,
+                "loop": true,
+                "frames": 11,
+                "src": "walk"
+              },
+              "carryToss": {
+                "fps": 24,
+                "loop": false,
+                "hitFrame": 0,
+                "frames": 5,
+                "src": "throw"
+              },
+              "rideIdle": {
+                "fps": 10,
+                "loop": true,
+                "frames": 15,
+                "src": "idle"
+              },
+              "rideDash": {
+                "fps": 14,
+                "loop": true,
+                "frames": 7,
+                "src": "dash"
+              },
+              "rideHop": {
                 "fps": 18,
                 "loop": false,
                 "frames": 4,
@@ -14607,6 +15188,125 @@
             "loop": true,
             "frames": 24,
             "src": "ledge"
+          },
+          "gripIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "gripWalk": {
+            "fps": 24,
+            "loop": true,
+            "frames": 8,
+            "src": "walk"
+          },
+          "gripLight": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "startFrame": 1,
+            "frames": 10,
+            "src": "light"
+          },
+          "gripHeavy": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 8,
+            "startFrame": 1,
+            "frames": 18,
+            "src": "heavy"
+          },
+          "aimIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "aimWalk": {
+            "fps": 24,
+            "loop": true,
+            "frames": 8,
+            "src": "walk"
+          },
+          "aimShoot": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "startFrame": 1,
+            "frames": 10,
+            "src": "light"
+          },
+          "aimCharge": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 8,
+            "startFrame": 1,
+            "frames": 18,
+            "src": "heavy"
+          },
+          "itemHold": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "itemThrow": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 8,
+            "src": "throw"
+          },
+          "itemThrowUp": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 8,
+            "src": "throw"
+          },
+          "itemEat": {
+            "fps": 12,
+            "loop": false,
+            "frames": 24,
+            "src": "taunt"
+          },
+          "carryIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "carryWalk": {
+            "fps": 24,
+            "loop": true,
+            "frames": 8,
+            "src": "walk"
+          },
+          "carryToss": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 8,
+            "src": "throw"
+          },
+          "rideIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "rideDash": {
+            "fps": 24,
+            "loop": true,
+            "frames": 8,
+            "src": "dash"
+          },
+          "rideHop": {
+            "fps": 24,
+            "loop": false,
+            "frames": 7,
+            "src": "jump"
           }
         }
       },
@@ -14855,6 +15555,125 @@
                 "loop": true,
                 "frames": 24,
                 "src": "ledge"
+              },
+              "gripIdle": {
+                "fps": 12,
+                "loop": true,
+                "frames": 24,
+                "src": "idle"
+              },
+              "gripWalk": {
+                "fps": 24,
+                "loop": true,
+                "frames": 8,
+                "src": "walk"
+              },
+              "gripLight": {
+                "fps": 24,
+                "loop": false,
+                "hitFrame": 2,
+                "startFrame": 1,
+                "frames": 10,
+                "src": "light"
+              },
+              "gripHeavy": {
+                "fps": 24,
+                "loop": false,
+                "hitFrame": 8,
+                "startFrame": 1,
+                "frames": 18,
+                "src": "heavy"
+              },
+              "aimIdle": {
+                "fps": 12,
+                "loop": true,
+                "frames": 24,
+                "src": "idle"
+              },
+              "aimWalk": {
+                "fps": 24,
+                "loop": true,
+                "frames": 8,
+                "src": "walk"
+              },
+              "aimShoot": {
+                "fps": 24,
+                "loop": false,
+                "hitFrame": 2,
+                "startFrame": 1,
+                "frames": 10,
+                "src": "light"
+              },
+              "aimCharge": {
+                "fps": 24,
+                "loop": false,
+                "hitFrame": 8,
+                "startFrame": 1,
+                "frames": 18,
+                "src": "heavy"
+              },
+              "itemHold": {
+                "fps": 12,
+                "loop": true,
+                "frames": 24,
+                "src": "idle"
+              },
+              "itemThrow": {
+                "fps": 24,
+                "loop": false,
+                "hitFrame": 0,
+                "frames": 8,
+                "src": "throw"
+              },
+              "itemThrowUp": {
+                "fps": 24,
+                "loop": false,
+                "hitFrame": 0,
+                "frames": 8,
+                "src": "throw"
+              },
+              "itemEat": {
+                "fps": 12,
+                "loop": false,
+                "frames": 24,
+                "src": "taunt"
+              },
+              "carryIdle": {
+                "fps": 12,
+                "loop": true,
+                "frames": 24,
+                "src": "idle"
+              },
+              "carryWalk": {
+                "fps": 24,
+                "loop": true,
+                "frames": 8,
+                "src": "walk"
+              },
+              "carryToss": {
+                "fps": 24,
+                "loop": false,
+                "hitFrame": 0,
+                "frames": 8,
+                "src": "throw"
+              },
+              "rideIdle": {
+                "fps": 12,
+                "loop": true,
+                "frames": 24,
+                "src": "idle"
+              },
+              "rideDash": {
+                "fps": 24,
+                "loop": true,
+                "frames": 8,
+                "src": "dash"
+              },
+              "rideHop": {
+                "fps": 24,
+                "loop": false,
+                "frames": 7,
+                "src": "jump"
               }
             }
           },
@@ -15297,6 +16116,125 @@
             "src": "jump"
           },
           "anchorClimb": {
+            "fps": 18,
+            "loop": false,
+            "frames": 4,
+            "src": "jump"
+          },
+          "gripIdle": {
+            "fps": 8,
+            "loop": true,
+            "frames": 15,
+            "src": "idle"
+          },
+          "gripWalk": {
+            "fps": 14,
+            "loop": true,
+            "frames": 14,
+            "src": "walk"
+          },
+          "gripLight": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "activeEnd": 5,
+            "frames": 8,
+            "src": "light"
+          },
+          "gripHeavy": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "activeEnd": 5,
+            "frames": 10,
+            "src": "heavy"
+          },
+          "aimIdle": {
+            "fps": 8,
+            "loop": true,
+            "frames": 15,
+            "src": "idle"
+          },
+          "aimWalk": {
+            "fps": 14,
+            "loop": true,
+            "frames": 14,
+            "src": "walk"
+          },
+          "aimShoot": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "activeEnd": 5,
+            "frames": 8,
+            "src": "light"
+          },
+          "aimCharge": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "activeEnd": 5,
+            "frames": 10,
+            "src": "heavy"
+          },
+          "itemHold": {
+            "fps": 8,
+            "loop": true,
+            "frames": 15,
+            "src": "idle"
+          },
+          "itemThrow": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 7,
+            "src": "throw"
+          },
+          "itemThrowUp": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 7,
+            "src": "throw"
+          },
+          "itemEat": {
+            "fps": 12,
+            "loop": false,
+            "frames": 14,
+            "src": "taunt"
+          },
+          "carryIdle": {
+            "fps": 8,
+            "loop": true,
+            "frames": 15,
+            "src": "idle"
+          },
+          "carryWalk": {
+            "fps": 14,
+            "loop": true,
+            "frames": 14,
+            "src": "walk"
+          },
+          "carryToss": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 7,
+            "src": "throw"
+          },
+          "rideIdle": {
+            "fps": 8,
+            "loop": true,
+            "frames": 15,
+            "src": "idle"
+          },
+          "rideDash": {
+            "fps": 14,
+            "loop": true,
+            "frames": 6,
+            "src": "dash"
+          },
+          "rideHop": {
             "fps": 18,
             "loop": false,
             "frames": 4,
@@ -15772,6 +16710,125 @@
             "loop": true,
             "frames": 24,
             "src": "ledge"
+          },
+          "gripIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "gripWalk": {
+            "fps": 24,
+            "loop": true,
+            "frames": 8,
+            "src": "walk"
+          },
+          "gripLight": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "startFrame": 1,
+            "frames": 10,
+            "src": "light"
+          },
+          "gripHeavy": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 8,
+            "startFrame": 1,
+            "frames": 18,
+            "src": "heavy"
+          },
+          "aimIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "aimWalk": {
+            "fps": 24,
+            "loop": true,
+            "frames": 8,
+            "src": "walk"
+          },
+          "aimShoot": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "startFrame": 1,
+            "frames": 10,
+            "src": "light"
+          },
+          "aimCharge": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 8,
+            "startFrame": 1,
+            "frames": 18,
+            "src": "heavy"
+          },
+          "itemHold": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "itemThrow": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 8,
+            "src": "throw"
+          },
+          "itemThrowUp": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 8,
+            "src": "throw"
+          },
+          "itemEat": {
+            "fps": 12,
+            "loop": false,
+            "frames": 24,
+            "src": "taunt"
+          },
+          "carryIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "carryWalk": {
+            "fps": 24,
+            "loop": true,
+            "frames": 8,
+            "src": "walk"
+          },
+          "carryToss": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 8,
+            "src": "throw"
+          },
+          "rideIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "rideDash": {
+            "fps": 24,
+            "loop": true,
+            "frames": 8,
+            "src": "dash"
+          },
+          "rideHop": {
+            "fps": 24,
+            "loop": false,
+            "frames": 7,
+            "src": "jump"
           }
         }
       },
@@ -16219,6 +17276,121 @@
             "loop": false,
             "frames": 5,
             "src": "jump"
+          },
+          "gripIdle": {
+            "fps": 8,
+            "loop": true,
+            "frames": 8,
+            "src": "idle"
+          },
+          "gripWalk": {
+            "fps": 6,
+            "loop": true,
+            "frames": 2,
+            "src": "walk"
+          },
+          "gripLight": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "frames": 5,
+            "src": "light"
+          },
+          "gripHeavy": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 5,
+            "frames": 11,
+            "src": "heavy"
+          },
+          "aimIdle": {
+            "fps": 8,
+            "loop": true,
+            "frames": 8,
+            "src": "idle"
+          },
+          "aimWalk": {
+            "fps": 6,
+            "loop": true,
+            "frames": 2,
+            "src": "walk"
+          },
+          "aimShoot": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "frames": 5,
+            "src": "light"
+          },
+          "aimCharge": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 5,
+            "frames": 11,
+            "src": "heavy"
+          },
+          "itemHold": {
+            "fps": 8,
+            "loop": true,
+            "frames": 8,
+            "src": "idle"
+          },
+          "itemThrow": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 4,
+            "src": "throw"
+          },
+          "itemThrowUp": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 4,
+            "src": "throw"
+          },
+          "itemEat": {
+            "fps": 10,
+            "loop": false,
+            "frames": 10,
+            "src": "taunt"
+          },
+          "carryIdle": {
+            "fps": 8,
+            "loop": true,
+            "frames": 8,
+            "src": "idle"
+          },
+          "carryWalk": {
+            "fps": 6,
+            "loop": true,
+            "frames": 2,
+            "src": "walk"
+          },
+          "carryToss": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 4,
+            "src": "throw"
+          },
+          "rideIdle": {
+            "fps": 8,
+            "loop": true,
+            "frames": 8,
+            "src": "idle"
+          },
+          "rideDash": {
+            "fps": 1,
+            "loop": false,
+            "frames": 1,
+            "src": "dash"
+          },
+          "rideHop": {
+            "fps": 24,
+            "loop": false,
+            "frames": 5,
+            "src": "jump"
           }
         }
       },
@@ -16642,6 +17814,125 @@
             "loop": true,
             "frames": 24,
             "src": "ledge"
+          },
+          "gripIdle": {
+            "fps": 24,
+            "loop": true,
+            "frames": 46,
+            "src": "idle"
+          },
+          "gripWalk": {
+            "fps": 24,
+            "loop": true,
+            "frames": 47,
+            "src": "walk"
+          },
+          "gripLight": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 11,
+            "startFrame": 1,
+            "frames": 49,
+            "src": "light"
+          },
+          "gripHeavy": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 27,
+            "startFrame": 1,
+            "frames": 65,
+            "src": "heavy"
+          },
+          "aimIdle": {
+            "fps": 24,
+            "loop": true,
+            "frames": 46,
+            "src": "idle"
+          },
+          "aimWalk": {
+            "fps": 24,
+            "loop": true,
+            "frames": 47,
+            "src": "walk"
+          },
+          "aimShoot": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 11,
+            "startFrame": 1,
+            "frames": 49,
+            "src": "light"
+          },
+          "aimCharge": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 27,
+            "startFrame": 1,
+            "frames": 65,
+            "src": "heavy"
+          },
+          "itemHold": {
+            "fps": 24,
+            "loop": true,
+            "frames": 46,
+            "src": "idle"
+          },
+          "itemThrow": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 8,
+            "src": "throw"
+          },
+          "itemThrowUp": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 8,
+            "src": "throw"
+          },
+          "itemEat": {
+            "fps": 12,
+            "loop": false,
+            "frames": 24,
+            "src": "taunt"
+          },
+          "carryIdle": {
+            "fps": 24,
+            "loop": true,
+            "frames": 46,
+            "src": "idle"
+          },
+          "carryWalk": {
+            "fps": 24,
+            "loop": true,
+            "frames": 47,
+            "src": "walk"
+          },
+          "carryToss": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 8,
+            "src": "throw"
+          },
+          "rideIdle": {
+            "fps": 24,
+            "loop": true,
+            "frames": 46,
+            "src": "idle"
+          },
+          "rideDash": {
+            "fps": 24,
+            "loop": true,
+            "frames": 8,
+            "src": "dash"
+          },
+          "rideHop": {
+            "fps": 24,
+            "loop": false,
+            "frames": 16,
+            "src": "jump"
           }
         }
       },
@@ -17073,6 +18364,125 @@
             "loop": true,
             "frames": 24,
             "src": "ledge"
+          },
+          "gripIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "gripWalk": {
+            "fps": 24,
+            "loop": true,
+            "frames": 8,
+            "src": "walk"
+          },
+          "gripLight": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "startFrame": 1,
+            "frames": 10,
+            "src": "light"
+          },
+          "gripHeavy": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 8,
+            "startFrame": 1,
+            "frames": 18,
+            "src": "heavy"
+          },
+          "aimIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "aimWalk": {
+            "fps": 24,
+            "loop": true,
+            "frames": 8,
+            "src": "walk"
+          },
+          "aimShoot": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "startFrame": 1,
+            "frames": 10,
+            "src": "light"
+          },
+          "aimCharge": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 8,
+            "startFrame": 1,
+            "frames": 18,
+            "src": "heavy"
+          },
+          "itemHold": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "itemThrow": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 8,
+            "src": "throw"
+          },
+          "itemThrowUp": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 8,
+            "src": "throw"
+          },
+          "itemEat": {
+            "fps": 12,
+            "loop": false,
+            "frames": 24,
+            "src": "taunt"
+          },
+          "carryIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "carryWalk": {
+            "fps": 24,
+            "loop": true,
+            "frames": 8,
+            "src": "walk"
+          },
+          "carryToss": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 8,
+            "src": "throw"
+          },
+          "rideIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "rideDash": {
+            "fps": 24,
+            "loop": true,
+            "frames": 8,
+            "src": "dash"
+          },
+          "rideHop": {
+            "fps": 24,
+            "loop": false,
+            "frames": 7,
+            "src": "jump"
           }
         }
       },
@@ -17513,6 +18923,125 @@
             "loop": true,
             "frames": 24,
             "src": "ledge"
+          },
+          "gripIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "gripWalk": {
+            "fps": 24,
+            "loop": true,
+            "frames": 8,
+            "src": "walk"
+          },
+          "gripLight": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "startFrame": 1,
+            "frames": 10,
+            "src": "light"
+          },
+          "gripHeavy": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 8,
+            "startFrame": 1,
+            "frames": 18,
+            "src": "heavy"
+          },
+          "aimIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "aimWalk": {
+            "fps": 24,
+            "loop": true,
+            "frames": 8,
+            "src": "walk"
+          },
+          "aimShoot": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "startFrame": 1,
+            "frames": 10,
+            "src": "light"
+          },
+          "aimCharge": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 8,
+            "startFrame": 1,
+            "frames": 18,
+            "src": "heavy"
+          },
+          "itemHold": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "itemThrow": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 8,
+            "src": "throw"
+          },
+          "itemThrowUp": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 8,
+            "src": "throw"
+          },
+          "itemEat": {
+            "fps": 12,
+            "loop": false,
+            "frames": 24,
+            "src": "taunt"
+          },
+          "carryIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "carryWalk": {
+            "fps": 24,
+            "loop": true,
+            "frames": 8,
+            "src": "walk"
+          },
+          "carryToss": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 8,
+            "src": "throw"
+          },
+          "rideIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "rideDash": {
+            "fps": 24,
+            "loop": true,
+            "frames": 8,
+            "src": "dash"
+          },
+          "rideHop": {
+            "fps": 24,
+            "loop": false,
+            "frames": 7,
+            "src": "jump"
           }
         }
       },
@@ -17971,6 +19500,125 @@
             "loop": true,
             "frames": 24,
             "src": "ledge"
+          },
+          "gripIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "gripWalk": {
+            "fps": 24,
+            "loop": true,
+            "frames": 10,
+            "src": "walk"
+          },
+          "gripLight": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "startFrame": 1,
+            "frames": 9,
+            "src": "light"
+          },
+          "gripHeavy": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 8,
+            "startFrame": 1,
+            "frames": 18,
+            "src": "heavy"
+          },
+          "aimIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "aimWalk": {
+            "fps": 24,
+            "loop": true,
+            "frames": 10,
+            "src": "walk"
+          },
+          "aimShoot": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "startFrame": 1,
+            "frames": 9,
+            "src": "light"
+          },
+          "aimCharge": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 8,
+            "startFrame": 1,
+            "frames": 18,
+            "src": "heavy"
+          },
+          "itemHold": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "itemThrow": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 8,
+            "src": "throw"
+          },
+          "itemThrowUp": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 8,
+            "src": "throw"
+          },
+          "itemEat": {
+            "fps": 12,
+            "loop": false,
+            "frames": 14,
+            "src": "taunt"
+          },
+          "carryIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "carryWalk": {
+            "fps": 24,
+            "loop": true,
+            "frames": 10,
+            "src": "walk"
+          },
+          "carryToss": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 8,
+            "src": "throw"
+          },
+          "rideIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "rideDash": {
+            "fps": 24,
+            "loop": true,
+            "frames": 8,
+            "src": "dash"
+          },
+          "rideHop": {
+            "fps": 24,
+            "loop": false,
+            "frames": 7,
+            "src": "jump"
           }
         },
         "rig": "assets/characters/nonnagina/rig/godot.json"
@@ -18412,6 +20060,125 @@
             "loop": true,
             "frames": 24,
             "src": "ledge"
+          },
+          "gripIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "gripWalk": {
+            "fps": 24,
+            "loop": true,
+            "frames": 10,
+            "src": "walk"
+          },
+          "gripLight": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "activeEnd": 3,
+            "frames": 9,
+            "src": "light"
+          },
+          "gripHeavy": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 7,
+            "activeEnd": 9,
+            "frames": 18,
+            "src": "heavy"
+          },
+          "aimIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "aimWalk": {
+            "fps": 24,
+            "loop": true,
+            "frames": 10,
+            "src": "walk"
+          },
+          "aimShoot": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "activeEnd": 3,
+            "frames": 9,
+            "src": "light"
+          },
+          "aimCharge": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 7,
+            "activeEnd": 9,
+            "frames": 18,
+            "src": "heavy"
+          },
+          "itemHold": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "itemThrow": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 8,
+            "src": "throw"
+          },
+          "itemThrowUp": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 8,
+            "src": "throw"
+          },
+          "itemEat": {
+            "fps": 12,
+            "loop": false,
+            "frames": 24,
+            "src": "taunt"
+          },
+          "carryIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "carryWalk": {
+            "fps": 24,
+            "loop": true,
+            "frames": 10,
+            "src": "walk"
+          },
+          "carryToss": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 8,
+            "src": "throw"
+          },
+          "rideIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "rideDash": {
+            "fps": 24,
+            "loop": true,
+            "frames": 8,
+            "src": "dash"
+          },
+          "rideHop": {
+            "fps": 24,
+            "loop": false,
+            "frames": 7,
+            "src": "jump"
           }
         }
       },
