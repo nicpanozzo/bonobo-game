@@ -655,12 +655,12 @@ AVOID_MAGENTA = f" The magenta {{thing}} never changes shape, color or size, nev
 # Le clip, una per presa: (codice, presa, slug, titolo, categorie, mosse [(stato, attacco?, testo, cosa fa)], stato fermo)
 CLIP_OGGETTI = [
     ("O1", "bastone", "impugnatura", "Impugnatura", "impugnatura", [
-        ("gripWalk", False, "he marches on the spot like on a treadmill, holding the magenta stick in the same way", "cammina con l'arma"),
+        ("gripWalk", False, "he marches on the spot, without moving forward, holding the magenta stick in the same way", "cammina con l'arma"),
         ("gripLight", True, "one quick forward thrust with the magenta stick, the tip jabbing straight forward at chest height, then pulled straight back", "colpo leggero"),
         ("gripHeavy", True, "he raises the magenta stick over his head with both hands for half a second, then smashes it down in front of him in one powerful blow, and returns the stick to the hand nearer to the viewer", "colpo forte"),
     ], "gripIdle"),
     ("O2", "mira", "sparo", "Sparo", "sparo", [
-        ("aimWalk", False, "he marches on the spot like on a treadmill, keeping the magenta block pointed forward", "cammina mirando"),
+        ("aimWalk", False, "he marches on the spot, without moving forward, keeping the magenta block pointed forward", "cammina mirando"),
         ("aimShoot", True, "he fires two quick shots: each time his hand kicks up a little with the recoil and comes straight back, the block always pointing forward", "spara"),
         ("aimCharge", True, "he braces his legs and grips the magenta block with both hands, trembling with effort for one second, then a big recoil pushes him half a step back, and he steps forward again", "carica e getto"),
     ], "aimIdle"),
@@ -670,7 +670,7 @@ CLIP_OGGETTI = [
         ("itemEat", False, "he brings the magenta ball to his mouth, takes two big greedy bites and chews with his cheeks puffed, pleased; the ball keeps exactly its shape", "mangia o beve"),
     ], "itemHold"),
     ("O4", "peso", "peso", "Peso", "peso", [
-        ("carryWalk", False, "he trudges on the spot like on a treadmill under the heavy magenta cube, wobbling a little, the cube always above his head", "cammina col peso"),
+        ("carryWalk", False, "he trudges on the spot, without moving forward, under the heavy magenta cube, wobbling a little, the cube always above his head", "cammina col peso"),
         ("carryToss", True, "he leans back, then heaves the magenta cube forward and down with both arms as if hurling it, arms ending stretched forward, but the cube never leaves his hands; then he lifts it back above his head", "scaglia il peso"),
     ], "carryIdle"),
     ("O5", "sella", "cavalcatura", "Cavalcatura", "cavalcatura", [
@@ -721,6 +721,8 @@ def oggetti_clips(cid):
         where = "the board under his boots" if presa == "sella" else ("his hands" if presa == "peso" else "his hand")
         p = prompt(cid, action, c=c).replace(c["character"], c["character"] + f"\n\nOBJECT: {PRESE[presa][1]}, exactly as in the reference image. {PRESE[presa][2][0].upper() + PRESE[presa][2][1:]} in the reference image.", 1)
         p = p.replace(", no props.", ", no props other than the magenta " + thing + ".")
+        if presa == "sella":  # la tavola sotto i piedi è proprio il segnaposto
+            p = p.replace("a floor or any object under his feet", "a floor or any object under his feet other than the magenta board")
         p += AVOID_MAGENTA.format(thing=thing, where=where)
         start = f"{REF}/partenze/{cid}_{presa}.png"
         out.append((f"{code}-{oc}", slug, title, "Frames to video", start, start, p, table))
