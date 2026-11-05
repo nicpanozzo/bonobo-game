@@ -37,6 +37,13 @@ export const OPTIONAL_ANIMATION_NAMES = [
   "jumpSquat", // preparazione al salto (#384 A3): senza disegno, la posa dell'atterraggio
   "anchorHang", // appeso all'ancora di Capt. OrsoBlu (#547): senza disegno, la posa appesa al bordo
   "anchorClimb", // arrampicata sulla catena: senza disegno, la posa appesa all'ancora
+  // Pose con gli oggetti, una presa per categoria (docs/clip-flow/pose-oggetti.md): si usano solo se disegnate,
+  // e l'oggetto si disegna sul punto della presa di mani.json. Impugnatura, sparo, lancio e consumo, peso, cavalcatura
+  "gripIdle", "gripWalk", "gripLight", "gripHeavy",
+  "aimIdle", "aimWalk", "aimShoot", "aimCharge",
+  "itemHold", "itemThrow", "itemThrowUp", "itemEat",
+  "carryIdle", "carryWalk", "carryToss",
+  "rideIdle", "rideDash", "rideHop",
 ] as const;
 export type OptionalAnimationName = (typeof OPTIONAL_ANIMATION_NAMES)[number];
 export type SpriteState = AnimationName | OptionalAnimationName;
@@ -72,6 +79,24 @@ export const ANIMATION_FALLBACK: Record<OptionalAnimationName, SpriteState> = {
   jumpSquat: "land", // e chi non ha nemmeno quella resta fermo (idle)
   anchorHang: "ledge",
   anchorClimb: "anchorHang",
+  gripIdle: "idle",
+  gripWalk: "walk",
+  gripLight: "light",
+  gripHeavy: "heavy",
+  aimIdle: "idle",
+  aimWalk: "walk",
+  aimShoot: "light",
+  aimCharge: "heavy",
+  itemHold: "idle",
+  itemThrow: "throw",
+  itemThrowUp: "itemThrow",
+  itemEat: "taunt",
+  carryIdle: "idle",
+  carryWalk: "walk",
+  carryToss: "throw",
+  rideIdle: "idle",
+  rideDash: "dash",
+  rideHop: "jump",
 };
 
 export interface SpriteAnimation {
@@ -136,6 +161,9 @@ export interface SpriteFolderSpec {
   rig?: string;
   // La scia dei colpi è già disegnata nei fotogrammi (#506): il gioco non ci aggiunge la sua mezzaluna (#389)
   drawnSmear?: boolean;
+  // Il punto della presa degli oggetti (docs/clip-flow/pose-oggetti.md): lo scrive export:godot da <dir>/mani.json,
+  // per stato e per fotogramma [x, y, gradi, lunghezza] dai piedi, o null dove il segnaposto non si vedeva
+  hands?: Record<string, ([number, number, number, number] | null)[]>;
   animations: Record<AnimationName, SpriteStateSpec> & Partial<Record<OptionalAnimationName, SpriteStateSpec>>;
 }
 
