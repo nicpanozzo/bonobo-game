@@ -11878,6 +11878,24 @@
           "boxX": 0,
           "boxY": -82
         },
+        "lightUp": {
+          "range": 54,
+          "height": 48,
+          "boxX": -27,
+          "boxY": -146
+        },
+        "lightDown": {
+          "range": 78,
+          "height": 24,
+          "boxX": 18,
+          "boxY": -24
+        },
+        "heavyDown": {
+          "range": 96,
+          "height": 30,
+          "boxX": 0,
+          "boxY": -30
+        },
         "dashAttack": {
           "range": 75,
           "height": 44,
@@ -12049,20 +12067,18 @@
             "src": "land"
           },
           "lightUp": {
-            "fps": 24,
+            "fps": 30,
             "loop": false,
-            "hitFrame": 7,
-            "startFrame": 5,
-            "frames": 27,
-            "src": "light"
+            "hitFrame": 5,
+            "frames": 25,
+            "src": "lightUp"
           },
           "lightDown": {
-            "fps": 24,
+            "fps": 30,
             "loop": false,
-            "hitFrame": 7,
-            "startFrame": 5,
+            "hitFrame": 8,
             "frames": 27,
-            "src": "light"
+            "src": "lightDown"
           },
           "lightAir": {
             "fps": 24,
@@ -12080,11 +12096,11 @@
             "src": "heavyUp"
           },
           "heavyDown": {
-            "fps": 24,
+            "fps": 30,
             "loop": false,
-            "hitFrame": 17,
-            "frames": 53,
-            "src": "heavy"
+            "hitFrame": 14,
+            "frames": 36,
+            "src": "heavyDown"
           },
           "heavyAir": {
             "fps": 24,

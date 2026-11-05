@@ -557,6 +557,9 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     attacks: {
       light: { range: 67, height: 30, boxX: 1, boxY: -75 },
       heavy: { range: 78, height: 44, boxX: 0, boxY: -82 },
+      lightUp: { range: 54, height: 48, boxX: -27, boxY: -146 }, // OB-B3
+      lightDown: { range: 78, height: 24, boxX: 18, boxY: -24 },
+      heavyDown: { range: 96, height: 30, boxX: 0, boxY: -30 },
       dashAttack: { range: 75, height: 44, boxX: 2, boxY: -82 },
     },
     // Tempesta! (#547, scheda di Nicola del 3/11/2026): l'arena rolla, tutti scivolano tranne lui al timone che insulta.
@@ -622,6 +625,10 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         specialNeutral: { fps: 24, loop: false, hitFrame: 8 }, // ancora avanti e strattone
         anchorHang: { fps: 18, loop: true }, // appeso all'ancora che dondola (#547)
         anchorClimb: { fps: 24, loop: true }, // si tira su lungo la catena
+        // OB-B3 (5/11/2026): tolti i fotogrammi in cui il braccio restava fermo, per non allungare i colpi
+        lightUp: { fps: 30, loop: false, hitFrame: 5 }, // pugno in alto guardando su
+        lightDown: { fps: 30, loop: false, hitFrame: 8 }, // spazzata bassa con la mano
+        heavyDown: { fps: 30, loop: false, hitFrame: 14 }, // si carica accucciato e spazza ai due lati
       },
     },
   },
