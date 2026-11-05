@@ -11878,6 +11878,18 @@
           "boxX": 0,
           "boxY": -82
         },
+        "lightAir": {
+          "range": 62,
+          "height": 50,
+          "boxX": 0,
+          "boxY": -92
+        },
+        "heavyAir": {
+          "range": 50,
+          "height": 60,
+          "boxX": 0,
+          "boxY": -94
+        },
         "dashAttack": {
           "range": 75,
           "height": 44,
@@ -12067,10 +12079,11 @@
           "lightAir": {
             "fps": 24,
             "loop": false,
-            "hitFrame": 7,
-            "startFrame": 5,
-            "frames": 27,
-            "src": "light"
+            "hitFrame": 20,
+            "startFrame": 14,
+            "activeEnd": 30,
+            "frames": 41,
+            "src": "lightAir"
           },
           "heavyUp": {
             "fps": 24,
@@ -12089,9 +12102,11 @@
           "heavyAir": {
             "fps": 24,
             "loop": false,
-            "hitFrame": 17,
-            "frames": 53,
-            "src": "heavy"
+            "hitFrame": 23,
+            "startFrame": 4,
+            "activeEnd": 26,
+            "frames": 35,
+            "src": "heavyAir"
           },
           "recovery": {
             "fps": 24,
