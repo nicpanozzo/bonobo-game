@@ -381,6 +381,7 @@
     "countdownMs": 5000,
     "returnAfterMs": 12000,
     "minFighters": 2,
+    "soloDummyMs": 1500,
     "gongCooldownMs": 1500,
     "sendEveryTicks": 2,
     "boardRows": 10,

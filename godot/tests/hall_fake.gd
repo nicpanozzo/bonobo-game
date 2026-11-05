@@ -221,6 +221,13 @@ static func party(t: float, scene := "sala") -> Dictionary:
 		players[4].z = 560
 		players[4].ready = false
 		extra = {"need": null, "botLevel": "difficile"}
+	elif scene == "solo":
+		# da solo nel cerchio dei pronti: la sala ha chiamato un manichino fermo e si parte
+		players = [
+			player("p1", "Nicola", "orsoblu", 0x3498db, -60, 60, {"host": true, "ready": true}),
+			player("bot-sala-1", "Manichino", "bonobot", 0x1abc9c, 260, 330, {"bot": true, "ready": true, "facing": -1}),
+		]
+		extra = {"countdownMs": 3200.0, "need": null, "botLevel": "manichino"}
 	elif scene == "galleria":
 		players[0].x = -1200
 		players[0].z = -110
