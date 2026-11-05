@@ -10,7 +10,7 @@ var _out := "user://screenshots"
 var _game: Dictionary
 var _world: Node2D # nella partita finta: riceve uno snapshot a ogni frame
 var _hud: Control
-const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre", "lobby_regole", "musica", "tetris", "pacman", "bassanese", "bologna_piazza", "bologna_torri", "bologna_crollo", "bologna_zuffa", "oggetti", "oggetti_categorie", "oggetti_armi", "oggetti_pesanti", "prepartita_attesa", "prepartita_vs", "prepartita_conto", "fine_partita", "sala", "sala_conto", "sala_galleria", "sala_via", "sala_basket", "sala_scacchi", "sala_computer", "sala_regole", "sala_solo", "fabbrica", "diluvio", "palco_metal", "palco_reggae", "palco_techno"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
+const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre", "lobby_regole", "musica", "tetris", "pacman", "bassanese", "bologna_piazza", "bologna_torri", "bologna_crollo", "bologna_zuffa", "oggetti", "oggetti_categorie", "oggetti_armi", "oggetti_pesanti", "prepartita_attesa", "prepartita_vs", "prepartita_conto", "fine_partita", "sala", "sala_conto", "sala_galleria", "sala_via", "sala_basket", "sala_scacchi", "sala_computer", "sala_regole", "sala_solo", "fabbrica", "diluvio", "palco_metal", "palco_reggae", "palco_techno", "orsoblu_mosse"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
 var _index := -1
 var _frame := 0
 var _failed := false
@@ -22,6 +22,7 @@ var _items_on := false # la partita finta con tutti gli oggetti in fila a terra
 var _held_on := false # i cinque principali con le armi da impugnare e da sparo (held_view.gd)
 var _gear_on := false # i cinque principali con gli oggetti per categoria (gear_view.gd)
 var _ride_on := false # i cinque principali con pesanti e cavalcature (ride_view.gd)
+var _orso_on := false # cinque Capt. OrsoBlu nelle mosse con le strisce più lunghe (dirada_strisce.py)
 var _bassanese_on := false # la partita finta col Bassanese che si guarda in giro e un telefono a terra
 var _pre: Dictionary = {} # pre-partita: lo stato messo in snapshot.prematch, vuoto nelle altre partite
 var _pre_fighters := 0 # quanti lottatori nella partita finta del pre-partita (0 = tutti)
@@ -256,6 +257,17 @@ func _oggetti_pesanti() -> void:
 	_partita()
 
 
+# Capt. OrsoBlu in cinque mosse le cui strisce erano troppo larghe per la scheda video (e diventavano quadrati):
+# cammina, pesante, scudo, provocazione, speciale laterale
+func _orsoblu_mosse() -> void:
+	_items_on = false
+	_gear_on = false
+	_held_on = false
+	_ride_on = false
+	_orso_on = true
+	_partita()
+
+
 # Pre-partita: l'attesa dei Pronto, la presentazione col VS, il 2 del conto alla rovescia
 func _prepartita_attesa() -> void:
 	_items_on = false
@@ -472,6 +484,18 @@ func _snapshot(frame: int) -> Dictionary:
 				{"type": "gear", "phase": "jet", "kind": "idrante", "id": players[2].id, "x": 700, "y": 520, "r": 300},
 				{"type": "gear", "phase": "zap", "kind": "anguilla", "id": players[3].id, "x": 760, "y": 520},
 			]
+	if _orso_on:
+		snap.projectiles = []
+		var moves := [["walk", 300], ["heavy", 480], ["shield", 660], ["taunt", 840], ["specialSide", 1020]]
+		for i in moves.size():
+			var p: Dictionary = players[i]
+			p.characterId = "orsoblu"
+			p.x = moves[i][1]
+			p.facing = 1
+			p.charge = 0.0
+			p.shielding = moves[i][0] == "shield"
+			p.vx = 200 if moves[i][0] == "walk" else 0
+			p.attack = moves[i][0] if moves[i][0] in ["heavy", "taunt", "specialSide"] else null
 	if _ride_on:
 		snap.projectiles = []
 		var core := [["bradipo", 340], ["marcomunista", 500], ["orsoblu", 680], ["egiainuso", 690], ["elvedeo", 900]]
