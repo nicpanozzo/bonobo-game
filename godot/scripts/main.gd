@@ -36,6 +36,8 @@ var _tunnel_note: Label # chi ospita senza tunnel: perché il link vale solo in 
 var _tunnel_retry: Button
 var _fps_counter: FpsCounter # in alto a destra, da Opzioni → Video (#529)
 var pause_menu: Control
+var hall_rules: Control # la schermata del computer delle regole in sala (#567), null se chiusa
+var _hall_rules_now := {} # le regole e il livello dei bot dell'ultimo snapshot della sala
 var world: Node2D
 var camera := Camera2D.new()
 var post_fx: Node # luce e colori dell'arena (post_fx.gd), sotto l'HUD
@@ -660,9 +662,14 @@ func _on_event(name: String, data: Variant) -> void:
 			_last_snapshot = Time.get_ticks_msec() # il silenzio della rete si misura anche in sala
 			if not _in_hall:
 				_enter_hall()
+			_hall_rules_now = {"rules": data.get("rules", {}) if data.get("rules") is Dictionary else {}, "botLevel": str(data.get("botLevel", ""))}
 			for e in data.get("events", []):
 				hall_view.on_event(e)
 				audio.on_hall_event(e, world.my_id)
+				if str(e.get("type", "")) == "computer" and str(e.get("id", "")) == world.my_id:
+					_open_hall_rules()
+			if is_instance_valid(hall_rules):
+				hall_rules.sync(_hall_rules_now.rules, _hall_rules_now.botLevel)
 			hall_view.on_snapshot(data)
 			hall_hud.on_snapshot(data)
 			audio.on_hall_snapshot(data)
@@ -777,6 +784,8 @@ func _enter_hall() -> void:
 
 # Si esce dalla sala (si parte, o si lascia la stanza): via la sala 3D, tornano arena e HUD
 func _exit_hall() -> void:
+	if is_instance_valid(hall_rules):
+		hall_rules.queue_free() # si parte: la schermata delle regole si chiude da sola
 	if is_instance_valid(hall_view):
 		hall_view.queue_free()
 	if is_instance_valid(hall_hud):
@@ -1049,7 +1058,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		# M accende e spegne la musica, come nel gioco web
 		settings.music_on = not settings.music_on
 		settings.save()
-	elif key.keycode == KEY_ESCAPE and not is_instance_valid(pause_menu):
+	elif key.keycode == KEY_ESCAPE and not is_instance_valid(pause_menu) and not is_instance_valid(hall_rules):
 		_open_pause()
 	elif (key.keycode == KEY_ENTER or key.keycode == KEY_KP_ENTER) and prematch.waiting():
 		prematch.set_ready(not prematch.is_ready()) # pre-partita: Invio dice Pronto (e lo ritira)
@@ -1184,9 +1193,24 @@ func _open_pause() -> void:
 	ui_layer.add_child(pause_menu)
 	pause_menu.setup(settings, room_link(params.room), {"server": params.server, "room": params.room, "stage": "Sala d'attesa" if _in_hall else world.stage.get("name", ""), "rules": hud.rules, "players": _last_players, "me": world.my_id})
 	pause_menu.left.connect(_leave)
+	if _in_hall:
+		pause_menu.add_rules_button(func(): _open_hall_rules())
 	pause_menu.team_chosen.connect(func(team: int):
 		params.team = team # anche la prossima volta si entra in questa squadra
 		socket.emit("team", {"team": team}))
+
+
+# Il computer della sala (#567): regole della prossima partita e livello dei bot, per tutti quelli in sala
+func _open_hall_rules() -> void:
+	if is_instance_valid(hall_rules) or not _in_hall:
+		return
+	if is_instance_valid(pause_menu):
+		pause_menu.queue_free()
+	hall_rules = preload("res://scripts/hall_rules_panel.gd").new()
+	hall_rules.theme = UI.theme()
+	ui_layer.add_child(hall_rules)
+	hall_rules.setup(game, settings, _hall_rules_now.get("rules", {}), str(_hall_rules_now.get("botLevel", "")))
+	hall_rules.changed.connect(func(rules: Dictionary, bot_level: String): socket.emit("hallRules", {"rules": rules, "botLevel": bot_level}))
 
 
 func _send_input() -> void:

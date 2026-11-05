@@ -33,6 +33,7 @@ const ZONES := [
 	{"kind": "trampoline", "id": "trampolino-destra", "x": 620, "z": 250, "r": 110, "label": "Trampolino"},
 	{"kind": "botAdd", "id": "bot-chiama", "x": -720, "z": 650, "r": 90, "label": "Chiama un bot"},
 	{"kind": "botRemove", "id": "bot-via", "x": -480, "z": 650, "r": 90, "label": "Manda via un bot"},
+	{"kind": "computer", "id": "computer", "x": 600, "z": 650, "r": 90, "label": "Regole della partita"},
 	{"kind": "gong", "id": "gong", "x": 1250, "z": -720, "r": 90, "label": "Gong"},
 	{"kind": "throne", "id": "trono", "x": -1250, "z": -720, "r": 80, "label": "Trono del campione"},
 	{"kind": "court", "id": "campo", "x": 2100, "z": 0, "r": 600, "label": "Campo da basket"},
@@ -208,6 +209,18 @@ static func party(t: float, scene := "sala") -> Dictionary:
 		find(list, "chess-b-pawn-d").x = CHESS_X - 40
 		find(list, "chess-b-pawn-d").z = -40
 		extra = {"props": list, "need": null}
+	elif scene == "computer":
+		# al computer delle regole (#567): io davanti allo schermo, due amici che guardano
+		players[0].x = 520
+		players[0].z = 720
+		players[0].facing = 1
+		players[2].x = 760
+		players[2].z = 760
+		players[2].moving = false
+		players[4].x = 380
+		players[4].z = 560
+		players[4].ready = false
+		extra = {"need": null, "botLevel": "difficile"}
 	elif scene == "galleria":
 		players[0].x = -1200
 		players[0].z = -110
