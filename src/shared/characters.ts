@@ -662,6 +662,14 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         // OB-B4 (5/11/2026): i colpi in aria. La stella a braccia e gambe aperte e la martellata a due pugni
         lightAir: { fps: 24, loop: false, hitFrame: 20, startFrame: 14, activeEnd: 30 },
         heavyAir: { fps: 24, loop: false, hitFrame: 23, startFrame: 4, activeEnd: 26 }, // i pugni scendono da sopra la testa
+        // Pose con gli oggetti (5/11/2026, docs/clip-flow/pose-oggetti.md): OB-O1 impugnatura e OB-O2 sparo, la presa in mani.json
+        gripIdle: { fps: 12, loop: true }, // il bastone tenuto in guardia
+        gripWalk: { fps: 24, loop: true }, // marcia col bastone basso
+        gripLight: { fps: 24, loop: false, hitFrame: 8 }, // affondo in avanti
+        gripHeavy: { fps: 24, loop: false, hitFrame: 25 }, // da sopra la testa giù davanti
+        aimIdle: { fps: 12, loop: true }, // punta l'arma in avanti
+        aimShoot: { fps: 30, loop: false, hitFrame: 7 }, // il rinculo di un colpo
+        aimCharge: { fps: 24, loop: false, hitFrame: 40 }, // stringe a due mani e trema, poi il getto
       },
     },
   },

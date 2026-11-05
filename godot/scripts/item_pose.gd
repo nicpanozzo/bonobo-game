@@ -106,10 +106,11 @@ func pick(name: String, p: Dictionary, anims: Dictionary, items: Array, game: Di
 			elif name in MOVING:
 				want = "gripWalk"
 		"sparo":
-			if jets.has(id) and FighterPose.has_own(anims, "aimCharge") and now - float(jets[id]) < FighterPose.animation_ms(anims.aimCharge):
-				return ["aimCharge", float(jets[id])]
-			if shots.has(id) and FighterPose.has_own(anims, "aimShoot") and now - float(shots[id]) < FighterPose.animation_ms(anims.aimShoot):
-				return ["aimShoot", float(shots[id])]
+			# il colpo (hitFrame) cade nell'istante dello sparo
+			if jets.has(id) and FighterPose.has_own(anims, "aimCharge") and now - float(jets[id]) < _left(anims.aimCharge):
+				return ["aimCharge", float(jets[id]) - _hit_ms(anims.aimCharge)]
+			if shots.has(id) and FighterPose.has_own(anims, "aimShoot") and now - float(shots[id]) < _left(anims.aimShoot):
+				return ["aimShoot", float(shots[id]) - _hit_ms(anims.aimShoot)]
 			if attack == "" and name in STILL:
 				want = "aimIdle"
 			elif attack == "" and name in MOVING:

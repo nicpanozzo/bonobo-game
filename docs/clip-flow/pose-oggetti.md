@@ -15,6 +15,12 @@ Dentro una categoria cambia l'aspetto (scopa o pesce, pistola o sparabolle) ma n
 
 Il magenta perché è il colore più lontano dal verde dello sfondo e da quelli dei personaggi: non si confonde con lo scontorno.
 
+![Capt. OrsoBlu con scopa, pesce, pistola e idrante sul punto della presa](pose-oggetti-orsoblu.jpg)
+
+**Stato (5/11/2026):** OrsoBlu ha `gripIdle`, `gripWalk`, `gripLight`, `gripHeavy` (OB-O1) e `aimIdle`, `aimShoot`,
+`aimCharge` (OB-O2; nella clip non cammina, quindi niente `aimWalk`). OB-O3, OB-O4 e OB-O5 Flow le ha rifiutate la prima volta: da rigenerare.
+Le clip di Flow hanno un bordo nero di 8 pixel per lato: si toglie prima del taglio (`ffmpeg -vf crop=iw-16:ih-16:8:8`).
+
 ## Le cinque prese
 
 Sei categorie, cinque prese: lancio e consumo usano la stessa palla in mano.

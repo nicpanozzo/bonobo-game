@@ -10,7 +10,7 @@ var _out := "user://screenshots"
 var _game: Dictionary
 var _world: Node2D # nella partita finta: riceve uno snapshot a ogni frame
 var _hud: Control
-const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre", "lobby_regole", "musica", "tetris", "pacman", "bassanese", "bologna_piazza", "bologna_torri", "bologna_crollo", "bologna_zuffa", "oggetti", "oggetti_categorie", "oggetti_armi", "oggetti_pesanti", "prepartita_attesa", "prepartita_vs", "prepartita_conto", "fine_partita", "sala", "sala_conto", "sala_galleria", "sala_via", "sala_basket", "sala_scacchi", "sala_computer", "sala_regole", "fabbrica", "diluvio", "palco_metal", "palco_reggae", "palco_techno"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
+const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre", "lobby_regole", "musica", "tetris", "pacman", "bassanese", "bologna_piazza", "bologna_torri", "bologna_crollo", "bologna_zuffa", "oggetti", "oggetti_categorie", "oggetti_armi", "oggetti_pesanti", "oggetti_orsoblu", "prepartita_attesa", "prepartita_vs", "prepartita_conto", "fine_partita", "sala", "sala_conto", "sala_galleria", "sala_via", "sala_basket", "sala_scacchi", "sala_computer", "sala_regole", "fabbrica", "diluvio", "palco_metal", "palco_reggae", "palco_techno"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
 var _index := -1
 var _frame := 0
 var _failed := false
@@ -20,6 +20,7 @@ var _tetris_on := false # la partita finta con uno che gioca a Tetris (#427)
 var _pacman_on := false # la partita finta con un Pac-Man e i fantasmini (#427)
 var _items_on := false # la partita finta con tutti gli oggetti in fila a terra
 var _held_on := false # i cinque principali con le armi da impugnare e da sparo (held_view.gd)
+var _orso_on := false # Capt. OrsoBlu nelle pose con gli oggetti (item_pose.gd, docs/clip-flow/pose-oggetti.md)
 var _gear_on := false # i cinque principali con gli oggetti per categoria (gear_view.gd)
 var _ride_on := false # i cinque principali con pesanti e cavalcature (ride_view.gd)
 var _bassanese_on := false # la partita finta col Bassanese che si guarda in giro e un telefono a terra
@@ -247,6 +248,17 @@ func _oggetti_armi() -> void:
 	_partita()
 
 
+# Le pose con gli oggetti (docs/clip-flow/pose-oggetti.md): cinque Capt. OrsoBlu, la scopa in guardia e nel colpo
+# forte, il pesce nell'affondo, la pistola puntata e l'idrante verso sinistra; l'oggetto vero sta sulla presa
+func _oggetti_orsoblu() -> void:
+	_items_on = false
+	_gear_on = false
+	_held_on = false
+	_ride_on = false
+	_partita()
+	_orso_on = true # dopo _partita, che lo rimette a false per le altre foto
+
+
 # Pesanti e cavalcature: Bradipo con la cassa sopra la testa, Marcomunista in monopattino, OrsoBlu col carrello con
 # Egiainuso dentro, Elvedeo sul monopattino a razzo; a terra la lavatrice in centrifuga, la cassa d'oro e una cassa rotta
 func _oggetti_pesanti() -> void:
@@ -307,6 +319,7 @@ func _fine_partita() -> void:
 
 
 func _partita() -> void:
+	_orso_on = false
 	var world: Node2D = load("res://scripts/world_view.gd").new()
 	root.add_child(world)
 	world.setup(_game)
@@ -450,7 +463,7 @@ func _snapshot(frame: int) -> Dictionary:
 			if core[i][2] != "":
 				p.powerup = core[i][2]
 				p.powerupMs = 1500
-		players[0].attack = "light1" # Bradipo colpisce con la scopa
+		players[0].attack = "light" # Bradipo colpisce con la scopa
 		players[0].attackActive = true
 		players[1].y = 380 # Marcomunista plana con l'ombrellone
 		players[1].onGround = false
@@ -472,6 +485,22 @@ func _snapshot(frame: int) -> Dictionary:
 				{"type": "gear", "phase": "jet", "kind": "idrante", "id": players[2].id, "x": 700, "y": 520, "r": 300},
 				{"type": "gear", "phase": "zap", "kind": "anguilla", "id": players[3].id, "x": 760, "y": 520},
 			]
+	if _orso_on:
+		snap.projectiles = []
+		var poses := [[360, 1, null, "scopa"], [540, 1, "heavy", "scopa"], [720, 1, "light", "pesce"], [880, 1, null, "pistola"], [1040, -1, null, "idrante"]]
+		snap.items = []
+		for i in poses.size():
+			var p: Dictionary = players[i]
+			p.characterId = "orsoblu"
+			p.x = poses[i][0]
+			p.facing = poses[i][1]
+			p.attack = poses[i][2]
+			p.attackActive = false
+			p.percent = 0
+			p.shielding = false
+			p.charge = 0.0
+			p.vx = 0
+			snap.items.append({"id": 70 + i, "kind": poses[i][3], "x": 0, "y": 0, "vx": 0, "vy": 0, "heldBy": p.id, "thrown": false})
 	if _ride_on:
 		snap.projectiles = []
 		var core := [["bradipo", 340], ["marcomunista", 500], ["orsoblu", 680], ["egiainuso", 690], ["elvedeo", 900]]

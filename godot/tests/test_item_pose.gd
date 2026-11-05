@@ -47,7 +47,7 @@ func test_eventi() -> void:
 	var gun := [{"id": 1, "kind": "pistola", "heldBy": "a"}]
 	pose.on_event({"type": "gear", "phase": "shot", "id": "a"}, 100.0)
 	var r: Array = pose.pick("idle", _p(), anims, gun, GAME, 200.0)
-	runner.check(r[0] == "aimShoot" and r[1] == 100.0, "appena sparato: la posa dello sparo, dallo sparo (%s)" % [r])
+	runner.check(r[0] == "aimShoot" and is_equal_approx(float(r[1]), 100.0 - 200.0), "appena sparato: la posa dello sparo, col colpo nell'istante dello sparo (%s)" % [r])
 	runner.check(pose.pick("idle", _p(), anims, gun, GAME, 2000.0)[0] == "aimIdle", "poi torna a mirare")
 	pose.on_event({"type": "itemThrow", "id": "a", "itemId": 7}, 3000.0)
 	var flying := [{"id": 7, "kind": "ciabatta", "heldBy": null, "vx": 0.0, "vy": -500.0}]

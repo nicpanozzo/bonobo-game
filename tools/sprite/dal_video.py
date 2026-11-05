@@ -402,6 +402,10 @@ def main():
     plan, notes = assign(found, expected, len(masks))
     plan = {**fermi, **plan}
     for s, ab in over.items():
+        if ab is None:  # null: la clip non ha questo stato (OB-O2 non cammina), non si scrive
+            plan.pop(s, None)
+            notes.append(f"{s}: saltato (null in flow_tagli.json)")
+            continue
         plan[s] = ab
         notes.append(f"{s}: fotogrammi da flow_tagli.json")
 
