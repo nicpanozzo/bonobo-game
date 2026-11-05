@@ -1006,7 +1006,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       scale: 0.5, // alto come le pose del foglio
       drawnSmear: true, // gli archi rosa dei colpi sono nei fotogrammi
       animations: {
-        idle: { fps: 12, loop: true }, // OB-B1: il respiro
+        idle: { fps: 8, loop: true },
         walk: { fps: 14, loop: true },
         dash: { fps: 14, loop: true },
         jump: { fps: 18, loop: false },
@@ -1131,7 +1131,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       footY: 222,
       scale: 0.5, // alto come le pose del foglio
       animations: {
-        idle: { fps: 12, loop: true }, // OB-B1: il respiro // respira, le braccia si aprono appena
+        idle: { fps: 8, loop: true }, // respira, le braccia si aprono appena
         walk: { fps: 6, loop: true }, // passo e corsa del foglio, alternati
         dash: { fps: 1, loop: false },
         jump: { fps: 24, loop: false },
