@@ -2487,6 +2487,16 @@ func _draw_groove(p: Dictionary, height: float) -> void:
 	draw_arc(Vector2(p.x, p.y - 4), height * (0.32 + 0.08 * k), 0, TAU, 32, Color(1.0, 0.85, 0.29, 0.75 * k), 3.0)
 
 
+# Scivolone di Egiainuso (#557): chi è bagnato dallo Sputo gocciola, gocce verdine che cadono dal corpo
+func _draw_wet(p: Dictionary, now: float, height: float) -> void:
+	var offset := float(hash(p.id) % 1000) / 1000.0
+	for k in 6:
+		var life := fmod(now / 700.0 + float(k) / 6.0 + offset, 1.0)
+		var x := float(p.x) + (float(k) / 5.0 - 0.5) * height * 0.45
+		var pos := Vector2(x, float(p.y) - height * (0.8 - 0.7 * life))
+		draw_circle(pos, 3.0, Color(0.62, 0.86, 0.55, 0.85 * (1.0 - life)))
+
+
 # Il fumo: sbuffi grigio-verdi che salgono lenti dalla testa e si allargano, sempre gli stessi per lo stesso istante
 # level (#302): quanto si è fatti col bong; il fumo diventa più fitto, grande e mosso. 0 = il fiore, fumo leggero
 func _draw_power_smoke(p: Dictionary, now: float, height: float, level: float = 0.0) -> void:
@@ -3078,6 +3088,8 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 		_draw_supreme_ready(p, now, fh)
 	if character.get("groove", false):
 		_draw_groove(p, fh) # il battito del Groove di Bradipo (#557)
+	if p.get("wet", false):
+		_draw_wet(p, now, fh) # bagnato dallo Sputo di Egiainuso (#557)
 	var charge := float(p.get("charge", 0.0))
 	if charge > 0.0:
 		_draw_charge(Vector2(p.x, p.y - fh / 2), charge, now)

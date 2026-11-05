@@ -161,6 +161,8 @@ Prompt in [`base.md`](base.md). Immagine = `riferimenti/personaggi/<id>.png`.
 | LE-B2 | Lendmar: Colpi | nel gioco | 1 | Veo 3.1 Lite | 10 | | Veo ha fatto un pugno solo invece di due colpi: leggero e pesante sono lo stesso pugno; poi cade a terra (non usato) |
 | OB-IMG | Capt. OrsoBlu: immagine di partenza | fatta | | Nano Banana | 0 | | |
 | OB-B1 | Capt. OrsoBlu: Movimento | nel gioco | 2 | Veo 3.1 Lite | 10 | | progetto Flow "nov 03 - 23:37"; il primo tentativo è fallito ("fornitori di contenuti di terze parti", rimborsato). Presi idle, walk, jumpSquat e land; jump e fall restano di OB-03 perché in cima al salto la testa esce dal bordo |
+| OB-B3 | Capt. OrsoBlu: colpi in alto e in basso | nel gioco | 1 | Veo 3.1 Lite | 10 | | lightUp, lightDown, heavyDown; tolti a mano i fotogrammi col braccio fermo, che allungavano i colpi |
+| OB-B4 | Capt. OrsoBlu: colpi in aria | nel gioco | 3 | Veo 3.1 Lite | 10 | | due tentativi falliti ("fornitori di contenuti di terze parti", rimborsati); lightAir e heavyAir, PR #570 |
 | OB-B2 | Capt. OrsoBlu: Colpi | nel gioco | 1 | Veo 3.1 Lite | 10 | | progetto Flow "nov 03 - 23:37"; il pesante è un pugno lungo tenuto teso (non la spallata del prompt), tagliato in flow_tagli.json |
 | MA-IMG | Marcomunista: immagine di partenza | fatta | | Nano Banana | 0 | | |
 | MA-B1 | Marcomunista: Movimento | da fare | | Veo 3.1 Lite | | | |

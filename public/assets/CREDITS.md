@@ -2,7 +2,7 @@
 
 | File | Autore | Fonte | Licenza |
 |---|---|---|---|
-| `characters/orsoblu/*.png` (Capt. OrsoBlu v2, il capitano con la barchetta in spalla) | animazioni dalle clip OB-01, OB-02, OB-03, OB-07 (3/11) , OB-B2 (light, heavy, hit; 4/11) e OB-B1 (idle, walk, jumpSquat, land; 4/11) generate su Google Flow da Claude Code per Nicola il 2026-11-03 (personaggio di @MauroGrecchi, #37; disegno nuovo scelto con Nicola), scontornate con `tools/sprite/dal_video.py` | video di Nicola (fuori dalla repo) | uso nel gioco concesso da Nicola |
+| `characters/orsoblu/*.png` (Capt. OrsoBlu v2, il capitano con la barchetta in spalla) | animazioni dalle clip OB-01, OB-02, OB-03, OB-07 (3/11) , OB-B2 (light, heavy, hit; 4/11) e OB-B1 (idle, walk, jumpSquat, land; 4/11), OB-B3 (lightUp, lightDown, heavyDown; 5/11) generate su Google Flow da Claude Code per Nicola il 2026-11-03 (personaggio di @MauroGrecchi, #37; disegno nuovo scelto con Nicola), scontornate con `tools/sprite/dal_video.py` | video di Nicola (fuori dalla repo) | uso nel gioco concesso da Nicola |
 | `characters/bonobot/*.png` (sprite e ritratto, dallo scheletro di `rig/`, E7 passo 4) | Claude per Riccardo (GiovannifRana); fermo, schiaffo e martello dalla prova #198 | fatto da noi | CC0 |
 | `characters/bonobot/omar/` (orsogufo e gnomo della suprema, #102) | Claude per Riccardo (GiovannifRana), provvisori disegnati col codice; orsogufo: fan art ispirata a Baldur's Gate 3, nessun file del gioco | fatto da noi | CC0 |
 | `characters/bonobot/rig/` (pezzi dello scheletro nuovo, #195) | Claude per Riccardo (GiovannifRana), provvisori disegnati col codice | fatto da noi | CC0 |

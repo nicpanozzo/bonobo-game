@@ -83,6 +83,7 @@ export interface PlayerState {
   predict?: PredictionState; // E17: solo per chi manda InputState.seq
   companion?: CompanionState; // il compagno che lo segue (#369, il beagle di Lampione); manca se non ne ha
   anchor?: AnchorState; // l'ancora di Capt. OrsoBlu (#547): in volo, piantata o di ritorno; manca se è in mano
+  wet?: boolean; // bagnato dallo Sputo di Egiainuso (Scivolone, #557): si afferra da più lontano; manca se asciutto
   station?: number; // indice della postazione che sta usando (#433, stage.stations): fermo, i tasti guidano lei; manca se nessuna
 }
 
