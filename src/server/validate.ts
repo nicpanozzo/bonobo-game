@@ -39,6 +39,9 @@ export function parseJoin(raw: unknown): JoinData | null {
       if (key === "__proto__") continue;
       if (typeof value === "number" || typeof value === "boolean" || typeof value === "string") {
         (rules as Record<string, unknown>)[key] = typeof value === "string" ? value.slice(0, NET_LIMITS.maxStringLength) : value;
+      } else if (key === "itemKinds" && Array.isArray(value)) {
+        // Quali oggetti cadono: l'unica lista ammessa, solo stringhe corte (sanitizeRules tiene quelli che esistono)
+        rules.itemKinds = value.filter((k): k is string => typeof k === "string").slice(0, 64).map((k) => k.slice(0, NET_LIMITS.maxStringLength));
       }
     }
   }

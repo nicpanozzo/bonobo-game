@@ -101,6 +101,8 @@ var _theme: RefCounted = preload("res://scripts/theme_stage.gd").new() # le aren
 var _arcade: RefCounted = preload("res://scripts/arcade_view.gd").new() # pezzi e blocchi del power-up Tetris (#427)
 var _bassanese: RefCounted = preload("res://scripts/bassanese_view.gd").new() # Chiama Bassanese
 const BassaneseView := preload("res://scripts/bassanese_view.gd")
+const GearView := preload("res://scripts/gear_view.gd") # oggetti per categoria (physics/gear.ts)
+var _gear: RefCounted = GearView.new()
 var _stations: RefCounted = preload("res://scripts/station_view.gd").new() # postazioni e palle di mortadella (#433)
 var _ambient := Color.WHITE # luce del momento del giorno (#267): moltiplica strati e decorazioni, un po' il palco
 var _textures := {} # id personaggio -> Texture2D dello spritesheet (nel formato cartella, quella di idle)
@@ -826,6 +828,11 @@ func on_event(e: Dictionary) -> void:
 				else:
 					_sparks.append({"x": e.x, "y": e.y, "age": 0.0, "size": 40.0, "color": Color("f2a7b0")})
 				_shake = maxf(_shake, 5.0)
+		"gear":
+			# Oggetti per categoria (gear.ts): scoppi del petardo e scosse del gigante; la miccia e l'aggancio fanno una scintilla
+			_shake = maxf(_shake, _gear.on_event(e))
+			if e.phase in ["fuse", "stick"]:
+				_sparks.append({"x": e.x, "y": float(e.y) - 10.0, "age": 0.0, "size": 14.0, "color": Color(1, 0.75, 0.3)})
 		"hazard":
 			# Trappola (#14): scintilla arancione e scossa come un colpo forte
 			_sparks.append({"x": e.x, "y": e.y, "age": 0.0, "size": 30.0, "color": Color(1, 0.55, 0.15)})
@@ -1524,6 +1531,7 @@ func _process(delta: float) -> void:
 	if not _ko_specials.is_empty():
 		_age_ko_specials()
 	_sparks = _aged(_sparks, dt_ms, fx.hitSparkMs)
+	_gear.step(dt_ms)
 	_dust = _aged(_dust, dt_ms, fx.dustMs)
 	_beams = _aged(_beams, dt_ms, fx.koBeamMs)
 	for s in _shards:
@@ -1709,6 +1717,7 @@ func _draw() -> void:
 		var dc := Color(0.9, 0.85, 0.75, 0.8 * (1.0 - kd))
 		draw_circle(Vector2(d.x + d.dx * (8 + 34 * kd), d.y - 4 - 10 * kd * absf(d.dx)), 4 + 7 * kd, dc)
 
+	_gear.draw(self) # scoppi dei petardi e scosse (gear_view.gd)
 	for s in _sparks:
 		var k: float = s.age / game.effects.hitSparkMs
 		var c: Color = s.color
@@ -2083,6 +2092,8 @@ func _draw_item(kind: String, base: Vector2, spin: float, load: float = -1.0, al
 		_draw_mushroom_bag(w, h)
 	elif kind == "fungoTeemo":
 		_draw_teemo(w, h, alpha)
+	elif GearView.draws(kind):
+		GearView.draw_item(self, kind, w, h, load, now, _ink, _light, GearView.is_rare(game, kind) and not glow)
 	else:
 		draw_rect(Rect2(-w / 2, -h / 2, w, h), _lit(_color(spec.color)))
 		draw_rect(Rect2(-w / 2, -h / 2, w, h), _ink, false, 2.0 * _ink_width)
@@ -3072,7 +3083,7 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 		_draw_charge(Vector2(p.x, p.y - fh / 2), charge, now)
 	if int(p.team) > 0:
 		_draw_team_ring(p, fw)
-	var react := _reaction_transform(p, now) * _motion_transform(p, now)
+	var react := GearView.size_transform(p, game) * _reaction_transform(p, now) * _motion_transform(p, now) # giganti e mini dal brownie
 	if _textures.has(character.id):
 		_draw_sprite(p, character, now, react)
 	else:
@@ -3108,6 +3119,8 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 			var c := Color.from_hsv(fmod(now / 2000.0 + k / 3.0, 1.0), 0.7, 1.0)
 			draw_circle(Vector2(p.x + cos(a) * 22.0, p.y - fh - 14.0 + sin(a) * 6.0), 5.0, c)
 
+	if not away:
+		GearView.draw_powerup(self, p, now, fw, fh, _font, game) # caffè, moka, brownie, sonno, gigante della nonna
 	if p.get("anchor") is Dictionary:
 		_draw_anchor(p) # l'ancora-ragnatela di Capt. OrsoBlu (#547)
 
