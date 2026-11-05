@@ -6,6 +6,7 @@ import type { AttackKind, SpecialKind } from "../types";
 import { biteBox, biting, chooseBiter, hitPets } from "./companion";
 import { bodyScale, consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
 import { gearAttackSpeed, gearDamageMult, gearKnockbackMult } from "./gear";
+import { meleeDamage, meleeHit, meleeReach, popBubble } from "./held";
 import { clearStun, hitShield } from "./shield";
 import { counterHit, isCountering, tryStartSpecial } from "./specials";
 import { chasePigeon } from "./projectiles";
@@ -161,7 +162,7 @@ export function attackBox(f: Fighter): Box {
   const o = hitOrigin(f); // la suprema di Bonobot colpisce sulla liana, non dove sta lui (#102)
   const s = bodyScale(f); // giganti e mini dal brownie (gear.ts): colpi più grandi o più piccoli
   const front = (spec.boxX ?? FIGHTER.width / 2) * s;
-  const range = spec.range * s;
+  const range = (spec.range + meleeReach(f)) * s; // più lunga con un'arma in mano (held.ts)
   const height = spec.height * s;
   const y = o.y + (spec.boxY ?? -FIGHTER.height * 0.7) * s;
   if (spec.bothSides) return { x: o.x - front - range, y, w: 2 * (front + range), h: height }; // davanti e dietro
@@ -221,6 +222,7 @@ export function resolveHits(fighters: Fighter[], ctx: PhysicsContext): void {
       }
 
       launch(target, attacker, attacker.attack, Math.round(ix), Math.round(iy), ctx);
+      meleeHit(attacker, target, fighters, ctx); // l'effetto dell'arma in mano: gelo, scossa, ombrellone (held.ts)
       armJab(attacker);
     }
     hitPets(attacker, box, spec.damage, fighters, attacker.alreadyHit, ctx); // anche il beagle di Lampione si colpisce (#369)
@@ -240,7 +242,8 @@ export function onBeat(attacker: Fighter, kind: AttackKind, ctx: PhysicsContext)
 // hit: altri numeri del colpo al posto di quelli di kind (l'aquila dell'Elefante, che ha i suoi)
 export function launch(target: Fighter, attacker: Fighter, kind: AttackKind, x: number, y: number, ctx: PhysicsContext, damage?: number, hit?: Pick<AttackSpec, "damage" | "baseKnockback" | "knockbackGrowth" | "angleDeg">): void {
   const own = hit ? { ...attackSpecFor(attacker, kind), damage: hit.damage, baseKnockback: hit.baseKnockback, knockbackGrowth: hit.knockbackGrowth, angleDeg: hit.angleDeg } : attackSpecFor(attacker, kind);
-  const base = damage === undefined ? own : { ...own, damage };
+  const extra = damage === undefined ? meleeDamage(attacker, kind) : 0; // l'arma in mano (held.ts)
+  const base = damage === undefined ? (extra ? { ...own, damage: own.damage + extra } : own) : { ...own, damage };
   // Potenziati dal fiore (#231) i colpi fanno più danno; il volo cresce già con la percentuale
   const powered = attacker.powerup === "fiore" ? POWERUP.damageMult : attacker.powerup === "micelio" ? MICELIO.damageMult : 1; // il micelio di Dr. Micelium (#358)
   const mult = powered * gearDamageMult(attacker) * (onBeat(attacker, kind, ctx) ? GROOVE.damageMult : 1); // il Groove di Bradipo (#557); giganti e mini (gear.ts)
@@ -277,6 +280,7 @@ export function launch(target: Fighter, attacker: Fighter, kind: AttackKind, x: 
   target.anchor = undefined; // un colpo stacca dall'ancora di OrsoBlu e la riporta in mano (#547)
   target.anchorThrows = 0;
   clearStun(target);
+  popBubble(target, ctx, false); // chi è nella bolla dello sparabolle esce col colpo (held.ts)
   if (kind === "supreme") infect(attacker, target, ctx); // il filo di Kirschner di Dr. Micelium (#358)
   ctx.events.push({
     type: "hit",
