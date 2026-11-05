@@ -13522,8 +13522,9 @@
           "recovery": {
             "fps": 12,
             "loop": false,
-            "frames": 3,
-            "src": "jump"
+            "hitFrame": 3,
+            "frames": 12,
+            "src": "recovery"
           },
           "taunt": {
             "fps": 12,
