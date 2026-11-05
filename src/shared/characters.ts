@@ -820,6 +820,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         specialSide: { fps: 24, loop: false, hitFrame: 3, activeEnd: 9 }, // la carica, poi lo schianto con le stelline
         specialDown: { fps: 24, loop: false, hitFrame: 4, activeEnd: 6 }, // la nuvola dietro
         supreme: { fps: 24, loop: false, hitFrame: 7, activeEnd: 14 }, // la nuvola, l'elefante con l'aquila, la nuvola
+        recovery: { fps: 12, loop: false, hitFrame: 3 }, // EL-06 (5/11/2026): il balzo da stambecco, la capra s'impenna e salta raccolta
       },
     },
     // il corpo che si può colpire: la capra e lui seduto sopra, misurato sul fermo (#243)
