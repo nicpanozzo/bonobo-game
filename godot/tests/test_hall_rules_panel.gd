@@ -9,7 +9,6 @@ const RulesPanel := preload("res://scripts/hall_rules_panel.gd")
 func _panel(rules: Dictionary, bot_level := "semplice") -> Control:
 	var game = JSON.parse_string(FileAccess.get_file_as_string("res://data/game.json"))
 	var p: Control = RulesPanel.new()
-	runner.root.add_child(p)
 	p.setup(game, Settings.new({"master": 0.8, "sfx": 0.7, "music": 0.35}, "user://test_hall_rules.cfg"), rules, bot_level)
 	return p
 

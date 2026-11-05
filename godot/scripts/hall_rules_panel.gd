@@ -101,7 +101,8 @@ func setup(game_data: Dictionary, s: Settings, rules: Dictionary, bot_level: Str
 	actions.add_child(done)
 	box.add_child(actions)
 	sync(rules, bot_level, true)
-	UI.keep_focus(self, _stocks.focus_target())
+	if get_viewport() != null: # nei test fuori dalla scena non c'è viewport (né pad da tenere sul menu)
+		UI.keep_focus(self, _stocks.focus_target())
 
 
 func _row(text: String, control: Control) -> HBoxContainer:
