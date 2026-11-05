@@ -20,6 +20,7 @@
 //   bassanese.ts il Bassanese chiamato col telefono
 //   anchor.ts    l'ancora-ragnatela di Capt. OrsoBlu (#547)
 //   gear.ts      oggetti per categoria: ciabatte, petardi, caffè, brownie
+//   held.ts      oggetti da impugnare e da sparo: scopa, pesce, pistola ad acqua, sparabolle
 
 import { isArcade, playPacman, playTetris, stepArcade } from "./arcade";
 import { hookFighters, onRope, stepHook, swingAnchor, tightenAnchor } from "./anchor";
@@ -34,6 +35,7 @@ import { tickBuffer, type Fighter, type PhysicsContext } from "./fighter";
 import { grabbing, inGrab, resolveGrabs, stepGrabs } from "./grab";
 import { swapTripInput, tickPowerup } from "./items";
 import { fly, quakes } from "./gear";
+import { floatInBubble, glide } from "./held";
 import { holdLedge, remapLedges, tryGrabLedge } from "./ledge";
 import { applyControls, applyGravity, startLanding, stepDrop, stepLag, tickCoyote } from "./movement";
 import { holdShield } from "./shield";
@@ -118,6 +120,12 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
     f.prevInput = f.input;
     return;
   }
+  // Chiusi nella bolla dello sparabolle (held.ts): si sale piano senza tasti, e dall'alto si può finire fuori
+  if (floatInBubble(f, dtMs)) {
+    if (outOfBlastZone(f, ctx)) loseStock(f, ctx);
+    f.prevInput = f.input;
+    return;
+  }
   // Alla postazione (#433) si sta fermi dove si è, e i tasti guidano la bombarda o le munizioni
   if (useStation(f, dtMs, ctx)) {
     if (outOfBlastZone(f, ctx)) loseStock(f, ctx); // una fase nuova può lasciarla fuori dall'arena
@@ -170,6 +178,7 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
   }
   if (!swinging) applyGravity(f, dt, genreGravity(genreAt(ctx.stage, ctx.timeMs ?? 0, ctx.padsMs))); // col reggae del Palco si vola
   fly(f, dt); // la moka a razzo: tenendo il salto si sale (gear.ts)
+  glide(f); // l'ombrellone in mano: tenendo il salto si plana (held.ts)
 
   const prevY = f.y;
   const wasOnGround = f.onGround;

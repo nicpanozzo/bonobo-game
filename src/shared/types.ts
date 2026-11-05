@@ -264,7 +264,10 @@ export type GameEvent =
   // Pesanti e cavalcature (ride.ts): break = la cassa si rompe, spin = la lavatrice parte in centrifuga, hop = salta,
   // charge = id scatta in sella, ram = id viene investito, scoop = id finisce nel carrello, launch = id catapulta chi
   // aveva nel carrello; boom vale anche per il monopattino a razzo che finisce il razzo
-  | { type: "gear"; phase: "fuse" | "stick" | "boom" | "quake" | "break" | "spin" | "hop" | "charge" | "ram" | "scoop" | "launch"; kind: string; id: string; x: number; y: number; r?: number }
+  // Da impugnare e da sparo (held.ts): freeze = id congelato dal pesce, zap = la scossa dell'anguilla arriva a id partendo
+  // da x, y; shot = id spara; jet = il getto dell'idrante da x, y lungo r pixel (negativo = verso sinistra); trap = id chiuso
+  // nella bolla; pop = una bolla o una goccia finisce in x, y; break vale anche per l'arma in mano a id che si rompe o finisce i colpi
+  | { type: "gear"; phase: "fuse" | "stick" | "boom" | "quake" | "break" | "spin" | "hop" | "charge" | "ram" | "scoop" | "launch" | "freeze" | "zap" | "shot" | "jet" | "trap" | "pop"; kind: string; id: string; x: number; y: number; r?: number }
   | { type: "tetris"; phase: "spawn" | "move" | "rotate" | "drop" | "land" | "line"; id: string; x: number; y: number; width?: number } // il pezzo di Tetris di id (#427); line: esplode una riga larga width pixel, x e y al centro
   // Il bong (#302): load = comincia a caricarlo, smoke = soffia la nuvola (centro x,y, verso dir, danno), stun = troppo fatto, crolla
   | { type: "bong"; phase: "load" | "smoke" | "stun"; id: string; x: number; y: number; dir?: 1 | -1; damage?: number }

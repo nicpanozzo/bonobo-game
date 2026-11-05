@@ -1,4 +1,4 @@
-import { FUNGO, GEAR, ITEM_RARITY, PACMAN, POWERUP, RIDE, TETRIS, type ItemRarity } from "./constants";
+import { FUNGO, GEAR, HELD, ITEM_RARITY, PACMAN, POWERUP, RIDE, TETRIS, type ItemRarity } from "./constants";
 
 // Oggetti che cadono nell'arena (#17 passo 3). Caduta, raccolta e lancio sono in
 // src/shared/physics/items.ts, i numeri comuni in ITEM_RULES (constants.ts).
@@ -37,6 +37,9 @@ export interface ItemSpec {
   throwSpec?: { throwSpeed: number; throwLift: number; throwUpSpeed: number; gravityMult: number }; // vola diverso dalla banana
   homing?: boolean; // lanciato insegue l'avversario più vicino (GEAR.ciabattaMamma)
   petardo?: "normale" | "grappolo" | "mini"; // si accende lanciato o posato, si attacca dove tocca e scoppia (GEAR.petardo)
+  melee?: "scopa" | "ombrellone" | "pesce" | "anguilla"; // da impugnare: J fa le mosse normali più lunghe e forti (HELD)
+  gun?: "pistola" | "idrante" | "sparabolle" | "triplo"; // da sparo: J spara (HELD)
+  shot?: "goccia" | "bolla" | "rimbalzina"; // un colpo sparato: vola dritto, non si raccoglie (held.ts)
   crate?: number; // la cassa (physics/ride.ts): rotta lascia tanti oggetti della stanza
   washer?: "normale" | "matta"; // la lavatrice (ride.ts): scagliata va in centrifuga; matta salta addosso agli avversari
   mount?: "monopattino" | "razzo" | "carrello"; // ci si sale sopra (ride.ts, RIDE)
@@ -72,6 +75,18 @@ export const ITEMS: Record<string, ItemSpec> = {
   moka: { id: "moka", name: "Moka a razzo", damage: 0, knockback: 0, width: 22, height: 32, color: 0xb8bcc4, rarity: "raro", category: "consumo", rareOf: "caffe", consume: { powerup: "razzo", ms: GEAR.moka.ms } },
   brownie: { id: "brownie", name: "Brownie spaziale", damage: 0, knockback: 0, width: 24, height: 18, color: 0x5b3a24, rarity: "normale", category: "consumo", consume: { powerup: "brownie", ms: GEAR.brownie.delayMs } },
   brownieNonna: { id: "brownieNonna", name: "Brownie della nonna", damage: 0, knockback: 0, width: 28, height: 20, color: 0x7a4a2a, rarity: "raro", category: "consumo", rareOf: "brownie", consume: { powerup: "colosso", ms: GEAR.brownie.nonnaMs } },
+  // Da impugnare e da sparo (held.ts). TODO community: i nomi
+  scopa: { id: "scopa", name: "Scopa", damage: 8, knockback: 340, width: 12, height: 58, color: 0xc8a050, rarity: "normale", category: "impugnatura", melee: "scopa" },
+  ombrellone: { id: "ombrellone", name: "Ombrellone", damage: 9, knockback: 360, width: 16, height: 60, color: 0xe8483c, rarity: "raro", category: "impugnatura", rareOf: "scopa", melee: "ombrellone" },
+  pesce: { id: "pesce", name: "Pesce surgelato", damage: 7, knockback: 320, width: 40, height: 16, color: 0x8fb8d8, rarity: "normale", category: "impugnatura", melee: "pesce" },
+  anguilla: { id: "anguilla", name: "Anguilla elettrica", damage: 7, knockback: 320, width: 46, height: 14, color: 0x3c8f5a, rarity: "raro", category: "impugnatura", rareOf: "pesce", melee: "anguilla" },
+  pistola: { id: "pistola", name: "Pistola ad acqua", damage: 6, knockback: 300, width: 30, height: 20, color: 0x2fb7e8, rarity: "comune", category: "sparo", gun: "pistola" },
+  idrante: { id: "idrante", name: "Idrante", damage: 9, knockback: 360, width: 26, height: 32, color: 0xd8342c, rarity: "raro", category: "sparo", rareOf: "pistola", gun: "idrante" },
+  sparabolle: { id: "sparabolle", name: "Sparabolle", damage: 5, knockback: 280, width: 30, height: 22, color: 0xf2a6d8, rarity: "normale", category: "sparo", gun: "sparabolle" },
+  sparabolleTriplo: { id: "sparabolleTriplo", name: "Sparabolle triplo", damage: 6, knockback: 300, width: 34, height: 24, color: 0xa66cf0, rarity: "raro", category: "sparo", rareOf: "sparabolle", gun: "triplo" },
+  goccia: { id: "goccia", name: "Goccia", damage: HELD.goccia.damage, knockback: HELD.goccia.knockback, width: 12, height: 12, color: 0x7fd3ff, rarity: "mai", shot: "goccia" },
+  bolla: { id: "bolla", name: "Bolla", damage: 0, knockback: 0, width: 30, height: 30, color: 0xf2a6d8, rarity: "mai", shot: "bolla" },
+  bollaRimbalzina: { id: "bollaRimbalzina", name: "Bolla rimbalzina", damage: 0, knockback: 0, width: 30, height: 30, color: 0xa66cf0, rarity: "mai", shot: "rimbalzina" },
   // Pesanti e da cavalcare (physics/ride.ts, RIDE). TODO community: i nomi
   cassa: { id: "cassa", name: "Cassa", damage: 13, knockback: 440, width: 40, height: 36, color: 0xa86b32, rarity: "normale", category: "peso", throwSpec: RIDE.heavy, crate: 1 },
   cassaOro: { id: "cassaOro", name: "Cassa d'oro", damage: 13, knockback: 440, width: 40, height: 36, color: 0xf2c230, rarity: "raro", category: "peso", rareOf: "cassa", throwSpec: RIDE.heavy, crate: 3 },

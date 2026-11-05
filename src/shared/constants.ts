@@ -1055,6 +1055,39 @@ export const GEAR = {
   },
 };
 
+// Oggetti da impugnare e da sparo (held.ts): J colpisce o spara, K lancia. Le armi da impugnare allungano e rinforzano
+// le mosse normali del personaggio, così vanno con le animazioni che ha già
+export const HELD = {
+  // La scopa: più portata. L'ombrellone (raro): colpi che lanciano in alto, e tenendo il salto in aria si plana
+  scopa: { reach: 46, damage: 4, uses: 12 }, // pixel di portata in più, percentuale in più, colpi a segno prima di rompersi
+  ombrellone: { reach: 40, damage: 5, uses: 12, launchDeg: 80, glideFallSpeed: 140 }, // angolo dei colpi; pixel/s di caduta planando
+  // Il pesce surgelato congela chi prende; l'anguilla (rara) dà una scossa a catena a chi gli sta vicino
+  pesce: { reach: 30, damage: 2, uses: 8, freezeMs: 1300 }, // ms congelati: fermi e colpibili
+  anguilla: { reach: 30, damage: 3, uses: 8, zapRadius: 240, zapDamage: 6, zapStunMs: 700 }, // pixel dal colpito, percentuale e ms storditi della scossa
+  // La pistola ad acqua spara gocce che spingono; l'idrante (raro) tenendo J carica un getto che attraversa l'arena
+  pistola: { ammo: 14, cooldownMs: 160, speed: 1300, lift: 40, flyMs: 600 }, // colpi, ms tra due colpi, pixel/s, ms di volo
+  idrante: {
+    ammo: 3, // getti
+    chargeMs: 700, // ms tenendo J per caricare il getto; lasciando prima esce una goccia
+    length: 900, // pixel di getto davanti
+    height: 34, // pixel di spessore del getto
+    damage: 16,
+    knockback: 620, // pixel/s di lancio di base
+    knockbackGrowth: 7, // pixel/s in più per ogni punto di percentuale
+    angleDeg: 18, // il getto spinge quasi in orizzontale
+  },
+  // Lo sparabolle chiude chi prende in una bolla che sale; quello triplo (raro) spara tre bolle a ventaglio che rimbalzano
+  sparabolle: { ammo: 6, cooldownMs: 450, speed: 380, flyMs: 2200, spreadDeg: 16 }, // ms di volo di una bolla, gradi tra le tre bolle
+  bolla: {
+    trapMs: 1800, // ms chiusi nella bolla
+    riseSpeed: 150, // pixel/s verso l'alto mentre si è dentro: vicino al cielo si può finire fuori
+    popDamage: 5, // percentuale quando la bolla scoppia da sola
+    popVy: 380, // pixel/s verso l'alto allo scoppio
+    bounceVy: 520, // pixel/s verso l'alto quando una bolla rimbalzina tocca terra
+  },
+  goccia: { damage: 3, knockback: 260 }, // la goccia della pistola: poco danno, spinge
+};
+
 // Oggetti pesanti e da cavalcare (physics/ride.ts), come GEAR: due per categoria, ognuno con la sua versione rara
 export const RIDE = {
   // Peso: si porta sopra la testa, si va piano e si salta poco; scagliato vola corto e cade pesante

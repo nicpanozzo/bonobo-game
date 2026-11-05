@@ -16,12 +16,14 @@ const LEAF := Color("6cbf3f")
 # Gli oggetti che sa disegnare
 const KINDS := ["ciabatta", "ciabattaMamma", "petardo", "petardoGrappolo", "petardino", "caffe", "moka", "brownie", "brownieNonna"]
 
+const HeldView := preload("res://scripts/held_view.gd")
+
 var booms: Array = [] # scoppi dei petardi: [{x, y, r, age}]
 var quakes: Array = [] # scosse del gigante della nonna: [{x, y, r, age}]
 
 
 static func draws(kind: String) -> bool:
-	return kind in KINDS
+	return kind in KINDS or HeldView.draws(kind)
 
 
 # Le versioni rare (ItemSpec.rareOf) brillano d'oro dietro, così si riconoscono a colpo d'occhio
@@ -53,6 +55,8 @@ static func draw_item(ci: CanvasItem, kind: String, w: float, h: float, load: fl
 			_moka(ci, w, h, ink, lit, now)
 		"brownie", "brownieNonna":
 			_brownie(ci, w, h, ink, lit, kind == "brownieNonna")
+		_:
+			HeldView.draw_item(ci, kind, w, h, now, ink, lit) # impugnatura e sparo (held_view.gd)
 
 
 static func _star(ci: CanvasItem, c: Vector2, r: float, col: Color) -> void:

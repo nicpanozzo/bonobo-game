@@ -12,6 +12,7 @@ import type { ItemState } from "../types";
 import { endArcade, isArcade, startArcade } from "./arcade";
 import { bodyBox } from "./attacks";
 import { callBassanese } from "./bassanese";
+import { popBubble, shotGravityMult, shotLands, stepHeld, stepShot, trapInBubble, useHeld } from "./held";
 import { carried, markCarriers, mountInput, rideLoad, spinning, stepRideItem } from "./ride";
 import { brownieKicksIn, eatBrownie, fuseLoad, itemGravityMult, lit, onThrow, stepGearItem, stickTo } from "./gear";
 import { moverHere, moverPlace } from "./elements";
@@ -36,6 +37,8 @@ export interface Item extends ItemState {
   fuseTotal?: number; // ms di miccia quando si è acceso
   lighter?: string; // chi ha acceso il petardo: a lui i KO dello scoppio
   stuckTo?: string; // il petardo attaccato addosso a questo lottatore
+  cooldownMs?: number; // l'arma da sparo (held.ts): ms prima del prossimo colpo
+  flyMs?: number; // un colpo sparato: ms di volo che restano
 }
 
 export interface ItemWorld {
@@ -77,7 +80,7 @@ export function resetItems(world: ItemWorld): void {
 
 // Un funghetto piantato o un fungo di Teemo piazzato (ha un proprietario): non si raccoglie, scatta sugli avversari
 // e non conta tra gli oggetti che cadono
-const isPlanted = (i: Item) => !!ITEMS[i.kind].planted || (!!ITEMS[i.kind].shroom && i.ownerId !== undefined) || lit(i) || spinning(i); // anche il petardo acceso e la lavatrice in centrifuga (ride.ts)
+const isPlanted = (i: Item) => !!ITEMS[i.kind].planted || (!!ITEMS[i.kind].shroom && i.ownerId !== undefined) || lit(i) || spinning(i) || !!ITEMS[i.kind].shot; // anche il petardo acceso, la lavatrice in centrifuga (ride.ts) e i colpi sparati (held.ts)
 
 // Non si raccoglie né si lancia mentre si è occupati: colpiti, in attacco, in schivata o inermi dopo il recupero
 const busy = (f: Fighter) =>
@@ -120,6 +123,13 @@ export function handleItemInput(world: ItemWorld, fighters: Fighter[], ctx: Phys
       consumeAttackKeys(f);
       continue;
     }
+    // Le armi (held.ts): J con un'arma da impugnare lascia partire l'attacco, con una da sparo spara
+    const use = held ? useHeld(world, held, f, ctx) : null;
+    if (use === "attack") continue;
+    if (use === "used") {
+      consumeAttackKeys(f);
+      continue;
+    }
     if (held) {
       throwItem(held, f, ctx);
       consumeAttackKeys(f);
@@ -138,6 +148,8 @@ export function handleItemInput(world: ItemWorld, fighters: Fighter[], ctx: Phys
     } else if (near) {
       near.heldBy = f.id;
       near.onGround = false;
+      f.heldKind = near.kind; // le armi valgono subito (held.ts)
+      f.meleeHits = 0;
       ctx.events.push({ type: "itemPick", itemId: near.id, id: f.id });
       consumeAttackKeys(f);
     }
@@ -276,6 +288,7 @@ export function tickPowerup(f: Fighter, dtMs: number, ctx: PhysicsContext): void
   f.powerupMs = Math.max(0, f.powerupMs - dtMs);
   if (f.powerup === "veleno") poisonTick(f, beforeMs, f.powerupMs);
   if (f.powerupMs > 0) return;
+  if (popBubble(f, ctx, true)) return; // la bolla dello sparabolle scoppia da sola (held.ts)
   ctx.events.push({ type: "powerEnd", id: f.id, kind: f.powerup });
   if (brownieKicksIn(f, ctx)) return; // finita l'attesa del brownie sale l'effetto (gear.ts)
   if (isArcade(f)) endArcade(f); // si torna in partita (#427)
@@ -397,6 +410,7 @@ function throwItem(item: Item, f: Fighter, ctx: PhysicsContext) {
   }
   item.heldBy = null;
   item.loadMs = -1;
+  f.heldKind = undefined;
   item.thrown = true;
   item.thrownBy = f.id;
   const speeds = shroom ? FUNGO : (ITEMS[item.kind].throwSpec ?? ITEM_RULES); // il fungo vola a pallonetto, la ciabatta tesa
@@ -421,6 +435,7 @@ export function stepItems(world: ItemWorld, fighters: Fighter[], dtMs: number, c
     if (world.items.filter((i) => !isPlanted(i)).length < world.maxOnStage) spawn(world, ctx);
   }
 
+  for (const f of fighters) f.heldKind = undefined; // lo rimette stepHeld per chi ha ancora l'oggetto in mano
   for (const item of [...world.items]) {
     const spec = ITEMS[item.kind];
     if (!item.heldBy && stepGearItem(world, item, fighters, dtMs, ctx)) continue; // attaccato addosso a qualcuno (gear.ts)
@@ -433,6 +448,7 @@ export function stepItems(world: ItemWorld, fighters: Fighter[], dtMs: number, c
         item.vy = holder.vy;
         if (spec.bong) loadBong(world, item, holder, dtMs, ctx);
         carried(world, item, holder, fighters, dtMs, ctx); // sopra la testa o sotto i piedi (ride.ts)
+        stepHeld(world, item, holder, fighters, dtMs, ctx); // armi da impugnare e da sparo (held.ts)
         continue;
       }
       // Chi lo teneva è stato colpito o è uscito: l'oggetto cade dov'è
@@ -443,7 +459,7 @@ export function stepItems(world: ItemWorld, fighters: Fighter[], dtMs: number, c
     }
 
     carry(item, dtMs, ctx);
-    item.vy = Math.min(FIGHTER.maxFallSpeed, item.vy + FIGHTER.gravity * dt * (spec.shroom ? FUNGO.gravityMult : itemGravityMult(item))); // il fungo è pesante
+    item.vy = Math.min(FIGHTER.maxFallSpeed, item.vy + FIGHTER.gravity * dt * (spec.shroom ? FUNGO.gravityMult : itemGravityMult(item) * shotGravityMult(item))); // il fungo è pesante, i colpi sparati volano dritti
     if (item.onGround) item.vx = Math.sign(item.vx) * Math.max(0, Math.abs(item.vx) - ITEM_RULES.groundFriction * dt);
     const prevY = item.y;
     const wasThrown = item.thrown;
@@ -451,6 +467,8 @@ export function stepItems(world: ItemWorld, fighters: Fighter[], dtMs: number, c
     item.y += item.vy * dt;
     land(item, prevY, spec.width / 2, dtMs, ctx);
 
+    shotLands(item, ctx); // la goccia si spiaccica, la bolla scoppia o rimbalza (held.ts)
+    stepShot(item, dtMs, ctx);
     if (item.thrown) hitWithItem(item, fighters, ctx);
     stepRideItem(world, item, fighters, dtMs, ctx, wasThrown); // cassa che si rompe, lavatrice in centrifuga (ride.ts)
     if (spec.shroom && item.onGround && item.plantBy) settleShroom(world, item);
@@ -570,6 +588,7 @@ function hitWithItem(item: Item, fighters: Fighter[], ctx: PhysicsContext) {
     if (!(box.x < body.x + body.w && box.x + box.w > body.x && box.y < body.y + body.h && box.y + box.h > body.y)) continue;
 
     if (spec.petardo) return stickTo(item, target, ctx); // il petardo si attacca addosso (gear.ts)
+    if (spec.shot === "bolla" || spec.shot === "rimbalzina") return trapInBubble(item, target, ctx); // chiuso nella bolla (held.ts)
     const dir = item.vx !== 0 ? (Math.sign(item.vx) as 1 | -1) : target.x >= item.x ? 1 : -1;
     // Sparisce al prossimo filtro; il fungo di Teemo invece cade dritto e si piazza lo stesso
     if (spec.shroom) item.vx = 0;
