@@ -9,7 +9,7 @@ signal changed(rules: Dictionary, bot_level: String) # main.gd lo manda al serve
 signal closed
 
 const LobbyScript := preload("res://scripts/lobby.gd")
-const BOT_LEVELS := [["facile", "Facili"], ["semplice", "Normali"], ["difficile", "Difficili"]] # come BotLevel in src/server/bot.ts
+const BOT_LEVELS := [["manichino", "Fermi (manichini)"], ["facile", "Facili"], ["semplice", "Normali"], ["difficile", "Difficili"]] # come HallBotLevel in src/shared/types.ts: "manichino" li tiene fermi
 const SEND_DELAY := 0.25 # s: le frecce premute di fila partono in un messaggio solo (il server ne accetta pochi al secondo)
 const QUIET_AFTER_EDIT := 0.8 # s: dopo una modifica mia lo snapshot vecchio non rimette i valori di prima
 

@@ -139,19 +139,20 @@ export function attachGame(io: Server<ClientToServer, ServerToClient>, deps: Gam
         const bots = new Bots();
         const discord = discordHooks(deps.discordWebhookUrl, (id) => bots.isBot(id), deps.leaderboard);
         const kind = parseBotKind(bot);
-        // Sala d'attesa: i suoi bot entrano in ogni partita nuova; giocano come il bot scelto dal creatore (mai fermi)
+        // Sala d'attesa: i suoi bot entrano in ogni partita nuova; giocano come il bot scelto dal creatore.
+        // Il manichino chiamato da solo nel cerchio resta fermo comunque
         // Il livello si cambia poi dal computer della sala (#567): si legge a ogni partita nuova
         const hallBots = {
           onMatchBuilt: (built: Room, match: Room["match"], botIds: string[]) => {
             bots.reset();
-            for (const id of botIds) bots.adopt(match, id, built.hallBotLevel);
+            for (const id of botIds) bots.adopt(match, id, built.hall?.isDummy(id) ? "manichino" : built.hallBotLevel);
           },
         };
         const board = () => deps.leaderboard?.board(HALL.boardRows) ?? [];
         r = new Room(code, io, { stageId, rules, prematch: true, hall: data.hall, board }, combineHooks(bots.hooks, discord, hallBots), deps.reconnectHoldMs);
         rooms.set(code, r);
         r.onClose = () => rooms.delete(code);
-        if (r.hall) r.hallBotLevel = kind === "facile" || kind === "difficile" ? kind : "semplice";
+        if (r.hall) r.hallBotLevel = kind === "manichino" || kind === "facile" || kind === "difficile" ? kind : "semplice";
         if (kind && r.hall) r.hall.addBot(botCharacter(botCharacterId));
         else if (kind) bots.add(r.match, kind, botCharacterId);
       }

@@ -309,9 +309,33 @@ describe("sala d'attesa: partenza", () => {
   it("da soli serve un altro lottatore, anche dentro il cerchio", () => {
     const hall = new Hall({ seed: "solo" });
     hall.addPlayer("a", "Marta");
-    assert.equal(hall.need(), "Serve un altro lottatore: manda il link o chiama un bot dalla gabbia");
+    assert.equal(hall.need(), "Serve un altro lottatore: resta nel cerchio e arriva un manichino, o chiama un bot dalla gabbia");
     walkInto(hall, "a", zone(hall, "ready"));
     assert.equal(hall.countdownMs, null);
+  });
+
+  it("da soli nel cerchio arriva un manichino e si parte", () => {
+    const hall = new Hall({ seed: "solo-manichino" });
+    hall.addPlayer("a", "Marta");
+    walkInto(hall, "a", zone(hall, "ready"));
+    const out = run(hall, HALL.soloDummyMs + DT);
+    const [dummy] = hall.botIds();
+    assert.ok(dummy, "la sala ha chiamato un bot");
+    assert.ok(hall.isDummy(dummy), "è un manichino");
+    assert.ok(out.some((e) => e.type === "bot" && e.added));
+    assert.equal(hall.roster().find((p) => p.id === dummy)?.name, "Manichino");
+    run(hall, DT);
+    assert.notEqual(hall.countdownMs, null, "conto alla rovescia partito");
+    // Restando nel cerchio non ne arrivano altri
+    run(hall, HALL.soloDummyMs * 2);
+    assert.equal(hall.botIds().length, 1);
+  });
+
+  it("in due nessun manichino arriva da solo", () => {
+    const hall = twoHumans();
+    walkInto(hall, "a", zone(hall, "ready"));
+    run(hall, HALL.soloDummyMs * 2);
+    assert.deepEqual(hall.botIds(), []);
   });
 
   it("need dice chi manca nel cerchio", () => {

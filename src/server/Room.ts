@@ -178,7 +178,7 @@ export class Room {
   setHallRules(id: string, rules: Partial<MatchRules> | undefined, botLevel: unknown) {
     if (!this.hall || !this.inHall || !this.hall.roster().some((p) => p.id === id && !p.bot)) return;
     if (rules) this.creatorRules = hallRules(rules, this.creatorRules.mode);
-    if (botLevel === "facile" || botLevel === "semplice" || botLevel === "difficile") this.hallBotLevel = botLevel;
+    if (botLevel === "manichino" || botLevel === "facile" || botLevel === "semplice" || botLevel === "difficile") this.hallBotLevel = botLevel;
     this.hall.rulesChanged(id);
   }
 

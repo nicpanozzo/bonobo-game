@@ -166,6 +166,8 @@ export class Hall {
   private gongCooldown = 0;
   private arrivals = 0; // quanti sono entrati: decide dove spunta il prossimo
   private botCount = 0;
+  private dummies = new Set<string>(); // bot chiamati perché uno era da solo nel cerchio: in partita stanno fermi
+  private soloMs = 0; // ms passati da solo nel cerchio dei pronti
   private round = 0; // quante volte si è partiti: cambia il seme dell'arena casuale
   private randomStageId: string;
   private readonly props: HallProp[] = makeProps();
@@ -217,6 +219,11 @@ export class Hall {
   // Tutti, in ordine di arrivo: con questi si costruisce la partita
   roster(): readonly HallPlayerState[] {
     return [...this.players.values()];
+  }
+
+  // Il manichino chiamato da solo nel cerchio: game.ts lo fa stare fermo qualunque sia il livello dei bot
+  isDummy(id: string): boolean {
+    return this.dummies.has(id);
   }
 
   botIds(): string[] {
@@ -278,14 +285,16 @@ export class Hall {
   }
 
   // Un bot del server: lottatori a rotazione, da Bonobot in poi. null se la stanza è piena o ce ne sono già troppi
-  addBot(characterId?: string): string | null {
+  // dummy: un manichino fermo (Bonobot se non si sceglie il lottatore)
+  addBot(characterId?: string, dummy = false): string | null {
     if (this.isFull || this.botIds().length >= HALL.maxBots) return null;
     const roster = hallFighterIds();
     const n = this.botCount++;
     const start = Math.max(0, roster.indexOf("bonobot"));
-    const cid = characterId && Object.hasOwn(CHARACTERS, characterId) ? characterId : roster[(start + n) % roster.length];
+    const cid = characterId && Object.hasOwn(CHARACTERS, characterId) ? characterId : dummy ? roster[start] : roster[(start + n) % roster.length];
     const id = `bot-sala-${n + 1}`;
-    this.addPlayer(id, `Bot ${getCharacter(cid).name}`, cid, undefined, { bot: true });
+    this.addPlayer(id, dummy ? "Manichino" : `Bot ${getCharacter(cid).name}`, cid, undefined, { bot: true });
+    if (dummy) this.dummies.add(id);
     return id;
   }
 
@@ -302,6 +311,7 @@ export class Hall {
     if (!p) return;
     this.release(p);
     this.players.delete(id);
+    this.dummies.delete(id);
     this.events.push({ type: "leave", id });
     // Il padrone di casa se ne va: lo diventa il prossimo umano arrivato
     if (p.host) {
@@ -359,6 +369,8 @@ export class Hall {
     const missing = HALL.minFighters - fighters;
     if (missing > 0) {
       const head = missing === 1 ? "Serve un altro lottatore" : `Servono altri ${missing} lottatori`;
+      // Da soli basta restare nel cerchio: arriva un manichino fermo (soloDummy)
+      if (humans.length === 1 && missing === 1) return `${head}: resta nel cerchio e arriva un manichino, o chiama un bot dalla gabbia`;
       return `${head}: manda il link o chiama un bot dalla gabbia`;
     }
     const out = humans.filter((p) => !p.ready).map((p) => p.name);
@@ -418,6 +430,7 @@ export class Hall {
       p.ready = p.bot || !!this.inZone(p, "ready");
       p.prev = p.input;
     }
+    this.soloDummy(dtMs);
     this.updateCountdown(dtMs);
     return this.flush();
   }
@@ -1178,6 +1191,17 @@ export class Hall {
   }
 
   // --- partenza ---
+
+  // Da solo nel cerchio dei pronti, senza bot: dopo un po' la sala chiama un manichino, così si parte anche da soli
+  private soloDummy(dtMs: number) {
+    const humans = this.voters();
+    const alone = humans.length === 1 && this.botIds().length === 0 && humans[0].ready;
+    this.soloMs = alone ? this.soloMs + dtMs : 0;
+    if (this.soloMs < HALL.soloDummyMs) return;
+    this.soloMs = 0;
+    const id = this.addBot(undefined, true);
+    if (id) this.events.push({ type: "bot", id, added: true });
+  }
 
   private updateCountdown(dtMs: number) {
     const canStart = this.need() === null;
