@@ -1433,4 +1433,14 @@ export const MINIGAME = {
   acqua: { durationMs: 50000, startY: 690, topY: 250, holdMs: 3000, riseMs: 40000 },
   // Attraversa la Strada: corsie tra i due marciapiedi; ogni corsia ha un passaggio ogni periodMs (min..max), preavviso warnMs
   strada: { durationMs: 45000, lanes: 5, periodMinMs: 1800, periodMaxMs: 3400, warnMs: 750, passMs: 550, bumpVx: 520, bumpVy: -680 },
+  // Il Filo: ognuno lascia un filo di micelio lungo maxPoints punti (uno ogni stepPx), che dura lifeMs; toccare quello
+  // degli altri (entro hitPx) butta fuori. Una vita sola
+  filo: { durationMs: 45000, stepPx: 22, maxPoints: 70, lifeMs: 7000, hitPx: 14, graceMs: 1500 },
+  // Mattoni a Mazzate: palle che rimbalzano (velocità px/s), colpite con le mosse entro reachPx; ogni mattone del proprio
+  // colore rotto vale un punto. Chi li finisce tutti per primo vince subito
+  mattoni: { durationMs: 50000, balls: 2, ballR: 16, speed: 560, maxSpeed: 900, reachPx: 90, bricksEach: 8, gravity: 0 },
+  // Casse al Posto Giusto: si spingono a colpi (pushVx px/s, frenate da friction al secondo) nella porta della propria parte
+  casse: { durationMs: 50000, crates: 3, size: 56, pushVx: 620, pushVy: -260, reachPx: 80, friction: 1.8, goalW: 150 },
+  // Il Muro: un muro con un buco arriva ogni everyMs e attraversa l'arena a speed px/s; chi non è nella posa del buco vola
+  muro: { durationMs: 50000, firstMs: 2500, everyMs: 4200, speed: 520, minSpeed: 420, maxSpeed: 760, bumpVx: 900, bumpVy: -700 },
 };
