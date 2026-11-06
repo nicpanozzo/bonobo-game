@@ -55,8 +55,10 @@ func _draw() -> void:
 				_crack(pos, float(p.get("w", 120)))
 			"zone":
 				_zone(pos, float(p.get("w", 160)), float(p.get("h", 20)), col)
-			"crate", "brick", "bus", "wall":
+			"crate", "brick", "wall":
 				_box(pos, float(p.get("w", 40)), float(p.get("h", 40)), col)
+			"bus":
+				_bus(pos, float(p.get("w", 120)), float(p.get("h", 100)), col)
 			"ball":
 				_coin(pos, col, float(p.get("w", 16)))
 			"trail":
@@ -144,6 +146,17 @@ func _box(c: Vector2, w: float, h: float, col: Color) -> void:
 	var r := Rect2(c.x - w / 2, c.y - h / 2, w, h)
 	draw_rect(r, col)
 	draw_rect(r, INK, false, 2.5)
+
+
+# L'autobus di Attraversa la Strada visto di muso: la scatola col parabrezza e i fari
+func _bus(c: Vector2, w: float, h: float, col: Color) -> void:
+	_box(c, w, h, col)
+	var glass := Rect2(c.x - w / 2 + 8, c.y - h / 2 + 10, w - 16, h * 0.38)
+	draw_rect(glass, Color("bfe3ff"))
+	draw_rect(glass, INK, false, 2.0)
+	for side in [-1, 1]:
+		draw_circle(Vector2(c.x + side * (w / 2 - 14), c.y + h / 2 - 16), 7.0, Color("fff3a0"))
+		draw_arc(Vector2(c.x + side * (w / 2 - 14), c.y + h / 2 - 16), 7.0, 0, TAU, 14, INK, 1.6)
 
 
 func _trail(pts: Variant, col: Color) -> void:
