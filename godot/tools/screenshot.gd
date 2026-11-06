@@ -10,7 +10,7 @@ var _out := "user://screenshots"
 var _game: Dictionary
 var _world: Node2D # nella partita finta: riceve uno snapshot a ogni frame
 var _hud: Control
-const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre", "lobby_regole", "musica", "tetris", "pacman", "bassanese", "bologna_piazza", "bologna_torri", "bologna_crollo", "bologna_zuffa", "oggetti", "oggetti_categorie", "oggetti_armi", "oggetti_pesanti", "prepartita_attesa", "prepartita_vs", "prepartita_conto", "fine_partita", "sala", "sala_conto", "sala_galleria", "sala_via", "sala_basket", "sala_scacchi", "sala_computer", "sala_regole", "sala_solo", "fabbrica", "diluvio", "palco_metal", "palco_reggae", "palco_techno", "orsoblu_mosse"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
+const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre", "lobby_regole", "musica", "tetris", "pacman", "bassanese", "bologna_piazza", "bologna_torri", "bologna_crollo", "bologna_zuffa", "oggetti", "oggetti_categorie", "oggetti_armi", "oggetti_pesanti", "prepartita_attesa", "prepartita_vs", "prepartita_conto", "fine_partita", "sala", "sala_conto", "sala_galleria", "sala_via", "sala_basket", "sala_scacchi", "sala_computer", "sala_regole", "sala_solo", "fabbrica", "diluvio", "palco_metal", "palco_reggae", "palco_techno", "orsoblu_mosse", "party_tabellone", "party_voto"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
 var _index := -1
 var _frame := 0
 var _failed := false
@@ -301,6 +301,47 @@ func _add_prematch() -> void:
 	_pre_view.portrait_of = _hud._portrait
 	_hud.get_parent().add_child(_pre_view)
 	_pre_view.size = Vector2(_game.world.width, _game.world.height)
+# Bonobo Party (#579): il tabellone a metà partita, col dado appena tirato
+func _party_tabellone() -> void:
+	_party_board("roll", {"dice": 5, "turnId": "p0", "events": [{"type": "roll", "id": "p0", "value": 5}]})
+
+
+# Bonobo Party: il voto tra tre minigiochi
+func _party_voto() -> void:
+	_party_board("vote", {"options": [
+		{"id": "pioggia", "title": "Pioggia di Banane", "category": "arraffa"},
+		{"id": "contagio", "title": "Contagio", "category": "unoContro"},
+		{"id": "mezzogiorno", "title": "Mezzogiorno di Fuoco", "category": "ritmo"},
+	], "votes": {"p1": "contagio", "p2": "pioggia"}})
+
+
+func _party_board(phase: String, extra: Dictionary) -> void:
+	var squares: Array = []
+	var kinds := ["banana", "banana", "buccia", "banana", "evento", "banana", "banana"]
+	for i in 28: # il giro, come makeBoard in src/shared/party/board.ts (forma approssimata)
+		var t := float(i) / 28.0
+		var a := TAU * t - PI / 2
+		var p := Vector2(0.5 + 0.44 * cos(a), 0.5 + 0.42 * sin(a))
+		squares.append({"x": p.x, "y": p.y, "kind": "start" if i == 0 else ("bottega" if i == 10 or i == 24 else kinds[i % kinds.size()]), "next": [(i + 1) % 28] if i != 6 else [7, 28]})
+	for k in 5: # la scorciatoia dall'incrocio (6) al rientro (20)
+		var u := (k + 1) / 6.0
+		var a6: Dictionary = squares[6]
+		var a20: Dictionary = squares[20]
+		squares.append({"x": lerpf(a6.x, a20.x, u), "y": lerpf(a6.y, a20.y, u), "kind": "evento", "next": [29 + k if k < 4 else 20]})
+	var names := [["p0", "Nicola", "orsoblu", 0xff4560], ["p1", "Marco", "marcomunista", 0xb48cff], ["p2", "Bot Gina", "nonnagina", 0x5ef0a0], ["p3", "Ricky", "bradipo", 0xffc928]]
+	var players: Array = []
+	for i in names.size():
+		var n: Array = names[i]
+		players.append({"id": n[0], "name": n[1], "characterId": n[2], "skinId": "", "color": n[3], "bot": i == 2, "away": false, "square": [3, 9, 9, 15][i], "bananas": [14, 22, 6, 9][i], "crowns": [1, 0, 0, 0][i], "item": "moka" if i == 0 else null, "wins": [2, 1, 0, 1][i], "place": [1, 2, 4, 3][i]})
+	var snap := {"t": 0, "phase": phase, "phaseLeftMs": 9000, "round": 4, "rounds": 10, "pick": "vote", "turnId": null, "dice": null, "moveLeft": 0, "squares": squares, "crownSquare": 18, "players": players, "options": [], "votes": {}, "feedbackDone": [], "lastResults": null, "shop": [], "text": "", "events": [], "winnerId": null}
+	snap.merge(extra, true)
+	var view: Control = load("res://scripts/party_view.gd").new()
+	root.add_child(view)
+	view.setup(_game, "p0")
+	view.size = Vector2(_game.world.width, _game.world.height)
+	view.on_snapshot(snap)
+
+
 # Fine partita: la classifica è già entrata tutta, coi premi; il vincitore sotto il riflettore
 func _fine_partita() -> void:
 	_items_on = false

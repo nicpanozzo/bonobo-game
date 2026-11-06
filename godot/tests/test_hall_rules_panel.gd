@@ -45,3 +45,11 @@ func test_un_tempo_strano_non_si_perde() -> void:
 	p.sync({"stocks": 2, "timeLimitSec": 0}, "facile", true)
 	runner.check(p.chosen_rules().stocks == 2 and p.chosen_rules().timeLimitSec == 0 and p.chosen_bot_level() == "facile", "lo snapshot nuovo aggiorna la schermata")
 	p.free()
+
+
+func test_giri_e_scelta_del_party() -> void:
+	var p := _panel({"stocks": 3, "partyRounds": 5, "partyPick": "vote"})
+	runner.check(p.chosen_rules().partyRounds == 5 and p.chosen_rules().partyPick == "vote", "giri e voto del party: %s" % p.chosen_rules())
+	p.sync({"stocks": 3, "partyRounds": 11}, "semplice", true)
+	runner.check(p.chosen_rules().partyRounds == 10 and p.chosen_rules().partyPick == "random", "11 giri diventano i 10 più vicini, a caso: %s" % p.chosen_rules())
+	p.free()

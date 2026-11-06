@@ -43,7 +43,7 @@ const KINDS := [
 ]
 const KIND_MARKS := {"create": "NEW", "join": "LINK", "bot": "CPU"} # la sigla sullo sfondo delle piastrelle (menu_tile.gd)
 const PAGE_NAMES := {"match": "Partita", "stage": "Arena", "fighter": "Lottatore"}
-const HALL_MODES := ["ffa", "teams", "flag", "race"] # modalità che si votano in sala (HallMode in types.ts)
+const HALL_MODES := ["ffa", "teams", "flag", "race", "party"] # modalità che si votano in sala (HallMode in types.ts)
 const HALL_NOTE := "Modalità e arena si scelgono nella sala d'attesa, camminando: sali su una pedana o entra in un portale. Qui decidi le regole."
 const PAGE_W := 1010.0 # larghezza del contenuto delle pagine, pixel
 const PAGE_TOP := 14 # spazio sopra il titolo della pagina, pixel

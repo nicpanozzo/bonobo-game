@@ -83,6 +83,10 @@ var _results_since := 0 # ms in cui sono comparsi i pulsanti di fine partita: il
 var _return_note: Label # "Si torna in sala tra 9 s", sotto i pulsanti di fine partita
 var voice: VoiceChat # chat vocale (voice.gd): nel browser, tra chi è nella stanza
 var voice_panel: VoicePanel # chi è in voce, in alto a destra (voice_panel.gd)
+var party_view: Control # Bonobo Party (#579): il tabellone (party_view.gd), null fuori dal tabellone
+var party_hud: Control # Bonobo Party: come si gioca, punti e posti del minigioco (party_hud.gd)
+var party_props: Node2D # Bonobo Party: banane, crepe e scritte del minigioco, dentro l'arena (party_props.gd)
+var _in_party := false # la stanza è sul tabellone del party: arrivano i messaggi party, l'arena 2D è spenta
 
 
 func _ready() -> void:
@@ -134,6 +138,11 @@ func _ready() -> void:
 	layer.add_child(results)
 	results.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	layer.add_child(hud)
+	party_hud = preload("res://scripts/party_hud.gd").new()
+	layer.add_child(party_hud)
+	party_hud.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	party_props = preload("res://scripts/party_props.gd").new()
+	world.add_child(party_props)
 	prematch = preload("res://scripts/prematch_view.gd").new()
 	prematch.game = game
 	layer.add_child(prematch)
@@ -426,6 +435,9 @@ func _leave(page := "match") -> void:
 	socket.close()
 	voice.reset_room() # la voce è della stanza: uscendo si chiude
 	_exit_hall()
+	_exit_party()
+	party_hud.reset()
+	party_props.clear()
 	_hall_room = false
 	_welcome = {}
 	_held = []
@@ -453,7 +465,7 @@ func _flash_status(text: String) -> void:
 
 # Predizione (E17): accesa dall'opzione, e solo a velocità normale (l'allenamento rallentato fa meno tick)
 func _apply_prediction() -> void:
-	world.predictor.enabled = bool(settings.video.get("predict", true)) and gym.speed == 1.0 and not (prematch != null and prematch.frozen()) and not _in_hall
+	world.predictor.enabled = bool(settings.video.get("predict", true)) and gym.speed == 1.0 and not (prematch != null and prematch.frozen()) and not _in_hall and not _in_party
 
 
 func _apply_volumes() -> void:
@@ -651,9 +663,13 @@ func _on_event(name: String, data: Variant) -> void:
 			# Da solo contro un bot non c'è nessuno da aspettare: si va dritti al 3, 2, 1 (in sala il Pronto è il cerchio)
 			if str(params.get("bot", "")) != "" and str(params.get("kind", "")) != "create" and not _hall_room:
 				socket.emit("ready", {"ready": true})
-			if HallFlow.phase_of(data) == "hall":
+			if str(data.get("phase", "")) == "party":
+				_exit_hall()
+				_enter_party()
+			elif HallFlow.phase_of(data) == "hall":
 				_enter_hall()
 			else:
+				_exit_party()
 				_exit_hall()
 				_setup_stage(data)
 			gym.on_welcome(data)
@@ -676,9 +692,21 @@ func _on_event(name: String, data: Variant) -> void:
 			voice.on_hall_snapshot(data) # nomi e, se acceso, volume per distanza
 		"stage": # dalla sala si parte: arena e regole della partita, poi arrivano gli snapshot
 			_exit_hall()
+			_exit_party()
 			_setup_stage(HallFlow.stage_welcome(_welcome, data))
-			# Nel cerchio dei pronti ci sono già entrati tutti: nessuno deve ridire Pronto
-			socket.emit("ready", {"ready": true})
+			party_props.clear()
+			if data.get("minigame") is Dictionary:
+				# Un minigioco del party: la prova libera parte da sola, Pronto la accorcia
+				party_hud.start(data.minigame)
+			else:
+				party_hud.reset()
+				# Nel cerchio dei pronti ci sono già entrati tutti: nessuno deve ridire Pronto
+				socket.emit("ready", {"ready": true})
+		"party": # il tabellone del party (PartySnapshot): al posto degli snapshot della partita
+			_last_snapshot = Time.get_ticks_msec()
+			if not _in_party:
+				_enter_party()
+			party_view.on_snapshot(data)
 		"ratings": # i punti in classifica di chi ha giocato, a fine partita
 			var changes: Array = data.get("changes", []) if data.get("changes") is Array else []
 			results.set_ratings(changes) # grado, punti e posto li mostra la fine partita, sotto la tabella
@@ -687,6 +715,11 @@ func _on_event(name: String, data: Variant) -> void:
 				_exit_hall() # un server senza il messaggio stage: si gioca nell'arena che c'è, meglio che restare in sala
 			_last_snapshot = Time.get_ticks_msec()
 			_last_players = data.get("players", [])
+			if data.get("party") is Dictionary and not party_hud.active():
+				party_hud.start({"id": str(data.party.get("id", "")), "title": ""}) # rientrati a minigioco in corso
+			party_hud.my_id = world.my_id
+			party_hud.on_snapshot(data)
+			party_props.set_props(data.party.get("props", []) if data.get("party") is Dictionary else [])
 			voice.on_match_snapshot(_last_players)
 			if world.holding() or not _held.is_empty():
 				# Rallentatore (#470): lo snapshot entra subito nel buffer, il resto aspetta che il disegno lo raggiunga
@@ -752,6 +785,9 @@ func _setup_stage(data: Dictionary) -> void:
 # Si entra nella sala d'attesa 3D (welcome con phase "hall", o la stanza ci torna a fine partita):
 # l'arena 2D e tutto quello che le sta sopra si spengono, così niente copre la sala che sta sotto
 func _enter_hall() -> void:
+	_exit_party()
+	party_hud.reset()
+	party_props.clear()
 	if not _in_hall:
 		_in_hall = true
 		_held = []
@@ -799,9 +835,48 @@ func _exit_hall() -> void:
 	_apply_prediction()
 
 
+# Bonobo Party (#579): il tabellone sta nel livello dei menu e copre tutto; l'arena 2D si spegne come in sala
+func _enter_party() -> void:
+	if not _in_party:
+		_in_party = true
+		_held = []
+		_hide_results()
+		world.reset()
+		hud.reset()
+		prematch.reset()
+		results.reset()
+		party_hud.reset()
+		party_props.clear()
+		_show_hall_layers(false)
+		audio.set_stage_song(null)
+		audio.play_music("hall")
+	world.my_id = str(_welcome.get("id", ""))
+	_apply_prediction()
+	if not is_instance_valid(party_view):
+		party_view = preload("res://scripts/party_view.gd").new()
+		ui_layer.add_child(party_view)
+		ui_layer.move_child(party_view, 0) # sotto menu, avvisi e pausa
+		party_view.setup(game, world.my_id)
+		party_view.command.connect(func(cmd: Dictionary): socket.emit("party", cmd))
+	party_view.my_id = world.my_id
+
+
+# Si lascia il tabellone (parte un minigioco, si torna in sala o si esce dalla stanza)
+func _exit_party() -> void:
+	if is_instance_valid(party_view):
+		party_view.queue_free()
+	party_view = null
+	if not _in_party:
+		return
+	_in_party = false
+	_show_hall_layers(true)
+	_apply_prediction()
+
+
 func _show_hall_layers(on: bool) -> void:
 	world.visible = on
 	hud.visible = on
+	party_hud.visible = on
 	prematch.visible = on
 	results.visible = on
 	if post_fx != null:
@@ -850,8 +925,9 @@ func _process(_delta: float) -> void:
 	if touch.active and playing:
 		hud.rematch_key = "Tocca lo schermo"
 	# A fine partita i pulsanti Rivincita e Cambia lottatore; spariscono quando la rivincita comincia
-	var over: bool = playing and hud._snap.get("winnerId") != null and not gym.hides_results()
-	results.visible = not gym.hides_results() and not _in_hall # sfide e tutorial hanno la loro fine
+	# I minigiochi del party hanno i loro posti (party_hud) e si torna da soli al tabellone
+	var over: bool = playing and hud._snap.get("winnerId") != null and not gym.hides_results() and not party_hud.active()
+	results.visible = not gym.hides_results() and not _in_hall and not _in_party and not party_hud.active() # sfide e tutorial hanno la loro fine
 	if over and not is_instance_valid(results_bar) and not is_instance_valid(pause_menu):
 		_show_results()
 	elif not over and is_instance_valid(results_bar):
@@ -865,6 +941,8 @@ func _process(_delta: float) -> void:
 		_return_note.text = HallFlow.return_note(_hall_return_ms() - (Time.get_ticks_msec() - _results_since))
 	if playing and _in_hall:
 		_send_input() # in sala si cammina con gli stessi tasti: li smista il server
+	elif playing and _in_party:
+		pass # sul tabellone si gioca con i pulsanti (messaggio party), non con i tasti
 	elif playing:
 		_send_input()
 		# Solo i percorsi della Corsa (con il traguardo) seguono il proprio lottatore; le arene,
@@ -1191,7 +1269,7 @@ func _open_pause() -> void:
 	pause_menu = preload("res://scripts/pause_menu.gd").new()
 	pause_menu.theme = UI.theme()
 	ui_layer.add_child(pause_menu)
-	pause_menu.setup(settings, room_link(params.room), {"server": params.server, "room": params.room, "stage": "Sala d'attesa" if _in_hall else world.stage.get("name", ""), "rules": hud.rules, "players": _last_players, "me": world.my_id})
+	pause_menu.setup(settings, room_link(params.room), {"server": params.server, "room": params.room, "stage": "Sala d'attesa" if _in_hall else "Bonobo Party" if _in_party else world.stage.get("name", ""), "rules": hud.rules, "players": _last_players, "me": world.my_id})
 	pause_menu.left.connect(_leave)
 	if _in_hall:
 		pause_menu.add_rules_button(func(): _open_hall_rules())

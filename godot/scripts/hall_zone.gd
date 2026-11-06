@@ -21,7 +21,7 @@ const FIBA_HOOP := 1.575 # m dal fondo al centro del ferro, nel campo vero largo
 const FIBA_THREE := 6.75 # m, raggio della linea da tre nel campo vero
 const BOARD_BORDER := 0.06 # quota del lato della scacchiera occupata dalla cornice (chessboard_material)
 
-const MODE_COLORS := {"ffa": Color("f1c40f"), "teams": Color("3498db"), "flag": Color("2ecc71"), "race": Color("b06bff")}
+const MODE_COLORS := {"ffa": Color("f1c40f"), "teams": Color("3498db"), "flag": Color("2ecc71"), "race": Color("b06bff"), "party": Color("ff8ad8")}
 const BOT_ADD := Color("2ecc71")
 const BOT_REMOVE := Color("e74c3c")
 
@@ -291,6 +291,15 @@ func _mode_icon(parent: Node3D) -> void:
 						var sq := _box(Vector3(0.14, 0.12, 0.03), white if (i + j) % 2 == 0 else dark)
 						sq.position = Vector3(-0.2 + i * 0.14, 0.45 - j * 0.12, 0.0)
 						parent.add_child(sq)
+		"party": # Bonobo Party (#579): un dado che gira, con i puntini del cinque
+			var die := _box(Vector3(0.5, 0.5, 0.5), holo)
+			die.rotation = Vector3(0.5, 0.6, 0.0)
+			parent.add_child(die)
+			var pip := HallMaterials.neon(Color.WHITE, 1.6)
+			for off in [Vector2(-0.13, -0.13), Vector2(0.13, -0.13), Vector2.ZERO, Vector2(-0.13, 0.13), Vector2(0.13, 0.13)]:
+				var dot := _sphere(0.045, pip)
+				dot.position = Vector3(off.x, off.y, 0.26)
+				die.add_child(dot)
 		_:
 			parent.add_child(_sphere(0.3, holo))
 
