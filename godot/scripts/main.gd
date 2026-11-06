@@ -466,7 +466,7 @@ func _flash_status(text: String) -> void:
 
 # Predizione (E17): accesa dall'opzione, e solo a velocità normale (l'allenamento rallentato fa meno tick)
 func _apply_prediction() -> void:
-	world.predictor.enabled = bool(settings.video.get("predict", true)) and gym.speed == 1.0 and not (prematch != null and prematch.frozen()) and not _in_hall and not _in_party
+	world.predictor.enabled = bool(settings.video.get("predict", true)) and gym.speed == 1.0 and not (prematch != null and prematch.frozen()) and not _in_hall and not _in_party and not party_hud.active() # nei minigiochi i tasti possono guidare un altro lottatore (Lo Specchio)
 
 
 func _apply_volumes() -> void:
@@ -700,8 +700,10 @@ func _on_event(name: String, data: Variant) -> void:
 				# Un minigioco del party: la prova libera parte da sola, Pronto la accorcia
 				party_hud.start(data.minigame)
 				_last_minigame = data.minigame
+				_apply_prediction()
 			else:
 				party_hud.reset()
+				_apply_prediction()
 				# Nel cerchio dei pronti ci sono già entrati tutti: nessuno deve ridire Pronto
 				socket.emit("ready", {"ready": true})
 		"party": # il tabellone del party (PartySnapshot): al posto degli snapshot della partita

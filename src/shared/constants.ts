@@ -1443,4 +1443,18 @@ export const MINIGAME = {
   casse: { durationMs: 50000, crates: 3, size: 56, pushVx: 620, pushVy: -260, reachPx: 80, friction: 1.8, goalW: 150 },
   // Il Muro: un muro con un buco arriva ogni everyMs e attraversa l'arena a speed px/s; chi non è nella posa del buco vola
   muro: { durationMs: 50000, firstMs: 2500, everyMs: 4200, speed: 520, minSpeed: 420, maxSpeed: 760, bumpVx: 900, bumpVy: -700 },
+  // Ieri Me: giri da roundMs; a ogni giro si riparte e i fantasmi rifanno i giri di prima. Punti: hitPoints a colpo, koPoints a KO
+  ierime: { rounds: 4, roundMs: 10000, hitPoints: 1, koPoints: 3 },
+  // Un Solo Tasto: un tasto d'azione a testa, a sorte; punti a KO
+  unTasto: { durationMs: 45000, koPoints: 1 },
+  // Lo Specchio: ogni swapMs i comandi girano di un posto; punti a chi è al comando (hitPoints a colpo, koPoints a KO)
+  specchio: { durationMs: 45000, swapMs: 10000, hitPoints: 1, koPoints: 3 },
+  // Il Bonobo a Quattro: tutti guidano un solo bonobo gigante contro il Rivale; koPoints a KO del Rivale, -fallPoints a caduta
+  quattro: { durationMs: 45000, koPoints: 2, fallPoints: 1, rivalReach: 90, rivalThinkMs: 180 },
+  // Il Burattinaio: dall'alto lascia cadere mattoni, petardi e bucce (cooldownMs tra un lancio e l'altro); punti a chi colpisce
+  burattinaio: { durationMs: 45000, cooldownMs: 650, brickPoints: 2, boomPoints: 2, peelPoints: 1, fuseMs: 700, boomR: 120, peelMs: 6000, safeEveryMs: 1500 },
+  // Sala Prove: i colpi dati entro windowMs dal battito (bpm) valgono beatPoints, i KO a tempo koPoints
+  salaProve: { durationMs: 40000, bpm: 120, windowMs: 140, beatPoints: 2, offPoints: 0, koPoints: 3 },
+  // Gara di Provocazioni: si mostra una sequenza (showMs a passo), poi si ripete entro stepMs a passo più graceMs
+  provocazioni: { durationMs: 60000, startLen: 2, maxLen: 7, showMs: 800, stepMs: 1000, graceMs: 1500, pauseMs: 1500, botStepMs: 520, botMissChance: 0.12 },
 };
