@@ -1386,3 +1386,43 @@ export const BOLOGNA = {
   bellSwingMs: 4400, // l'altalena della campana tra le torri: un'andata e ritorno completa...
   bellAmplitudeDeg: 38, // ...fino a tanti gradi dalla verticale per parte: agli estremi sfiora la postazione (A) di ogni torre
 };
+
+// Bonobo Party (#579): tabellone a giri e minigiochi (src/shared/party/). Tempi in ms, prezzi e premi in banane
+export const PARTY = {
+  minRounds: 3,
+  maxRounds: 20,
+  defaultRounds: 10, // circa 30 minuti in quattro
+  startBananas: 10,
+  crownPrice: 20, // la Corona si compra passandoci sopra con almeno tante banane
+  placeBananas: [10, 5, 2, 0], // premio del minigioco per posto: primo, secondo, terzo, quarto (e oltre)
+  squareBananas: 3, // casella Banana (+) e Buccia (-)
+  dice: 6, // facce del dado
+  introMs: 4000, // il tabellone si presenta prima del primo tiro
+  rollMs: 15000, // tempo per tirare il dado: poi tira il server
+  stepMs: 300, // una casella di cammino
+  squareMs: 1800, // l'effetto della casella resta a schermo
+  pathMs: 8000, // tempo per scegliere la strada all'incrocio
+  shopMs: 10000, // tempo in bottega
+  voteMs: 15000, // tempo per votare il minigioco (o finché votano tutti)
+  revealMs: 3000, // il minigioco scelto resta a schermo prima di partire
+  practiceMs: 15000, // prova libera prima del minigioco: poi si parte anche senza tutti pronti
+  resultsMs: 3000, // dopo il GAME! del minigioco, prima di tornare al tabellone
+  feedbackMs: 35000, // tempo per lasciare il feedback (o finché lo mandano tutti)
+  podiumMs: 45000, // il podio, poi tutti in sala
+  botThinkMs: 1000, // i bot ci pensano un attimo, così si vede cosa fanno
+  sendEveryTicks: 6, // un messaggio party ogni tanti passi (10 al secondo)
+  voteOptions: 3, // minigiochi tra cui votare
+  recentMinigames: 4, // non si ripesca uno degli ultimi tanti minigiochi (se ce ne sono abbastanza)
+  feedbackMaxChars: 500,
+  bonusCrowns: 1, // premi di fine partita: Corone a chi ha vinto più minigiochi e a chi ha più banane
+};
+
+// I minigiochi di Bonobo Party (#579, src/shared/party/minigames/): durate in ms, distanze in pixel, velocità in pixel/s
+export const MINIGAME = {
+  fallGravity: 1400, // pixel/s²: banane e monete che cadono dal cielo (più lente dei lottatori, per vederle)
+  pioggia: { durationMs: 40000, everyMs: 450, goldEvery: 7, goldValue: 3, maxOnStage: 26, dropOnHit: 0.5, maxDrop: 6, pickRadius: 18 },
+  mezzogiorno: { rounds: 5, readyMs: 1200, waitMinMs: 1500, waitMaxMs: 4500, goMs: 2500, showMs: 1600, botReactMinMs: 260, botReactMaxMs: 620 },
+  contagio: { durationMs: 45000, infectPoints: 2, infectedColor: 0x6fbf3a },
+  scalata: { durationMs: 60000, afterFirstMs: 12000, height: 2700, rowGap: 150, checkpointEvery: 600 },
+  crollo: { durationMs: 60000, firstFallMs: 6000, everyMs: 2200, warnMs: 1600, keep: 2 },
+};

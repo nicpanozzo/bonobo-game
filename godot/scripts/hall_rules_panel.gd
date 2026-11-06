@@ -11,6 +11,8 @@ signal closed
 const LobbyScript := preload("res://scripts/lobby.gd")
 const BOT_LEVELS := [["manichino", "Fermi (manichini)"], ["facile", "Facili"], ["semplice", "Normali"], ["difficile", "Difficili"]] # come HallBotLevel in src/shared/types.ts: "manichino" li tiene fermi
 const SEND_DELAY := 0.25 # s: le frecce premute di fila partono in un messaggio solo (il server ne accetta pochi al secondo)
+const PARTY_ROUNDS := [3, 5, 10, 15, 20] # giri del Bonobo Party (#579), tra PARTY.minRounds e PARTY.maxRounds in constants.ts
+const PARTY_PICKS := [["random", "A caso"], ["vote", "A voto"]] # come PartyPick in src/shared/types.ts
 const QUIET_AFTER_EDIT := 0.8 # s: dopo una modifica mia lo snapshot vecchio non rimette i valori di prima
 
 var settings: Settings
@@ -22,6 +24,8 @@ var _ff := CheckButton.new()
 var _supreme := Stepper.new()
 var _amount := Stepper.new()
 var _bots := Stepper.new()
+var _rounds := Stepper.new()
+var _pick := Stepper.new()
 var _checks := {} # id dell'oggetto -> CheckButton
 var _dim: Control
 var _note: Label
@@ -84,7 +88,13 @@ func setup(game_data: Dictionary, s: Settings, rules: Dictionary, bot_level: Str
 		_checks[str(k)] = c
 		kinds.add_child(c)
 	col_b.add_child(kinds)
-	for st in [_stocks, _time, _teams, _bots, _supreme, _amount]:
+	for n in PARTY_ROUNDS:
+		_rounds.add_item("%d giri" % n)
+	col_b.add_child(_row("Party", _rounds))
+	for pk in PARTY_PICKS:
+		_pick.add_item(pk[1])
+	col_b.add_child(_row("Minigioco", _pick))
+	for st in [_stocks, _time, _teams, _bots, _supreme, _amount, _rounds, _pick]:
 		st.item_selected.connect(func(_i): _edited())
 	_ff.toggled.connect(func(_on): _edited())
 	_note = UI.note("Le cambia chiunque è nella sala e valgono dalla prossima partita. Modalità e arena si votano sulle pedane.")
@@ -137,6 +147,13 @@ func sync(rules: Dictionary, bot_level: String, force := false) -> void:
 	var kinds: Variant = rules.get("itemKinds")
 	for k in _checks:
 		_checks[k].set_pressed_no_signal(not (kinds is Array) or (kinds as Array).has(k))
+	var rounds := int(rules.get("partyRounds", 10))
+	var ri := 0
+	for i in PARTY_ROUNDS.size(): # il numero di giri più vicino tra quelli che si possono scegliere
+		if absi(PARTY_ROUNDS[i] - rounds) < absi(PARTY_ROUNDS[ri] - rounds):
+			ri = i
+	_rounds.select(ri)
+	_pick.select(1 if str(rules.get("partyPick", "")) == "vote" else 0)
 	_sync_enabled()
 	_filling = false
 
@@ -152,6 +169,8 @@ func chosen_rules() -> Dictionary:
 		"supremeSpeed": float(speeds[_supreme.selected].mult) if _supreme.selected >= 0 and _supreme.selected < speeds.size() else 1.0,
 		"itemAmount": maxi(0, _amount.selected),
 		"itemKinds": _checks.keys().filter(func(k): return _checks[k].button_pressed),
+		"partyRounds": PARTY_ROUNDS[clampi(_rounds.selected, 0, PARTY_ROUNDS.size() - 1)],
+		"partyPick": PARTY_PICKS[clampi(_pick.selected, 0, PARTY_PICKS.size() - 1)][0],
 	}
 
 

@@ -6,14 +6,16 @@ import { HALL, NET_LIMITS, ROOM_IDLE_MS, VOICE } from "../shared/constants";
 import type { ClientToServer, IceServer, MatchRules, ServerToClient, VoiceState } from "../shared/types";
 import { botCharacter, Bots, parseBotKind } from "./bot";
 import { discordHooks } from "./discord";
+import type { FeedbackStore } from "./feedback";
 import type { Leaderboard } from "./leaderboard";
 import { clientIp, Flood, IpLimits, TokenBucket } from "./rateLimit";
 import { combineHooks, Room } from "./Room";
-import { parseInput, parseJoin, parseTraining, parseVoiceSignal, parseVoiceState, sanitizeName } from "./validate";
+import { parseInput, parseJoin, parsePartyCommand, parseTraining, parseVoiceSignal, parseVoiceState, sanitizeName } from "./validate";
 import { checkProtocol, ROOM_FULL, SERVER_VERSION, TOO_MANY_ROOMS } from "./version";
 
 export interface GameDeps {
   leaderboard?: Leaderboard;
+  feedback?: FeedbackStore; // Bonobo Party (#579): dove finiscono i pareri sui minigiochi
   discordWebhookUrl?: string;
   limits?: Partial<typeof NET_LIMITS>; // per i test: limiti diversi da quelli di constants.ts
   roomIdleMs?: number;
@@ -149,7 +151,8 @@ export function attachGame(io: Server<ClientToServer, ServerToClient>, deps: Gam
           },
         };
         const board = () => deps.leaderboard?.board(HALL.boardRows) ?? [];
-        r = new Room(code, io, { stageId, rules, prematch: true, hall: data.hall, board }, combineHooks(bots.hooks, discord, hallBots), deps.reconnectHoldMs);
+        const feedback = { onFeedback: (fr: Room, entries: Parameters<FeedbackStore["add"]>[1]) => void deps.feedback?.add(fr.code, entries) };
+        r = new Room(code, io, { stageId, rules, prematch: true, hall: data.hall, board }, combineHooks(bots.hooks, discord, hallBots, feedback), deps.reconnectHoldMs);
         rooms.set(code, r);
         r.onClose = () => rooms.delete(code);
         if (r.hall) r.hallBotLevel = kind === "manichino" || kind === "facile" || kind === "difficile" ? kind : "semplice";
@@ -183,6 +186,12 @@ export function attachGame(io: Server<ClientToServer, ServerToClient>, deps: Gam
     // A partita finita: tutti nella sala d'attesa (solo nelle stanze con la sala)
     socket.on("hall", () => {
       if (room && allow(rematchBucket)) room.requestHall();
+    });
+    // Bonobo Party (#579): dado, strada, bottega, voto e feedback sul tabellone
+    socket.on("party", (raw: unknown) => {
+      if (!room || !allow(rematchBucket)) return;
+      const cmd = parsePartyCommand(raw);
+      if (cmd) room.partyCommand(playerId, cmd);
     });
     // Computer della sala (#567): regole e livello dei bot della prossima partita, ripuliti da Room e sanitizeRules
     socket.on("hallRules", (raw: unknown) => {
