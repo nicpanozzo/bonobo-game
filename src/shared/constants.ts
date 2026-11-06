@@ -721,7 +721,7 @@ export const STATION = {
 
 // Sala d'attesa 3D (src/shared/hall.ts): misure in centimetri, tempi in millisecondi
 export const HALL = {
-  width: 5400, // pavimento della sala, cm (da -2700 a 2700): ai lati la zona giochi, a sinistra gli scacchi e a destra il basket
+  width: 5800, // pavimento della sala, cm (da -2900 a 2900): ai lati la zona giochi, a sinistra gli scacchi e a destra il basket
   depth: 1800, // cm (da -900 davanti... a 900 verso la telecamera)
   walkSpeed: 520, // cm/s camminando
   accel: 4200, // cm/s² per arrivare alla velocità piena
@@ -751,8 +751,8 @@ export const HALL = {
   cageRadius: 90, // cm: le due gabbie dei bot (chiama / manda via)
   gongRadius: 90, // cm: dentro si suona il gong col tasto leggero
   throneRadius: 80, // cm: il trono del campione
-  computerX: 600, // cm: il computer delle regole (#567), davanti a destra
-  computerZ: 650, // cm
+  computerX: 1380, // cm: il computer delle regole (#567), davanti a destra
+  computerZ: 520, // cm
   computerRadius: 90, // cm: dentro, il colpo leggero apre la schermata delle regole
   shoveLift: 320, // cm/s verso l'alto di chi viene spinto: vola via invece di scivolare
   collideHeight: 120, // cm di differenza d'altezza oltre cui due giocatori non si urtano (si salta sopra)
@@ -777,7 +777,7 @@ export const HALL = {
   courtRadius: 600, // cm: mezzo campo quadrato, metà lato (zona "court")
   threePointRadius: 600, // cm dal punto sotto il ferro: tirando da più lontano il canestro vale 3
   freeThrowDist: 420, // cm dal punto sotto il ferro alla lunetta (solo da disegnare)
-  rackX: 1900, // cm: centro della rastrelliera dei palloni da basket (lì tornano)
+  rackX: 2100, // cm: centro della rastrelliera dei palloni da basket (lì tornano)
   rackZ: -800,
   rackGap: 40, // cm tra un pallone e l'altro sulla rastrelliera
   basketballs: 3,

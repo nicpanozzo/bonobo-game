@@ -358,7 +358,7 @@
     "minFighters": 2
   },
   "hall": {
-    "width": 5400,
+    "width": 5800,
     "depth": 1800,
     "walkSpeed": 520,
     "accel": 4200,
@@ -388,8 +388,8 @@
     "cageRadius": 90,
     "gongRadius": 90,
     "throneRadius": 80,
-    "computerX": 600,
-    "computerZ": 650,
+    "computerX": 1380,
+    "computerZ": 520,
     "computerRadius": 90,
     "shoveLift": 320,
     "collideHeight": 120,
@@ -412,7 +412,7 @@
     "courtRadius": 600,
     "threePointRadius": 600,
     "freeThrowDist": 420,
-    "rackX": 1900,
+    "rackX": 2100,
     "rackZ": -800,
     "rackGap": 40,
     "basketballs": 3,
