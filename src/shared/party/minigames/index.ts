@@ -20,11 +20,12 @@ import { provocazioni } from "./provocazioni";
 import { quattro } from "./quattro";
 import { salaprove } from "./salaprove";
 import { scalata } from "./scalata";
+import { sfida } from "./sfida";
 import { specchio } from "./specchio";
 import { strada } from "./strada";
 import { untasto } from "./untasto";
 
-export const MINIGAMES: Record<string, MinigameDef> = Object.fromEntries([pioggia, contagio, scalata, crollo, mezzogiorno, bancomat, colosso, acqua, strada, mattoni, filo, casse, muro, ierime, untasto, specchio, quattro, burattinaio, salaprove, provocazioni].map((g) => [g.info.id, g]));
+export const MINIGAMES: Record<string, MinigameDef> = Object.fromEntries([pioggia, contagio, scalata, crollo, mezzogiorno, bancomat, colosso, acqua, strada, mattoni, filo, casse, muro, ierime, untasto, specchio, quattro, burattinaio, salaprove, provocazioni, sfida].map((g) => [g.info.id, g]));
 
 export function getMinigame(id: string): MinigameDef | undefined {
   return MINIGAMES[id];
@@ -33,6 +34,6 @@ export function getMinigame(id: string): MinigameDef | undefined {
 // Quelli che si possono giocare in tanti
 export function minigamesFor(players: number): MinigameInfo[] {
   return Object.values(MINIGAMES)
-    .filter((g) => players >= (g.minPlayers ?? 1))
+    .filter((g) => !g.duelOnly && players >= (g.minPlayers ?? 1))
     .map((g) => g.info);
 }

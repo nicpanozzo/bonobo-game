@@ -286,3 +286,25 @@ describe("Bonobo Party: ritmo e Burattinaio", () => {
     assert.ok(Object.values(snap(match).party?.scores ?? {}).every((n) => n === 0), "senza tasti nessuno fa punti");
   });
 });
+
+describe("Bonobo Party: la Sfida", () => {
+  it("non si pesca, si parte ammaccati e vince chi resta in piedi", () => {
+    assert.ok(!minigamesFor(4).some((g) => g.id === "sfida"));
+    const { match } = minigameMatch("sfida", 1, ["a", "b"]);
+    match.step(DT);
+    const b = match.players.find((f) => f.id === "b")!;
+    assert.equal(match.players.find((f) => f.id === "a")!.percent, MINIGAME.sfida.startPercent);
+    b.y = match.stage.blastZone.bottom + 50;
+    run(match, 5000);
+    assert.ok(match.ended);
+    assert.deepEqual(match.minigamePlaces, { a: 1, b: 2 });
+  });
+
+  it("allo scadere vince chi ha meno danni", () => {
+    const { match } = minigameMatch("sfida", 1, ["a", "b"]);
+    match.step(DT);
+    match.players.find((f) => f.id === "b")!.percent = 140;
+    run(match, MINIGAME.sfida.durationMs + 2000);
+    assert.deepEqual(match.minigamePlaces, { a: 1, b: 2 });
+  });
+});

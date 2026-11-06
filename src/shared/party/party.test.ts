@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { PARTY } from "../constants";
+import { MINIGAME, PARTY } from "../constants";
 import type { MinigameInfo, PartySnapshot } from "../types";
 import { BOARD_LOOP, crownSpots, makeBoard } from "./board";
 import { Party, type PartyMember } from "./party";
@@ -158,5 +158,32 @@ describe("Bonobo Party: la partita", () => {
     assert.equal(p.phase, "roll");
     assert.notEqual(p.turnId, leaving);
     assert.equal(p.playerIds.length, 2);
+  });
+
+  it("la carta Sfida fa giocare un duello solo ai due, poi le banane passano di mano e il turno riprende", () => {
+    // Si cerca un seme in cui esce la carta Sfida (con soli bot è tutto deterministico)
+    let p: Party | null = null;
+    for (let seed = 1; seed < 80 && !p; seed++) {
+      const q = party([member("a", true), member("b", true), member("c", true)], { seed, rounds: PARTY.maxRounds });
+      run(q, 600_000, (x) => !!x.duel || x.phase === "podium" || (x.phase === "minigame" && !x.duel && x.round > 1), (x) => {
+        if (x.minigameReady && !x.duel) x.minigameDone({ a: 1, b: 2, c: 3 });
+      });
+      if (q.duel) p = q;
+    }
+    assert.ok(p, "in qualche seme esce la Sfida");
+    const [w, l] = p.duel!;
+    assert.equal(p.minigame?.id, "sfida");
+    const before = p.snapshot(0).players;
+    const turn = p.turnId;
+    run(p, 10_000, (q) => q.minigameReady);
+    p.minigameDone({ [w]: 1, [l]: 2 });
+    const snap = p.snapshot(0);
+    const taken = Math.min(MINIGAME.sfida.bananas, before.find((x) => x.id === l)!.bananas);
+    assert.equal(snap.players.find((x) => x.id === w)!.bananas, before.find((x) => x.id === w)!.bananas + taken);
+    assert.equal(snap.players.find((x) => x.id === l)!.bananas, before.find((x) => x.id === l)!.bananas - taken);
+    assert.equal(snap.phase, "move", "niente feedback dopo la Sfida");
+    assert.equal(p.duel, null);
+    run(p, 5000, (q) => q.turnId !== turn || q.phase === "vote" || q.phase === "minigame");
+    assert.ok(p.turnId !== turn || p.phase !== "move", "il turno va avanti");
   });
 });
