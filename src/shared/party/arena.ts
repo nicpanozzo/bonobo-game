@@ -20,6 +20,7 @@ export interface ArenaParts {
   respawn?: { x: number; y: number };
   camera?: StageSpec["camera"];
   checkpoints?: StageSpec["checkpoints"];
+  music?: StageSpec["music"]; // la musica a sintetizzatore, col suo tempo (Sala Prove)
 }
 
 // Un'arena da minigioco: zona di espulsione larga attorno al mondo, partenze sul primo blocco se non dette
@@ -42,6 +43,7 @@ export function arena(p: ArenaParts): StageSpec {
     ...(p.height && { height: p.height }),
     ...(p.camera && { camera: p.camera }),
     ...(p.checkpoints && { checkpoints: p.checkpoints }),
+    ...(p.music && { music: p.music }),
   };
 }
 

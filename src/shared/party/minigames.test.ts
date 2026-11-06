@@ -47,7 +47,8 @@ describe("Bonobo Party: i minigiochi", () => {
       assert.ok(match.ended, `${id} finisce`);
       const places = match.minigamePlaces!;
       assert.deepEqual(Object.keys(places).sort(), [...IDS].sort(), id);
-      assert.ok(Object.values(places).some((p) => p === 1), id);
+      // C'è un primo, oppure (nei minigiochi di squadra) un posto solo per tutti
+      assert.ok(Object.values(places).some((p) => p === 1) || new Set(Object.values(places)).size === 1, id);
       const end = events.find((e) => e.type === "matchEnd");
       assert.ok(end, `${id}: matchEnd`);
       assert.deepEqual(snap(match).party?.places, places);
@@ -197,5 +198,91 @@ describe("Bonobo Party: classici e puzzle", () => {
     }
     // In mezzo minuto qualche muro col buco non in basso passa per forza
     assert.ok(flew || (snap(match).party?.scores.a ?? 0) > 0);
+  });
+});
+
+describe("Bonobo Party: idee pazze", () => {
+  it("Ieri Me: a ogni giro un fantasma in più a testa, che non entra in classifica", () => {
+    const { match } = minigameMatch("ierime", 1, ["a", "b"]);
+    run(match, MINIGAME.ierime.roundMs * 2 + 500, () => false);
+    const ghosts = snap(match).players.filter((p) => p.ghostOf);
+    assert.equal(ghosts.length, 4, "due giri finiti, due fantasmi a testa");
+    assert.ok(ghosts.every((g) => g.ghostOf === "a" || g.ghostOf === "b"));
+    run(match, 200_000);
+    assert.deepEqual(Object.keys(match.minigamePlaces!).sort(), ["a", "b"]);
+  });
+
+  it("Un Solo Tasto: i tasti tolti non arrivano al lottatore", () => {
+    const { match, setup } = minigameMatch("untasto", 1, ["a", "b"]);
+    const role = setup.roles!.a;
+    run(match, 100, () => false);
+    match.setInput("a", { ...emptyInput(), jump: true, light: true, heavy: true, special: true, shield: true, left: true });
+    const a = match.players.find((f) => f.id === "a")!;
+    const pressed = (["jump", "light", "heavy", "special", "shield"] as const).filter((k) => a.input[k]);
+    assert.equal(pressed.length, 1, role);
+    assert.ok(a.input.left, "il movimento resta");
+  });
+
+  it("Lo Specchio: dopo il cambio i miei tasti guidano un altro", () => {
+    const { match } = minigameMatch("specchio", 1, ["a", "b"]);
+    run(match, MINIGAME.specchio.swapMs + 200, () => false);
+    match.setInput("a", { ...emptyInput(), right: true });
+    match.setInput("b", emptyInput());
+    match.step(DT);
+    const [a, b] = ["a", "b"].map((id) => match.players.find((f) => f.id === id)!);
+    assert.ok(b.input.right && !a.input.right, "a guida b");
+  });
+
+  it("Il Bonobo a Quattro: un bonobo gigante e il Rivale; i tasti di ognuno muovono solo la sua parte", () => {
+    const { match, setup } = minigameMatch("quattro", 1, ["a", "b"]);
+    assert.equal(setup.roles!.a, "Sinistra + Salto");
+    run(match, 200, () => false);
+    const bonobo = match.players.find((f) => f.id === "bonobo-a-quattro")!;
+    assert.ok(bonobo && match.players.some((f) => f.id === "rivale"));
+    assert.equal(bonobo.powerup, "colosso");
+    match.setInput("a", { ...emptyInput(), right: true, left: true });
+    match.step(DT);
+    assert.ok(bonobo.input.left && !bonobo.input.right, "a ha solo la sinistra");
+    run(match, 200_000);
+    const places = Object.values(match.minigamePlaces!);
+    assert.ok(places.every((p) => p === places[0]), "si vince o si perde insieme");
+  });
+});
+
+describe("Bonobo Party: ritmo e Burattinaio", () => {
+  it("Il Burattinaio: col Leggero cade un mattone, e lui resta sulla passerella", () => {
+    const { match, setup } = minigameMatch("burattinaio", 1, ["a", "b"]);
+    const master = Object.keys(setup.roles!)[0];
+    run(match, 300, () => false);
+    const m = match.players.find((f) => f.id === master)!;
+    assert.ok(m.y < 200, `in alto: ${m.y}`);
+    match.setInput(master, { ...emptyInput(), light: true });
+    match.step(DT);
+    match.setInput(master, emptyInput());
+    match.step(DT);
+    assert.ok((snap(match).party?.props ?? []).some((p) => p.kind === "brick"), "il mattone cade");
+    assert.ok(!m.attack, "il Leggero del Burattinaio non è una mossa");
+  });
+
+  it("Sala Prove: un colpo sul battito vale punti, fuori tempo no", async () => {
+    const { offBeat } = await import("./minigames/salaprove");
+    const beat = 60000 / MINIGAME.salaProve.bpm;
+    assert.equal(offBeat(beat * 3), 0);
+    assert.equal(offBeat(beat * 3 + 40), 40);
+    assert.equal(offBeat(beat * 3 - 40), 40);
+    assert.equal(Math.round(offBeat(beat * 3.5)), Math.round(beat / 2));
+  });
+
+  it("Gara di Provocazioni: le mosse vengono dagli eventi di sempre", async () => {
+    const { moveOf } = await import("./minigames/provocazioni");
+    assert.deepEqual(moveOf({ type: "jump", id: "a", x: 0, y: 0, air: false }), { id: "a", move: "salto" });
+    assert.deepEqual(moveOf({ type: "attack", id: "a", kind: "heavyUp" }), { id: "a", move: "pesante" });
+    assert.deepEqual(moveOf({ type: "attack", id: "a", kind: "lightAir" }), { id: "a", move: "leggero" });
+    assert.deepEqual(moveOf({ type: "taunt", id: "a" }), { id: "a", move: "provocazione" });
+    assert.equal(moveOf({ type: "attack", id: "a", kind: "grab" }), null);
+    // Chi non preme niente non fa punti (e il minigioco finisce da solo)
+    const { match } = minigameMatch("provocazioni", 3, ["a", "b"]);
+    run(match, 200_000);
+    assert.ok(Object.values(snap(match).party?.scores ?? {}).every((n) => n === 0), "senza tasti nessuno fa punti");
   });
 });
