@@ -157,7 +157,7 @@ func test_canestro_campo_e_scacchiera() -> void:
 	var facing := hoop.basis.z
 	runner.check(facing.x < -0.9, "il canestro guarda il campo: %s" % facing)
 	var rim: Vector3 = hoop.rim_point()
-	runner.check(absf(rim.y - 3.05) < 0.01 and absf(rim.x - 25.42) < 0.01, "ferro all'altezza del server: %s" % rim)
+	runner.check(absf(rim.y - 3.05) < 0.01 and absf(rim.x - 27.42) < 0.01, "ferro all'altezza del server: %s" % rim)
 	runner.check(hoop.board_point().x > rim.x, "il tabellone sta dietro al ferro")
 	# il fondo del parquet passa dietro al ferro, a FIBA_HOOP (scalato) dal centro del ferro
 	var s: float = court._court_size.x / 15.0
@@ -165,9 +165,9 @@ func test_canestro_campo_e_scacchiera() -> void:
 	runner.check(absf(baseline - (rim.x + 1.575 * s)) < 0.05, "il parquet finisce sotto il canestro: %.2f" % baseline)
 	runner.check(v.zone_count() == Fake.ZONES.size(), "tutte le zone, anche rastrelliera e scacchiera")
 	runner.check(v.hit_surface(rim + Vector3(0.23, 0.0, 0.0), 0.12, "basketball") == "rim", "colpo sul ferro")
-	runner.check(v.hit_surface(Vector3(25.7, 3.7, 0.6), 0.12, "basketball") == "board", "colpo sul tabellone")
-	runner.check(v.hit_surface(Vector3(20.0, 0.12, 2.0), 0.12, "basketball") == "floor", "rimbalzo a terra")
-	runner.check(v.hit_surface(Vector3(-21.0, 0.5, 0.0), 0.2, "chess") == "piece", "pezzo degli scacchi")
+	runner.check(v.hit_surface(Vector3(27.7, 3.7, 0.6), 0.12, "basketball") == "board", "colpo sul tabellone")
+	runner.check(v.hit_surface(Vector3(22.0, 0.12, 2.0), 0.12, "basketball") == "floor", "rimbalzo a terra")
+	runner.check(v.hit_surface(Vector3(-23.0, 0.5, 0.0), 0.2, "chess") == "piece", "pezzo degli scacchi")
 	v.free()
 
 

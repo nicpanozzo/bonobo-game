@@ -3,47 +3,49 @@
 extends RefCounted
 
 const ZONES := [
-	{"kind": "mode", "id": "ffa", "x": -660, "z": -680, "r": 170, "label": "Tutti contro tutti"},
-	{"kind": "mode", "id": "teams", "x": -220, "z": -680, "r": 170, "label": "Squadre"},
-	{"kind": "mode", "id": "flag", "x": 220, "z": -680, "r": 170, "label": "Bandiera"},
-	{"kind": "mode", "id": "race", "x": 660, "z": -680, "r": 170, "label": "Corsa"},
-	{"kind": "fighter", "id": "default", "x": -1380, "z": -380, "r": 70, "label": "Bonobo"},
-	{"kind": "fighter", "id": "orsoblu", "x": -1200, "z": -380, "r": 70, "label": "Capt. OrsoBlu"},
-	{"kind": "fighter", "id": "bonobot", "x": -1020, "z": -380, "r": 70, "label": "Bonobot"},
-	{"kind": "fighter", "id": "elvedeo", "x": -1380, "z": -180, "r": 70, "label": "Elvedeo"},
-	{"kind": "fighter", "id": "egiainuso", "x": -1200, "z": -180, "r": 70, "label": "Egiainuso"},
-	{"kind": "fighter", "id": "lampione", "x": -1020, "z": -180, "r": 70, "label": "Lampione"},
-	{"kind": "fighter", "id": "bradipo", "x": -1380, "z": 20, "r": 70, "label": "Bradipo Giallo"},
-	{"kind": "fighter", "id": "giovannifrana", "x": -1200, "z": 20, "r": 70, "label": "Giovanni fRana"},
-	{"kind": "fighter", "id": "marcomunista", "x": -1020, "z": 20, "r": 70, "label": "Marcomunista"},
-	{"kind": "fighter", "id": "lendmar", "x": -1380, "z": 220, "r": 70, "label": "Lendmar"},
-	{"kind": "fighter", "id": "drmicelium", "x": -1200, "z": 220, "r": 70, "label": "Dr. Micelium"},
-	{"kind": "fighter", "id": "coachcartier", "x": -1020, "z": 220, "r": 70, "label": "Electronmaster"},
-	{"kind": "fighter", "id": "nonnagina", "x": -1380, "z": 420, "r": 70, "label": "Nonna Gina"},
-	{"kind": "stage", "id": "palco", "x": 1080, "z": -400, "r": 120, "label": "Il Palco"},
-	{"kind": "stage", "id": "isole", "x": 1360, "z": -400, "r": 120, "label": "Le Isole"},
-	{"kind": "stage", "id": "fabbrica", "x": 1080, "z": -120, "r": 120, "label": "La Fabbrica"},
-	{"kind": "stage", "id": "palestra", "x": 1360, "z": -120, "r": 120, "label": "La Palestra"},
-	{"kind": "stage", "id": "padova", "x": 1080, "z": 160, "r": 120, "label": "Padova"},
-	{"kind": "stage", "id": "musica", "x": 1360, "z": 160, "r": 120, "label": "Sala Prove"},
-	{"kind": "stage", "id": "bologna", "x": 1080, "z": 440, "r": 120, "label": "Bologna"},
-	{"kind": "stage", "id": "casuale", "x": 1360, "z": 440, "r": 120, "label": "Casuale"},
-	{"kind": "ready", "id": "ready", "x": 0, "z": 100, "r": 260, "label": "Pronti"},
-	{"kind": "trampoline", "id": "trampolino-sinistra", "x": -620, "z": 250, "r": 110, "label": "Trampolino"},
-	{"kind": "trampoline", "id": "trampolino-destra", "x": 620, "z": 250, "r": 110, "label": "Trampolino"},
-	{"kind": "botAdd", "id": "bot-chiama", "x": -720, "z": 650, "r": 90, "label": "Chiama un bot"},
-	{"kind": "botRemove", "id": "bot-via", "x": -480, "z": 650, "r": 90, "label": "Manda via un bot"},
-	{"kind": "computer", "id": "computer", "x": 600, "z": 650, "r": 90, "label": "Regole della partita"},
-	{"kind": "gong", "id": "gong", "x": 1250, "z": -720, "r": 90, "label": "Gong"},
-	{"kind": "throne", "id": "trono", "x": -1250, "z": -720, "r": 80, "label": "Trono del campione"},
-	{"kind": "court", "id": "campo", "x": 2100, "z": 0, "r": 600, "label": "Campo da basket"},
-	{"kind": "hoop", "id": "canestro", "x": 2542, "z": 0, "r": 23, "label": "Canestro"},
-	{"kind": "chessboard", "id": "scacchiera", "x": -2100, "z": 0, "r": 280, "label": "Scacchi giganti"},
-	{"kind": "rack", "id": "rastrelliera", "x": 1940, "z": -800, "r": 80, "label": "Palloni"},
+	{"kind": "mode", "id": "ffa", "x": -880, "z": 520, "r": 170, "label": "Tutti contro tutti"},
+	{"kind": "mode", "id": "teams", "x": -440, "z": 520, "r": 170, "label": "Squadre"},
+	{"kind": "mode", "id": "flag", "x": 0, "z": 520, "r": 170, "label": "Bandiera"},
+	{"kind": "mode", "id": "race", "x": 440, "z": 520, "r": 170, "label": "Corsa"},
+	{"kind": "mode", "id": "party", "x": 880, "z": 520, "r": 170, "label": "Bonobo Party"},
+	{"kind": "fighter", "id": "default", "x": -475, "z": -300, "r": 70, "label": "Bonobo"},
+	{"kind": "fighter", "id": "orsoblu", "x": -665, "z": -300, "r": 70, "label": "Capt. OrsoBlu"},
+	{"kind": "fighter", "id": "bonobot", "x": -855, "z": -300, "r": 70, "label": "Bonobot"},
+	{"kind": "fighter", "id": "elvedeo", "x": -1045, "z": -300, "r": 70, "label": "Elvedeo"},
+	{"kind": "fighter", "id": "egiainuso", "x": -1235, "z": -300, "r": 70, "label": "Egiainuso"},
+	{"kind": "fighter", "id": "lampione", "x": -1425, "z": -300, "r": 70, "label": "Lampione"},
+	{"kind": "fighter", "id": "bradipo", "x": -1615, "z": -300, "r": 70, "label": "Bradipo Giallo"},
+	{"kind": "fighter", "id": "giovannifrana", "x": -380, "z": -680, "r": 70, "label": "Giovanni fRana"},
+	{"kind": "fighter", "id": "marcomunista", "x": -570, "z": -680, "r": 70, "label": "Marcomunista"},
+	{"kind": "fighter", "id": "lendmar", "x": -760, "z": -680, "r": 70, "label": "Lendmar"},
+	{"kind": "fighter", "id": "drmicelium", "x": -950, "z": -680, "r": 70, "label": "Dr. Micelium"},
+	{"kind": "fighter", "id": "coachcartier", "x": -1140, "z": -680, "r": 70, "label": "Electronmaster"},
+	{"kind": "fighter", "id": "nonnagina", "x": -1330, "z": -680, "r": 70, "label": "Nonna Gina"},
+	{"kind": "fighter", "id": "opus", "x": -1520, "z": -680, "r": 70, "label": "Maestro Opus"},
+	{"kind": "stage", "id": "palco", "x": 530, "z": -260, "r": 120, "label": "Il Palco"},
+	{"kind": "stage", "id": "isole", "x": 830, "z": -260, "r": 120, "label": "Il Diluvio"},
+	{"kind": "stage", "id": "fabbrica", "x": 1130, "z": -260, "r": 120, "label": "La Fabbrica"},
+	{"kind": "stage", "id": "palestra", "x": 1430, "z": -260, "r": 120, "label": "La Palestra"},
+	{"kind": "stage", "id": "padova", "x": 380, "z": -660, "r": 120, "label": "Padova"},
+	{"kind": "stage", "id": "musica", "x": 680, "z": -660, "r": 120, "label": "Sala Prove"},
+	{"kind": "stage", "id": "bologna", "x": 980, "z": -660, "r": 120, "label": "Bologna"},
+	{"kind": "stage", "id": "casuale", "x": 1280, "z": -660, "r": 120, "label": "Casuale"},
+	{"kind": "ready", "id": "ready", "x": 0, "z": 0, "r": 260, "label": "Pronti"},
+	{"kind": "trampoline", "id": "trampolino-sinistra", "x": -1000, "z": 150, "r": 110, "label": "Trampolino"},
+	{"kind": "trampoline", "id": "trampolino-destra", "x": 1000, "z": 150, "r": 110, "label": "Trampolino"},
+	{"kind": "botAdd", "id": "bot-chiama", "x": -1260, "z": 520, "r": 90, "label": "Chiama un bot"},
+	{"kind": "botRemove", "id": "bot-via", "x": -1500, "z": 520, "r": 90, "label": "Manda via un bot"},
+	{"kind": "computer", "id": "computer", "x": 1380, "z": 520, "r": 90, "label": "Regole della partita"},
+	{"kind": "gong", "id": "gong", "x": 130, "z": -740, "r": 90, "label": "Gong"},
+	{"kind": "throne", "id": "trono", "x": -130, "z": -740, "r": 80, "label": "Trono del campione"},
+	{"kind": "court", "id": "campo", "x": 2300, "z": 0, "r": 600, "label": "Campo da basket"},
+	{"kind": "hoop", "id": "canestro", "x": 2742, "z": 0, "r": 23, "label": "Canestro"},
+	{"kind": "chessboard", "id": "scacchiera", "x": -2300, "z": 0, "r": 280, "label": "Scacchi giganti"},
+	{"kind": "rack", "id": "rastrelliera", "x": 2140, "z": -800, "r": 80, "label": "Palloni"},
 ]
-const WIDTH := 5400 # HALL.width: la zona giochi ai lati
-const HOOP := Vector3(2542, 305, 0) # centro del ferro, cm
-const CHESS_X := -2100
+const WIDTH := 5800 # HALL.width: la zona giochi ai lati
+const HOOP := Vector3(2742, 305, 0) # centro del ferro, cm
+const CHESS_X := -2300
 const CHESS_SQUARE := 70
 const PIECES := {"king": [180, 27], "queen": [165, 26], "bishop": [135, 23], "knight": [120, 24], "rook": [110, 24], "pawn": [90, 20]} # h, r in cm
 const BACK_RANK := ["rook", "knight", "bishop", "queen", "king", "bishop", "knight", "rook"]
@@ -93,9 +95,9 @@ static func snapshot(t: float, players: Array, extra := {}) -> Dictionary:
 static func props() -> Array:
 	var out := []
 	for i in 3:
-		out.append(prop("ball-%d" % (i + 1), "basketball", 1860 + i * 40, 12, -800, 12))
-	out.append(prop("beach-1", "beachball", -400, 60, -300, 60))
-	out.append(prop("beach-2", "beachball", 400, 60, -300, 60))
+		out.append(prop("ball-%d" % (i + 1), "basketball", 2060 + i * 40, 12, -800, 12))
+	out.append(prop("beach-1", "beachball", -200, 60, -420, 60))
+	out.append(prop("beach-2", "beachball", 200, 60, -420, 60))
 	for color in ["white", "black"]:
 		var side := 1 if color == "white" else -1
 		var c := "w" if color == "white" else "b"
@@ -131,13 +133,13 @@ static func party(t: float, scene := "sala") -> Dictionary:
 	var wob := sin(t / 400.0) * 20.0
 	var players := [
 		player("p0", "Davide", "bonobot", 0xe74c3c, 60, -330 + wob * 0.2, {"host": true, "modeVote": "ffa", "stageVote": "palco", "facing": -1}),
-		player("p1", "Nicola", "nonnagina", 0x3498db, -660, -640, {"modeVote": "ffa", "moving": false}),
+		player("p1", "Nicola", "nonnagina", 0x3498db, -880, 500, {"modeVote": "ffa", "moving": false}),
 		player("p2", "Riccardo", "orsoblu", 0x2ecc71, 380, -60 + wob, {"moving": true, "ready": true, "modeVote": "teams", "stageVote": "bologna"}),
-		player("p3", "Marta", "elvedeo", 0xf1c40f, -1250, -700, {"throne": true, "modeVote": "ffa", "stageVote": "palco"}),
+		player("p3", "Marta", "elvedeo", 0xf1c40f, -130, -740, {"throne": true, "modeVote": "ffa", "stageVote": "palco"}),
 		player("p4", "Gianlu", "default", 0x9b59b6, -170, 120, {"ready": true, "modeVote": "ffa", "stageVote": "palco"}),
-		player("p5", "Elena", "bradipo", 0xe67e22, 620, 250, {"y": 180.0 + absf(wob) * 4.0, "onGround": false, "modeVote": "race"}),
+		player("p5", "Elena", "bradipo", 0xe67e22, 1000, 150, {"y": 180.0 + absf(wob) * 4.0, "onGround": false, "modeVote": "race"}),
 		player("p6", "Bonobot", "bonobot", 0x1abc9c, 160, 230, {"bot": true, "ready": true, "facing": -1}),
-		player("p7", "Pietro", "lampione", 0xff7675, -220, -560, {"away": true, "modeVote": "teams"}),
+		player("p7", "Pietro", "lampione", 0xff7675, -440, 560, {"away": true, "modeVote": "teams"}),
 	]
 	var extra := {"need": "Servono tutti nel cerchio: mancano 3 giocatori"}
 	if scene == "conto" or scene == "via":
@@ -155,7 +157,7 @@ static func party(t: float, scene := "sala") -> Dictionary:
 		extra = {"countdownMs": 3200.0 if scene == "conto" else null, "need": null}
 	elif scene == "basket":
 		# partita al campo: Riccardo tira da tre in salto, il pallone è in volo sopra il ferro, gli altri guardano
-		var spots := [[1980, 330], [1700, -150], [1880, 60], [2250, -330], [1760, -420], [1620, 420], [2280, 380], [2080, 620]]
+		var spots := [[2180, 330], [1900, -150], [2080, 60], [2450, -330], [1960, -420], [1820, 420], [2480, 380], [2280, 620]]
 		for i in players.size():
 			players[i].x = spots[i][0]
 			players[i].z = spots[i][1]
@@ -175,7 +177,7 @@ static func party(t: float, scene := "sala") -> Dictionary:
 		players[4].emote = true
 		var list: Array = extra.get("props", props())
 		var k := fposmod(t / 1400.0, 1.0) * 0.25 + 0.72 # la parte finale dell'arco, sopra il ferro
-		var from := Vector3(1900, 260, 120)
+		var from := Vector3(2100, 260, 120)
 		var to := HOOP + Vector3(-8, 0, 0)
 		var arc := from.lerp(to, k) + Vector3(0, sin(k * PI) * 260, 0)
 		var shot := find(list, "ball-1")
@@ -183,13 +185,13 @@ static func party(t: float, scene := "sala") -> Dictionary:
 		var held := find(list, "ball-2")
 		held.merge({"x": players[0].x, "y": 195, "z": players[0].z, "holder": "p0"}, true)
 		var loose := find(list, "ball-3")
-		loose.merge({"x": 2300, "y": 12, "z": 300, "yaw": 1.0, "spin": t / 200.0}, true)
+		loose.merge({"x": 2500, "y": 12, "z": 300, "yaw": 1.0, "spin": t / 200.0}, true)
 		var beach := find(list, "beach-2")
-		beach.merge({"x": 1350, "y": 140, "z": 560, "spin": t / 500.0, "yaw": 0.4}, true)
+		beach.merge({"x": 1550, "y": 140, "z": 560, "spin": t / 500.0, "yaw": 0.4}, true)
 		extra = {"props": list, "need": null}
 	elif scene == "scacchi":
 		# alla scacchiera: qualche pezzo già per terra, il re nero sta cadendo
-		var spots := [[-1980, 520], [-2500, 520], [-1650, 120], [-2250, -480], [-1650, -300], [-2700 + 120, 80], [-1500, 520], [-2050, 640]]
+		var spots := [[-2180, 520], [-2700, 520], [-1850, 120], [-2450, -480], [-1850, -300], [-2900 + 120, 80], [-1700, 520], [-2250, 640]]
 		for i in players.size():
 			players[i].x = spots[i][0]
 			players[i].z = spots[i][1]
@@ -211,14 +213,14 @@ static func party(t: float, scene := "sala") -> Dictionary:
 		extra = {"props": list, "need": null}
 	elif scene == "computer":
 		# al computer delle regole (#567): io davanti allo schermo, due amici che guardano
-		players[0].x = 520
-		players[0].z = 720
+		players[0].x = 1300
+		players[0].z = 590
 		players[0].facing = 1
-		players[2].x = 760
-		players[2].z = 760
+		players[2].x = 1540
+		players[2].z = 630
 		players[2].moving = false
-		players[4].x = 380
-		players[4].z = 560
+		players[4].x = 1160
+		players[4].z = 430
 		players[4].ready = false
 		extra = {"need": null, "botLevel": "difficile"}
 	elif scene == "solo":
@@ -229,12 +231,12 @@ static func party(t: float, scene := "sala") -> Dictionary:
 		]
 		extra = {"countdownMs": 3200.0, "need": null, "botLevel": "manichino"}
 	elif scene == "galleria":
-		players[0].x = -1200
-		players[0].z = -110
+		players[0].x = -1235
+		players[0].z = -220
 		players[0].characterId = "egiainuso"
-		players[1].x = 1080
-		players[1].z = -40
+		players[1].x = 1130
+		players[1].z = -180
 		players[1].stageVote = "fabbrica"
-		players[2].x = -1020
-		players[2].z = 60
+		players[2].x = -1045
+		players[2].z = -200
 	return snapshot(t, players, extra)

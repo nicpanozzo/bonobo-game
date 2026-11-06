@@ -10,7 +10,7 @@ var _out := "user://screenshots"
 var _game: Dictionary
 var _world: Node2D # nella partita finta: riceve uno snapshot a ogni frame
 var _hud: Control
-const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre", "lobby_regole", "musica", "tetris", "pacman", "bassanese", "bologna_piazza", "bologna_torri", "bologna_crollo", "bologna_zuffa", "oggetti", "oggetti_categorie", "oggetti_armi", "oggetti_pesanti", "prepartita_attesa", "prepartita_vs", "prepartita_conto", "fine_partita", "sala", "sala_conto", "sala_galleria", "sala_via", "sala_basket", "sala_scacchi", "sala_computer", "sala_regole", "sala_solo", "fabbrica", "diluvio", "palco_metal", "palco_reggae", "palco_techno", "orsoblu_mosse", "party_tabellone", "party_voto"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
+const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre", "lobby_regole", "musica", "tetris", "pacman", "bassanese", "bologna_piazza", "bologna_torri", "bologna_crollo", "bologna_zuffa", "oggetti", "oggetti_categorie", "oggetti_armi", "oggetti_pesanti", "prepartita_attesa", "prepartita_vs", "prepartita_conto", "fine_partita", "sala", "sala_conto", "sala_galleria", "sala_via", "sala_basket", "sala_scacchi", "sala_computer", "sala_regole", "sala_solo", "sala_pianta", "fabbrica", "diluvio", "palco_metal", "palco_reggae", "palco_techno", "orsoblu_mosse", "party_tabellone", "party_voto"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
 var _index := -1
 var _frame := 0
 var _failed := false
@@ -30,6 +30,7 @@ var _pre_view: Control
 var _end_on := false # la partita finta finita: GAME!, vincitore e classifica coi premi (results_view.gd)
 var _results: Control
 var _hall_view: Node3D # la sala d'attesa 3D finta: riceve uno snapshot a ogni frame
+var _fixed_cam: Camera3D # se c'è, la foto si scatta da qui e non dalla telecamera della sala
 var _hall_hud: Control
 var _hall_scene := "sala" # quale serata finta (tests/hall_fake.gd): sala, conto, galleria
 var _only: Array = [] # --only=sala,sala_basket: si scattano solo queste (per provare in fretta)
@@ -102,6 +103,8 @@ func _process(_delta: float) -> bool:
 			_hall_view.on_event(e)
 		_hall_view.on_snapshot(hall)
 		_hall_hud.on_snapshot(hall)
+		if _fixed_cam != null:
+			_fixed_cam.make_current()
 	if _frame < SHOT_FRAME:
 		return false
 	var name: String = SHOTS[_index]
@@ -133,6 +136,7 @@ func _next() -> void:
 	_results = null
 	_hall_view = null
 	_hall_hud = null
+	_fixed_cam = null
 	if _index < SHOTS.size():
 		call("_" + SHOTS[_index])
 
@@ -629,6 +633,18 @@ func _sala_computer() -> void:
 func _sala_solo() -> void:
 	_hall_scene = "solo"
 	_add_hall()
+
+
+# Tutta la sala dall'alto e da davanti, con una telecamera fissa: per vedere la disposizione delle zone (#581)
+func _sala_pianta() -> void:
+	_hall_scene = "sala"
+	_add_hall()
+	var cam := Camera3D.new()
+	cam.fov = 46.0
+	cam.far = 260.0
+	root.add_child(cam)
+	cam.look_at_from_position(Vector3(0.0, 26.0, 21.0), Vector3(0.0, 0.0, -1.5))
+	_fixed_cam = cam
 
 
 func _sala_regole() -> void:

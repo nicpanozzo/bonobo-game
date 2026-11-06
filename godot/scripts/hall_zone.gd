@@ -307,7 +307,7 @@ func _mode_icon(parent: Node3D) -> void:
 func _build_portal(text: String, preview: Texture2D) -> void:
 	_fade_labels = true
 	color = Color("b06bff") if zone_id == "casuale" else Color("4ad9ff")
-	var w := minf(radius * 1.85, 2.3)
+	var w := minf(radius * 1.6, 1.9) # stretti abbastanza da lasciar vedere, tra due portali, quello della fila dietro
 	var h := w * 1.3
 	# la base: una lastra di metallo scuro e la pedana davanti per entrare
 	var pad := HallMaterials.pad(color, radius * 1.7)

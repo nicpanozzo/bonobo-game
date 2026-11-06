@@ -63,6 +63,16 @@ describe("sala d'attesa: pianta", () => {
       }
   });
 
+  it("niente di alto sta subito dietro un'altra cosa alta: la telecamera di tre quarti lo vedrebbe coperto (#581)", () => {
+    const tall = hallLayout().filter((z) => ["stage", "fighter", "throne", "gong"].includes(z.kind));
+    for (const a of tall)
+      for (const b of tall) {
+        const behind = a.z - b.z; // b è più in fondo di a
+        if (a === b || behind <= 0 || behind > 600) continue;
+        assert.ok(Math.abs(a.x - b.x) >= Math.max(a.r, b.r), `${a.id} copre ${b.id}`);
+      }
+  });
+
   it("una pedana per modalità, un portale per arena della lobby (con la casuale), un piedistallo per lottatore", () => {
     const zones = hallLayout();
     assert.deepEqual(zones.filter((z) => z.kind === "mode").map((z) => z.id), ["ffa", "teams", "flag", "race", "party"]);
