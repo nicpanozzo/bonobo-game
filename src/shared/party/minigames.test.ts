@@ -159,3 +159,43 @@ describe("Bonobo Party: i minigiochi della seconda tornata", () => {
     assert.ok(got, "prima o poi dall'altra parte");
   });
 });
+
+describe("Bonobo Party: classici e puzzle", () => {
+  it("Il Filo: chi resta fermo sul filo di un altro finisce fuori", () => {
+    const { match } = minigameMatch("filo", 2, ["a", "b"]);
+    const [a, b] = match.players;
+    // a corre verso b e oltre, lasciando il filo; b resta fermo dove a è passato
+    for (let t = 0; t < 8000 && !b.eliminated; t += DT) {
+      match.setInput("a", { ...emptyInput(), right: a.x < 1000, left: a.x >= 1000 });
+      match.step(DT);
+    }
+    assert.ok(match.players.some((f) => f.eliminated), "qualcuno ha toccato il filo dell'altro");
+  });
+
+  it("Mattoni a Mazzate: ci sono i mattoni di ognuno e le palle", () => {
+    const { match } = minigameMatch("mattoni", 2);
+    run(match, 6000, () => false);
+    const props = snap(match).party?.props ?? [];
+    assert.equal(props.filter((p) => p.kind === "brick").length + Object.values(snap(match).party?.scores ?? {}).reduce((s, n) => s + n, 0), IDS.length * MINIGAME.mattoni.bricksEach);
+    assert.equal(props.filter((p) => p.kind === "ball").length, MINIGAME.mattoni.balls);
+  });
+
+  it("Casse al Posto Giusto: due squadre e le casse in mezzo", () => {
+    const { match, setup } = minigameMatch("casse", 2, ["a", "b", "c", "d"]);
+    assert.equal(new Set(Object.values(setup.roles ?? {})).size, 2);
+    run(match, 6000, () => false);
+    assert.equal((snap(match).party?.props ?? []).filter((p) => p.kind === "crate").length, MINIGAME.casse.crates);
+  });
+
+  it("Il Muro: chi è a terra quando passa un muro col buco in alto vola via", () => {
+    const { match } = minigameMatch("muro", 1, ["a"]);
+    const a = match.players[0];
+    let flew = false;
+    for (let t = 0; t < MINIGAME.muro.durationMs && !flew; t += DT) {
+      match.step(DT);
+      flew = a.hitstunTimer > 0 || a.respawning;
+    }
+    // In mezzo minuto qualche muro col buco non in basso passa per forza
+    assert.ok(flew || (snap(match).party?.scores.a ?? 0) > 0);
+  });
+});
