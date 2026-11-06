@@ -90,3 +90,11 @@ func test_oggetti_di_scena() -> void:
 	pr.set_props(null)
 	runner.check(pr.props.is_empty(), "niente oggetti se lo snapshot non li ha")
 	pr.free()
+
+
+func test_feedback_come_issue_gia_compilata() -> void:
+	var url := PartyView.feedback_url({"id": "pioggia", "title": "Pioggia di Banane", "category": "arraffa"}, 4, "più banane d'oro", 2, "orsoblu")
+	runner.check(url.begins_with("https://github.com/nicpanozzo/bonobo-game/issues/new?title="), "apre una issue nuova: %s" % url)
+	var body := url.get_slice("&body=", 1).uri_decode()
+	runner.check(url.get_slice("&body=", 0).uri_decode().ends_with("Feedback minigioco: Pioggia di Banane"), "il titolo dice il minigioco")
+	runner.check(body.contains("★★★★☆") and body.contains("2°") and body.contains("più banane d'oro") and body.contains("orsoblu"), "voto, posto, testo e lottatore: %s" % body)

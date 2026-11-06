@@ -18,6 +18,7 @@ const SQUARES := {
 	"evento": [Color("b48cff"), "?"],
 	"bottega": [Color("4fd1c5"), "€"],
 }
+const ISSUES_URL := "https://github.com/nicpanozzo/bonobo-game/issues/new" # il feedback come issue già compilata, come Segnala
 const ITEM_NAMES := {"moka": "Moka", "monopattino": "Monopattino", "ciabatta": "Ciabatta", "telefono": "Telefono"} # come PARTY_ITEMS in party.ts
 const SQUARE_R := 17.0 # raggio di una casella, pixel
 const PAWN := 46.0 # lato di una pedina, pixel
@@ -28,6 +29,7 @@ const FLOAT_S := 1.4 # secondi di una scritta che sale da una pedina (+3, -3)
 
 var game: Dictionary
 var my_id := ""
+var minigame_info: Dictionary = {} # l'ultimo minigioco giocato (MinigameInfo), per il titolo dell'issue di feedback
 var snap: Dictionary = {}
 var _pawns := {} # id -> Vector2 disegnata
 var _faces := {} # characterId -> Texture2D (o null)
@@ -242,6 +244,7 @@ func _build_feedback() -> Control:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", UI.GAP_M)
 	row.add_child(UI.button("Invia", _send_feedback, true))
+	row.add_child(UI.button("Invia e apri su GitHub", func(): _send_feedback(false, true)))
 	row.add_child(UI.button("Salta", func(): _send_feedback(true)))
 	box.add_child(row)
 	_actions.add_child(box)
@@ -257,13 +260,35 @@ func _set_stars(n: int) -> void:
 		b.add_theme_color_override("font_focus_color", UI.BANANA if i < n else UI.PAPER)
 
 
-func _send_feedback(skip := false) -> void:
+# github: oltre a mandarlo al server, apre nel browser un'issue già compilata (si invia con un clic su GitHub)
+func _send_feedback(skip := false, github := false) -> void:
 	if _sent_feedback:
 		return
 	_sent_feedback = true
 	var text := "" if skip or _note == null else _note.text.strip_edges()
 	command.emit({"kind": "feedback", "stars": 0 if skip else _stars, "text": text})
+	if github:
+		var results: Dictionary = snap.get("lastResults", {}) if snap.get("lastResults") is Dictionary else {}
+		var places: Dictionary = results.get("places", {}) if results.get("places") is Dictionary else {}
+		var info := minigame_info if not minigame_info.is_empty() else {"id": str(results.get("minigameId", "")), "title": str(results.get("minigameId", ""))}
+		OS.shell_open(feedback_url(info, _stars, text, int(places.get(my_id, 0)), str(_player(my_id).get("characterId", ""))))
 	_sync_actions()
+
+
+static func feedback_url(info: Dictionary, stars: int, text: String, place: int, character_id: String) -> String:
+	var title := "Feedback minigioco: %s" % str(info.get("title", info.get("id", "?")))
+	var lines := [
+		"**Minigioco:** %s (`%s`, %s)" % [str(info.get("title", "")), str(info.get("id", "")), PartyHud.category_name(str(info.get("category", "")))],
+		"**Voto:** %s" % ("★".repeat(stars) + "☆".repeat(5 - stars) if stars > 0 else "nessuno"),
+		"**Posto:** %s" % ("%d°" % place if place > 0 else "?"),
+		"**Lottatore:** %s" % character_id,
+		"",
+		"**Cosa cambieresti?**",
+		text if text != "" else "_(scrivi qui)_",
+		"",
+		"_Aperta dal gioco, Bonobo Party (#579)_",
+	]
+	return "%s?title=%s&body=%s" % [ISSUES_URL, title.uri_encode(), "\n".join(lines).uri_encode()]
 
 
 # --- Disegno ---

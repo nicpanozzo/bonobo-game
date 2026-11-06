@@ -86,6 +86,7 @@ var voice_panel: VoicePanel # chi è in voce, in alto a destra (voice_panel.gd)
 var party_view: Control # Bonobo Party (#579): il tabellone (party_view.gd), null fuori dal tabellone
 var party_hud: Control # Bonobo Party: come si gioca, punti e posti del minigioco (party_hud.gd)
 var party_props: Node2D # Bonobo Party: banane, crepe e scritte del minigioco, dentro l'arena (party_props.gd)
+var _last_minigame: Dictionary = {} # l'ultimo minigioco del party (MinigameInfo): il tabellone lo usa per il feedback
 var _in_party := false # la stanza è sul tabellone del party: arrivano i messaggi party, l'arena 2D è spenta
 
 
@@ -698,6 +699,7 @@ func _on_event(name: String, data: Variant) -> void:
 			if data.get("minigame") is Dictionary:
 				# Un minigioco del party: la prova libera parte da sola, Pronto la accorcia
 				party_hud.start(data.minigame)
+				_last_minigame = data.minigame
 			else:
 				party_hud.reset()
 				# Nel cerchio dei pronti ci sono già entrati tutti: nessuno deve ridire Pronto
@@ -859,6 +861,7 @@ func _enter_party() -> void:
 		party_view.setup(game, world.my_id)
 		party_view.command.connect(func(cmd: Dictionary): socket.emit("party", cmd))
 	party_view.my_id = world.my_id
+	party_view.minigame_info = _last_minigame
 
 
 # Si lascia il tabellone (parte un minigioco, si torna in sala o si esce dalla stanza)
