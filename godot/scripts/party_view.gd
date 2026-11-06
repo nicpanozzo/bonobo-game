@@ -89,6 +89,13 @@ func _on_event(e: Dictionary) -> void:
 		"results":
 			_sent_feedback = false
 			_stars = 0
+			# La Sfida non ha la scheda del feedback: le banane vinte e perse si vedono sopra le pedine
+			if str(e.get("minigameId", "")) == "sfida":
+				var won: Dictionary = e.get("bananas", {}) if e.get("bananas") is Dictionary else {}
+				for id in won:
+					var b := int(won[id])
+					if b != 0:
+						_floats.append({"id": str(id), "text": ("+%d" % b) if b > 0 else str(b), "color": UI.BANANA if b > 0 else UI.PUNCH, "age": 0.0})
 
 
 func _process(delta: float) -> void:

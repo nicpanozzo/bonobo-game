@@ -43,6 +43,7 @@ export interface MinigameSetup {
 export interface MinigameDef {
   info: Omit<MinigameInfo, "roles">;
   minPlayers?: number; // sotto non si pesca (es. 1 contro tutti vuole almeno 2 giocatori)
+  duelOnly?: boolean; // non si pesca: lo lancia il tabellone (la Sfida)
   build(seed: number, playerIds: string[]): MinigameSetup;
 }
 

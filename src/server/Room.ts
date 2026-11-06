@@ -368,7 +368,7 @@ export class Room {
     const info = party.minigame!;
     const def = getMinigame(info.id);
     if (!def) return party.minigameDone({});
-    const roster = (this.hall?.roster() ?? []).filter((p) => party.playerIds.includes(p.id));
+    const roster = (this.hall?.roster() ?? []).filter((p) => (party.duel ?? party.playerIds).includes(p.id));
     this.partySeed = (this.partySeed * 1103515245 + 12345) >>> 0;
     const setup = def.build(this.partySeed, roster.map((p) => p.id));
     const match = new Match({

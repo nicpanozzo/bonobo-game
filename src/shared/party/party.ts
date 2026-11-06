@@ -6,10 +6,11 @@
 // le banane), la casella dove si ferma fa il suo effetto. Finiti i turni, un minigioco per tutti (a caso o a voto),
 // poi il feedback sul minigioco. Dopo l'ultimo giro i premi e il podio: vince chi ha più Corone, poi più banane.
 
-import { PARTY } from "../constants";
+import { MINIGAME, PARTY } from "../constants";
 import { rng } from "../stageGenerator";
 import type { MinigameInfo, PartyCommand, PartyEvent, PartyPhase, PartyPick, PartyPlayer, PartySnapshot, PartySquare } from "../types";
 import { crownSpots, makeBoard } from "./board";
+import { sfida } from "./minigames/sfida";
 
 export interface PartyMember {
   id: string;
@@ -85,6 +86,9 @@ export class Party {
   private random: () => number;
   // Il minigioco da giocare: Room lo legge in fase minigame, costruisce la partita e poi chiama minigameDone
   minigame: MinigameInfo | null = null;
+  // In una Sfida (carta Evento) giocano solo questi due: Room costruisce la partita solo con loro
+  duel: [string, string] | null = null;
+  private pendingDuel: [string, string] | null = null;
   private pool: MinigameInfo[];
   finished = false; // il podio è finito: Room riporta tutti in sala
 
@@ -285,7 +289,7 @@ export class Party {
 
   // Un passo di cammino; all'incrocio ci si ferma a scegliere; all'arrivo la casella fa effetto
   private walk(m: Member) {
-    if (this.landed) return this.nextTurn();
+    if (this.landed) return this.pendingDuel ? this.startDuel(this.pendingDuel) : this.nextTurn();
     if (this.moveLeft <= 0) return this.land(m);
     const next = this.squares[m.square].next;
     if (next.length > 1) {
@@ -360,7 +364,7 @@ export class Party {
   // Le carte Evento: piccole sorprese che rimescolano la classifica senza decidere la partita
   private event(m: Member): string {
     const all = [...this.members.values()];
-    const card = Math.floor(this.random() * 6);
+    const card = Math.floor(this.random() * 7);
     switch (card) {
       case 0:
         for (const p of all) p.bananas += PARTY.squareBananas;
@@ -388,6 +392,14 @@ export class Party {
         const fine = Math.min(5, m.bananas);
         m.bananas -= fine;
         return `Multa per divieto di sosta a ${m.name}: -${fine}`;
+      }
+      case 6: {
+        // La Sfida: un duello con chi si sceglie a caso, subito dopo la casella
+        const others = all.filter((p) => p.id !== m.id && !p.away);
+        if (others.length === 0) return `${m.name} cerca qualcuno da sfidare, ma non trova nessuno`;
+        const o = this.pickOne(others);
+        this.pendingDuel = [m.id, o.id];
+        return `Sfida! ${m.name} contro ${o.name}: chi vince prende ${MINIGAME.sfida.bananas} banane all'altro`;
       }
       default: {
         const to = this.pickOne(crownSpots(this.squares));
@@ -458,6 +470,42 @@ export class Party {
     this.setPhase("minigame", PARTY.revealMs);
   }
 
+  // La Sfida va giocata subito, in mezzo ai turni: niente voto, niente feedback, poi il turno riprende
+  private startDuel(ids: [string, string]) {
+    this.pendingDuel = null;
+    if (!ids.every((id) => this.members.has(id))) return this.nextTurn(); // uno dei due è uscito
+    this.duel = ids;
+    this.minigame = sfida.info;
+    this.options = [sfida.info];
+    this.events.push({ type: "minigame", minigameId: sfida.info.id });
+    this.text = sfida.info.title;
+    this.setPhase("minigame", PARTY.revealMs);
+  }
+
+  // Fine della Sfida: le banane passano dal perdente al vincitore e si torna al turno
+  private duelDone(places: Record<string, number>) {
+    const [a, b] = this.duel!;
+    const winner = places[a] === 1 && places[b] !== 1 ? a : places[b] === 1 && places[a] !== 1 ? b : null;
+    const bananas: Record<string, number> = { [a]: 0, [b]: 0 };
+    const w = winner ? this.members.get(winner) : undefined;
+    const l = this.members.get(winner === a ? b : a);
+    if (w && l) {
+      const taken = Math.min(MINIGAME.sfida.bananas, l.bananas);
+      l.bananas -= taken;
+      w.bananas += taken;
+      bananas[w.id] = taken;
+      bananas[l.id] = -taken;
+      this.text = `${w.name} vince la sfida e prende ${taken} banane a ${l.name}`;
+    } else this.text = "La sfida finisce pari";
+    this.lastResults = { type: "results", minigameId: sfida.info.id, places: { ...places }, bananas };
+    this.events.push(this.lastResults);
+    this.duel = null;
+    this.minigame = null;
+    this.options = [];
+    this.landed = true;
+    this.setPhase("move", PARTY.squareMs);
+  }
+
   // Room: il tempo del cartellone è finito, si può costruire la partita del minigioco
   get minigameReady(): boolean {
     return this.phase === "minigame" && this.phaseMs <= 0 && !!this.minigame;
@@ -466,6 +514,7 @@ export class Party {
   // Room: il minigioco è finito con questi posti (1 = primo); chi non c'era non prende niente
   minigameDone(places: Record<string, number>) {
     if (this.phase !== "minigame" || !this.minigame) return;
+    if (this.duel) return this.duelDone(places);
     const bananas: Record<string, number> = {};
     for (const [id, place] of Object.entries(places)) {
       const m = this.members.get(id);
