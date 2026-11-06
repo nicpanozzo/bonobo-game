@@ -3,13 +3,17 @@
 
 import type { MinigameInfo } from "../../types";
 import type { MinigameDef } from "../minigame";
+import { acqua } from "./acqua";
+import { bancomat } from "./bancomat";
+import { colosso } from "./colosso";
 import { contagio } from "./contagio";
 import { crollo } from "./crollo";
 import { mezzogiorno } from "./mezzogiorno";
 import { pioggia } from "./pioggia";
 import { scalata } from "./scalata";
+import { strada } from "./strada";
 
-export const MINIGAMES: Record<string, MinigameDef> = Object.fromEntries([pioggia, contagio, scalata, crollo, mezzogiorno].map((g) => [g.info.id, g]));
+export const MINIGAMES: Record<string, MinigameDef> = Object.fromEntries([pioggia, contagio, scalata, crollo, mezzogiorno, bancomat, colosso, acqua, strada].map((g) => [g.info.id, g]));
 
 export function getMinigame(id: string): MinigameDef | undefined {
   return MINIGAMES[id];

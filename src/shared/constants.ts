@@ -1425,4 +1425,12 @@ export const MINIGAME = {
   contagio: { durationMs: 45000, infectPoints: 2, infectedColor: 0x6fbf3a },
   scalata: { durationMs: 60000, afterFirstMs: 12000, height: 2700, rowGap: 150, checkpointEvery: 600 },
   crollo: { durationMs: 60000, firstFallMs: 6000, everyMs: 2200, warnMs: 1600, keep: 2 },
+  // Il Bancomat Rotto: i colpi pesanti vicino alla macchina (range px) fanno uscire monete, poi si ricarica (cooldownMs)
+  bancomat: { durationMs: 40000, range: 130, cooldownMs: 700, coinsPerHit: 3, jackpotEvery: 6, jackpotCoins: 8, coinSpeed: 520, pickRadius: 16, maxCoins: 40, lostOnKo: 3 },
+  // Il Colosso: punti al Colosso per ogni KO, a chi lo butta fuori koPoints (e helpPoints agli altri cacciatori)
+  colosso: { durationMs: 45000, giantPoints: 2, koPoints: 4, helpPoints: 1 },
+  // Acqua Alta: l'acqua parte da startY e sale fino a topY in riseMs (pixel dell'arena), dopo una pausa iniziale
+  acqua: { durationMs: 50000, startY: 690, topY: 250, holdMs: 3000, riseMs: 40000 },
+  // Attraversa la Strada: corsie tra i due marciapiedi; ogni corsia ha un passaggio ogni periodMs (min..max), preavviso warnMs
+  strada: { durationMs: 45000, lanes: 5, periodMinMs: 1800, periodMaxMs: 3400, warnMs: 750, passMs: 550, bumpVx: 520, bumpVy: -680 },
 };

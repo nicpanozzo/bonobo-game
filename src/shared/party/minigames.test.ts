@@ -111,3 +111,51 @@ describe("Bonobo Party: i minigiochi", () => {
     assert.ok(Object.values(places).includes(1));
   });
 });
+
+describe("Bonobo Party: i minigiochi della seconda tornata", () => {
+  it("Il Bancomat Rotto: un colpo pesante davanti alla macchina fa uscire monete", () => {
+    const { match } = minigameMatch("bancomat", 4, ["a"]);
+    const a = match.players[0];
+    // Si va davanti alla macchina, girati verso di lei, e si colpisce col pesante
+    run(match, 6000, () => a.x > 560);
+    for (let t = 0; t < 6000 && a.x < 560; t += DT) {
+      match.setInput("a", { ...emptyInput(), right: true });
+      match.step(DT);
+    }
+    match.setInput("a", emptyInput());
+    run(match, 300, () => false);
+    match.setInput("a", { ...emptyInput(), heavy: true });
+    match.step(DT);
+    match.setInput("a", emptyInput());
+    run(match, 200, () => false);
+    const props = snap(match).party?.props ?? [];
+    assert.ok(props.filter((p) => p.kind === "coin").length >= MINIGAME.bancomat.coinsPerHit, "le monete escono");
+  });
+
+  it("Il Colosso: uno è gigante per tutto il minigioco, anche dopo un KO", () => {
+    const { match, setup } = minigameMatch("colosso", 3);
+    const giant = Object.keys(setup.roles ?? {})[0];
+    assert.ok(giant, "c'è un Colosso");
+    run(match, 3000, () => false);
+    assert.equal(match.players.find((f) => f.id === giant)?.powerup, "colosso");
+    assert.ok(match.players.filter((f) => f.id !== giant).every((f) => f.powerup !== "colosso"));
+  });
+
+  it("Acqua Alta: chi resta in basso affoga e finisce fuori", () => {
+    const { match } = minigameMatch("acqua", 2);
+    run(match, MINIGAME.acqua.durationMs + 2000);
+    assert.ok(match.ended);
+    assert.ok(Object.values(match.minigamePlaces!).includes(1));
+  });
+
+  it("Attraversa la Strada: arrivare sul marciapiede opposto vale un punto, l'autobus rimanda indietro", () => {
+    const { match } = minigameMatch("strada", 6, ["a"]);
+    let got = false;
+    for (let t = 0; t < MINIGAME.strada.durationMs && !got; t += DT) {
+      match.setInput("a", { ...emptyInput(), right: true, jump: Math.floor(t / 400) % 2 === 0 });
+      match.step(DT);
+      got = (snap(match).party?.scores.a ?? 0) > 0;
+    }
+    assert.ok(got, "prima o poi dall'altra parte");
+  });
+});

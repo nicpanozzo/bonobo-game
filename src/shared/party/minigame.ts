@@ -2,6 +2,7 @@
 // più una regola: questo file dice cosa la regola può fare. La partita la chiama a ogni passo dopo la fisica.
 // Niente animazioni nuove: un minigioco cambia arena, obiettivo e punti, e disegna solo oggetti di scena (PartyProp).
 
+import { HITSTUN_PER_KNOCKBACK } from "../constants";
 import type { Fighter, PhysicsContext } from "../physics";
 import type { StageSpec } from "../stages";
 import type { GameEvent, InputState, MatchRules, MinigameHud, MinigameInfo, PartyProp } from "../types";
@@ -64,6 +65,18 @@ export const bodyCenter = (f: Fighter) => ({ x: f.x, y: f.y - 40 });
 export function touches(f: Fighter, x: number, y: number, r: number): boolean {
   if (f.respawning || f.eliminated) return false;
   return Math.abs(f.x - x) < 26 + r && y > f.y - 90 - r && y < f.y + r;
+}
+
+// Un colpo dato dall'arena (un autobus, un muro): fa volare come un colpo vero, con la stessa sospensione dei comandi,
+// senza percentuale e senza un autore (nessuno prende il KO)
+export function bump(f: Fighter, vx: number, vy: number) {
+  if (f.respawning || f.eliminated) return;
+  f.vx = vx;
+  f.vy = vy;
+  f.onGround = false;
+  f.hitstunTimer = Math.hypot(vx, vy) * HITSTUN_PER_KNOCKBACK;
+  f.attack = null;
+  f.attackActive = false;
 }
 
 // Base per i minigiochi a tempo con i punti: conta il tempo, tiene punti e chi è fuori, e fa l'HUD
