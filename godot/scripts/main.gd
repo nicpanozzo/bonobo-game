@@ -466,7 +466,7 @@ func _flash_status(text: String) -> void:
 
 # Predizione (E17): accesa dall'opzione, e solo a velocità normale (l'allenamento rallentato fa meno tick)
 func _apply_prediction() -> void:
-	world.predictor.enabled = bool(settings.video.get("predict", true)) and gym.speed == 1.0 and not (prematch != null and prematch.frozen()) and not _in_hall and not _in_party and not party_hud.active() # nei minigiochi i tasti possono guidare un altro lottatore (Lo Specchio)
+	world.predictor.enabled = bool(settings.video.get("predict", true)) and gym.speed == 1.0 and not (prematch != null and prematch.frozen()) and not _in_hall and not _in_party and not (party_hud != null and party_hud.active()) # nei minigiochi i tasti possono guidare un altro lottatore (Lo Specchio)
 
 
 func _apply_volumes() -> void:
