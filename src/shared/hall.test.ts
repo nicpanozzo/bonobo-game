@@ -65,7 +65,7 @@ describe("sala d'attesa: pianta", () => {
 
   it("una pedana per modalità, un portale per arena della lobby (con la casuale), un piedistallo per lottatore", () => {
     const zones = hallLayout();
-    assert.deepEqual(zones.filter((z) => z.kind === "mode").map((z) => z.id), ["ffa", "teams", "flag", "race"]);
+    assert.deepEqual(zones.filter((z) => z.kind === "mode").map((z) => z.id), ["ffa", "teams", "flag", "race", "party"]);
     assert.deepEqual(zones.filter((z) => z.kind === "stage").map((z) => z.id), hallStageIds());
     assert.ok(hallStageIds().includes(RANDOM_STAGE_ZONE));
     assert.ok(!hallStageIds().includes("padova-palazzo"), "le arene nascoste restano fuori");

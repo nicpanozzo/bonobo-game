@@ -106,7 +106,8 @@ export function discordHooks(
     onEvents: (_room, events) => stats.add(events),
     onMatchEnd: (room, result, fighters: readonly Fighter[]) => {
       const humans = fighters.filter((f) => !isBot(f.id));
-      if (humans.length < 2) return;
+      // I minigiochi di Bonobo Party (#579) non contano per la classifica: sono giochi diversi, a punti
+      if (humans.length < 2 || room.match?.minigame) return;
       const results = leaderboard?.record({
         t: Date.now(),
         mode: room.rules.mode,

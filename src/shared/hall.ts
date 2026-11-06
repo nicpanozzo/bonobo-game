@@ -28,6 +28,7 @@ export const HALL_MODES: { id: HallMode; label: string }[] = [
   { id: "teams", label: "Squadre" },
   { id: "flag", label: "Bandiera" },
   { id: "race", label: "Corsa" },
+  { id: "party", label: "Bonobo Party" }, // tabellone e minigiochi (#579)
 ];
 export const RANDOM_STAGE_ZONE = "casuale"; // il portale dell'arena generata: il seme lo decide la sala a ogni giro
 
@@ -47,7 +48,7 @@ export function hallFighterIds(): string[] {
 // a destra il mezzo campo da basket col canestro sul muro, rivolto verso la sala
 export function hallLayout(): HallZone[] {
   const zones: HallZone[] = [];
-  const modeX = [-660, -220, 220, 660];
+  const modeX = [-800, -400, 0, 400, 800]; // cinque pedane da 170 cm di raggio, a 400 cm l'una dall'altra
   HALL_MODES.forEach((m, i) => zones.push({ kind: "mode", id: m.id, x: modeX[i], z: -680, r: HALL.padRadius, label: m.label }));
   // Galleria: tre colonne, file di 200 cm verso la telecamera
   hallFighterIds().forEach((id, i) =>
@@ -484,7 +485,7 @@ export class Hall {
       events,
       board,
       props: this.props.map(propState),
-      rules: { ...rules, mode: leading.mode },
+      rules: { ...rules, mode: leading.mode === "party" ? rules.mode : leading.mode }, // Bonobo Party (#579) non è una modalità di partita
       ...(botLevel ? { botLevel } : {}),
     };
   }
