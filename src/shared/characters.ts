@@ -862,7 +862,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       footY: 194,
       scale: 0.5, // il foglio è disegnato grande come un disegno a 2x
       animations: {
-        idle: { fps: 1, loop: true },
+        idle: { fps: 12, loop: true }, // clip Flow EG-01: respira
         walk: { fps: 6, loop: true }, // passo e corsa del foglio, alternati
         jump: { fps: 1, loop: false },
         fall: { fps: 1, loop: false },
@@ -885,6 +885,8 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         // clip Flow EG-12: lo sbuffo bianco è tolto, lo sputo lo disegna il gioco
         specialNeutral: { fps: 8, loop: false, hitFrame: 11 },
         specialSide: { fps: 12, loop: false, hitFrame: 9 }, // scatto a testa bassa
+        taunt: { fps: 8, loop: false }, // clip Flow EG-01: agita il braccio e gonfia le guance
+        tumble: { fps: 8, loop: true }, // clip Flow EG-19: le capriole quando lo lanciano
       },
     },
     skins: {

@@ -13811,9 +13811,9 @@
         "scale": 0.5,
         "animations": {
           "idle": {
-            "fps": 1,
+            "fps": 12,
             "loop": true,
-            "frames": 1,
+            "frames": 21,
             "src": "idle"
           },
           "walk": {
@@ -13859,10 +13859,10 @@
             "src": "jump"
           },
           "tumble": {
-            "fps": 1,
-            "loop": false,
-            "frames": 1,
-            "src": "hit"
+            "fps": 8,
+            "loop": true,
+            "frames": 20,
+            "src": "tumble"
           },
           "ledge": {
             "fps": 1,
@@ -13925,10 +13925,10 @@
             "src": "recovery"
           },
           "taunt": {
-            "fps": 1,
-            "loop": true,
-            "frames": 1,
-            "src": "idle"
+            "fps": 8,
+            "loop": false,
+            "frames": 17,
+            "src": "taunt"
           },
           "shield": {
             "fps": 1,
