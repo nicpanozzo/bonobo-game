@@ -882,6 +882,9 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         grab: { fps: 1, loop: false },
         throw: { fps: 1, loop: false }, // "Throw (forward)"
         supreme: { fps: 1, loop: false }, // "Final Smash"
+        // clip Flow EG-12: lo sbuffo bianco è tolto, lo sputo lo disegna il gioco
+        specialNeutral: { fps: 8, loop: false, hitFrame: 11 },
+        specialSide: { fps: 12, loop: false, hitFrame: 9 }, // scatto a testa bassa
       },
     },
     skins: {
