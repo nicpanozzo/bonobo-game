@@ -12700,10 +12700,10 @@
             "src": "heavy"
           },
           "dash": {
-            "fps": 8,
+            "fps": 12,
             "loop": true,
-            "frames": 17,
-            "src": "walk"
+            "frames": 14,
+            "src": "dash"
           },
           "supreme": {
             "fps": 8,

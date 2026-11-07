@@ -634,6 +634,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         // OB-B4 (5/11/2026): i colpi in aria. La stella a braccia e gambe aperte e la martellata a due pugni
         lightAir: { fps: 12, loop: false, hitFrame: 10, startFrame: 7, activeEnd: 15 },
         heavyAir: { fps: 12, loop: false, hitFrame: 11, startFrame: 1, activeEnd: 12 }, // i pugni scendono da sopra la testa
+        dash: { fps: 12, loop: true }, // OB-B5 (7/11/2026): corre curvo in avanti, un passo e mezzo
       },
     },
   },
