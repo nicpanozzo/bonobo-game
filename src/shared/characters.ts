@@ -822,6 +822,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         specialDown: { fps: 24, loop: false, hitFrame: 4, activeEnd: 6 }, // la nuvola dietro
         supreme: { fps: 24, loop: false, hitFrame: 7, activeEnd: 14 }, // la nuvola, l'elefante con l'aquila, la nuvola
         recovery: { fps: 12, loop: false, hitFrame: 3 }, // EL-06 (5/11/2026): il balzo da stambecco, la capra s'impenna e salta raccolta
+        heavyAir: { fps: 8, loop: false, hitFrame: 12, activeEnd: 12 }, // EL-06b (7/11/2026): il bastone sopra la testa e giù in avanti, in sella
       },
     },
     // il corpo che si può colpire: la capra e lui seduto sopra, misurato sul fermo (#243)
@@ -835,7 +836,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       lightAir: { range: 50, height: 50, boxX: 0, boxY: -68 },
       heavyUp: { range: 80, height: 64, boxX: -70, boxY: -137 },
       heavyDown: { range: 62, height: 30, boxX: -26, boxY: -44 },
-      heavyAir: { range: 50, height: 60, boxX: 0, boxY: -95 },
+      heavyAir: { range: 72, height: 60, boxX: 0, boxY: -86 }, // la bastonata di EL-06b
       dashAttack: { range: 50, height: 44, boxX: 0, boxY: -80 },
     },
   },

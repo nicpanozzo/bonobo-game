@@ -13512,12 +13512,12 @@
             "src": "heavyDown"
           },
           "heavyAir": {
-            "fps": 24,
+            "fps": 8,
             "loop": false,
-            "hitFrame": 5,
-            "activeEnd": 6,
-            "frames": 11,
-            "src": "heavy"
+            "hitFrame": 12,
+            "activeEnd": 12,
+            "frames": 15,
+            "src": "heavyAir"
           },
           "recovery": {
             "fps": 12,
@@ -13679,10 +13679,10 @@
           "boxY": -44
         },
         "heavyAir": {
-          "range": 50,
+          "range": 72,
           "height": 60,
           "boxX": 0,
-          "boxY": -95
+          "boxY": -86
         },
         "dashAttack": {
           "range": 50,

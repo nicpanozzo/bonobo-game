@@ -448,6 +448,7 @@ FATTE = {
     "OB-07": ("orsoblu", "remo-barca", "Remo e barca", [("heavy", .5, 2, "remata"), ("heavyUp", 3, 4.5, "barca a ombrello"), ("shield", 5.5, 7.5, "sotto la barca")]),
     "OB-B4": ("orsoblu", "colpi-in-aria", "Colpi in aria", [("lightAir", .5, 2, "stella a braccia e gambe aperte"), ("heavyAir", 3, 4.5, "martellata a due pugni")]),
     "OB-B5": ("orsoblu", "corsa", "Corsa", [("walk", .5, 2.5, "cammina"), ("dash", 2.5, 4.5, "corre"), ("skid", 4.5, 5.5, "frena"), ("turn", 5.5, 6.5, "si gira")]),
+    "EL-06B": ("elvedeo", "bastonata-in-aria", "Bastonata in aria, in sella", [("heavyAir", 4, 6, "bastone sopra la testa e giù, sempre in sella")]),
 }
 
 BASE_CLIPS = [  # (codice, slug, titolo, mosse)
