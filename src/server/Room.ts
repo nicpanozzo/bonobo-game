@@ -3,12 +3,14 @@
 // e manda a tutti lo stato.
 
 import type { Server } from "socket.io";
-import { HALL, MAX_CATCHUP_TICKS, RECONNECT_HOLD_MS, SNAPSHOT_CLOCK_RESYNC_MS, ROOM_MAX_ERRORS, SEND_RATE, TICK_RATE } from "../shared/constants";
+import { HALL, MAX_CATCHUP_TICKS, PARTY, RECONNECT_HOLD_MS, SNAPSHOT_CLOCK_RESYNC_MS, ROOM_MAX_ERRORS, SEND_RATE, TICK_RATE } from "../shared/constants";
 import { Hall, type HallChoice } from "../shared/hall";
 import { Match, type MatchEndEvent, type MatchOptions } from "../shared/match";
 import type { Fighter } from "../shared/physics";
+import { getMinigame, minigamesFor } from "../shared/party/minigames";
+import { Party, type PartyFeedback } from "../shared/party/party";
 import { sanitizeRules } from "../shared/rules";
-import type { BoardRow, ClientToServer, GameEvent, HallBotLevel, HallEvent, HallMode, InputState, MatchRules, ServerToClient } from "../shared/types";
+import type { BoardRow, ClientToServer, GameEvent, HallBotLevel, HallEvent, HallMode, InputState, MatchRules, PartyCommand, ServerToClient } from "../shared/types";
 import { Seats } from "./seats";
 
 export interface RoomOptions extends MatchOptions {
@@ -24,6 +26,8 @@ export interface RoomHooks {
   onMatchEnd?: (room: Room, result: MatchEndEvent, fighters: readonly Fighter[]) => void;
   // Dalla sala d'attesa parte una partita nuova (Match nuova): botIds sono i bot della sala, già dentro come lottatori
   onMatchBuilt?: (room: Room, match: Match, botIds: string[]) => void;
+  // Bonobo Party (#579): i pareri sul minigioco appena giocato, da salvare (feedback.ts)
+  onFeedback?: (room: Room, entries: PartyFeedback[]) => void;
 }
 
 // Più estensioni sulla stessa stanza (bot e Discord): ogni gancio le chiama tutte, in ordine
@@ -33,6 +37,7 @@ export function combineHooks(...list: RoomHooks[]): RoomHooks {
     onEvents: (room, events) => list.forEach((h) => h.onEvents?.(room, events)),
     onMatchEnd: (room, result, fighters) => list.forEach((h) => h.onMatchEnd?.(room, result, fighters)),
     onMatchBuilt: (room, match, botIds) => list.forEach((h) => h.onMatchBuilt?.(room, match, botIds)),
+    onFeedback: (room, entries) => list.forEach((h) => h.onFeedback?.(room, entries)),
   };
 }
 
@@ -51,6 +56,10 @@ export class Room {
   private boardAt = -Infinity; // clock dell'ultima lettura della classifica
   private board?: () => BoardRow[];
   private endedMs = 0; // ms da quando la partita è finita: dopo HALL.returnAfterMs si torna nella sala
+  // Bonobo Party (#579): il tabellone, quando dalla sala si è scelto Party. partyMatch = si sta giocando il minigioco
+  party: Party | null = null;
+  private partyMatch = false;
+  private partySeed = 1;
   private loop: NodeJS.Timeout;
   private ticks = 0;
   private lastTime = performance.now();
@@ -80,7 +89,9 @@ export class Room {
     const mode = this.creatorRules.mode;
     // In sala la modalità si vota: il numero di squadre scelto in lobby vale anche se chi crea non ha scelto Squadre
     if (hall && mode !== "training") this.creatorRules = hallRules(matchOptions.rules, mode);
-    this.hall = hall && mode !== "training" ? new Hall({ seed: code, defaultMode: mode as HallMode, defaultStageId: options.stageId }) : null;
+    // Bonobo Party (#579) non è una modalità di partita: chi crea la stanza può però volerla come scelta della sala
+    const wanted = (matchOptions.rules as { mode?: unknown } | undefined)?.mode === "party" ? "party" : (mode as HallMode);
+    this.hall = hall && mode !== "training" ? new Hall({ seed: code, defaultMode: wanted, defaultStageId: options.stageId }) : null;
     this.inHall = !!this.hall;
     this.board = board;
     this.seats = new Seats(holdMs);
@@ -93,9 +104,9 @@ export class Room {
     return this.current;
   }
 
-  // "hall" = nella sala d'attesa (arrivano i messaggi hall), "match" = partita
-  get phase(): "hall" | "match" {
-    return this.inHall ? "hall" : "match";
+  // "hall" = nella sala d'attesa (arrivano i messaggi hall), "party" = sul tabellone di Bonobo Party, "match" = partita
+  get phase(): "hall" | "match" | "party" {
+    return this.inHall ? "hall" : this.party && !this.partyMatch ? "party" : "match";
   }
 
   get stage() {
@@ -127,7 +138,12 @@ export class Room {
   addPlayer(id: string, name: string, characterId?: string, skinId?: string, team?: number) {
     // Con la sala si entra nella sala; a partita in corso anche nella partita, come nelle stanze di prima
     this.hall?.addPlayer(id, name, characterId, skinId);
-    if (!this.inHall) this.match.addPlayer(id, name, characterId, skinId, team);
+    if (this.party) {
+      // A Bonobo Party in corso si entra sul tabellone, e se c'è un minigioco anche lì (parte da zero punti)
+      const p = this.hall?.roster().find((r) => r.id === id);
+      this.party.addPlayer({ id, name: p?.name ?? name, characterId: p?.characterId ?? characterId ?? "", skinId: p?.skinId ?? "", color: p?.color ?? 0xffffff, bot: false });
+      if (this.partyMatch) this.match.addPlayer(id, p?.name ?? name, characterId, skinId);
+    } else if (!this.inHall) this.match.addPlayer(id, name, characterId, skinId, team);
     this.humans.add(id);
     this.lastHumanInput = Date.now();
   }
@@ -135,6 +151,7 @@ export class Room {
   // Caduta di rete (#107): il lottatore resta fermo nel suo posto finché scade RECONNECT_HOLD_MS.
   // Intanto conta ancora tra gli umani, così la stanza non si chiude
   holdPlayer(id: string) {
+    this.party?.setAway(id, true);
     this.match.setAway(id, true);
     this.hall?.setAway(id, true);
     this.seats.hold(id, Date.now());
@@ -142,12 +159,14 @@ export class Room {
 
   // Rientro con il token: lo stesso lottatore torna in gioco
   resumePlayer(id: string) {
+    this.party?.setAway(id, false);
     this.match.setAway(id, false);
     this.hall?.setAway(id, false);
     this.lastHumanInput = Date.now();
   }
 
   removePlayer(id: string) {
+    this.party?.removePlayer(id);
     this.match.removePlayer(id);
     this.hall?.removePlayer(id);
     this.humans.delete(id);
@@ -156,7 +175,7 @@ export class Room {
 
   setInput(id: string, input: InputState) {
     if (this.inHall) this.hall!.setInput(id, input);
-    else this.match.setInput(id, input);
+    else if (!this.party || this.partyMatch) this.match.setInput(id, input);
     this.lastHumanInput = Date.now();
   }
 
@@ -171,7 +190,12 @@ export class Room {
   }
 
   requestRematch() {
-    if (!this.inHall) this.match.requestRematch();
+    if (!this.inHall && !this.party) this.match.requestRematch();
+  }
+
+  // Bonobo Party (#579): un comando sul tabellone (dado, strada, bottega, voto, feedback). Party decide se vale
+  partyCommand(id: string, cmd: PartyCommand) {
+    if (this.party && !this.partyMatch) this.party.command(id, cmd);
   }
 
   // Dal computer della sala (#567): regole e livello dei bot della prossima partita. Solo nella sala, solo chi c'è dentro
@@ -184,6 +208,10 @@ export class Room {
 
   // A partita finita, tutti tornano nella sala d'attesa (solo nelle stanze con la sala)
   requestHall() {
+    if (this.party) {
+      if (!this.partyMatch && this.party.phase === "podium") this.endParty();
+      return;
+    }
     if (this.hall && !this.inHall && this.match.ended) this.returnToHall();
   }
 
@@ -242,6 +270,7 @@ export class Room {
 
   private tick() {
     if (this.inHall) return this.tickHall();
+    if (this.party && !this.partyMatch) return this.tickParty();
     this.hooks.onTick?.(this, this.match.players);
     const events = this.match.step(TICK_MS);
     if (events.length) {
@@ -255,6 +284,12 @@ export class Room {
     if (this.ticks % TICKS_PER_SNAPSHOT === 0) {
       this.io.to(this.code).emit("snapshot", this.match.snapshot(this.pendingEvents, this.clock));
       this.pendingEvents = [];
+    }
+    // Bonobo Party: a minigioco finito, dopo il GAME! si torna al tabellone con i posti d'arrivo
+    if (this.party) {
+      this.endedMs = this.match.ended ? this.endedMs + TICK_MS : 0;
+      if (this.endedMs >= PARTY.resultsMs) this.endMinigame();
+      return;
     }
     // Con la sala la partita finita non ricomincia da sola: rivincita, oppure dopo un po' tutti nella sala
     if (this.hall) {
@@ -286,8 +321,97 @@ export class Room {
     this.hallEvents = [];
   }
 
+  // Un passo del tabellone di Bonobo Party: niente fisica, solo la macchina a stati e i messaggi party
+  private tickParty() {
+    const party = this.party!;
+    party.step(TICK_MS);
+    this.ticks++;
+    this.clock += TICK_MS / this.speed;
+    const feedback = party.drainFeedback();
+    if (feedback.length > 0) this.hooks.onFeedback?.(this, feedback);
+    if (party.finished) return this.endParty();
+    if (party.minigameReady) {
+      this.sendParty();
+      return this.startMinigame();
+    }
+    if (this.ticks % PARTY.sendEveryTicks === 0) this.sendParty();
+  }
+
+  private sendParty() {
+    if (this.party) this.io.to(this.code).emit("party", this.party.snapshot(this.clock));
+  }
+
+  // Dalla sala al tabellone: tutti quelli della sala, bot compresi
+  private startParty() {
+    const hall = this.hall!;
+    const roster = hall.roster();
+    this.partySeed = seedOf(`${this.code}:${this.ticks}`);
+    this.party = new Party({
+      seed: this.partySeed,
+      rounds: this.creatorRules.partyRounds ?? PARTY.defaultRounds,
+      pick: this.creatorRules.partyPick ?? "random",
+      players: roster.map((p) => ({ id: p.id, name: p.name, characterId: p.characterId, skinId: p.skinId, color: p.color, bot: p.bot })),
+      minigames: minigamesFor(roster.length),
+    });
+    for (const p of roster) if (p.away) this.party.setAway(p.id, true);
+    this.inHall = false;
+    this.partyMatch = false;
+    this.pendingEvents = [];
+    this.endedMs = 0;
+    this.sendParty();
+  }
+
+  // Il tabellone ha scelto il minigioco: una Match nuova con la sua arena e la sua regola. Prima la prova libera
+  // (il pre-partita: i bot sono già pronti, chi gioca dice Pronto o aspetta PARTY.practiceMs), poi presentazione e 3, 2, 1
+  private startMinigame() {
+    const party = this.party!;
+    const info = party.minigame!;
+    const def = getMinigame(info.id);
+    if (!def) return party.minigameDone({});
+    const roster = (this.hall?.roster() ?? []).filter((p) => (party.duel ?? party.playerIds).includes(p.id));
+    this.partySeed = (this.partySeed * 1103515245 + 12345) >>> 0;
+    const setup = def.build(this.partySeed, roster.map((p) => p.id));
+    const match = new Match({
+      stage: setup.stage,
+      rules: { ...this.creatorRules, itemAmount: 0, timeLimitSec: 0, ...setup.rules },
+      items: false,
+      prematch: true,
+      autoRestart: false,
+      minigame: { id: info.id, runtime: setup.runtime, unlimitedStocks: setup.unlimitedStocks ?? true, practiceMs: PARTY.practiceMs },
+    });
+    for (const p of roster) {
+      match.addPlayer(p.id, p.name, p.characterId, p.skinId || undefined);
+      if (p.away) match.setAway(p.id, true);
+    }
+    this.current = match;
+    this.partyMatch = true;
+    this.pendingEvents = [];
+    this.endedMs = 0;
+    this.hooks.onMatchBuilt?.(this, match, this.hall?.botIds() ?? []);
+    this.io.to(this.code).emit("stage", { stageId: match.stage.id, rules: match.rules, stage: match.stage, minigame: { ...info, ...(setup.roles && { roles: setup.roles }) } });
+  }
+
+  // Il minigioco è finito: i posti tornano al tabellone (chi è entrato a metà non ha un posto)
+  private endMinigame() {
+    const party = this.party!;
+    const places = this.match.minigamePlaces ?? {};
+    party.minigameDone(Object.fromEntries(Object.entries(places).filter(([id]) => party.playerIds.includes(id))));
+    this.partyMatch = false;
+    this.endedMs = 0;
+    this.pendingEvents = [];
+    this.sendParty();
+  }
+
+  // Fine del party (podio finito o tutti d'accordo): si torna nella sala
+  private endParty() {
+    this.party = null;
+    this.partyMatch = false;
+    this.returnToHall();
+  }
+
   // Dalla sala alla partita: una Match nuova con tutti quelli della sala, già pronti (presentazione e 3, 2, 1)
   private startMatch(choice: HallChoice) {
+    if (choice.mode === "party") return this.startParty();
     const hall = this.hall!;
     const match = new Match({ stageId: choice.stageId, rules: { ...this.creatorRules, mode: choice.mode }, prematch: true, autoRestart: false });
     for (const p of hall.roster()) {
@@ -312,6 +436,13 @@ export class Room {
     this.pendingEvents = [];
     this.sendHall();
   }
+}
+
+// Un seme da una scritta (codice della stanza e passo): ogni party ha il suo tabellone e i suoi minigiochi
+function seedOf(text: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619);
+  return h >>> 0 || 1;
 }
 
 // Le regole per la sala: ripulite come in Squadre (così il numero di squadre resta), poi la modalità di prima

@@ -10,7 +10,7 @@ var _out := "user://screenshots"
 var _game: Dictionary
 var _world: Node2D # nella partita finta: riceve uno snapshot a ogni frame
 var _hud: Control
-const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre", "lobby_regole", "musica", "tetris", "pacman", "bassanese", "bologna_piazza", "bologna_torri", "bologna_crollo", "bologna_zuffa", "oggetti", "oggetti_categorie", "oggetti_armi", "oggetti_pesanti", "oggetti_orsoblu", "prepartita_attesa", "prepartita_vs", "prepartita_conto", "fine_partita", "sala", "sala_conto", "sala_galleria", "sala_via", "sala_basket", "sala_scacchi", "sala_computer", "sala_regole", "sala_solo", "fabbrica", "diluvio", "palco_metal", "palco_reggae", "palco_techno"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
+const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre", "lobby_regole", "musica", "tetris", "pacman", "bassanese", "bologna_piazza", "bologna_torri", "bologna_crollo", "bologna_zuffa", "oggetti", "oggetti_categorie", "oggetti_armi", "oggetti_pesanti", "oggetti_orsoblu", "prepartita_attesa", "prepartita_vs", "prepartita_conto", "fine_partita", "sala", "sala_conto", "sala_galleria", "sala_via", "sala_basket", "sala_scacchi", "sala_computer", "sala_regole", "sala_solo", "sala_pianta", "fabbrica", "diluvio", "palco_metal", "palco_reggae", "palco_techno", "orsoblu_mosse", "party_tabellone", "party_voto"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
 var _index := -1
 var _frame := 0
 var _failed := false
@@ -20,9 +20,10 @@ var _tetris_on := false # la partita finta con uno che gioca a Tetris (#427)
 var _pacman_on := false # la partita finta con un Pac-Man e i fantasmini (#427)
 var _items_on := false # la partita finta con tutti gli oggetti in fila a terra
 var _held_on := false # i cinque principali con le armi da impugnare e da sparo (held_view.gd)
-var _orso_on := false # Capt. OrsoBlu nelle pose con gli oggetti (item_pose.gd, docs/clip-flow/pose-oggetti.md)
+var _pose_on := false # Capt. OrsoBlu nelle pose con gli oggetti (item_pose.gd, docs/clip-flow/pose-oggetti.md)
 var _gear_on := false # i cinque principali con gli oggetti per categoria (gear_view.gd)
 var _ride_on := false # i cinque principali con pesanti e cavalcature (ride_view.gd)
+var _orso_on := false # cinque Capt. OrsoBlu nelle mosse con le strisce più lunghe (dirada_strisce.py)
 var _bassanese_on := false # la partita finta col Bassanese che si guarda in giro e un telefono a terra
 var _pre: Dictionary = {} # pre-partita: lo stato messo in snapshot.prematch, vuoto nelle altre partite
 var _pre_fighters := 0 # quanti lottatori nella partita finta del pre-partita (0 = tutti)
@@ -30,6 +31,7 @@ var _pre_view: Control
 var _end_on := false # la partita finta finita: GAME!, vincitore e classifica coi premi (results_view.gd)
 var _results: Control
 var _hall_view: Node3D # la sala d'attesa 3D finta: riceve uno snapshot a ogni frame
+var _fixed_cam: Camera3D # se c'è, la foto si scatta da qui e non dalla telecamera della sala
 var _hall_hud: Control
 var _hall_scene := "sala" # quale serata finta (tests/hall_fake.gd): sala, conto, galleria
 var _only: Array = [] # --only=sala,sala_basket: si scattano solo queste (per provare in fretta)
@@ -102,6 +104,8 @@ func _process(_delta: float) -> bool:
 			_hall_view.on_event(e)
 		_hall_view.on_snapshot(hall)
 		_hall_hud.on_snapshot(hall)
+		if _fixed_cam != null:
+			_fixed_cam.make_current()
 	if _frame < SHOT_FRAME:
 		return false
 	var name: String = SHOTS[_index]
@@ -133,6 +137,7 @@ func _next() -> void:
 	_results = null
 	_hall_view = null
 	_hall_hud = null
+	_fixed_cam = null
 	if _index < SHOTS.size():
 		call("_" + SHOTS[_index])
 
@@ -256,7 +261,7 @@ func _oggetti_orsoblu() -> void:
 	_held_on = false
 	_ride_on = false
 	_partita()
-	_orso_on = true # dopo _partita, che lo rimette a false per le altre foto
+	_pose_on = true # dopo _partita, che lo rimette a false per le altre foto
 
 
 # Pesanti e cavalcature: Bradipo con la cassa sopra la testa, Marcomunista in monopattino, OrsoBlu col carrello con
@@ -265,6 +270,17 @@ func _oggetti_pesanti() -> void:
 	_gear_on = false
 	_ride_on = true
 	_held_on = false
+	_partita()
+
+
+# Capt. OrsoBlu in cinque mosse le cui strisce erano troppo larghe per la scheda video (e diventavano quadrati):
+# cammina, pesante, scudo, provocazione, speciale laterale
+func _orsoblu_mosse() -> void:
+	_items_on = false
+	_gear_on = false
+	_held_on = false
+	_ride_on = false
+	_orso_on = true
 	_partita()
 
 
@@ -301,6 +317,47 @@ func _add_prematch() -> void:
 	_pre_view.portrait_of = _hud._portrait
 	_hud.get_parent().add_child(_pre_view)
 	_pre_view.size = Vector2(_game.world.width, _game.world.height)
+# Bonobo Party (#579): il tabellone a metà partita, col dado appena tirato
+func _party_tabellone() -> void:
+	_party_board("roll", {"dice": 5, "turnId": "p0", "events": [{"type": "roll", "id": "p0", "value": 5}]})
+
+
+# Bonobo Party: il voto tra tre minigiochi
+func _party_voto() -> void:
+	_party_board("vote", {"options": [
+		{"id": "pioggia", "title": "Pioggia di Banane", "category": "arraffa"},
+		{"id": "contagio", "title": "Contagio", "category": "unoContro"},
+		{"id": "mezzogiorno", "title": "Mezzogiorno di Fuoco", "category": "ritmo"},
+	], "votes": {"p1": "contagio", "p2": "pioggia"}})
+
+
+func _party_board(phase: String, extra: Dictionary) -> void:
+	var squares: Array = []
+	var kinds := ["banana", "banana", "buccia", "banana", "evento", "banana", "banana"]
+	for i in 28: # il giro, come makeBoard in src/shared/party/board.ts (forma approssimata)
+		var t := float(i) / 28.0
+		var a := TAU * t - PI / 2
+		var p := Vector2(0.5 + 0.44 * cos(a), 0.5 + 0.42 * sin(a))
+		squares.append({"x": p.x, "y": p.y, "kind": "start" if i == 0 else ("bottega" if i == 10 or i == 24 else kinds[i % kinds.size()]), "next": [(i + 1) % 28] if i != 6 else [7, 28]})
+	for k in 5: # la scorciatoia dall'incrocio (6) al rientro (20)
+		var u := (k + 1) / 6.0
+		var a6: Dictionary = squares[6]
+		var a20: Dictionary = squares[20]
+		squares.append({"x": lerpf(a6.x, a20.x, u), "y": lerpf(a6.y, a20.y, u), "kind": "evento", "next": [29 + k if k < 4 else 20]})
+	var names := [["p0", "Nicola", "orsoblu", 0xff4560], ["p1", "Marco", "marcomunista", 0xb48cff], ["p2", "Bot Gina", "nonnagina", 0x5ef0a0], ["p3", "Ricky", "bradipo", 0xffc928]]
+	var players: Array = []
+	for i in names.size():
+		var n: Array = names[i]
+		players.append({"id": n[0], "name": n[1], "characterId": n[2], "skinId": "", "color": n[3], "bot": i == 2, "away": false, "square": [3, 9, 9, 15][i], "bananas": [14, 22, 6, 9][i], "crowns": [1, 0, 0, 0][i], "item": "moka" if i == 0 else null, "wins": [2, 1, 0, 1][i], "place": [1, 2, 4, 3][i]})
+	var snap := {"t": 0, "phase": phase, "phaseLeftMs": 9000, "round": 4, "rounds": 10, "pick": "vote", "turnId": null, "dice": null, "moveLeft": 0, "squares": squares, "crownSquare": 18, "players": players, "options": [], "votes": {}, "feedbackDone": [], "lastResults": null, "shop": [], "text": "", "events": [], "winnerId": null}
+	snap.merge(extra, true)
+	var view: Control = load("res://scripts/party_view.gd").new()
+	root.add_child(view)
+	view.setup(_game, "p0")
+	view.size = Vector2(_game.world.width, _game.world.height)
+	view.on_snapshot(snap)
+
+
 # Fine partita: la classifica è già entrata tutta, coi premi; il vincitore sotto il riflettore
 func _fine_partita() -> void:
 	_items_on = false
@@ -319,7 +376,7 @@ func _fine_partita() -> void:
 
 
 func _partita() -> void:
-	_orso_on = false
+	_pose_on = false
 	var world: Node2D = load("res://scripts/world_view.gd").new()
 	root.add_child(world)
 	world.setup(_game)
@@ -487,7 +544,19 @@ func _snapshot(frame: int) -> Dictionary:
 			]
 	if _orso_on:
 		snap.projectiles = []
-		var poses := [[360, 1, null, "scopa"], [540, 1, "heavy", "scopa"], [720, 1, "light", "pesce"], [880, 1, null, "pistola"], [1040, -1, null, "idrante"]]
+		var moves := [["walk", 300], ["heavy", 480], ["shield", 660], ["taunt", 840], ["specialSide", 1020]]
+		for i in moves.size():
+			var p: Dictionary = players[i]
+			p.characterId = "orsoblu"
+			p.x = moves[i][1]
+			p.facing = 1
+			p.charge = 0.0
+			p.shielding = moves[i][0] == "shield"
+			p.vx = 200 if moves[i][0] == "walk" else 0
+			p.attack = moves[i][0] if moves[i][0] in ["heavy", "taunt", "specialSide"] else null
+	if _pose_on:
+		snap.projectiles = []
+		var poses := [[340, 1, "heavy", "scopa"], [520, 1, null, "pistola"], [690, 1, null, "caffe"], [860, -1, null, "cassa"], [1040, -1, null, "monopattino"]] # le cinque prese
 		snap.items = []
 		for i in poses.size():
 			var p: Dictionary = players[i]
@@ -593,6 +662,18 @@ func _sala_computer() -> void:
 func _sala_solo() -> void:
 	_hall_scene = "solo"
 	_add_hall()
+
+
+# Tutta la sala dall'alto e da davanti, con una telecamera fissa: per vedere la disposizione delle zone (#581)
+func _sala_pianta() -> void:
+	_hall_scene = "sala"
+	_add_hall()
+	var cam := Camera3D.new()
+	cam.fov = 46.0
+	cam.far = 260.0
+	root.add_child(cam)
+	cam.look_at_from_position(Vector3(0.0, 26.0, 21.0), Vector3(0.0, 0.0, -1.5))
+	_fixed_cam = cam
 
 
 func _sala_regole() -> void:

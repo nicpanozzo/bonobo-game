@@ -15,10 +15,14 @@ Dentro una categoria cambia l'aspetto (scopa o pesce, pistola o sparabolle) ma n
 
 Il magenta perché è il colore più lontano dal verde dello sfondo e da quelli dei personaggi: non si confonde con lo scontorno.
 
-![Capt. OrsoBlu con scopa, pesce, pistola e idrante sul punto della presa](pose-oggetti-orsoblu.jpg)
+![Capt. OrsoBlu con scopa, pistola, caffè, cassa e monopattino sul punto della presa](pose-oggetti-orsoblu.jpg)
 
-**Stato (5/11/2026):** OrsoBlu ha `gripIdle`, `gripWalk`, `gripLight`, `gripHeavy` (OB-O1) e `aimIdle`, `aimShoot`,
-`aimCharge` (OB-O2; nella clip non cammina, quindi niente `aimWalk`). OB-O3, OB-O4 e OB-O5 Flow le ha rifiutate la prima volta: da rigenerare.
+**Stato (7/11/2026):** OrsoBlu ha le cinque prese: `gripIdle`, `gripWalk`, `gripLight`, `gripHeavy` (OB-O1),
+`aimIdle`, `aimShoot`, `aimCharge` (OB-O2; nella clip non cammina, quindi niente `aimWalk`), `itemHold`, `itemThrow`,
+`itemEat` (OB-O3; il lancio è venuto solo dall'alto, così `itemThrowUp` usa gli stessi fotogrammi), `carryIdle`,
+`carryWalk`, `carryToss` (OB-O4) e `rideIdle`, `rideDash`, `rideHop` (OB-O5; dove la tavola sparisce nel salto la
+presa resta sotto gli stivali). I tagli a mano sono in `tools/sprite/flow_tagli.json`; le strisce oltre 8192 px si
+diradano con `tools/sprite/dirada_strisce.py`, che dirada anche `mani.json`.
 Le clip di Flow hanno un bordo nero di 8 pixel per lato: si toglie prima del taglio (`ffmpeg -vf crop=iw-16:ih-16:8:8`).
 
 ## Le cinque prese

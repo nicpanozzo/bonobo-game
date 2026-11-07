@@ -45,7 +45,7 @@ MAGENTA_MIN = 30  # pixel del video: meno di così il segnaposto è coperto dal 
 BORDO_MAGENTA = 6
 PRESA_DI = {"bastone": "end", "mira": "end", "palla": "center", "peso": "center", "sella": "axis"}
 # stati in aria: ogni fotogramma coi piedi su footY, perché l'altezza la decide la fisica
-IN_ARIA = re.compile(r"^(jump|doubleJump|fall|tumble|recovery|helpless|airDodge|lightAir|heavyAir|air[A-Z].*|.*Air|martelloJump)$")
+IN_ARIA = re.compile(r"^(jump|doubleJump|fall|tumble|recovery|helpless|airDodge|lightAir|heavyAir|air[A-Z].*|.*Air|martelloJump|rideHop)$")
 
 
 def die(msg):
@@ -303,7 +303,13 @@ def presa(mag, body, dxy, geo):
     FW, FH, FOOT, SCALE = geo[:4]
     ys, xs = np.nonzero(mag)
     if len(xs) < MAGENTA_MIN:
-        return None
+        by, bx = np.nonzero(body)
+        if PRESA != "axis" or not len(by):
+            return None
+        # la tavola che Flow non disegna (in cima al salto di OB-O5): sotto gli stivali, piatta
+        dx, dy = dxy
+        foot = by.max()
+        return [round(dx + bx[by > foot - 20].mean() * SCALE - FW / 2, 1), round(dy + (foot + 4) * SCALE - FOOT, 1), 0, 0]
     pts = np.stack([xs, ys], 1).astype(np.float64)
     c = pts.mean(0)
     w, v = np.linalg.eigh(np.cov((pts - c).T))

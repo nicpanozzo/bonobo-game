@@ -721,7 +721,7 @@ export const STATION = {
 
 // Sala d'attesa 3D (src/shared/hall.ts): misure in centimetri, tempi in millisecondi
 export const HALL = {
-  width: 5400, // pavimento della sala, cm (da -2700 a 2700): ai lati la zona giochi, a sinistra gli scacchi e a destra il basket
+  width: 5800, // pavimento della sala, cm (da -2900 a 2900): ai lati la zona giochi, a sinistra gli scacchi e a destra il basket
   depth: 1800, // cm (da -900 davanti... a 900 verso la telecamera)
   walkSpeed: 520, // cm/s camminando
   accel: 4200, // cm/s² per arrivare alla velocità piena
@@ -751,8 +751,8 @@ export const HALL = {
   cageRadius: 90, // cm: le due gabbie dei bot (chiama / manda via)
   gongRadius: 90, // cm: dentro si suona il gong col tasto leggero
   throneRadius: 80, // cm: il trono del campione
-  computerX: 600, // cm: il computer delle regole (#567), davanti a destra
-  computerZ: 650, // cm
+  computerX: 1380, // cm: il computer delle regole (#567), davanti a destra
+  computerZ: 520, // cm
   computerRadius: 90, // cm: dentro, il colpo leggero apre la schermata delle regole
   shoveLift: 320, // cm/s verso l'alto di chi viene spinto: vola via invece di scivolare
   collideHeight: 120, // cm di differenza d'altezza oltre cui due giocatori non si urtano (si salta sopra)
@@ -777,7 +777,7 @@ export const HALL = {
   courtRadius: 600, // cm: mezzo campo quadrato, metà lato (zona "court")
   threePointRadius: 600, // cm dal punto sotto il ferro: tirando da più lontano il canestro vale 3
   freeThrowDist: 420, // cm dal punto sotto il ferro alla lunetta (solo da disegnare)
-  rackX: 1900, // cm: centro della rastrelliera dei palloni da basket (lì tornano)
+  rackX: 2100, // cm: centro della rastrelliera dei palloni da basket (lì tornano)
   rackZ: -800,
   rackGap: 40, // cm tra un pallone e l'altro sulla rastrelliera
   basketballs: 3,
@@ -1385,4 +1385,78 @@ export const BOLOGNA = {
   busSpeedPxS: 400, // pixel/s mentre entra ed esce
   bellSwingMs: 4400, // l'altalena della campana tra le torri: un'andata e ritorno completa...
   bellAmplitudeDeg: 38, // ...fino a tanti gradi dalla verticale per parte: agli estremi sfiora la postazione (A) di ogni torre
+};
+
+// Bonobo Party (#579): tabellone a giri e minigiochi (src/shared/party/). Tempi in ms, prezzi e premi in banane
+export const PARTY = {
+  minRounds: 3,
+  maxRounds: 20,
+  defaultRounds: 10, // circa 30 minuti in quattro
+  startBananas: 10,
+  crownPrice: 20, // la Corona si compra passandoci sopra con almeno tante banane
+  placeBananas: [10, 5, 2, 0], // premio del minigioco per posto: primo, secondo, terzo, quarto (e oltre)
+  squareBananas: 3, // casella Banana (+) e Buccia (-)
+  dice: 6, // facce del dado
+  introMs: 4000, // il tabellone si presenta prima del primo tiro
+  rollMs: 15000, // tempo per tirare il dado: poi tira il server
+  stepMs: 300, // una casella di cammino
+  squareMs: 1800, // l'effetto della casella resta a schermo
+  pathMs: 8000, // tempo per scegliere la strada all'incrocio
+  shopMs: 10000, // tempo in bottega
+  voteMs: 15000, // tempo per votare il minigioco (o finché votano tutti)
+  revealMs: 3000, // il minigioco scelto resta a schermo prima di partire
+  practiceMs: 15000, // prova libera prima del minigioco: poi si parte anche senza tutti pronti
+  resultsMs: 3000, // dopo il GAME! del minigioco, prima di tornare al tabellone
+  feedbackMs: 35000, // tempo per lasciare il feedback (o finché lo mandano tutti)
+  podiumMs: 45000, // il podio, poi tutti in sala
+  botThinkMs: 1000, // i bot ci pensano un attimo, così si vede cosa fanno
+  sendEveryTicks: 6, // un messaggio party ogni tanti passi (10 al secondo)
+  voteOptions: 3, // minigiochi tra cui votare
+  recentMinigames: 4, // non si ripesca uno degli ultimi tanti minigiochi (se ce ne sono abbastanza)
+  feedbackMaxChars: 500,
+  bonusCrowns: 1, // premi di fine partita: Corone a chi ha vinto più minigiochi e a chi ha più banane
+};
+
+// I minigiochi di Bonobo Party (#579, src/shared/party/minigames/): durate in ms, distanze in pixel, velocità in pixel/s
+export const MINIGAME = {
+  fallGravity: 1400, // pixel/s²: banane e monete che cadono dal cielo (più lente dei lottatori, per vederle)
+  pioggia: { durationMs: 40000, everyMs: 450, goldEvery: 7, goldValue: 3, maxOnStage: 26, dropOnHit: 0.5, maxDrop: 6, pickRadius: 18 },
+  mezzogiorno: { rounds: 5, readyMs: 1200, waitMinMs: 1500, waitMaxMs: 4500, goMs: 2500, showMs: 1600, botReactMinMs: 260, botReactMaxMs: 620 },
+  contagio: { durationMs: 45000, infectPoints: 2, infectedColor: 0x6fbf3a },
+  scalata: { durationMs: 60000, afterFirstMs: 12000, height: 2700, rowGap: 150, checkpointEvery: 600 },
+  crollo: { durationMs: 60000, firstFallMs: 6000, everyMs: 2200, warnMs: 1600, keep: 2 },
+  // Il Bancomat Rotto: i colpi pesanti vicino alla macchina (range px) fanno uscire monete, poi si ricarica (cooldownMs)
+  bancomat: { durationMs: 40000, range: 130, cooldownMs: 700, coinsPerHit: 3, jackpotEvery: 6, jackpotCoins: 8, coinSpeed: 520, pickRadius: 16, maxCoins: 40, lostOnKo: 3 },
+  // Il Colosso: punti al Colosso per ogni KO, a chi lo butta fuori koPoints (e helpPoints agli altri cacciatori)
+  colosso: { durationMs: 45000, giantPoints: 2, koPoints: 4, helpPoints: 1 },
+  // Acqua Alta: l'acqua parte da startY e sale fino a topY in riseMs (pixel dell'arena), dopo una pausa iniziale
+  acqua: { durationMs: 50000, startY: 690, topY: 250, holdMs: 3000, riseMs: 40000 },
+  // Attraversa la Strada: corsie tra i due marciapiedi; ogni corsia ha un passaggio ogni periodMs (min..max), preavviso warnMs
+  strada: { durationMs: 45000, lanes: 5, periodMinMs: 1800, periodMaxMs: 3400, warnMs: 750, passMs: 550, bumpVx: 520, bumpVy: -680 },
+  // Il Filo: ognuno lascia un filo di micelio lungo maxPoints punti (uno ogni stepPx), che dura lifeMs; toccare quello
+  // degli altri (entro hitPx) butta fuori. Una vita sola
+  filo: { durationMs: 45000, stepPx: 22, maxPoints: 70, lifeMs: 7000, hitPx: 14, graceMs: 1500 },
+  // Mattoni a Mazzate: palle che rimbalzano (velocità px/s), colpite con le mosse entro reachPx; ogni mattone del proprio
+  // colore rotto vale un punto. Chi li finisce tutti per primo vince subito
+  mattoni: { durationMs: 50000, balls: 2, ballR: 16, speed: 560, maxSpeed: 900, reachPx: 90, bricksEach: 8, gravity: 0 },
+  // Casse al Posto Giusto: si spingono a colpi (pushVx px/s, frenate da friction al secondo) nella porta della propria parte
+  casse: { durationMs: 50000, crates: 3, size: 56, pushVx: 620, pushVy: -260, reachPx: 80, friction: 1.8, goalW: 150 },
+  // Il Muro: un muro con un buco arriva ogni everyMs e attraversa l'arena a speed px/s; chi non è nella posa del buco vola
+  muro: { durationMs: 50000, firstMs: 2500, everyMs: 4200, speed: 520, minSpeed: 420, maxSpeed: 760, bumpVx: 900, bumpVy: -700 },
+  // Ieri Me: giri da roundMs; a ogni giro si riparte e i fantasmi rifanno i giri di prima. Punti: hitPoints a colpo, koPoints a KO
+  ierime: { rounds: 4, roundMs: 10000, hitPoints: 1, koPoints: 3 },
+  // Un Solo Tasto: un tasto d'azione a testa, a sorte; punti a KO
+  unTasto: { durationMs: 45000, koPoints: 1 },
+  // Lo Specchio: ogni swapMs i comandi girano di un posto; punti a chi è al comando (hitPoints a colpo, koPoints a KO)
+  specchio: { durationMs: 45000, swapMs: 10000, hitPoints: 1, koPoints: 3 },
+  // Il Bonobo a Quattro: tutti guidano un solo bonobo gigante contro il Rivale; koPoints a KO del Rivale, -fallPoints a caduta
+  quattro: { durationMs: 45000, koPoints: 2, fallPoints: 1, rivalReach: 90, rivalThinkMs: 180 },
+  // Il Burattinaio: dall'alto lascia cadere mattoni, petardi e bucce (cooldownMs tra un lancio e l'altro); punti a chi colpisce
+  burattinaio: { durationMs: 45000, cooldownMs: 650, brickPoints: 2, boomPoints: 2, peelPoints: 1, fuseMs: 700, boomR: 120, peelMs: 6000, safeEveryMs: 1500 },
+  // Sala Prove: i colpi dati entro windowMs dal battito (bpm) valgono beatPoints, i KO a tempo koPoints
+  salaProve: { durationMs: 40000, bpm: 120, windowMs: 140, beatPoints: 2, offPoints: 0, koPoints: 3 },
+  // Gara di Provocazioni: si mostra una sequenza (showMs a passo), poi si ripete entro stepMs a passo più graceMs
+  provocazioni: { durationMs: 60000, startLen: 2, maxLen: 7, showMs: 800, stepMs: 1000, graceMs: 1500, pauseMs: 1500, botStepMs: 520, botMissChance: 0.12 },
+  // La Sfida del tabellone (carta Evento): duello 1 contro 1 a una vita, già un po' ammaccati; chi vince prende banane all'altro
+  sfida: { durationMs: 40000, startPercent: 60, bananas: 5 }, // ms, % di danno all'inizio, banane che passano di mano
 };

@@ -1,6 +1,6 @@
 // Regole della partita: valori di default e controllo di quelle che arrivano dai client.
 
-import { DEFAULT_ITEM_AMOUNT, ITEM_AMOUNTS, MAX_TEAMS, STOCKS, SUPREME_SPEEDS } from "./constants";
+import { DEFAULT_ITEM_AMOUNT, ITEM_AMOUNTS, MAX_TEAMS, PARTY, STOCKS, SUPREME_SPEEDS } from "./constants";
 import { DROPPABLE_ITEMS } from "./items";
 import type { MatchRules } from "./types";
 
@@ -13,6 +13,8 @@ export const DEFAULT_RULES: MatchRules = {
   supremeSpeed: 1,
   itemAmount: DEFAULT_ITEM_AMOUNT,
   itemKinds: [...DROPPABLE_ITEMS],
+  partyRounds: PARTY.defaultRounds,
+  partyPick: "random",
 };
 
 export const RULE_LIMITS = {
@@ -38,6 +40,9 @@ export function sanitizeRules(raw: Partial<MatchRules> | undefined): MatchRules 
     itemAmount: int(r.itemAmount, 0, ITEM_AMOUNTS.length - 1, DEFAULT_RULES.itemAmount),
     // Solo oggetti che esistono e cadono, senza doppioni e nell'ordine di sempre
     itemKinds: Array.isArray(r.itemKinds) ? DROPPABLE_ITEMS.filter((k) => (r.itemKinds as unknown[]).includes(k)) : [...DEFAULT_RULES.itemKinds],
+    // Bonobo Party (#579): giri del tabellone e come si sceglie il minigioco
+    partyRounds: int(r.partyRounds, PARTY.minRounds, PARTY.maxRounds, PARTY.defaultRounds),
+    partyPick: r.partyPick === "vote" ? "vote" : "random",
   };
 }
 

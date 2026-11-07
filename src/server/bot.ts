@@ -3,6 +3,7 @@
 
 import { ATTACKS, BOT, BOT_LEVELS, FIGHTER, TICK_RATE } from "../shared/constants";
 import type { Match } from "../shared/match";
+import type { MinigameRuntime } from "../shared/party/minigame";
 import { CHARACTERS, getCharacter, specialsFor } from "../shared/characters";
 import { emptyInput, ledgesOf, platformSurfaceY, type Fighter } from "../shared/physics";
 import { supremeReach, supremeReady } from "../shared/physics/supreme";
@@ -115,8 +116,11 @@ export class Bots {
     for (const f of players) {
       const mem = this.bots.get(f.id);
       if (!mem) continue;
+      // Nei minigiochi di Bonobo Party (#579) la regola dice ai bot cosa fare; se tace si gioca come in partita
+      const game = mem.kind === "manichino" ? null : match.minigame;
       const input =
-        mem.kind === "manichino" ? emptyInput() : mem.kind === "sparring" ? decideSparring(f, players, mem) : decideSimple(f, players, stage, mem, mem.kind);
+        (game && decideMinigame(f, players, stage, mem, game)) ??
+        (mem.kind === "manichino" ? emptyInput() : mem.kind === "sparring" ? decideSparring(f, players, mem) : decideSimple(f, players, stage, mem, mem.kind));
       mem.last = input;
       match.setInput(f.id, input);
     }
@@ -476,4 +480,36 @@ function usableSpecial(specials: ReturnType<typeof specialsFor>, distance: numbe
 // Un pesante che carica a portata: quello il difficile lo schiva invece di pararlo
 function dodgeThreat(self: Fighter, players: readonly Fighter[]): boolean {
   return players.some((p) => p !== self && !!p.attack?.startsWith("heavy") && !p.attackActive && Math.abs(p.x - self.x) <= FIGHTER.width * 2 + ATTACKS.heavy.range);
+}
+
+// Bonobo Party (#579): i tasti dalla regola del minigioco, o un cammino verso il punto che indica (una banana, la cima,
+// lontano dall'infetto). null = la regola non dice niente, o il bot è fuori dal palco: decide il bot di sempre
+function decideMinigame(self: Fighter, players: readonly Fighter[], stage: StageSpec, mem: BotMemory, game: MinigameRuntime): InputState | null {
+  if (self.eliminated || self.respawning) return emptyInput();
+  const forced = game.botInput?.(self, players);
+  if (forced) return forced;
+  const goal = game.botGoal?.(self, players);
+  if (!goal) return null;
+  const ground = groundUnder(stage, self.x);
+  const platformBelow = stage.platforms.some((p) => self.x >= p.x && self.x <= p.x + p.width && self.y <= p.y);
+  if (!self.onGround && !platformBelow && (!ground || self.y > ground.y)) return null; // fuori dal palco: si rientra come sempre
+  const input = emptyInput();
+  const tap = (key: Exclude<keyof InputState, "seq">) => {
+    if (!mem.last[key]) input[key] = true;
+  };
+  mem.ticks++;
+  const dx = goal.x - self.x;
+  if (Math.abs(dx) > 14) {
+    input.left = dx < 0;
+    input.right = dx > 0;
+  }
+  const above = goal.y < self.y - 40;
+  if (above && self.onGround && Math.abs(dx) < 260) tap("jump");
+  else if (above && !self.onGround && self.vy > 0 && self.jumpsLeft > 0) tap("jump");
+  // Sotto, su una piattaforma sottile: si scende tenendo giù
+  if (goal.y > self.y + 40 && self.onGround && onThin(self, stage) && Math.abs(dx) < 120) input.down = true;
+  // Chi gli sta davanti a portata si prende un colpo, coi tempi di reazione del livello
+  const foe = nearestTarget(self, players);
+  if (foe && Math.abs(foe.x - self.x) <= strikeReach(self, "light") && Math.abs(foe.y - self.y) < FIGHTER.height && Math.sign(foe.x - self.x) === self.facing && mem.ticks % reactionTicks(mem.kind === "sparring" ? "semplice" : mem.kind === "manichino" ? "facile" : mem.kind) === 0) tap("light");
+  return input;
 }

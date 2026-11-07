@@ -638,38 +638,50 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       scale: 0.5,
       animations: {
         idle: { fps: 12, loop: true }, // OB-B1: il respiro
-        walk: { fps: 24, loop: true }, // OB-B1: due passi al secondo, come nel video
+        walk: { fps: 8, loop: true }, // OB-B1: due passi al secondo, come nel video
         jump: { fps: 18, loop: false },
         fall: { fps: 8, loop: true },
-        light: { fps: 24, loop: false, hitFrame: 7, startFrame: 5 }, // i primi fotogrammi sono ancora la guardia
-        heavy: { fps: 24, loop: false, hitFrame: 17 },
-        hit: { fps: 24, loop: false },
+        light: { fps: 12, loop: false, hitFrame: 3, startFrame: 2 }, // i primi fotogrammi sono ancora la guardia
+        heavy: { fps: 8, loop: false, hitFrame: 5 },
+        hit: { fps: 12, loop: false },
         jumpSquat: { fps: 24, loop: false },
         land: { fps: 24, loop: false },
-        doubleJump: { fps: 30, loop: false }, // la capriola con la barca
-        taunt: { fps: 18, loop: false }, // fischietto e dito puntato: insulta tutti
-        heavyUp: { fps: 24, loop: false, hitFrame: 14 }, // la barca a ombrello
-        shield: { fps: 12, loop: true }, // sotto la barca come una tartaruga
+        doubleJump: { fps: 10, loop: false }, // la capriola con la barca
+        taunt: { fps: 6, loop: false }, // fischietto e dito puntato: insulta tutti
+        heavyUp: { fps: 8, loop: false, hitFrame: 4 }, // la barca a ombrello
+        shield: { fps: 4, loop: true }, // sotto la barca come una tartaruga
         recovery: { fps: 24, loop: false, hitFrame: 6 }, // lancia l'ancora in alto
-        specialSide: { fps: 24, loop: false, hitFrame: 10 }, // teleferica verso l'ancora
-        specialNeutral: { fps: 24, loop: false, hitFrame: 8 }, // ancora avanti e strattone
-        anchorHang: { fps: 18, loop: true }, // appeso all'ancora che dondola (#547)
-        anchorClimb: { fps: 24, loop: true }, // si tira su lungo la catena
+        specialSide: { fps: 8, loop: false, hitFrame: 3 }, // teleferica verso l'ancora
+        specialNeutral: { fps: 8, loop: false, hitFrame: 2 }, // ancora avanti e strattone
+        anchorHang: { fps: 6, loop: true }, // appeso all'ancora che dondola (#547)
+        anchorClimb: { fps: 12, loop: true }, // si tira su lungo la catena
         // OB-B3 (5/11/2026): tolti i fotogrammi in cui il braccio restava fermo, per non allungare i colpi
-        lightUp: { fps: 30, loop: false, hitFrame: 5 }, // pugno in alto guardando su
-        lightDown: { fps: 30, loop: false, hitFrame: 10 }, // spazzata bassa con la mano
-        heavyDown: { fps: 30, loop: false, hitFrame: 14 }, // si carica accucciato e spazza ai due lati
+        lightUp: { fps: 15, loop: false, hitFrame: 2 }, // pugno in alto guardando su
+        lightDown: { fps: 15, loop: false, hitFrame: 5 }, // spazzata bassa con la mano
+        heavyDown: { fps: 15, loop: false, hitFrame: 7 }, // si carica accucciato e spazza ai due lati
         // OB-B4 (5/11/2026): i colpi in aria. La stella a braccia e gambe aperte e la martellata a due pugni
-        lightAir: { fps: 24, loop: false, hitFrame: 20, startFrame: 14, activeEnd: 30 },
-        heavyAir: { fps: 24, loop: false, hitFrame: 23, startFrame: 4, activeEnd: 26 }, // i pugni scendono da sopra la testa
+        lightAir: { fps: 12, loop: false, hitFrame: 10, startFrame: 7, activeEnd: 15 },
+        heavyAir: { fps: 12, loop: false, hitFrame: 11, startFrame: 1, activeEnd: 12 }, // i pugni scendono da sopra la testa
         // Pose con gli oggetti (5/11/2026, docs/clip-flow/pose-oggetti.md): OB-O1 impugnatura e OB-O2 sparo, la presa in mani.json
         gripIdle: { fps: 12, loop: true }, // il bastone tenuto in guardia
-        gripWalk: { fps: 24, loop: true }, // marcia col bastone basso
-        gripLight: { fps: 24, loop: false, hitFrame: 8 }, // affondo in avanti
-        gripHeavy: { fps: 24, loop: false, hitFrame: 25 }, // da sopra la testa giù davanti
+        gripWalk: { fps: 12, loop: true }, // marcia col bastone basso
+        gripLight: { fps: 12, loop: false, hitFrame: 4 }, // affondo in avanti
+        gripHeavy: { fps: 12, loop: false, hitFrame: 12 }, // da sopra la testa giù davanti
         aimIdle: { fps: 12, loop: true }, // punta l'arma in avanti
         aimShoot: { fps: 30, loop: false, hitFrame: 7 }, // il rinculo di un colpo
-        aimCharge: { fps: 24, loop: false, hitFrame: 40 }, // stringe a due mani e trema, poi il getto
+        aimCharge: { fps: 12, loop: false, hitFrame: 20 }, // stringe a due mani e trema, poi il getto
+        // OB-O3 lancio e consumo, OB-O4 peso (7/11/2026). Nella clip il lancio è venuto solo dall'alto: vale per tutti e due
+        itemHold: { fps: 6, loop: true }, // la palla in mano al fianco
+        itemThrow: { fps: 12, loop: false, hitFrame: 9 }, // il braccio su e giù: l'oggetto parte in cima
+        itemThrowUp: { fps: 12, loop: false, hitFrame: 9 },
+        itemEat: { fps: 8, loop: false }, // la porta alla bocca e mastica
+        carryIdle: { fps: 12, loop: true }, // il cubo sopra la testa
+        carryWalk: { fps: 6, loop: true }, // marcia sotto il peso
+        carryToss: { fps: 12, loop: false, hitFrame: 8 }, // lo scaglia avanti e in basso
+        // OB-O5 cavalcatura (7/11/2026): la tavola sotto gli stivali, dove sparisce la presa resta sotto i piedi
+        rideIdle: { fps: 12, loop: true }, // in piedi sulla tavola, braccia larghe
+        rideDash: { fps: 8, loop: true }, // chinato in avanti, veloce
+        rideHop: { fps: 12, loop: false }, // il salto con la tavola attaccata ai piedi
       },
     },
   },
@@ -856,6 +868,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         specialSide: { fps: 24, loop: false, hitFrame: 3, activeEnd: 9 }, // la carica, poi lo schianto con le stelline
         specialDown: { fps: 24, loop: false, hitFrame: 4, activeEnd: 6 }, // la nuvola dietro
         supreme: { fps: 24, loop: false, hitFrame: 7, activeEnd: 14 }, // la nuvola, l'elefante con l'aquila, la nuvola
+        recovery: { fps: 12, loop: false, hitFrame: 3 }, // EL-06 (5/11/2026): il balzo da stambecco, la capra s'impenna e salta raccolta
       },
     },
     // il corpo che si può colpire: la capra e lui seduto sopra, misurato sul fermo (#243)
@@ -1242,10 +1255,11 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       ...communitySprite("lendmar"),
       animations: fromRest({
         ...communitySprite("lendmar").animations,
-        idle: { fps: 24, loop: true }, // 46 fotogrammi del video: respiro lento
+        walk: { fps: 12, loop: true }, // un fotogramma ogni due (tools/sprite/dirada_strisce.py)
+        idle: { fps: 12, loop: true }, // 46 fotogrammi del video: respiro lento
         jumpSquat: { fps: 24, loop: false },
-        light: { fps: 24, loop: false, hitFrame: 11 },
-        heavy: { fps: 24, loop: false, hitFrame: 27 },
+        light: { fps: 8, loop: false, hitFrame: 3 },
+        heavy: { fps: 8, loop: false, hitFrame: 9 },
         hit: { fps: 24, loop: false },
       }),
     },
