@@ -634,6 +634,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         // OB-B4 (5/11/2026): i colpi in aria. La stella a braccia e gambe aperte e la martellata a due pugni
         lightAir: { fps: 12, loop: false, hitFrame: 10, startFrame: 7, activeEnd: 15 },
         heavyAir: { fps: 12, loop: false, hitFrame: 11, startFrame: 1, activeEnd: 12 }, // i pugni scendono da sopra la testa
+        dash: { fps: 12, loop: true }, // OB-B5 (7/11/2026): corre curvo in avanti, un passo e mezzo
       },
     },
   },
@@ -821,6 +822,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         specialDown: { fps: 24, loop: false, hitFrame: 4, activeEnd: 6 }, // la nuvola dietro
         supreme: { fps: 24, loop: false, hitFrame: 7, activeEnd: 14 }, // la nuvola, l'elefante con l'aquila, la nuvola
         recovery: { fps: 12, loop: false, hitFrame: 3 }, // EL-06 (5/11/2026): il balzo da stambecco, la capra s'impenna e salta raccolta
+        heavyAir: { fps: 8, loop: false, hitFrame: 12, activeEnd: 12 }, // EL-06b (7/11/2026): il bastone sopra la testa e giù in avanti, in sella
       },
     },
     // il corpo che si può colpire: la capra e lui seduto sopra, misurato sul fermo (#243)
@@ -834,7 +836,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       lightAir: { range: 50, height: 50, boxX: 0, boxY: -68 },
       heavyUp: { range: 80, height: 64, boxX: -70, boxY: -137 },
       heavyDown: { range: 62, height: 30, boxX: -26, boxY: -44 },
-      heavyAir: { range: 50, height: 60, boxX: 0, boxY: -95 },
+      heavyAir: { range: 72, height: 60, boxX: 0, boxY: -86 }, // la bastonata di EL-06b
       dashAttack: { range: 50, height: 44, boxX: 0, boxY: -80 },
     },
   },
@@ -860,7 +862,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       footY: 194,
       scale: 0.5, // il foglio è disegnato grande come un disegno a 2x
       animations: {
-        idle: { fps: 1, loop: true },
+        idle: { fps: 12, loop: true }, // clip Flow EG-01: respira
         walk: { fps: 6, loop: true }, // passo e corsa del foglio, alternati
         jump: { fps: 1, loop: false },
         fall: { fps: 1, loop: false },
@@ -880,6 +882,11 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         grab: { fps: 1, loop: false },
         throw: { fps: 1, loop: false }, // "Throw (forward)"
         supreme: { fps: 1, loop: false }, // "Final Smash"
+        // clip Flow EG-12: lo sbuffo bianco è tolto, lo sputo lo disegna il gioco
+        specialNeutral: { fps: 8, loop: false, hitFrame: 11 },
+        specialSide: { fps: 12, loop: false, hitFrame: 9 }, // scatto a testa bassa
+        taunt: { fps: 8, loop: false }, // clip Flow EG-01: agita il braccio e gonfia le guance
+        tumble: { fps: 8, loop: true }, // clip Flow EG-19: le capriole quando lo lanciano
       },
     },
     skins: {

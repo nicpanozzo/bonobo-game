@@ -12700,10 +12700,10 @@
             "src": "heavy"
           },
           "dash": {
-            "fps": 8,
+            "fps": 12,
             "loop": true,
-            "frames": 17,
-            "src": "walk"
+            "frames": 14,
+            "src": "dash"
           },
           "supreme": {
             "fps": 8,
@@ -13512,12 +13512,12 @@
             "src": "heavyDown"
           },
           "heavyAir": {
-            "fps": 24,
+            "fps": 8,
             "loop": false,
-            "hitFrame": 5,
-            "activeEnd": 6,
-            "frames": 11,
-            "src": "heavy"
+            "hitFrame": 12,
+            "activeEnd": 12,
+            "frames": 15,
+            "src": "heavyAir"
           },
           "recovery": {
             "fps": 12,
@@ -13679,10 +13679,10 @@
           "boxY": -44
         },
         "heavyAir": {
-          "range": 50,
+          "range": 72,
           "height": 60,
           "boxX": 0,
-          "boxY": -95
+          "boxY": -86
         },
         "dashAttack": {
           "range": 50,
@@ -13811,9 +13811,9 @@
         "scale": 0.5,
         "animations": {
           "idle": {
-            "fps": 1,
+            "fps": 12,
             "loop": true,
-            "frames": 1,
+            "frames": 21,
             "src": "idle"
           },
           "walk": {
@@ -13859,10 +13859,10 @@
             "src": "jump"
           },
           "tumble": {
-            "fps": 1,
-            "loop": false,
-            "frames": 1,
-            "src": "hit"
+            "fps": 8,
+            "loop": true,
+            "frames": 20,
+            "src": "tumble"
           },
           "ledge": {
             "fps": 1,
@@ -13925,10 +13925,10 @@
             "src": "recovery"
           },
           "taunt": {
-            "fps": 1,
-            "loop": true,
-            "frames": 1,
-            "src": "idle"
+            "fps": 8,
+            "loop": false,
+            "frames": 17,
+            "src": "taunt"
           },
           "shield": {
             "fps": 1,
@@ -13973,16 +13973,18 @@
             "src": "supreme"
           },
           "specialNeutral": {
-            "fps": 1,
+            "fps": 8,
             "loop": false,
-            "frames": 1,
-            "src": "heavy"
+            "hitFrame": 11,
+            "frames": 21,
+            "src": "specialNeutral"
           },
           "specialSide": {
-            "fps": 1,
+            "fps": 12,
             "loop": false,
-            "frames": 1,
-            "src": "heavy"
+            "hitFrame": 9,
+            "frames": 24,
+            "src": "specialSide"
           },
           "specialDown": {
             "fps": 1,
