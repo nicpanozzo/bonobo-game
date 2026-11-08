@@ -101,7 +101,27 @@ function folderSprite(id: string, sprite: SpriteFolderSpec): SpriteFolderSpec {
     }
   }
   const rig = sprite.rig ? rigFor(id, sprite.rig, animations) : undefined;
-  return { ...sprite, rig, animations: resolvedAnimations(animations) as SpriteFolderSpec["animations"] };
+  const hands = handsFor(id, sprite.dir, animations);
+  return { ...sprite, rig, hands, animations: resolvedAnimations(animations) as SpriteFolderSpec["animations"] };
+}
+
+// Il punto della presa degli oggetti (docs/clip-flow/pose-oggetti.md), da <dir>/mani.json (tools/sprite/dal_video.py):
+// solo gli stati disegnati, con un punto per fotogramma
+function handsFor(id: string, dir: string, animations: Record<string, object>): SpriteFolderSpec["hands"] {
+  const path = `${publicDir}${dir}/mani.json`;
+  if (!existsSync(path)) return undefined;
+  const all = JSON.parse(readFileSync(path, "utf8")) as NonNullable<SpriteFolderSpec["hands"]>;
+  const out: NonNullable<SpriteFolderSpec["hands"]> = {};
+  for (const [state, points] of Object.entries(all)) {
+    const a = animations[state] as { frames?: number } | undefined;
+    if (!a) continue; // lo stato non è (ancora) nel blocco del personaggio
+    if (points.length !== a.frames) {
+      spriteErrors.push(`${id}: mani.json ha ${points.length} punti per "${state}", ma i fotogrammi sono ${a.frames}`);
+      continue;
+    }
+    out[state] = points;
+  }
+  return Object.keys(out).length ? out : undefined;
 }
 
 // La prova del rig in tempo reale (#403): da rig.json e animazioni.json di tools/rig/ un file solo per Godot,

@@ -15,9 +15,15 @@ func test_chi_scatta_ha_la_posa_dello_scatto() -> void:
 	runner.check(FighterPose.animation_for(p) == "walk", "server di prima, senza il campo")
 
 
-func test_senza_disegno_ripiega_sulla_camminata() -> void:
+func test_ogni_personaggio_ha_lo_scatto_o_il_ripiego() -> void:
+	# Chi non ha il disegno dello scatto usa la camminata (ANIMATION_FALLBACK in characters.ts); dal 2026-11-08
+	# tutti hanno il proprio, quindi qui si controlla che ogni striscia sia una delle due.
 	var game: Dictionary = JSON.parse_string(FileAccess.open("res://data/game.json", FileAccess.READ).get_as_text())
-	var anims: Dictionary = game.characters.orsoblu.sprite.animations
-	runner.check(anims.has("dash") and str(anims.dash.src) == "walk", "Capt. OrsoBlu (senza disegno dello scatto): lo scatto usa la camminata")
-	var own: Dictionary = game.characters.bonobot.sprite.animations
-	runner.check(str(own.dash.src) == "dash", "Bonobot ha il suo scatto (#257)")
+	for id in game.characters:
+		var c: Dictionary = game.characters[id]
+		if not c.has("sprite"):
+			continue
+		var anims: Dictionary = c.sprite.animations
+		runner.check(anims.has("dash") and str(anims.dash.src) in ["dash", "walk"], "%s: lo scatto ha il suo disegno o la camminata" % id)
+	runner.check(str(game.characters.orsoblu.sprite.animations.dash.src) == "dash", "Capt. OrsoBlu ha il suo scatto (clip Flow OB-B5)")
+	runner.check(str(game.characters.bonobot.sprite.animations.dash.src) == "dash", "Bonobot ha il suo scatto (#257)")

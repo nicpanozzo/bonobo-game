@@ -37,6 +37,13 @@ export const OPTIONAL_ANIMATION_NAMES = [
   "jumpSquat", // preparazione al salto (#384 A3): senza disegno, la posa dell'atterraggio
   "anchorHang", // appeso all'ancora di Capt. OrsoBlu (#547): senza disegno, la posa appesa al bordo
   "anchorClimb", // arrampicata sulla catena: senza disegno, la posa appesa all'ancora
+  // Pose con gli oggetti, una presa per categoria (docs/clip-flow/pose-oggetti.md): si usano solo se disegnate,
+  // e l'oggetto si disegna sul punto della presa di mani.json. Impugnatura, sparo, lancio e consumo, peso, cavalcatura
+  "gripIdle", "gripWalk", "gripLight", "gripHeavy",
+  "aimIdle", "aimWalk", "aimShoot", "aimCharge",
+  "itemHold", "itemThrow", "itemThrowUp", "itemEat",
+  "carryIdle", "carryWalk", "carryToss",
+  "rideIdle", "rideDash", "rideHop",
 ] as const;
 export type OptionalAnimationName = (typeof OPTIONAL_ANIMATION_NAMES)[number];
 export type SpriteState = AnimationName | OptionalAnimationName;
@@ -72,6 +79,24 @@ export const ANIMATION_FALLBACK: Record<OptionalAnimationName, SpriteState> = {
   jumpSquat: "land", // e chi non ha nemmeno quella resta fermo (idle)
   anchorHang: "ledge",
   anchorClimb: "anchorHang",
+  gripIdle: "idle",
+  gripWalk: "walk",
+  gripLight: "light",
+  gripHeavy: "heavy",
+  aimIdle: "idle",
+  aimWalk: "walk",
+  aimShoot: "light",
+  aimCharge: "heavy",
+  itemHold: "idle",
+  itemThrow: "throw",
+  itemThrowUp: "itemThrow",
+  itemEat: "taunt",
+  carryIdle: "idle",
+  carryWalk: "walk",
+  carryToss: "throw",
+  rideIdle: "idle",
+  rideDash: "dash",
+  rideHop: "jump",
 };
 
 export interface SpriteAnimation {
@@ -136,6 +161,9 @@ export interface SpriteFolderSpec {
   rig?: string;
   // La scia dei colpi è già disegnata nei fotogrammi (#506): il gioco non ci aggiunge la sua mezzaluna (#389)
   drawnSmear?: boolean;
+  // Il punto della presa degli oggetti (docs/clip-flow/pose-oggetti.md): lo scrive export:godot da <dir>/mani.json,
+  // per stato e per fotogramma [x, y, gradi, lunghezza] dai piedi, o null dove il segnaposto non si vedeva
+  hands?: Record<string, ([number, number, number, number] | null)[]>;
   animations: Record<AnimationName, SpriteStateSpec> & Partial<Record<OptionalAnimationName, SpriteStateSpec>>;
 }
 
@@ -634,6 +662,27 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         // OB-B4 (5/11/2026): i colpi in aria. La stella a braccia e gambe aperte e la martellata a due pugni
         lightAir: { fps: 12, loop: false, hitFrame: 10, startFrame: 7, activeEnd: 15 },
         heavyAir: { fps: 12, loop: false, hitFrame: 11, startFrame: 1, activeEnd: 12 }, // i pugni scendono da sopra la testa
+        dash: { fps: 12, loop: true }, // OB-B5 (7/11/2026): corre curvo in avanti, un passo e mezzo
+        // Pose con gli oggetti (5/11/2026, docs/clip-flow/pose-oggetti.md): OB-O1 impugnatura e OB-O2 sparo, la presa in mani.json
+        gripIdle: { fps: 12, loop: true }, // il bastone tenuto in guardia
+        gripWalk: { fps: 12, loop: true }, // marcia col bastone basso
+        gripLight: { fps: 12, loop: false, hitFrame: 4 }, // affondo in avanti
+        gripHeavy: { fps: 12, loop: false, hitFrame: 12 }, // da sopra la testa giù davanti
+        aimIdle: { fps: 12, loop: true }, // punta l'arma in avanti
+        aimShoot: { fps: 30, loop: false, hitFrame: 7 }, // il rinculo di un colpo
+        aimCharge: { fps: 12, loop: false, hitFrame: 20 }, // stringe a due mani e trema, poi il getto
+        // OB-O3 lancio e consumo, OB-O4 peso (7/11/2026). Nella clip il lancio è venuto solo dall'alto: vale per tutti e due
+        itemHold: { fps: 6, loop: true }, // la palla in mano al fianco
+        itemThrow: { fps: 12, loop: false, hitFrame: 9 }, // il braccio su e giù: l'oggetto parte in cima
+        itemThrowUp: { fps: 12, loop: false, hitFrame: 9 },
+        itemEat: { fps: 8, loop: false }, // la porta alla bocca e mastica
+        carryIdle: { fps: 12, loop: true }, // il cubo sopra la testa
+        carryWalk: { fps: 6, loop: true }, // marcia sotto il peso
+        carryToss: { fps: 12, loop: false, hitFrame: 8 }, // lo scaglia avanti e in basso
+        // OB-O5 cavalcatura (7/11/2026): la tavola sotto gli stivali, dove sparisce la presa resta sotto i piedi
+        rideIdle: { fps: 12, loop: true }, // in piedi sulla tavola, braccia larghe
+        rideDash: { fps: 8, loop: true }, // chinato in avanti, veloce
+        rideHop: { fps: 12, loop: false }, // il salto con la tavola attaccata ai piedi
       },
     },
   },
@@ -821,6 +870,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         specialDown: { fps: 24, loop: false, hitFrame: 4, activeEnd: 6 }, // la nuvola dietro
         supreme: { fps: 24, loop: false, hitFrame: 7, activeEnd: 14 }, // la nuvola, l'elefante con l'aquila, la nuvola
         recovery: { fps: 12, loop: false, hitFrame: 3 }, // EL-06 (5/11/2026): il balzo da stambecco, la capra s'impenna e salta raccolta
+        heavyAir: { fps: 8, loop: false, hitFrame: 12, activeEnd: 12 }, // EL-06b (7/11/2026): il bastone sopra la testa e giù in avanti, in sella
       },
     },
     // il corpo che si può colpire: la capra e lui seduto sopra, misurato sul fermo (#243)
@@ -834,7 +884,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       lightAir: { range: 50, height: 50, boxX: 0, boxY: -68 },
       heavyUp: { range: 80, height: 64, boxX: -70, boxY: -137 },
       heavyDown: { range: 62, height: 30, boxX: -26, boxY: -44 },
-      heavyAir: { range: 50, height: 60, boxX: 0, boxY: -95 },
+      heavyAir: { range: 72, height: 60, boxX: 0, boxY: -86 }, // la bastonata di EL-06b
       dashAttack: { range: 50, height: 44, boxX: 0, boxY: -80 },
     },
   },
@@ -860,26 +910,34 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       footY: 194,
       scale: 0.5, // il foglio è disegnato grande come un disegno a 2x
       animations: {
-        idle: { fps: 1, loop: true },
-        walk: { fps: 6, loop: true }, // passo e corsa del foglio, alternati
-        jump: { fps: 1, loop: false },
-        fall: { fps: 1, loop: false },
-        light: { fps: 1, loop: false }, // "Side Tilt"
-        heavy: { fps: 1, loop: false }, // "Side Smash"
+        idle: { fps: 12, loop: true }, // clip Flow EG-01: respira
+        walk: { fps: 12, loop: true }, // clip Flow EG-02
+        jump: { fps: 24, loop: false }, // clip Flow EG-03
+        fall: { fps: 6, loop: true }, // clip Flow EG-03
+        light: { fps: 12, loop: false, hitFrame: 4 }, // clip Flow EG-04: il primo pugno
+        heavy: { fps: 12, loop: false, hitFrame: 12 }, // clip Flow EG-07: braccio elastico (senza i fotogrammi che escono dal bordo)
         hit: { fps: 1, loop: false }, // nel foglio non c'è: il fermo piegato all'indietro
-        land: { fps: 1, loop: false }, // "Crouch"
-        dash: { fps: 1, loop: false },
-        lightUp: { fps: 1, loop: false },
-        lightDown: { fps: 1, loop: false },
-        lightAir: { fps: 1, loop: false }, // "Neutral Air"
+        land: { fps: 24, loop: false }, // clip Flow EG-03
+        dash: { fps: 12, loop: true }, // clip Flow EG-02: corsa
+        lightUp: { fps: 12, loop: false, hitFrame: 4 }, // clip Flow EG-04
+        lightDown: { fps: 8, loop: false, hitFrame: 7 }, // clip Flow EG-05: spazzata
+        lightAir: { fps: 12, loop: false, hitFrame: 14 }, // clip Flow EG-09: braccia aperte
         heavyUp: { fps: 1, loop: false },
-        heavyDown: { fps: 1, loop: false },
-        heavyAir: { fps: 1, loop: false }, // "Forward Air"
-        recovery: { fps: 1, loop: false }, // "Up Air"
+        heavyDown: { fps: 12, loop: false, hitFrame: 6 }, // clip Flow EG-08: spaccata
+        heavyAir: { fps: 12, loop: false, hitFrame: 6 }, // clip Flow EG-11: capriola col calcio
+        recovery: { fps: 12, loop: false, hitFrame: 2 }, // clip Flow EG-13: elica
         shield: { fps: 1, loop: false },
         grab: { fps: 1, loop: false },
         throw: { fps: 1, loop: false }, // "Throw (forward)"
         supreme: { fps: 1, loop: false }, // "Final Smash"
+        // clip Flow EG-12: lo sbuffo bianco è tolto, lo sputo lo disegna il gioco
+        specialNeutral: { fps: 8, loop: false, hitFrame: 11 },
+        specialSide: { fps: 12, loop: false, hitFrame: 9 }, // scatto a testa bassa
+        jumpSquat: { fps: 24, loop: false }, // clip Flow EG-03
+        doubleJump: { fps: 24, loop: false }, // clip Flow EG-03: capriola
+        specialDown: { fps: 8, loop: false, hitFrame: 11 }, // clip Flow EG-13: guardia a braccia incrociate, poi pugno
+        taunt: { fps: 8, loop: false }, // clip Flow EG-01: agita il braccio e gonfia le guance
+        tumble: { fps: 8, loop: true }, // clip Flow EG-19: le capriole quando lo lanciano
       },
     },
     skins: {
@@ -925,18 +983,18 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       },
     },
     // il corpo che si può colpire, misurato sulla sagoma del fermo (#243)
-    hurtbox: { width: 41, height: 92 },
+    hurtbox: { width: 38, height: 92 },
     // le zone dei colpi dove arriva il disegno (#243, tools/sprite/zone_dei_colpi.py)
     attacks: {
-      light: { range: 48, height: 30, boxX: 0, boxY: -56 },
-      heavy: { range: 78, height: 44, boxX: 0, boxY: -52 },
-      lightUp: { range: 54, height: 48, boxX: 0, boxY: -88 },
-      lightDown: { range: 43, height: 24, boxX: 0, boxY: -26 },
-      lightAir: { range: 38, height: 50, boxX: 0, boxY: -75 },
+      light: { range: 40, height: 30, boxX: 0, boxY: -64 },
+      heavy: { range: 78, height: 44, boxX: 0, boxY: -71 },
+      lightUp: { range: 54, height: 48, boxX: -28, boxY: -100 },
+      lightDown: { range: 44, height: 24, boxX: 0, boxY: -36 },
+      lightAir: { range: 50, height: 50, boxX: 0, boxY: -74 },
       heavyUp: { range: 80, height: 64, boxX: -12, boxY: -93 },
-      heavyDown: { range: 62, height: 30, boxX: -6, boxY: -30 },
-      heavyAir: { range: 64, height: 60, boxX: 0, boxY: -64 },
-      dashAttack: { range: 75, height: 44, boxX: 2, boxY: -52 },
+      heavyDown: { range: 62, height: 30, boxX: -10, boxY: -37 },
+      heavyAir: { range: 47, height: 60, boxX: -5, boxY: -67 },
+      dashAttack: { range: 75, height: 44, boxX: 2, boxY: -71 },
     },
   },
   // Lottatori dalle schede della community (#13), compilate a ottobre 2026 nella cartella Drive del gruppo.
