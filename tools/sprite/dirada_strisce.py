@@ -45,6 +45,13 @@ def main():
         for j, i in enumerate(keep):
             out.paste(img.crop((i * fw, 0, (i + 1) * fw, img.height)), (j * fw, 0))
         out.quantize(256, method=Image.Quantize.FASTOCTREE).save(path, optimize=True)
+        # il punto della presa degli oggetti (docs/clip-flow/pose-oggetti.md): un punto per fotogramma, gli stessi tenuti
+        mani = os.path.join(folder, "mani.json")
+        hands = json.load(open(mani)) if os.path.exists(mani) else {}
+        if len(hands.get(state, [])) == n:
+            hands[state] = [hands[state][i] for i in keep]
+            with open(mani, "w") as f:
+                f.write("{\n" + ",\n".join(f' "{s}": {json.dumps(v, separators=(",", ":"))}' for s, v in sorted(hands.items())) + "\n}\n")
 
         def near(f):  # il fotogramma tenuto più vicino, senza superare
             return max(j for j, i in enumerate(keep) if i <= f) if f >= keep[0] else 0
