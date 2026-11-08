@@ -890,8 +890,9 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
   },
 
   // Omino col cappellino e lo zaino, dal foglio delle pose di @Marcomunista (#178): ha preso il nome Egiainuso,
-  // che prima era di Capt. OrsoBlu. Una posa per stato (due per la corsa), ritagliate da
-  // tools/sprite/egiainuso_dal_foglio.py; un'eccezione alla style guide come Elvedeo (vedi il suo README).
+  // che prima era di Capt. OrsoBlu. Animato dal video di tutte le mosse fatto da Nicola con Google Flow
+  // (tools/sprite/egiainuso_dal_video.py); le pose ferme del foglio sono state tolte. Un'eccezione alla style guide
+  // come Elvedeo (vedi il suo README).
   egiainuso: {
     id: "egiainuso",
     name: "Egiainuso",
@@ -905,10 +906,10 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     },
     sprite: {
       dir: "assets/characters/egiainuso",
-      frameWidth: 318,
-      frameHeight: 238,
-      footY: 194,
-      scale: 0.5, // il foglio è disegnato grande come un disegno a 2x
+      frameWidth: 400, // largo e alto: l'aura della suprema e lo sputo escono dal corpo
+      frameHeight: 330,
+      footY: 290,
+      scale: 0.5, // alto poco più della hitbox, come le vecchie pose del foglio
       animations: {
         idle: { fps: 12, loop: true }, // clip Flow EG-01: respira
         walk: { fps: 12, loop: true }, // clip Flow EG-02
@@ -916,20 +917,20 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         fall: { fps: 6, loop: true }, // clip Flow EG-03
         light: { fps: 12, loop: false, hitFrame: 4 }, // clip Flow EG-04: il primo pugno
         heavy: { fps: 12, loop: false, hitFrame: 12 }, // clip Flow EG-07: braccio elastico (senza i fotogrammi che escono dal bordo)
-        hit: { fps: 1, loop: false }, // nel foglio non c'è: il fermo piegato all'indietro
+        hit: { fps: 16, loop: false },
         land: { fps: 24, loop: false }, // clip Flow EG-03
         dash: { fps: 12, loop: true }, // clip Flow EG-02: corsa
         lightUp: { fps: 12, loop: false, hitFrame: 4 }, // clip Flow EG-04
         lightDown: { fps: 8, loop: false, hitFrame: 7 }, // clip Flow EG-05: spazzata
         lightAir: { fps: 12, loop: false, hitFrame: 14 }, // clip Flow EG-09: braccia aperte
-        heavyUp: { fps: 1, loop: false },
+        heavyUp: { fps: 24, loop: false, hitFrame: 3 },
         heavyDown: { fps: 12, loop: false, hitFrame: 6 }, // clip Flow EG-08: spaccata
         heavyAir: { fps: 12, loop: false, hitFrame: 6 }, // clip Flow EG-11: capriola col calcio
         recovery: { fps: 12, loop: false, hitFrame: 2 }, // clip Flow EG-13: elica
-        shield: { fps: 1, loop: false },
-        grab: { fps: 1, loop: false },
-        throw: { fps: 1, loop: false }, // "Throw (forward)"
-        supreme: { fps: 1, loop: false }, // "Final Smash"
+        shield: { fps: 8, loop: true },
+        grab: { fps: 24, loop: false, hitFrame: 1 },
+        throw: { fps: 24, loop: false, hitFrame: 0 },
+        supreme: { fps: 24, loop: true }, // l'aura nera a zig-zag
         // clip Flow EG-12: lo sbuffo bianco è tolto, lo sputo lo disegna il gioco
         specialNeutral: { fps: 8, loop: false, hitFrame: 11 },
         specialSide: { fps: 12, loop: false, hitFrame: 9 }, // scatto a testa bassa
@@ -938,48 +939,6 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         specialDown: { fps: 8, loop: false, hitFrame: 11 }, // clip Flow EG-13: guardia a braccia incrociate, poi pugno
         taunt: { fps: 8, loop: false }, // clip Flow EG-01: agita il braccio e gonfia le guance
         tumble: { fps: 8, loop: true }, // clip Flow EG-19: le capriole quando lo lanciano
-      },
-    },
-    skins: {
-      // Dal video di tutte le mosse fatto da Nicola con Google Flow (tools/sprite/egiainuso_dal_video.py): stesso
-      // omino del foglio ma animato, e la speciale neutra è lo sputo
-      animato: {
-        name: "Animato",
-        sprite: {
-          dir: "assets/characters/egiainuso/skins/animato",
-          frameWidth: 400, // largo e alto: l'aura della suprema e lo sputo escono dal corpo
-          frameHeight: 330,
-          footY: 290,
-          scale: 0.5, // alto come le pose del foglio
-          animations: {
-            idle: { fps: 10, loop: true },
-            walk: { fps: 14, loop: true },
-            dash: { fps: 14, loop: true },
-            jump: { fps: 18, loop: false },
-            fall: { fps: 1, loop: true },
-            doubleJump: { fps: 24, loop: false }, // la capriola
-            tumble: { fps: 18, loop: true },
-            land: { fps: 24, loop: false },
-            hit: { fps: 16, loop: false },
-            taunt: { fps: 12, loop: false }, // le guance gonfie
-            shield: { fps: 8, loop: true },
-            light: { fps: 24, loop: false, hitFrame: 2 },
-            heavy: { fps: 24, loop: false, hitFrame: 3 },
-            lightUp: { fps: 24, loop: false, hitFrame: 2 },
-            heavyUp: { fps: 24, loop: false, hitFrame: 3 },
-            lightDown: { fps: 24, loop: false, hitFrame: 2 },
-            heavyDown: { fps: 24, loop: false, hitFrame: 1 },
-            lightAir: { fps: 24, loop: false, hitFrame: 0 },
-            heavyAir: { fps: 24, loop: false, hitFrame: 2 },
-            recovery: { fps: 24, loop: false, hitFrame: 0 },
-            grab: { fps: 24, loop: false, hitFrame: 1 },
-            throw: { fps: 24, loop: false, hitFrame: 0 },
-            specialNeutral: { fps: 24, loop: false, hitFrame: 4 }, // Sputo: gonfia le guance e sputa
-            specialSide: { fps: 24, loop: false, hitFrame: 1 }, // Scatto
-            specialDown: { fps: 24, loop: false, hitFrame: 2 }, // Contrattacco: il lampo e il pugno
-            supreme: { fps: 24, loop: true }, // l'aura nera a zig-zag
-          },
-        },
       },
     },
     // il corpo che si può colpire, misurato sulla sagoma del fermo (#243)
@@ -991,7 +950,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       lightUp: { range: 54, height: 48, boxX: -28, boxY: -100 },
       lightDown: { range: 44, height: 24, boxX: 0, boxY: -36 },
       lightAir: { range: 50, height: 50, boxX: 0, boxY: -74 },
-      heavyUp: { range: 80, height: 64, boxX: -12, boxY: -93 },
+      heavyUp: { range: 80, height: 64, boxX: -54, boxY: -108 },
       heavyDown: { range: 62, height: 30, boxX: -10, boxY: -37 },
       heavyAir: { range: 47, height: 60, boxX: -5, boxY: -67 },
       dashAttack: { range: 75, height: 44, boxX: 2, boxY: -71 },

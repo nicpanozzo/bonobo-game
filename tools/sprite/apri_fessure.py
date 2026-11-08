@@ -3,7 +3,7 @@
 # e corpo o tra le gambe c'erano meno di ~4 px i due contorni si toccavano e riempivano il buco di bianco.
 # Lavora sui PNG già fatti (i video non sono nella repo): il contorno chiaro che sta dentro una fessura diventa
 # trasparente, quello lungo i bordi resta. Gli script dei video ora non lo rifanno.
-# Uso: python3 tools/sprite/apri_fessure.py public/assets/characters/bradipo public/assets/characters/egiainuso/skins/animato
+# Uso: python3 tools/sprite/apri_fessure.py public/assets/characters/bradipo public/assets/characters/egiainuso
 import os
 import sys
 

@@ -15842,9 +15842,9 @@
       },
       "sprite": {
         "dir": "assets/characters/egiainuso",
-        "frameWidth": 318,
-        "frameHeight": 238,
-        "footY": 194,
+        "frameWidth": 400,
+        "frameHeight": 330,
+        "footY": 290,
         "scale": 0.5,
         "animations": {
           "idle": {
@@ -15886,9 +15886,9 @@
             "src": "heavy"
           },
           "hit": {
-            "fps": 1,
+            "fps": 16,
             "loop": false,
-            "frames": 1,
+            "frames": 7,
             "src": "hit"
           },
           "doubleJump": {
@@ -15943,9 +15943,10 @@
             "src": "lightAir"
           },
           "heavyUp": {
-            "fps": 1,
+            "fps": 24,
             "loop": false,
-            "frames": 1,
+            "hitFrame": 3,
+            "frames": 9,
             "src": "heavyUp"
           },
           "heavyDown": {
@@ -15976,27 +15977,29 @@
             "src": "taunt"
           },
           "shield": {
-            "fps": 1,
-            "loop": false,
-            "frames": 1,
+            "fps": 8,
+            "loop": true,
+            "frames": 5,
             "src": "shield"
           },
           "grab": {
-            "fps": 1,
+            "fps": 24,
             "loop": false,
-            "frames": 1,
+            "hitFrame": 1,
+            "frames": 5,
             "src": "grab"
           },
           "throw": {
-            "fps": 1,
+            "fps": 24,
             "loop": false,
-            "frames": 1,
+            "hitFrame": 0,
+            "frames": 5,
             "src": "throw"
           },
           "grabbed": {
-            "fps": 1,
+            "fps": 16,
             "loop": false,
-            "frames": 1,
+            "frames": 7,
             "src": "hit"
           },
           "special": {
@@ -16013,9 +16016,9 @@
             "src": "dash"
           },
           "supreme": {
-            "fps": 1,
-            "loop": false,
-            "frames": 1,
+            "fps": 24,
+            "loop": true,
+            "frames": 19,
             "src": "supreme"
           },
           "specialNeutral": {
@@ -16123,15 +16126,17 @@
             "src": "idle"
           },
           "itemThrow": {
-            "fps": 1,
+            "fps": 24,
             "loop": false,
-            "frames": 1,
+            "hitFrame": 0,
+            "frames": 5,
             "src": "throw"
           },
           "itemThrowUp": {
-            "fps": 1,
+            "fps": 24,
             "loop": false,
-            "frames": 1,
+            "hitFrame": 0,
+            "frames": 5,
             "src": "throw"
           },
           "itemEat": {
@@ -16153,9 +16158,10 @@
             "src": "walk"
           },
           "carryToss": {
-            "fps": 1,
+            "fps": 24,
             "loop": false,
-            "frames": 1,
+            "hitFrame": 0,
+            "frames": 5,
             "src": "throw"
           },
           "rideIdle": {
@@ -16176,356 +16182,6 @@
             "frames": 17,
             "src": "jump"
           }
-        }
-      },
-      "skins": {
-        "animato": {
-          "name": "Animato",
-          "sprite": {
-            "dir": "assets/characters/egiainuso/skins/animato",
-            "frameWidth": 400,
-            "frameHeight": 330,
-            "footY": 290,
-            "scale": 0.5,
-            "animations": {
-              "idle": {
-                "fps": 10,
-                "loop": true,
-                "frames": 15,
-                "src": "idle"
-              },
-              "walk": {
-                "fps": 14,
-                "loop": true,
-                "frames": 11,
-                "src": "walk"
-              },
-              "jump": {
-                "fps": 18,
-                "loop": false,
-                "frames": 4,
-                "src": "jump"
-              },
-              "fall": {
-                "fps": 1,
-                "loop": true,
-                "frames": 1,
-                "src": "fall"
-              },
-              "light": {
-                "fps": 24,
-                "loop": false,
-                "hitFrame": 2,
-                "frames": 7,
-                "src": "light"
-              },
-              "heavy": {
-                "fps": 24,
-                "loop": false,
-                "hitFrame": 3,
-                "frames": 10,
-                "src": "heavy"
-              },
-              "hit": {
-                "fps": 16,
-                "loop": false,
-                "frames": 7,
-                "src": "hit"
-              },
-              "doubleJump": {
-                "fps": 24,
-                "loop": false,
-                "frames": 11,
-                "src": "doubleJump"
-              },
-              "tumble": {
-                "fps": 18,
-                "loop": true,
-                "frames": 9,
-                "src": "tumble"
-              },
-              "ledge": {
-                "fps": 18,
-                "loop": false,
-                "frames": 4,
-                "src": "jump"
-              },
-              "climb": {
-                "fps": 18,
-                "loop": false,
-                "frames": 4,
-                "src": "jump"
-              },
-              "land": {
-                "fps": 24,
-                "loop": false,
-                "frames": 4,
-                "src": "land"
-              },
-              "lightUp": {
-                "fps": 24,
-                "loop": false,
-                "hitFrame": 2,
-                "frames": 6,
-                "src": "lightUp"
-              },
-              "lightDown": {
-                "fps": 24,
-                "loop": false,
-                "hitFrame": 2,
-                "frames": 7,
-                "src": "lightDown"
-              },
-              "lightAir": {
-                "fps": 24,
-                "loop": false,
-                "hitFrame": 0,
-                "frames": 5,
-                "src": "lightAir"
-              },
-              "heavyUp": {
-                "fps": 24,
-                "loop": false,
-                "hitFrame": 3,
-                "frames": 9,
-                "src": "heavyUp"
-              },
-              "heavyDown": {
-                "fps": 24,
-                "loop": false,
-                "hitFrame": 1,
-                "frames": 6,
-                "src": "heavyDown"
-              },
-              "heavyAir": {
-                "fps": 24,
-                "loop": false,
-                "hitFrame": 2,
-                "frames": 7,
-                "src": "heavyAir"
-              },
-              "recovery": {
-                "fps": 24,
-                "loop": false,
-                "hitFrame": 0,
-                "frames": 6,
-                "src": "recovery"
-              },
-              "taunt": {
-                "fps": 12,
-                "loop": false,
-                "frames": 11,
-                "src": "taunt"
-              },
-              "shield": {
-                "fps": 8,
-                "loop": true,
-                "frames": 5,
-                "src": "shield"
-              },
-              "grab": {
-                "fps": 24,
-                "loop": false,
-                "hitFrame": 1,
-                "frames": 5,
-                "src": "grab"
-              },
-              "throw": {
-                "fps": 24,
-                "loop": false,
-                "hitFrame": 0,
-                "frames": 5,
-                "src": "throw"
-              },
-              "grabbed": {
-                "fps": 16,
-                "loop": false,
-                "frames": 7,
-                "src": "hit"
-              },
-              "special": {
-                "fps": 24,
-                "loop": false,
-                "hitFrame": 3,
-                "frames": 10,
-                "src": "heavy"
-              },
-              "dash": {
-                "fps": 14,
-                "loop": true,
-                "frames": 7,
-                "src": "dash"
-              },
-              "supreme": {
-                "fps": 24,
-                "loop": true,
-                "frames": 19,
-                "src": "supreme"
-              },
-              "specialNeutral": {
-                "fps": 24,
-                "loop": false,
-                "hitFrame": 4,
-                "frames": 11,
-                "src": "specialNeutral"
-              },
-              "specialSide": {
-                "fps": 24,
-                "loop": false,
-                "hitFrame": 1,
-                "frames": 14,
-                "src": "specialSide"
-              },
-              "specialDown": {
-                "fps": 24,
-                "loop": false,
-                "hitFrame": 2,
-                "frames": 17,
-                "src": "specialDown"
-              },
-              "dashAttack": {
-                "fps": 24,
-                "loop": false,
-                "hitFrame": 3,
-                "frames": 10,
-                "src": "heavy"
-              },
-              "jumpSquat": {
-                "fps": 24,
-                "loop": false,
-                "frames": 4,
-                "src": "land"
-              },
-              "anchorHang": {
-                "fps": 18,
-                "loop": false,
-                "frames": 4,
-                "src": "jump"
-              },
-              "anchorClimb": {
-                "fps": 18,
-                "loop": false,
-                "frames": 4,
-                "src": "jump"
-              },
-              "gripIdle": {
-                "fps": 10,
-                "loop": true,
-                "frames": 15,
-                "src": "idle"
-              },
-              "gripWalk": {
-                "fps": 14,
-                "loop": true,
-                "frames": 11,
-                "src": "walk"
-              },
-              "gripLight": {
-                "fps": 24,
-                "loop": false,
-                "hitFrame": 2,
-                "frames": 7,
-                "src": "light"
-              },
-              "gripHeavy": {
-                "fps": 24,
-                "loop": false,
-                "hitFrame": 3,
-                "frames": 10,
-                "src": "heavy"
-              },
-              "aimIdle": {
-                "fps": 10,
-                "loop": true,
-                "frames": 15,
-                "src": "idle"
-              },
-              "aimWalk": {
-                "fps": 14,
-                "loop": true,
-                "frames": 11,
-                "src": "walk"
-              },
-              "aimShoot": {
-                "fps": 24,
-                "loop": false,
-                "hitFrame": 2,
-                "frames": 7,
-                "src": "light"
-              },
-              "aimCharge": {
-                "fps": 24,
-                "loop": false,
-                "hitFrame": 3,
-                "frames": 10,
-                "src": "heavy"
-              },
-              "itemHold": {
-                "fps": 10,
-                "loop": true,
-                "frames": 15,
-                "src": "idle"
-              },
-              "itemThrow": {
-                "fps": 24,
-                "loop": false,
-                "hitFrame": 0,
-                "frames": 5,
-                "src": "throw"
-              },
-              "itemThrowUp": {
-                "fps": 24,
-                "loop": false,
-                "hitFrame": 0,
-                "frames": 5,
-                "src": "throw"
-              },
-              "itemEat": {
-                "fps": 12,
-                "loop": false,
-                "frames": 11,
-                "src": "taunt"
-              },
-              "carryIdle": {
-                "fps": 10,
-                "loop": true,
-                "frames": 15,
-                "src": "idle"
-              },
-              "carryWalk": {
-                "fps": 14,
-                "loop": true,
-                "frames": 11,
-                "src": "walk"
-              },
-              "carryToss": {
-                "fps": 24,
-                "loop": false,
-                "hitFrame": 0,
-                "frames": 5,
-                "src": "throw"
-              },
-              "rideIdle": {
-                "fps": 10,
-                "loop": true,
-                "frames": 15,
-                "src": "idle"
-              },
-              "rideDash": {
-                "fps": 14,
-                "loop": true,
-                "frames": 7,
-                "src": "dash"
-              },
-              "rideHop": {
-                "fps": 18,
-                "loop": false,
-                "frames": 4,
-                "src": "jump"
-              }
-            }
-          },
-          "portrait": "assets/characters/egiainuso/skins/animato/portrait.png"
         }
       },
       "hurtbox": {
@@ -16566,8 +16222,8 @@
         "heavyUp": {
           "range": 80,
           "height": 64,
-          "boxX": -12,
-          "boxY": -93
+          "boxX": -54,
+          "boxY": -108
         },
         "heavyDown": {
           "range": 62,
@@ -16631,7 +16287,8 @@
           "cooldownMs": 900
         }
       },
-      "supremeAttack": null
+      "supremeAttack": null,
+      "skins": {}
     },
     "lampione": {
       "id": "lampione",
