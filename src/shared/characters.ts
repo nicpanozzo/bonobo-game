@@ -37,6 +37,13 @@ export const OPTIONAL_ANIMATION_NAMES = [
   "jumpSquat", // preparazione al salto (#384 A3): senza disegno, la posa dell'atterraggio
   "anchorHang", // appeso all'ancora di Capt. OrsoBlu (#547): senza disegno, la posa appesa al bordo
   "anchorClimb", // arrampicata sulla catena: senza disegno, la posa appesa all'ancora
+  // Pose con gli oggetti, una presa per categoria (docs/clip-flow/pose-oggetti.md): si usano solo se disegnate,
+  // e l'oggetto si disegna sul punto della presa di mani.json. Impugnatura, sparo, lancio e consumo, peso, cavalcatura
+  "gripIdle", "gripWalk", "gripLight", "gripHeavy",
+  "aimIdle", "aimWalk", "aimShoot", "aimCharge",
+  "itemHold", "itemThrow", "itemThrowUp", "itemEat",
+  "carryIdle", "carryWalk", "carryToss",
+  "rideIdle", "rideDash", "rideHop",
 ] as const;
 export type OptionalAnimationName = (typeof OPTIONAL_ANIMATION_NAMES)[number];
 export type SpriteState = AnimationName | OptionalAnimationName;
@@ -72,6 +79,24 @@ export const ANIMATION_FALLBACK: Record<OptionalAnimationName, SpriteState> = {
   jumpSquat: "land", // e chi non ha nemmeno quella resta fermo (idle)
   anchorHang: "ledge",
   anchorClimb: "anchorHang",
+  gripIdle: "idle",
+  gripWalk: "walk",
+  gripLight: "light",
+  gripHeavy: "heavy",
+  aimIdle: "idle",
+  aimWalk: "walk",
+  aimShoot: "light",
+  aimCharge: "heavy",
+  itemHold: "idle",
+  itemThrow: "throw",
+  itemThrowUp: "itemThrow",
+  itemEat: "taunt",
+  carryIdle: "idle",
+  carryWalk: "walk",
+  carryToss: "throw",
+  rideIdle: "idle",
+  rideDash: "dash",
+  rideHop: "jump",
 };
 
 export interface SpriteAnimation {
@@ -136,6 +161,9 @@ export interface SpriteFolderSpec {
   rig?: string;
   // La scia dei colpi è già disegnata nei fotogrammi (#506): il gioco non ci aggiunge la sua mezzaluna (#389)
   drawnSmear?: boolean;
+  // Il punto della presa degli oggetti (docs/clip-flow/pose-oggetti.md): lo scrive export:godot da <dir>/mani.json,
+  // per stato e per fotogramma [x, y, gradi, lunghezza] dai piedi, o null dove il segnaposto non si vedeva
+  hands?: Record<string, ([number, number, number, number] | null)[]>;
   animations: Record<AnimationName, SpriteStateSpec> & Partial<Record<OptionalAnimationName, SpriteStateSpec>>;
 }
 
@@ -635,6 +663,26 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         lightAir: { fps: 12, loop: false, hitFrame: 10, startFrame: 7, activeEnd: 15 },
         heavyAir: { fps: 12, loop: false, hitFrame: 11, startFrame: 1, activeEnd: 12 }, // i pugni scendono da sopra la testa
         dash: { fps: 12, loop: true }, // OB-B5 (7/11/2026): corre curvo in avanti, un passo e mezzo
+        // Pose con gli oggetti (5/11/2026, docs/clip-flow/pose-oggetti.md): OB-O1 impugnatura e OB-O2 sparo, la presa in mani.json
+        gripIdle: { fps: 12, loop: true }, // il bastone tenuto in guardia
+        gripWalk: { fps: 12, loop: true }, // marcia col bastone basso
+        gripLight: { fps: 12, loop: false, hitFrame: 4 }, // affondo in avanti
+        gripHeavy: { fps: 12, loop: false, hitFrame: 12 }, // da sopra la testa giù davanti
+        aimIdle: { fps: 12, loop: true }, // punta l'arma in avanti
+        aimShoot: { fps: 30, loop: false, hitFrame: 7 }, // il rinculo di un colpo
+        aimCharge: { fps: 12, loop: false, hitFrame: 20 }, // stringe a due mani e trema, poi il getto
+        // OB-O3 lancio e consumo, OB-O4 peso (7/11/2026). Nella clip il lancio è venuto solo dall'alto: vale per tutti e due
+        itemHold: { fps: 6, loop: true }, // la palla in mano al fianco
+        itemThrow: { fps: 12, loop: false, hitFrame: 9 }, // il braccio su e giù: l'oggetto parte in cima
+        itemThrowUp: { fps: 12, loop: false, hitFrame: 9 },
+        itemEat: { fps: 8, loop: false }, // la porta alla bocca e mastica
+        carryIdle: { fps: 12, loop: true }, // il cubo sopra la testa
+        carryWalk: { fps: 6, loop: true }, // marcia sotto il peso
+        carryToss: { fps: 12, loop: false, hitFrame: 8 }, // lo scaglia avanti e in basso
+        // OB-O5 cavalcatura (7/11/2026): la tavola sotto gli stivali, dove sparisce la presa resta sotto i piedi
+        rideIdle: { fps: 12, loop: true }, // in piedi sulla tavola, braccia larghe
+        rideDash: { fps: 8, loop: true }, // chinato in avanti, veloce
+        rideHop: { fps: 12, loop: false }, // il salto con la tavola attaccata ai piedi
       },
     },
   },
