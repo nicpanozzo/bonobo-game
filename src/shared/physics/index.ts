@@ -18,16 +18,24 @@
 //   timed.ts     pezzi a tempo e fasi dell'arena (#433)
 //   stations.ts  postazioni: bombarda e munizioni (#433)
 //   bassanese.ts il Bassanese chiamato col telefono
+//   anchor.ts    l'ancora-ragnatela di Capt. OrsoBlu (#547)
+//   gear.ts      oggetti per categoria: ciabatte, petardi, caffè, brownie
+//   held.ts      oggetti da impugnare e da sparo: scopa, pesce, pistola ad acqua, sparabolle
 
 import { isArcade, playPacman, playTetris, stepArcade } from "./arcade";
+import { hookFighters, onRope, stepHook, swingAnchor, tightenAnchor } from "./anchor";
 import { resolveHits, tryStartAttack, updateAttack } from "./attacks";
 import { stepBassanese } from "./bassanese";
 import { stepCompanion } from "./companion";
 import { applyJets, carryRider, resolveHazards } from "./elements";
+import { applyBelts } from "./belts";
 import { pressPads } from "./pads";
+import { genreAt, genreGravity } from "./genre";
 import { tickBuffer, type Fighter, type PhysicsContext } from "./fighter";
 import { grabbing, inGrab, resolveGrabs, stepGrabs } from "./grab";
 import { swapTripInput, tickPowerup } from "./items";
+import { fly, quakes } from "./gear";
+import { floatInBubble, glide } from "./held";
 import { holdLedge, remapLedges, tryGrabLedge } from "./ledge";
 import { applyControls, applyGravity, startLanding, stepDrop, stepLag, tickCoyote } from "./movement";
 import { holdShield } from "./shield";
@@ -36,13 +44,14 @@ import { cancelSpecial, specialing } from "./specials";
 import { endDash } from "./dash";
 import { collideWithStage, liftOutOfZone, loseStock, outOfBlastZone, respawn } from "./stage";
 export { platformSurfaceY } from "./stage";
-import { burstFire, eagleFire, stepRewinds, supreming, tickSupreme, tryComboSupreme } from "./supreme";
+import { burstFire, eagleFire, stepRewinds, stepStorms, supreming, tickSupreme, tryComboSupreme } from "./supreme";
 import { landTech, tickTech } from "./tech";
 import { stageAt } from "./timed";
 import { freezePrize, stepStations, useStation } from "./stations";
 
 export * from "./fighter";
 export { resolveHits } from "./attacks";
+export { beltVelocity } from "./belts";
 export { floodPhase, hazardActive, hazardRect, jetPhase, moverHere, moverOn, moverPlace, moverPosition, padFx, travelDirection, travelPhase, type FloodPhase, type JetPhase, type TravelPhase } from "./elements";
 export { swingAngle } from "./elements";
 export { ledgesOf } from "./ledge";
@@ -83,6 +92,8 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
   }
   f.cooldownTimer = Math.max(0, f.cooldownTimer - dtMs);
   f.hitstunTimer = Math.max(0, f.hitstunTimer - dtMs);
+  f.boardedMs = Math.max(0, f.boardedMs - dtMs);
+  f.wetMs = Math.max(0, f.wetMs - dtMs);
   f.invulnerableTimer = Math.max(0, f.invulnerableTimer - dtMs);
   f.dropTimer = Math.max(0, f.dropTimer - dtMs);
   f.dodgeTimer = Math.max(0, f.dodgeTimer - dtMs);
@@ -106,6 +117,12 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
   // Da Pac-Man (#427) niente controlli né gravità: si va dritti attraverso tutto
   if (f.powerup === "pacman") {
     playPacman(f, dtMs, ctx);
+    f.prevInput = f.input;
+    return;
+  }
+  // Chiusi nella bolla dello sparabolle (held.ts): si sale piano senza tasti, e dall'alto si può finire fuori
+  if (floatInBubble(f, dtMs)) {
+    if (outOfBlastZone(f, ctx)) loseStock(f, ctx);
     f.prevInput = f.input;
     return;
   }
@@ -141,9 +158,16 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
     f.prevInput = f.input;
     return;
   }
-  tryComboSupreme(f, ctx); // Speciale + Pesante con la barra piena: anche sopra la speciale appena partita
+  // Appesi all'ancora (#547): il pendolo prende il posto dei controlli e della gravità
+  const swinging = swingAnchor(f, dtMs, ctx);
+  if (swinging) {
+    endDash(f);
+    f.jumpRising = false;
+  } else tryComboSupreme(f, ctx); // Speciale + Pesante con la barra piena: anche sopra la speciale appena partita
   // Durante la presa, sullo scudo o storditi niente controlli né attacchi
-  if (!grabbing(f, dtMs, ctx) && !specialing(f, dtMs, ctx) && !stepLag(f, dtMs, ctx) && !holdShield(f, dtMs, ctx)) {
+  if (swinging) {
+    // niente: i tasti li ha già letti swingAnchor
+  } else if (!grabbing(f, dtMs, ctx) && !specialing(f, dtMs, ctx) && !stepLag(f, dtMs, ctx) && !holdShield(f, dtMs, ctx)) {
     applyControls(f, dt, ctx);
     tryStartAttack(f, ctx);
     if (!f.hitstun) stepDrop(f, dtMs);
@@ -152,18 +176,24 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
     f.jumpRising = false; // il salto corto vale solo per la spinta del salto
     stepDrop(f, dtMs, true);
   }
-  applyGravity(f, dt);
+  if (!swinging) applyGravity(f, dt, genreGravity(genreAt(ctx.stage, ctx.timeMs ?? 0, ctx.padsMs))); // col reggae del Palco si vola
+  fly(f, dt); // la moka a razzo: tenendo il salto si sale (gear.ts)
+  glide(f); // l'ombrellone in mano: tenendo il salto si plana (held.ts)
 
   const prevY = f.y;
   const wasOnGround = f.onGround;
   f.x += f.vx * dt;
   f.y += f.vy * dt;
+  tightenAnchor(f); // la catena tesa riporta le mani sul cerchio del pendolo
 
   collideWithStage(f, prevY, ctx, dtMs);
   if (f.onGround && !wasOnGround) startLanding(f); // #384 A3
   landTech(f, wasOnGround, ctx);
 
   if (f.onGround && f.hitstun) f.vx *= 0.8; // attrito quando si atterra stordito
+
+  if (onRope(f) && f.onGround && !f.anchorZip) f.anchor = undefined; // toccata terra si lascia la catena
+  stepHook(f, dtMs, ctx); // l'ancora in volo parte dalle mani dove sono ora
 
   if (outOfBlastZone(f, ctx)) loseStock(f, ctx);
 
@@ -175,9 +205,9 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
 export function stepWorld(fighters: Fighter[], dtMs: number, ctx: PhysicsContext, stageMs = dtMs): void {
   ctx.timeMs = (ctx.timeMs ?? 0) + stageMs;
   // Pezzi a tempo e fasi (#433): da qui in poi ctx.stage è l'arena com'è adesso (la stessa, se non cambia)
-  const view = stageAt(ctx.stage, ctx.timeMs, freezePrize(ctx));
+  const view = stageAt(ctx.stage, ctx.timeMs, freezePrize(ctx), ctx.padsMs); // padsMs: i dischi del Palco
   if (view !== ctx.stage) {
-    const shrinks = view.blastZone.bottom < ctx.stage.blastZone.bottom;
+    const shrinks = view.blastZone.bottom < ctx.stage.blastZone.bottom && !view.rise; // il Diluvio sale da solo: chi è sotto è in mare
     remapLedges(fighters, ctx.stage, view);
     ctx.stage = view;
     if (shrinks) liftOutOfZone(fighters, ctx); // la zuffa di Bologna stringe il fondo: chi è già sotto non è un KO
@@ -190,15 +220,19 @@ export function stepWorld(fighters: Fighter[], dtMs: number, ctx: PhysicsContext
   swapTripInput(tripping);
   for (const f of tripping) if (f.powerupMs <= 0) f.powerup = null;
   for (const f of fighters) if (!f.away) tryGrabLedge(f, fighters, ctx);
+  hookFighters(fighters, ctx); // l'ancora di OrsoBlu che prende qualcuno lo tira (#547)
   for (const f of fighters) stepCompanion(f, dtMs, ctx); // il beagle di Lampione (#369)
   resolveHits(fighters, ctx);
   stepProjectiles(fighters, dtMs, ctx);
   stepRewinds(fighters, dtMs, ctx); // …COSA? di Marcomunista (#358)
+  stepStorms(fighters, dtMs, ctx); // Tempesta! di Capt. OrsoBlu (#547)
   resolveGrabs(fighters, ctx); // dopo i colpi: un colpo nello stesso tick vince sulla presa
   resolveHazards(fighters, ctx);
   applyJets(fighters, ctx, dtMs); // getti d'acqua (#253)
+  applyBelts(fighters, ctx, dtMs); // nastri trasportatori della Fabbrica
   pressPads(fighters, ctx, firstEvent); // bottoni sonori (#423)
   stepArcade(fighters, dtMs, ctx); // pezzi del Tetris e bocconi di Pac-Man (#427)
   stepBassanese(fighters, dtMs, ctx); // il Bassanese chiamato col telefono
   stepStations(fighters, dtMs, ctx, firstEvent); // postazioni e palle di mortadella (#433), dopo colpi e prese
+  quakes(fighters, ctx, firstEvent); // il gigante del brownie della nonna fa tremare la terra quando atterra (gear.ts)
 }

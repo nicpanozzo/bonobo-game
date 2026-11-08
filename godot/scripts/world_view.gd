@@ -80,6 +80,7 @@ const StageCollapse := preload("res://scripts/stage_collapse.gd")
 const HazardFx := preload("res://scripts/hazard_fx.gd")
 const BolognaHazards := preload("res://scripts/bologna_hazards.gd") # auto, ingorgo, mattoni e polvere di Bologna (#433)
 const StageCrowd := preload("res://scripts/stage_crowd.gd")
+const AnchorChain := preload("res://scripts/anchor_chain.gd") # le maglie della catena di Capt. OrsoBlu (#547)
 var _t_draw := 0.0 # il tempo dell'arena del frame che si sta disegnando (#378, per i ganci dentro le decorazioni)
 var _prize_team := 0 # premio (#433): la squadra in testa ai punti torre, dallo snapshot; i pezzi con forLeader ci sono solo per lei
 var _collapse := {} # la torre che crolla dell'arena (#433), art.collapse, o vuoto
@@ -96,9 +97,20 @@ var _life: RefCounted = preload("res://scripts/stage_life.gd").new() # sfondo vi
 var _crowd: RefCounted = StageCrowd.new() # i flash dei turisti a ogni KO (#433)
 var _water: RefCounted = preload("res://scripts/stage_water.gd").new() # getti, fontane e vento (#325)
 var _wonder: RefCounted = preload("res://scripts/wonder_stage.gd").new() # l'arena musicale che balla a tempo (#423)
+var _theme: RefCounted = preload("res://scripts/theme_stage.gd").new() # le arene a tema: Fabbrica, Diluvio, Palco
 var _arcade: RefCounted = preload("res://scripts/arcade_view.gd").new() # pezzi e blocchi del power-up Tetris (#427)
 var _bassanese: RefCounted = preload("res://scripts/bassanese_view.gd").new() # Chiama Bassanese
 const BassaneseView := preload("res://scripts/bassanese_view.gd")
+const GearView := preload("res://scripts/gear_view.gd") # oggetti per categoria (physics/gear.ts)
+var _gear: RefCounted = GearView.new()
+const HeldView := preload("res://scripts/held_view.gd") # oggetti da impugnare e da sparo (physics/held.ts)
+var _held: RefCounted = HeldView.new()
+var _swinging := {} # id giocatore -> colpo attivo, per inclinare l'arma in mano
+const RideView := preload("res://scripts/ride_view.gd") # pesanti e cavalcature (physics/ride.ts)
+var _ride: RefCounted = RideView.new()
+const ItemPose := preload("res://scripts/item_pose.gd") # pose con gli oggetti e punto della presa (docs/clip-flow/pose-oggetti.md)
+var _item_pose: RefCounted = ItemPose.new()
+var _hands := {} # id giocatore -> presa di questo frame {pos, angle, facing}, se il suo stato ha mani.json
 var _stations: RefCounted = preload("res://scripts/station_view.gd").new() # postazioni e palle di mortadella (#433)
 var _ambient := Color.WHITE # luce del momento del giorno (#267): moltiplica strati e decorazioni, un po' il palco
 var _textures := {} # id personaggio -> Texture2D dello spritesheet (nel formato cartella, quella di idle)
@@ -150,6 +162,7 @@ const SpeechBubbles := preload("res://scripts/speech_bubbles.gd")
 var _spin_view: Node2D # i vortici della suprema che gira (DEMACIAAA di Bradipo Giallo, #358)
 var _grab_view: Node2D # il braccio della suprema che afferra (snaack di Lampione, #358)
 var _burst_view: Node2D # la vampata della suprema a raffiche (IRA di Lendmar, #358)
+var _storm_view: Node2D # Tempesta! di Capt. OrsoBlu (#547): pioggia, timone, insulti e arena che rolla
 var _rewind_view: Node2D # l'orologio della suprema che torna indietro (…COSA? di Marcomunista, #358)
 
 
@@ -187,6 +200,10 @@ func setup(game_data: Dictionary) -> void:
 	_rewind_view.fighter_height = float(game.fighter.height)
 	_rewind_view.where = _spin_view.where
 	add_child(_rewind_view)
+	_storm_view = preload("res://scripts/supreme_storm_view.gd").new()
+	_storm_view.fighter_height = float(game.fighter.height)
+	_storm_view.where = _spin_view.where
+	add_child(_storm_view)
 	_high_overlay = ColorRect.new()
 	var fatto := ShaderMaterial.new()
 	fatto.shader = load("res://shaders/fatto.gdshader")
@@ -327,6 +344,7 @@ func reset() -> void:
 	_anims = {}
 	_air_jumps = {}
 	_taunts = {}
+	_item_pose.reset()
 	_sparks = []
 	_clouds = []
 	_poison_clouds = []
@@ -357,6 +375,7 @@ func reset() -> void:
 	_grab_view.clear()
 	_burst_view.clear()
 	_rewind_view.clear()
+	_storm_view.clear()
 	my_id = ""
 	predictor.reset()
 	set_stage(game.defaultStageId)
@@ -394,6 +413,7 @@ func set_stage_spec(spec: Dictionary) -> void:
 	_crowd.setup(spec)
 	_water.life = _life
 	_wonder.setup(spec)
+	_theme.setup(spec, game)
 	_arcade.setup(game)
 	_stations.setup(spec, game)
 	_supreme_view.stage = spec
@@ -725,6 +745,7 @@ func on_snapshot(snap: Dictionary) -> void:
 	buffer.push(snap.t, Time.get_ticks_msec(), snap.players, float(snap.get("stageMs", 0)))
 	_check_finish(snap) # il colpo che chiude la partita (#470): ora si sa con che velocità vola il bersaglio
 	predictor.items_present = not snap.get("items", []).is_empty()
+	predictor.riding = RideView.carrying(snap.get("items", []), my_id) # pesanti e cavalcature: decide il server
 	_puddles = snap.get("puddles", [])
 	_pads_pressed = snap.get("pads", []) if snap.get("pads") is Array else [] # bottoni sonori (#423)
 	_companions.on_snapshot(snap.players, game.characters)
@@ -736,6 +757,7 @@ func on_snapshot(snap: Dictionary) -> void:
 	predictor.stage_ms = float(snap.get("stageMs", 0)) # pezzi a tempo (#433)
 	_prize_team = int(snap.get("prizeTeam", 0)) # premio (#433)
 	predictor.prize_team = _prize_team
+	predictor.pads_pressed = _pads_pressed # Il Palco: il genere che suona
 	for p in snap.players:
 		_load_character(_look(p))
 		if p.id == my_id:
@@ -756,6 +778,8 @@ func on_snapshot(snap: Dictionary) -> void:
 
 
 func on_event(e: Dictionary) -> void:
+	_item_pose.on_event(e, Time.get_ticks_msec()) # lanci, consumi e spari: la posa con l'oggetto
+	_theme.on_event(e, Time.get_ticks_msec()) # l'arena a tema guarda KO e trappole (la scatola della Fabbrica)
 	if not _crowd.is_empty(): # il pubblico fotografa i KO e i colpi forti (#433)
 		_crowd.flash(StageCrowd.flashes_for(e, float(game.effects.get("shakeFromKnockback", INF))), Time.get_ticks_msec())
 	match e.type:
@@ -815,6 +839,12 @@ func on_event(e: Dictionary) -> void:
 				else:
 					_sparks.append({"x": e.x, "y": e.y, "age": 0.0, "size": 40.0, "color": Color("f2a7b0")})
 				_shake = maxf(_shake, 5.0)
+		"gear":
+			# Oggetti per categoria (gear.ts): scoppi del petardo e scosse del gigante; la miccia e l'aggancio fanno una scintilla
+			_shake = maxf(_shake, maxf(_gear.on_event(e), _ride.on_event(e))) # e pesanti e cavalcature (ride_view.gd)
+			_shake = maxf(_shake, _held.on_event(e)) # scosse, getti, bolle scoppiate (held_view.gd)
+			if e.phase in ["fuse", "stick"]:
+				_sparks.append({"x": e.x, "y": float(e.y) - 10.0, "age": 0.0, "size": 14.0, "color": Color(1, 0.75, 0.3)})
 		"hazard":
 			# Trappola (#14): scintilla arancione e scossa come un colpo forte
 			_sparks.append({"x": e.x, "y": e.y, "age": 0.0, "size": 30.0, "color": Color(1, 0.55, 0.15)})
@@ -899,6 +929,7 @@ func on_event(e: Dictionary) -> void:
 					_grab_view.start(e.id, game.characters.get(p.characterId, {}))
 					_burst_view.start(e.id, game.characters.get(p.characterId, {}))
 					_rewind_view.start(e.id, game.characters.get(p.characterId, {}))
+					_storm_view.start(e.id, game.characters.get(p.characterId, {}))
 					_speech.say(e.id, SpeechBubbles.quote(game.characters.get(p.characterId, {}), "supreme"))
 		"dash":
 			# Scatto (#199): uno sbuffo di polvere dove parte e uno un po' indietro
@@ -1512,6 +1543,9 @@ func _process(delta: float) -> void:
 	if not _ko_specials.is_empty():
 		_age_ko_specials()
 	_sparks = _aged(_sparks, dt_ms, fx.hitSparkMs)
+	_gear.step(dt_ms)
+	_held.step(dt_ms)
+	_ride.step(dt_ms)
 	_dust = _aged(_dust, dt_ms, fx.dustMs)
 	_beams = _aged(_beams, dt_ms, fx.koBeamMs)
 	for s in _shards:
@@ -1532,6 +1566,13 @@ func _process(delta: float) -> void:
 	_flash = maxf(0.0, _flash - delta * 1000.0)
 	_shake = maxf(0.0, _shake - fx.shakeDecay * delta)
 	position = Vector2(randf_range(-_shake, _shake), randf_range(-_shake, _shake)) if _shake > 0 else Vector2.ZERO
+	# Tempesta! (#547): l'arena rolla intorno al suo centro, come una nave (niente con meno scossa e lampi)
+	var tilt: float = 0.0 if Access.calm else _storm_view.tilt()
+	rotation = tilt
+	if tilt != 0.0:
+		var pivot := Vector2(stage_width(), world_height()) / 2.0
+		position += pivot - pivot.rotated(tilt)
+	predictor.storm = _storm_view.active() # il rollio sposta anche chi gioca: decide il server
 	queue_redraw()
 
 
@@ -1557,6 +1598,7 @@ func _draw() -> void:
 	var t_stage := buffer.sample_stage_ms(Time.get_ticks_msec())
 	_t_draw = t_stage
 	_wonder.draw_back(self, t_stage, view_rect, _pads_pressed, Time.get_ticks_msec()) # solo nelle arene col brano (#423)
+	_theme.draw_back(self, t_stage, view_rect, _pads_pressed, Time.get_ticks_msec()) # le arene a tema, disegnate col codice
 	var view_center := view_rect.get_center()
 	# Quello che si vede davvero, dalla telecamera: view_rect lo aggiorna main.gd solo mentre si gioca (#433)
 	var shown := visible_rect(get_global_transform_with_canvas(), get_viewport_rect())
@@ -1602,7 +1644,9 @@ func _draw() -> void:
 		_piece_alpha = StageMotion.piece_alpha(s, t_stage, _prize_team) # pezzi a tempo (#433): sfumano entrando e uscendo
 		if _piece_alpha <= 0.0:
 			continue
-		if skin.is_empty():
+		if _theme.draw_solid(self, s, t_stage, _pads_pressed):
+			pass
+		elif skin.is_empty():
 			draw_rect(Rect2(s.x, s.y, s.width, s.height), _faded(_palette.solid))
 			draw_rect(Rect2(s.x, s.y, s.width, 6), _faded(_palette.solidEdge))
 			_wonder.draw_floor(self, s, t_stage, _pads_pressed, _pad_fx) # la tastiera del pianoforte (#423)
@@ -1617,7 +1661,9 @@ func _draw() -> void:
 		_piece_alpha = StageMotion.piece_alpha(p, t_stage, _prize_team)
 		if _piece_alpha <= 0.0:
 			continue
-		if not skin.is_empty():
+		if _theme.draw_platform(self, p, t_stage):
+			pass
+		elif not skin.is_empty():
 			_draw_skinned_platform(p, skin)
 		elif p.get("y2") != null:
 			_draw_stairs(p, _faded(_palette.platform))
@@ -1646,11 +1692,13 @@ func _draw() -> void:
 		_sampled[my_id] = mine
 	_draw_sun_light(t_stage) # ombre a terra e luce dal lato del sole o della luna (#288), sotto i lottatori
 	_companions.draw(self, now) # dietro ai lottatori: il beagle di Lampione (#369)
+	_hands.clear()
 	for id in player_ids:
 		var p: Variant = _sampled.get(id)
 		if p != null:
 			positions[id] = Vector2(p.x, p.y)
 			_facings[id] = p.facing
+			_swinging[id] = p.get("attackActive", false) and p.get("attack") != null
 			if not p.eliminated:
 				_alive.append(id)
 				_feed_particles(id, p)
@@ -1659,6 +1707,7 @@ func _draw() -> void:
 				_draw_fighter(p, now)
 				_draw_strike(p, now)
 
+	_theme.draw_over_fighters(self, _sampled, now) # la scatola della Fabbrica sopra chi è impacchettato
 	_supreme_view.view_rect = view_rect
 	_speech.view_rect = view_rect
 	_draw_puddles(now)
@@ -1684,6 +1733,9 @@ func _draw() -> void:
 		var dc := Color(0.9, 0.85, 0.75, 0.8 * (1.0 - kd))
 		draw_circle(Vector2(d.x + d.dx * (8 + 34 * kd), d.y - 4 - 10 * kd * absf(d.dx)), 4 + 7 * kd, dc)
 
+	_gear.draw(self) # scoppi dei petardi e scosse (gear_view.gd)
+	_held.draw(self, positions, float(game.fighter.height)) # scosse dell'anguilla, getti dell'idrante, bolle scoppiate
+	_ride.draw(self) # schegge delle casse, schiuma e polvere (ride_view.gd)
 	for s in _sparks:
 		var k: float = s.age / game.effects.hitSparkMs
 		var c: Color = s.color
@@ -1708,6 +1760,7 @@ func _draw() -> void:
 		draw_line(Vector2(s.x, s.y) - tip, Vector2(s.x, s.y) + tip, c, 4.0)
 
 	_wonder.draw_front(self, t_stage, view_rect, _pads_pressed) # coriandoli e scritta della Meraviglia (#423)
+	_theme.draw_front(self, t_stage, view_rect, _pads_pressed) # le scritte delle arene a tema
 	if _flash > 0:
 		draw_rect(view_rect.grow(40), Color(1, 1, 1, 0.45 * _flash / float(game.effects.flashMs)))
 	_draw_screen_kos() # il KO sullo schermo, davanti a tutto (#470 fase 4)
@@ -1837,11 +1890,22 @@ func _draw_items(now: int) -> void:
 		if holder != null and positions.has(holder):
 			var rules: Dictionary = game.itemRules
 			target = positions[holder] + Vector2(_facings.get(holder, 1) * rules.holdOffsetX, -rules.holdOffsetY)
+			target = RideView.held_pos(str(it.kind), positions[holder], float(game.fighter.height), target) # pesanti sopra la testa, mezzi sotto i piedi
 		var pos: Vector2 = _item_pos.get(it.id, target)
 		pos = target if holder != null or pos.distance_to(target) > 200 else pos.lerp(target, 0.5)
 		_item_pos[it.id] = pos
 		seen[it.id] = true
 		var spin := now / 1000.0 * 14.0 if it.thrown else 0.0
+		if holder != null and HeldView.is_melee(it.kind): # l'arma in mano: appoggiata indietro, in avanti mentre colpisce
+			spin = float(_facings.get(holder, 1)) * (1.4 if _swinging.get(holder, false) else -0.35)
+		if holder != null and _hands.has(holder):
+			# Il disegno ha il punto della presa (pose con gli oggetti): l'oggetto sta lì, girato come il segnaposto
+			var spec: Dictionary = game.items.get(it.kind, {"width": 24, "height": 16})
+			var ht: Array = ItemPose.held_transform(str(it.kind), ItemPose.category(game, str(it.kind)), float(spec.width), float(spec.height), _hands[holder], ITEM_SCALE)
+			_item_pos[it.id] = ht[0]
+			seen[it.id] = true
+			_draw_item(it.kind, ht[0] + Vector2(0, float(spec.height) / 2.0 * ITEM_SCALE), ht[1], float(it.get("load", -1.0)), 1.0, 0.0, false, false, ht[2])
+			continue
 		if holder == null and not it.thrown and absf(float(it.get("vy", 0.0))) < 1.0:
 			pos.y = _rest_y(pos) # fermo su una scala: sul gradino che ha sotto, non sospeso sulla rampa
 		# Il funghetto piantato (#302): chi l'ha piantato lo vede, gli altri appena appena
@@ -2003,14 +2067,14 @@ func _draw_puddles(now: int) -> void:
 # Più grandi della loro scatola di gioco (ITEM_SCALE), così si riconoscono anche da lontano
 # A terra (lying) poggia sulla superficie e si inclina di rest attorno al punto di contatto (#498); glow disegna solo
 # il contorno chiaro di chi lo può raccogliere, sotto all'oggetto vero
-func _draw_item(kind: String, base: Vector2, spin: float, load: float = -1.0, alpha: float = 1.0, rest := 0.0, lying := false, glow := false) -> void:
+func _draw_item(kind: String, base: Vector2, spin: float, load: float = -1.0, alpha: float = 1.0, rest := 0.0, lying := false, glow := false, mirror := 1.0) -> void:
 	var spec: Dictionary = game.items.get(kind, {"width": 24, "height": 16, "color": 0xffffff})
 	var w: float = spec.width
 	var h: float = spec.height
 	if lying:
 		base += Vector2(0, 1.0 - float(ITEM_REST_LIFT.get(kind, 0.0)) * h * ITEM_SCALE) # un pixel dentro la superficie
 	var center := base + (Vector2(0, -h / 2) * ITEM_SCALE).rotated(rest)
-	draw_set_transform(center, spin + rest, Vector2.ONE * ITEM_SCALE)
+	draw_set_transform(center, spin + rest, Vector2(mirror, 1.0) * ITEM_SCALE) # mirror -1: in mano a chi guarda a sinistra
 	_ink = GLOW_INK if glow else item_ink(_color(spec.color))
 	_ink_width = GLOW_INK_WIDTH if glow else ITEM_INK_WIDTH
 	_light = Color.WHITE if kind in ARCADE_ITEMS else item_light(_sun, _palette.get("sky", Color.WHITE))
@@ -2057,6 +2121,10 @@ func _draw_item(kind: String, base: Vector2, spin: float, load: float = -1.0, al
 		_draw_mushroom_bag(w, h)
 	elif kind == "fungoTeemo":
 		_draw_teemo(w, h, alpha)
+	elif GearView.draws(kind):
+		GearView.draw_item(self, kind, w, h, load, now, _ink, _light, GearView.is_rare(game, kind) and not glow)
+	elif RideView.draws(kind):
+		RideView.draw_item(self, kind, w, h, load, now, _ink, _light, GearView.is_rare(game, kind) and not glow)
 	else:
 		draw_rect(Rect2(-w / 2, -h / 2, w, h), _lit(_color(spec.color)))
 		draw_rect(Rect2(-w / 2, -h / 2, w, h), _ink, false, 2.0 * _ink_width)
@@ -2438,6 +2506,28 @@ func _draw_supreme_ready(p: Dictionary, now: float, height: float) -> void:
 		draw_circle(Vector2(p.x, p.y) + f.pos, f.r, Color(SUPREME_GOLD.lightened(0.3), 0.8 * float(f.a)))
 
 
+# Groove di Bradipo Giallo (#557): un anello giallo ai piedi pulsa sui battiti della musica dell'arena, gli stessi
+# che usa il server (stageMs e bpm): colpire mentre pulsa fa più danno
+func _draw_groove(p: Dictionary, height: float) -> void:
+	var bpm := float(stage.get("music", {}).get("bpm", game.audio.musicBpm))
+	var beat := 60000.0 / bpm
+	var phase := fmod(buffer.sample_stage_ms(Time.get_ticks_msec()), beat)
+	var k := clampf(1.0 - minf(phase, beat - phase) / (float(game.groove.windowMs) * 2.0), 0.0, 1.0)
+	if k <= 0.0:
+		return
+	draw_arc(Vector2(p.x, p.y - 4), height * (0.32 + 0.08 * k), 0, TAU, 32, Color(1.0, 0.85, 0.29, 0.75 * k), 3.0)
+
+
+# Scivolone di Egiainuso (#557): chi è bagnato dallo Sputo gocciola, gocce verdine che cadono dal corpo
+func _draw_wet(p: Dictionary, now: float, height: float) -> void:
+	var offset := float(hash(p.id) % 1000) / 1000.0
+	for k in 6:
+		var life := fmod(now / 700.0 + float(k) / 6.0 + offset, 1.0)
+		var x := float(p.x) + (float(k) / 5.0 - 0.5) * height * 0.45
+		var pos := Vector2(x, float(p.y) - height * (0.8 - 0.7 * life))
+		draw_circle(pos, 3.0, Color(0.62, 0.86, 0.55, 0.85 * (1.0 - life)))
+
+
 # Il fumo: sbuffi grigio-verdi che salgono lenti dalla testa e si allargano, sempre gli stessi per lo stesso istante
 # level (#302): quanto si è fatti col bong; il fumo diventa più fitto, grande e mosso. 0 = il fiore, fumo leggero
 func _draw_power_smoke(p: Dictionary, now: float, height: float, level: float = 0.0) -> void:
@@ -2509,6 +2599,8 @@ func _draw_elements(t: float) -> void:
 		if m.get("kind", "") == "campana": # la campana appesa tra le torri di Bologna (#433)
 			BolognaHazards.draw_bell(self, m, pos, StageMotion.swing_angle(m.swing, t + float(m.get("offsetMs", 0))), t, _stage_light())
 			continue
+		if _theme.draw_mover(self, m, pos, t): # le arene a tema disegnano le loro
+			continue
 		if _mover_sprites.has(mi):
 			_draw_mover_sprite(_mover_sprites[mi], m, pos, t)
 			continue
@@ -2523,7 +2615,8 @@ func _draw_elements(t: float) -> void:
 		_water.draw_hub_foam(self, _stage_light(), st, t)
 	var pads: Array = stage.get("pads") if stage.get("pads") is Array else []
 	for i in pads.size():
-		_draw_pad(pads[i], _pads_pressed[i] if i < _pads_pressed.size() else null, t)
+		if not _theme.draw_pad(self, pads[i], _pads_pressed[i] if i < _pads_pressed.size() else null, t): # le leve della Fabbrica
+			_draw_pad(pads[i], _pads_pressed[i] if i < _pads_pressed.size() else null, t)
 	var hazards: Array = stage.get("hazards") if stage.get("hazards") != null else []
 	for i in hazards.size():
 		var h: Dictionary = hazards[i]
@@ -2549,6 +2642,8 @@ func _draw_hazard(h: Dictionary, on: bool, t: float, index := -1) -> void:
 	var warn := HazardFx.warn_progress(h, t) # l'avviso prima di accendersi (#433), la fisica non cambia
 	if warn >= 0.0:
 		HazardFx.draw_warning(self, h, r, warn, t, view_rect)
+	if _theme.draw_hazard(self, h, r, on, t): # le arene a tema disegnano le loro (le impacchettatrici della Fabbrica)
+		return
 	match h.kind:
 		"ciclista":
 			_draw_cyclist(h, r, t, index)
@@ -2728,7 +2823,7 @@ func _pad_fx(m: Dictionary, t: float) -> Dictionary:
 
 # Bottone sonoro (#423): una base scura e un tasto colorato che sporge. Appena premuto si abbassa e brilla;
 # finché si ricarica è grigio e una barra si riempie, carico pulsa piano col suo colore
-const PAD_COLORS := {"accordo": 0xffb74d, "piatto": 0x81c784, "cassa": 0x4fc3f7}
+const PAD_COLORS := {"accordo": 0xffb74d, "piatto": 0x81c784, "cassa": 0x4fc3f7, "leva": 0xe53935}
 
 
 func _draw_pad(p: Dictionary, pressed_at: Variant, t: float) -> void:
@@ -3022,12 +3117,16 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 	_supreme_ready[p.id] = ready
 	if ready:
 		_draw_supreme_ready(p, now, fh)
+	if character.get("groove", false):
+		_draw_groove(p, fh) # il battito del Groove di Bradipo (#557)
+	if p.get("wet", false):
+		_draw_wet(p, now, fh) # bagnato dallo Sputo di Egiainuso (#557)
 	var charge := float(p.get("charge", 0.0))
 	if charge > 0.0:
 		_draw_charge(Vector2(p.x, p.y - fh / 2), charge, now)
 	if int(p.team) > 0:
 		_draw_team_ring(p, fw)
-	var react := _reaction_transform(p, now) * _motion_transform(p, now)
+	var react := GearView.size_transform(p, game) * _reaction_transform(p, now) * _motion_transform(p, now) # giganti e mini dal brownie
 	if _textures.has(character.id):
 		_draw_sprite(p, character, now, react)
 	else:
@@ -3062,6 +3161,12 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 			var a := now / 300.0 + k * TAU / 3.0
 			var c := Color.from_hsv(fmod(now / 2000.0 + k / 3.0, 1.0), 0.7, 1.0)
 			draw_circle(Vector2(p.x + cos(a) * 22.0, p.y - fh - 14.0 + sin(a) * 6.0), 5.0, c)
+
+	if not away:
+		GearView.draw_powerup(self, p, now, fw, fh, _font, game) # caffè, moka, brownie, sonno, gigante della nonna
+		HeldView.draw_powerup(self, p, now, fw, fh) # blocco di ghiaccio del pesce, bolla dello sparabolle
+	if p.get("anchor") is Dictionary:
+		_draw_anchor(p) # l'ancora-ragnatela di Capt. OrsoBlu (#547)
 
 	# Appeso al bordo (#110): il braccio arriva fino allo spigolo, sopra la testa.
 	# Chi ha l'animazione ledge nello spritesheet (#171) ha già la mano disegnata sullo spigolo.
@@ -3268,6 +3373,12 @@ func _draw_sprite(p: Dictionary, character: Dictionary, now: float, react := Tra
 		since = taunted
 	elif name == "doubleJump":
 		since = air_jump # la capriola parte dal momento del doppio salto, non da quando la si disegna
+	# Con un oggetto in mano, lanciato o mangiato: la posa della sua categoria, se disegnata (item_pose.gd)
+	var held_pose: Array = _item_pose.pick(name, p, anims, _items, game, now)
+	if held_pose[0] != name:
+		name = held_pose[0]
+		if float(held_pose[1]) >= 0.0:
+			since = float(held_pose[1])
 	var new_attack: bool = p.attack != null and not bool(state.get("attacking", false))
 	if prev_name != name or new_attack:
 		state = {"name": name, "since": since, "kind": kind, "start": since}
@@ -3313,6 +3424,9 @@ func _draw_sprite(p: Dictionary, character: Dictionary, now: float, react := Tra
 		tint.b = outline_tint(OUTLINE_PX, fw * scale, src.size.x)
 	draw_texture_rect_region(texture, Rect2(-fw / 2, -foot_y, fw, fh), src, tint)
 	draw_set_transform(Vector2.ZERO)
+	var hand: Variant = ItemPose.hand_point(sheet, str(a.src), frame)
+	if hand != null: # la presa dell'oggetto in mano, per _draw_items
+		_hands[p.id] = ItemPose.hand_world(hand, p.x, p.y, p.facing, scale, react)
 
 
 # Il blu del modulate che chiede a palette.gdshader il contorno: 2 + spessore in texel / 8. Lo spessore è in pixel
@@ -3381,3 +3495,34 @@ func _draw_offscreen_markers() -> void:
 
 static func _color(n: Variant) -> Color:
 	return Color.hex((int(n) << 8) | 0xff)
+
+
+# L'ancora di Capt. OrsoBlu (#547): la catena dalle mani alla punta, a maglie, e l'ancora girata verso dove va.
+# Tesa quando è piantata, un po' molle in volo e di ritorno
+func _draw_anchor(p: Dictionary) -> void:
+	var a: Dictionary = p.anchor
+	var hand := Vector2(float(p.x), float(p.y) - float(game.anchor.gripY))
+	var tip := Vector2(float(a.x), float(a.y))
+	var alpha := FighterPose.away_alpha(p)
+	var sag := 0.0 if str(a.phase) in ["hold", "climb"] else 18.0
+	var links := AnchorChain.links(hand, tip, sag)
+	var iron := Color(0.24, 0.25, 0.29, alpha)
+	var shine := Color(0.62, 0.64, 0.7, alpha)
+	for i in links.size():
+		var l: Dictionary = links[i]
+		var c: Vector2 = l.at
+		var d: Vector2 = l.dir
+		var w := 3.0 if i % 2 == 0 else 1.8 # maglie di piatto e di taglio, alternate
+		draw_line(c - d * 5.0, c + d * 5.0, iron, w + 2.0)
+		draw_line(c - d * 4.0, c + d * 4.0, shine, maxf(1.0, w - 1.0))
+	var dir := (tip - hand).normalized() if tip.distance_to(hand) > 1.0 else Vector2.UP
+	var side := Vector2(-dir.y, dir.x)
+	var dark := Color(0.12, 0.13, 0.16, alpha)
+	# fusto, ceppo trasversale vicino all'anello e marre a uncino in punta
+	draw_line(tip - dir * 22.0, tip + dir * 4.0, dark, 6.0)
+	draw_line(tip - dir * 16.0 - side * 9.0, tip - dir * 16.0 + side * 9.0, dark, 4.0)
+	draw_circle(tip - dir * 24.0, 4.5, dark)
+	for s: float in [-1.0, 1.0]:
+		var bend: Vector2 = tip + side * s * 11.0 - dir * 6.0
+		draw_line(tip + dir * 2.0, bend, dark, 5.0)
+		draw_line(bend, bend - dir * 7.0 + side * s * 3.0, dark, 4.0)

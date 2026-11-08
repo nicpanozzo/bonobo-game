@@ -43,7 +43,7 @@ const KINDS := [
 ]
 const KIND_MARKS := {"create": "NEW", "join": "LINK", "bot": "CPU"} # la sigla sullo sfondo delle piastrelle (menu_tile.gd)
 const PAGE_NAMES := {"match": "Partita", "stage": "Arena", "fighter": "Lottatore"}
-const HALL_MODES := ["ffa", "teams", "flag", "race"] # modalità che si votano in sala (HallMode in types.ts)
+const HALL_MODES := ["ffa", "teams", "flag", "race", "party"] # modalità che si votano in sala (HallMode in types.ts)
 const HALL_NOTE := "Modalità e arena si scelgono nella sala d'attesa, camminando: sali su una pedana o entra in un portale. Qui decidi le regole."
 const PAGE_W := 1010.0 # larghezza del contenuto delle pagine, pixel
 const PAGE_TOP := 14 # spazio sopra il titolo della pagina, pixel
@@ -92,6 +92,8 @@ var _ff := CheckButton.new()
 var _supreme_speed := Stepper.new() # velocità della barra della suprema (SUPREME_SPEEDS)
 var _item_amount := Stepper.new() # quanti oggetti cadono (ITEM_AMOUNTS)
 var _item_checks := {} # id dell'oggetto -> CheckButton: quali possono cadere
+# Gli oggetti che cadevano prima delle categorie (5 novembre 2026): chi ha regole salvate da allora trova accesi i nuovi
+const ITEMS_BEFORE_CATEGORIES := ["banana", "bassanese", "bong", "fiore", "fungoTeemo", "pacman", "tetris"]
 var _items_box: Control # quanti e quali oggetti: solo dove gli oggetti ci sono
 var _host: CheckButton # Crea: ospita dal proprio computer (#308), solo nell'app per computer
 var _host_status: Label # a che punto è il server mentre si accende
@@ -429,22 +431,42 @@ func _match_page(params: Dictionary) -> Control:
 	_item_amount.select(clampi(int(saved.get("itemAmount", 2)), 0, maxi(0, amounts.size() - 1)))
 	_item_amount.item_selected.connect(func(_i): _sync_rules())
 	items_box.add_child(_labeled(UI.heading("Oggetti"), _item_amount))
-	var kinds_row := HFlowContainer.new()
-	kinds_row.add_theme_constant_override("h_separation", UI.GAP_S if Phone.active else UI.GAP_M)
-	kinds_row.add_theme_constant_override("v_separation", 0 if Phone.active else UI.GAP_S)
 	var saved_kinds = saved.get("itemKinds")
+	var known_kinds = saved.get("itemKindsKnown", ITEMS_BEFORE_CATEGORIES) # gli oggetti che c'erano quando si è salvato: quelli nuovi partono accesi
 	var items_spec: Dictionary = game.get("items", {})
+	# Gli oggetti divisi per categoria (lancio, consumo, ...), ognuna col suo titoletto; le versioni rare con la stellina
+	var groups := []
+	for cat in game.get("itemCategories", []):
+		groups.append({"id": str(cat.id), "name": str(cat.name), "kinds": []})
+	groups.append({"id": "", "name": "Altri", "kinds": []})
 	for k in game.get("droppableItems", []):
-		var c := CheckButton.new()
-		if Phone.active: # sul telefono più piccoli: la pagina sta in uno schermo
-			c.add_theme_font_size_override("font_size", Access.px(UI.SIZE_SMALL))
-		c.text = str(items_spec.get(k, {}).get("name", k))
-		c.button_pressed = not (saved_kinds is Array) or (saved_kinds as Array).has(k)
-		if k == "fungoTeemo" and saved_kinds is Array and (saved_kinds as Array).has("funghetti"):
-			c.button_pressed = true # chi aveva scelto i funghetti (messi da parte, #419) ritrova il fungo di Teemo
-		_item_checks[k] = c
-		kinds_row.add_child(c)
-	items_box.add_child(kinds_row)
+		var cat_id := str(items_spec.get(k, {}).get("category", ""))
+		var group: Dictionary = groups[-1]
+		for g in groups:
+			if g.id == cat_id:
+				group = g
+		group.kinds.append(k)
+	for g in groups:
+		if g.kinds.is_empty():
+			continue
+		var head := UI.label(g.name, UI.SIZE_SMALL, Color(UI.TEXT, 0.75))
+		items_box.add_child(head)
+		var kinds_row := HFlowContainer.new()
+		kinds_row.add_theme_constant_override("h_separation", UI.GAP_S if Phone.active else UI.GAP_M)
+		kinds_row.add_theme_constant_override("v_separation", 0 if Phone.active else UI.GAP_S)
+		for k in g.kinds:
+			var c := CheckButton.new()
+			if Phone.active: # sul telefono più piccoli: la pagina sta in uno schermo
+				c.add_theme_font_size_override("font_size", Access.px(UI.SIZE_SMALL))
+			var spec: Dictionary = items_spec.get(k, {})
+			c.text = ("★ " if spec.get("rareOf") != null else "") + str(spec.get("name", k))
+			c.tooltip_text = str(spec.get("rarity", ""))
+			c.button_pressed = not (saved_kinds is Array) or (saved_kinds as Array).has(k) or (known_kinds is Array and not (known_kinds as Array).has(k))
+			if k == "fungoTeemo" and saved_kinds is Array and (saved_kinds as Array).has("funghetti"):
+				c.button_pressed = true # chi aveva scelto i funghetti (messi da parte, #419) ritrova il fungo di Teemo
+			_item_checks[k] = c
+			kinds_row.add_child(c)
+		items_box.add_child(kinds_row)
 	_items_box = items_box
 	col_b.add_child(items_box)
 	col_a.add_child(_ff)
@@ -916,6 +938,7 @@ func _show_big_fighter(side := 0) -> void:
 	_draw_skins(skins)
 	_big_face.show_look(FighterPose.look(game, _character, _skin), side)
 	_big_name.text = str(c.name)
+	(_big_name.get_parent() as Control).queue_redraw() # la vetrina ridisegna il nome grande sullo sfondo
 	for child in _big_crews.get_children():
 		child.queue_free()
 	for crew in c.get("crews", []):
@@ -1349,7 +1372,7 @@ func _choice(bot: String) -> Dictionary:
 		"skin": _skin,
 		# Chi entra in una stanza che non c'è ancora la crea con le regole di questa pagina
 		"stage": _new_id("corsa-") if mode == "race" else _stage,
-		"rules": {"mode": mode, "stocks": _stocks.selected + 1, "timeLimitSec": TIMES[_time.selected][0], "friendlyFire": _ff.button_pressed, "teamCount": _team_count.selected + 2, "supremeSpeed": _supreme_mult(), "itemAmount": _item_amount.selected, "itemKinds": _item_checks.keys().filter(func(k): return _item_checks[k].button_pressed)},
+		"rules": {"mode": mode, "stocks": _stocks.selected + 1, "timeLimitSec": TIMES[_time.selected][0], "friendlyFire": _ff.button_pressed, "teamCount": _team_count.selected + 2, "supremeSpeed": _supreme_mult(), "itemAmount": _item_amount.selected, "itemKinds": _item_checks.keys().filter(func(k): return _item_checks[k].button_pressed), "itemKindsKnown": _item_checks.keys()},
 		"team": _team_picker.selected if _team_box.visible else 0, # la squadra chiesta (#409), 0 = automatica
 		"server": normalize_server(_server.text),
 		"bot": "manichino" if mode == "training" and bot == "" else bot, # conta solo se la stanza è nuova

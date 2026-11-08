@@ -6,6 +6,20 @@ Proposto da Riccardo (@GiovannifRana), scritto da Claude il 3/11/2026 dopo le pr
 
 **Se sei un agente:** leggi prima [Per gli agenti](#per-gli-agenti), poi il passo che ti è stato dato.
 
+## Prima una base per tutti (Nicola, 3/11/2026)
+
+Prima delle ondate qui sotto, ogni personaggio che non ha ancora disegni da Flow riceve il **pacchetto base**: un'immagine di partenza nuova e due clip Lite (movimento; leggero, pesante, colpito) che coprono le 7 animazioni obbligatorie, 20 crediti a personaggio. Sono 10 personaggi, 2 al giorno coi 50 crediti giornalieri. Poi un giro con le animazioni che si vedono di più (corsa, speciale firma, provocazione), poi le ondate. Prompt, ordine e cosa manca: [`base.md`](base.md).
+
+## L'obiettivo: pezzi riusabili per combo e oggetti (Nicola, 4/11/2026)
+
+Ogni clip si fa pensando a dove deve arrivare il gioco: **combo personalizzate** e **oggetti generici divisi per categoria**. Vale per chiunque lavori sulle animazioni, umano o agente. Il ragionamento completo è nel documento [Animazioni base per combo e oggetti](https://claude.ai/artifact/3AzkHTLNL2HVnzgxSTFD23).
+
+- **Ogni colpo parte e finisce nella stessa guardia** dell'immagine di partenza, con tre fasi leggibili (carica, colpo, ritorno) e mai due colpi nella stessa finestra di tempo: così i colpi si incatenano in qualsiasi ordine.
+- **Il personaggio resta tutto dentro l'inquadratura**, con margine su ogni lato anche in cima al salto e a braccio teso: una testa tagliata non si recupera.
+- **Gli oggetti si dividono per presa, non per oggetto:** lancio, impugnatura, sparo, consumo, peso, cavalcatura. Un oggetto nuovo sceglie la sua categoria e non costa clip nuove.
+- **Pose con oggetto = segnaposto magenta (#FF00FF)** in mano (o sgabello magenta per la cavalcatura): lo script ne ricava punto e angolo della mano, il gioco ci disegna l'oggetto vero. Da provare prima su una clip sola.
+- **Prima si rifinisce quel che c'è** (OrsoBlu, Lendmar, Marcomunista), poi si allarga agli altri.
+
 ## In breve
 
 | | |
@@ -25,6 +39,7 @@ docs/clip-flow/
 ├── README.md                  questo piano
 ├── produzione.md              il foglio di produzione: una riga per clip, si aggiorna a ogni PR
 ├── immagini-partenza.md       generato: i 16 prompt delle immagini con le armi
+├── base.md                    generato: il pacchetto base dei personaggi senza Flow
 ├── prompt/<personaggio>.md    generato: tutti i prompt delle clip, pronti da incollare
 └── riferimenti/
     ├── personaggi/<id>.png    il fermo del gioco su verde in 16:9: prima e ultima immagine delle clip
@@ -64,6 +79,8 @@ Ogni passo è un compito a sé. Chi lo prende lo scrive nell'issue #539 (`Prendo
 
 **Fatto quando:** la clip è nell'issue e lo script (o chi la guarda fotogramma per fotogramma) trova le due mosse separate da una pausa ferma. Allora valgono le regole di questo piano. Se non si ferma, si passa a **un attacco per clip**: si cambia `WINDOWS` e `SETS` in `prompt_flow.py` e il conto sale a circa 140 clip.
 
+**Fatto (4/11):** fra i due attacchi Bradipo si ferma per circa 1 secondo, ma in guardia coi pugni alti invece che nella posa di partenza. Lo script ora riconosce anche le pause in una posa diversa (mezzo secondo fermo) e divide la clip da solo. **Le regole del piano restano.** Difetti della clip: un arco bianco nell'aereo su e polvere all'atterraggio, nonostante l'AVOID. L'aereo avanti è venuto più "su e giù" che "in avanti".
+
 ### Passo 1 · Le 16 immagini di partenza con le armi (chi ha Flow)
 
 **Cosa serve:** i prompt in [`immagini-partenza.md`](immagini-partenza.md); le immagini in `riferimenti/personaggi/` e `riferimenti/armi/`.
@@ -82,28 +99,43 @@ Le clip del personaggio non aspettano questo passo: solo quelle delle armi.
 
 `tools/sprite/dal_video.py`: da una clip combinata alle strisce PNG del gioco. Prende il posto dei tagli scritti a mano personaggio per personaggio (`bradipo_dal_video.py`, `elvedeo_dai_video.py`, ...), che restano per rifare gli asset vecchi.
 
-**Uso:**
+**Uso** (fatto il 3/11, PR #541):
 ```bash
-python3 tools/sprite/dal_video.py <codice> <video.mp4> <cartella di lavoro>   # es. BR-04 BR-04_aerei-a.mp4 /tmp/br04
+python3 tools/sprite/dal_video.py <codice> <video.mp4> <cartella di lavoro>            # prova: scrive solo nella cartella
+python3 tools/sprite/dal_video.py <codice> <video.mp4> <cartella di lavoro> --scrivi   # anche negli asset del gioco
+python3 tools/sprite/dal_video.py EG-04 EG-04_leggeri-a.mp4 /tmp/eg04 --skin animato   # misure di una skin
 ```
 
-**Cosa deve fare:**
+Nella cartella di lavoro: `out/<stato>.png`, `foglio.png` (il foglio di controllo da mettere nella PR), `resoconto.json` (fotogrammi usati, `hitFrame` proposto, dove va ogni stato, avvisi) e `qualita.md` (la bozza della sezione [Qualità](#qualità-passo-fisso), con gli avvisi già dentro). Ci mette circa un minuto a clip.
+
+**Cosa controllare nel resoconto:**
+- **avvisi `pausa non trovata`:** la mossa è tagliata dai secondi previsti. Guarda il foglio e, se serve, correggi i fotogrammi in `tools/sprite/flow_tagli.json`;
+- **avvisi `diviso in parti uguali`:** due stati nella stessa mossa (`turn+skid`, `tumble+prone+getup`). Il confine è a metà: controllalo sempre;
+- **`hitFrame_proposto`:** vale solo per gli attacchi. È il fotogramma in cui il disegno arriva più lontano dal centro; va confermato con `zone_dei_colpi.py`.
+
+**Due opzioni in più (4/11):**
+- `--pulisci` toglie gli archi bianchi dei fendenti e la polvere grigia ai piedi che Flow disegna nonostante l'AVOID. Non è perfetto: guarda il foglio e, se resta troppo, rigenera la clip;
+- `--passo 2` tiene un fotogramma ogni due (12 fps): strisce grandi la metà. Va bene per quasi tutti gli stati; per i colpi rapidi meglio tenerli tutti.
+
+**Limiti noti:** la polvere staccata dai piedi si toglie, quella attaccata ai piedi no (meglio rigenerare la clip). La scala viene dal fermo che il personaggio ha già nel gioco (`idle.png`): un personaggio senza `idle.png` va prima sistemato a mano.
+
+**Cosa fa dentro** (per chi lo modifica):
 1. **Sapere cosa c'è nella clip** importando `clips_of()` da `tools/flow/prompt_flow.py`: stati, secondi previsti, personaggio.
 2. **Scontornare** il verde `#17B03B`:
-   - verde in HSV di OpenCV: H 38-88, S ≥ 70, V ≥ 50;
-   - apertura 3×3; si tiene il pezzo più grande più quelli sopra 400 px (artigli staccati), il resto è polvere;
-   - despill: il canale verde non supera max(rosso, blu) + 10. **Più forte sui pixel scuri**: le mani quasi nere prendono il riflesso verde;
-   - via le macchie grigie poco sature sotto i piedi (polvere).
+   - quanto è verde un pixel: verde meno il massimo fra rosso e blu, come `bradipo_dal_video.py`; i bordi mescolati si ripuliscono;
+   - si tiene il pezzo più grande più quelli sopra 400 px (artigli staccati); i pezzi staccati grigi all'altezza dei piedi sono polvere e si tolgono;
+   - despill: il canale verde non supera max(rosso, blu) + 8, **+ 2 sui pixel scuri** (le mani quasi nere prendevano il riflesso verde).
 3. **Trovare le mosse:** per ogni fotogramma la differenza di sagoma dal fotogramma 0 (pixel diversi / pixel della sagoma). Sotto 0,2 per almeno 6 fotogrammi = pausa nella posa. Le mosse sono i tratti fra le pause, in ordine. Prova del 3/11: con questa soglia la clip di Bradipo si divide da sola nelle 3 mosse.
-4. **Se le mosse trovate non sono quante previste,** usare i secondi della tabella del prompt (± 0,5 s) e scriverlo nel resoconto. Correzioni a mano in `tools/sprite/flow_tagli.json`: `{"BR-01": {"turn": [117, 146], "skid": [147, 181]}}`. Serve anche per due stati nella stessa mossa (`turn+skid`, `tumble+prone+getup`).
-5. **Normalizzare** come `bradipo_dal_video.py`: fotogramma, `footY` e `scale` del personaggio da `characters.ts`; modo "world" a terra, "feet" in aria; contorno chiaro di 2 px; PNG a 256 colori se supera 1 MB.
+4. **Se le mosse trovate non sono quante previste,** si tengono le mosse trovate che toccano la finestra prevista di una mossa sola; le altre si tagliano dai secondi della tabella (± 0,25 s), con un avviso. Correzioni a mano in `tools/sprite/flow_tagli.json`: `{"BR-01": {"turn": [117, 146], "skid": [147, 181]}}`. Serve anche per due stati nella stessa mossa (`turn+skid`, `tumble+prone+getup`).
+5. **Normalizzare** come `bradipo_dal_video.py`: fotogramma e `footY` del personaggio da `godot/data/game.json`, scala presa dall'altezza del suo `idle.png`; modo "world" a terra, "feet" in aria; contorno chiaro di 2 px; PNG a 256 colori.
 6. **Scrivere:**
    - gli stati che il gioco conosce già (`OPTIONAL_ANIMATION_NAMES` e obbligatori in `characters.ts`) vanno in `public/assets/characters/<id>/<stato>.png`;
    - gli stati che il gioco **non conosce ancora** (quelli nuovi di #531 e quelli delle armi) vanno in `public/assets/characters/<id>/in-attesa/<stato>.png`, che il controllo dei nomi non guarda. Si spostano quando il gioco li conosce;
-   - `throwForward` diventa anche `throw` finché i 4 lanci non sono separati nel gioco.
+   - `throwForward` diventa anche `throw` finché i 4 lanci non sono separati nel gioco;
+   - la PR che aggiunge file in `public/assets/` aggiunge anche la riga in `public/assets/CREDITS.md` (una per cartella basta, per esempio `characters/bradipo/in-attesa/`), se no `npm test` fallisce.
 7. **Resoconto:** un foglio di controllo PNG per clip (8 fotogrammi per stato, su grigio) da mettere nella PR, e per ogni stato fotogrammi usati e `hitFrame` proposto (il fotogramma in cui mano, piede o arma arriva più lontano; per le zone `zone_dei_colpi.py`).
 
-**Fatto quando:** lo script taglia le due clip di prova del 3/11 (chiedile a Riccardo) e una clip vera del passo 3; `npm test` passa (crediti in `public/assets/CREDITS.md`, file sotto i 5 MB).
+**Fatto (3/11, PR #541):** taglia le due clip di prova di Bradipo, che sono `BR-01`. Una si divide da sola in 3 mosse; nell'altra trova la prima mossa e taglia le altre due dai secondi, con l'avviso. Il primo taglio vero dell'ondata 1 lo conferma.
 
 ### Passi 3-6 · Le ondate
 
@@ -114,12 +146,13 @@ python3 tools/sprite/dal_video.py <codice> <video.mp4> <cartella di lavoro>   # 
 | 5 | **Marcomunista** [`prompt/marcomunista.md`](prompt/marcomunista.md) | 29 | dicembre-gennaio |
 | 6 | **Egiainuso** [`prompt/egiainuso.md`](prompt/egiainuso.md) | 29 | gennaio-febbraio |
 
-Ogni ondata ha tre parti, che possono fare persone diverse:
+Ogni ondata ha quattro parti, che possono fare persone diverse:
 1. **Generare** le clip (sotto "Generare una clip") e consegnarle nell'issue.
 2. **Tagliarle** con lo script del passo 2: una PR a settimana per personaggio, `Parte di #539`, coi fogli di controllo.
 3. **Aggiornare** `produzione.md` nella stessa PR.
+4. **Scrivere la Qualità** nella stessa PR: cosa è venuto peggio e dove si è scesi a compromessi (sotto, [Qualità](#qualità-passo-fisso)).
 
-**Fatto quando:** tutte le clip dell'ondata sono `tagliata` in `produzione.md`, gli stati che il gioco conosce si vedono in allenamento (screenshot nella PR) e la CI è verde.
+**Fatto quando:** tutte le clip dell'ondata sono `tagliata` in `produzione.md`, ogni clip ha la sua riga in [Qualità](produzione.md#qualità) (anche solo "niente da segnalare"), gli stati che il gioco conosce si vedono in allenamento (screenshot nella PR) e la CI è verde.
 
 **Le schede mosse** di Marcomunista ed Egiainuso sono proposte di Riccardo e Claude: prima di generare la loro ondata, chiedi a Marco (@Marcomunista) se va bene, come dice [docs/community.md](../community.md). Cambiare una mossa = cambiare `OVR` in `prompt_flow.py`.
 
@@ -169,6 +202,26 @@ Si tiene se:
 - **I video non vanno nella repo.** Si allegano a un **commento dell'issue #539**, fino a 5 clip per commento, con una riga per clip: codice, tentativo, modello, crediti scalati, se l'hai tenuta.
 - Chi genera aggiorna `produzione.md` (stato `consegnata`, tentativi, modello, crediti, link al commento) nella PR del taglio, oppure lo scrive nel commento e lo aggiorna chi taglia.
 
+## Qualità (passo fisso)
+
+**Ogni PR del flusso** (immagini di partenza, taglio, prompt corretti, personaggi nuovi da Flow) dice cosa è venuto **peggio del resto** e dove si è **scesi a compromessi**. Serve a chi rifà una clip, a chi sceglie cosa rigenerare quando avanzano crediti e a chi gioca e vede qualcosa di strano: senza, i difetti si scoprono di nuovo ogni volta. Proposta di Nicola, 4/11/2026.
+
+**Cosa si scrive** (una riga per problema, con la clip o lo stato):
+- il personaggio che cambia nella clip (faccia, colori, proporzioni, arma);
+- una mossa tagliata dai secondi invece che dalla pausa, o un confine diviso a metà (`turn+skid`);
+- una mossa poco leggibile, troppo corta o troppo lunga, un `hitFrame` non confermato;
+- una posa riusata da un altro stato, una clip tenuta anche se una mossa è sbagliata;
+- scontorno: riflesso verde, buchi, polvere attaccata ai piedi, bordo del fotogramma;
+- una scelta fatta per risparmiare (Lite invece di Fast, meno tentativi, una mossa tolta);
+- quello che resta diverso dal resto del personaggio (grandezza, stile, contorno).
+
+**Dove si scrive:**
+1. **Nella PR**, una sezione `## Qualità` (lo script la prepara in `qualita.md`: gli avvisi ci sono già, il resto lo vede chi guarda il foglio).
+2. **In [`produzione.md`](produzione.md#qualità)**, nella tabella Qualità, così resta dopo il merge. Quando un problema si risolve, la riga non si cancella: si scrive `risolto in #NNN` in "Come si rimedia".
+3. **Nel README del personaggio** (`public/assets/characters/<id>/README.md`), sezione `## Qualità`, solo per quello che finisce davvero nel gioco: è lì che guarda chi lavora su quel personaggio.
+
+**Formato:** `| Clip | Cosa è venuto peggio o il compromesso | Perché si è accettato | Come si rimedia |`. Se una clip è venuta bene, si scrive "niente da segnalare": una riga vuota vuol dire "non controllato".
+
 ## Le regole dei prompt (imparate il 3/11)
 
 Valgono per ogni prompt nuovo o cambiato in `prompt_flow.py`:
@@ -211,7 +264,9 @@ Valgono per ogni prompt nuovo o cambiato in `prompt_flow.py`:
 - stile del gioco: [docs/stile-grafico.md](../stile-grafico.md);
 - un taglio fatto a mano da imitare: `tools/sprite/bradipo_dal_video.py`.
 
-**Quando ti fermi:** scrivi nell'issue dove sei arrivato (quali codici), aggiorna `produzione.md` e pusha.
+**Ogni PR** ha la sezione `## Qualità` (vedi [Qualità](#qualità-passo-fisso)) e le stesse righe in `produzione.md`. Non nascondere un difetto per far sembrare finita un'ondata: scriverlo è parte del compito.
+
+**Quando ti fermi:** scrivi nell'issue dove sei arrivato (quali codici), aggiorna `produzione.md` (anche la Qualità) e pusha.
 
 ## Domande aperte
 

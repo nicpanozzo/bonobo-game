@@ -3,10 +3,12 @@
 # Unica fonte dei prompt per Google Flow (#539). Genera:
 #   docs/clip-flow/prompt/<personaggio>.md   tutti i prompt delle clip, pronti da incollare
 #   docs/clip-flow/immagini-partenza.md      i prompt delle immagini di partenza con le armi
+#   docs/clip-flow/base.md                   il pacchetto base (immagine + 2 clip) dei personaggi ancora senza Flow
 #   docs/clip-flow/produzione.md             il foglio di produzione, SOLO se non esiste (poi si aggiorna a mano)
 # Per cambiare un prompt si cambia questo file e si rigenera: i .md generati non si toccano a mano.
 # Le regole dietro i testi (pause, massimo 2 attacchi, niente effetti) sono in docs/clip-flow/README.md.
 import os
+import re
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(__file__), "../.."))
 OUT = os.path.join(ROOT, "docs/clip-flow")
@@ -20,10 +22,10 @@ STYLE = {
     "illustrato": "STYLE: 2D hand-drawn cartoon illustration animated for a fighting video game, exactly the art style of the reference image: clean dark outlines, cel shading with flat shadow tones, detailed but clean shapes. Not 3D, not a render, not photorealistic.",
     "omino": "STYLE: 2D hand-drawn animation for a fighting video game, exactly the art style of the reference image: a minimal stick figure drawn with thick, even black ink lines and flat fills, no shading, no extra detail. Not 3D, not a render.",
 }
-SHOT = "SHOT: side view in three-quarters, full body always inside the frame, the character faces right unless the action says otherwise. Locked-off static camera: no camera movement, no zoom, no cuts, no slow motion. The character stays the same size as in the reference image."
+SHOT = "SHOT: side view in three-quarters, the character faces right unless the action says otherwise. FRAMING RULE: the whole character (head, hat, hands, feet and everything he carries) always stays completely inside the frame with a wide margin of empty green on every side, even at the top of a jump and at the full reach of a strike; no part of him is ever cut off by or touches the edges of the frame. Locked-off static camera: no camera movement, no zoom, no cuts, no slow motion. The character stays the same size as in the reference image."
 BACKGROUND = "BACKGROUND: one solid flat chroma-key green (#17B03B) filling the whole frame for the whole clip. No floor, no ground line, no shadow, no dust clouds, no smoke, no particles, no sky, no props."
 BACKGROUND_BLOCK = BACKGROUND.replace("no props.", "no props except the grey block described above.")
-AVOID = "AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, {extra}, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech."
+AVOID = "AVOID: changing the character's colors, face or proportions, extra arms, legs, fingers or heads, {extra}, holding a pose with a limb stretched out, extra accessories, logos, text, subtitles, a second character, any part of the character cut off by or touching the edges of the frame, a treadmill, a floor or any object under his feet, motion blur, speed lines, sparkles, slash trails, smoke, dust, camera shake. Only the effects explicitly described in ACTION are allowed. No music, no speech."
 AVOID_WEAPON = " The weapon never changes shape, color or size, never disappears or duplicates, and stays in the same hand. No muzzle flashes, bullets, lasers, sparks, trails, flames or glow effects coming from the weapon."
 ATTACK_RULE = "Every single strike snaps out and is pulled straight back in less than half a second: he never holds a limb stretched out."
 START = "From 0 s to 0.5 s he stands still exactly in the pose of the reference image."
@@ -85,10 +87,13 @@ WEAPONS = {
 
 M = {
     "idle": ("fermo", ["idle"], False, "he breathes calmly on the spot, shifting his weight slightly from one foot to the other"),
+    "walk": ("cammina", ["walk"], False, "he walks on the spot, without moving forward, four relaxed steps"),
+    "light": ("leggero", ["light"], True, "one quick straight punch forward with the front hand"),
+    "movimento": ("fermo, cammina, salto", ["idle", "walk", "jumpSquat", "jump", "fall", "land"], False, "From 0.5 s to 2.5 s he breathes calmly on the spot, shifting his weight slightly from one foot to the other. From 2.5 s to 4.5 s he walks on the spot, without moving forward, four relaxed steps. From 4.5 s to 5 s he is back in exactly the pose of the reference image. From 5 s to 5.5 s he bends his knees deeply (squash). From 5.5 s to 6.5 s he jumps straight up. From 6.5 s to 7.25 s he falls back down, arms out, legs ready, and at 7.25 s he lands on the same spot with a strong squash of the knees"),
     "crouch": ("accovacciato", ["crouch"], False, "he crouches down low on the spot, knees bent and head lowered, holds it for a moment, then stands up"),
     "taunt": ("provocazione", ["taunt"], False, "he waves one hand at an invisible opponent with a cheeky grin"),
     "turn_skid": ("si gira e frena", ["turn", "skid"], False, "he quickly turns around to face left and back to face right, then brakes hard on the spot as if stopping from a run, feet dug in, leaning back, arms out for balance"),
-    "corsa": ("cammina, corre, frena, si gira", ["walk", "dash", "skid", "turn"], False, "From 0.5 s to 2.5 s he walks on the spot, like on a treadmill, four relaxed steps. From 2.5 s to 4.5 s he runs on the spot, like on a treadmill, leaning forward, arms pumping. From 4.5 s to 5.5 s he brakes hard, feet dug in, leaning back, arms out for balance. From 5.5 s to 6.5 s he quickly turns around to face left and turns back to face right"),
+    "corsa": ("cammina, corre, frena, si gira", ["walk", "dash", "skid", "turn"], False, "From 0.5 s to 2.5 s he walks on the spot, without moving forward, four relaxed steps. From 2.5 s to 4.5 s he runs on the spot, without moving forward, leaning forward, arms pumping. From 4.5 s to 5.5 s he brakes hard and skids to a stop still facing right (he does NOT turn around yet), feet dug in, leaning back, arms out for balance. From 5.5 s to 6.5 s he quickly turns around to face left and turns back to face right"),
     "salto": ("salto completo", ["jumpSquat", "jump", "doubleJump", "fall", "land"], False, "From 0.5 s to 1 s he bends his knees deeply (squash). From 1 s to 2.5 s he jumps straight up. From 2.5 s to 3.5 s, at the top, he does a second jump in mid-air with a forward somersault. From 3.5 s to 5 s he falls back down, arms out, legs ready, and at 5 s he lands on the same spot with a strong squash of the knees"),
     "salti_ridotto": ("preparazione e atterraggio", ["jumpSquat", "land"], False, "he bends his knees deeply for a split second (squash), jumps straight up, falls back down to the same spot and lands with a strong squash of the knees"),
     "salti_doppio": ("preparazione, doppio salto, atterraggio", ["jumpSquat", "doubleJump", "land"], False, "he bends his knees deeply (squash), jumps straight up, does a second jump in mid-air, falls back down to the same spot and lands with a strong squash"),
@@ -290,7 +295,7 @@ VARIANTS = {"elvedeo": {"salti": ["salti_doppio", "airDodge", "helpless"], "recu
 
 W = {
     "idle": "he stands in guard holding the {w} steady, breathing calmly",
-    "walk": "he walks on the spot, like on a treadmill, four steps, holding the {w} steady",
+    "walk": "he walks on the spot, without moving forward, four steps, holding the {w} steady",
     "spadaAir": "he jumps straight up; at the top he swings the sword in one quick full circle around himself, then lands on the same spot",
     "spadaLight": "two quick horizontal slashes forward with the sword, one from left to right and one back from right to left, each pulled straight back",
     "spadaHeavy": "he raises the sword above his head with both hands for half a second, then one strong vertical slash downward in front of him, and returns to guard",
@@ -319,12 +324,146 @@ W_NAMES = {"spada": "sword", "pistola": "pistol", "lancia": "spear", "martello":
 
 def elvedeo_weapon(text):
     # Elvedeo è sempre in sella: si muove la capra
-    return (text.replace("he walks on the spot, like on a treadmill, four steps,", "the goat walks on the spot, like on a treadmill, four steps, while he keeps")
+    return (text.replace("he walks on the spot, without moving forward, four steps,", "the goat walks on the spot, without moving forward, four steps, while he keeps")
             .replace("he jumps straight up;", "the goat jumps straight up with him on its back;")
             .replace("then lands on the same spot", "then they land on the same spot").replace(", and lands on the same spot", ", and they land on the same spot")
             .replace("pushes him one step back, then he steps forward again", "pushes the goat one step back, then the goat steps forward again"))
 
+# ---------------------------------------------------------------- pacchetto base (Nicola, 3/11/2026)
+# Prima una base per tutti, poi si raffina: per chi non ha ancora disegni da Flow, un'immagine di partenza nuova
+# (Nano Banana, gratis) e due clip Lite che coprono le 7 animazioni obbligatorie; il resto lo fanno i ripieghi
+# di ANIMATION_FALLBACK. 20 crediti a personaggio: 2 personaggi al giorno coi 50 crediti giornalieri.
+
+BASE_STYLE = "STYLE: 2D hand-drawn cartoon illustration for a fighting video game: thick black ink outlines of even thickness, flat colors with one hard-edged shadow tone, clean round shapes, a very expressive face, normal body proportions with the head not oversized. Not 3D, not a render, no gradients, no realistic textures."
+BASE_PREFIX = "CHARACTER (must stay identical in every frame, same proportions, same colors, same face): the character from the reference image, "
+
+BASE = {
+    # day: giorno del piano; look: com'è fatto, in inglese, senza il prefisso; da_fare: cosa manca prima di generare
+    "giovannifrana": dict(
+        code="GF", name="Giovanni fRana", day=1, style="gioco",
+        look="a sturdy, broad-shouldered young man, a relaxed and cheerful beach brawler. Light tanned skin (#E8B98F), thick messy curly dark brown hair (#3B2618), a short dark brown beard (#3B2618), a confident grin. A short-sleeved red Hawaiian shirt (#C0392B) with big cream-yellow hibiscus flowers (#F1C40F), unbuttoned at the collar. Knee-length beige cargo shorts (#C8B48A). White sneakers (#EDEDED) with short white socks. Bare forearms. Nothing else on him.",
+        avoid="a ball, a football shirt, glasses, a cigarette, sandals",
+        source="il foglio sprite di @Marcomunista nell'ultimo commento di #528 (3/11), scelto da Nicola il 4/11",
+        da_fare="Aspettare l'ok di Riccardo (@GiovannifRana) in #528 sul foglio scelto da Nicola.",
+    ),
+    "lendmar": dict(
+        code="LE", name="Lendmar", day=1, style="gioco",
+        look="a lean young man dressed all in black, serious and a bit grim. Light skin (#EAC9AE), short dark brown hair (#2A1E18), thick frowning eyebrows, a stern stare. A tall black brimless cap (#141414), slightly crooked. A black long-sleeved button-up shirt (#1A1A1A) tucked into black trousers (#141414) with a black belt and a dull silver buckle (#8A8A8A). Black lace-up boots (#0E0E0E). Nothing else on him.",
+        avoid="colorful clothes, a smile, a fringe over the eyes",
+        source="il foglio sprite di @Marcomunista in #536, approvato da Nicola il 4/11",
+        da_fare="",
+    ),
+    "orsoblu": dict(
+        code="OB", name="Capt. OrsoBlu", day=2, style="gioco",
+        look="a stocky grumpy blue bear sea captain standing on two legs. Cobalt-indigo fur (#3B4F9A), lighter blue muzzle and belly (#8FA6D8), big round dark nose, thick frowning eyebrows, scowling mouth. Crooked navy captain's cap (#1F2A44) with a small gold anchor badge (#E0B040). Short mustard-yellow double-breasted pea coat (#D9A520) with brass buttons. Small red neckerchief (#B83A2E). Heavy black sea boots (#2A2A2A). A small upside-down wooden rowboat (#8B5A2B) strapped on his back like a turtle shell, a light wooden oar (#C49A6C) strapped across it. Brass whistle on a cord, small brass spyglass in his belt. Nothing else on him.",
+        avoid="an anchor, a chain, a rope, the boat leaving his back",
+        source="l'immagine di partenza nuova, già fatta su Flow il 3/11 (progetto \"nov 03 - 23:37\"): va salvata nella repo", ready=True,
+        da_fare="",
+    ),
+    "marcomunista": dict(
+        code="MA", name="Marcomunista", day=2, style="illustrato", look=None,
+        source="`riferimenti/personaggi/marcomunista.png` (già nella repo)", ready=True,
+        da_fare="",
+    ),
+    "lampione": dict(
+        code="LA", name="Lampione", day=3, style="gioco",
+        look="a big, burly, wild and hyper-competitive man. Light skin (#F0C3A0), red-ginger buzz cut (#C4602F), ginger stubble, wide crazy eyes and a big toothy grin. A dark olive-green long-sleeved shirt (#4F6B3A) with a loose red tie (#C0392B), brown trousers (#6B4A30), dark brown shoes (#3A2A20). Bright yellow padded goalkeeper gloves (#E9EC3C) on both hands. Nothing else on him.",
+        avoid="a ball, a racket, a hat",
+        source="lo sprite di oggi (scheda della community, #13)",
+        da_fare="",
+    ),
+    "drmicelium": dict(
+        code="DM", name="Dr. Micelium", day=3, style="gioco",
+        look="a rasta trauma surgeon infected by mushrooms. Brown skin (#C98F62), long brown dreadlocks (#8A5A2B) with tiny orange-brown mushrooms (#C9A27A) growing in them and on his shoulders, a calm, wise half-smile. A long white surgeon's coat (#F4F1EA) with a few small red stains (#D23B3B) on the sleeves, open over blue-grey scrubs (#5F7B8A), dark brown shoes (#3A2E29). An unlit joint in his mouth, never lit. Nothing else on him.",
+        avoid="smoke, a scalpel, a surgical mask, spores",
+        source="lo sprite di oggi (scheda della community, #13)",
+        da_fare="",
+    ),
+    "coachcartier": dict(
+        code="EM", name="Electronmaster", day=4, style="gioco",
+        look="a tall, muscular sports coach. Dark brown skin (#6B4630), a big round black afro (#1C1512), a confident grin. A shiny green tracksuit (#1F8A4C) with yellow stripes (#F2D02E) down the sleeves and the legs, white sneakers (#F4F4F4), two thick gold chains around his neck (#E0B040). Nothing else on him.",
+        avoid="a whistle, a clipboard, a cap",
+        source="lo sprite di oggi (scheda della community, #13)",
+        da_fare="",
+    ),
+    "nonnagina": dict(
+        code="NG", name="Nonna Gina", day=4, style="gioco", she=True,
+        look="a short, sturdy Italian grandmother from the countryside, warm but bossy. Light skin (#F2CFB3), grey hair in a tight bun (#DCD9D3), round glasses, rosy cheeks, a stern loving face. A purple cardigan (#7B4F8E), a navy-blue skirt (#3F4A5C) to below the knee, a white apron (#F3EFE6) with a small front pocket, skin-colored stockings (#D8B597), red slippers (#9C3B2E). She always holds a long wooden rolling pin (#C49A6C) in the hand nearer to the viewer. Nothing else on her.",
+        avoid="a second rolling pin, food, a handbag",
+        source="lo sprite di oggi e la scheda `docs/mosse/nonnagina.md`",
+        da_fare="",
+    ),
+    "opus": dict(
+        code="OP", name="Maestro Opus", day=5, style="gioco",
+        look="a small, pompous bonobo orchestra conductor standing upright. Dark brown-black fur (#2B211C), a pinkish-tan face, hands and feet (#C9A189), a huge wild white mane like Beethoven's (#F2EFE8), a proud chin-up expression. A black tailcoat with long tails (#1A1A22), a white waistcoat and a white bow tie, a red carnation in the buttonhole (#C8323C). Bare bonobo feet, no shoes. In the hand nearer to the viewer an oversized conductor's baton, white with a gold tip (#E0B040), about as long as his arm. Nothing else on him.",
+        avoid="shoes, musical notes, a music stand",
+        source="lo sprite di oggi e la scheda `docs/mosse/opus.md`",
+        da_fare="",
+    ),
+    "bonobot": dict(
+        code="BB", name="Bonobot", day=5, style="gioco",
+        look="a cocky, swaggering bonobo standing upright. Black fur (#1E1A18), a pinkish-tan face, ears, hands and feet (#C9A189), a smug grin with half-closed eyes, a messy tuft of hair on top of the head. An unlit joint in the corner of his mouth, never lit. No clothes. Nothing else on him.",
+        avoid="clothes, smoke, a tail",
+        source="lo sprite di oggi (Riccardo, #20)",
+        da_fare="Bonobot è di Riccardo: fagli vedere l'immagine prima delle clip.",
+    ),
+}
+
+# le mosse proprie del pacchetto base (OVR vale anche qui; Marcomunista usa le sue di sopra)
+OVR_BASE = {
+    "orsoblu": {
+        "light": "one quick jab forward with his fist, scowling",
+        "heavy": "he lowers his head for half a second, then rams forward with one powerful shoulder charge, the boat on his back rocking, and steps back",
+        "hit": "he is struck hard by an invisible blow: his cap tilts, his head and body snap backward, then he recovers, furious",
+    },
+    "marcomunista": {"light": "one quick open palm strike forward with the front hand"},
+    "lampione": {
+        "light": "one quick straight punch forward with his gloved front hand",
+        "heavy": "he pulls back for half a second, then dives forward with both gloved fists together like a goalkeeper punching the ball away, and steps back",
+    },
+    "giovannifrana": {
+        "light": "one quick straight jab forward with the front fist",
+        "heavy": "he pulls his fist back for half a second, then throws one big swinging punch forward with his whole body, and steps back",
+    },
+    "lendmar": {"heavy": "he pulls back for half a second, scowling, then throws one angry, powerful punch forward with his whole body"},
+    "nonnagina": {
+        "light": "one quick poke forward with the end of her rolling pin",
+        "heavy": "she raises the rolling pin over her head with both hands for half a second, then brings it down in front of her in one powerful blow",
+    },
+    "opus": {
+        "light": "one quick jab forward with the tip of his baton",
+        "heavy": "he raises the baton high for half a second, then brings it down in front of him in one grand, dramatic conducting stroke",
+    },
+    "coachcartier": {"heavy": "he pulls back for half a second, then throws one powerful uppercut forward and up, his gold chains swinging"},
+    "drmicelium": {"heavy": "he pulls back for half a second, then thrusts one open palm forward in a calm, powerful strike"},
+}
+
+# Clip già generate con prompt scritti fuori da questo script (OrsoBlu v2, 3/11/2026): servono solo allo script di
+# taglio, che ne legge stati e secondi. (codice: personaggio, slug, titolo, tabella (stato, da s, a s, nome))
+FATTE = {
+    "OB-01": ("orsoblu", "ancora-a", "Ancora A", [("recovery", .5, 2, "lancia l'ancora"), ("anchorHang", 3, 5, "appeso che oscilla"), ("anchorClimb", 6, 7.5, "si arrampica")]),
+    "OB-02": ("orsoblu", "ancora-b", "Ancora B", [("specialSide", .5, 2, "teleferica"), ("doubleJump", 3, 4.5, "capriola"), ("specialNeutral", 5.5, 7, "ancora avanti e strattone")]),
+    "OB-03": ("orsoblu", "marcia", "Marcia, fischietto, salto", [("walk", .5, 2, "marcia"), ("taunt", 3, 4.5, "fischietto e dito puntato"), ("jumpSquat+jump+fall+land", 5.5, 7.5, "salto")]),
+    "OB-B3": ("orsoblu", "colpi-bassi", "Colpi in alto e in basso", [("lightUp", .5, 2, "pugno in alto"), ("lightDown", 3, 4.5, "spazzata bassa"), ("heavyDown", 5.5, 7.5, "spazzata ai due lati")]),
+    "OB-07": ("orsoblu", "remo-barca", "Remo e barca", [("heavy", .5, 2, "remata"), ("heavyUp", 3, 4.5, "barca a ombrello"), ("shield", 5.5, 7.5, "sotto la barca")]),
+    "OB-B4": ("orsoblu", "colpi-in-aria", "Colpi in aria", [("lightAir", .5, 2, "stella a braccia e gambe aperte"), ("heavyAir", 3, 4.5, "martellata a due pugni")]),
+    "OB-B5": ("orsoblu", "corsa", "Corsa", [("walk", .5, 2.5, "cammina"), ("dash", 2.5, 4.5, "corre"), ("skid", 4.5, 5.5, "frena"), ("turn", 5.5, 6.5, "si gira")]),
+    "EL-06B": ("elvedeo", "bastonata-in-aria", "Bastonata in aria, in sella", [("heavyAir", 4, 6, "bastone sopra la testa e giù, sempre in sella")]),
+}
+
+BASE_CLIPS = [  # (codice, slug, titolo, mosse)
+    ("B1", "movimento", "Movimento", ["movimento"]),
+    ("B2", "colpi", "Colpi", ["light", "heavy", "hit"]),
+]
+
 # ---------------------------------------------------------------- composizione
+
+# le mosse in sequenza (una clip sola, senza pause in mezzo): da quando torna fermo, e dove taglia lo script (secondi)
+SEQ_CUTS = {
+    "corsa": (7, [("walk", .5, 2.5), ("dash", 2.5, 4.5), ("skid", 4.5, 5.5), ("turn", 5.5, 6.5)]),
+    "salto": (5.5, [("jumpSquat", .5, 1), ("jump", 1, 2.5), ("doubleJump", 2.5, 3.5), ("fall", 3.5, 5), ("land", 5, 5.5)]),
+    "movimento": (7.5, [("idle", .5, 2.5), ("walk", 2.5, 4.5), ("jumpSquat", 5, 5.5), ("jump", 5.5, 6.5), ("fall", 6.5, 7.25), ("land", 7.25, 7.5)]),
+}
 
 
 def fmt(x):
@@ -332,7 +471,7 @@ def fmt(x):
 
 
 def move_text(cid, key):
-    return OVR.get(cid, {}).get(key, M[key][3])
+    return OVR_BASE.get(cid, {}).get(key) or OVR.get(cid, {}).get(key, M[key][3])
 
 
 def compose(cid, moves):
@@ -345,16 +484,15 @@ def compose(cid, moves):
                 f"From 3.5 s to 4.5 s {'they drop' if cid == 'elvedeo' else 'he drops'} back down and {'hang' if cid == 'elvedeo' else 'hangs'} from the corner again. From 4.5 s to 6 s {'they flip' if cid == 'elvedeo' else 'he flips'} up onto the top of the block with {strike}. "
                 f"From 6 s to the end of the clip {'they stand' if cid == 'elvedeo' else 'he stands'} still on top of the block. Everything stays inside the frame for the whole clip.")
         return text, [("ledge", 0, 2, "appeso"), ("climb", 2, 3.5, "si tira su"), ("ledgeAttack", 4.5, 6, "attacco dal bordo")], True
-    seq = len(moves) == 1 and moves[0] in ("corsa", "salto")
+    seq = len(moves) == 1 and moves[0] in SEQ_CUTS
     parts, table, attack = [START], [], False
     if seq:
         key = moves[0]
         parts.append(move_text(cid, key) + ".")
-        end = 6.5 if key == "corsa" else 5.0
-        parts.append(HOLD_END.format(a=fmt(end + 0.5)))
-        cuts = {"corsa": [("walk", .5, 2.5), ("dash", 2.5, 4.5), ("skid", 4.5, 5.5), ("turn", 5.5, 6.5)],
-                "salto": [("jumpSquat", .5, 1), ("jump", 1, 2.5), ("doubleJump", 2.5, 3.5), ("fall", 3.5, 5), ("land", 5, 5.5)]}[key]
-        table = [(s, a, b, M[key][0]) for s, a, b in cuts]
+        hold, cuts = SEQ_CUTS[key]
+        parts.append(HOLD_END.format(a=fmt(hold)))
+        names = {"idle": "fermo", "walk": "cammina", "jumpSquat": "preparazione", "jump": "salto", "fall": "caduta", "land": "atterraggio"} if key == "movimento" else {}
+        table = [(s, a, b, names.get(s, M[key][0])) for s, a, b in cuts]
         return "ACTION: " + " ".join(parts), table, False
     win = WINDOWS[len(moves)]
     for i, (key, (a, b)) in enumerate(zip(moves, win)):
@@ -382,7 +520,7 @@ def compose_weapon(cid, wc):
             text = text.replace("takes one step forward and throws", "leans forward in the saddle and throws")
         return text, [("lanciaThrow", 0.5, 2, "lancio")], True
     if kind == "martello":
-        walk = "while the goat walks on the spot, like on a treadmill" if cid == "elvedeo" else "while walking on the spot, like on a treadmill"
+        walk = "while the goat walks on the spot, without moving forward" if cid == "elvedeo" else "while walking on the spot, without moving forward"
         jump = "during one jump of the goat straight up, and they land" if cid == "elvedeo" else "during one jump straight up, and lands"
         text = ("ACTION: hammering. " + START + " From 0.5 s to 2.5 s he swings the hammer up over his head and down in front of him with both hands, striking the empty space in front of his feet, about twice per second. "
                 f"From 2.5 s to 4.5 s he keeps hammering the same way {walk}. From 4.5 s to 6 s he keeps hammering {jump} on the same spot. "
@@ -413,8 +551,8 @@ def held(cid, arma):
     return c.get("hold_" + arma, c["hold"])
 
 
-def prompt(cid, action, weapon=None, block=False):
-    c = CHARS[cid]
+def prompt(cid, action, weapon=None, block=False, c=None):
+    c = c or CHARS[cid]
     blocks = [STYLE[c["style"]], c["character"]]
     if weapon:
         blocks.append(WEAPONS[weapon]["block"] + f" He {held(cid, weapon)}, exactly as in the first-frame image.")
@@ -426,6 +564,46 @@ def prompt(cid, action, weapon=None, block=False):
             avoid = avoid.replace("never disappears or duplicates", "never duplicates and leaves the frame only when thrown")
     blocks.append(avoid)
     return "\n\n".join(blocks)
+
+
+def she(text):
+    """Testi al femminile (Nonna Gina): he/his/him diventano she/her."""
+    for a, b in (("himself", "herself"), ("He", "She"), ("he", "she"), ("his", "her"), ("him", "her")):
+        text = re.sub(rf"\b{a}\b", b, text)
+    return text
+
+
+def base_char(cid):
+    """Il personaggio del pacchetto base nel formato di CHARS (style, character, avoid)."""
+    b = BASE[cid]
+    if b["look"] is None:
+        return CHARS[cid]
+    return dict(style=b["style"], character=BASE_PREFIX + b["look"], avoid=b["avoid"])
+
+
+def base_clips(cid):
+    """Le clip del pacchetto base: (codice, slug, titolo, modalità, prima, ultima, prompt, tabella), come clips_of()."""
+    b = BASE[cid]
+    ref = f"{REF}/personaggi/{cid}.png"
+    out = []
+    for code, slug, title, moves in BASE_CLIPS:
+        action, table, _ = compose(cid, moves)
+        if b.get("she"):
+            action = she(action)
+        out.append((f"{b['code']}-{code}", slug, title, "Frames to video", ref, ref, prompt(cid, action, c=base_char(cid)), table))
+    return out
+
+
+def base_start_image(cid):
+    b = BASE[cid]
+    look = b["look"] if b["look"] else CHARS[cid]["character"].split("): ", 1)[1]
+    return "\n\n".join([
+        "Draw one original character for a 2D fighting video game, full body, standing in a relaxed fighting stance, side view in three-quarters, facing right. If an image is attached, it only shows who the character is: keep the look, the clothes and the colors, but redraw everything in the style below.",
+        BASE_STYLE,
+        "CHARACTER: " + look,
+        "FRAMING: full body, the character is about two thirds of the image height, in the middle of the image, feet a little above the bottom edge. Nothing cut off.",
+        "BACKGROUND: one solid flat chroma-key green (#17B03B) filling the whole image. No floor, no ground line, no shadow, no other objects, no text.",
+    ])
 
 
 def frames(a, b):
@@ -456,6 +634,129 @@ def clips_of(cid):
         last = ref if kind == "lancio" else start
         out.append((f"{c['code']}-{code}", slug, title, "Frames to video", start, last, prompt(cid, action, weapon=arma), table))
     return out
+
+# ---------------------------------------------------------------- pose con gli oggetti (docs/clip-flow/pose-oggetti.md)
+
+# Le clip con gli oggetti non disegnano l'oggetto vero: in mano c'è un segnaposto magenta pieno (#FF00FF), da cui lo
+# script di taglio ricava punto e angolo della presa (mani.json) e che poi cancella. Il gioco ci disegna sopra
+# qualsiasi oggetto della stessa categoria. Una presa = un'immagine di partenza = una clip.
+MAGENTA = "#FF00FF"
+PRESE = {  # presa: (nome, segnaposto, posa ferma)
+    "bastone": ("Bastone", f"a plain straight stick of solid flat magenta ({MAGENTA}), about as long as his arm, thick as a broom handle, with a thin black outline and no details, no shading",
+                "he holds the magenta stick by its lower end in the hand nearer to the viewer, fist at his waist, the stick pointing up and forward at 45 degrees; the other fist raised in his usual guard"),
+    "mira": ("Mira", f"a small plain block of solid flat magenta ({MAGENTA}), the size of a brick, with no details, no shading",
+             "he holds the magenta block in the hand nearer to the viewer at chest height, elbow bent, the block pointing straight forward to the right like a pistol; the other hand supports his wrist"),
+    "palla": ("Palla", f"a small plain ball of solid flat magenta ({MAGENTA}), the size of an orange, with no details, no shading",
+              "he holds the magenta ball in the hand nearer to the viewer at hip height, arm relaxed; the other fist raised in his usual guard"),
+    "peso": ("Peso", f"a big plain cube of solid flat magenta ({MAGENTA}), about as wide as his shoulders, with no details, no shading",
+             "he holds the magenta cube high above his head with both arms, elbows slightly bent, knees bent under the weight, the cube resting on both palms"),
+    "sella": ("Sella", f"a flat plain board of solid flat magenta ({MAGENTA}), as long as his body is tall and as thick as a hand, with no wheels, no details, no shading",
+              "he stands on the magenta board, which lies flat and horizontal under both boots, knees bent, arms slightly out for balance, like a surfer"),
+}
+AVOID_MAGENTA = f" The magenta {{thing}} never changes shape, color or size, never disappears, duplicates or bends, never leaves {{where}} and is always drawn in the same flat magenta ({MAGENTA}); nothing else in the image is magenta or pink. No glow, trails or effects around it."
+# Le clip, una per presa: (codice, presa, slug, titolo, categorie, mosse [(stato, attacco?, testo, cosa fa)], stato fermo)
+CLIP_OGGETTI = [
+    ("O1", "bastone", "impugnatura", "Impugnatura", "impugnatura", [
+        ("gripWalk", False, "he marches on the spot, without moving forward, holding the magenta stick in the same way", "cammina con l'arma"),
+        ("gripLight", True, "one quick forward thrust with the magenta stick, the tip jabbing straight forward at chest height, then pulled straight back", "colpo leggero"),
+        ("gripHeavy", True, "he raises the magenta stick over his head with both hands for half a second, then smashes it down in front of him in one powerful blow, and returns the stick to the hand nearer to the viewer", "colpo forte"),
+    ], "gripIdle"),
+    ("O2", "mira", "sparo", "Sparo", "sparo", [
+        ("aimWalk", False, "he marches on the spot, without moving forward, keeping the magenta block pointed forward", "cammina mirando"),
+        ("aimShoot", True, "he fires two quick shots: each time his hand kicks up a little with the recoil and comes straight back, the block always pointing forward", "spara"),
+        ("aimCharge", True, "he braces his legs and grips the magenta block with both hands, trembling with effort for one second, then a big recoil pushes him half a step back, and he steps forward again", "carica e getto"),
+    ], "aimIdle"),
+    ("O3", "palla", "lancio-consumo", "Lancio e consumo", "lancio, consumo", [
+        ("itemThrow", True, "he winds up and throws overhand forward with the hand holding the magenta ball, one big throwing motion, but the ball never leaves his hand", "lancia avanti"),
+        ("itemThrowUp", True, "he throws straight up toward the sky with the hand holding the magenta ball, but the ball never leaves his hand", "lancia in alto"),
+        ("itemEat", False, "he brings the magenta ball to his mouth, takes two big greedy bites and chews with his cheeks puffed, pleased; the ball keeps exactly its shape", "mangia o beve"),
+    ], "itemHold"),
+    ("O4", "peso", "peso", "Peso", "peso", [
+        ("carryWalk", False, "he trudges on the spot, without moving forward, under the heavy magenta cube, wobbling a little, the cube always above his head", "cammina col peso"),
+        ("carryToss", True, "he leans back, then heaves the magenta cube forward and down with both arms as if hurling it, arms ending stretched forward, but the cube never leaves his hands; then he lifts it back above his head", "scaglia il peso"),
+    ], "carryIdle"),
+    ("O5", "sella", "cavalcatura", "Cavalcatura", "cavalcatura", [
+        ("rideDash", False, "he crouches low and leans far forward as if speeding along on the board, coat flapping, the board staying flat under his boots, then straightens up again", "va forte"),
+        ("rideHop", False, "he jumps straight up with the board stuck under his boots, the board rising with him and staying flat, and lands back on the same spot", "salta sulla tavola"),
+    ], "rideIdle"),
+]
+OGGETTI_PER = ["orsoblu"]  # chi ha le clip delle pose con gli oggetti (Nicola, 5/11/2026: prima un personaggio solo)
+
+
+def oggetti_start_image(cid, presa):
+    """Il prompt dell'immagine di partenza di una presa: il fermo del personaggio con il segnaposto magenta."""
+    name, thing, pose = PRESE[presa]
+    c = base_char(cid)
+    return "\n\n".join([
+        "The attached image is the character. Draw exactly the same character, same size, same position of the feet in the frame and same style; change only the pose of the arms (and legs where the pose says so) and add the magenta object described below.",
+        STYLE[c["style"]], c["character"],
+        f"OBJECT: {thing}. It is a placeholder that will be replaced in the game: keep it perfectly plain and flat.",
+        f"POSE: {pose}. Keep his face, clothes and everything he carries exactly as in the attached image.",
+        "FRAMING: identical to the attached image: side view in three-quarters, facing right, full body, same size and same place in the frame. Everything, including the magenta object, stays inside the image with a wide margin of empty green on every side.",
+        "BACKGROUND: one solid flat chroma-key green (#17B03B) filling the whole image. No floor, no ground line, no shadow, no other objects, no text.",
+    ])
+
+
+def oggetti_clips(cid):
+    """Le clip delle pose con gli oggetti: (codice, slug, titolo, modalità, prima, ultima, prompt, tabella), come clips_of().
+    Lo stato fermo (gripIdle...) ha la finestra 0-0.5 s: lo script lo taglia dai secondi, senza cercarlo fra le mosse."""
+    code = BASE[cid]["code"] if cid in BASE else CHARS[cid]["code"]
+    c = base_char(cid) if cid in BASE else CHARS[cid]
+    out = []
+    for oc, presa, slug, title, cats, moves, idle in CLIP_OGGETTI:
+        win = WINDOWS[len(moves)]
+        thing = presa if presa != "bastone" else "stick"
+        thing = {"mira": "block", "palla": "ball", "peso": "cube", "sella": "board"}.get(presa, thing)
+        parts, table, attack = [START], [(idle, 0, 0.5, "fermo con l'oggetto")], False
+        for i, ((state, att, text, it), (a, b)) in enumerate(zip(moves, win)):
+            attack |= att
+            parts.append(f"{'Attack' if att else 'Move'} {i + 1}, from {fmt(a)} s to {fmt(b)} s: {text}.")
+            nxt = win[i + 1][0] if i + 1 < len(win) else None
+            parts.append(HOLD.format(a=fmt(b), b=fmt(nxt)) if nxt else HOLD_END.format(a=fmt(b)))
+            table.append((state, a, b, it))
+        intro = f"{len(moves)} short separate moves with the magenta {thing}, each one followed by a pause in the starting pose."
+        if attack:
+            intro += " " + ATTACK_RULE.replace("he never holds a limb stretched out", "he never holds a limb stretched out at the end")
+        action = "ACTION: " + intro + " " + " ".join(parts)
+        if cid in BASE and BASE[cid].get("she"):
+            action = she(action)
+        where = "the board under his boots" if presa == "sella" else ("his hands" if presa == "peso" else "his hand")
+        p = prompt(cid, action, c=c).replace(c["character"], c["character"] + f"\n\nOBJECT: {PRESE[presa][1]}, exactly as in the reference image. {PRESE[presa][2][0].upper() + PRESE[presa][2][1:]} in the reference image.", 1)
+        p = p.replace(", no props.", ", no props other than the magenta " + thing + ".")
+        if presa == "sella":  # la tavola sotto i piedi è proprio il segnaposto
+            p = p.replace("a floor or any object under his feet", "a floor or any object under his feet other than the magenta board")
+        p += AVOID_MAGENTA.format(thing=thing, where=where)
+        start = f"{REF}/partenze/{cid}_{presa}.png"
+        out.append((f"{code}-{oc}", slug, title, "Frames to video", start, start, p, table))
+    return out
+
+
+def write_oggetti():
+    L = [HEAD, "# Pose con gli oggetti: prompt\n",
+         "Lo standard (perché il segnaposto magenta, punti di presa, inquadratura, stati) è in [pose-oggetti.md](pose-oggetti.md). Qui ci sono solo i prompt, generati da `tools/flow/prompt_flow.py`.\n",
+         "**Ordine:** prima le immagini di partenza (Nano Banana, 0 crediti), poi le clip (Veo 3.1 Lite, 10 crediti l'una), Frames to video con l'immagine della presa come prima **e** ultima immagine, 16:9, 8 secondi, 1 risultato.\n"]
+    for cid in OGGETTI_PER:
+        name = BASE[cid]["name"] if cid in BASE else CHARS[cid]["name"]
+        L += [f"## {name}\n", "### Immagini di partenza\n",
+              f"Strumento immagini di Flow, 16:9, 1 risultato. Allega [`personaggi/{cid}.png`](riferimenti/personaggi/{cid}.png) e incolla il prompt. Salva in `{REF}/partenze/{cid}_<presa>.png`.\n",
+              "**Scartala se:** il personaggio cambia, i piedi si spostano, l'oggetto non è magenta pieno o ha dettagli, c'è altro magenta o rosa nell'immagine, qualcosa tocca il bordo.\n"]
+        for presa, (pn, _, _) in PRESE.items():
+            L += [f"#### `{cid}_{presa}.png` · {pn}\n", "```text", oggetti_start_image(cid, presa), "```", ""]
+        L += ["### Clip\n", "| Codice | Clip | Categorie | Stati |", "|---|---|---|---|"]
+        cats = {f"{BASE.get(cid, CHARS.get(cid, {})).get('code')}-{oc}": cs for oc, _, _, _, cs, _, _ in CLIP_OGGETTI}
+        cl = oggetti_clips(cid)
+        for code, slug, title, mode, a, z, p, table in cl:
+            L.append(f"| [{code}](#{code.lower()}) | {title} | {cats[code]} | {', '.join('`' + s + '`' for s, *_ in table)} |")
+        L.append("")
+        for code, slug, title, mode, a, z, p, table in cl:
+            L += [f"### {code}", "", f"**{title}** · file da consegnare: `{code}_{slug}.mp4` · Veo 3.1 Lite, Frames to video, prima e ultima immagine `{a}`", "",
+                  "| Stato | Secondi | Fotogrammi | Cosa fa |", "|---|---|---|---|"]
+            for st, x, y, nm in table:
+                L.append(f"| `{st}` | {fmt(x)}-{fmt(y)} | {frames(x, y)} | {nm} |")
+            L += ["", "```text", p, "```", ""]
+    write(os.path.join(OUT, "pose-oggetti-prompt.md"), "\n".join(L))
+    return sum(len(CLIP_OGGETTI) for _ in OGGETTI_PER)
+
 
 # ---------------------------------------------------------------- scrittura dei file
 
@@ -541,12 +842,47 @@ def write_production(allc):
     return True
 
 
+def write_base():
+    days = sorted({b["day"] for b in BASE.values()})
+    L = [HEAD, "# Pacchetto base: prima una base per tutti\n",
+         "Per ogni personaggio che non ha ancora disegni da Flow: **un'immagine di partenza nuova** (Nano Banana, 0 crediti) e **due clip Veo 3.1 Lite** (10 crediti l'una) che coprono le 7 animazioni obbligatorie. Il resto lo fanno i ripieghi di `ANIMATION_FALLBACK`; quando le clip sono nel gioco si tolgono le pose vecchie, come per Egiainuso in #542. Dopo, un giro con le animazioni che si vedono di più (corsa, speciale firma, provocazione), poi le ondate complete del [README](README.md).\n",
+         "**20 crediti a personaggio, 2 personaggi al giorno** coi 50 crediti giornalieri (si azzerano alle 9:00): i 10 che avanzano servono a rifare la clip venuta peggio. I crediti mensili non si toccano.\n",
+         "**Come:** come una clip del README (Frames to video, la stessa immagine come prima e ultima, 16:9, 8 secondi, 1 risultato), ma con **Veo 3.1 Lite**. L'immagine di partenza va in `riferimenti/personaggi/<id>.png`, 16:9, prima delle clip. Lo script di taglio trova le clip con `base_clips()` di `tools/flow/prompt_flow.py`.\n",
+         "**Rifalla se:** il personaggio cambia colori o faccia, una mossa resta a metà o col braccio teso, compaiono effetti, pavimento o un secondo personaggio, la clip non finisce nella posa di partenza.\n",
+         "| Giorno | Personaggio | Immagine di partenza da | Clip | Prima di generare |", "|---|---|---|---|---|"]
+    for cid, b in sorted(BASE.items(), key=lambda kv: kv[1]["day"]):
+        codes = ", ".join(f"[{c}](#{c.lower()})" for c, *_ in base_clips(cid))
+        L.append(f"| {b['day']} | [{b['name']}](#{cid}) | {b['source']} | {codes} | {b['da_fare'] or '-'} |")
+    L.append("")
+    for d in days:
+        for cid, b in BASE.items():
+            if b["day"] != d:
+                continue
+            L += [f'<a id="{cid}"></a>', "", f"## Giorno {d} · {b['name']}", ""]
+            if b["da_fare"]:
+                L += [f"**Prima di generare:** {b['da_fare']}", ""]
+            L += [f"### Immagine di partenza · `riferimenti/personaggi/{cid}.png`", "",
+                  f"Già fatta: {b['source']}." if b.get("ready") else f"Da: {b['source']}. Strumento immagini di Flow (Nano Banana), 16:9, 1 risultato; allega il riferimento se c'è.", ""]
+            if not b.get("ready"):
+                L += ["```text", base_start_image(cid), "```", ""]
+            for code, slug, title, mode, a, z, p, table in base_clips(cid):
+                L += [f"### {code}", "", f"**{title}** · file da consegnare: `{code}_{slug}.mp4` · Veo 3.1 Lite, Frames to video, prima e ultima immagine `{a}`", "",
+                      "| Stato | Secondi | Fotogrammi | Cosa fa |", "|---|---|---|---|"]
+                for st, x, y, name in table:
+                    L.append(f"| `{st}` | {fmt(x)}-{fmt(y)} | {frames(x, y)} | {name} |")
+                L += ["", "```text", p, "```", ""]
+    write(os.path.join(OUT, "base.md"), "\n".join(L))
+    return len(BASE_CLIPS) * len(BASE)
+
+
 def main():
     allc = {cid: write_character(cid) for cid in CHARS}
     write_start_images()
     made = write_production(allc)
+    nb = write_base()
+    no = write_oggetti()
     tot = sum(len(v) for v in allc.values())
-    print(f"{tot} clip in {len(allc)} file, 16 immagini di partenza" + (", foglio di produzione creato" if made else ""))
+    print(f"{tot} clip in {len(allc)} file, 16 immagini di partenza, pacchetto base: {nb} clip per {len(BASE)} personaggi, pose con gli oggetti: {no} clip" + (", foglio di produzione creato" if made else ""))
 
 
 if __name__ == "__main__":

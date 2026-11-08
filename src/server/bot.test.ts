@@ -412,7 +412,8 @@ describe("bot", () => {
   });
 
   it("Bonobo e Capt. OrsoBlu col bot semplice: nessuno vince oltre il 60% in 20 partite (E10)", () => {
-    const stages = ["palco", "isole", "fabbrica", "palestra", "casuale-1"];
+    // Il Diluvio (isole) è una scalata col mare che sale: premia chi si arrampica meglio, non serve a pesare i personaggi
+    const stages = ["palco", "musica", "fabbrica", "palestra", "casuale-1"];
     const wins = { default: 0, orsoblu: 0 };
     for (let i = 0; i < 20; i++) {
       // Senza oggetti: ogni oggetto nuovo cambia quello che cade e sposterebbe il conto senza c'entrare coi personaggi (#302)

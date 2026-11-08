@@ -4,11 +4,11 @@ L'omino col cappellino e lo zaino del foglio delle pose di @Marcomunista ([#178]
 
 ## Sprite: animazioni dal video (E7)
 
-Le animazioni vengono dal video di tutte le mosse fatto da Nicola con Google Flow (il prompt e i riferimenti sono quelli del flusso di Bradipo Giallo), con le pose del foglio di Marco come riferimento. Prima era una skin ("Animato") accanto alle pose ferme ritagliate dal foglio: le pose ferme sono state tolte e l'animato è diventato lo sprite di base.
+Le animazioni vengono dai video fatti da Nicola con Google Flow (il video di tutte le mosse del 25/10 e le clip dedicate EG-01..EG-19 del 6–8/11), con le pose del foglio di Marco come riferimento. Prima l'animato era una skin ("Animato") accanto alle pose ferme ritagliate dal foglio: le pose ferme sono state tolte e l'animato è diventato lo sprite di base.
 
 - **Una striscia per stato**, fotogrammi da **400×330 px** coi piedi a 290 (`footY`) e `scale: 0.5`.
 - La speciale neutra è lo sputo.
-- **Eccezione alla style guide:** è un disegno a tratto nero su fondo bianco, non illustrato a 2 toni. Per leggersi sui fondali scuri ha un **contorno chiaro**, e la faccia è riempita di bianco.
+- **Eccezione alla style guide:** è un disegno a tratto nero su fondo bianco, non illustrato a 2 toni. La faccia è riempita di bianco; **niente contorno chiaro** attorno al corpo (tolto il 2026-11-04: in gioco sembrava uno scontorno sbagliato).
 - `portrait.png`: testa e cappellino, per lobby e HUD.
 
 ## Rifarlo

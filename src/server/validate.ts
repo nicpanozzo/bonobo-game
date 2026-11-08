@@ -1,8 +1,8 @@
 // Tutto quello che arriva dalla rete è sconosciuto (#105): un client vecchio, buggato o malevolo
 // può mandare null, numeri, array o stringhe enormi. Queste funzioni restituiscono dati puliti
 // o null, così i gestori di index.ts non si fidano mai di quello che ricevono.
-import { NET_LIMITS, TRAINING, VOICE } from "../shared/constants";
-import type { InputState, MatchRules, VoiceSignal } from "../shared/types";
+import { NET_LIMITS, PARTY, TRAINING, VOICE } from "../shared/constants";
+import type { InputState, MatchRules, PartyCommand, VoiceSignal } from "../shared/types";
 
 export interface JoinData {
   room: string;
@@ -39,6 +39,9 @@ export function parseJoin(raw: unknown): JoinData | null {
       if (key === "__proto__") continue;
       if (typeof value === "number" || typeof value === "boolean" || typeof value === "string") {
         (rules as Record<string, unknown>)[key] = typeof value === "string" ? value.slice(0, NET_LIMITS.maxStringLength) : value;
+      } else if (key === "itemKinds" && Array.isArray(value)) {
+        // Quali oggetti cadono: l'unica lista ammessa, solo stringhe corte (sanitizeRules tiene quelli che esistono)
+        rules.itemKinds = value.filter((k): k is string => typeof k === "string").slice(0, 64).map((k) => k.slice(0, NET_LIMITS.maxStringLength));
       }
     }
   }
@@ -145,5 +148,35 @@ export function sanitizeName(raw: string, taken: readonly string[] = []): string
     const suffix = ` ${n}`;
     const candidate = `${cut(name, max - suffix.length).trim()}${suffix}`;
     if (!used.has(candidate.toLowerCase())) return candidate;
+  }
+}
+
+// Bonobo Party (#579): un comando sul tabellone. Party controlla poi se tocca davvero a chi lo manda
+export function parsePartyCommand(raw: unknown): PartyCommand | null {
+  if (!isObject(raw)) return null;
+  const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? Math.round(v) : null);
+  switch (raw.kind) {
+    case "roll":
+      return { kind: "roll", useItem: raw.useItem === true };
+    case "path": {
+      const next = num(raw.next);
+      return next === null ? null : { kind: "path", next: Math.max(0, Math.min(3, next)) };
+    }
+    case "buy":
+      return { kind: "buy", item: raw.item === null ? null : (shortString(raw.item) ?? null) };
+    case "vote": {
+      const id = shortString(raw.minigameId);
+      return id ? { kind: "vote", minigameId: id } : null;
+    }
+    case "feedback": {
+      const stars = num(raw.stars);
+      // Testo libero: niente caratteri di controllo (a parte gli a capo), al massimo PARTY.feedbackMaxChars
+      const text = typeof raw.text === "string" ? raw.text.replace(/[\u0000-\u0009\u000b-\u001f\u007f]/g, "").slice(0, PARTY.feedbackMaxChars) : "";
+      return { kind: "feedback", stars: stars === null ? 0 : Math.max(0, Math.min(5, stars)), text };
+    }
+    case "hall":
+      return { kind: "hall" };
+    default:
+      return null;
   }
 }

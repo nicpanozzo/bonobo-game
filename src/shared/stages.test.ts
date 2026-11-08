@@ -135,7 +135,7 @@ describe("arene", () => {
     assert.ok(withArt.length >= 1, "almeno Il Palco ha uno sfondo");
     for (const stage of withArt) {
       const art = stage.art!;
-      assert.ok(art.layers.length >= 1 || art.collapse, `${stage.id}: almeno uno strato`); // Bologna per ora ha solo il crollo (#433)
+      assert.ok(art.layers.length >= 1 || art.collapse || (stage.id === "palco" && art.preview), `${stage.id}: almeno uno strato`); // Bologna per ora ha solo il crollo (#433); Il Palco ha solo l'anteprima, il concerto lo disegna Godot
       const layers = [...art.layers, ...(art.foreground ? [art.foreground] : [])];
       for (const l of layers) assert.ok(l.parallax >= 0 && l.parallax <= 1, `${stage.id}: parallasse di ${l.file} tra 0 e 1`);
       const v = art.verticalParallax ?? 1; // #400
@@ -348,7 +348,7 @@ describe("arene", () => {
     const editor = await loadEditor();
     for (const base of [...Object.values(STAGES), generateStage(3), generateStage(17)]) {
       // Eccezione (#433): l'editor rifà le partenze a coppie simmetriche e non conosce quelle di squadra (né fasi e pezzi a tempo)
-      if (base.spawns.some((s) => s.team !== undefined)) continue;
+      if (base.spawns.some((s) => s.team !== undefined) || base.rise) continue; // né il mare che sale del Diluvio
       const model = { ...base, id: "nuova", name: "Nuova arena" };
       const spec = editor.toStageSpec(model);
       assert.deepEqual(editor.problems(spec, stageCheckData(), Object.keys(STAGES)), [], base.id);

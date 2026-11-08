@@ -2,7 +2,8 @@
 // invece di dare percentuale e knockback; lo scudo si consuma anche da solo e a 0 si rompe: saltino e stordimento.
 // Su fa saltare fuori dallo scudo, una direzione (o la schivata) fa rotolare con la schivata che c'è già (#3).
 
-import { INPUT, SHIELD } from "../constants";
+import { INPUT, PACK, SHIELD } from "../constants";
+import type { InputState } from "../types";
 import { pressed, type Fighter, type PhysicsContext } from "./fighter";
 
 // Un passo di scudo e stordimento. true se si è fermi (scudo alzato, colpo parato, attesa dopo averlo
@@ -12,7 +13,10 @@ export function holdShield(f: Fighter, dtMs: number, ctx: PhysicsContext): boole
 
   // Stordito dopo la rottura: fermo e colpibile. Un colpo vero lo fa finire (resolveHits)
   if (f.stunTimer > 0) {
-    f.stunTimer = Math.max(0, f.stunTimer - dtMs);
+    // Nella scatola dell'impacchettatrice (La Fabbrica) ogni tasto premuto la apre un po' prima; un colpo la rompe
+    const mash = f.packed ? PACK.mashMs * newKeys(f) : 0;
+    f.stunTimer = f.packed && f.hitstun ? 0 : Math.max(0, f.stunTimer - dtMs - mash);
+    if (f.stunTimer === 0) f.packed = false;
     f.stunned = f.stunTimer > 0;
     slide(f, dt);
     return true;
@@ -118,4 +122,11 @@ function slide(f: Fighter, dt: number): void {
   if (!f.onGround) return;
   const slow = SHIELD.pushFriction * dt;
   f.vx = Math.abs(f.vx) <= slow ? 0 : f.vx - Math.sign(f.vx) * slow;
+}
+
+// Tasti appena premuti in questo passo (per uscire prima dalla scatola dell'impacchettatrice)
+function newKeys(f: Fighter): number {
+  let n = 0;
+  for (const key of Object.keys(f.input) as (keyof InputState)[]) if (f.input[key] && !f.prevInput[key]) n++;
+  return n;
 }

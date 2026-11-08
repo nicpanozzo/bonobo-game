@@ -123,7 +123,9 @@ function land(f: Fighter, y: number) {
   f.recoveryUsed = false;
   f.helpless = false;
   f.airDodgeUsed = false;
+  f.airPops = 0; // il Piano quinquennale di Marcomunista riparte (#557)
   f.ledgeGrabs = 0;
+  f.anchorThrows = 0; // l'ancora di OrsoBlu (#547)
 }
 
 export function outOfBlastZone(f: Fighter, ctx: PhysicsContext): boolean {
@@ -145,8 +147,13 @@ export function loseStock(f: Fighter, ctx: PhysicsContext): void {
   f.attackActive = false;
   f.hitstunTimer = 0;
   f.hitstun = false;
+  f.stunTimer = 0; // spedito fuori dalla Fabbrica dentro la scatola: si ricompare liberi
+  f.stunned = false;
+  f.packed = false;
   f.lastHitById = null;
   if (!SUPREME.keepOnKo) f.supreme = 0; // #101
+  f.anchor = undefined; // l'ancora di OrsoBlu (#547) resta in mano
+  f.anchorThrows = 0;
   f.rewindTrail = []; // col KO il passato si perde: …COSA? non riporta in vita (#358)
   f.powerup = null; // il fiore finisce con la vita (#231)
   f.powerupMs = 0;

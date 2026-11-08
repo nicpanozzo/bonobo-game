@@ -5,6 +5,7 @@ import express from "express";
 import { Server } from "socket.io";
 import { NET_LIMITS, PING_INTERVAL_MS, PING_TIMEOUT_MS } from "../shared/constants";
 import type { ClientToServer, ServerToClient } from "../shared/types";
+import { FeedbackStore, githubFromEnv } from "./feedback";
 import { attachGame, turnFromEnv } from "./game";
 import { health } from "./health";
 import { Leaderboard, leaderboardPage } from "./leaderboard";
@@ -48,11 +49,17 @@ app.get("/classifica/punti.json", (_req, res) => {
   res.set("Access-Control-Allow-Origin", "*").json({ board: leaderboard.board(BOARD_PAGE_ROWS), updatedAt: Date.now() });
 });
 
+// Bonobo Party (#579): i pareri sui minigiochi, nel file e (con FEEDBACK_GITHUB_TOKEN e FEEDBACK_ISSUE) in un'issue
+const feedback = new FeedbackStore(process.env.FEEDBACK_FILE || path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../data/feedback.json"), githubFromEnv(process.env));
+app.get("/feedback.json", (_req, res) => {
+  void feedback.list().then((list) => res.set("Access-Control-Allow-Origin", "*").json(list));
+});
+
 // Stanze e messaggi dei giocatori: src/server/game.ts
 // Chat vocale: TURN facoltativo per chi è dietro reti chiuse. Si scrive solo se c'è, mai nome utente o password
 const turn = turnFromEnv(process.env);
 if (turn) console.log(`[voce] TURN configurato: ${[turn.urls].flat().length} indirizzi`);
-const rooms = attachGame(io, { leaderboard, discordWebhookUrl: process.env.DISCORD_WEBHOOK_URL, turn });
+const rooms = attachGame(io, { leaderboard, feedback, discordWebhookUrl: process.env.DISCORD_WEBHOOK_URL, turn });
 
 // Un errore sfuggito (in un gancio asincrono, in una libreria) non spegne il server per tutti: si registra e si va avanti.
 // Solo se la porta non si apre non c'è niente da tenere acceso. host.ts ha un suo gestore che lo spiega a chi ospita.

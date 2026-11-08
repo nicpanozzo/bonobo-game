@@ -1,22 +1,30 @@
 # Capt. OrsoBlu
 
-Creatura blu su una barchetta, con un remo. Proposto da @MauroGrecchi in #37 con il nome Egiainuso, rinominato con #178.
+Proposto da @MauroGrecchi in #37 (si chiamava Egiainuso, rinominato con #178). Dal 3/11/2026 è la versione 2 scelta con Nicola: un vecchio capitano di mare burbero e pignolo, un orso blu con la barchetta rovesciata in spalla, il berretto, il cappotto giallo e il fischietto. La meccanica principale sarà l'ancora usata come una ragnatela per appendersi, dondolare e arrampicarsi.
 
-## Spritesheet: `orsoblu.png`
+## Da dove vengono i disegni
 
-- Fotogrammi da **64×96 px** (pixel art disegnata a 32×48 e ingrandita ×2), sfondo trasparente.
-- Griglia di 6 colonne × 7 righe, una riga per animazione, fotogrammi da sinistra.
-- Guarda **a destra**: per andare a sinistra si specchia lo sprite.
-- I piedi (il fondo della barca) sono sulla riga in basso del fotogramma: l'origine è `(0.5, 1)`, come `y` in `PlayerState`.
+Dalle prime 4 clip fatte su Google Flow (Veo 3.1 Lite), tagliate con `tools/sprite/dal_video.py`:
 
-| Riga | Animazione | Fotogrammi | Note |
-|---|---|---|---|
-| 0 | fermo | 4 | dondola sull'acqua, l'ultimo strizza gli occhi |
-| 1 | camminata | 6 | rema |
-| 2 | salto | 2 | la barca si stacca dall'acqua |
-| 3 | caduta | 2 | |
-| 4 | attacco leggero | 3 | pugno in avanti |
-| 5 | attacco pesante | 4 | colpo di remo |
-| 6 | colpito | 2 | il primo è bianco (lampo) |
+| Clip | Stati |
+|---|---|
+| OB-03 | `idle`, `walk`, `taunt`, `jumpSquat`, `jump`, `fall`, `land`, `hit` |
+| OB-07 | `heavy`, `heavyUp`, `shield` |
+| OB-01 | `recovery`, `anchorHang` (appeso all'ancora) e `anchorClimb` (arrampicata sulla catena, #547) |
+| OB-02 | `specialSide`, `doubleJump`, `specialNeutral`, `light` |
 
-La hitbox di gioco resta quella di `FIGHTER` in `constants.ts`: lo sprite è solo grafica.
+I fotogrammi presi a mano sono in `tools/sprite/flow_tagli.json`. I video non sono nella repo: se servono, chiedili a Nicola.
+
+**È incompleto apposta:** si mette nel gioco quel che c'è. Finché non arriva il pacchetto base (`docs/clip-flow/base.md`), alcuni stati sono provvisori:
+- `light` è la spinta della speciale neutra;
+- `heavy` è la barca alzata;
+- `hit` è l'atterraggio pesante;
+- `fall` è un pezzo della salita del salto, perché nella clip la testa esce dall'inquadratura.
+
+Fotogrammi da 360×300 a 2x, piedi a 280, guarda a destra.
+
+## Qualità
+
+Cosa è venuto peggio del resto (dettagli e rimedi in [`docs/clip-flow/produzione.md`](../../../../docs/clip-flow/produzione.md#qualità)):
+- `jump` e `fall` sono ancora quelli vecchi: nella clip nuova la testa esce dal bordo in cima al salto.
+- Il pesante è un pugno lungo tenuto teso, non la spallata della scheda.

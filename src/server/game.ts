@@ -3,17 +3,19 @@
 
 import type { Server, Socket } from "socket.io";
 import { HALL, NET_LIMITS, ROOM_IDLE_MS, VOICE } from "../shared/constants";
-import type { ClientToServer, IceServer, ServerToClient, VoiceState } from "../shared/types";
+import type { ClientToServer, IceServer, MatchRules, ServerToClient, VoiceState } from "../shared/types";
 import { botCharacter, Bots, parseBotKind } from "./bot";
 import { discordHooks } from "./discord";
+import type { FeedbackStore } from "./feedback";
 import type { Leaderboard } from "./leaderboard";
 import { clientIp, Flood, IpLimits, TokenBucket } from "./rateLimit";
 import { combineHooks, Room } from "./Room";
-import { parseInput, parseJoin, parseTraining, parseVoiceSignal, parseVoiceState, sanitizeName } from "./validate";
+import { parseInput, parseJoin, parsePartyCommand, parseTraining, parseVoiceSignal, parseVoiceState, sanitizeName } from "./validate";
 import { checkProtocol, ROOM_FULL, SERVER_VERSION, TOO_MANY_ROOMS } from "./version";
 
 export interface GameDeps {
   leaderboard?: Leaderboard;
+  feedback?: FeedbackStore; // Bonobo Party (#579): dove finiscono i pareri sui minigiochi
   discordWebhookUrl?: string;
   limits?: Partial<typeof NET_LIMITS>; // per i test: limiti diversi da quelli di constants.ts
   roomIdleMs?: number;
@@ -139,18 +141,21 @@ export function attachGame(io: Server<ClientToServer, ServerToClient>, deps: Gam
         const bots = new Bots();
         const discord = discordHooks(deps.discordWebhookUrl, (id) => bots.isBot(id), deps.leaderboard);
         const kind = parseBotKind(bot);
-        // Sala d'attesa: i suoi bot entrano in ogni partita nuova; giocano come il bot scelto dal creatore (mai fermi)
-        const hallKind = kind === "facile" || kind === "difficile" ? kind : "semplice";
+        // Sala d'attesa: i suoi bot entrano in ogni partita nuova; giocano come il bot scelto dal creatore.
+        // Il manichino chiamato da solo nel cerchio resta fermo comunque
+        // Il livello si cambia poi dal computer della sala (#567): si legge a ogni partita nuova
         const hallBots = {
-          onMatchBuilt: (_room: Room, match: Room["match"], botIds: string[]) => {
+          onMatchBuilt: (built: Room, match: Room["match"], botIds: string[]) => {
             bots.reset();
-            for (const id of botIds) bots.adopt(match, id, hallKind);
+            for (const id of botIds) bots.adopt(match, id, built.hall?.isDummy(id) ? "manichino" : built.hallBotLevel);
           },
         };
         const board = () => deps.leaderboard?.board(HALL.boardRows) ?? [];
-        r = new Room(code, io, { stageId, rules, prematch: true, hall: data.hall, board }, combineHooks(bots.hooks, discord, hallBots), deps.reconnectHoldMs);
+        const feedback = { onFeedback: (fr: Room, entries: Parameters<FeedbackStore["add"]>[1]) => void deps.feedback?.add(fr.code, entries) };
+        r = new Room(code, io, { stageId, rules, prematch: true, hall: data.hall, board }, combineHooks(bots.hooks, discord, hallBots, feedback), deps.reconnectHoldMs);
         rooms.set(code, r);
         r.onClose = () => rooms.delete(code);
+        if (r.hall) r.hallBotLevel = kind === "manichino" || kind === "facile" || kind === "difficile" ? kind : "semplice";
         if (kind && r.hall) r.hall.addBot(botCharacter(botCharacterId));
         else if (kind) bots.add(r.match, kind, botCharacterId);
       }
@@ -181,6 +186,19 @@ export function attachGame(io: Server<ClientToServer, ServerToClient>, deps: Gam
     // A partita finita: tutti nella sala d'attesa (solo nelle stanze con la sala)
     socket.on("hall", () => {
       if (room && allow(rematchBucket)) room.requestHall();
+    });
+    // Bonobo Party (#579): dado, strada, bottega, voto e feedback sul tabellone
+    socket.on("party", (raw: unknown) => {
+      if (!room || !allow(rematchBucket)) return;
+      const cmd = parsePartyCommand(raw);
+      if (cmd) room.partyCommand(playerId, cmd);
+    });
+    // Computer della sala (#567): regole e livello dei bot della prossima partita, ripuliti da Room e sanitizeRules
+    socket.on("hallRules", (raw: unknown) => {
+      if (!room || !allow(rematchBucket) || typeof raw !== "object" || raw === null) return;
+      const data = raw as { rules?: unknown; botLevel?: unknown };
+      const rules = typeof data.rules === "object" && data.rules !== null && !Array.isArray(data.rules) ? (data.rules as Partial<MatchRules>) : undefined;
+      room.setHallRules(playerId, rules, data.botLevel);
     });
     // Pre-partita: Pronto (o non più); conta solo finché la partita non è cominciata
     socket.on("ready", (raw: unknown) => {
