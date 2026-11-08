@@ -85,4 +85,4 @@ jobs:
           name: screenshot
           path: ${{ runner.temp }}/screenshot
           if-no-files-found: ignore
-          retention-days: 14
+          retention-days: 3

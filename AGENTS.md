@@ -75,6 +75,7 @@ In locale bastano `typecheck` e `test`. Caricamento degli script Godot, test del
 
 - TypeScript `strict`, moduli ES, niente `any` senza un commento che spiega perché. Nomi in inglese, commenti in italiano, brevi, sul *perché*. Segui lo stile del file.
 - Asset solo nostri o con licenza libera, annotati in `public/assets/CREDITS.md`; file oltre 5 MB solo dopo averne parlato col gruppo.
+- Giochi esistenti richiamati (Nicola, 6 novembre 2026): un minigioco o un oggetto che richiama un gioco esistente (Pac-Man, Tetris...) usa prima un rifacimento libero che gli somiglia. Usa gli asset originali di quel gioco, cercati direttamente, solo se il rifacimento se ne allontana troppo o se il riferimento è chiaramente quel gioco. In `CREDITS.md` vanno il gioco, il proprietario e "asset originale, non libero"; se arriva una richiesta di rimozione, si tolgono subito.
 
 ## Mai
 

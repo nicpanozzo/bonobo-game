@@ -9,7 +9,7 @@ const HallIcons := preload("res://scripts/hall_icons.gd")
 
 const MARGIN := 16.0 # dal bordo dello schermo, pixel
 const LIST_W := 290.0 # larghezza della colonna dei giocatori, pixel
-const MODE_NAMES := {"ffa": "Tutti contro tutti", "teams": "A squadre", "flag": "Ruba bandiera", "race": "Corsa"}
+const MODE_NAMES := {"ffa": "Tutti contro tutti", "teams": "A squadre", "flag": "Ruba bandiera", "race": "Corsa", "party": "Bonobo Party"}
 const PUNCH_S := 0.35 # quanto dura il colpo di un numero del conto alla rovescia, secondi
 
 var my_id := ""
@@ -222,6 +222,8 @@ static func need_text(need: Variant, counting: bool) -> String:
 static func rules_text(rules: Dictionary, mode: String) -> String:
 	if rules.is_empty():
 		return ""
+	if mode == "party": # Bonobo Party (#579): giri del tabellone e come si sceglie il minigioco
+		return "%d giri · minigioco %s" % [int(rules.get("partyRounds", 10)), "a voto" if str(rules.get("partyPick", "")) == "vote" else "a caso"]
 	var parts: Array[String] = []
 	var stocks := int(rules.get("stocks", 0))
 	if mode == "flag":
@@ -374,6 +376,7 @@ static func short_mode(id: String) -> String:
 		"teams": return "SQUADRE"
 		"flag": return "BANDIERA"
 		"race": return "CORSA"
+		"party": return "PARTY"
 	return id.to_upper()
 
 

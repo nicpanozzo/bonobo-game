@@ -105,7 +105,7 @@ describe("ancora di Capt. OrsoBlu", () => {
     assert.equal(f.anchorLen, ANCHOR.maxLength);
   });
 
-  it("col salto si stacca tenendo lo slancio, con una spinta in alto, e il doppio salto resta", () => {
+  it("col salto si stacca tenendo lo slancio, con una spinta in alto e verso la direzione tenuta, e il doppio salto resta", () => {
     const { ctx, f } = setup();
     hook(f, ctx);
     for (let i = 0; i < 60; i++) run(f, ctx, 1, { right: true });
@@ -113,7 +113,7 @@ describe("ancora di Capt. OrsoBlu", () => {
     run(f, ctx, 1, { right: true, jump: true });
     assert.equal(f.anchor, undefined);
     assert.ok(f.vy <= -ANCHOR.releaseBoost);
-    assert.ok(Math.abs(f.vx - vx) < 80, "tiene lo slancio orizzontale");
+    assert.ok(Math.abs(f.vx - vx - ANCHOR.releasePush) < 80, "tiene lo slancio orizzontale e prende la spinta");
     assert.equal(f.jumpsLeft, 1);
   });
 
@@ -274,6 +274,68 @@ describe("ancora di Capt. OrsoBlu", () => {
     launch(other, x, "heavy", 0, 0, ctx);
     launch(plain, x, "heavy", 0, 0, ctx);
     assert.equal(Math.round(other.vx), Math.round(plain.vx));
+  });
+
+  it("tutto sullo Speciale: con su la spara in alto e in diagonale, da sola in avanti", () => {
+    const { ctx, f } = setup();
+    run(f, ctx, 1, { special: true, up: true });
+    assert.equal(f.anchor?.phase, "fly");
+    assert.ok(f.anchorVy < -Math.abs(f.anchorVx), "su: più in alto che in avanti");
+    for (let i = 0; i < 30 && f.anchor?.phase === "fly"; i++) run(f, ctx, 1);
+    assert.equal(f.anchor?.phase, "hold", "si pianta nel soffitto");
+    const g = setup().f;
+    const c2 = setup().ctx;
+    run(g, c2, 1, { special: true, up: true, left: true });
+    assert.ok(g.anchorVx < 0 && g.anchorVy < 0, "su + sinistra: in diagonale a sinistra");
+    const h = setup().f;
+    run(h, setup().ctx, 1, { special: true });
+    assert.ok(Math.abs(h.anchorVy) < Math.abs(h.anchorVx) / 4, "da sola: in avanti");
+  });
+
+  it("la mira aiutata va verso la piattaforma vicina alla direzione del lancio", () => {
+    // Una piattaforma in alto un po' di lato: il lancio in su quasi verticale la manca senza aiuto
+    const plat = { x: 760, y: 200, width: 120 };
+    const ctx: PhysicsContext = { stage: { ...stage, solids: [stage.solids[1]], platforms: [plat] }, events: [] };
+    const f = createFighter({ id: "p", name: "P", characterId: "orsoblu", color: 0, team: 0, index: 0, stocks: 3 }, ctx.stage);
+    f.x = 640;
+    f.y = 500;
+    f.onGround = false;
+    run(f, ctx, 1, { special: true, up: true });
+    for (let i = 0; i < 30 && f.anchor?.phase === "fly"; i++) run(f, ctx, 1);
+    assert.equal(f.anchor?.phase, "hold", "si è piantata nella piattaforma");
+    assert.ok(Math.abs(f.anchor!.y - plat.y) <= ANCHOR.platformGrabPx);
+  });
+
+  it("arrampicandosi fino a una piattaforma ci si sale sopra", () => {
+    const plat = { x: 540, y: 200, width: 200 };
+    const ctx: PhysicsContext = { stage: { ...stage, solids: [stage.solids[1]], platforms: [plat] }, events: [] };
+    const f = createFighter({ id: "p", name: "P", characterId: "orsoblu", color: 0, team: 0, index: 0, stocks: 3 }, ctx.stage);
+    f.x = 640;
+    f.y = 480;
+    f.onGround = false;
+    run(f, ctx, 1, { special: true, up: true });
+    for (let i = 0; i < 30 && f.anchor?.phase === "fly"; i++) run(f, ctx, 1);
+    assert.equal(f.anchor?.phase, "hold");
+    for (let i = 0; i < 120 && !f.onGround; i++) run(f, ctx, 1, { up: true });
+    assert.equal(f.onGround, true, "è atterrato");
+    assert.ok(Math.abs(f.y - plat.y) < 1, `sulla piattaforma (y ${f.y.toFixed(0)})`);
+    assert.equal(f.anchor, undefined);
+  });
+
+  it("da terra Speciale + su tira fin sopra la piattaforma", () => {
+    const plat = { x: 540, y: 900, width: 200 };
+    const ctx: PhysicsContext = { stage: { ...stage, solids: [stage.solids[1]], platforms: [plat] }, events: [] };
+    const f = createFighter({ id: "p", name: "P", characterId: "orsoblu", color: 0, team: 0, index: 0, stocks: 3 }, ctx.stage);
+    f.x = 600;
+    f.y = 1200;
+    f.onGround = true;
+    run(f, ctx, 1, { special: true, up: true });
+    let landedOn = false;
+    for (let i = 0; i < 150 && !landedOn; i++) {
+      run(f, ctx, 1);
+      landedOn = f.onGround && Math.abs(f.y - plat.y) < 1;
+    }
+    assert.ok(landedOn, `finisce sulla piattaforma (y ${f.y.toFixed(0)})`);
   });
 
   it("chi non ha l'ancora fa il recupero di sempre", () => {

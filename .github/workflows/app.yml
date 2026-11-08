@@ -41,10 +41,31 @@ jobs:
   # Il server in un eseguibile solo (scripts/build-server.mjs), con accanto cloudflared per il tunnel.
   # Il Mac si costruisce su un Mac perché l'eseguibile va firmato (ad hoc) dopo averlo modificato.
   # Sulle PR basta Linux per vedere che il server si costruisce: i Mac sono i runner più lenti da avere.
+  # Il minuto Mac è il più caro (10 volte Linux): il server per Mac si ricostruisce solo se è cambiato
+  # qualcosa che finisce dentro il server. Altrimenti la Release riusa gli zip Mac della Release prima.
+  cambi:
+    runs-on: ubuntu-latest
+    outputs:
+      mac: ${{ steps.diff.outputs.mac }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: diff
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          MAC=true
+          if [ "${{ github.event_name }}" = push ] && git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            git diff --quiet "$BEFORE" "$GITHUB_SHA" -- src/server src/shared scripts/build-server.mjs package-lock.json .github/workflows/app.yml && MAC=false
+          fi
+          echo "mac=$MAC" | tee -a "$GITHUB_OUTPUT"
+
   server:
+    needs: cambi
     strategy:
       matrix:
-        include: ${{ fromJSON(github.event_name == 'pull_request' && '[{"name":"linux","os":"ubuntu-latest","node":"linux-x64","cloudflared":"cloudflared-linux-amd64"}]' || '[{"name":"linux","os":"ubuntu-latest","node":"linux-x64","cloudflared":"cloudflared-linux-amd64"},{"name":"windows","os":"ubuntu-latest","node":"win-x64","cloudflared":"cloudflared-windows-amd64.exe"},{"name":"mac","os":"macos-latest","node":"darwin-arm64","cloudflared":"cloudflared-darwin-arm64.tgz"},{"name":"mac-intel","os":"macos-latest","node":"darwin-x64","cloudflared":"cloudflared-darwin-amd64.tgz"}]') }}
+        include: ${{ fromJSON(github.event_name == 'pull_request' && '[{"name":"linux","os":"ubuntu-latest","node":"linux-x64","cloudflared":"cloudflared-linux-amd64"}]' || (needs.cambi.outputs.mac == 'true' && '[{"name":"linux","os":"ubuntu-latest","node":"linux-x64","cloudflared":"cloudflared-linux-amd64"},{"name":"windows","os":"ubuntu-latest","node":"win-x64","cloudflared":"cloudflared-windows-amd64.exe"},{"name":"mac","os":"macos-latest","node":"darwin-arm64","cloudflared":"cloudflared-darwin-arm64.tgz"},{"name":"mac-intel","os":"macos-latest","node":"darwin-x64","cloudflared":"cloudflared-darwin-amd64.tgz"}]' || '[{"name":"linux","os":"ubuntu-latest","node":"linux-x64","cloudflared":"cloudflared-linux-amd64"},{"name":"windows","os":"ubuntu-latest","node":"win-x64","cloudflared":"cloudflared-windows-amd64.exe"}]')) }}
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -109,9 +130,11 @@ jobs:
         with:
           name: bonobo-server-${{ matrix.name }}
           path: bonobo-server-${{ matrix.name }}.zip
+          # Serve solo al job pubblica qui sotto: dopo un giorno si cancella (prima restava 90 giorni)
+          retention-days: 1
 
   pubblica:
-    needs: server
+    needs: [cambi, server]
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
@@ -170,6 +193,11 @@ jobs:
           pattern: bonobo-server-*
           path: out
           merge-multiple: true
+      - name: Riusa il server per Mac della Release prima, se non è cambiato
+        if: needs.cambi.outputs.mac != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release download --repo "$GITHUB_REPOSITORY" --pattern 'bonobo-server-mac*.zip' --dir out
       # Le note: il paragrafo di installazione e sotto, da sole, le PR unite dall'ultima Release (.github/release.yml)
       - name: Pubblica la Release
         env:

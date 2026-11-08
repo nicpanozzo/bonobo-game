@@ -2,7 +2,7 @@
 // che ne legge i numeri da godot/data/game.json (stageCheck) e rifà il conto in site/editor/arena.js.
 
 import { FIGHTER, STAGE_CHECK } from "./constants";
-import { stageAt } from "./physics/timed";
+import { stageAt, waterAt } from "./physics/timed";
 import type { Rect, StageSpec, ThinPlatform } from "./stages";
 
 // Un salto sale di v²/2g pixel; con il doppio salto si arriva alla somma dei due
@@ -40,7 +40,10 @@ export function timedReachProblems(stage: StageSpec, heightScale = 1): string[] 
   for (const t of checkTimes(stage)) {
     for (const leader of leaders) {
       const now = stageAt(stage, t, leader);
-      for (const p of now.platforms) if (!reachable(now, p, heightScale)) out.push(`a ${t} ms${leader ? ` (premio squadra ${leader})` : ""}: piattaforma a ${p.x},${p.y} irraggiungibile`);
+      // Il Diluvio: chi sta sotto i pezzi appena sopra il mare è già in mare; contano solo quelli più in alto
+      const water = waterAt(stage, t);
+      const sinking = (p: ThinPlatform) => water !== null && p.y > water - DOUBLE_JUMP_HEIGHT;
+      for (const p of now.platforms) if (!sinking(p) && !reachable(now, p, heightScale)) out.push(`a ${t} ms${leader ? ` (premio squadra ${leader})` : ""}: piattaforma a ${p.x},${p.y} irraggiungibile`);
     }
   }
   return out;

@@ -19,6 +19,25 @@ Un orso blu capitano di mare, **burbero e pignolo**, che tratta l'arena come la 
 
 **Nel gioco da #547** (`src/shared/physics/anchor.ts`, numeri in `ANCHOR` di `constants.ts`): Pesante + su in aria spara l'ancora (solo su quasi in verticale, su + direzione in diagonale), 2 lanci prima di toccare terra, sgancio da solo dopo 3 s, Scudo lascia andare, un colpo stacca; arrampicandosi fino a uno spigolo ci si aggrappa al bordo. Da provare al playtest: spinta extra staccandosi nel punto più alto. Avanti tutta! è la speciale laterale: da appeso sfreccia verso l'ancora già attiva (poi resta appeso in cima, col Salto si fa la fionda), da libero è la spallata. Tutti a bordo! (Speciale neutra) spara l'ancora quasi dritta in avanti: in aria ci si appende a muri e bordi davanti, da terra la catena tira fin lì (Nicola, 4/11/2026). Se l'ancora prende qualcuno lo tira verso di lui (6%).
 
+**I comandi dell'ancora (Nicola, 5/11/2026: tutto sullo Speciale, si deve piantare nelle piattaforme)**
+
+| Tasti | Cosa fa |
+|---|---|
+| Speciale | ancora dritta in avanti (Tutti a bordo!): prende muri, bordi e chi ha davanti, che tira a sé |
+| Speciale + su | ancora in alto; con su + una direzione in diagonale. La mira va da sola verso lo spigolo o la piattaforma più vicina |
+| Pesante + su in aria | il recupero comune: come Speciale + su, così funziona anche con i comandi di tutti |
+| Da terra, ancora piantata | la catena lo tira fin lì; su una piattaforma ci si ritrova sopra |
+| Appeso: avanti / indietro | slancio lungo l'arco del pendolo |
+| Appeso: su / giù | si avvicina (arrampica) o si allontana (cala); arrivato a una piattaforma ci sale sopra, a uno spigolo si aggrappa al bordo |
+| Appeso: Speciale | Avanti tutta!: sfreccia verso l'ancora travolgendo chi c'è in mezzo, poi sale sulla piattaforma |
+| Appeso: Salto | si stacca con lo slancio, una spinta in alto e verso la direzione tenuta |
+| Appeso: Scudo | lascia andare |
+| Appeso: Leggero / Pesante | calcio in oscillazione (attacco in aria) |
+| Speciale + direzione, senza ancora | Avanti tutta!: la spallata |
+| Speciale + giù | Mina di bordo |
+
+Si resta appesi al massimo 4 s, con 2 lanci prima di toccare terra.
+
 **Ancora e catena le disegna il gioco** (come l'aquila di Elvedeo): nelle clip lui mima il lancio e stringe una catena invisibile, "nothing is drawn". Servono a parte gli sprite di ancora, catena e mina.
 
 ## Le altre mosse

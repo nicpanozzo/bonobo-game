@@ -13,6 +13,8 @@
 # 5. in <cartella>/out le strisce, <cartella>/foglio.png il foglio di controllo da mettere nella PR,
 #    <cartella>/resoconto.json fotogrammi usati e hitFrame proposto. Con --scrivi le strisce vanno anche negli asset:
 #    gli stati che il gioco conosce in public/assets/characters/<id>/, gli altri in .../<id>/in-attesa/.
+# 6. <cartella>/qualita.md: la bozza della sezione "Qualità" (avvisi già scritti, il resto da completare guardando
+#    il foglio), da copiare nella PR e in docs/clip-flow/produzione.md (vedi "Qualità" nel README del piano).
 # Correzioni a mano dei fotogrammi: tools/sprite/flow_tagli.json, {"BR-01": {"turn": [117, 146]}} (fotogrammi del video).
 # Il video non va nella repo. Servono ffmpeg, Pillow, numpy e scipy, solo per rifarlo.
 import json, os, re, subprocess, sys
@@ -24,7 +26,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.normpath(os.path.join(HERE, "../.."))
 sys.dont_write_bytecode = True  # niente __pycache__ in tools/flow
 sys.path.insert(0, os.path.join(ROOT, "tools/flow"))
-from prompt_flow import BASE, CHARS, FATTE, FPS, base_clips, clips_of  # noqa: E402
+from prompt_flow import BASE, CHARS, CLIP_OGGETTI, FATTE, FPS, OGGETTI_PER, base_clips, clips_of, oggetti_clips  # noqa: E402
 
 SOGLIA = 0.2  # differenza di sagoma dal fotogramma 0 sotto cui il personaggio è "nella posa" (prova del 3/11)
 PAUSA_MIN = 6  # fotogrammi di fila nella posa per contare come pausa (un quarto di secondo)
@@ -38,8 +40,14 @@ MARGINE = 12  # fotogrammi di tolleranza attorno ai secondi previsti, quando non
 BG = np.array([23, 176, 59], np.float32)  # il verde dello sfondo
 OUTLINE = np.array([218, 225, 235], np.float32)  # il contorno chiaro dei personaggi
 PEZZO_MIN = 400  # pixel del video: i pezzi staccati più piccoli sono polvere o puntini
+# Pose con gli oggetti (docs/clip-flow/pose-oggetti.md): il segnaposto magenta #FF00FF in mano. Se ne ricava il punto
+# della presa (mani.json) e poi si cancella, col suo contorno nero, entro BORDO_MAGENTA pixel del video
+PRESA = None  # "end", "center" o "axis" per le clip -O, None per le altre (niente magenta da cercare)
+MAGENTA_MIN = 30  # pixel del video: meno di così il segnaposto è coperto dal corpo
+BORDO_MAGENTA = 6
+PRESA_DI = {"bastone": "end", "mira": "end", "palla": "center", "peso": "center", "sella": "axis"}
 # stati in aria: ogni fotogramma coi piedi su footY, perché l'altezza la decide la fisica
-IN_ARIA = re.compile(r"^(jump|doubleJump|fall|tumble|recovery|helpless|airDodge|lightAir|heavyAir|air[A-Z].*|.*Air|martelloJump)$")
+IN_ARIA = re.compile(r"^(jump|doubleJump|fall|tumble|recovery|helpless|airDodge|lightAir|heavyAir|air[A-Z].*|.*Air|martelloJump|rideHop)$")
 
 
 def die(msg):
@@ -65,6 +73,8 @@ def clip_info(code):
         return cid, (code, slug, title, "Frames to video", None, None, None, table)
     pref = code.split("-")[0]
     found = [(k, clips_of) for k, c in CHARS.items() if c["code"] == pref] + [(k, base_clips) for k, c in BASE.items() if c["code"] == pref]
+    if re.match(r"^[A-Z]+-O\d+$", code):
+        found = [(k, oggetti_clips) for k in OGGETTI_PER if (BASE.get(k) or CHARS.get(k, {})).get("code") == pref]
     if not found:
         die(f"nessun personaggio col codice {pref} in tools/flow/prompt_flow.py")
     for cid, of in found:
@@ -106,12 +116,28 @@ def reader(video):
     p.wait()
 
 
+def magenta(p):
+    """Il segnaposto: magenta pieno, e attorno (entro BORDO_MAGENTA) il suo contorno scuro e i bordi mescolati."""
+    r, g, b = p[..., 0], p[..., 1], p[..., 2]
+    m = (np.minimum(r, b) > 100) & (r - g > 70) & (b - g > 60)  # anche le facce in ombra (il cubo del peso, 5/11)
+    if not m.any():
+        return m, m
+    near = ndi.binary_dilation(m, iterations=BORDO_MAGENTA)
+    lum = p.mean(-1)
+    tinted = (r - g > 30) & (b - g > 30)
+    return m, m | (near & ((lum < 70) | tinted))
+
+
 def cut(p):
-    """RGBA del personaggio e maschera del corpo, dal verde pieno."""
+    """RGBA del personaggio, maschera del corpo e del segnaposto magenta (vuota fuori dalle clip -O), dal verde pieno."""
     r, g, b = p[..., 0], p[..., 1], p[..., 2]
     d = g - np.maximum(r, b)  # quanto è verde
     a = np.clip((48 - d) / 30, 0, 1)
     a[a < 0.08] = 0
+    mag = np.zeros(a.shape, bool)
+    if PRESA:
+        mag, erase = magenta(p)
+        a[erase] = 0
     lab, n = ndi.label(a > 0.3)
     if n:
         sizes = ndi.sum(np.ones_like(a), lab, range(1, n + 1))
@@ -137,7 +163,7 @@ def cut(p):
     # il riflesso verde: sui colori scuri (mani quasi nere, prova del 3/11) quasi niente verde in più
     room = np.where(lum < 70, 2, 8)
     c[..., 1] = np.minimum(c[..., 1], np.maximum(c[..., 0], c[..., 2]) + room)
-    return np.dstack([c, a * 255]), a > 0.5
+    return np.dstack([c, a * 255]), a > 0.5, mag
 
 
 def pulisci(p, a):
@@ -273,7 +299,51 @@ def resize(rgba, size):
     return np.asarray(im.resize(size, Image.LANCZOS).convert("RGBA"), np.float32)
 
 
-def place(rgba, body, mode, geo):
+def presa(mag, body, dxy, geo):
+    """Il punto della presa nel fotogramma del gioco, dai pixel magenta del video: [x, y, gradi, lunghezza] con
+    l'origine ai piedi (frameWidth / 2, footY), o None se il segnaposto non si vede."""
+    FW, FH, FOOT, SCALE = geo[:4]
+    ys, xs = np.nonzero(mag)
+    if len(xs) < MAGENTA_MIN:
+        by, bx = np.nonzero(body)
+        if PRESA != "axis" or not len(by):
+            return None
+        # la tavola che Flow non disegna (in cima al salto di OB-O5): sotto gli stivali, piatta
+        dx, dy = dxy
+        foot = by.max()
+        return [round(dx + bx[by > foot - 20].mean() * SCALE - FW / 2, 1), round(dy + (foot + 4) * SCALE - FOOT, 1), 0, 0]
+    pts = np.stack([xs, ys], 1).astype(np.float64)
+    c = pts.mean(0)
+    w, v = np.linalg.eigh(np.cov((pts - c).T))
+    axis = v[:, int(np.argmax(w))]
+    t = (pts - c) @ axis
+    e1, e2 = c + axis * t.min(), c + axis * t.max()
+    length = float(t.max() - t.min())
+    if PRESA == "end":
+        # la mano copre un tratto del segnaposto: se c'è un buco lungo l'asse la presa è lì (bastone tenuto a metà),
+        # altrimenti è l'estremità più vicina al corpo. La punta è dalla parte più lunga
+        ts = np.sort(t)
+        gaps = np.diff(ts)
+        k = int(np.argmax(gaps)) if len(gaps) else 0
+        if len(gaps) and gaps[k] > 6:
+            g = (ts[k] + ts[k + 1]) / 2
+        else:
+            by, bx = np.nonzero(body)
+            core = np.array([bx.mean(), by.mean()]) if len(bx) else c
+            g = t.min() if np.linalg.norm(e1 - core) < np.linalg.norm(e2 - core) else t.max()
+        grip = c + axis * g
+        tip = e2 if t.max() - g >= g - t.min() else e1
+        point, ang = grip, np.degrees(np.arctan2(tip[1] - grip[1], tip[0] - grip[0]))
+    elif PRESA == "axis":
+        point, ang = c, np.degrees(np.arctan2(axis[1], axis[0]))
+        ang = (ang + 90) % 180 - 90  # la tavola punta sempre verso destra
+    else:
+        point, ang = c, 0.0
+    dx, dy = dxy
+    return [round(dx + point[0] * SCALE - FW / 2, 1), round(dy + point[1] * SCALE - FOOT, 1), round(float(ang)), round(length * SCALE)]
+
+
+def place(rgba, body, mode, geo, outline=True):
     FW, FH, FOOT, SCALE, CENTER, GROUND = geo
     h, w = body.shape
     size = (max(1, round(w * SCALE)), max(1, round(h * SCALE)))
@@ -291,7 +361,8 @@ def place(rgba, body, mode, geo):
     if ys.start < ys.stop and xs.start < xs.stop:
         frame[ys, xs] = sm[ys.start - dy:ys.stop - dy, xs.start - dx:xs.stop - dx]
         fb[ys, xs] = sb[ys.start - dy:ys.stop - dy, xs.start - dx:xs.stop - dx]
-    ring = ndi.gaussian_filter(ndi.binary_dilation(fb > 0.5, iterations=2).astype(np.float32), 0.6)
+    # Egiainuso è a tratto nero su bianco senza contorno chiaro (#561)
+    ring = ndi.gaussian_filter(ndi.binary_dilation(fb > 0.5, iterations=2).astype(np.float32), 0.6) if outline else np.zeros((FH, FW), np.float32)
     ring[ndi.binary_closing(fb > 0.5, iterations=3, border_value=0) & (fb <= 0.5)] = 0  # le fessure restano aperte (#506)
     a = frame[..., 3:] / 255
     rgb = frame[..., :3] * a + OUTLINE * ring[..., None] * (1 - a)
@@ -300,7 +371,7 @@ def place(rgba, body, mode, geo):
     out = np.dstack([rgb, alpha * 255]).round().clip(0, 255).astype(np.uint8)
     out[0, 0] = 0  # l'angolo in alto a sinistra trasparente (lo controlla assets.test.ts)
     touches = bool(fb[0].any() or fb[-1].any() or fb[:, 0].any() or fb[:, -1].any())
-    return out, touches
+    return out, touches, (dx, dy)
 
 
 def save(rgba, path):
@@ -320,6 +391,13 @@ def main():
     code, video, work, skin, scrivi = args()
     cid, clip = clip_info(code)
     _, slug, title, mode_flow, _, _, _, table = clip
+    global PRESA
+    oc = re.match(r"^[A-Z]+-(O\d+)$", code)
+    if oc:
+        PRESA = PRESA_DI[next(o[1] for o in CLIP_OGGETTI if o[0] == oc.group(1))]
+    # lo stato fermo con l'oggetto (finestra da 0 s) non è una mossa: si taglia dai secondi
+    fermi = {s: [0, round(b * FPS) - 1] for s, a, b, _ in table if a == 0}
+    table = [t for t in table if t[1] != 0]
     spec = sprite_spec(cid, skin)
     os.makedirs(os.path.join(work, "out"), exist_ok=True)
     over = json.load(open(os.path.join(HERE, "flow_tagli.json"))).get(code, {}) if os.path.exists(os.path.join(HERE, "flow_tagli.json")) else {}
@@ -331,7 +409,12 @@ def main():
     found, diff = find_moves(masks)
     expected = expected_moves(table)
     plan, notes = assign(found, expected, len(masks))
+    plan = {**fermi, **plan}
     for s, ab in over.items():
+        if ab is None:  # null: la clip non ha questo stato (OB-O2 non cammina), non si scrive
+            plan.pop(s, None)
+            notes.append(f"{s}: saltato (null in flow_tagli.json)")
+            continue
         plan[s] = ab
         notes.append(f"{s}: fotogrammi da flow_tagli.json")
 
@@ -348,17 +431,20 @@ def main():
     for i, f in enumerate(reader(video)):
         if i in need:
             full[i] = cut(f)
+    hands = {}
     known, report, rows = known_states(), {"codice": code, "clip": title, "personaggio": cid, "scala": round(scale, 4), "avvisi": notes, "stati": {}}, []
     c0 = np.array([xs.mean() * 2, ys.mean() * 2])
     for s, (a, b) in plan.items():
         idx = list(range(max(0, a - 1), min(len(masks), b + 2)))[::PASSO]
         mode = "feet" if IN_ARIA.match(s) else "world"
         strip, edge = [], False
-        reach = []
+        reach, hs = [], []
         for i in idx:
-            img, t = place(*full[i], mode, geo)
+            img, t, dxy = place(full[i][0], full[i][1], mode, geo, cid != "egiainuso")
             strip.append(img)
             edge |= t
+            if PRESA:
+                hs.append(presa(full[i][2], full[i][1], dxy, geo))
             yy, xx = np.nonzero(full[i][1])
             reach.append(float(np.hypot(xx - c0[0], yy - c0[1]).max()) if len(xx) else 0)
         save(np.concatenate(strip, 1), os.path.join(work, "out", f"{s}.png"))
@@ -367,6 +453,14 @@ def main():
         report["stati"][s] = {"fotogrammi_video": [idx[0], idx[-1]], "fotogrammi": len(strip), "fps": FPS // PASSO, "modo": mode, "hitFrame_proposto": hit, "va_in": dest}
         if edge:
             notes.append(f"{s}: il disegno tocca il bordo del fotogramma, va allargato")
+        if PRESA:
+            hands[s] = hs
+            miss = sum(h is None for h in hs)
+            if miss:
+                notes.append(f"{s}: magenta non trovato in {miss} fotogrammi su {len(hs)}" + (", rigenera" if miss * 2 > len(hs) else ""))
+            big = [h for h in hs if h and h[3] > spec["frameHeight"]]
+            if big:
+                notes.append(f"{s}: magenta troppo grande in {len(big)} fotogrammi, guarda il foglio")
         rows.append((s, strip))
         if scrivi:
             base = os.path.join(ROOT, "public", spec["dir"])
@@ -376,6 +470,15 @@ def main():
             if s == "throwForward" and "throw" in known:
                 save(np.concatenate(strip, 1), os.path.join(base, "throw.png"))
 
+    if hands:
+        json.dump(hands, open(os.path.join(work, "mani.json"), "w"))
+        if scrivi:
+            path = os.path.join(ROOT, "public", spec["dir"], "mani.json")
+            old = json.load(open(path)) if os.path.exists(path) else {}
+            old.update(hands)
+            with open(path, "w") as f:
+                f.write("{\n" + ",\n".join(f' "{k}": {json.dumps(v, separators=(",", ":"))}' for k, v in sorted(old.items())) + "\n}\n")
+
     # foglio di controllo: 8 fotogrammi per stato su grigio
     fw, fh = spec["frameWidth"], spec["frameHeight"]
     sheet = Image.new("RGBA", (8 * fw + 140, len(rows) * fh), (70, 70, 80, 255))
@@ -384,6 +487,12 @@ def main():
         draw.text((6, r * fh + 6), s, fill=(255, 255, 255, 255))
         for k, j in enumerate(np.linspace(0, len(strip) - 1, min(8, len(strip))).round().astype(int)):
             sheet.alpha_composite(Image.fromarray(strip[j], "RGBA"), (140 + k * fw, r * fh))
+            h = hands.get(s, [None] * len(strip))[j]
+            if h:  # il punto della presa: pallino giallo e linea verso la punta
+                x, y = 140 + k * fw + fw / 2 + h[0], r * fh + spec.get("footY", fh) + h[1]
+                ex, ey = x + np.cos(np.radians(h[2])) * max(h[3], 12), y + np.sin(np.radians(h[2])) * max(h[3], 12)
+                draw.line([(x, y), (ex, ey)], fill=(255, 220, 0, 255), width=2)
+                draw.ellipse([x - 4, y - 4, x + 4, y + 4], fill=(255, 220, 0, 255), outline=(0, 0, 0, 255))
     sheet.convert("RGB").save(os.path.join(work, "foglio.png"))
     report["differenza_dalla_posa"] = [round(float(x), 3) for x in diff]
     json.dump(report, open(os.path.join(work, "resoconto.json"), "w"), indent=1, ensure_ascii=False)
@@ -392,6 +501,26 @@ def main():
         print(f"  {s:14} fotogrammi {v['fotogrammi_video'][0]}-{v['fotogrammi_video'][1]} ({v['fotogrammi']}), {v['modo']}, hitFrame {v['hitFrame_proposto']}, {v['va_in']}")
     for n in notes:
         print("  ! " + n)
+    write_quality(work, code, title, notes)
+    print(f"  bozza della sezione Qualità: {os.path.join(work, 'qualita.md')} (da completare guardando il foglio)")
+
+
+def write_quality(work, code, title, notes):
+    """La bozza delle righe "Qualità": gli avvisi sono già problemi o compromessi, il resto lo vede solo chi guarda."""
+    rows = [f"| {code} | {n} | | |" for n in notes]
+    text = [
+        f"## Qualità · {code} {title}",
+        "",
+        "Cosa è venuto peggio del resto o dove si è scesi a compromessi. Gli avvisi dello script sono già qui;",
+        "aggiungi quello che vedi nel foglio (personaggio che cambia, mossa poco leggibile, posa riusata, riflesso verde,",
+        "polvere, hitFrame da confermare...). Se non c'è niente, scrivi \"niente da segnalare\" e lascia la riga.",
+        "",
+        "| Clip | Cosa è venuto peggio o il compromesso | Perché si è accettato | Come si rimedia |",
+        "|---|---|---|---|",
+        *(rows or [f"| {code} | | | |"]),
+        "",
+    ]
+    open(os.path.join(work, "qualita.md"), "w").write("\n".join(text))
 
 
 if __name__ == "__main__":

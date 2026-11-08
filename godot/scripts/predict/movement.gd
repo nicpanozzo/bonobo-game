@@ -488,8 +488,11 @@ static func surface_y(p: Dictionary, x: float) -> float:
 
 # Come pieceOn() in physics/timed.ts (#433): un pezzo con le finestre "on" c'è solo dentro una [da, a) del tempo dell'arena
 # Con forLeader (il premio) c'è solo se prize, la squadra in testa congelata a prizeAtMs, è la sua
+# I pezzi del Palco che ci sono solo con un genere (genre) qui non contano: vicino a loro decide il server (predictor.gd)
 static func piece_on(p: Dictionary, t: float, prize := 0) -> bool:
 	if p.get("forLeader") != null and int(p.forLeader) != prize:
+		return false
+	if p.get("genre") != null:
 		return false
 	if not (p.get("on") is Array):
 		return true

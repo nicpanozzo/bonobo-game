@@ -25,11 +25,14 @@ const CASES: { stage: StageSpec; characterId: string; seed: number }[] = [
   { stage: getStage("palestra"), characterId: "elvedeo", seed: 48 },
   { stage: generateStage(7), characterId: "default", seed: 34 },
   // Il palco con un ponte ad arco (#244) al posto delle due piattaforme basse: si cammina sulla curva
-  { stage: { ...getStage("palco"), id: "palco-arco", platforms: [{ x: 340, y: 420, width: 600, arch: 30 }, { x: 540, y: 290, width: 200 }] }, characterId: "bonobot", seed: 150 }, // seme scelto perché cammina a lungo sulla curva
+  { stage: { ...getStage("palco"), genres: undefined, pads: undefined, hazards: undefined, id: "palco-arco", platforms: [{ x: 340, y: 420, width: 600, arch: 30 }, { x: 540, y: 290, width: 200 }] }, characterId: "bonobot", seed: 150 }, // seme scelto perché cammina a lungo sulla curva
   // Il canale di Padova (#246): ponte ad arco e due scale inclinate che scendono al fondo; seme che ci cammina sopra a lungo
   {
     stage: {
       ...getStage("palco"),
+      genres: undefined, // il canale non ha i dischi e i generi del Palco
+      pads: undefined,
+      hazards: undefined,
       id: "canale-scala",
       width: 1920,
       solids: [{ x: 100, y: 520, width: 620, height: 200 }, { x: 1200, y: 520, width: 620, height: 200 }, { x: 720, y: 690, width: 480, height: 30 }],

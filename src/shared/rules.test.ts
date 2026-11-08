@@ -28,6 +28,8 @@ describe("regole della partita", () => {
       supremeSpeed: 1,
       itemAmount: DEFAULT_RULES.itemAmount,
       itemKinds: DEFAULT_RULES.itemKinds,
+      partyRounds: DEFAULT_RULES.partyRounds,
+      partyPick: "random",
     });
   });
 

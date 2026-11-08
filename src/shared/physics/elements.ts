@@ -7,6 +7,7 @@ import type { Hazard, Jet, MovingPlatform, SoundPad } from "../stages";
 import type { Fighter, PhysicsContext } from "./fighter";
 import { chargeFromHit } from "./supreme";
 import { pieceOn } from "./timed";
+import { genreAt, genreOk, technoBeat } from "./genre";
 
 const mod = (a: number, b: number) => ((a % b) + b) % b;
 
@@ -254,8 +255,10 @@ export function resolveHazards(fighters: Fighter[], ctx: PhysicsContext): void {
   if (hazards.length === 0) return;
   const t = ctx.timeMs ?? 0;
   const half = FIGHTER.width / 2;
+  const genre = genreAt(ctx.stage, t, ctx.padsMs); // Il Palco: le fiamme ci sono solo col metal
+  const beat = technoBeat(ctx.stage, t);
   hazards.forEach((h, index) => {
-    if (!pieceOn(h, t) || !hazardActive(h, t)) return; // fuori dalle sue finestre la trappola non c'è (#433)
+    if (!pieceOn(h, t) || !hazardActive(h, t) || !genreOk(h, genre, beat)) return; // fuori dalle sue finestre la trappola non c'è (#433)
     if (h.travel && travelPhase(h, t).phase !== "cross") return; // fuori scena o durante l'avviso non fa male (#229)
     if (h.flood?.lowSafe && ["calm", "warn"].includes(floodPhase(h, t).phase)) return; // l'acqua bassa non fa male (#253)
     const r = hazardRect(h, t); // con l'acqua alta la superficie cambia nel tempo (#228), il ciclista viaggia (#229)

@@ -21,8 +21,10 @@ var max_replay_ticks := 30
 var teleport_distance := 300.0
 var storm := false # Tempesta! di Capt. OrsoBlu in corso (#547): il rollio sposta tutti, il port non lo sa
 var items_present := false # oggetti nell'arena: leggero e pesante li lascia decidere al server
+var riding := false # porto un oggetto pesante o cavalco (ride_view.gd): velocità e salto diversi, decide il server
 var puddles: Array = [] # pozze scivolose dell'ultimo snapshot (#13): sopra si scivola, il port non lo sa
 var blocks: Array = [] # blocchi del Tetris dell'ultimo snapshot (#427): il port non li conosce
+var pads_pressed: Array = [] # Il Palco: le pressioni dei dischi dallo snapshot, per sapere che genere suona
 var prize_team := 0 # premio (#433): la squadra in testa ai punti torre congelata dal server (0 = nessuna), per i ponteggi
 var stage_ms := 0.0 # tempo dell'arena dell'ultimo snapshot (#433): i pezzi a tempo ci sono o no come sul server
 
@@ -103,7 +105,7 @@ func on_server(p: Dictionary, now_ms: float, shown := Vector2(NAN, NAN)) -> void
 		_advance(now_ms)
 		before = _position(now_ms) + _decayed_error(now_ms)
 	_server = p
-	_active = enabled and not storm and predictable(p, _stage, stage_ms) and not near_puddle(p, puddles) and not near_blocks(p, blocks) and not _pressed_action_since(int(p.predict.seq) if p.get("predict") is Dictionary else 0)
+	_active = enabled and not riding and not storm and predictable(p, _stage, stage_ms) and not near_puddle(p, puddles) and not near_blocks(p, blocks) and not off_genre(p, _stage, stage_ms, pads_pressed) and not _pressed_action_since(int(p.predict.seq) if p.get("predict") is Dictionary else 0)
 	if not _active:
 		return
 	var key := "%s/%s" % [_stage.get("id", ""), p.characterId]
@@ -221,6 +223,19 @@ static func predictable(p: Dictionary, stage: Dictionary, t := -1.0) -> bool:
 		if p.get(flag, false):
 			return false
 	return float(p.get("charge", 0)) == 0.0
+
+
+# Il Palco: col reggae la gravità cambia, e le piattaforme della techno vanno e vengono col genere. Il port non lo sa:
+# col reggae e vicino a quelle piattaforme decide il server (il metal cambia solo i lanci, che non si predicono)
+static func off_genre(p: Dictionary, stage: Dictionary, t: float, pressed: Array) -> bool:
+	if not (stage.get("genres") is Dictionary):
+		return false
+	if StageMotion.genre_at(stage, t, pressed) == "reggae":
+		return true
+	for q in stage.get("platforms", []):
+		if q.get("genre") != null and float(p.x) > float(q.x) - 60 and float(p.x) < float(q.x) + float(q.width) + 60 and float(p.y) > float(q.y) - 260 and float(p.y) < float(q.y) + 120:
+			return true
+	return false
 
 
 # Vicino a una pozza dell'IRA (#13) non sua si torna allo stato del server: lì si scivola

@@ -10,7 +10,7 @@ var _out := "user://screenshots"
 var _game: Dictionary
 var _world: Node2D # nella partita finta: riceve uno snapshot a ogni frame
 var _hud: Control
-const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre", "lobby_regole", "musica", "tetris", "pacman", "bassanese", "bologna_piazza", "bologna_torri", "bologna_crollo", "bologna_zuffa", "oggetti", "prepartita_attesa", "prepartita_vs", "prepartita_conto", "fine_partita", "sala", "sala_conto", "sala_galleria", "sala_via", "sala_basket", "sala_scacchi", "fabbrica"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
+const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre", "lobby_regole", "musica", "tetris", "pacman", "bassanese", "bologna_piazza", "bologna_torri", "bologna_crollo", "bologna_zuffa", "oggetti", "oggetti_categorie", "oggetti_armi", "oggetti_pesanti", "oggetti_orsoblu", "prepartita_attesa", "prepartita_vs", "prepartita_conto", "fine_partita", "sala", "sala_conto", "sala_galleria", "sala_via", "sala_basket", "sala_scacchi", "sala_computer", "sala_regole", "sala_solo", "sala_pianta", "fabbrica", "diluvio", "palco_metal", "palco_reggae", "palco_techno", "orsoblu_mosse", "party_tabellone", "party_voto"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
 var _index := -1
 var _frame := 0
 var _failed := false
@@ -19,6 +19,11 @@ var _music := false # la partita finta nell'arena musicale, durante la Meravigli
 var _tetris_on := false # la partita finta con uno che gioca a Tetris (#427)
 var _pacman_on := false # la partita finta con un Pac-Man e i fantasmini (#427)
 var _items_on := false # la partita finta con tutti gli oggetti in fila a terra
+var _held_on := false # i cinque principali con le armi da impugnare e da sparo (held_view.gd)
+var _pose_on := false # Capt. OrsoBlu nelle pose con gli oggetti (item_pose.gd, docs/clip-flow/pose-oggetti.md)
+var _gear_on := false # i cinque principali con gli oggetti per categoria (gear_view.gd)
+var _ride_on := false # i cinque principali con pesanti e cavalcature (ride_view.gd)
+var _orso_on := false # cinque Capt. OrsoBlu nelle mosse con le strisce più lunghe (dirada_strisce.py)
 var _bassanese_on := false # la partita finta col Bassanese che si guarda in giro e un telefono a terra
 var _pre: Dictionary = {} # pre-partita: lo stato messo in snapshot.prematch, vuoto nelle altre partite
 var _pre_fighters := 0 # quanti lottatori nella partita finta del pre-partita (0 = tutti)
@@ -26,6 +31,7 @@ var _pre_view: Control
 var _end_on := false # la partita finta finita: GAME!, vincitore e classifica coi premi (results_view.gd)
 var _results: Control
 var _hall_view: Node3D # la sala d'attesa 3D finta: riceve uno snapshot a ogni frame
+var _fixed_cam: Camera3D # se c'è, la foto si scatta da qui e non dalla telecamera della sala
 var _hall_hud: Control
 var _hall_scene := "sala" # quale serata finta (tests/hall_fake.gd): sala, conto, galleria
 var _only: Array = [] # --only=sala,sala_basket: si scattano solo queste (per provare in fretta)
@@ -35,6 +41,12 @@ const THEME_SHOTS := {
 	# La Fabbrica: sirena del cambio di verso, le due leve appena tirate (TURBO!) e uno impacchettato sul nastro
 	"fabbrica": {"ms": 13300, "cam": Vector2(640, 380), "zoom": 1.0, "x": [180, 300, 860, 1010, 440], "y": [560, 560, 560, 560, 410],
 		"pads": [12650, 12700], "packed": 2, "hazard": 2},
+	# Il Diluvio a metà scalata: il mare che sale, i relitti, una zattera e una cima larga; uno è appena finito in acqua
+	"diluvio": {"id": "isole", "ms": 85400, "cam": Vector2(640, 6560), "zoom": 0.8, "x": [290, 590, 830, 960, 480], "y": [6480, 6360, 6480, 6720, 6600]},
+	# Il Palco nei tre generi: il metal con le fiamme ai bordi, il reggae con la luna e uno in volo, la techno coi neon
+	"palco_metal": {"id": "palco", "ms": 12900, "cam": Vector2(640, 380), "zoom": 1.0, "x": [380, 560, 760, 900, 640], "y": [560, 560, 560, 420, 290]},
+	"palco_reggae": {"id": "palco", "ms": 31000, "cam": Vector2(640, 380), "zoom": 1.0, "x": [380, 560, 760, 900, 640], "y": [560, 330, 560, 420, 200]},
+	"palco_techno": {"id": "palco", "ms": 49100, "cam": Vector2(640, 380), "zoom": 0.9, "x": [380, 170, 760, 1100, 640], "y": [560, 400, 560, 400, 290]},
 }
 var _bologna: Dictionary = {} # le fasi di Bologna (#433): {ms, cam, zoom, spots}, vuoto nelle altre partite
 # Bologna in quattro momenti: l'auto in piazza, l'ingorgo sotto le torri, la Garisenda che cade coi mattoni, la polvere
@@ -84,12 +96,16 @@ func _process(_delta: float) -> bool:
 		if _hall_scene == "basket" and _frame == 2:
 			_hall_view.set_speaking("p1", true)
 			_hall_view.set_voice_muted("p3", true)
+		if _frame == 18 and _hall_scene == "computer":
+			hall.events = [{"type": "rules", "id": "p2"}]
 		if _frame == 24 and _hall_scene == "via":
 			hall.events = [{"type": "go", "mode": "ffa", "stageId": "palco"}]
 		for e in hall.events:
 			_hall_view.on_event(e)
 		_hall_view.on_snapshot(hall)
 		_hall_hud.on_snapshot(hall)
+		if _fixed_cam != null:
+			_fixed_cam.make_current()
 	if _frame < SHOT_FRAME:
 		return false
 	var name: String = SHOTS[_index]
@@ -121,6 +137,7 @@ func _next() -> void:
 	_results = null
 	_hall_view = null
 	_hall_hud = null
+	_fixed_cam = null
 	if _index < SHOTS.size():
 		call("_" + SHOTS[_index])
 
@@ -218,9 +235,61 @@ func _oggetti() -> void:
 	_partita()
 
 
+# Oggetti per categoria: i cinque principali, uno gigante, uno mini, uno che vola con la moka, uno col petardo
+# attaccato che scoppia, uno col caffè; la ciabatta della mamma in volo e gli oggetti nuovi a terra
+func _oggetti_categorie() -> void:
+	_items_on = false
+	_gear_on = true
+	_partita()
+
+
+# Impugnatura e sparo: Bradipo colpisce con la scopa, Marcomunista plana con l'ombrellone, Egiainuso congelato dal pesce,
+# OrsoBlu spara il getto dell'idrante, Elvedeo chiuso in una bolla; a terra anguilla, pistola e sparabolle triplo
+func _oggetti_armi() -> void:
+	_items_on = false
+	_gear_on = false
+	_held_on = true
+	_ride_on = false
+	_partita()
+
+
+# Le pose con gli oggetti (docs/clip-flow/pose-oggetti.md): cinque Capt. OrsoBlu, la scopa in guardia e nel colpo
+# forte, il pesce nell'affondo, la pistola puntata e l'idrante verso sinistra; l'oggetto vero sta sulla presa
+func _oggetti_orsoblu() -> void:
+	_items_on = false
+	_gear_on = false
+	_held_on = false
+	_ride_on = false
+	_partita()
+	_pose_on = true # dopo _partita, che lo rimette a false per le altre foto
+
+
+# Pesanti e cavalcature: Bradipo con la cassa sopra la testa, Marcomunista in monopattino, OrsoBlu col carrello con
+# Egiainuso dentro, Elvedeo sul monopattino a razzo; a terra la lavatrice in centrifuga, la cassa d'oro e una cassa rotta
+func _oggetti_pesanti() -> void:
+	_gear_on = false
+	_ride_on = true
+	_held_on = false
+	_partita()
+
+
+# Capt. OrsoBlu in cinque mosse le cui strisce erano troppo larghe per la scheda video (e diventavano quadrati):
+# cammina, pesante, scudo, provocazione, speciale laterale
+func _orsoblu_mosse() -> void:
+	_items_on = false
+	_gear_on = false
+	_held_on = false
+	_ride_on = false
+	_orso_on = true
+	_partita()
+
+
 # Pre-partita: l'attesa dei Pronto, la presentazione col VS, il 2 del conto alla rovescia
 func _prepartita_attesa() -> void:
 	_items_on = false
+	_gear_on = false
+	_held_on = false
+	_ride_on = false
 	_pre = {"phase": "waiting", "leftMs": 0, "ready": ["p0", "p2", "p3"], "autoStartMs": 41000}
 	_pre_fighters = 0
 	_partita()
@@ -248,6 +317,47 @@ func _add_prematch() -> void:
 	_pre_view.portrait_of = _hud._portrait
 	_hud.get_parent().add_child(_pre_view)
 	_pre_view.size = Vector2(_game.world.width, _game.world.height)
+# Bonobo Party (#579): il tabellone a metà partita, col dado appena tirato
+func _party_tabellone() -> void:
+	_party_board("roll", {"dice": 5, "turnId": "p0", "events": [{"type": "roll", "id": "p0", "value": 5}]})
+
+
+# Bonobo Party: il voto tra tre minigiochi
+func _party_voto() -> void:
+	_party_board("vote", {"options": [
+		{"id": "pioggia", "title": "Pioggia di Banane", "category": "arraffa"},
+		{"id": "contagio", "title": "Contagio", "category": "unoContro"},
+		{"id": "mezzogiorno", "title": "Mezzogiorno di Fuoco", "category": "ritmo"},
+	], "votes": {"p1": "contagio", "p2": "pioggia"}})
+
+
+func _party_board(phase: String, extra: Dictionary) -> void:
+	var squares: Array = []
+	var kinds := ["banana", "banana", "buccia", "banana", "evento", "banana", "banana"]
+	for i in 28: # il giro, come makeBoard in src/shared/party/board.ts (forma approssimata)
+		var t := float(i) / 28.0
+		var a := TAU * t - PI / 2
+		var p := Vector2(0.5 + 0.44 * cos(a), 0.5 + 0.42 * sin(a))
+		squares.append({"x": p.x, "y": p.y, "kind": "start" if i == 0 else ("bottega" if i == 10 or i == 24 else kinds[i % kinds.size()]), "next": [(i + 1) % 28] if i != 6 else [7, 28]})
+	for k in 5: # la scorciatoia dall'incrocio (6) al rientro (20)
+		var u := (k + 1) / 6.0
+		var a6: Dictionary = squares[6]
+		var a20: Dictionary = squares[20]
+		squares.append({"x": lerpf(a6.x, a20.x, u), "y": lerpf(a6.y, a20.y, u), "kind": "evento", "next": [29 + k if k < 4 else 20]})
+	var names := [["p0", "Nicola", "orsoblu", 0xff4560], ["p1", "Marco", "marcomunista", 0xb48cff], ["p2", "Bot Gina", "nonnagina", 0x5ef0a0], ["p3", "Ricky", "bradipo", 0xffc928]]
+	var players: Array = []
+	for i in names.size():
+		var n: Array = names[i]
+		players.append({"id": n[0], "name": n[1], "characterId": n[2], "skinId": "", "color": n[3], "bot": i == 2, "away": false, "square": [3, 9, 9, 15][i], "bananas": [14, 22, 6, 9][i], "crowns": [1, 0, 0, 0][i], "item": "moka" if i == 0 else null, "wins": [2, 1, 0, 1][i], "place": [1, 2, 4, 3][i]})
+	var snap := {"t": 0, "phase": phase, "phaseLeftMs": 9000, "round": 4, "rounds": 10, "pick": "vote", "turnId": null, "dice": null, "moveLeft": 0, "squares": squares, "crownSquare": 18, "players": players, "options": [], "votes": {}, "feedbackDone": [], "lastResults": null, "shop": [], "text": "", "events": [], "winnerId": null}
+	snap.merge(extra, true)
+	var view: Control = load("res://scripts/party_view.gd").new()
+	root.add_child(view)
+	view.setup(_game, "p0")
+	view.size = Vector2(_game.world.width, _game.world.height)
+	view.on_snapshot(snap)
+
+
 # Fine partita: la classifica è già entrata tutta, coi premi; il vincitore sotto il riflettore
 func _fine_partita() -> void:
 	_items_on = false
@@ -266,6 +376,7 @@ func _fine_partita() -> void:
 
 
 func _partita() -> void:
+	_pose_on = false
 	var world: Node2D = load("res://scripts/world_view.gd").new()
 	root.add_child(world)
 	world.setup(_game)
@@ -277,6 +388,9 @@ func _partita() -> void:
 	if not _theme_shot.is_empty():
 		cam.position = _theme_shot.cam
 		cam.zoom = Vector2.ONE * float(_theme_shot.zoom)
+		# Come main.gd: il mondo sa cosa inquadra la telecamera (le arene a tema disegnano solo lì)
+		var seen := Vector2(_game.world.width, _game.world.height) / cam.zoom
+		world.view_rect = Rect2(cam.position - seen / 2.0, seen)
 	root.add_child(cam)
 	cam.make_current()
 	_hud = load("res://scripts/hud.gd").new()
@@ -363,9 +477,123 @@ func _snapshot(frame: int) -> Dictionary:
 		snap.projectiles = []
 		var kinds: Array = _game.droppableItems
 		for i in kinds.size():
-			snap.items.append({"id": 20 + i, "kind": kinds[i], "x": 380 + i * 75, "y": 560, "vx": 0, "vy": 0, "heldBy": null, "thrown": false})
+			snap.items.append({"id": 20 + i, "kind": kinds[i], "x": 250 + i * 760.0 / maxf(1.0, kinds.size() - 1), "y": 560, "vx": 0, "vy": 0, "heldBy": null, "thrown": false})
 		for p in players:
 			p.y = 300
+	if _gear_on:
+		snap.projectiles = []
+		var core := [["bradipo", 360, "colosso"], ["marcomunista", 520, "mini"], ["orsoblu", 640, "razzo"], ["egiainuso", 800, ""], ["elvedeo", 940, "caffe"]]
+		for i in core.size():
+			var p: Dictionary = players[i]
+			p.characterId = core[i][0]
+			p.x = core[i][1]
+			p.shielding = false
+			p.charge = 0.0
+			p.facing = 1 if i < 3 else -1
+			if core[i][2] != "":
+				p.powerup = core[i][2]
+				p.powerupMs = 6000
+		players[2].y = 410 # OrsoBlu vola con la moka
+		players[2].onGround = false
+		snap.items = [
+			{"id": 40, "kind": "petardo", "x": 800, "y": 520, "vx": 0, "vy": 0, "heldBy": null, "thrown": false, "load": 0.8},
+			{"id": 41, "kind": "ciabattaMamma", "x": 700, "y": 480, "vx": 600, "vy": -60, "heldBy": null, "thrown": true},
+			{"id": 42, "kind": "brownie", "x": 250, "y": 560, "vx": 0, "vy": 0, "heldBy": null, "thrown": false},
+			{"id": 43, "kind": "moka", "x": 1030, "y": 560, "vx": 0, "vy": 0, "heldBy": null, "thrown": false},
+			{"id": 44, "kind": "petardoGrappolo", "x": 1090, "y": 560, "vx": 0, "vy": 0, "heldBy": null, "thrown": false},
+			{"id": 45, "kind": "caffe", "x": 300, "y": 560, "vx": 0, "vy": 0, "heldBy": null, "thrown": false},
+		]
+		if frame % 20 == 2: # uno scoppio di petardino ogni tanto, così nella foto c'è sempre la palla di fuoco
+			snap.events = [{"type": "gear", "phase": "boom", "kind": "petardino", "id": "p3", "x": 1000, "y": 470, "r": 60}]
+	if _held_on:
+		snap.projectiles = []
+		var core := [["bradipo", 420, ""], ["marcomunista", 560, ""], ["orsoblu", 680, ""], ["egiainuso", 820, "gelo"], ["elvedeo", 980, "bolla"]]
+		for i in core.size():
+			var p: Dictionary = players[i]
+			p.characterId = core[i][0]
+			p.x = core[i][1]
+			p.shielding = false
+			p.charge = 0.0
+			p.facing = -1 if i == 4 else 1
+			p.attack = null
+			p.attackActive = false
+			if core[i][2] != "":
+				p.powerup = core[i][2]
+				p.powerupMs = 1500
+		players[0].attack = "light" # Bradipo colpisce con la scopa
+		players[0].attackActive = true
+		players[1].y = 380 # Marcomunista plana con l'ombrellone
+		players[1].onGround = false
+		players[4].y = 470 # Elvedeo sale nella bolla
+		players[4].onGround = false
+		snap.items = [
+			{"id": 50, "kind": "scopa", "x": 0, "y": 0, "vx": 0, "vy": 0, "heldBy": players[0].id, "thrown": false},
+			{"id": 51, "kind": "ombrellone", "x": 0, "y": 0, "vx": 0, "vy": 0, "heldBy": players[1].id, "thrown": false},
+			{"id": 52, "kind": "idrante", "x": 0, "y": 0, "vx": 0, "vy": 0, "heldBy": players[2].id, "thrown": false},
+			{"id": 53, "kind": "anguilla", "x": 260, "y": 560, "vx": 0, "vy": 0, "heldBy": null, "thrown": false},
+			{"id": 54, "kind": "pistola", "x": 320, "y": 560, "vx": 0, "vy": 0, "heldBy": null, "thrown": false},
+			{"id": 55, "kind": "sparabolleTriplo", "x": 1080, "y": 560, "vx": 0, "vy": 0, "heldBy": null, "thrown": false},
+			{"id": 56, "kind": "pesce", "x": 1140, "y": 560, "vx": 0, "vy": 0, "heldBy": null, "thrown": false},
+			{"id": 57, "kind": "bollaRimbalzina", "x": 900, "y": 380, "vx": -380, "vy": 0, "heldBy": null, "thrown": true},
+			{"id": 58, "kind": "goccia", "x": 380, "y": 500, "vx": 1300, "vy": 0, "heldBy": null, "thrown": true},
+		]
+		if frame % 12 == 2: # il getto dell'idrante e una scossa dell'anguilla, così nella foto ci sono sempre
+			snap.events = [
+				{"type": "gear", "phase": "jet", "kind": "idrante", "id": players[2].id, "x": 700, "y": 520, "r": 300},
+				{"type": "gear", "phase": "zap", "kind": "anguilla", "id": players[3].id, "x": 760, "y": 520},
+			]
+	if _orso_on:
+		snap.projectiles = []
+		var moves := [["walk", 300], ["heavy", 480], ["shield", 660], ["taunt", 840], ["specialSide", 1020]]
+		for i in moves.size():
+			var p: Dictionary = players[i]
+			p.characterId = "orsoblu"
+			p.x = moves[i][1]
+			p.facing = 1
+			p.charge = 0.0
+			p.shielding = moves[i][0] == "shield"
+			p.vx = 200 if moves[i][0] == "walk" else 0
+			p.attack = moves[i][0] if moves[i][0] in ["heavy", "taunt", "specialSide"] else null
+	if _pose_on:
+		snap.projectiles = []
+		var poses := [[340, 1, "heavy", "scopa"], [520, 1, null, "pistola"], [690, 1, null, "caffe"], [860, -1, null, "cassa"], [1040, -1, null, "monopattino"]] # le cinque prese
+		snap.items = []
+		for i in poses.size():
+			var p: Dictionary = players[i]
+			p.characterId = "orsoblu"
+			p.x = poses[i][0]
+			p.facing = poses[i][1]
+			p.attack = poses[i][2]
+			p.attackActive = false
+			p.percent = 0
+			p.shielding = false
+			p.charge = 0.0
+			p.vx = 0
+			snap.items.append({"id": 70 + i, "kind": poses[i][3], "x": 0, "y": 0, "vx": 0, "vy": 0, "heldBy": p.id, "thrown": false})
+	if _ride_on:
+		snap.projectiles = []
+		var core := [["bradipo", 340], ["marcomunista", 500], ["orsoblu", 680], ["egiainuso", 690], ["elvedeo", 900]]
+		for i in core.size():
+			var p: Dictionary = players[i]
+			p.characterId = core[i][0]
+			p.x = core[i][1]
+			p.shielding = false
+			p.charge = 0.0
+			p.powerup = null
+			p.facing = 1 if i < 4 else -1
+		players[3].stunned = true # Egiainuso dentro il carrello di OrsoBlu
+		players[3].y = float(players[2].y) - 26.0
+		snap.items = [
+			{"id": 50, "kind": "cassa", "x": 340, "y": 0, "vx": 0, "vy": 0, "heldBy": "p0", "thrown": false},
+			{"id": 51, "kind": "monopattino", "x": 500, "y": 0, "vx": 0, "vy": 0, "heldBy": "p1", "thrown": false},
+			{"id": 52, "kind": "carrello", "x": 680, "y": 0, "vx": 0, "vy": 0, "heldBy": "p2", "thrown": false},
+			{"id": 53, "kind": "monopattinoRazzo", "x": 900, "y": 0, "vx": 0, "vy": 0, "heldBy": "p4", "thrown": false, "load": 0.7},
+			{"id": 54, "kind": "lavatrice", "x": 1010, "y": 560, "vx": 0, "vy": 0, "heldBy": null, "thrown": false, "load": 0.6},
+			{"id": 55, "kind": "cassaOro", "x": 220, "y": 560, "vx": 0, "vy": 0, "heldBy": null, "thrown": false},
+			{"id": 56, "kind": "lavatriceMatta", "x": 1090, "y": 560, "vx": 0, "vy": 0, "heldBy": null, "thrown": false},
+		]
+		if frame % 24 == 2: # una cassa che si rompe ogni tanto, così nella foto ci sono sempre le schegge
+			snap.events = [{"type": "gear", "phase": "break", "kind": "cassa", "id": "p0", "x": 780, "y": 560}]
 	if _end_on:
 		snap.winnerId = "p1"
 		snap.timeLeftMs = 0
@@ -424,10 +652,66 @@ func _sala_scacchi() -> void:
 	_add_hall()
 
 
+# Il computer delle regole (#567): la scrivania col monitor e, sopra la sala, la schermata che apre
+func _sala_computer() -> void:
+	_hall_scene = "computer"
+	_add_hall()
+
+
+# Da soli nel cerchio arriva un manichino fermo e parte il conto alla rovescia
+func _sala_solo() -> void:
+	_hall_scene = "solo"
+	_add_hall()
+
+
+# Tutta la sala dall'alto e da davanti, con una telecamera fissa: per vedere la disposizione delle zone (#581)
+func _sala_pianta() -> void:
+	_hall_scene = "sala"
+	_add_hall()
+	var cam := Camera3D.new()
+	cam.fov = 46.0
+	cam.far = 260.0
+	root.add_child(cam)
+	cam.look_at_from_position(Vector3(0.0, 26.0, 21.0), Vector3(0.0, 0.0, -1.5))
+	_fixed_cam = cam
+
+
+func _sala_regole() -> void:
+	_hall_scene = "computer"
+	_add_hall()
+	var layer := CanvasLayer.new()
+	layer.layer = 5
+	root.add_child(layer)
+	var panel: Control = load("res://scripts/hall_rules_panel.gd").new()
+	layer.add_child(panel)
+	var snap: Dictionary = load("res://tests/hall_fake.gd").party(0.0, "computer")
+	panel.setup(_game, Settings.new({"master": 0.8, "sfx": 0.7, "music": 0.35}, "user://ci_regole.cfg"), snap.rules, "manichino")
+
+
 # Le arene a tema: una funzione per foto, tutte uguali
 func _fabbrica() -> void:
 	_theme_shot = THEME_SHOTS.fabbrica.duplicate()
 	_theme_shot.id = "fabbrica"
+	_partita()
+
+
+func _diluvio() -> void:
+	_theme_shot = THEME_SHOTS.diluvio.duplicate()
+	_partita()
+
+
+func _palco_metal() -> void:
+	_theme_shot = THEME_SHOTS.palco_metal.duplicate()
+	_partita()
+
+
+func _palco_reggae() -> void:
+	_theme_shot = THEME_SHOTS.palco_reggae.duplicate()
+	_partita()
+
+
+func _palco_techno() -> void:
+	_theme_shot = THEME_SHOTS.palco_techno.duplicate()
 	_partita()
 
 

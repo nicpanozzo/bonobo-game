@@ -166,6 +166,50 @@ static func belt_velocity(b: Dictionary, t: float, pads: Array, pressed: Array, 
 	return dir * float(b.speed) * (turbo_mult if levers >= 2 else 1.0)
 
 
+# Il Palco: il genere del DJ senza dischi, come autoGenre() in physics/genre.ts ("" nella prova del suono)
+static func auto_genre(stage: Dictionary, t: float) -> String:
+	var g: Variant = stage.get("genres")
+	if not (g is Dictionary) or (g.order as Array).is_empty() or t < float(g.startMs):
+		return ""
+	var order: Array = g.order
+	return str(order[posmod(int(floorf((t - float(g.startMs)) / float(g.everyMs))), order.size())])
+
+
+# Il genere che suona a t, come genreAt(): l'ultimo disco ancora in effetto, altrimenti quello del DJ
+static func genre_at(stage: Dictionary, t: float, pressed: Array) -> String:
+	if not (stage.get("genres") is Dictionary):
+		return ""
+	var best := ""
+	var best_at := -INF
+	var pads: Array = stage.get("pads", []) if stage.get("pads") is Array else []
+	for i in mini(pads.size(), pressed.size()):
+		var fx: Dictionary = pads[i].effect
+		if pressed[i] == null or fx.get("genre") == null:
+			continue
+		var at := float(pressed[i])
+		if t >= at and t - at < float(fx.durationMs) and at > best_at:
+			best = str(fx.genre)
+			best_at = at
+	return best if best != "" else auto_genre(stage, t)
+
+
+# Il giro della techno (0 o 1), come technoBeat()
+static func techno_beat(stage: Dictionary, t: float, blink_beats: float) -> int:
+	var g: Variant = stage.get("genres")
+	if not (g is Dictionary):
+		return 0
+	return posmod(int(floorf(t / (float(g.beatMs) * blink_beats))), 2)
+
+
+# Se un pezzo con genre (e beat) c'è, come genreOk()
+static func genre_ok(p: Dictionary, genre: String, beat: int) -> bool:
+	if p.get("genre") == null:
+		return true
+	if str(p.genre) != genre:
+		return false
+	return p.get("beat") == null or int(p.beat) == beat
+
+
 # Bottone sonoro: quanto è carico da 0 (appena premuto) a 1 (si può premere), come padReady() in physics/pads.ts
 static func pad_charge(p: Dictionary, pressed_at: Variant, t: float) -> float:
 	if pressed_at == null:

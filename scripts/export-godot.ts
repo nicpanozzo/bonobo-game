@@ -8,7 +8,7 @@ import { basename, dirname, extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { SpriteFolderSpec } from "../src/shared/characters";
 import { CHARACTERS, CREWS, DEFAULT_CHARACTER_ID, isSpriteFolder, resolvedAnimations, SPECIAL_KINDS, SPECIAL_SLOTS, specialAttackSpec, specialsFor, spriteStatePath, supremeAttackSpec } from "../src/shared/characters";
-import { ANCHOR, ATTACKS, AUDIO, BONG, CAMERA, FUNGHI, FUNGO, HALL, COLORS, EFFECTS, FIGHTER, INPUT, ITEM_AMOUNTS, ITEM_RULES, LEDGE, BELT, MICELIO, NET, PAD, POWERUP, PREMATCH, PROTOCOL_VERSION, RUMBLE, SHIELD, SPORE, SUPREME_SPEEDS, TEAM_COLORS, TEAM_NAMES, VOICE, WORLD } from "../src/shared/constants";
+import { ANCHOR, ATTACKS, AUDIO, BONG, CAMERA, FUNGHI, FUNGO, GEAR, HALL, COLORS, EFFECTS, FIGHTER, INPUT, ITEM_AMOUNTS, ITEM_RULES, LEDGE, BELT, GENRE, MICELIO, NET, PAD, POWERUP, PREMATCH, PROTOCOL_VERSION, RUMBLE, SHIELD, SPORE, SUPREME_SPEEDS, TEAM_COLORS, TEAM_NAMES, VOICE, WORLD } from "../src/shared/constants";
 import { RECONNECT, RECONNECT_HOLD_MS } from "../src/shared/constants";
 import { COLORS_COLORBLIND, MAX_TEAMS, TEAM_COLORS_COLORBLIND } from "../src/shared/constants";
 import { BASSANESE, PACMAN, TETRIS, TRAINING } from "../src/shared/constants";
@@ -18,7 +18,7 @@ import { predictionTraces } from "../src/shared/predictionTraces";
 import { HITSTOP, SMASH_CHARGE, SUPREME } from "../src/shared/constants";
 import { LESSONS, TUTORIAL_BOT, TUTORIAL_STAGE_ID } from "../src/shared/tutorial";
 import { CHALLENGES } from "../src/shared/challenges";
-import { DROPPABLE_ITEMS, ITEMS } from "../src/shared/items";
+import { DROPPABLE_ITEMS, ITEM_CATEGORIES, ITEMS } from "../src/shared/items";
 import { DEFAULT_STAGE_ID, STAGES, stageArtFiles } from "../src/shared/stages";
 import { stageCheckData } from "../src/shared/stageCheck";
 import { RANDOM_STAGE_ART } from "../src/shared/stageGenerator";
@@ -101,7 +101,27 @@ function folderSprite(id: string, sprite: SpriteFolderSpec): SpriteFolderSpec {
     }
   }
   const rig = sprite.rig ? rigFor(id, sprite.rig, animations) : undefined;
-  return { ...sprite, rig, animations: resolvedAnimations(animations) as SpriteFolderSpec["animations"] };
+  const hands = handsFor(id, sprite.dir, animations);
+  return { ...sprite, rig, hands, animations: resolvedAnimations(animations) as SpriteFolderSpec["animations"] };
+}
+
+// Il punto della presa degli oggetti (docs/clip-flow/pose-oggetti.md), da <dir>/mani.json (tools/sprite/dal_video.py):
+// solo gli stati disegnati, con un punto per fotogramma
+function handsFor(id: string, dir: string, animations: Record<string, object>): SpriteFolderSpec["hands"] {
+  const path = `${publicDir}${dir}/mani.json`;
+  if (!existsSync(path)) return undefined;
+  const all = JSON.parse(readFileSync(path, "utf8")) as NonNullable<SpriteFolderSpec["hands"]>;
+  const out: NonNullable<SpriteFolderSpec["hands"]> = {};
+  for (const [state, points] of Object.entries(all)) {
+    const a = animations[state] as { frames?: number } | undefined;
+    if (!a) continue; // lo stato non è (ancora) nel blocco del personaggio
+    if (points.length !== a.frames) {
+      spriteErrors.push(`${id}: mani.json ha ${points.length} punti per "${state}", ma i fotogrammi sono ${a.frames}`);
+      continue;
+    }
+    out[state] = points;
+  }
+  return Object.keys(out).length ? out : undefined;
 }
 
 // La prova del rig in tempo reale (#403): da rig.json e animazioni.json di tools/rig/ un file solo per Godot,
@@ -267,6 +287,7 @@ const data = {
   camera: CAMERA,
   pad: PAD, // bottoni sonori dell'arena musicale (#423)
   belt: BELT, // nastri trasportatori della Fabbrica
+  genre: GENRE, // i generi del Palco
   tetris: TETRIS, // il power-up Tetris (#427)
   station: STATION, // postazioni: bombarda e munizioni (#433)
   pacman: PACMAN, // il power-up Pac-Man (#427)
@@ -281,6 +302,8 @@ const data = {
   bong: BONG, // #302
   funghi: FUNGHI, // #302
   fungo: FUNGO, // il fungo di Teemo (#419)
+  gear: GEAR, // oggetti per categoria (gear.ts)
+  itemCategories: ITEM_CATEGORIES, // le categorie degli oggetti, in ordine per la lobby
   spore: SPORE, // #358
   micelio: MICELIO, // #358
   colors: COLORS,

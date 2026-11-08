@@ -17,10 +17,12 @@ const specOf = (f: Fighter, kind: SpecialKind) => specialsFor(f.characterId)[SLO
 export function tryStartSpecial(f: Fighter, ctx: PhysicsContext): void {
   const slot: SpecialSlot = f.input.down ? "down" : f.input.left !== f.input.right ? "side" : "neutral";
   const kind = SPECIAL_KINDS[slot];
-  // Capt. OrsoBlu (#547): la neutra è l'ancora sparata dritta in avanti, da terra o in aria (Tutti a bordo!)
-  if (slot === "neutral" && anchorSpec(f.characterId)) {
+  // Capt. OrsoBlu (#547): lo Speciale spara l'ancora, da terra o in aria. Da solo dritta in avanti (Tutti a bordo!),
+  // con su in alto, con su + una direzione in diagonale. Avanti tutta! (con una direzione) e la mina restano
+  if (anchorSpec(f.characterId) && !f.input.down && (slot === "neutral" || f.input.up)) {
     consume(f, "special");
-    return throwAnchor(f, 0, ctx, true);
+    const dir = (f.input.right ? 1 : 0) - (f.input.left ? 1 : 0);
+    return throwAnchor(f, f.input.up ? dir : 0, ctx, !f.input.up);
   }
   const sp = specialsFor(f.characterId)[slot];
   if (sp.type === "dash") {

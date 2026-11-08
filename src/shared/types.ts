@@ -51,6 +51,7 @@ export interface PlayerState {
   skinId?: string; // skin scelta (#339): cambia solo il disegno; manca = aspetto base
   color: number;
   team: number; // 0 = nessuna squadra (tutti contro tutti), da 1 a MAX_TEAMS = squadre (#17, #409)
+  ghostOf?: string; // Bonobo Party (#579): un fantasma che rifà le mosse di questo giocatore (Ieri Me)
   x: number; // centro orizzontale
   y: number; // piedi
   vx: number;
@@ -83,6 +84,7 @@ export interface PlayerState {
   predict?: PredictionState; // E17: solo per chi manda InputState.seq
   companion?: CompanionState; // il compagno che lo segue (#369, il beagle di Lampione); manca se non ne ha
   anchor?: AnchorState; // l'ancora di Capt. OrsoBlu (#547): in volo, piantata o di ritorno; manca se è in mano
+  wet?: boolean; // bagnato dallo Sputo di Egiainuso (Scivolone, #557): si afferra da più lontano; manca se asciutto
   station?: number; // indice della postazione che sta usando (#433, stage.stations): fermo, i tasti guidano lei; manca se nessuna
 }
 
@@ -206,7 +208,8 @@ export interface ItemState {
   heldBy: string | null; // chi lo tiene in mano
   thrown: boolean; // lanciato: colpisce chi tocca
   owner?: string; // il funghetto piantato (#302): chi l'ha piantato, solo lui lo vede bene
-  load?: number; // il bong in carica (#302), da 0 a 1; assente se non lo si carica
+  load?: number; // il bong in carica (#302) o la miccia del petardo che brucia, da 0 a 1; assente se non lo si carica
+  // anche (ride.ts): la centrifuga che resta alla lavatrice o il razzo che resta al monopattino, da 1 a 0
 }
 
 // Regole della partita, scelte da chi crea la stanza (#17). Default in src/shared/rules.ts
@@ -219,6 +222,8 @@ export interface MatchRules {
   supremeSpeed: number; // moltiplicatore della carica della suprema, uno dei SUPREME_SPEEDS (1 = normale)
   itemAmount: number; // quanti oggetti cadono: indice in ITEM_AMOUNTS (0 = nessuno)
   itemKinds: string[]; // quali oggetti possono cadere (id di ITEMS); vuoto = nessuno
+  partyRounds?: number; // Bonobo Party (#579): quanti giri di tabellone, da PARTY.minRounds a PARTY.maxRounds
+  partyPick?: PartyPick; // Bonobo Party: il minigioco a fine giro si pesca a caso o si vota
 }
 
 // Cose successe tra uno snapshot e l'altro. La fisica le produce, e chi disegna,
@@ -256,6 +261,16 @@ export type GameEvent =
   | { type: "powerUp"; itemId: number; id: string; kind: string; x: number; y: number } // id consuma l'oggetto e si potenzia (#231)
   | { type: "powerEnd"; id: string; kind: string } // il potenziamento di id finisce
   | { type: "bassanese"; phase: "call" | "leave"; id: string; x: number; y: number } // Chiama Bassanese: id ha chiamato
+  // Oggetti per categoria (gear.ts): kind è l'oggetto, id chi lo usa (o chi lo prende addosso), r un raggio in pixel.
+  // fuse = si accende la miccia, stick = il petardo si attacca a id, boom = scoppia (raggio r), quake = il gigante della
+  // nonna atterra e fa tremare la terra (raggio r). Le PR delle altre categorie aggiungono le loro fasi qui.
+  // Pesanti e cavalcature (ride.ts): break = la cassa si rompe, spin = la lavatrice parte in centrifuga, hop = salta,
+  // charge = id scatta in sella, ram = id viene investito, scoop = id finisce nel carrello, launch = id catapulta chi
+  // aveva nel carrello; boom vale anche per il monopattino a razzo che finisce il razzo
+  // Da impugnare e da sparo (held.ts): freeze = id congelato dal pesce, zap = la scossa dell'anguilla arriva a id partendo
+  // da x, y; shot = id spara; jet = il getto dell'idrante da x, y lungo r pixel (negativo = verso sinistra); trap = id chiuso
+  // nella bolla; pop = una bolla o una goccia finisce in x, y; break vale anche per l'arma in mano a id che si rompe o finisce i colpi
+  | { type: "gear"; phase: "fuse" | "stick" | "boom" | "quake" | "break" | "spin" | "hop" | "charge" | "ram" | "scoop" | "launch" | "freeze" | "zap" | "shot" | "jet" | "trap" | "pop"; kind: string; id: string; x: number; y: number; r?: number }
   | { type: "tetris"; phase: "spawn" | "move" | "rotate" | "drop" | "land" | "line"; id: string; x: number; y: number; width?: number } // il pezzo di Tetris di id (#427); line: esplode una riga larga width pixel, x e y al centro
   // Il bong (#302): load = comincia a caricarlo, smoke = soffia la nuvola (centro x,y, verso dir, danno), stun = troppo fatto, crolla
   | { type: "bong"; phase: "load" | "smoke" | "stun"; id: string; x: number; y: number; dir?: 1 | -1; damage?: number }
@@ -293,6 +308,7 @@ export interface GameSnapshot {
   towerPoints?: Record<number, number>; // punti torre per squadra (#433): colpi di bombarda a segno sugli avversari, con stations
   prizeTeam?: number; // premio (#433): la squadra in testa ai punti torre congelata a prizeAtMs; assente prima, o se era pareggio
   prematch?: PrematchState; // pre-partita: c'è solo finché la partita non è cominciata (attesa, presentazione, 3, 2, 1)
+  party?: MinigameHud; // Bonobo Party (#579): la partita è un minigioco, qui punti, oggetti di scena e cosa fare
 }
 
 // Pre-partita. waiting: si aspetta che tutti dicano Pronto, intanto ci si scalda senza perdere vite;
@@ -308,8 +324,8 @@ export interface PrematchState {
 // camminando (pedane delle modalità, portali delle arene, piedistalli dei lottatori, cerchio dei pronti).
 // Il server è l'arbitro anche qui: calcola dove sono tutti (src/shared/hall.ts) e manda HallSnapshot.
 // Coordinate in centimetri: x verso destra, z verso la telecamera (su = -z), y in alto; (0, 0, 0) al centro del pavimento.
-export type HallMode = "ffa" | "teams" | "flag" | "race";
-export type HallZoneKind = "mode" | "stage" | "fighter" | "ready" | "trampoline" | "botAdd" | "botRemove" | "gong" | "throne" | "hoop" | "court" | "chessboard" | "rack";
+export type HallMode = "ffa" | "teams" | "flag" | "race" | "party"; // party: Bonobo Party (#579), tabellone e minigiochi
+export type HallZoneKind = "mode" | "stage" | "fighter" | "ready" | "trampoline" | "botAdd" | "botRemove" | "gong" | "throne" | "hoop" | "court" | "chessboard" | "rack" | "computer";
 export interface HallZone {
   kind: HallZoneKind;
   id: string; // mode: id della modalità; stage: id dell'arena o "casuale"; fighter: id del lottatore; gli altri: un nome unico
@@ -362,7 +378,9 @@ export type HallEvent =
   | { type: "basket"; id: string; prop: string; points: 2 | 3; swish: boolean } // canestro! id = chi ha tirato
   | { type: "propHit"; prop: string; speed: number } // un oggetto sbatte forte (pavimento, muro, ferro, altro oggetto): per il suono
   | { type: "topple"; prop: string; by: string | null } // un pezzo degli scacchi cade
-  | { type: "checkmate"; id: string; color: "white" | "black" }; // il re di color è caduto: scacco matto di id
+  | { type: "checkmate"; id: string; color: "white" | "black" } // il re di color è caduto: scacco matto di id
+  | { type: "computer"; id: string } // colpo leggero sul computer delle regole: a id si apre la schermata (#567)
+  | { type: "rules"; id: string }; // id ha cambiato le regole della partita dal computer
 // Una riga della classifica a punti (src/server/rating.ts)
 export interface BoardRow {
   name: string;
@@ -404,8 +422,10 @@ export interface HallSnapshot {
   events: HallEvent[];
   board: BoardRow[]; // i primi della classifica, per il tabellone della sala
   props: HallPropState[]; // palloni e pezzi degli scacchi
-  rules: MatchRules; // regole di chi ha creato la stanza (vite, tempo, oggetti): la modalità la decide il voto
+  rules: MatchRules; // regole della prossima partita (vite, tempo, oggetti), cambiabili dal computer: la modalità la decide il voto
+  botLevel?: HallBotLevel; // come giocano i bot della sala; manca nei server di prima
 }
+export type HallBotLevel = "manichino" | "facile" | "semplice" | "difficile"; // manichino: fermi, per provare i colpi da soli
 // Punti guadagnati o persi a fine partita, per la schermata dei risultati
 export interface RatingChange {
   id: string;
@@ -442,12 +462,15 @@ export interface ServerToClient {
   // resumed: true = rientrato nel posto tenuto, con lo stesso lottatore
   // serverVersion: versione del gioco sul server (package.json), il client avvisa se è diversa dalla sua (E2)
   // phase: "hall" = la stanza è nella sala d'attesa (arrivano i messaggi hall), "match" = partita; hall: la stanza ha la sala
-  welcome: (data: { id: string; room: string; stageId: string; rules: MatchRules; stage: StageSpec; token: string; resumed: boolean; serverVersion: string; hall?: boolean; phase?: "hall" | "match" }) => void;
+  // phase "party": la stanza è sul tabellone di Bonobo Party (#579), arrivano i messaggi party
+  welcome: (data: { id: string; room: string; stageId: string; rules: MatchRules; stage: StageSpec; token: string; resumed: boolean; serverVersion: string; hall?: boolean; phase?: "hall" | "match" | "party" }) => void;
   snapshot: (snap: GameSnapshot) => void;
   roomFull: () => void; // resta per i client di prima; i nuovi leggono refused
   refused: (data: Refusal) => void; // unico rifiuto con motivo: protocollo diverso, stanza piena, troppe stanze (E2, E4)
   hall: (snap: HallSnapshot) => void; // la stanza è nella sala d'attesa: al posto degli snapshot della partita
-  stage: (data: { stageId: string; rules: MatchRules; stage: StageSpec }) => void; // dalla sala si parte: arena e regole della partita
+  // dalla sala si parte: arena e regole della partita; minigame c'è se la partita è un minigioco di Bonobo Party (#579)
+  stage: (data: { stageId: string; rules: MatchRules; stage: StageSpec; minigame?: MinigameInfo }) => void;
+  party: (snap: PartySnapshot) => void; // la stanza è sul tabellone di Bonobo Party (#579): al posto degli snapshot della partita
   ratings: (data: { changes: RatingChange[] }) => void; // a fine partita, i punti in classifica di chi ha giocato
   voice: (data: VoiceSignal & { from: string }) => void; // chat vocale: un messaggio per collegarsi, da un altro giocatore
   voiceState: (data: VoiceState) => void; // chat vocale: qualcuno è entrato, uscito, si è silenziato
@@ -477,7 +500,112 @@ export interface ClientToServer {
   // Allenamento (#113): percentuale degli avversari, velocità dell'orologio (TRAINING.speeds), si ricomincia da capo.
   // Il server li accetta solo in una stanza "training" con un solo umano
   training: (data: { percent?: number; speed?: number; reset?: boolean }) => void;
+  // Dal computer della sala (#567): regole della prossima partita (senza modalità, che si vota) e livello dei bot.
+  // Lo accetta solo una stanza nella sala d'attesa; il server ripulisce tutto con sanitizeRules
+  hallRules: (data: { rules?: Partial<MatchRules>; botLevel?: HallBotLevel }) => void;
   hall: () => void; // a partita finita: tutti tornano nella sala d'attesa (solo nelle stanze con la sala)
+  party: (cmd: PartyCommand) => void; // Bonobo Party (#579): dado, strada, voto, feedback; il server accetta solo quello che tocca a chi lo manda
   voice: (data: VoiceSignal & { to: string }) => void; // chat vocale: il server lo gira solo a "to", se è nella stessa stanza
   voiceState: (data: { on: boolean; muted: boolean; deafened: boolean }) => void;
 }
+
+// Bonobo Party (#579): un tabellone a giri e un minigioco a fine giro. Il server tiene tutto (src/shared/party/):
+// il client manda solo i comandi qui sotto e disegna PartySnapshot sul tabellone, MinigameHud durante il minigioco.
+export type PartyPick = "random" | "vote";
+export type MinigameCategory = "arraffa" | "unoContro" | "platform" | "ritmo" | "puzzle" | "classici" | "pazze";
+export interface MinigameInfo {
+  id: string;
+  title: string;
+  category: MinigameCategory;
+  howTo: string; // come si gioca, una o due frasi già pronte da mostrare
+  keys: string; // i tasti che servono, es. "Muoviti e salta, Leggero per sparare"
+  durationSec: number; // durata massima
+  roles?: Record<string, string>; // chi fa cosa nei minigiochi a ruoli, es. { "id": "Colosso" }; assente = tutti uguali
+}
+// Un oggetto di scena del minigioco, disegnato con forme semplici dal client (godot/scripts/party_props.gd).
+// kind: banana, coin, zone, wall, crate, ball, brick, bus, trail, marker, goal, sign
+export interface PartyProp {
+  kind: string;
+  x: number; // centro, pixel dell'arena
+  y: number;
+  w?: number;
+  h?: number;
+  color?: number;
+  owner?: string; // di chi è (scia, mattoni), se di qualcuno
+  text?: string; // una scritta sopra (es. "VAI!")
+  pts?: number[]; // scia: x, y, x, y... dal più vecchio
+}
+export interface MinigameHud {
+  id: string; // il minigioco (MinigameInfo.id)
+  scores: Record<string, number>; // punti di ognuno, per id del giocatore
+  unit: string; // cosa contano i punti, es. "banane"
+  text: string | null; // il momento, già pronto (es. "Aspetta il VIA..."), null = niente
+  leftMs: number | null; // tempo che resta, null se il minigioco non finisce a tempo
+  out: string[]; // id di chi è fuori
+  props: PartyProp[];
+  places?: Record<string, number>; // a minigioco finito: 1 = primo (a pari punti, stesso posto)
+}
+
+export type PartySquareKind = "start" | "banana" | "buccia" | "evento" | "bottega";
+export interface PartySquare {
+  x: number; // posizione sul tabellone, da 0 a 1 (il client la scala sullo schermo)
+  y: number;
+  kind: PartySquareKind;
+  next: number[]; // dove si va dopo: due strade = un incrocio
+}
+export interface PartyPlayer {
+  id: string;
+  name: string;
+  characterId: string;
+  skinId: string;
+  color: number;
+  bot: boolean;
+  away: boolean;
+  square: number; // indice in squares
+  bananas: number;
+  crowns: number;
+  item: string | null; // oggetto da tabellone in tasca (PARTY_ITEMS)
+  wins: number; // minigiochi vinti
+  place: number; // posto in classifica adesso (1 = primo)
+}
+export type PartyPhase = "intro" | "roll" | "move" | "path" | "shop" | "vote" | "minigame" | "feedback" | "podium";
+export type PartyEvent =
+  | { type: "roll"; id: string; value: number; item?: string }
+  | { type: "step"; id: string; square: number }
+  | { type: "square"; id: string; kind: PartySquareKind; bananas: number; text: string } // la casella fa effetto: bananas guadagnate (negative = perse)
+  | { type: "crown"; id: string; square: number } // id compra la Corona; square = dove si sposta
+  | { type: "item"; id: string; item: string; targetId?: string } // id compra o usa un oggetto
+  | { type: "vote"; id: string; minigameId: string }
+  | { type: "minigame"; minigameId: string } // si parte con questo minigioco
+  | { type: "results"; minigameId: string; places: Record<string, number>; bananas: Record<string, number> }
+  | { type: "feedback"; id: string }
+  | { type: "end"; winnerId: string | null };
+export interface PartySnapshot {
+  t: number;
+  phase: PartyPhase;
+  phaseLeftMs: number; // quanto resta prima che il server decida da solo (tiro automatico, voto a caso...)
+  round: number; // giro in corso, da 1
+  rounds: number;
+  pick: PartyPick;
+  turnId: string | null; // a chi tocca (roll, move, path, shop)
+  dice: number | null; // l'ultimo tiro di chi è di turno
+  moveLeft: number; // caselle che restano da fare
+  squares: PartySquare[];
+  crownSquare: number;
+  players: PartyPlayer[];
+  options: MinigameInfo[]; // in vote: i minigiochi tra cui votare; in minigame e feedback: quello di adesso
+  votes: Record<string, string>; // in vote: id del giocatore -> id del minigioco
+  feedbackDone: string[]; // in feedback: chi ha già mandato (o saltato)
+  lastResults: Extract<PartyEvent, { type: "results" }> | null;
+  shop: { item: string; price: number; name: string }[]; // in shop: cosa si può comprare
+  text: string | null; // cosa è appena successo, già pronto da mostrare
+  events: PartyEvent[];
+  winnerId: string | null; // nel podio
+}
+export type PartyCommand =
+  | { kind: "roll"; useItem?: boolean } // tira il dado; useItem = usa prima l'oggetto in tasca
+  | { kind: "path"; next: number } // all'incrocio: indice in next della casella
+  | { kind: "buy"; item: string | null } // in bottega: compra o passa (null)
+  | { kind: "vote"; minigameId: string }
+  | { kind: "feedback"; stars: number; text: string } // stelle da 1 a 5 (0 = salta), testo libero
+  | { kind: "hall" }; // nel podio: tutti in sala

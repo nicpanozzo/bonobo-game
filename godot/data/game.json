@@ -302,7 +302,7 @@
     "maxSwingSpeed": 1150,
     "swingDrag": 0.25,
     "releaseBoost": 420,
-    "maxHangMs": 3000,
+    "maxHangMs": 4000,
     "hookStepPx": 8,
     "platformGrabPx": 8,
     "zipSpeed": 1400,
@@ -311,7 +311,13 @@
     "pullDamage": 6,
     "pullSpeed": 760,
     "pullLift": 260,
-    "pullHitstunMs": 320
+    "pullHitstunMs": 320,
+    "assistUpDeg": 30,
+    "assistDiagDeg": 25,
+    "assistForwardDeg": 8,
+    "assistStepPx": 16,
+    "releasePush": 180,
+    "platformHopPx": 40
   },
   "ledge": {
     "hangOffsetY": 56
@@ -352,7 +358,7 @@
     "minFighters": 2
   },
   "hall": {
-    "width": 5400,
+    "width": 5800,
     "depth": 1800,
     "walkSpeed": 520,
     "accel": 4200,
@@ -375,12 +381,16 @@
     "countdownMs": 5000,
     "returnAfterMs": 12000,
     "minFighters": 2,
+    "soloDummyMs": 1500,
     "gongCooldownMs": 1500,
     "sendEveryTicks": 2,
     "boardRows": 10,
     "cageRadius": 90,
     "gongRadius": 90,
     "throneRadius": 80,
+    "computerX": 1380,
+    "computerZ": 520,
+    "computerRadius": 90,
     "shoveLift": 320,
     "collideHeight": 120,
     "boardRefreshMs": 10000,
@@ -402,7 +412,7 @@
     "courtRadius": 600,
     "threePointRadius": 600,
     "freeThrowDist": 420,
-    "rackX": 1900,
+    "rackX": 2100,
     "rackZ": -800,
     "rackGap": 40,
     "basketballs": 3,
@@ -970,6 +980,12 @@
     "feetTolerancePx": 2,
     "warnMs": 2000
   },
+  "genre": {
+    "metalKnockbackMult": 1.25,
+    "reggaeGravityMult": 0.55,
+    "technoBlinkBeats": 4,
+    "warnMs": 2000
+  },
   "tetris": {
     "ms": 9000,
     "cellPx": 40,
@@ -1172,7 +1188,8 @@
       "width": 24,
       "height": 16,
       "color": 15844367,
-      "rarity": "comune"
+      "rarity": "comune",
+      "category": "lancio"
     },
     "fiore": {
       "id": "fiore",
@@ -1183,6 +1200,7 @@
       "height": 26,
       "color": 5025616,
       "rarity": "raro",
+      "category": "consumo",
       "consume": {
         "powerup": "fiore",
         "ms": 8000
@@ -1219,6 +1237,7 @@
       "height": 34,
       "color": 5928497,
       "rarity": "normale",
+      "category": "lancio",
       "shroom": true
     },
     "bong": {
@@ -1230,6 +1249,7 @@
       "height": 40,
       "color": 8378564,
       "rarity": "normale",
+      "category": "consumo",
       "bong": true
     },
     "pacman": {
@@ -1241,6 +1261,7 @@
       "height": 28,
       "color": 16771899,
       "rarity": "rarissimo",
+      "category": "consumo",
       "consume": {
         "powerup": "pacman",
         "ms": 8000
@@ -1255,6 +1276,7 @@
       "height": 30,
       "color": 2899536,
       "rarity": "raro",
+      "category": "consumo",
       "call": true
     },
     "tetris": {
@@ -1266,10 +1288,412 @@
       "height": 28,
       "color": 48340,
       "rarity": "rarissimo",
+      "category": "consumo",
       "consume": {
         "powerup": "tetris",
         "ms": 9000
       }
+    },
+    "ciabatta": {
+      "id": "ciabatta",
+      "name": "Ciabatta",
+      "damage": 7,
+      "knockback": 320,
+      "width": 30,
+      "height": 12,
+      "color": 3900100,
+      "rarity": "comune",
+      "category": "lancio",
+      "throwSpec": {
+        "throwSpeed": 1250,
+        "throwLift": 120,
+        "throwUpSpeed": 1150,
+        "gravityMult": 0.55
+      }
+    },
+    "ciabattaMamma": {
+      "id": "ciabattaMamma",
+      "name": "Ciabatta della mamma",
+      "damage": 12,
+      "knockback": 430,
+      "width": 30,
+      "height": 12,
+      "color": 15228318,
+      "rarity": "raro",
+      "category": "lancio",
+      "rareOf": "ciabatta",
+      "throwSpec": {
+        "throwSpeed": 1250,
+        "throwLift": 120,
+        "throwUpSpeed": 1150,
+        "gravityMult": 0.55
+      },
+      "homing": true
+    },
+    "petardo": {
+      "id": "petardo",
+      "name": "Petardo",
+      "damage": 0,
+      "knockback": 0,
+      "width": 14,
+      "height": 30,
+      "color": 14039599,
+      "rarity": "normale",
+      "category": "lancio",
+      "petardo": "normale"
+    },
+    "petardoGrappolo": {
+      "id": "petardoGrappolo",
+      "name": "Petardo a grappolo",
+      "damage": 0,
+      "knockback": 0,
+      "width": 24,
+      "height": 30,
+      "color": 15764004,
+      "rarity": "raro",
+      "category": "lancio",
+      "rareOf": "petardo",
+      "petardo": "grappolo"
+    },
+    "petardino": {
+      "id": "petardino",
+      "name": "Petardino",
+      "damage": 0,
+      "knockback": 0,
+      "width": 8,
+      "height": 16,
+      "color": 15764004,
+      "rarity": "mai",
+      "petardo": "mini"
+    },
+    "caffe": {
+      "id": "caffe",
+      "name": "Caffè",
+      "damage": 0,
+      "knockback": 0,
+      "width": 22,
+      "height": 20,
+      "color": 7291942,
+      "rarity": "comune",
+      "category": "consumo",
+      "consume": {
+        "powerup": "caffe",
+        "ms": 8000
+      }
+    },
+    "moka": {
+      "id": "moka",
+      "name": "Moka a razzo",
+      "damage": 0,
+      "knockback": 0,
+      "width": 22,
+      "height": 32,
+      "color": 12106948,
+      "rarity": "raro",
+      "category": "consumo",
+      "rareOf": "caffe",
+      "consume": {
+        "powerup": "razzo",
+        "ms": 7000
+      }
+    },
+    "brownie": {
+      "id": "brownie",
+      "name": "Brownie spaziale",
+      "damage": 0,
+      "knockback": 0,
+      "width": 24,
+      "height": 18,
+      "color": 5978660,
+      "rarity": "normale",
+      "category": "consumo",
+      "consume": {
+        "powerup": "brownie",
+        "ms": 2500
+      }
+    },
+    "brownieNonna": {
+      "id": "brownieNonna",
+      "name": "Brownie della nonna",
+      "damage": 0,
+      "knockback": 0,
+      "width": 28,
+      "height": 20,
+      "color": 8014378,
+      "rarity": "raro",
+      "category": "consumo",
+      "rareOf": "brownie",
+      "consume": {
+        "powerup": "colosso",
+        "ms": 11000
+      }
+    },
+    "scopa": {
+      "id": "scopa",
+      "name": "Scopa",
+      "damage": 8,
+      "knockback": 340,
+      "width": 12,
+      "height": 58,
+      "color": 13148240,
+      "rarity": "normale",
+      "category": "impugnatura",
+      "melee": "scopa"
+    },
+    "ombrellone": {
+      "id": "ombrellone",
+      "name": "Ombrellone",
+      "damage": 9,
+      "knockback": 360,
+      "width": 16,
+      "height": 60,
+      "color": 15222844,
+      "rarity": "raro",
+      "category": "impugnatura",
+      "rareOf": "scopa",
+      "melee": "ombrellone"
+    },
+    "pesce": {
+      "id": "pesce",
+      "name": "Pesce surgelato",
+      "damage": 7,
+      "knockback": 320,
+      "width": 40,
+      "height": 16,
+      "color": 9418968,
+      "rarity": "normale",
+      "category": "impugnatura",
+      "melee": "pesce"
+    },
+    "anguilla": {
+      "id": "anguilla",
+      "name": "Anguilla elettrica",
+      "damage": 7,
+      "knockback": 320,
+      "width": 46,
+      "height": 14,
+      "color": 3968858,
+      "rarity": "raro",
+      "category": "impugnatura",
+      "rareOf": "pesce",
+      "melee": "anguilla"
+    },
+    "pistola": {
+      "id": "pistola",
+      "name": "Pistola ad acqua",
+      "damage": 6,
+      "knockback": 300,
+      "width": 30,
+      "height": 20,
+      "color": 3127272,
+      "rarity": "comune",
+      "category": "sparo",
+      "gun": "pistola"
+    },
+    "idrante": {
+      "id": "idrante",
+      "name": "Idrante",
+      "damage": 9,
+      "knockback": 360,
+      "width": 26,
+      "height": 32,
+      "color": 14169132,
+      "rarity": "raro",
+      "category": "sparo",
+      "rareOf": "pistola",
+      "gun": "idrante"
+    },
+    "sparabolle": {
+      "id": "sparabolle",
+      "name": "Sparabolle",
+      "damage": 5,
+      "knockback": 280,
+      "width": 30,
+      "height": 22,
+      "color": 15902424,
+      "rarity": "normale",
+      "category": "sparo",
+      "gun": "sparabolle"
+    },
+    "sparabolleTriplo": {
+      "id": "sparabolleTriplo",
+      "name": "Sparabolle triplo",
+      "damage": 6,
+      "knockback": 300,
+      "width": 34,
+      "height": 24,
+      "color": 10906864,
+      "rarity": "raro",
+      "category": "sparo",
+      "rareOf": "sparabolle",
+      "gun": "triplo"
+    },
+    "goccia": {
+      "id": "goccia",
+      "name": "Goccia",
+      "damage": 3,
+      "knockback": 260,
+      "width": 12,
+      "height": 12,
+      "color": 8377343,
+      "rarity": "mai",
+      "shot": "goccia"
+    },
+    "bolla": {
+      "id": "bolla",
+      "name": "Bolla",
+      "damage": 0,
+      "knockback": 0,
+      "width": 30,
+      "height": 30,
+      "color": 15902424,
+      "rarity": "mai",
+      "shot": "bolla"
+    },
+    "bollaRimbalzina": {
+      "id": "bollaRimbalzina",
+      "name": "Bolla rimbalzina",
+      "damage": 0,
+      "knockback": 0,
+      "width": 30,
+      "height": 30,
+      "color": 10906864,
+      "rarity": "mai",
+      "shot": "rimbalzina"
+    },
+    "cassa": {
+      "id": "cassa",
+      "name": "Cassa",
+      "damage": 13,
+      "knockback": 440,
+      "width": 40,
+      "height": 36,
+      "color": 11037490,
+      "rarity": "normale",
+      "category": "peso",
+      "throwSpec": {
+        "speedMult": 0.6,
+        "jumpMult": 0.72,
+        "throwSpeed": 720,
+        "throwLift": 300,
+        "throwUpSpeed": 900,
+        "gravityMult": 1.6
+      },
+      "crate": 1
+    },
+    "cassaOro": {
+      "id": "cassaOro",
+      "name": "Cassa d'oro",
+      "damage": 13,
+      "knockback": 440,
+      "width": 40,
+      "height": 36,
+      "color": 15909424,
+      "rarity": "raro",
+      "category": "peso",
+      "rareOf": "cassa",
+      "throwSpec": {
+        "speedMult": 0.6,
+        "jumpMult": 0.72,
+        "throwSpeed": 720,
+        "throwLift": 300,
+        "throwUpSpeed": 900,
+        "gravityMult": 1.6
+      },
+      "crate": 3
+    },
+    "lavatrice": {
+      "id": "lavatrice",
+      "name": "Lavatrice",
+      "damage": 16,
+      "knockback": 480,
+      "width": 42,
+      "height": 46,
+      "color": 15265007,
+      "rarity": "normale",
+      "category": "peso",
+      "throwSpec": {
+        "speedMult": 0.6,
+        "jumpMult": 0.72,
+        "throwSpeed": 720,
+        "throwLift": 300,
+        "throwUpSpeed": 900,
+        "gravityMult": 1.6
+      },
+      "washer": "normale"
+    },
+    "lavatriceMatta": {
+      "id": "lavatriceMatta",
+      "name": "Lavatrice impazzita",
+      "damage": 16,
+      "knockback": 480,
+      "width": 42,
+      "height": 46,
+      "color": 16740277,
+      "rarity": "raro",
+      "category": "peso",
+      "rareOf": "lavatrice",
+      "throwSpec": {
+        "speedMult": 0.6,
+        "jumpMult": 0.72,
+        "throwSpeed": 720,
+        "throwLift": 300,
+        "throwUpSpeed": 900,
+        "gravityMult": 1.6
+      },
+      "washer": "matta"
+    },
+    "monopattino": {
+      "id": "monopattino",
+      "name": "Monopattino",
+      "damage": 9,
+      "knockback": 400,
+      "width": 44,
+      "height": 30,
+      "color": 3066993,
+      "rarity": "normale",
+      "category": "cavalcatura",
+      "mount": "monopattino"
+    },
+    "monopattinoRazzo": {
+      "id": "monopattinoRazzo",
+      "name": "Monopattino a razzo",
+      "damage": 11,
+      "knockback": 460,
+      "width": 48,
+      "height": 30,
+      "color": 15158332,
+      "rarity": "raro",
+      "category": "cavalcatura",
+      "rareOf": "monopattino",
+      "mount": "razzo"
+    },
+    "carrello": {
+      "id": "carrello",
+      "name": "Carrello della spesa",
+      "damage": 10,
+      "knockback": 420,
+      "width": 50,
+      "height": 40,
+      "color": 9807270,
+      "rarity": "normale",
+      "category": "cavalcatura",
+      "mount": "carrello",
+      "seats": 1
+    },
+    "carrelloTurbo": {
+      "id": "carrelloTurbo",
+      "name": "Carrello da tre",
+      "damage": 10,
+      "knockback": 420,
+      "width": 62,
+      "height": 42,
+      "color": 15965202,
+      "rarity": "raro",
+      "category": "cavalcatura",
+      "rareOf": "carrello",
+      "mount": "carrello",
+      "seats": 3
     }
   },
   "itemRules": {
@@ -1316,12 +1740,36 @@
     }
   ],
   "droppableItems": [
+    "anguilla",
     "banana",
     "bassanese",
     "bong",
+    "brownie",
+    "brownieNonna",
+    "caffe",
+    "carrello",
+    "carrelloTurbo",
+    "cassa",
+    "cassaOro",
+    "ciabatta",
+    "ciabattaMamma",
     "fiore",
     "fungoTeemo",
+    "idrante",
+    "lavatrice",
+    "lavatriceMatta",
+    "moka",
+    "monopattino",
+    "monopattinoRazzo",
+    "ombrellone",
     "pacman",
+    "pesce",
+    "petardo",
+    "petardoGrappolo",
+    "pistola",
+    "scopa",
+    "sparabolle",
+    "sparabolleTriplo",
     "tetris"
   ],
   "supremeSpeeds": [
@@ -1395,6 +1843,97 @@
     "bounceVx": 260,
     "bounceVy": 420
   },
+  "gear": {
+    "ciabatta": {
+      "throwSpeed": 1250,
+      "throwLift": 120,
+      "throwUpSpeed": 1150,
+      "gravityMult": 0.55
+    },
+    "ciabattaMamma": {
+      "homingMs": 1800,
+      "speed": 900,
+      "turnDegPerSec": 300
+    },
+    "petardo": {
+      "fuseMs": 1600,
+      "radius": 95,
+      "damage": 15,
+      "knockback": 560,
+      "knockbackGrowth": 6,
+      "angleDeg": 55,
+      "clusterCount": 4,
+      "clusterSpeed": 520,
+      "clusterLift": 520,
+      "clusterFuseMs": 700,
+      "clusterStepMs": 120,
+      "clusterRadius": 60,
+      "clusterDamage": 7,
+      "clusterKnockback": 380
+    },
+    "caffe": {
+      "ms": 8000,
+      "speedMult": 1.3,
+      "attackSpeedMult": 1.25
+    },
+    "moka": {
+      "ms": 7000,
+      "speedMult": 1.2,
+      "thrust": 2600,
+      "maxRise": 520
+    },
+    "brownie": {
+      "delayMs": 2500,
+      "effectMs": 8000,
+      "nonnaMs": 11000,
+      "sleepMs": 2200
+    },
+    "size": {
+      "giant": 1.5,
+      "giantDamageMult": 1.35,
+      "giantKnockbackMult": 0.7,
+      "giantSpeedMult": 0.9,
+      "mini": 0.6,
+      "miniDamageMult": 0.75,
+      "miniKnockbackMult": 1.35,
+      "miniSpeedMult": 1.3,
+      "quakeRadius": 220,
+      "quakeDamage": 5,
+      "quakeVy": 620
+    }
+  },
+  "itemCategories": [
+    {
+      "id": "lancio",
+      "name": "Da lanciare",
+      "hint": "J o K per raccoglierlo, J o K per lanciarlo"
+    },
+    {
+      "id": "consumo",
+      "name": "Da consumare",
+      "hint": "fa effetto appena lo prendi"
+    },
+    {
+      "id": "impugnatura",
+      "name": "Da impugnare",
+      "hint": "J colpisce con l'oggetto, K lo lancia"
+    },
+    {
+      "id": "sparo",
+      "name": "Da sparo",
+      "hint": "J spara, K lo lancia"
+    },
+    {
+      "id": "peso",
+      "name": "Pesanti",
+      "hint": "sopra la testa: lenti, K lo scaglia"
+    },
+    {
+      "id": "cavalcatura",
+      "name": "Da cavalcare",
+      "hint": "ci sali sopra, J carica, K scendi"
+    }
+  ],
   "spore": {
     "ms": 4000,
     "speedMult": 0.6
@@ -1511,6 +2050,115 @@
           "x": 540,
           "width": 200,
           "y": 290
+        },
+        {
+          "x": 110,
+          "width": 130,
+          "y": 400,
+          "genre": "techno",
+          "beat": 0
+        },
+        {
+          "x": 1040,
+          "width": 130,
+          "y": 400,
+          "genre": "techno",
+          "beat": 0
+        },
+        {
+          "x": 360,
+          "width": 130,
+          "y": 250,
+          "genre": "techno",
+          "beat": 1
+        },
+        {
+          "x": 790,
+          "width": 130,
+          "y": 250,
+          "genre": "techno",
+          "beat": 1
+        }
+      ],
+      "genres": {
+        "startMs": 12000,
+        "order": [
+          "metal",
+          "reggae",
+          "techno"
+        ],
+        "everyMs": 18000,
+        "beatMs": 454.54545454545456
+      },
+      "pads": [
+        {
+          "x": 410,
+          "y": 420,
+          "width": 60,
+          "sound": "metal",
+          "cooldownMs": 14000,
+          "effect": {
+            "group": "genere",
+            "durationMs": 12000,
+            "genre": "metal"
+          }
+        },
+        {
+          "x": 810,
+          "y": 420,
+          "width": 60,
+          "sound": "reggae",
+          "cooldownMs": 14000,
+          "effect": {
+            "group": "genere",
+            "durationMs": 12000,
+            "genre": "reggae"
+          }
+        },
+        {
+          "x": 610,
+          "y": 290,
+          "width": 60,
+          "sound": "techno",
+          "cooldownMs": 14000,
+          "effect": {
+            "group": "genere",
+            "durationMs": 12000,
+            "genre": "techno"
+          }
+        }
+      ],
+      "hazards": [
+        {
+          "kind": "pirotecnica",
+          "genre": "metal",
+          "x": 262,
+          "y": 400,
+          "width": 44,
+          "height": 160,
+          "damage": 6,
+          "knockback": 520,
+          "knockbackGrowth": 3,
+          "angleDeg": 80,
+          "periodMs": 3200,
+          "activeMs": 700,
+          "warnMs": 1000
+        },
+        {
+          "kind": "pirotecnica",
+          "genre": "metal",
+          "x": 974,
+          "y": 400,
+          "width": 44,
+          "height": 160,
+          "damage": 6,
+          "knockback": 520,
+          "knockbackGrowth": 3,
+          "angleDeg": 80,
+          "periodMs": 3200,
+          "activeMs": 700,
+          "warnMs": 1000,
+          "offsetMs": 1600
         }
       ],
       "blastZone": {
@@ -1564,118 +2212,1913 @@
         "platform": 10528952
       },
       "art": {
-        "layers": [
-          {
-            "file": "sfondo-0.png",
-            "parallax": 0.15
-          },
-          {
-            "file": "sfondo-1.png",
-            "parallax": 0.45
-          },
-          {
-            "file": "sfondo-2.png",
-            "parallax": 0.75
-          }
-        ],
+        "layers": [],
         "preview": "anteprima.png"
       }
     },
     "isole": {
       "id": "isole",
-      "name": "Le Isole",
+      "name": "Il Diluvio",
+      "height": 9400,
+      "camera": {
+        "minZoom": 0.55
+      },
       "solids": [
         {
+          "x": 240,
+          "y": 9000,
+          "width": 800,
+          "height": 260,
+          "on": [
+            [
+              0,
+              13386
+            ]
+          ]
+        },
+        {
+          "x": 220,
+          "y": 8160,
+          "width": 370,
+          "height": 70,
+          "on": [
+            [
+              0,
+              45285
+            ]
+          ]
+        },
+        {
+          "x": 710,
+          "y": 6960,
+          "width": 390,
+          "height": 70,
+          "on": [
+            [
+              24457,
+              85374
+            ]
+          ]
+        },
+        {
           "x": 200,
-          "y": 560,
+          "y": 5760,
           "width": 340,
-          "height": 90
+          "height": 70,
+          "on": [
+            [
+              67330,
+              120965
+            ]
+          ]
         },
         {
           "x": 740,
-          "y": 560,
-          "width": 340,
-          "height": 90
+          "y": 4560,
+          "width": 390,
+          "height": 70,
+          "on": [
+            [
+              104821,
+              153298
+            ]
+          ]
+        },
+        {
+          "x": 160,
+          "y": 3360,
+          "width": 390,
+          "height": 70,
+          "on": [
+            [
+              138559,
+              183133
+            ]
+          ]
+        },
+        {
+          "x": 690,
+          "y": 2160,
+          "width": 400,
+          "height": 70,
+          "on": [
+            [
+              169485,
+              210972
+            ]
+          ]
+        },
+        {
+          "x": 290,
+          "y": 1080,
+          "width": 700,
+          "height": 120
         }
       ],
       "platforms": [
         {
-          "x": 540,
-          "width": 200,
-          "y": 450
+          "x": 240,
+          "y": 8880,
+          "width": 110,
+          "on": [
+            [
+              0,
+              18190
+            ]
+          ]
+        },
+        {
+          "x": 516,
+          "y": 8880,
+          "width": 180,
+          "on": [
+            [
+              0,
+              18190
+            ]
+          ]
+        },
+        {
+          "x": 992,
+          "y": 8880,
+          "width": 110,
+          "on": [
+            [
+              0,
+              18190
+            ]
+          ]
+        },
+        {
+          "x": 280,
+          "y": 8760,
+          "width": 150,
+          "on": [
+            [
+              0,
+              22905
+            ]
+          ]
+        },
+        {
+          "x": 860,
+          "y": 8760,
+          "width": 130,
+          "on": [
+            [
+              0,
+              22905
+            ]
+          ]
+        },
+        {
+          "x": 330,
+          "y": 8640,
+          "width": 170,
+          "on": [
+            [
+              0,
+              27534
+            ]
+          ]
+        },
+        {
+          "x": 1020,
+          "y": 8640,
+          "width": 190,
+          "on": [
+            [
+              0,
+              27534
+            ]
+          ]
+        },
+        {
+          "x": 420,
+          "y": 8520,
+          "width": 120,
+          "on": [
+            [
+              0,
+              32083
+            ]
+          ]
+        },
+        {
+          "x": 310,
+          "y": 8400,
+          "width": 110,
+          "on": [
+            [
+              0,
+              36555
+            ]
+          ]
+        },
+        {
+          "x": 656,
+          "y": 8400,
+          "width": 160,
+          "on": [
+            [
+              0,
+              36555
+            ]
+          ]
+        },
+        {
+          "x": 770,
+          "y": 8400,
+          "width": 130,
+          "on": [
+            [
+              0,
+              36555
+            ]
+          ]
+        },
+        {
+          "x": 290,
+          "y": 8280,
+          "width": 130,
+          "on": [
+            [
+              0,
+              40955
+            ]
+          ]
+        },
+        {
+          "x": 616,
+          "y": 8280,
+          "width": 130,
+          "on": [
+            [
+              0,
+              40955
+            ]
+          ]
+        },
+        {
+          "x": 932,
+          "y": 8280,
+          "width": 130,
+          "on": [
+            [
+              0,
+              40955
+            ]
+          ]
+        },
+        {
+          "x": 820,
+          "y": 8160,
+          "width": 160,
+          "on": [
+            [
+              0,
+              45285
+            ]
+          ]
+        },
+        {
+          "x": 240,
+          "y": 8040,
+          "width": 190,
+          "on": [
+            [
+              0,
+              49549
+            ]
+          ]
+        },
+        {
+          "x": 516,
+          "y": 8040,
+          "width": 120,
+          "on": [
+            [
+              0,
+              49549
+            ]
+          ]
+        },
+        {
+          "x": 842,
+          "y": 8040,
+          "width": 160,
+          "on": [
+            [
+              0,
+              49549
+            ]
+          ]
+        },
+        {
+          "x": 340,
+          "y": 7920,
+          "width": 180,
+          "on": [
+            [
+              0,
+              53750
+            ]
+          ]
+        },
+        {
+          "x": 930,
+          "y": 7920,
+          "width": 170,
+          "on": [
+            [
+              0,
+              53750
+            ]
+          ]
+        },
+        {
+          "x": 380,
+          "y": 7800,
+          "width": 160,
+          "on": [
+            [
+              0,
+              57890
+            ]
+          ]
+        },
+        {
+          "x": 690,
+          "y": 7800,
+          "width": 150,
+          "on": [
+            [
+              0,
+              57890
+            ]
+          ]
+        },
+        {
+          "x": 240,
+          "y": 7680,
+          "width": 150,
+          "on": [
+            [
+              0,
+              61973
+            ]
+          ]
+        },
+        {
+          "x": 476,
+          "y": 7680,
+          "width": 150,
+          "on": [
+            [
+              0,
+              61973
+            ]
+          ]
+        },
+        {
+          "x": 1032,
+          "y": 7680,
+          "width": 160,
+          "on": [
+            [
+              0,
+              61973
+            ]
+          ]
+        },
+        {
+          "x": 740,
+          "y": 7560,
+          "width": 120,
+          "on": [
+            [
+              0,
+              66000
+            ]
+          ]
+        },
+        {
+          "x": 390,
+          "y": 7440,
+          "width": 120,
+          "on": [
+            [
+              0,
+              69974
+            ]
+          ]
+        },
+        {
+          "x": 970,
+          "y": 7440,
+          "width": 120,
+          "on": [
+            [
+              0,
+              69974
+            ]
+          ]
+        },
+        {
+          "x": 80,
+          "y": 7320,
+          "width": 150,
+          "on": [
+            [
+              10131,
+              73896
+            ]
+          ]
+        },
+        {
+          "x": 566,
+          "y": 7320,
+          "width": 140,
+          "on": [
+            [
+              10131,
+              73896
+            ]
+          ]
+        },
+        {
+          "x": 1022,
+          "y": 7320,
+          "width": 140,
+          "on": [
+            [
+              10131,
+              73896
+            ]
+          ]
+        },
+        {
+          "x": 210,
+          "y": 7200,
+          "width": 190,
+          "on": [
+            [
+              14998,
+              77769
+            ]
+          ]
+        },
+        {
+          "x": 850,
+          "y": 7200,
+          "width": 190,
+          "on": [
+            [
+              14998,
+              77769
+            ]
+          ]
+        },
+        {
+          "x": 70,
+          "y": 7080,
+          "width": 140,
+          "on": [
+            [
+              19772,
+              81595
+            ]
+          ]
+        },
+        {
+          "x": 466,
+          "y": 7080,
+          "width": 140,
+          "on": [
+            [
+              19772,
+              81595
+            ]
+          ]
+        },
+        {
+          "x": 1012,
+          "y": 7080,
+          "width": 110,
+          "on": [
+            [
+              19772,
+              81595
+            ]
+          ]
         },
         {
           "x": 260,
-          "width": 180,
-          "y": 410
-        },
-        {
-          "x": 840,
-          "width": 180,
-          "y": 410
-        },
-        {
-          "x": 560,
+          "y": 6960,
           "width": 160,
-          "y": 300
-        }
-      ],
-      "blastZone": {
-        "left": -250,
-        "right": 1530,
-        "top": -350,
-        "bottom": 920
-      },
-      "spawns": [
-        {
-          "x": 370,
-          "y": 560
+          "on": [
+            [
+              24457,
+              85374
+            ]
+          ]
         },
         {
-          "x": 910,
-          "y": 560
-        },
-        {
-          "x": 270,
-          "y": 560
+          "x": 140,
+          "y": 6840,
+          "width": 160,
+          "on": [
+            [
+              29059,
+              89110
+            ]
+          ]
         },
         {
           "x": 1010,
-          "y": 560
+          "y": 6840,
+          "width": 130,
+          "on": [
+            [
+              29059,
+              89110
+            ]
+          ]
         },
         {
-          "x": 470,
-          "y": 560
+          "x": 230,
+          "y": 6720,
+          "width": 120,
+          "on": [
+            [
+              33582,
+              92803
+            ]
+          ]
         },
         {
-          "x": 810,
-          "y": 560
+          "x": 686,
+          "y": 6720,
+          "width": 110,
+          "on": [
+            [
+              33582,
+              92803
+            ]
+          ]
         },
         {
-          "x": 320,
-          "y": 560
+          "x": 912,
+          "y": 6720,
+          "width": 170,
+          "on": [
+            [
+              33582,
+              92803
+            ]
+          ]
         },
         {
-          "x": 960,
-          "y": 560
+          "x": 420,
+          "y": 6600,
+          "width": 120,
+          "on": [
+            [
+              38029,
+              96454
+            ]
+          ]
+        },
+        {
+          "x": 220,
+          "y": 6480,
+          "width": 180,
+          "on": [
+            [
+              42405,
+              100066
+            ]
+          ]
+        },
+        {
+          "x": 466,
+          "y": 6480,
+          "width": 110,
+          "on": [
+            [
+              42405,
+              100066
+            ]
+          ]
+        },
+        {
+          "x": 770,
+          "y": 6480,
+          "width": 140,
+          "on": [
+            [
+              42405,
+              100066
+            ]
+          ]
+        },
+        {
+          "x": 220,
+          "y": 6360,
+          "width": 150,
+          "on": [
+            [
+              46713,
+              103639
+            ]
+          ]
+        },
+        {
+          "x": 536,
+          "y": 6360,
+          "width": 160,
+          "on": [
+            [
+              46713,
+              103639
+            ]
+          ]
+        },
+        {
+          "x": 922,
+          "y": 6360,
+          "width": 140,
+          "on": [
+            [
+              46713,
+              103639
+            ]
+          ]
+        },
+        {
+          "x": 120,
+          "y": 6240,
+          "width": 130,
+          "on": [
+            [
+              50956,
+              107174
+            ]
+          ]
+        },
+        {
+          "x": 616,
+          "y": 6240,
+          "width": 170,
+          "on": [
+            [
+              50956,
+              107174
+            ]
+          ]
+        },
+        {
+          "x": 872,
+          "y": 6240,
+          "width": 170,
+          "on": [
+            [
+              50956,
+              107174
+            ]
+          ]
+        },
+        {
+          "x": 210,
+          "y": 6120,
+          "width": 130,
+          "on": [
+            [
+              55137,
+              110674
+            ]
+          ]
+        },
+        {
+          "x": 890,
+          "y": 6120,
+          "width": 180,
+          "on": [
+            [
+              55137,
+              110674
+            ]
+          ]
+        },
+        {
+          "x": 310,
+          "y": 6000,
+          "width": 170,
+          "on": [
+            [
+              59258,
+              114138
+            ]
+          ]
+        },
+        {
+          "x": 1000,
+          "y": 6000,
+          "width": 180,
+          "on": [
+            [
+              59258,
+              114138
+            ]
+          ]
+        },
+        {
+          "x": 460,
+          "y": 5880,
+          "width": 130,
+          "on": [
+            [
+              63321,
+              117568
+            ]
+          ]
+        },
+        {
+          "x": 1100,
+          "y": 5880,
+          "width": 110,
+          "on": [
+            [
+              63321,
+              117568
+            ]
+          ]
+        },
+        {
+          "x": 820,
+          "y": 5760,
+          "width": 160,
+          "on": [
+            [
+              67330,
+              120965
+            ]
+          ]
+        },
+        {
+          "x": 740,
+          "y": 5640,
+          "width": 120,
+          "on": [
+            [
+              71287,
+              124329
+            ]
+          ]
+        },
+        {
+          "x": 390,
+          "y": 5520,
+          "width": 120,
+          "on": [
+            [
+              75192,
+              127663
+            ]
+          ]
+        },
+        {
+          "x": 556,
+          "y": 5520,
+          "width": 160,
+          "on": [
+            [
+              75192,
+              127663
+            ]
+          ]
+        },
+        {
+          "x": 1032,
+          "y": 5520,
+          "width": 120,
+          "on": [
+            [
+              75192,
+              127663
+            ]
+          ]
+        },
+        {
+          "x": 180,
+          "y": 5400,
+          "width": 120,
+          "on": [
+            [
+              79050,
+              130966
+            ]
+          ]
+        },
+        {
+          "x": 646,
+          "y": 5400,
+          "width": 170,
+          "on": [
+            [
+              79050,
+              130966
+            ]
+          ]
+        },
+        {
+          "x": 1002,
+          "y": 5400,
+          "width": 170,
+          "on": [
+            [
+              79050,
+              130966
+            ]
+          ]
+        },
+        {
+          "x": 350,
+          "y": 5280,
+          "width": 130,
+          "on": [
+            [
+              82860,
+              134239
+            ]
+          ]
+        },
+        {
+          "x": 1060,
+          "y": 5280,
+          "width": 130,
+          "on": [
+            [
+              82860,
+              134239
+            ]
+          ]
+        },
+        {
+          "x": 150,
+          "y": 5160,
+          "width": 170,
+          "on": [
+            [
+              86624,
+              137484
+            ]
+          ]
+        },
+        {
+          "x": 616,
+          "y": 5160,
+          "width": 190,
+          "on": [
+            [
+              86624,
+              137484
+            ]
+          ]
+        },
+        {
+          "x": 942,
+          "y": 5160,
+          "width": 160,
+          "on": [
+            [
+              86624,
+              137484
+            ]
+          ]
+        },
+        {
+          "x": 300,
+          "y": 5040,
+          "width": 120,
+          "on": [
+            [
+              90345,
+              140700
+            ]
+          ]
+        },
+        {
+          "x": 616,
+          "y": 5040,
+          "width": 120,
+          "on": [
+            [
+              90345,
+              140700
+            ]
+          ]
+        },
+        {
+          "x": 1042,
+          "y": 5040,
+          "width": 110,
+          "on": [
+            [
+              90345,
+              140700
+            ]
+          ]
+        },
+        {
+          "x": 80,
+          "y": 4920,
+          "width": 150,
+          "on": [
+            [
+              94024,
+              143889
+            ]
+          ]
+        },
+        {
+          "x": 606,
+          "y": 4920,
+          "width": 120,
+          "on": [
+            [
+              94024,
+              143889
+            ]
+          ]
+        },
+        {
+          "x": 912,
+          "y": 4920,
+          "width": 160,
+          "on": [
+            [
+              94024,
+              143889
+            ]
+          ]
+        },
+        {
+          "x": 210,
+          "y": 4800,
+          "width": 180,
+          "on": [
+            [
+              97662,
+              147051
+            ]
+          ]
+        },
+        {
+          "x": 1030,
+          "y": 4800,
+          "width": 130,
+          "on": [
+            [
+              97662,
+              147051
+            ]
+          ]
+        },
+        {
+          "x": 420,
+          "y": 4680,
+          "width": 120,
+          "on": [
+            [
+              101261,
+              150187
+            ]
+          ]
+        },
+        {
+          "x": 260,
+          "y": 4560,
+          "width": 160,
+          "on": [
+            [
+              104821,
+              153298
+            ]
+          ]
+        },
+        {
+          "x": 170,
+          "y": 4440,
+          "width": 120,
+          "on": [
+            [
+              108345,
+              156384
+            ]
+          ]
+        },
+        {
+          "x": 680,
+          "y": 4440,
+          "width": 160,
+          "on": [
+            [
+              108345,
+              156384
+            ]
+          ]
+        },
+        {
+          "x": 70,
+          "y": 4320,
+          "width": 180,
+          "on": [
+            [
+              111832,
+              159446
+            ]
+          ]
+        },
+        {
+          "x": 506,
+          "y": 4320,
+          "width": 160,
+          "on": [
+            [
+              111832,
+              159446
+            ]
+          ]
+        },
+        {
+          "x": 1042,
+          "y": 4320,
+          "width": 150,
+          "on": [
+            [
+              111832,
+              159446
+            ]
+          ]
+        },
+        {
+          "x": 150,
+          "y": 4200,
+          "width": 140,
+          "on": [
+            [
+              115285,
+              162485
+            ]
+          ]
+        },
+        {
+          "x": 940,
+          "y": 4200,
+          "width": 180,
+          "on": [
+            [
+              115285,
+              162485
+            ]
+          ]
+        },
+        {
+          "x": 130,
+          "y": 4080,
+          "width": 160,
+          "on": [
+            [
+              118704,
+              165500
+            ]
+          ]
+        },
+        {
+          "x": 1010,
+          "y": 4080,
+          "width": 110,
+          "on": [
+            [
+              118704,
+              165500
+            ]
+          ]
+        },
+        {
+          "x": 190,
+          "y": 3960,
+          "width": 160,
+          "on": [
+            [
+              122090,
+              168492
+            ]
+          ]
+        },
+        {
+          "x": 950,
+          "y": 3960,
+          "width": 170,
+          "on": [
+            [
+              122090,
+              168492
+            ]
+          ]
+        },
+        {
+          "x": 310,
+          "y": 3840,
+          "width": 190,
+          "on": [
+            [
+              125444,
+              171463
+            ]
+          ]
+        },
+        {
+          "x": 740,
+          "y": 3840,
+          "width": 150,
+          "on": [
+            [
+              125444,
+              171463
+            ]
+          ]
+        },
+        {
+          "x": 740,
+          "y": 3720,
+          "width": 120,
+          "on": [
+            [
+              128767,
+              174412
+            ]
+          ]
+        },
+        {
+          "x": 340,
+          "y": 3600,
+          "width": 170,
+          "on": [
+            [
+              132060,
+              177339
+            ]
+          ]
+        },
+        {
+          "x": 586,
+          "y": 3600,
+          "width": 120,
+          "on": [
+            [
+              132060,
+              177339
+            ]
+          ]
+        },
+        {
+          "x": 872,
+          "y": 3600,
+          "width": 170,
+          "on": [
+            [
+              132060,
+              177339
+            ]
+          ]
+        },
+        {
+          "x": 210,
+          "y": 3480,
+          "width": 160,
+          "on": [
+            [
+              135324,
+              180246
+            ]
+          ]
+        },
+        {
+          "x": 760,
+          "y": 3480,
+          "width": 130,
+          "on": [
+            [
+              135324,
+              180246
+            ]
+          ]
+        },
+        {
+          "x": 820,
+          "y": 3360,
+          "width": 160,
+          "on": [
+            [
+              138559,
+              183133
+            ]
+          ]
+        },
+        {
+          "x": 150,
+          "y": 3240,
+          "width": 170,
+          "on": [
+            [
+              141766,
+              186000
+            ]
+          ]
+        },
+        {
+          "x": 496,
+          "y": 3240,
+          "width": 180,
+          "on": [
+            [
+              141766,
+              186000
+            ]
+          ]
+        },
+        {
+          "x": 1092,
+          "y": 3240,
+          "width": 110,
+          "on": [
+            [
+              141766,
+              186000
+            ]
+          ]
+        },
+        {
+          "x": 420,
+          "y": 3120,
+          "width": 150,
+          "on": [
+            [
+              144946,
+              188847
+            ]
+          ]
+        },
+        {
+          "x": 650,
+          "y": 3120,
+          "width": 120,
+          "on": [
+            [
+              144946,
+              188847
+            ]
+          ]
+        },
+        {
+          "x": 130,
+          "y": 3000,
+          "width": 140,
+          "on": [
+            [
+              148099,
+              191676
+            ]
+          ]
+        },
+        {
+          "x": 646,
+          "y": 3000,
+          "width": 160,
+          "on": [
+            [
+              148099,
+              191676
+            ]
+          ]
+        },
+        {
+          "x": 992,
+          "y": 3000,
+          "width": 180,
+          "on": [
+            [
+              148099,
+              191676
+            ]
+          ]
+        },
+        {
+          "x": 100,
+          "y": 2880,
+          "width": 140,
+          "on": [
+            [
+              151227,
+              194486
+            ]
+          ]
+        },
+        {
+          "x": 476,
+          "y": 2880,
+          "width": 180,
+          "on": [
+            [
+              151227,
+              194486
+            ]
+          ]
+        },
+        {
+          "x": 912,
+          "y": 2880,
+          "width": 180,
+          "on": [
+            [
+              151227,
+              194486
+            ]
+          ]
+        },
+        {
+          "x": 420,
+          "y": 2760,
+          "width": 120,
+          "on": [
+            [
+              154330,
+              197277
+            ]
+          ]
+        },
+        {
+          "x": 70,
+          "y": 2640,
+          "width": 170,
+          "on": [
+            [
+              157408,
+              200051
+            ]
+          ]
+        },
+        {
+          "x": 546,
+          "y": 2640,
+          "width": 110,
+          "on": [
+            [
+              157408,
+              200051
+            ]
+          ]
+        },
+        {
+          "x": 770,
+          "y": 2640,
+          "width": 140,
+          "on": [
+            [
+              157408,
+              200051
+            ]
+          ]
+        },
+        {
+          "x": 110,
+          "y": 2520,
+          "width": 190,
+          "on": [
+            [
+              160462,
+              202807
+            ]
+          ]
+        },
+        {
+          "x": 586,
+          "y": 2520,
+          "width": 160,
+          "on": [
+            [
+              160462,
+              202807
+            ]
+          ]
+        },
+        {
+          "x": 852,
+          "y": 2520,
+          "width": 180,
+          "on": [
+            [
+              160462,
+              202807
+            ]
+          ]
+        },
+        {
+          "x": 120,
+          "y": 2400,
+          "width": 180,
+          "on": [
+            [
+              163492,
+              205545
+            ]
+          ]
+        },
+        {
+          "x": 506,
+          "y": 2400,
+          "width": 110,
+          "on": [
+            [
+              163492,
+              205545
+            ]
+          ]
+        },
+        {
+          "x": 842,
+          "y": 2400,
+          "width": 130,
+          "on": [
+            [
+              163492,
+              205545
+            ]
+          ]
+        },
+        {
+          "x": 200,
+          "y": 2280,
+          "width": 150,
+          "on": [
+            [
+              166500,
+              208267
+            ]
+          ]
+        },
+        {
+          "x": 616,
+          "y": 2280,
+          "width": 180,
+          "on": [
+            [
+              166500,
+              208267
+            ]
+          ]
+        },
+        {
+          "x": 902,
+          "y": 2280,
+          "width": 120,
+          "on": [
+            [
+              166500,
+              208267
+            ]
+          ]
+        },
+        {
+          "x": 260,
+          "y": 2160,
+          "width": 160,
+          "on": [
+            [
+              169485,
+              210972
+            ]
+          ]
+        },
+        {
+          "x": 270,
+          "y": 2040,
+          "width": 150,
+          "on": [
+            [
+              172448,
+              213661
+            ]
+          ]
+        },
+        {
+          "x": 616,
+          "y": 2040,
+          "width": 120,
+          "on": [
+            [
+              172448,
+              213661
+            ]
+          ]
+        },
+        {
+          "x": 1012,
+          "y": 2040,
+          "width": 180,
+          "on": [
+            [
+              172448,
+              213661
+            ]
+          ]
+        },
+        {
+          "x": 70,
+          "y": 1920,
+          "width": 150,
+          "on": [
+            [
+              175390,
+              216333
+            ]
+          ]
+        },
+        {
+          "x": 690,
+          "y": 1920,
+          "width": 190,
+          "on": [
+            [
+              175390,
+              216333
+            ]
+          ]
+        },
+        {
+          "x": 740,
+          "y": 1800,
+          "width": 120,
+          "on": [
+            [
+              178311,
+              218990
+            ]
+          ]
+        },
+        {
+          "x": 350,
+          "y": 1680,
+          "width": 160,
+          "on": [
+            [
+              181211,
+              221631
+            ]
+          ]
+        },
+        {
+          "x": 780,
+          "y": 1680,
+          "width": 140,
+          "on": [
+            [
+              181211,
+              221631
+            ]
+          ]
+        },
+        {
+          "x": 240,
+          "y": 1560,
+          "width": 170,
+          "on": [
+            [
+              184091,
+              224258
+            ]
+          ]
+        },
+        {
+          "x": 546,
+          "y": 1560,
+          "width": 130,
+          "on": [
+            [
+              184091,
+              224258
+            ]
+          ]
+        },
+        {
+          "x": 1002,
+          "y": 1560,
+          "width": 190,
+          "on": [
+            [
+              184091,
+              224258
+            ]
+          ]
+        },
+        {
+          "x": 220,
+          "y": 1440,
+          "width": 180,
+          "on": [
+            [
+              186951,
+              226869
+            ]
+          ]
+        },
+        {
+          "x": 526,
+          "y": 1440,
+          "width": 160,
+          "on": [
+            [
+              186951,
+              226869
+            ]
+          ]
+        },
+        {
+          "x": 942,
+          "y": 1440,
+          "width": 180,
+          "on": [
+            [
+              186951,
+              226869
+            ]
+          ]
+        },
+        {
+          "x": 70,
+          "y": 1320,
+          "width": 170,
+          "on": [
+            [
+              189792,
+              229465
+            ]
+          ]
+        },
+        {
+          "x": 466,
+          "y": 1320,
+          "width": 130,
+          "on": [
+            [
+              189792,
+              229465
+            ]
+          ]
+        },
+        {
+          "x": 872,
+          "y": 1320,
+          "width": 180,
+          "on": [
+            [
+              189792,
+              229465
+            ]
+          ]
+        },
+        {
+          "x": 480,
+          "y": 1200,
+          "width": 140,
+          "on": [
+            [
+              192615,
+              1000000000000
+            ]
+          ]
+        },
+        {
+          "x": 800,
+          "y": 1200,
+          "width": 130,
+          "on": [
+            [
+              192615,
+              1000000000000
+            ]
+          ]
+        },
+        {
+          "x": 520,
+          "y": 960,
+          "width": 240
+        }
+      ],
+      "movers": [
+        {
+          "width": 150,
+          "path": [
+            {
+              "x": 70,
+              "y": 8520
+            },
+            {
+              "x": 1060,
+              "y": 8520
+            }
+          ],
+          "periodMs": 9000,
+          "pauseMs": 600,
+          "offsetMs": 5100,
+          "kind": "zattera"
+        },
+        {
+          "width": 150,
+          "path": [
+            {
+              "x": 70,
+              "y": 7560
+            },
+            {
+              "x": 1060,
+              "y": 7560
+            }
+          ],
+          "periodMs": 12000,
+          "pauseMs": 600,
+          "offsetMs": 700,
+          "kind": "zattera"
+        },
+        {
+          "width": 150,
+          "path": [
+            {
+              "x": 70,
+              "y": 6600
+            },
+            {
+              "x": 1060,
+              "y": 6600
+            }
+          ],
+          "periodMs": 10500,
+          "pauseMs": 600,
+          "offsetMs": 5300,
+          "kind": "zattera"
+        },
+        {
+          "width": 150,
+          "path": [
+            {
+              "x": 70,
+              "y": 5640
+            },
+            {
+              "x": 1060,
+              "y": 5640
+            }
+          ],
+          "periodMs": 9000,
+          "pauseMs": 600,
+          "offsetMs": 900,
+          "kind": "zattera"
+        },
+        {
+          "width": 150,
+          "path": [
+            {
+              "x": 70,
+              "y": 4680
+            },
+            {
+              "x": 1060,
+              "y": 4680
+            }
+          ],
+          "periodMs": 12000,
+          "pauseMs": 600,
+          "offsetMs": 5500,
+          "kind": "zattera"
+        },
+        {
+          "width": 150,
+          "path": [
+            {
+              "x": 70,
+              "y": 3720
+            },
+            {
+              "x": 1060,
+              "y": 3720
+            }
+          ],
+          "periodMs": 10500,
+          "pauseMs": 600,
+          "offsetMs": 1100,
+          "kind": "zattera"
+        },
+        {
+          "width": 150,
+          "path": [
+            {
+              "x": 70,
+              "y": 2760
+            },
+            {
+              "x": 1060,
+              "y": 2760
+            }
+          ],
+          "periodMs": 9000,
+          "pauseMs": 600,
+          "offsetMs": 5700,
+          "kind": "zattera"
+        },
+        {
+          "width": 150,
+          "path": [
+            {
+              "x": 70,
+              "y": 1800
+            },
+            {
+              "x": 1060,
+              "y": 1800
+            }
+          ],
+          "periodMs": 12000,
+          "pauseMs": 600,
+          "offsetMs": 1300,
+          "kind": "zattera"
+        }
+      ],
+      "rise": {
+        "startMs": 6000,
+        "pxPerS": 24,
+        "accelPxPerS2": 0.1,
+        "stepMs": 250,
+        "waterY": 9120,
+        "maxPx": 7900
+      },
+      "blastZone": {
+        "left": -250,
+        "right": 1530,
+        "top": 7420,
+        "bottom": 9160
+      },
+      "spawns": [
+        {
+          "x": 480,
+          "y": 9000
+        },
+        {
+          "x": 800,
+          "y": 9000
+        },
+        {
+          "x": 600,
+          "y": 9000
+        },
+        {
+          "x": 680,
+          "y": 9000
+        },
+        {
+          "x": 400,
+          "y": 9000
+        },
+        {
+          "x": 880,
+          "y": 9000
+        },
+        {
+          "x": 536,
+          "y": 9000
+        },
+        {
+          "x": 744,
+          "y": 9000
         }
       ],
       "respawn": {
         "x": 640,
-        "y": 170
+        "y": 8360
       },
       "colors": {
-        "sky": 1192007,
-        "solid": 3104058,
-        "solidEdge": 8175466,
-        "platform": 15260072
+        "sky": 2767434,
+        "solid": 7031339,
+        "solidEdge": 15260072,
+        "platform": 13149814
       },
       "music": {
-        "bpm": 108,
+        "bpm": 112,
         "chords": [
-          "C",
           "Am",
           "F",
+          "C",
           "G"
         ],
         "lead": "triangle"
@@ -9962,6 +12405,36 @@
           "boxX": 0,
           "boxY": -82
         },
+        "lightUp": {
+          "range": 54,
+          "height": 48,
+          "boxX": 0,
+          "boxY": -118
+        },
+        "lightDown": {
+          "range": 42,
+          "height": 24,
+          "boxX": -1,
+          "boxY": -24
+        },
+        "heavyDown": {
+          "range": 73,
+          "height": 30,
+          "boxX": 0,
+          "boxY": -38
+        },
+        "lightAir": {
+          "range": 62,
+          "height": 50,
+          "boxX": 0,
+          "boxY": -92
+        },
+        "heavyAir": {
+          "range": 50,
+          "height": 60,
+          "boxX": 0,
+          "boxY": -94
+        },
         "dashAttack": {
           "range": 75,
           "height": 44,
@@ -10064,9 +12537,9 @@
             "src": "idle"
           },
           "walk": {
-            "fps": 24,
+            "fps": 8,
             "loop": true,
-            "frames": 50,
+            "frames": 17,
             "src": "walk"
           },
           "jump": {
@@ -10082,36 +12555,36 @@
             "src": "fall"
           },
           "light": {
-            "fps": 24,
+            "fps": 12,
             "loop": false,
-            "hitFrame": 7,
-            "startFrame": 5,
-            "frames": 27,
+            "hitFrame": 3,
+            "startFrame": 2,
+            "frames": 13,
             "src": "light"
           },
           "heavy": {
-            "fps": 24,
+            "fps": 8,
             "loop": false,
-            "hitFrame": 17,
-            "frames": 53,
+            "hitFrame": 5,
+            "frames": 17,
             "src": "heavy"
           },
           "hit": {
-            "fps": 24,
+            "fps": 12,
             "loop": false,
-            "frames": 33,
+            "frames": 17,
             "src": "hit"
           },
           "doubleJump": {
-            "fps": 30,
+            "fps": 10,
             "loop": false,
-            "frames": 51,
+            "frames": 17,
             "src": "doubleJump"
           },
           "tumble": {
-            "fps": 24,
+            "fps": 12,
             "loop": false,
-            "frames": 33,
+            "frames": 17,
             "src": "hit"
           },
           "ledge": {
@@ -10133,49 +12606,50 @@
             "src": "land"
           },
           "lightUp": {
-            "fps": 24,
+            "fps": 15,
             "loop": false,
-            "hitFrame": 7,
-            "startFrame": 5,
-            "frames": 27,
-            "src": "light"
+            "hitFrame": 2,
+            "frames": 12,
+            "src": "lightUp"
           },
           "lightDown": {
-            "fps": 24,
+            "fps": 15,
             "loop": false,
-            "hitFrame": 7,
-            "startFrame": 5,
-            "frames": 27,
-            "src": "light"
+            "hitFrame": 5,
+            "frames": 14,
+            "src": "lightDown"
           },
           "lightAir": {
-            "fps": 24,
+            "fps": 12,
             "loop": false,
-            "hitFrame": 7,
-            "startFrame": 5,
-            "frames": 27,
-            "src": "light"
+            "hitFrame": 10,
+            "startFrame": 7,
+            "activeEnd": 15,
+            "frames": 21,
+            "src": "lightAir"
           },
           "heavyUp": {
-            "fps": 24,
+            "fps": 8,
             "loop": false,
-            "hitFrame": 14,
-            "frames": 51,
+            "hitFrame": 4,
+            "frames": 17,
             "src": "heavyUp"
           },
           "heavyDown": {
-            "fps": 24,
+            "fps": 15,
             "loop": false,
-            "hitFrame": 17,
-            "frames": 53,
-            "src": "heavy"
+            "hitFrame": 7,
+            "frames": 18,
+            "src": "heavyDown"
           },
           "heavyAir": {
-            "fps": 24,
+            "fps": 12,
             "loop": false,
-            "hitFrame": 17,
-            "frames": 53,
-            "src": "heavy"
+            "hitFrame": 11,
+            "startFrame": 1,
+            "activeEnd": 12,
+            "frames": 17,
+            "src": "heavyAir"
           },
           "recovery": {
             "fps": 24,
@@ -10185,85 +12659,85 @@
             "src": "recovery"
           },
           "taunt": {
-            "fps": 18,
+            "fps": 6,
             "loop": false,
-            "frames": 51,
+            "frames": 17,
             "src": "taunt"
           },
           "shield": {
-            "fps": 12,
+            "fps": 4,
             "loop": true,
-            "frames": 63,
+            "frames": 21,
             "src": "shield"
           },
           "grab": {
-            "fps": 24,
+            "fps": 12,
             "loop": false,
-            "hitFrame": 7,
-            "startFrame": 5,
-            "frames": 27,
+            "hitFrame": 3,
+            "startFrame": 2,
+            "frames": 13,
             "src": "light"
           },
           "throw": {
-            "fps": 24,
+            "fps": 12,
             "loop": false,
-            "hitFrame": 7,
-            "startFrame": 5,
-            "frames": 27,
+            "hitFrame": 3,
+            "startFrame": 2,
+            "frames": 13,
             "src": "light"
           },
           "grabbed": {
-            "fps": 24,
+            "fps": 12,
             "loop": false,
-            "frames": 33,
+            "frames": 17,
             "src": "hit"
           },
           "special": {
-            "fps": 24,
+            "fps": 8,
             "loop": false,
-            "hitFrame": 17,
-            "frames": 53,
+            "hitFrame": 5,
+            "frames": 17,
             "src": "heavy"
           },
           "dash": {
-            "fps": 24,
+            "fps": 12,
             "loop": true,
-            "frames": 50,
-            "src": "walk"
+            "frames": 14,
+            "src": "dash"
           },
           "supreme": {
-            "fps": 24,
+            "fps": 8,
             "loop": false,
-            "hitFrame": 17,
-            "frames": 53,
+            "hitFrame": 5,
+            "frames": 17,
             "src": "heavy"
           },
           "specialNeutral": {
-            "fps": 24,
+            "fps": 8,
             "loop": false,
-            "hitFrame": 8,
-            "frames": 51,
+            "hitFrame": 2,
+            "frames": 17,
             "src": "specialNeutral"
           },
           "specialSide": {
-            "fps": 24,
+            "fps": 8,
             "loop": false,
-            "hitFrame": 10,
-            "frames": 51,
+            "hitFrame": 3,
+            "frames": 17,
             "src": "specialSide"
           },
           "specialDown": {
-            "fps": 24,
+            "fps": 8,
             "loop": false,
-            "hitFrame": 17,
-            "frames": 53,
+            "hitFrame": 5,
+            "frames": 17,
             "src": "heavy"
           },
           "dashAttack": {
-            "fps": 24,
+            "fps": 8,
             "loop": false,
-            "hitFrame": 17,
-            "frames": 53,
+            "hitFrame": 5,
+            "frames": 17,
             "src": "heavy"
           },
           "jumpSquat": {
@@ -10273,17 +12747,1816 @@
             "src": "jumpSquat"
           },
           "anchorHang": {
-            "fps": 18,
+            "fps": 6,
             "loop": true,
-            "frames": 58,
+            "frames": 20,
             "src": "anchorHang"
           },
           "anchorClimb": {
-            "fps": 24,
+            "fps": 12,
             "loop": true,
-            "frames": 41,
+            "frames": 21,
             "src": "anchorClimb"
+          },
+          "gripIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 8,
+            "src": "gripIdle"
+          },
+          "gripWalk": {
+            "fps": 12,
+            "loop": true,
+            "frames": 13,
+            "src": "gripWalk"
+          },
+          "gripLight": {
+            "fps": 12,
+            "loop": false,
+            "hitFrame": 4,
+            "frames": 20,
+            "src": "gripLight"
+          },
+          "gripHeavy": {
+            "fps": 12,
+            "loop": false,
+            "hitFrame": 12,
+            "frames": 21,
+            "src": "gripHeavy"
+          },
+          "aimIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 14,
+            "src": "aimIdle"
+          },
+          "aimWalk": {
+            "fps": 8,
+            "loop": true,
+            "frames": 17,
+            "src": "walk"
+          },
+          "aimShoot": {
+            "fps": 30,
+            "loop": false,
+            "hitFrame": 7,
+            "frames": 19,
+            "src": "aimShoot"
+          },
+          "aimCharge": {
+            "fps": 12,
+            "loop": false,
+            "hitFrame": 20,
+            "frames": 21,
+            "src": "aimCharge"
+          },
+          "itemHold": {
+            "fps": 6,
+            "loop": true,
+            "frames": 21,
+            "src": "itemHold"
+          },
+          "itemThrow": {
+            "fps": 12,
+            "loop": false,
+            "hitFrame": 9,
+            "frames": 16,
+            "src": "itemThrow"
+          },
+          "itemThrowUp": {
+            "fps": 12,
+            "loop": false,
+            "hitFrame": 9,
+            "frames": 16,
+            "src": "itemThrowUp"
+          },
+          "itemEat": {
+            "fps": 8,
+            "loop": false,
+            "frames": 21,
+            "src": "itemEat"
+          },
+          "carryIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 10,
+            "src": "carryIdle"
+          },
+          "carryWalk": {
+            "fps": 6,
+            "loop": true,
+            "frames": 17,
+            "src": "carryWalk"
+          },
+          "carryToss": {
+            "fps": 12,
+            "loop": false,
+            "hitFrame": 8,
+            "frames": 17,
+            "src": "carryToss"
+          },
+          "rideIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 14,
+            "src": "rideIdle"
+          },
+          "rideDash": {
+            "fps": 8,
+            "loop": true,
+            "frames": 17,
+            "src": "rideDash"
+          },
+          "rideHop": {
+            "fps": 12,
+            "loop": false,
+            "frames": 18,
+            "src": "rideHop"
           }
+        },
+        "hands": {
+          "aimCharge": [
+            [
+              68.2,
+              -140.8,
+              -1,
+              42
+            ],
+            [
+              70.6,
+              -142.7,
+              -3,
+              42
+            ],
+            [
+              70.7,
+              -143.6,
+              -3,
+              42
+            ],
+            [
+              70.5,
+              -144.7,
+              -3,
+              42
+            ],
+            [
+              70.2,
+              -145.7,
+              -4,
+              42
+            ],
+            [
+              70,
+              -146.5,
+              -4,
+              42
+            ],
+            [
+              69.8,
+              -147,
+              -4,
+              42
+            ],
+            [
+              69.9,
+              -147,
+              -4,
+              42
+            ],
+            [
+              69.9,
+              -147,
+              -4,
+              42
+            ],
+            [
+              69.9,
+              -147,
+              -4,
+              42
+            ],
+            [
+              69.9,
+              -147,
+              -4,
+              42
+            ],
+            [
+              69.9,
+              -147,
+              -4,
+              42
+            ],
+            [
+              69.9,
+              -147,
+              -4,
+              42
+            ],
+            [
+              69.9,
+              -147,
+              -4,
+              42
+            ],
+            [
+              69.9,
+              -147,
+              -4,
+              42
+            ],
+            [
+              69.8,
+              -147,
+              -5,
+              42
+            ],
+            [
+              69.9,
+              -146.8,
+              -5,
+              42
+            ],
+            [
+              71.9,
+              -144.7,
+              -3,
+              42
+            ],
+            [
+              75.8,
+              -140.2,
+              0,
+              42
+            ],
+            [
+              79.7,
+              -136.2,
+              3,
+              37
+            ],
+            [
+              78.6,
+              -135.3,
+              3,
+              42
+            ]
+          ],
+          "aimIdle": [
+            [
+              67.6,
+              -153.6,
+              0,
+              42
+            ],
+            [
+              67.6,
+              -153.6,
+              0,
+              42
+            ],
+            [
+              67.6,
+              -153.6,
+              0,
+              42
+            ],
+            [
+              67.6,
+              -153.6,
+              0,
+              42
+            ],
+            [
+              67.6,
+              -153.6,
+              0,
+              42
+            ],
+            [
+              67.6,
+              -153.6,
+              0,
+              42
+            ],
+            [
+              67.6,
+              -153.6,
+              0,
+              42
+            ],
+            [
+              67.6,
+              -153.6,
+              0,
+              42
+            ],
+            [
+              67.6,
+              -153.6,
+              0,
+              42
+            ],
+            [
+              67.6,
+              -153.6,
+              0,
+              42
+            ],
+            [
+              67.6,
+              -153.6,
+              0,
+              42
+            ],
+            [
+              67.6,
+              -153.6,
+              0,
+              42
+            ],
+            [
+              67.6,
+              -153.6,
+              0,
+              42
+            ],
+            [
+              67.6,
+              -153.6,
+              0,
+              42
+            ]
+          ],
+          "aimShoot": [
+            [
+              71.8,
+              -153.4,
+              1,
+              42
+            ],
+            [
+              71.8,
+              -153.4,
+              1,
+              42
+            ],
+            [
+              71.7,
+              -153.3,
+              1,
+              42
+            ],
+            [
+              71.7,
+              -153.3,
+              1,
+              42
+            ],
+            [
+              71.7,
+              -153.3,
+              1,
+              42
+            ],
+            [
+              71.7,
+              -153.4,
+              1,
+              40
+            ],
+            [
+              71.6,
+              -153.5,
+              1,
+              40
+            ],
+            [
+              70.9,
+              -154.2,
+              1,
+              42
+            ],
+            [
+              72,
+              -153.3,
+              1,
+              42
+            ],
+            [
+              71.7,
+              -153.2,
+              1,
+              42
+            ],
+            [
+              71.6,
+              -153.3,
+              1,
+              42
+            ],
+            [
+              71.6,
+              -153.3,
+              1,
+              42
+            ],
+            [
+              71.6,
+              -153.3,
+              1,
+              42
+            ],
+            [
+              71.6,
+              -153.3,
+              1,
+              42
+            ],
+            [
+              71.6,
+              -153.3,
+              1,
+              42
+            ],
+            [
+              71.6,
+              -153.3,
+              1,
+              42
+            ],
+            [
+              71.6,
+              -153.3,
+              1,
+              42
+            ],
+            [
+              71.6,
+              -153.3,
+              1,
+              42
+            ],
+            [
+              71.6,
+              -153.3,
+              1,
+              42
+            ]
+          ],
+          "carryIdle": [
+            [
+              23.3,
+              -226.8,
+              0,
+              151
+            ],
+            [
+              23.3,
+              -226.6,
+              0,
+              151
+            ],
+            [
+              23.3,
+              -226.2,
+              0,
+              151
+            ],
+            [
+              23.3,
+              -225.6,
+              0,
+              151
+            ],
+            [
+              23.5,
+              -225.1,
+              0,
+              150
+            ],
+            [
+              23.6,
+              -224.6,
+              0,
+              150
+            ],
+            [
+              23.9,
+              -224.1,
+              0,
+              151
+            ],
+            [
+              24.2,
+              -223.6,
+              0,
+              151
+            ],
+            [
+              24.6,
+              -223.3,
+              0,
+              150
+            ],
+            [
+              25,
+              -223,
+              0,
+              151
+            ]
+          ],
+          "carryToss": [
+            [
+              42.5,
+              -204.4,
+              0,
+              147
+            ],
+            [
+              68,
+              -206.5,
+              0,
+              143
+            ],
+            [
+              93,
+              -205.3,
+              0,
+              141
+            ],
+            [
+              115.7,
+              -197.3,
+              0,
+              140
+            ],
+            [
+              134.2,
+              -181.5,
+              0,
+              142
+            ],
+            [
+              147.4,
+              -157.4,
+              0,
+              139
+            ],
+            [
+              154.9,
+              -127.2,
+              0,
+              138
+            ],
+            [
+              155.8,
+              -96.9,
+              0,
+              138
+            ],
+            [
+              152.4,
+              -82.5,
+              0,
+              138
+            ],
+            [
+              149.8,
+              -93.7,
+              0,
+              144
+            ],
+            [
+              138.1,
+              -137.5,
+              0,
+              143
+            ],
+            [
+              109.6,
+              -184.3,
+              0,
+              146
+            ],
+            [
+              73.4,
+              -216.1,
+              0,
+              151
+            ],
+            [
+              45,
+              -229.2,
+              0,
+              153
+            ],
+            [
+              28.3,
+              -232.3,
+              0,
+              152
+            ],
+            [
+              23.3,
+              -230.9,
+              0,
+              152
+            ],
+            [
+              23.1,
+              -228.7,
+              0,
+              151
+            ]
+          ],
+          "carryWalk": [
+            [
+              23.3,
+              -225.6,
+              0,
+              151
+            ],
+            [
+              24.2,
+              -223.6,
+              0,
+              151
+            ],
+            [
+              26.1,
+              -223.6,
+              0,
+              150
+            ],
+            [
+              28,
+              -225.8,
+              0,
+              150
+            ],
+            [
+              29.7,
+              -226.9,
+              0,
+              151
+            ],
+            [
+              30.1,
+              -225.9,
+              0,
+              151
+            ],
+            [
+              30.4,
+              -224.8,
+              0,
+              151
+            ],
+            [
+              30.1,
+              -224.7,
+              0,
+              151
+            ],
+            [
+              29.6,
+              -224.5,
+              0,
+              151
+            ],
+            [
+              28.6,
+              -223.8,
+              0,
+              151
+            ],
+            [
+              27.5,
+              -222.9,
+              0,
+              151
+            ],
+            [
+              26.5,
+              -222.9,
+              0,
+              151
+            ],
+            [
+              26.3,
+              -222.9,
+              0,
+              150
+            ],
+            [
+              26.3,
+              -222.9,
+              0,
+              151
+            ],
+            [
+              26.3,
+              -222.9,
+              0,
+              151
+            ],
+            [
+              26.3,
+              -222.9,
+              0,
+              151
+            ],
+            [
+              26.3,
+              -222.9,
+              0,
+              151
+            ]
+          ],
+          "gripHeavy": [
+            [
+              -0.3,
+              -204.7,
+              180,
+              144
+            ],
+            [
+              -0.3,
+              -204.7,
+              179,
+              144
+            ],
+            [
+              -0.3,
+              -204.7,
+              180,
+              144
+            ],
+            [
+              0.4,
+              -204.7,
+              180,
+              144
+            ],
+            [
+              3.2,
+              -203.8,
+              -178,
+              144
+            ],
+            [
+              13.2,
+              -200.1,
+              -169,
+              145
+            ],
+            [
+              30.1,
+              -190.6,
+              -151,
+              138
+            ],
+            [
+              48.6,
+              -171.5,
+              -126,
+              121
+            ],
+            [
+              60.3,
+              -132,
+              -95,
+              133
+            ],
+            [
+              52.9,
+              -101,
+              -55,
+              158
+            ],
+            [
+              24.3,
+              -72.5,
+              -13,
+              157
+            ],
+            [
+              -7.7,
+              -64.6,
+              20,
+              158
+            ],
+            [
+              -9.5,
+              -65.8,
+              18,
+              157
+            ],
+            [
+              -6.2,
+              -68.2,
+              10,
+              157
+            ],
+            [
+              -1.7,
+              -72.1,
+              0,
+              156
+            ],
+            [
+              2.6,
+              -77.4,
+              -12,
+              157
+            ],
+            [
+              5.9,
+              -81.8,
+              -23,
+              159
+            ],
+            [
+              8.5,
+              -85.1,
+              -30,
+              160
+            ],
+            [
+              9.5,
+              -86.4,
+              -33,
+              160
+            ],
+            [
+              9.7,
+              -86.4,
+              -33,
+              160
+            ],
+            [
+              9.8,
+              -86.4,
+              -33,
+              160
+            ]
+          ],
+          "gripIdle": [
+            [
+              9.8,
+              -86.3,
+              -33,
+              160
+            ],
+            [
+              9.8,
+              -86.2,
+              -32,
+              160
+            ],
+            [
+              9.3,
+              -85.4,
+              -32,
+              161
+            ],
+            [
+              8.6,
+              -84.2,
+              -31,
+              161
+            ],
+            [
+              7.9,
+              -82.5,
+              -29,
+              161
+            ],
+            [
+              6.8,
+              -80.6,
+              -26,
+              160
+            ],
+            [
+              5.3,
+              -78.8,
+              -23,
+              160
+            ],
+            [
+              3.5,
+              -77,
+              -19,
+              158
+            ]
+          ],
+          "gripLight": [
+            [
+              21.4,
+              -96.9,
+              -28,
+              148
+            ],
+            [
+              33.2,
+              -104.8,
+              -23,
+              150
+            ],
+            [
+              60.6,
+              -122.5,
+              -8,
+              143
+            ],
+            [
+              70.6,
+              -131.9,
+              -1,
+              149
+            ],
+            [
+              71.7,
+              -132.3,
+              -1,
+              147
+            ],
+            [
+              71.7,
+              -132.1,
+              -1,
+              147
+            ],
+            [
+              71.7,
+              -132,
+              -1,
+              147
+            ],
+            [
+              71.7,
+              -132,
+              -1,
+              147
+            ],
+            [
+              71.7,
+              -132,
+              -1,
+              147
+            ],
+            [
+              71.7,
+              -132,
+              -1,
+              147
+            ],
+            [
+              71.7,
+              -132,
+              -1,
+              147
+            ],
+            [
+              71.7,
+              -132,
+              -1,
+              147
+            ],
+            [
+              71.3,
+              -131.2,
+              -1,
+              147
+            ],
+            [
+              98.5,
+              -123.8,
+              -4,
+              117
+            ],
+            [
+              48.3,
+              -100,
+              -10,
+              155
+            ],
+            [
+              25.2,
+              -79.2,
+              -9,
+              155
+            ],
+            [
+              8.2,
+              -71.7,
+              -1,
+              158
+            ],
+            [
+              5.8,
+              -70.9,
+              0,
+              159
+            ],
+            [
+              5.8,
+              -70.9,
+              0,
+              159
+            ],
+            [
+              8.5,
+              -72.3,
+              -2,
+              159
+            ]
+          ],
+          "gripWalk": [
+            [
+              3.5,
+              -77,
+              -19,
+              158
+            ],
+            [
+              -1.8,
+              -74.6,
+              -9,
+              155
+            ],
+            [
+              -9.4,
+              -74.7,
+              3,
+              153
+            ],
+            [
+              -16.7,
+              -76.9,
+              14,
+              152
+            ],
+            [
+              -22.9,
+              -79.8,
+              22,
+              151
+            ],
+            [
+              -27.2,
+              -81.9,
+              28,
+              150
+            ],
+            [
+              -28.8,
+              -82.6,
+              30,
+              150
+            ],
+            [
+              -29.3,
+              -82,
+              30,
+              150
+            ],
+            [
+              -29.8,
+              -80.6,
+              29,
+              150
+            ],
+            [
+              -31,
+              -78.8,
+              26,
+              150
+            ],
+            [
+              -31,
+              -75.9,
+              21,
+              151
+            ],
+            [
+              -29.6,
+              -72.9,
+              16,
+              150
+            ],
+            [
+              -28.6,
+              -71.2,
+              12,
+              150
+            ]
+          ],
+          "itemEat": [
+            [
+              0,
+              -77.7,
+              0,
+              20
+            ],
+            [
+              6,
+              -83.3,
+              0,
+              19
+            ],
+            [
+              41.8,
+              -116.4,
+              0,
+              93
+            ],
+            [
+              35.1,
+              -119.7,
+              0,
+              92
+            ],
+            [
+              30,
+              -116.8,
+              0,
+              90
+            ],
+            [
+              31,
+              -118.7,
+              0,
+              93
+            ],
+            [
+              31.2,
+              -118.5,
+              0,
+              93
+            ],
+            [
+              30.2,
+              -116,
+              0,
+              91
+            ],
+            [
+              29.6,
+              -114.7,
+              0,
+              91
+            ],
+            [
+              29.7,
+              -114.9,
+              0,
+              92
+            ],
+            [
+              30,
+              -114,
+              0,
+              91
+            ],
+            [
+              22.7,
+              -104.3,
+              0,
+              92
+            ],
+            [
+              18.5,
+              -98.1,
+              0,
+              91
+            ],
+            [
+              23.4,
+              -108.4,
+              0,
+              80
+            ],
+            [
+              13.6,
+              -110.7,
+              0,
+              19
+            ],
+            [
+              13.7,
+              -115.5,
+              0,
+              19
+            ],
+            [
+              13.6,
+              -115.8,
+              0,
+              19
+            ],
+            [
+              13.5,
+              -116,
+              0,
+              19
+            ],
+            [
+              13.5,
+              -116,
+              0,
+              19
+            ],
+            [
+              13.5,
+              -116,
+              0,
+              19
+            ],
+            [
+              13.5,
+              -115.9,
+              0,
+              19
+            ]
+          ],
+          "itemHold": [
+            [
+              -10.1,
+              -69.3,
+              0,
+              19
+            ],
+            [
+              -10.1,
+              -69.3,
+              0,
+              19
+            ],
+            [
+              -10.1,
+              -69.3,
+              0,
+              19
+            ],
+            [
+              -10.1,
+              -69.3,
+              0,
+              19
+            ],
+            [
+              -10.1,
+              -69.3,
+              0,
+              19
+            ],
+            [
+              -10.1,
+              -69.3,
+              0,
+              19
+            ],
+            [
+              -10.1,
+              -69.3,
+              0,
+              19
+            ],
+            [
+              -10.1,
+              -69.3,
+              0,
+              19
+            ],
+            [
+              -10.1,
+              -69.4,
+              0,
+              20
+            ],
+            [
+              -10,
+              -69.8,
+              0,
+              20
+            ],
+            [
+              -9.9,
+              -70.1,
+              0,
+              19
+            ],
+            [
+              -9.8,
+              -70.3,
+              0,
+              20
+            ],
+            [
+              -9.7,
+              -70.5,
+              0,
+              19
+            ],
+            [
+              -9.8,
+              -70.4,
+              0,
+              20
+            ],
+            [
+              -9.8,
+              -70.2,
+              0,
+              19
+            ],
+            [
+              -9.9,
+              -69.9,
+              0,
+              20
+            ],
+            [
+              -9.9,
+              -69.8,
+              0,
+              19
+            ],
+            [
+              -9.9,
+              -69.8,
+              0,
+              20
+            ],
+            [
+              -9.9,
+              -69.8,
+              0,
+              20
+            ],
+            [
+              -9.9,
+              -69.8,
+              0,
+              20
+            ],
+            [
+              -9.9,
+              -69.8,
+              0,
+              20
+            ]
+          ],
+          "itemThrow": [
+            [
+              -3.2,
+              -94.9,
+              0,
+              20
+            ],
+            [
+              -3.4,
+              -116.9,
+              0,
+              21
+            ],
+            [
+              -9.6,
+              -159.8,
+              0,
+              24
+            ],
+            [
+              -14.3,
+              -186.4,
+              0,
+              21
+            ],
+            [
+              -16,
+              -211,
+              0,
+              20
+            ],
+            [
+              -15.5,
+              -214.9,
+              0,
+              20
+            ],
+            [
+              -15.4,
+              -214.7,
+              0,
+              20
+            ],
+            [
+              -1.3,
+              -229.4,
+              0,
+              17
+            ],
+            null,
+            null,
+            null,
+            null,
+            null,
+            [
+              -4.4,
+              -109.9,
+              0,
+              20
+            ],
+            [
+              -5.5,
+              -83,
+              0,
+              20
+            ],
+            [
+              -7.1,
+              -72.9,
+              0,
+              20
+            ]
+          ],
+          "itemThrowUp": [
+            [
+              -3.2,
+              -94.9,
+              0,
+              20
+            ],
+            [
+              -3.4,
+              -116.9,
+              0,
+              21
+            ],
+            [
+              -9.6,
+              -159.8,
+              0,
+              24
+            ],
+            [
+              -14.3,
+              -186.4,
+              0,
+              21
+            ],
+            [
+              -16,
+              -211,
+              0,
+              20
+            ],
+            [
+              -15.5,
+              -214.9,
+              0,
+              20
+            ],
+            [
+              -15.4,
+              -214.7,
+              0,
+              20
+            ],
+            [
+              -1.3,
+              -229.4,
+              0,
+              17
+            ],
+            null,
+            null,
+            null,
+            null,
+            null,
+            [
+              -4.4,
+              -109.9,
+              0,
+              20
+            ],
+            [
+              -5.5,
+              -83,
+              0,
+              20
+            ],
+            [
+              -7.1,
+              -72.9,
+              0,
+              20
+            ]
+          ],
+          "rideDash": [
+            [
+              7.3,
+              -4.1,
+              0,
+              240
+            ],
+            [
+              7.3,
+              -4.1,
+              0,
+              240
+            ],
+            [
+              7.3,
+              -4.1,
+              0,
+              240
+            ],
+            [
+              6.8,
+              -4.1,
+              0,
+              240
+            ],
+            [
+              -8.6,
+              -2.6,
+              1,
+              240
+            ],
+            [
+              -10.7,
+              -1.7,
+              0,
+              240
+            ],
+            [
+              13.3,
+              -1.9,
+              1,
+              209
+            ],
+            [
+              9.6,
+              -1.7,
+              1,
+              218
+            ],
+            [
+              0.5,
+              -1.5,
+              0,
+              234
+            ],
+            [
+              -3.9,
+              -1.4,
+              0,
+              240
+            ],
+            [
+              -5.4,
+              -1.4,
+              0,
+              240
+            ],
+            [
+              -5.6,
+              -1.4,
+              0,
+              240
+            ],
+            [
+              -6.2,
+              -2,
+              0,
+              240
+            ],
+            [
+              5.6,
+              -3.6,
+              0,
+              240
+            ],
+            [
+              7.3,
+              -4.2,
+              0,
+              240
+            ],
+            [
+              7.4,
+              -4.1,
+              0,
+              240
+            ],
+            [
+              7.3,
+              -4.1,
+              0,
+              240
+            ]
+          ],
+          "rideHop": [
+            [
+              7,
+              -2.1,
+              0,
+              240
+            ],
+            [
+              7,
+              -2.1,
+              0,
+              240
+            ],
+            [
+              -11.4,
+              1.5,
+              0,
+              0
+            ],
+            [
+              -3.8,
+              1.1,
+              0,
+              0
+            ],
+            [
+              2,
+              1.3,
+              0,
+              0
+            ],
+            [
+              4.5,
+              1.3,
+              0,
+              0
+            ],
+            [
+              4.3,
+              1.4,
+              0,
+              0
+            ],
+            [
+              5.8,
+              1.2,
+              0,
+              0
+            ],
+            [
+              6.8,
+              1.5,
+              0,
+              0
+            ],
+            [
+              6.4,
+              0.9,
+              0,
+              0
+            ],
+            [
+              5.5,
+              1.4,
+              0,
+              0
+            ],
+            [
+              6,
+              1.7,
+              0,
+              0
+            ],
+            [
+              3.5,
+              1.1,
+              0,
+              0
+            ],
+            [
+              -0.5,
+              1.6,
+              0,
+              0
+            ],
+            [
+              3.5,
+              -6.4,
+              -3,
+              239
+            ],
+            [
+              7.5,
+              -4,
+              0,
+              239
+            ],
+            [
+              7.1,
+              -2.9,
+              0,
+              239
+            ],
+            [
+              7.2,
+              -2.3,
+              0,
+              239
+            ]
+          ],
+          "rideIdle": [
+            [
+              7.1,
+              -4.1,
+              0,
+              240
+            ],
+            [
+              7.2,
+              -4.1,
+              0,
+              240
+            ],
+            [
+              7.2,
+              -4.1,
+              0,
+              240
+            ],
+            [
+              7.2,
+              -4.1,
+              0,
+              240
+            ],
+            [
+              7.3,
+              -4.1,
+              0,
+              240
+            ],
+            [
+              7.3,
+              -4.1,
+              0,
+              240
+            ],
+            [
+              7.3,
+              -4.1,
+              0,
+              240
+            ],
+            [
+              7.3,
+              -4.1,
+              0,
+              240
+            ],
+            [
+              7.3,
+              -4.1,
+              0,
+              240
+            ],
+            [
+              7.2,
+              -4.1,
+              0,
+              240
+            ],
+            [
+              7.2,
+              -4.1,
+              0,
+              240
+            ],
+            [
+              7.2,
+              -4.1,
+              0,
+              240
+            ],
+            [
+              7.3,
+              -4.1,
+              0,
+              240
+            ],
+            [
+              7.3,
+              -4.1,
+              0,
+              240
+            ]
+          ]
         }
       },
       "specialAttacks": {
@@ -10658,6 +14931,125 @@
             "loop": true,
             "frames": 24,
             "src": "ledge"
+          },
+          "gripIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "gripWalk": {
+            "fps": 24,
+            "loop": true,
+            "frames": 8,
+            "src": "walk"
+          },
+          "gripLight": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "startFrame": 1,
+            "frames": 10,
+            "src": "light"
+          },
+          "gripHeavy": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 8,
+            "startFrame": 1,
+            "frames": 18,
+            "src": "heavy"
+          },
+          "aimIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "aimWalk": {
+            "fps": 24,
+            "loop": true,
+            "frames": 8,
+            "src": "walk"
+          },
+          "aimShoot": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "startFrame": 1,
+            "frames": 10,
+            "src": "light"
+          },
+          "aimCharge": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 8,
+            "startFrame": 1,
+            "frames": 18,
+            "src": "heavy"
+          },
+          "itemHold": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "itemThrow": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 8,
+            "src": "throw"
+          },
+          "itemThrowUp": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 8,
+            "src": "throw"
+          },
+          "itemEat": {
+            "fps": 12,
+            "loop": false,
+            "frames": 24,
+            "src": "taunt"
+          },
+          "carryIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "carryWalk": {
+            "fps": 24,
+            "loop": true,
+            "frames": 8,
+            "src": "walk"
+          },
+          "carryToss": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 8,
+            "src": "throw"
+          },
+          "rideIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "rideDash": {
+            "fps": 24,
+            "loop": true,
+            "frames": 6,
+            "src": "dash"
+          },
+          "rideHop": {
+            "fps": 24,
+            "loop": false,
+            "frames": 7,
+            "src": "jump"
           }
         }
       },
@@ -11038,18 +15430,19 @@
             "src": "heavyDown"
           },
           "heavyAir": {
-            "fps": 24,
+            "fps": 8,
             "loop": false,
-            "hitFrame": 5,
-            "activeEnd": 6,
-            "frames": 11,
-            "src": "heavy"
+            "hitFrame": 12,
+            "activeEnd": 12,
+            "frames": 15,
+            "src": "heavyAir"
           },
           "recovery": {
             "fps": 12,
             "loop": false,
-            "frames": 3,
-            "src": "jump"
+            "hitFrame": 3,
+            "frames": 12,
+            "src": "recovery"
           },
           "taunt": {
             "fps": 12,
@@ -11153,6 +15546,125 @@
             "loop": false,
             "frames": 3,
             "src": "jump"
+          },
+          "gripIdle": {
+            "fps": 10,
+            "loop": true,
+            "frames": 18,
+            "src": "idle"
+          },
+          "gripWalk": {
+            "fps": 18,
+            "loop": true,
+            "frames": 13,
+            "src": "walk"
+          },
+          "gripLight": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 4,
+            "activeEnd": 6,
+            "frames": 9,
+            "src": "light"
+          },
+          "gripHeavy": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 5,
+            "activeEnd": 6,
+            "frames": 11,
+            "src": "heavy"
+          },
+          "aimIdle": {
+            "fps": 10,
+            "loop": true,
+            "frames": 18,
+            "src": "idle"
+          },
+          "aimWalk": {
+            "fps": 18,
+            "loop": true,
+            "frames": 13,
+            "src": "walk"
+          },
+          "aimShoot": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 4,
+            "activeEnd": 6,
+            "frames": 9,
+            "src": "light"
+          },
+          "aimCharge": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 5,
+            "activeEnd": 6,
+            "frames": 11,
+            "src": "heavy"
+          },
+          "itemHold": {
+            "fps": 10,
+            "loop": true,
+            "frames": 18,
+            "src": "idle"
+          },
+          "itemThrow": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 4,
+            "frames": 7,
+            "src": "throw"
+          },
+          "itemThrowUp": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 4,
+            "frames": 7,
+            "src": "throw"
+          },
+          "itemEat": {
+            "fps": 12,
+            "loop": false,
+            "frames": 12,
+            "src": "taunt"
+          },
+          "carryIdle": {
+            "fps": 10,
+            "loop": true,
+            "frames": 18,
+            "src": "idle"
+          },
+          "carryWalk": {
+            "fps": 18,
+            "loop": true,
+            "frames": 13,
+            "src": "walk"
+          },
+          "carryToss": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 4,
+            "frames": 7,
+            "src": "throw"
+          },
+          "rideIdle": {
+            "fps": 10,
+            "loop": true,
+            "frames": 18,
+            "src": "idle"
+          },
+          "rideDash": {
+            "fps": 28,
+            "loop": true,
+            "frames": 13,
+            "src": "dash"
+          },
+          "rideHop": {
+            "fps": 12,
+            "loop": false,
+            "frames": 3,
+            "src": "jump"
           }
         }
       },
@@ -11204,10 +15716,10 @@
           "boxY": -44
         },
         "heavyAir": {
-          "range": 50,
+          "range": 72,
           "height": 60,
           "boxX": 0,
-          "boxY": -95
+          "boxY": -86
         },
         "dashAttack": {
           "range": 50,
@@ -11336,39 +15848,41 @@
         "scale": 0.5,
         "animations": {
           "idle": {
-            "fps": 1,
+            "fps": 12,
             "loop": true,
-            "frames": 1,
+            "frames": 21,
             "src": "idle"
           },
           "walk": {
-            "fps": 6,
+            "fps": 12,
             "loop": true,
-            "frames": 2,
+            "frames": 22,
             "src": "walk"
           },
           "jump": {
-            "fps": 1,
+            "fps": 24,
             "loop": false,
-            "frames": 1,
+            "frames": 17,
             "src": "jump"
           },
           "fall": {
-            "fps": 1,
-            "loop": false,
-            "frames": 1,
+            "fps": 6,
+            "loop": true,
+            "frames": 3,
             "src": "fall"
           },
           "light": {
-            "fps": 1,
+            "fps": 12,
             "loop": false,
-            "frames": 1,
+            "hitFrame": 4,
+            "frames": 15,
             "src": "light"
           },
           "heavy": {
-            "fps": 1,
+            "fps": 12,
             "loop": false,
-            "frames": 1,
+            "hitFrame": 12,
+            "frames": 17,
             "src": "heavy"
           },
           "hit": {
@@ -11378,51 +15892,54 @@
             "src": "hit"
           },
           "doubleJump": {
-            "fps": 1,
+            "fps": 24,
             "loop": false,
-            "frames": 1,
-            "src": "jump"
+            "frames": 23,
+            "src": "doubleJump"
           },
           "tumble": {
-            "fps": 1,
-            "loop": false,
-            "frames": 1,
-            "src": "hit"
+            "fps": 8,
+            "loop": true,
+            "frames": 20,
+            "src": "tumble"
           },
           "ledge": {
-            "fps": 1,
+            "fps": 24,
             "loop": false,
-            "frames": 1,
+            "frames": 17,
             "src": "jump"
           },
           "climb": {
-            "fps": 1,
+            "fps": 24,
             "loop": false,
-            "frames": 1,
+            "frames": 17,
             "src": "jump"
           },
           "land": {
-            "fps": 1,
+            "fps": 24,
             "loop": false,
-            "frames": 1,
+            "frames": 20,
             "src": "land"
           },
           "lightUp": {
-            "fps": 1,
+            "fps": 12,
             "loop": false,
-            "frames": 1,
+            "hitFrame": 4,
+            "frames": 21,
             "src": "lightUp"
           },
           "lightDown": {
-            "fps": 1,
+            "fps": 8,
             "loop": false,
-            "frames": 1,
+            "hitFrame": 7,
+            "frames": 19,
             "src": "lightDown"
           },
           "lightAir": {
-            "fps": 1,
+            "fps": 12,
             "loop": false,
-            "frames": 1,
+            "hitFrame": 14,
+            "frames": 17,
             "src": "lightAir"
           },
           "heavyUp": {
@@ -11432,28 +15949,31 @@
             "src": "heavyUp"
           },
           "heavyDown": {
-            "fps": 1,
+            "fps": 12,
             "loop": false,
-            "frames": 1,
+            "hitFrame": 6,
+            "frames": 21,
             "src": "heavyDown"
           },
           "heavyAir": {
-            "fps": 1,
+            "fps": 12,
             "loop": false,
-            "frames": 1,
+            "hitFrame": 6,
+            "frames": 23,
             "src": "heavyAir"
           },
           "recovery": {
-            "fps": 1,
+            "fps": 12,
             "loop": false,
-            "frames": 1,
+            "hitFrame": 2,
+            "frames": 24,
             "src": "recovery"
           },
           "taunt": {
-            "fps": 1,
-            "loop": true,
-            "frames": 1,
-            "src": "idle"
+            "fps": 8,
+            "loop": false,
+            "frames": 17,
+            "src": "taunt"
           },
           "shield": {
             "fps": 1,
@@ -11480,15 +16000,16 @@
             "src": "hit"
           },
           "special": {
-            "fps": 1,
+            "fps": 12,
             "loop": false,
-            "frames": 1,
+            "hitFrame": 12,
+            "frames": 17,
             "src": "heavy"
           },
           "dash": {
-            "fps": 1,
-            "loop": false,
-            "frames": 1,
+            "fps": 12,
+            "loop": true,
+            "frames": 15,
             "src": "dash"
           },
           "supreme": {
@@ -11498,45 +16019,161 @@
             "src": "supreme"
           },
           "specialNeutral": {
-            "fps": 1,
+            "fps": 8,
             "loop": false,
-            "frames": 1,
-            "src": "heavy"
+            "hitFrame": 11,
+            "frames": 21,
+            "src": "specialNeutral"
           },
           "specialSide": {
-            "fps": 1,
+            "fps": 12,
             "loop": false,
-            "frames": 1,
-            "src": "heavy"
+            "hitFrame": 9,
+            "frames": 24,
+            "src": "specialSide"
           },
           "specialDown": {
-            "fps": 1,
+            "fps": 8,
             "loop": false,
-            "frames": 1,
-            "src": "heavy"
+            "hitFrame": 11,
+            "frames": 20,
+            "src": "specialDown"
           },
           "dashAttack": {
-            "fps": 1,
+            "fps": 12,
             "loop": false,
-            "frames": 1,
+            "hitFrame": 12,
+            "frames": 17,
             "src": "heavy"
           },
           "jumpSquat": {
-            "fps": 1,
+            "fps": 24,
             "loop": false,
-            "frames": 1,
-            "src": "land"
+            "frames": 15,
+            "src": "jumpSquat"
           },
           "anchorHang": {
-            "fps": 1,
+            "fps": 24,
             "loop": false,
-            "frames": 1,
+            "frames": 17,
             "src": "jump"
           },
           "anchorClimb": {
+            "fps": 24,
+            "loop": false,
+            "frames": 17,
+            "src": "jump"
+          },
+          "gripIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 21,
+            "src": "idle"
+          },
+          "gripWalk": {
+            "fps": 12,
+            "loop": true,
+            "frames": 22,
+            "src": "walk"
+          },
+          "gripLight": {
+            "fps": 12,
+            "loop": false,
+            "hitFrame": 4,
+            "frames": 15,
+            "src": "light"
+          },
+          "gripHeavy": {
+            "fps": 12,
+            "loop": false,
+            "hitFrame": 12,
+            "frames": 17,
+            "src": "heavy"
+          },
+          "aimIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 21,
+            "src": "idle"
+          },
+          "aimWalk": {
+            "fps": 12,
+            "loop": true,
+            "frames": 22,
+            "src": "walk"
+          },
+          "aimShoot": {
+            "fps": 12,
+            "loop": false,
+            "hitFrame": 4,
+            "frames": 15,
+            "src": "light"
+          },
+          "aimCharge": {
+            "fps": 12,
+            "loop": false,
+            "hitFrame": 12,
+            "frames": 17,
+            "src": "heavy"
+          },
+          "itemHold": {
+            "fps": 12,
+            "loop": true,
+            "frames": 21,
+            "src": "idle"
+          },
+          "itemThrow": {
             "fps": 1,
             "loop": false,
             "frames": 1,
+            "src": "throw"
+          },
+          "itemThrowUp": {
+            "fps": 1,
+            "loop": false,
+            "frames": 1,
+            "src": "throw"
+          },
+          "itemEat": {
+            "fps": 8,
+            "loop": false,
+            "frames": 17,
+            "src": "taunt"
+          },
+          "carryIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 21,
+            "src": "idle"
+          },
+          "carryWalk": {
+            "fps": 12,
+            "loop": true,
+            "frames": 22,
+            "src": "walk"
+          },
+          "carryToss": {
+            "fps": 1,
+            "loop": false,
+            "frames": 1,
+            "src": "throw"
+          },
+          "rideIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 21,
+            "src": "idle"
+          },
+          "rideDash": {
+            "fps": 12,
+            "loop": true,
+            "frames": 15,
+            "src": "dash"
+          },
+          "rideHop": {
+            "fps": 24,
+            "loop": false,
+            "frames": 17,
             "src": "jump"
           }
         }
@@ -11770,6 +16407,121 @@
                 "loop": false,
                 "frames": 4,
                 "src": "jump"
+              },
+              "gripIdle": {
+                "fps": 10,
+                "loop": true,
+                "frames": 15,
+                "src": "idle"
+              },
+              "gripWalk": {
+                "fps": 14,
+                "loop": true,
+                "frames": 11,
+                "src": "walk"
+              },
+              "gripLight": {
+                "fps": 24,
+                "loop": false,
+                "hitFrame": 2,
+                "frames": 7,
+                "src": "light"
+              },
+              "gripHeavy": {
+                "fps": 24,
+                "loop": false,
+                "hitFrame": 3,
+                "frames": 10,
+                "src": "heavy"
+              },
+              "aimIdle": {
+                "fps": 10,
+                "loop": true,
+                "frames": 15,
+                "src": "idle"
+              },
+              "aimWalk": {
+                "fps": 14,
+                "loop": true,
+                "frames": 11,
+                "src": "walk"
+              },
+              "aimShoot": {
+                "fps": 24,
+                "loop": false,
+                "hitFrame": 2,
+                "frames": 7,
+                "src": "light"
+              },
+              "aimCharge": {
+                "fps": 24,
+                "loop": false,
+                "hitFrame": 3,
+                "frames": 10,
+                "src": "heavy"
+              },
+              "itemHold": {
+                "fps": 10,
+                "loop": true,
+                "frames": 15,
+                "src": "idle"
+              },
+              "itemThrow": {
+                "fps": 24,
+                "loop": false,
+                "hitFrame": 0,
+                "frames": 5,
+                "src": "throw"
+              },
+              "itemThrowUp": {
+                "fps": 24,
+                "loop": false,
+                "hitFrame": 0,
+                "frames": 5,
+                "src": "throw"
+              },
+              "itemEat": {
+                "fps": 12,
+                "loop": false,
+                "frames": 11,
+                "src": "taunt"
+              },
+              "carryIdle": {
+                "fps": 10,
+                "loop": true,
+                "frames": 15,
+                "src": "idle"
+              },
+              "carryWalk": {
+                "fps": 14,
+                "loop": true,
+                "frames": 11,
+                "src": "walk"
+              },
+              "carryToss": {
+                "fps": 24,
+                "loop": false,
+                "hitFrame": 0,
+                "frames": 5,
+                "src": "throw"
+              },
+              "rideIdle": {
+                "fps": 10,
+                "loop": true,
+                "frames": 15,
+                "src": "idle"
+              },
+              "rideDash": {
+                "fps": 14,
+                "loop": true,
+                "frames": 7,
+                "src": "dash"
+              },
+              "rideHop": {
+                "fps": 18,
+                "loop": false,
+                "frames": 4,
+                "src": "jump"
               }
             }
           },
@@ -11777,39 +16529,39 @@
         }
       },
       "hurtbox": {
-        "width": 41,
+        "width": 38,
         "height": 92
       },
       "attacks": {
         "light": {
-          "range": 48,
+          "range": 40,
           "height": 30,
           "boxX": 0,
-          "boxY": -56
+          "boxY": -64
         },
         "heavy": {
           "range": 78,
           "height": 44,
           "boxX": 0,
-          "boxY": -52
+          "boxY": -71
         },
         "lightUp": {
           "range": 54,
           "height": 48,
-          "boxX": 0,
-          "boxY": -88
+          "boxX": -28,
+          "boxY": -100
         },
         "lightDown": {
-          "range": 43,
+          "range": 44,
           "height": 24,
           "boxX": 0,
-          "boxY": -26
+          "boxY": -36
         },
         "lightAir": {
-          "range": 38,
+          "range": 50,
           "height": 50,
           "boxX": 0,
-          "boxY": -75
+          "boxY": -74
         },
         "heavyUp": {
           "range": 80,
@@ -11820,20 +16572,20 @@
         "heavyDown": {
           "range": 62,
           "height": 30,
-          "boxX": -6,
-          "boxY": -30
+          "boxX": -10,
+          "boxY": -37
         },
         "heavyAir": {
-          "range": 64,
+          "range": 47,
           "height": 60,
-          "boxX": 0,
-          "boxY": -64
+          "boxX": -5,
+          "boxY": -67
         },
         "dashAttack": {
           "range": 75,
           "height": 44,
           "boxX": 2,
-          "boxY": -52
+          "boxY": -71
         }
       },
       "stats": {
@@ -12134,6 +16886,125 @@
             "loop": true,
             "frames": 24,
             "src": "ledge"
+          },
+          "gripIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "gripWalk": {
+            "fps": 24,
+            "loop": true,
+            "frames": 8,
+            "src": "walk"
+          },
+          "gripLight": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "startFrame": 1,
+            "frames": 10,
+            "src": "light"
+          },
+          "gripHeavy": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 8,
+            "startFrame": 1,
+            "frames": 18,
+            "src": "heavy"
+          },
+          "aimIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "aimWalk": {
+            "fps": 24,
+            "loop": true,
+            "frames": 8,
+            "src": "walk"
+          },
+          "aimShoot": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "startFrame": 1,
+            "frames": 10,
+            "src": "light"
+          },
+          "aimCharge": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 8,
+            "startFrame": 1,
+            "frames": 18,
+            "src": "heavy"
+          },
+          "itemHold": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "itemThrow": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 8,
+            "src": "throw"
+          },
+          "itemThrowUp": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 8,
+            "src": "throw"
+          },
+          "itemEat": {
+            "fps": 12,
+            "loop": false,
+            "frames": 24,
+            "src": "taunt"
+          },
+          "carryIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "carryWalk": {
+            "fps": 24,
+            "loop": true,
+            "frames": 8,
+            "src": "walk"
+          },
+          "carryToss": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 8,
+            "src": "throw"
+          },
+          "rideIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "rideDash": {
+            "fps": 24,
+            "loop": true,
+            "frames": 8,
+            "src": "dash"
+          },
+          "rideHop": {
+            "fps": 24,
+            "loop": false,
+            "frames": 7,
+            "src": "jump"
           }
         }
       },
@@ -12382,6 +17253,125 @@
                 "loop": true,
                 "frames": 24,
                 "src": "ledge"
+              },
+              "gripIdle": {
+                "fps": 12,
+                "loop": true,
+                "frames": 24,
+                "src": "idle"
+              },
+              "gripWalk": {
+                "fps": 24,
+                "loop": true,
+                "frames": 8,
+                "src": "walk"
+              },
+              "gripLight": {
+                "fps": 24,
+                "loop": false,
+                "hitFrame": 2,
+                "startFrame": 1,
+                "frames": 10,
+                "src": "light"
+              },
+              "gripHeavy": {
+                "fps": 24,
+                "loop": false,
+                "hitFrame": 8,
+                "startFrame": 1,
+                "frames": 18,
+                "src": "heavy"
+              },
+              "aimIdle": {
+                "fps": 12,
+                "loop": true,
+                "frames": 24,
+                "src": "idle"
+              },
+              "aimWalk": {
+                "fps": 24,
+                "loop": true,
+                "frames": 8,
+                "src": "walk"
+              },
+              "aimShoot": {
+                "fps": 24,
+                "loop": false,
+                "hitFrame": 2,
+                "startFrame": 1,
+                "frames": 10,
+                "src": "light"
+              },
+              "aimCharge": {
+                "fps": 24,
+                "loop": false,
+                "hitFrame": 8,
+                "startFrame": 1,
+                "frames": 18,
+                "src": "heavy"
+              },
+              "itemHold": {
+                "fps": 12,
+                "loop": true,
+                "frames": 24,
+                "src": "idle"
+              },
+              "itemThrow": {
+                "fps": 24,
+                "loop": false,
+                "hitFrame": 0,
+                "frames": 8,
+                "src": "throw"
+              },
+              "itemThrowUp": {
+                "fps": 24,
+                "loop": false,
+                "hitFrame": 0,
+                "frames": 8,
+                "src": "throw"
+              },
+              "itemEat": {
+                "fps": 12,
+                "loop": false,
+                "frames": 24,
+                "src": "taunt"
+              },
+              "carryIdle": {
+                "fps": 12,
+                "loop": true,
+                "frames": 24,
+                "src": "idle"
+              },
+              "carryWalk": {
+                "fps": 24,
+                "loop": true,
+                "frames": 8,
+                "src": "walk"
+              },
+              "carryToss": {
+                "fps": 24,
+                "loop": false,
+                "hitFrame": 0,
+                "frames": 8,
+                "src": "throw"
+              },
+              "rideIdle": {
+                "fps": 12,
+                "loop": true,
+                "frames": 24,
+                "src": "idle"
+              },
+              "rideDash": {
+                "fps": 24,
+                "loop": true,
+                "frames": 8,
+                "src": "dash"
+              },
+              "rideHop": {
+                "fps": 24,
+                "loop": false,
+                "frames": 7,
+                "src": "jump"
               }
             }
           },
@@ -12600,7 +17590,7 @@
         "drawnSmear": true,
         "animations": {
           "idle": {
-            "fps": 12,
+            "fps": 8,
             "loop": true,
             "frames": 15,
             "src": "idle"
@@ -12824,6 +17814,125 @@
             "src": "jump"
           },
           "anchorClimb": {
+            "fps": 18,
+            "loop": false,
+            "frames": 4,
+            "src": "jump"
+          },
+          "gripIdle": {
+            "fps": 8,
+            "loop": true,
+            "frames": 15,
+            "src": "idle"
+          },
+          "gripWalk": {
+            "fps": 14,
+            "loop": true,
+            "frames": 14,
+            "src": "walk"
+          },
+          "gripLight": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "activeEnd": 5,
+            "frames": 8,
+            "src": "light"
+          },
+          "gripHeavy": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "activeEnd": 5,
+            "frames": 10,
+            "src": "heavy"
+          },
+          "aimIdle": {
+            "fps": 8,
+            "loop": true,
+            "frames": 15,
+            "src": "idle"
+          },
+          "aimWalk": {
+            "fps": 14,
+            "loop": true,
+            "frames": 14,
+            "src": "walk"
+          },
+          "aimShoot": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "activeEnd": 5,
+            "frames": 8,
+            "src": "light"
+          },
+          "aimCharge": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "activeEnd": 5,
+            "frames": 10,
+            "src": "heavy"
+          },
+          "itemHold": {
+            "fps": 8,
+            "loop": true,
+            "frames": 15,
+            "src": "idle"
+          },
+          "itemThrow": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 7,
+            "src": "throw"
+          },
+          "itemThrowUp": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 7,
+            "src": "throw"
+          },
+          "itemEat": {
+            "fps": 12,
+            "loop": false,
+            "frames": 14,
+            "src": "taunt"
+          },
+          "carryIdle": {
+            "fps": 8,
+            "loop": true,
+            "frames": 15,
+            "src": "idle"
+          },
+          "carryWalk": {
+            "fps": 14,
+            "loop": true,
+            "frames": 14,
+            "src": "walk"
+          },
+          "carryToss": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 7,
+            "src": "throw"
+          },
+          "rideIdle": {
+            "fps": 8,
+            "loop": true,
+            "frames": 15,
+            "src": "idle"
+          },
+          "rideDash": {
+            "fps": 14,
+            "loop": true,
+            "frames": 6,
+            "src": "dash"
+          },
+          "rideHop": {
             "fps": 18,
             "loop": false,
             "frames": 4,
@@ -13299,6 +18408,125 @@
             "loop": true,
             "frames": 24,
             "src": "ledge"
+          },
+          "gripIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "gripWalk": {
+            "fps": 24,
+            "loop": true,
+            "frames": 8,
+            "src": "walk"
+          },
+          "gripLight": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "startFrame": 1,
+            "frames": 10,
+            "src": "light"
+          },
+          "gripHeavy": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 8,
+            "startFrame": 1,
+            "frames": 18,
+            "src": "heavy"
+          },
+          "aimIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "aimWalk": {
+            "fps": 24,
+            "loop": true,
+            "frames": 8,
+            "src": "walk"
+          },
+          "aimShoot": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "startFrame": 1,
+            "frames": 10,
+            "src": "light"
+          },
+          "aimCharge": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 8,
+            "startFrame": 1,
+            "frames": 18,
+            "src": "heavy"
+          },
+          "itemHold": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "itemThrow": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 8,
+            "src": "throw"
+          },
+          "itemThrowUp": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 8,
+            "src": "throw"
+          },
+          "itemEat": {
+            "fps": 12,
+            "loop": false,
+            "frames": 24,
+            "src": "taunt"
+          },
+          "carryIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "carryWalk": {
+            "fps": 24,
+            "loop": true,
+            "frames": 8,
+            "src": "walk"
+          },
+          "carryToss": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 8,
+            "src": "throw"
+          },
+          "rideIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "rideDash": {
+            "fps": 24,
+            "loop": true,
+            "frames": 8,
+            "src": "dash"
+          },
+          "rideHop": {
+            "fps": 24,
+            "loop": false,
+            "frames": 7,
+            "src": "jump"
           }
         }
       },
@@ -13527,7 +18755,7 @@
         "scale": 0.5,
         "animations": {
           "idle": {
-            "fps": 12,
+            "fps": 8,
             "loop": true,
             "frames": 8,
             "src": "idle"
@@ -13746,6 +18974,121 @@
             "loop": false,
             "frames": 5,
             "src": "jump"
+          },
+          "gripIdle": {
+            "fps": 8,
+            "loop": true,
+            "frames": 8,
+            "src": "idle"
+          },
+          "gripWalk": {
+            "fps": 6,
+            "loop": true,
+            "frames": 2,
+            "src": "walk"
+          },
+          "gripLight": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "frames": 5,
+            "src": "light"
+          },
+          "gripHeavy": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 5,
+            "frames": 11,
+            "src": "heavy"
+          },
+          "aimIdle": {
+            "fps": 8,
+            "loop": true,
+            "frames": 8,
+            "src": "idle"
+          },
+          "aimWalk": {
+            "fps": 6,
+            "loop": true,
+            "frames": 2,
+            "src": "walk"
+          },
+          "aimShoot": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "frames": 5,
+            "src": "light"
+          },
+          "aimCharge": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 5,
+            "frames": 11,
+            "src": "heavy"
+          },
+          "itemHold": {
+            "fps": 8,
+            "loop": true,
+            "frames": 8,
+            "src": "idle"
+          },
+          "itemThrow": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 4,
+            "src": "throw"
+          },
+          "itemThrowUp": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 4,
+            "src": "throw"
+          },
+          "itemEat": {
+            "fps": 10,
+            "loop": false,
+            "frames": 10,
+            "src": "taunt"
+          },
+          "carryIdle": {
+            "fps": 8,
+            "loop": true,
+            "frames": 8,
+            "src": "idle"
+          },
+          "carryWalk": {
+            "fps": 6,
+            "loop": true,
+            "frames": 2,
+            "src": "walk"
+          },
+          "carryToss": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 4,
+            "src": "throw"
+          },
+          "rideIdle": {
+            "fps": 8,
+            "loop": true,
+            "frames": 8,
+            "src": "idle"
+          },
+          "rideDash": {
+            "fps": 1,
+            "loop": false,
+            "frames": 1,
+            "src": "dash"
+          },
+          "rideHop": {
+            "fps": 24,
+            "loop": false,
+            "frames": 5,
+            "src": "jump"
           }
         }
       },
@@ -13935,15 +19278,15 @@
         "scale": 0.5,
         "animations": {
           "idle": {
-            "fps": 24,
+            "fps": 12,
             "loop": true,
-            "frames": 46,
+            "frames": 23,
             "src": "idle"
           },
           "walk": {
-            "fps": 24,
+            "fps": 12,
             "loop": true,
-            "frames": 47,
+            "frames": 24,
             "src": "walk"
           },
           "jump": {
@@ -13959,19 +19302,19 @@
             "src": "fall"
           },
           "light": {
-            "fps": 24,
+            "fps": 8,
             "loop": false,
-            "hitFrame": 11,
+            "hitFrame": 3,
             "startFrame": 1,
-            "frames": 49,
+            "frames": 16,
             "src": "light"
           },
           "heavy": {
-            "fps": 24,
+            "fps": 8,
             "loop": false,
-            "hitFrame": 27,
+            "hitFrame": 9,
             "startFrame": 1,
-            "frames": 65,
+            "frames": 22,
             "src": "heavy"
           },
           "hit": {
@@ -14099,11 +19442,11 @@
             "src": "grabbed"
           },
           "special": {
-            "fps": 24,
+            "fps": 8,
             "loop": false,
-            "hitFrame": 27,
+            "hitFrame": 9,
             "startFrame": 1,
-            "frames": 65,
+            "frames": 22,
             "src": "heavy"
           },
           "dash": {
@@ -14113,11 +19456,11 @@
             "src": "dash"
           },
           "supreme": {
-            "fps": 24,
+            "fps": 8,
             "loop": false,
-            "hitFrame": 27,
+            "hitFrame": 9,
             "startFrame": 1,
-            "frames": 65,
+            "frames": 22,
             "src": "heavy"
           },
           "specialNeutral": {
@@ -14145,11 +19488,11 @@
             "src": "specialDown"
           },
           "dashAttack": {
-            "fps": 24,
+            "fps": 8,
             "loop": false,
-            "hitFrame": 27,
+            "hitFrame": 9,
             "startFrame": 1,
-            "frames": 65,
+            "frames": 22,
             "src": "heavy"
           },
           "jumpSquat": {
@@ -14169,6 +19512,125 @@
             "loop": true,
             "frames": 24,
             "src": "ledge"
+          },
+          "gripIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 23,
+            "src": "idle"
+          },
+          "gripWalk": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "walk"
+          },
+          "gripLight": {
+            "fps": 8,
+            "loop": false,
+            "hitFrame": 3,
+            "startFrame": 1,
+            "frames": 16,
+            "src": "light"
+          },
+          "gripHeavy": {
+            "fps": 8,
+            "loop": false,
+            "hitFrame": 9,
+            "startFrame": 1,
+            "frames": 22,
+            "src": "heavy"
+          },
+          "aimIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 23,
+            "src": "idle"
+          },
+          "aimWalk": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "walk"
+          },
+          "aimShoot": {
+            "fps": 8,
+            "loop": false,
+            "hitFrame": 3,
+            "startFrame": 1,
+            "frames": 16,
+            "src": "light"
+          },
+          "aimCharge": {
+            "fps": 8,
+            "loop": false,
+            "hitFrame": 9,
+            "startFrame": 1,
+            "frames": 22,
+            "src": "heavy"
+          },
+          "itemHold": {
+            "fps": 12,
+            "loop": true,
+            "frames": 23,
+            "src": "idle"
+          },
+          "itemThrow": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 8,
+            "src": "throw"
+          },
+          "itemThrowUp": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 8,
+            "src": "throw"
+          },
+          "itemEat": {
+            "fps": 12,
+            "loop": false,
+            "frames": 24,
+            "src": "taunt"
+          },
+          "carryIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 23,
+            "src": "idle"
+          },
+          "carryWalk": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "walk"
+          },
+          "carryToss": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 8,
+            "src": "throw"
+          },
+          "rideIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 23,
+            "src": "idle"
+          },
+          "rideDash": {
+            "fps": 24,
+            "loop": true,
+            "frames": 8,
+            "src": "dash"
+          },
+          "rideHop": {
+            "fps": 24,
+            "loop": false,
+            "frames": 16,
+            "src": "jump"
           }
         }
       },
@@ -14600,6 +20062,125 @@
             "loop": true,
             "frames": 24,
             "src": "ledge"
+          },
+          "gripIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "gripWalk": {
+            "fps": 24,
+            "loop": true,
+            "frames": 8,
+            "src": "walk"
+          },
+          "gripLight": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "startFrame": 1,
+            "frames": 10,
+            "src": "light"
+          },
+          "gripHeavy": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 8,
+            "startFrame": 1,
+            "frames": 18,
+            "src": "heavy"
+          },
+          "aimIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "aimWalk": {
+            "fps": 24,
+            "loop": true,
+            "frames": 8,
+            "src": "walk"
+          },
+          "aimShoot": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "startFrame": 1,
+            "frames": 10,
+            "src": "light"
+          },
+          "aimCharge": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 8,
+            "startFrame": 1,
+            "frames": 18,
+            "src": "heavy"
+          },
+          "itemHold": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "itemThrow": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 8,
+            "src": "throw"
+          },
+          "itemThrowUp": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 8,
+            "src": "throw"
+          },
+          "itemEat": {
+            "fps": 12,
+            "loop": false,
+            "frames": 24,
+            "src": "taunt"
+          },
+          "carryIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "carryWalk": {
+            "fps": 24,
+            "loop": true,
+            "frames": 8,
+            "src": "walk"
+          },
+          "carryToss": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 8,
+            "src": "throw"
+          },
+          "rideIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "rideDash": {
+            "fps": 24,
+            "loop": true,
+            "frames": 8,
+            "src": "dash"
+          },
+          "rideHop": {
+            "fps": 24,
+            "loop": false,
+            "frames": 7,
+            "src": "jump"
           }
         }
       },
@@ -15040,6 +20621,125 @@
             "loop": true,
             "frames": 24,
             "src": "ledge"
+          },
+          "gripIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "gripWalk": {
+            "fps": 24,
+            "loop": true,
+            "frames": 8,
+            "src": "walk"
+          },
+          "gripLight": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "startFrame": 1,
+            "frames": 10,
+            "src": "light"
+          },
+          "gripHeavy": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 8,
+            "startFrame": 1,
+            "frames": 18,
+            "src": "heavy"
+          },
+          "aimIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "aimWalk": {
+            "fps": 24,
+            "loop": true,
+            "frames": 8,
+            "src": "walk"
+          },
+          "aimShoot": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "startFrame": 1,
+            "frames": 10,
+            "src": "light"
+          },
+          "aimCharge": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 8,
+            "startFrame": 1,
+            "frames": 18,
+            "src": "heavy"
+          },
+          "itemHold": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "itemThrow": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 8,
+            "src": "throw"
+          },
+          "itemThrowUp": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 8,
+            "src": "throw"
+          },
+          "itemEat": {
+            "fps": 12,
+            "loop": false,
+            "frames": 24,
+            "src": "taunt"
+          },
+          "carryIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "carryWalk": {
+            "fps": 24,
+            "loop": true,
+            "frames": 8,
+            "src": "walk"
+          },
+          "carryToss": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 8,
+            "src": "throw"
+          },
+          "rideIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "rideDash": {
+            "fps": 24,
+            "loop": true,
+            "frames": 8,
+            "src": "dash"
+          },
+          "rideHop": {
+            "fps": 24,
+            "loop": false,
+            "frames": 7,
+            "src": "jump"
           }
         }
       },
@@ -15498,6 +21198,125 @@
             "loop": true,
             "frames": 24,
             "src": "ledge"
+          },
+          "gripIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "gripWalk": {
+            "fps": 24,
+            "loop": true,
+            "frames": 10,
+            "src": "walk"
+          },
+          "gripLight": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "startFrame": 1,
+            "frames": 9,
+            "src": "light"
+          },
+          "gripHeavy": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 8,
+            "startFrame": 1,
+            "frames": 18,
+            "src": "heavy"
+          },
+          "aimIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "aimWalk": {
+            "fps": 24,
+            "loop": true,
+            "frames": 10,
+            "src": "walk"
+          },
+          "aimShoot": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "startFrame": 1,
+            "frames": 9,
+            "src": "light"
+          },
+          "aimCharge": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 8,
+            "startFrame": 1,
+            "frames": 18,
+            "src": "heavy"
+          },
+          "itemHold": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "itemThrow": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 8,
+            "src": "throw"
+          },
+          "itemThrowUp": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 8,
+            "src": "throw"
+          },
+          "itemEat": {
+            "fps": 12,
+            "loop": false,
+            "frames": 14,
+            "src": "taunt"
+          },
+          "carryIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "carryWalk": {
+            "fps": 24,
+            "loop": true,
+            "frames": 10,
+            "src": "walk"
+          },
+          "carryToss": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 8,
+            "src": "throw"
+          },
+          "rideIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "rideDash": {
+            "fps": 24,
+            "loop": true,
+            "frames": 8,
+            "src": "dash"
+          },
+          "rideHop": {
+            "fps": 24,
+            "loop": false,
+            "frames": 7,
+            "src": "jump"
           }
         },
         "rig": "assets/characters/nonnagina/rig/godot.json"
@@ -15939,6 +21758,125 @@
             "loop": true,
             "frames": 24,
             "src": "ledge"
+          },
+          "gripIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "gripWalk": {
+            "fps": 24,
+            "loop": true,
+            "frames": 10,
+            "src": "walk"
+          },
+          "gripLight": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "activeEnd": 3,
+            "frames": 9,
+            "src": "light"
+          },
+          "gripHeavy": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 7,
+            "activeEnd": 9,
+            "frames": 18,
+            "src": "heavy"
+          },
+          "aimIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "aimWalk": {
+            "fps": 24,
+            "loop": true,
+            "frames": 10,
+            "src": "walk"
+          },
+          "aimShoot": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 2,
+            "activeEnd": 3,
+            "frames": 9,
+            "src": "light"
+          },
+          "aimCharge": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 7,
+            "activeEnd": 9,
+            "frames": 18,
+            "src": "heavy"
+          },
+          "itemHold": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "itemThrow": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 8,
+            "src": "throw"
+          },
+          "itemThrowUp": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 8,
+            "src": "throw"
+          },
+          "itemEat": {
+            "fps": 12,
+            "loop": false,
+            "frames": 24,
+            "src": "taunt"
+          },
+          "carryIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "carryWalk": {
+            "fps": 24,
+            "loop": true,
+            "frames": 10,
+            "src": "walk"
+          },
+          "carryToss": {
+            "fps": 24,
+            "loop": false,
+            "hitFrame": 0,
+            "frames": 8,
+            "src": "throw"
+          },
+          "rideIdle": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
+          "rideDash": {
+            "fps": 24,
+            "loop": true,
+            "frames": 8,
+            "src": "dash"
+          },
+          "rideHop": {
+            "fps": 24,
+            "loop": false,
+            "frames": 7,
+            "src": "jump"
           }
         }
       },

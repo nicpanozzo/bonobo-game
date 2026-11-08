@@ -63,14 +63,24 @@ describe("sala d'attesa: pianta", () => {
       }
   });
 
+  it("niente di alto sta subito dietro un'altra cosa alta: la telecamera di tre quarti lo vedrebbe coperto (#581)", () => {
+    const tall = hallLayout().filter((z) => ["stage", "fighter", "throne", "gong"].includes(z.kind));
+    for (const a of tall)
+      for (const b of tall) {
+        const behind = a.z - b.z; // b è più in fondo di a
+        if (a === b || behind <= 0 || behind > 600) continue;
+        assert.ok(Math.abs(a.x - b.x) >= Math.max(a.r, b.r), `${a.id} copre ${b.id}`);
+      }
+  });
+
   it("una pedana per modalità, un portale per arena della lobby (con la casuale), un piedistallo per lottatore", () => {
     const zones = hallLayout();
-    assert.deepEqual(zones.filter((z) => z.kind === "mode").map((z) => z.id), ["ffa", "teams", "flag", "race"]);
+    assert.deepEqual(zones.filter((z) => z.kind === "mode").map((z) => z.id), ["ffa", "teams", "flag", "race", "party"]);
     assert.deepEqual(zones.filter((z) => z.kind === "stage").map((z) => z.id), hallStageIds());
     assert.ok(hallStageIds().includes(RANDOM_STAGE_ZONE));
     assert.ok(!hallStageIds().includes("padova-palazzo"), "le arene nascoste restano fuori");
     assert.deepEqual(zones.filter((z) => z.kind === "fighter").map((z) => z.id), Object.keys(CHARACTERS));
-    for (const k of ["ready", "botAdd", "botRemove", "gong", "throne"] as const) assert.equal(zones.filter((z) => z.kind === k).length, 1);
+    for (const k of ["ready", "botAdd", "botRemove", "gong", "throne", "computer"] as const) assert.equal(zones.filter((z) => z.kind === k).length, 1);
     assert.equal(zones.filter((z) => z.kind === "trampoline").length, 2);
     for (const k of ["hoop", "court", "chessboard"] as const) assert.equal(zones.filter((z) => z.kind === k).length, 1);
     assert.equal(new Set(zones.map((z) => `${z.kind}:${z.id}`)).size, zones.length, "id unici");
@@ -309,9 +319,33 @@ describe("sala d'attesa: partenza", () => {
   it("da soli serve un altro lottatore, anche dentro il cerchio", () => {
     const hall = new Hall({ seed: "solo" });
     hall.addPlayer("a", "Marta");
-    assert.equal(hall.need(), "Serve un altro lottatore: manda il link o chiama un bot dalla gabbia");
+    assert.equal(hall.need(), "Serve un altro lottatore: resta nel cerchio e arriva un manichino, o chiama un bot dalla gabbia");
     walkInto(hall, "a", zone(hall, "ready"));
     assert.equal(hall.countdownMs, null);
+  });
+
+  it("da soli nel cerchio arriva un manichino e si parte", () => {
+    const hall = new Hall({ seed: "solo-manichino" });
+    hall.addPlayer("a", "Marta");
+    walkInto(hall, "a", zone(hall, "ready"));
+    const out = run(hall, HALL.soloDummyMs + DT);
+    const [dummy] = hall.botIds();
+    assert.ok(dummy, "la sala ha chiamato un bot");
+    assert.ok(hall.isDummy(dummy), "è un manichino");
+    assert.ok(out.some((e) => e.type === "bot" && e.added));
+    assert.equal(hall.roster().find((p) => p.id === dummy)?.name, "Manichino");
+    run(hall, DT);
+    assert.notEqual(hall.countdownMs, null, "conto alla rovescia partito");
+    // Restando nel cerchio non ne arrivano altri
+    run(hall, HALL.soloDummyMs * 2);
+    assert.equal(hall.botIds().length, 1);
+  });
+
+  it("in due nessun manichino arriva da solo", () => {
+    const hall = twoHumans();
+    walkInto(hall, "a", zone(hall, "ready"));
+    run(hall, HALL.soloDummyMs * 2);
+    assert.deepEqual(hall.botIds(), []);
   });
 
   it("need dice chi manca nel cerchio", () => {
@@ -418,6 +452,17 @@ describe("sala d'attesa: gong e trono", () => {
     run(hall, HALL.shoveCooldownMs);
     hall.setInput("a", keys({ light: true }));
     assert.ok(!hall.step(DT).some((e) => e.type === "gong"), "il gong si ricarica");
+  });
+
+  it("leggero sul computer apre le regole a chi lo preme e non spinge nessuno (#567)", () => {
+    const hall = twoHumans();
+    walkInto(hall, "a", zone(hall, "computer"));
+    hall.setInput("a", emptyInput());
+    run(hall, 300);
+    hall.setInput("a", keys({ light: true }));
+    const events = hall.step(DT);
+    assert.ok(events.some((e) => e.type === "computer" && e.id === "a"));
+    assert.ok(!events.some((e) => e.type === "shove"));
   });
 
   it("il primo sul trono si siede, chi arriva dopo glielo prende", () => {
