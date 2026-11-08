@@ -185,3 +185,25 @@ Prompt in [`base.md`](base.md). Immagine = `riferimenti/personaggi/<id>.png`.
 | BB-IMG | Bonobot: immagine di partenza | da fare | | Nano Banana | 0 | | |
 | BB-B1 | Bonobot: Movimento | da fare | | Veo 3.1 Lite | | | |
 | BB-B2 | Bonobot: Colpi | da fare | | Veo 3.1 Lite | | | |
+
+## Qualità
+
+Cosa è venuto peggio del resto o dove si è scesi a compromessi, una riga per problema. Si aggiunge in ogni PR del flusso (come, nel [README](README.md#qualità-passo-fisso)); una riga risolta resta, con `risolto in #NNN`.
+
+| Clip | Cosa è venuto peggio o il compromesso | Perché si è accettato | Come si rimedia |
+|---|---|---|---|
+| prova Bonobot (3/11) | Con 3 attacchi di fila resta col braccio teso e non torna nella posa: lo script non trova le pause. Clip scartata. | Era una prova. | Regola: massimo 2 attacchi per clip, con "snaps out and is pulled straight back". Il passo 0 (`BR-04`) dice se basta, se no un attacco per clip (circa 140 clip invece di 102). |
+| BR-01 tentativo 2 (#541) | Non si ferma fra la seconda e la terza mossa: provocazione e `turn+skid` sono tagliati dai secondi previsti, non dalle pause. | Il tentativo 1 della stessa clip si divide da solo nelle 3 mosse. | Per l'ondata 1 tenere il tentativo 1; se serve il 2, fissare i fotogrammi in `tools/sprite/flow_tagli.json`. |
+| BR-01 (#541) | `turn+skid` sta in una mossa sola e viene diviso a metà: il confine fra girarsi e frenare è approssimato. | Veo non fa una pausa fra due stati così corti. | Guardare il foglio al taglio vero e correggere in `flow_tagli.json`. |
+| BR-01 (#541) | Scala calcolata 0,420 dall'`idle.png` del gioco; il taglio a mano di Bradipo usava 0,38. Le strisce nuove potrebbero sembrare un po' più grandi o più piccole di quelle vecchie, se si mescolano. | La scala dal fermo del gioco è la stessa per tutte le clip, quella a mano no. | Confrontare in allenamento al primo taglio dell'ondata 1, prima di mescolare stati vecchi e nuovi. |
+| script di taglio (#541) | La polvere attaccata ai piedi non si toglie (quella staccata sì). | Distinguerla dai piedi costa più del rigenerare. | Rigenerare la clip; nel prompt c'è già "no dust". |
+| script di taglio (#541) | `hitFrame_proposto` è solo il fotogramma col disegno più lontano dal centro: per alcuni attacchi non è l'impatto. | Va bene come primo valore. | Confermarlo sempre con `zone_dei_colpi.py`. |
+| script di taglio (#541) | Despill più forte sui pixel scuri (+2): le mani quasi nere prendevano il riflesso verde, ora i neri possono uscire un filo più spenti. | Meglio un nero spento che un nero verdastro. | Se si nota in gioco, abbassare il valore solo per quel personaggio. |
+| piano (#540) | Bradipo nelle clip di Flow non usa il basso: scudo e leggero laterale sono con gli artigli, diversi dalla skin "Bassista". | Così basta un'immagine di partenza sola. | Se il gruppo li vuole col basso, una clip di riparazione con un'immagine di partenza col basso. |
+| piano (#540) | La posa di partenza senza arma è il fermo del gioco ingrandito, quindi meno definita di un disegno nuovo. | La prova del 3/11 ha mostrato che a Veo basta. | Se un personaggio esce sfocato o diverso, generare un'immagine di partenza nuova (passo 1 senza arma). |
+| piano (#540) | I prompt delle armi arrivano a circa 4.000 caratteri contro i 2.500 provati: Flow potrebbe tagliarli o ignorarne una parte. | Non ancora provati. | La prima clip d'arma lo dice; nel caso si accorciano gli AVOID in `prompt_flow.py`. |
+| LE-B1 (base) | In alto il video taglia la testa: salto e caduta sono accorciati in `flow_tagli.json`. | Il resto del movimento è buono. | Rigenerare con più spazio sopra la testa. |
+| LE-B2 (base) | Veo ha fatto un pugno solo invece di due colpi: leggero e pesante di Lendmar sono lo stesso pugno. | Meglio un pugno animato che nessuno. | Clip di riparazione col pesante da solo. |
+| OB-B1 (base) | `jump` e `fall` restano quelli vecchi di OB-03: in cima al salto la testa esce dal bordo. | Idle, walk, jumpSquat e land sono buoni. | Rigenerare il salto con più spazio sopra. |
+| OB-B2 (base) | Il pesante è un pugno lungo tenuto teso, non la spallata del prompt. | Si legge comunque come colpo forte. | Clip di riparazione con la spallata. |
+| OB-B3 (base) | Tolti a mano i fotogrammi col braccio fermo, che allungavano i colpi. | Senza, i colpi duravano troppo. | Niente: è il taglio giusto. |

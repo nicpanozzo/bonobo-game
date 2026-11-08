@@ -22,3 +22,9 @@ I fotogrammi presi a mano sono in `tools/sprite/flow_tagli.json`. I video non so
 - `fall` è un pezzo della salita del salto, perché nella clip la testa esce dall'inquadratura.
 
 Fotogrammi da 360×300 a 2x, piedi a 280, guarda a destra.
+
+## Qualità
+
+Cosa è venuto peggio del resto (dettagli e rimedi in [`docs/clip-flow/produzione.md`](../../../../docs/clip-flow/produzione.md#qualità)):
+- `jump` e `fall` sono ancora quelli vecchi: nella clip nuova la testa esce dal bordo in cima al salto.
+- Il pesante è un pugno lungo tenuto teso, non la spallata della scheda.
