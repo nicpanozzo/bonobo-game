@@ -343,7 +343,7 @@ def presa(mag, body, dxy, geo):
     return [round(dx + point[0] * SCALE - FW / 2, 1), round(dy + point[1] * SCALE - FOOT, 1), round(float(ang)), round(length * SCALE)]
 
 
-def place(rgba, body, mode, geo):
+def place(rgba, body, mode, geo, outline=True):
     FW, FH, FOOT, SCALE, CENTER, GROUND = geo
     h, w = body.shape
     size = (max(1, round(w * SCALE)), max(1, round(h * SCALE)))
@@ -361,7 +361,8 @@ def place(rgba, body, mode, geo):
     if ys.start < ys.stop and xs.start < xs.stop:
         frame[ys, xs] = sm[ys.start - dy:ys.stop - dy, xs.start - dx:xs.stop - dx]
         fb[ys, xs] = sb[ys.start - dy:ys.stop - dy, xs.start - dx:xs.stop - dx]
-    ring = ndi.gaussian_filter(ndi.binary_dilation(fb > 0.5, iterations=2).astype(np.float32), 0.6)
+    # Egiainuso è a tratto nero su bianco senza contorno chiaro (#561)
+    ring = ndi.gaussian_filter(ndi.binary_dilation(fb > 0.5, iterations=2).astype(np.float32), 0.6) if outline else np.zeros((FH, FW), np.float32)
     ring[ndi.binary_closing(fb > 0.5, iterations=3, border_value=0) & (fb <= 0.5)] = 0  # le fessure restano aperte (#506)
     a = frame[..., 3:] / 255
     rgb = frame[..., :3] * a + OUTLINE * ring[..., None] * (1 - a)
@@ -439,7 +440,7 @@ def main():
         strip, edge = [], False
         reach, hs = [], []
         for i in idx:
-            img, t, dxy = place(full[i][0], full[i][1], mode, geo)
+            img, t, dxy = place(full[i][0], full[i][1], mode, geo, cid != "egiainuso")
             strip.append(img)
             edge |= t
             if PRESA:

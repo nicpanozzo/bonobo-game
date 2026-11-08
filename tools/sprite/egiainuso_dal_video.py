@@ -3,7 +3,7 @@
 # 240 fotogrammi, sfondo verde pieno, camera ferma, di profilo verso destra). Lo stesso metodo di bradipo_dal_video.py:
 # 1. scontorno col colore: il verde dello sfondo va via, i bordi si ripuliscono togliendo il verde mescolato; lo sputo
 #    verde chiaro resta, schiarito e velato, come smear;
-# 2. rimpicciolito all'altezza delle pose del foglio (#178), contorno chiaro, un PNG a strisce per stato in
+# 2. rimpicciolito all'altezza delle pose del foglio (#178), senza contorno chiaro, un PNG a strisce per stato in
 #    public/assets/characters/egiainuso/skins/animato con i piedi allineati (footY).
 # Il video non va nella repo. Servono ffmpeg, Pillow, numpy e scipy, solo per rifarlo.
 import os, subprocess, sys
@@ -87,7 +87,7 @@ def resize(rgba, size):
 
 
 def place(rgba, body, mode):
-    """Rimpicciolisce e mette nel fotogramma; poi il contorno chiaro attorno al corpo."""
+    """Rimpicciolisce e mette nel fotogramma."""
     h, w = body.shape
     size = (round(w * SCALE), round(h * SCALE))
     sm = resize(rgba, size)
@@ -106,11 +106,8 @@ def place(rgba, body, mode):
     sx = slice(xs.start - dx, xs.stop - dx)
     frame[ys, xs] = sm[sy, sx]
     fb[ys, xs] = sb[sy, sx]
-    # contorno chiaro di 2 px attorno al corpo (non alla scia), sotto il disegno
-    ring = ndi.gaussian_filter(ndi.binary_dilation(fb > 0.5, iterations=2).astype(np.float32), 0.6)
-    # ma non nelle fessure strette (tra braccio e corpo, tra le gambe): lì i due contorni si toccherebbero e
-    # riempirebbero il buco di chiaro (#506, tools/sprite/apri_fessure.py)
-    ring[ndi.binary_closing(fb > 0.5, iterations=3, border_value=0) & (fb <= 0.5)] = 0
+    # niente contorno chiaro attorno al corpo: in gioco sembrava uno scontorno sbagliato (resta solo il tratto)
+    ring = np.zeros((FH, FW), np.float32)
     a = frame[..., 3:] / 255
     rgb = frame[..., :3] * a + OUTLINE * ring[..., None] * (1 - a)
     alpha = a[..., 0] + ring * (1 - a[..., 0])
@@ -150,7 +147,7 @@ def main():
     crop[6:] = rgba[top : top + side - 6, x0 : x0 + side]
     por = resize(crop, (146, 146))
     a = por[..., 3] / 255
-    ring = ndi.gaussian_filter(ndi.binary_dilation(a > 0.5, iterations=2).astype(np.float32), 0.6)
+    ring = np.zeros_like(a)  # niente contorno chiaro, come le strisce
     canvas = np.zeros((150, 150, 4), np.float32)
     rgb = por[..., :3] * a[..., None] + OUTLINE * ring[..., None] * (1 - a[..., None])
     al = a + ring * (1 - a)

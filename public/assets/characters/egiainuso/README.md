@@ -6,7 +6,7 @@ L'omino col cappellino e lo zaino del foglio delle pose di @Marcomunista ([#178]
 
 - **Una posa per stato**, ritagliata dal foglio. La corsa alterna due pose (`Walk` e `Run`). Non ci sono animazioni vere, come per la versione provvisoria di Elvedeo.
 - Fotogrammi da **318×238 px** con i piedi a 194 (`footY`) e `scale: 0.5`: nel gioco l'omino è alto poco più della hitbox (44×88).
-- **Eccezione alla style guide:** è un disegno a tratto nero su fondo bianco, non illustrato a 2 toni. Per leggersi sui fondali scuri ha un **contorno chiaro**, e la faccia è riempita di bianco.
+- **Eccezione alla style guide:** è un disegno a tratto nero su fondo bianco, non illustrato a 2 toni. La faccia è riempita di bianco; **niente contorno chiaro** attorno al corpo (tolto il 2026-11-04: in gioco sembrava uno scontorno sbagliato).
 - `portrait.png`: testa e cappellino, per lobby e HUD.
 
 | Stato | Posa del foglio |
