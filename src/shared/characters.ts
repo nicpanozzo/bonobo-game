@@ -863,21 +863,21 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       scale: 0.5, // il foglio è disegnato grande come un disegno a 2x
       animations: {
         idle: { fps: 12, loop: true }, // clip Flow EG-01: respira
-        walk: { fps: 6, loop: true }, // passo e corsa del foglio, alternati
-        jump: { fps: 1, loop: false },
-        fall: { fps: 1, loop: false },
-        light: { fps: 1, loop: false }, // "Side Tilt"
-        heavy: { fps: 1, loop: false }, // "Side Smash"
+        walk: { fps: 12, loop: true }, // clip Flow EG-02
+        jump: { fps: 24, loop: false }, // clip Flow EG-03
+        fall: { fps: 6, loop: true }, // clip Flow EG-03
+        light: { fps: 12, loop: false, hitFrame: 4 }, // clip Flow EG-04: il primo pugno
+        heavy: { fps: 12, loop: false, hitFrame: 12 }, // clip Flow EG-07: braccio elastico (senza i fotogrammi che escono dal bordo)
         hit: { fps: 1, loop: false }, // nel foglio non c'è: il fermo piegato all'indietro
-        land: { fps: 1, loop: false }, // "Crouch"
-        dash: { fps: 1, loop: false },
-        lightUp: { fps: 1, loop: false },
-        lightDown: { fps: 1, loop: false },
-        lightAir: { fps: 1, loop: false }, // "Neutral Air"
+        land: { fps: 24, loop: false }, // clip Flow EG-03
+        dash: { fps: 12, loop: true }, // clip Flow EG-02: corsa
+        lightUp: { fps: 12, loop: false, hitFrame: 4 }, // clip Flow EG-04
+        lightDown: { fps: 8, loop: false, hitFrame: 7 }, // clip Flow EG-05: spazzata
+        lightAir: { fps: 12, loop: false, hitFrame: 14 }, // clip Flow EG-09: braccia aperte
         heavyUp: { fps: 1, loop: false },
-        heavyDown: { fps: 1, loop: false },
-        heavyAir: { fps: 1, loop: false }, // "Forward Air"
-        recovery: { fps: 1, loop: false }, // "Up Air"
+        heavyDown: { fps: 12, loop: false, hitFrame: 6 }, // clip Flow EG-08: spaccata
+        heavyAir: { fps: 12, loop: false, hitFrame: 6 }, // clip Flow EG-11: capriola col calcio
+        recovery: { fps: 12, loop: false, hitFrame: 2 }, // clip Flow EG-13: elica
         shield: { fps: 1, loop: false },
         grab: { fps: 1, loop: false },
         throw: { fps: 1, loop: false }, // "Throw (forward)"
@@ -885,6 +885,9 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         // clip Flow EG-12: lo sbuffo bianco è tolto, lo sputo lo disegna il gioco
         specialNeutral: { fps: 8, loop: false, hitFrame: 11 },
         specialSide: { fps: 12, loop: false, hitFrame: 9 }, // scatto a testa bassa
+        jumpSquat: { fps: 24, loop: false }, // clip Flow EG-03
+        doubleJump: { fps: 24, loop: false }, // clip Flow EG-03: capriola
+        specialDown: { fps: 8, loop: false, hitFrame: 11 }, // clip Flow EG-13: guardia a braccia incrociate, poi pugno
         taunt: { fps: 8, loop: false }, // clip Flow EG-01: agita il braccio e gonfia le guance
         tumble: { fps: 8, loop: true }, // clip Flow EG-19: le capriole quando lo lanciano
       },
@@ -932,18 +935,18 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       },
     },
     // il corpo che si può colpire, misurato sulla sagoma del fermo (#243)
-    hurtbox: { width: 41, height: 92 },
+    hurtbox: { width: 38, height: 92 },
     // le zone dei colpi dove arriva il disegno (#243, tools/sprite/zone_dei_colpi.py)
     attacks: {
-      light: { range: 48, height: 30, boxX: 0, boxY: -56 },
-      heavy: { range: 78, height: 44, boxX: 0, boxY: -52 },
-      lightUp: { range: 54, height: 48, boxX: 0, boxY: -88 },
-      lightDown: { range: 43, height: 24, boxX: 0, boxY: -26 },
-      lightAir: { range: 38, height: 50, boxX: 0, boxY: -75 },
+      light: { range: 40, height: 30, boxX: 0, boxY: -64 },
+      heavy: { range: 78, height: 44, boxX: 0, boxY: -71 },
+      lightUp: { range: 54, height: 48, boxX: -28, boxY: -100 },
+      lightDown: { range: 44, height: 24, boxX: 0, boxY: -36 },
+      lightAir: { range: 50, height: 50, boxX: 0, boxY: -74 },
       heavyUp: { range: 80, height: 64, boxX: -12, boxY: -93 },
-      heavyDown: { range: 62, height: 30, boxX: -6, boxY: -30 },
-      heavyAir: { range: 64, height: 60, boxX: 0, boxY: -64 },
-      dashAttack: { range: 75, height: 44, boxX: 2, boxY: -52 },
+      heavyDown: { range: 62, height: 30, boxX: -10, boxY: -37 },
+      heavyAir: { range: 47, height: 60, boxX: -5, boxY: -67 },
+      dashAttack: { range: 75, height: 44, boxX: 2, boxY: -71 },
     },
   },
   // Lottatori dalle schede della community (#13), compilate a ottobre 2026 nella cartella Drive del gruppo.
