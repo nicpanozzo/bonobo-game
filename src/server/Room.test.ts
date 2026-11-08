@@ -5,7 +5,7 @@ import type { Server } from "socket.io";
 import { HALL, MATCH_RESTART_MS, PREMATCH, ROOM_MAX_ERRORS, TICK_RATE } from "../shared/constants";
 import type { Match } from "../shared/match";
 import { emptyInput } from "../shared/physics";
-import type { ClientToServer, GameSnapshot, HallSnapshot, HallZone, ServerToClient } from "../shared/types";
+import type { ClientToServer, GameSnapshot, HallSnapshot, HallZone, PartySnapshot, ServerToClient } from "../shared/types";
 import { Room, type RoomHooks, type RoomOptions } from "./Room";
 
 // Finto io: conta gli snapshot mandati e le stanze scollegate
@@ -209,6 +209,43 @@ test("sala → partita: voti, cerchio, stage e poi snapshot con modalità, arena
   assert.equal(snap.prematch?.phase, "starting");
 });
 
+test("sala: dal computer chiunque cambia regole e bot della prossima partita, la modalità resta del voto (#567)", () => {
+  const built: Match[] = [];
+  const { room, sent, names } = hallRoom({ onMatchBuilt: (_r, match) => built.push(match) }, { rules: { stocks: 3, teamCount: 3 } });
+  room.addPlayer("a", "Marta");
+  room.addPlayer("b", "Luca");
+  room.setHallRules("b", { mode: "race", stocks: 5, timeLimitSec: 180, friendlyFire: true, teamCount: 4, supremeSpeed: 2, itemAmount: 0, itemKinds: ["bomba", "nonEsiste"] as never }, "difficile");
+  room.setHallRules("intruso", { stocks: 1 }, "facile"); // chi non è nella sala non cambia niente
+  play(room, 100);
+  const snap = sent.filter((s) => s.event === "hall").pop()!.data as HallSnapshot;
+  assert.equal(snap.rules.stocks, 5);
+  assert.equal(snap.rules.mode, "ffa", "la modalità la decidono le pedane");
+  assert.equal(snap.botLevel, "difficile");
+  assert.ok(sent.some((s) => s.event === "hall" && (s.data as HallSnapshot).events.some((e) => e.type === "rules" && e.id === "b")));
+  walkInto(room, "a", "mode", "teams");
+  walkInto(room, "a", "ready");
+  walkInto(room, "b", "ready");
+  play(room, HALL.countdownMs + 200);
+  const stage = sent[names().indexOf("stage")].data as { rules: { mode: string; stocks: number; timeLimitSec: number; friendlyFire: boolean; teamCount: number; supremeSpeed: number; itemAmount: number } };
+  assert.equal(stage.rules.mode, "teams");
+  assert.equal(stage.rules.stocks, 5);
+  assert.equal(stage.rules.timeLimitSec, 180);
+  assert.equal(stage.rules.friendlyFire, true);
+  assert.equal(stage.rules.teamCount, 4);
+  assert.equal(stage.rules.supremeSpeed, 2);
+  assert.equal(stage.rules.itemAmount, 0);
+  assert.equal(room.hallBotLevel, "difficile");
+  assert.equal(built.length, 1);
+});
+
+test("sala: il numero di squadre scelto in lobby resta anche se chi crea non sceglie Squadre", () => {
+  const { room, sent } = hallRoom({}, { rules: { mode: "ffa", teamCount: 3 } });
+  room.addPlayer("a", "Marta");
+  play(room, 100);
+  const snap = sent.filter((s) => s.event === "hall").pop()!.data as HallSnapshot;
+  assert.equal(snap.rules.teamCount, 3);
+});
+
 function toMatch(room: Room) {
   room.addPlayer("a", "Marta");
   room.addPlayer("b", "Luca");
@@ -295,4 +332,41 @@ test("sala: il tabellone si legge dal provider, non a ogni messaggio", () => {
   play(room, 2000);
   assert.equal(reads, 1);
   assert.deepEqual((sent.filter((s) => s.event === "hall").pop()!.data as HallSnapshot).board, [row]);
+});
+
+// Bonobo Party (#579): dalla pedana Party si va sul tabellone, poi minigioco e ritorno al tabellone
+test("Bonobo Party: sala → tabellone → minigioco → tabellone, con i comandi solo per chi è di turno", () => {
+  const feedback: unknown[] = [];
+  const { room, sent, names } = hallRoom({ onFeedback: (_r, entries) => feedback.push(...entries) }, { rules: { partyRounds: 3 } as never });
+  room.addPlayer("a", "Marta", "default");
+  room.hall!.addBot("orsoblu");
+  walkInto(room, "a", "mode", "party");
+  walkInto(room, "a", "ready");
+  play(room, HALL.countdownMs + 200);
+  assert.equal(room.phase, "party");
+  assert.ok(names().includes("party"));
+  const first = sent.find((s) => s.event === "party")!.data as PartySnapshot;
+  assert.equal(first.rounds, 3);
+  assert.equal(first.players.length, 2);
+  // Si gioca: Marta tira quando tocca a lei, finché parte il minigioco
+  for (let i = 0; i < 60 * 120 && room.phase === "party"; i++) {
+    if (room.party?.turnId === "a" && room.party.phase === "roll") room.partyCommand("a", { kind: "roll" });
+    room.advance(TICK);
+  }
+  assert.equal(room.phase, "match");
+  const stage = sent.filter((s) => s.event === "stage").pop()!.data as { minigame?: { id: string }; stage: { id: string } };
+  assert.ok(stage.minigame, "lo stage dice che è un minigioco");
+  assert.ok(stage.stage.id.startsWith("party-"));
+  assert.equal(room.match.players.length, 2);
+  // Gli input arrivano alla partita del minigioco; il comando del tabellone no
+  room.partyCommand("a", { kind: "roll" });
+  // Il minigioco finisce da solo (prova libera, presentazione, gioco), poi si torna al tabellone col feedback
+  for (let i = 0; i < 60 * 150 && room.phase === "match"; i++) room.advance(TICK);
+  assert.equal(room.phase, "party");
+  const back = sent.filter((s) => s.event === "party").pop()!.data as PartySnapshot;
+  assert.equal(back.phase, "feedback");
+  assert.ok(back.lastResults, "i posti del minigioco sono arrivati al tabellone");
+  room.partyCommand("a", { kind: "feedback", stars: 5, text: "bello" });
+  play(room, 200);
+  assert.equal(feedback.length, 1, "il parere arriva al gancio onFeedback");
 });

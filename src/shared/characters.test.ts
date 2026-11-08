@@ -123,7 +123,9 @@ function specialProblems(sp: SpecialSpec): string[] {
   if (!(damage >= 0 && damage <= 30)) out.push(`danno ${damage}, fuori da 0-30`);
   switch (sp.type) {
     case "projectile":
-      for (const k of ["startupMs", "cooldownMs", "speed", "lifeMs", "maxAlive"] as const) positive(k, sp[k]);
+      // Una mina che si posa (rests) può partire ferma: cade e resta lì
+      for (const k of ["startupMs", "cooldownMs", "lifeMs", "maxAlive"] as const) positive(k, sp[k]);
+      if (!(sp.speed > 0 || (sp.rests && sp.speed === 0))) out.push(`speed = ${sp.speed}`);
       if (!(sp.gravity >= 0)) out.push(`gravity = ${sp.gravity}`);
       break;
     case "dash":
@@ -228,6 +230,6 @@ describe("colpi normali propri (#384 D2)", () => {
     const gina = { characterId: "nonnagina", attack: "heavy", chargeMultiplier: 1, jabStep: 0 } as Parameters<typeof attackSpecFor>[0];
     assert.equal(attackSpecFor(gina, "heavy").startupMs, CHARACTERS.nonnagina.attacks!.heavy!.startupMs);
     assert.equal(attackSpecFor(gina, "heavy").activeMs, ATTACKS.heavy.activeMs);
-    assert.deepEqual(attackSpecFor({ ...gina, characterId: "orsoblu" }, "heavy"), ATTACKS.heavy);
+    assert.deepEqual(attackSpecFor({ ...gina, characterId: "default" }, "heavy"), ATTACKS.heavy);
   });
 });

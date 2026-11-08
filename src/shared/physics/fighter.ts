@@ -1,7 +1,7 @@
 // Lo stato completo di un lottatore sul server: quello che vedono i client (PlayerState)
 // più i timer interni che non viaggiano in rete.
 
-import { DASH, FIGHTER, INPUT, SHIELD } from "../constants";
+import { DASH, FIGHTER, GEAR, INPUT, SHIELD } from "../constants";
 import type { StageSpec } from "../stages";
 import type { GameEvent, InputState, PlayerState, SpecialKind } from "../types";
 import type { ArcadeWorld } from "./arcade";
@@ -42,6 +42,7 @@ export interface Fighter extends PlayerState {
   shieldDropTimer: number; // ms fermi dopo averlo abbassato
   shieldStunTimer: number; // ms fermi sullo scudo dopo un colpo parato
   stunTimer: number; // ms storditi dopo la rottura dello scudo
+  packed: boolean; // chiuso in una scatola dall'impacchettatrice della Fabbrica: è uno stordimento da cui si esce premendo i tasti
   holding: string | null; // id di chi si tiene con la presa (#109)
   grabLagTimer: number; // ms fermi per la presa: avvio, finestra attiva e attesa se va a vuoto
   grabTimer: number; // per chi è tenuto: ms prima di liberarsi da solo (i tasti premuti lo accorciano)
@@ -81,8 +82,25 @@ export interface Fighter extends PlayerState {
   shortHop: boolean; // lasciare presto il salto lo accorcia (i bot no: tengono il tasto un tick solo)
   inputSeq: number; // E17: InputState.seq dell'input in uso, -1 se il client non lo manda
   inputTicks: number; // tick giocati con quell'input
+  anchorVx: number; // l'ancora in volo (#547): pixel/s
+  anchorVy: number;
+  anchorLen: number; // pixel di catena tra l'ancora piantata e le mani
+  anchorMs: number; // ms appesi all'ancora
+  anchorZip: boolean; // Avanti tutta! in corso (#547): si sfreccia verso l'ancora
+  anchorThrows: number; // lanci dell'ancora da quando si è toccato terra, il bordo o si è stati colpiti
+  boardedBy?: string; // chi l'ha tirato a bordo con l'ancora (l'Arrembaggio di OrsoBlu, #557)
+  boardedMs: number; // ms in cui il suo colpo vale l'arrembaggio
+  airPops: number; // colpi in aria che l'hanno già rialzato da quando ha lasciato terra (Marcomunista, #557)
+  wetBy?: string; // chi l'ha bagnato con lo Sputo (lo Scivolone di Egiainuso, #557)
+  wetMs: number; // ms in cui resta bagnato
   pacDir?: { x: number; y: number }; // da Pac-Man (#427): dove si va, una sola tra x e y è -1 o 1
   pacPellets?: number; // da Pac-Man: palline mangiate in questa forma (piccola 1, grande PACMAN.bigPelletValue), accelerano
+  brownieNext?: string; // il brownie spaziale mangiato: l'effetto che salirà finita l'attesa (gear.ts)
+  heldKind?: string; // l'oggetto che ha in mano (items.ts lo aggiorna a ogni passo): le armi da impugnare cambiano i colpi (held.ts)
+  meleeHits?: number; // colpi a segno con l'arma da impugnare in mano: arrivata ai suoi usi si rompe
+  trappedBy?: string; // chi l'ha chiuso nella bolla dello sparabolle: a lui il KO se esce dall'alto
+  carrying?: string; // l'oggetto pesante sopra la testa o il mezzo che si cavalca (ride.ts), per movimento e salto
+  rideChargeMs?: number; // ms che restano dello scatto in sella (ride.ts)
 }
 
 // Quello che serve alla fisica oltre ai lottatori: l'arena e dove scrivere gli eventi
@@ -97,6 +115,13 @@ export interface PhysicsContext {
   arcade?: ArcadeWorld; // pezzi e blocchi dei power-up arcade (#427): nasce col primo pezzo
   stations?: StationWorld; // postazioni dell'arena (#433): nasce al primo passo
   bassanese?: BassaneseWorld; // i Bassanesi chiamati col telefono: nasce con la prima chiamata
+}
+
+// Gigante o mini dal brownie (gear.ts): il corpo da colpire e i colpi crescono o calano con lui
+export function bodyScale(f: Pick<Fighter, "powerup">): number {
+  if (f.powerup === "gigante" || f.powerup === "colosso") return GEAR.size.giant;
+  if (f.powerup === "mini") return GEAR.size.mini;
+  return 1;
 }
 
 export const emptyInput = (): InputState => ({
@@ -219,6 +244,7 @@ export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
     shieldDropTimer: 0,
     shieldStunTimer: 0,
     stunTimer: 0,
+    packed: false,
     holding: null,
     grabLagTimer: 0,
     grabTimer: 0,
@@ -246,6 +272,18 @@ export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
     pet: null,
     supremeRate: s.supremeRate ?? 1,
     supremeBusyMs: 0,
+    anchorVx: 0,
+    anchorVy: 0,
+    anchorLen: 0,
+    anchorMs: 0,
+    anchorThrows: 0,
+    anchorZip: false,
+    boardedBy: undefined,
+    boardedMs: 0,
+    airPops: 0,
+    wetBy: undefined,
+    wetMs: 0,
+    anchor: undefined, // esplicito: resetForMatch copia anche questo e toglie l'ancora rimasta
   };
 }
 

@@ -8,17 +8,17 @@ import { basename, dirname, extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { SpriteFolderSpec } from "../src/shared/characters";
 import { CHARACTERS, CREWS, DEFAULT_CHARACTER_ID, isSpriteFolder, resolvedAnimations, SPECIAL_KINDS, SPECIAL_SLOTS, specialAttackSpec, specialsFor, spriteStatePath, supremeAttackSpec } from "../src/shared/characters";
-import { ATTACKS, AUDIO, BONG, CAMERA, FUNGHI, FUNGO, HALL, COLORS, EFFECTS, FIGHTER, INPUT, ITEM_AMOUNTS, ITEM_RULES, LEDGE, MICELIO, NET, PAD, POWERUP, PREMATCH, PROTOCOL_VERSION, RUMBLE, SHIELD, SPORE, SUPREME_SPEEDS, TEAM_COLORS, TEAM_NAMES, VOICE, WORLD } from "../src/shared/constants";
+import { ANCHOR, ATTACKS, AUDIO, BONG, CAMERA, FUNGHI, FUNGO, GEAR, HALL, COLORS, EFFECTS, FIGHTER, INPUT, ITEM_AMOUNTS, ITEM_RULES, LEDGE, BELT, GENRE, MICELIO, NET, PAD, POWERUP, PREMATCH, PROTOCOL_VERSION, RUMBLE, SHIELD, SPORE, SUPREME_SPEEDS, TEAM_COLORS, TEAM_NAMES, VOICE, WORLD } from "../src/shared/constants";
 import { RECONNECT, RECONNECT_HOLD_MS } from "../src/shared/constants";
 import { COLORS_COLORBLIND, MAX_TEAMS, TEAM_COLORS_COLORBLIND } from "../src/shared/constants";
 import { BASSANESE, PACMAN, TETRIS, TRAINING } from "../src/shared/constants";
-import { STATION } from "../src/shared/constants";
+import { GROOVE, STATION } from "../src/shared/constants";
 import { DASH, DODGE, GAME_SPEED, RECOVERY, TICK_RATE } from "../src/shared/constants";
 import { predictionTraces } from "../src/shared/predictionTraces";
 import { HITSTOP, SMASH_CHARGE, SUPREME } from "../src/shared/constants";
 import { LESSONS, TUTORIAL_BOT, TUTORIAL_STAGE_ID } from "../src/shared/tutorial";
 import { CHALLENGES } from "../src/shared/challenges";
-import { DROPPABLE_ITEMS, ITEMS } from "../src/shared/items";
+import { DROPPABLE_ITEMS, ITEM_CATEGORIES, ITEMS } from "../src/shared/items";
 import { DEFAULT_STAGE_ID, STAGES, stageArtFiles } from "../src/shared/stages";
 import { stageCheckData } from "../src/shared/stageCheck";
 import { RANDOM_STAGE_ART } from "../src/shared/stageGenerator";
@@ -246,6 +246,7 @@ const data = {
   respawnMs: RESPAWN_MS, // attesa dopo un KO prima di ricomparire: la nuvoletta della rinascita (#470) arriva in tempo
   smashCharge: SMASH_CHARGE, // colpi caricati: il pesante a terra tenuto, per la predizione (E17)
   recovery: RECOVERY, // spinta del recupero (#11), per la predizione (E17)
+  anchor: ANCHOR, // l'ancora di Capt. OrsoBlu (#547): dove le mani tengono la catena, lancio per la predizione
   ledge: { hangOffsetY: LEDGE.hangOffsetY }, // bordo del palco (#110): dove sta la mano di chi è appeso
   shield: { maxHp: SHIELD.maxHp }, // scudo (#109): la bolla è grande in proporzione ai punti rimasti
   supreme: { max: SUPREME.max }, // barra della suprema (#101): piena a questo valore
@@ -256,6 +257,7 @@ const data = {
   hall: HALL, // sala d'attesa: misure di campo, canestro, scacchiera e tempi (src/shared/hall.ts)
   voice: VOICE, // chat vocale
   audio: AUDIO,
+  groove: GROOVE, // il battito del Groove di Bradipo (#557)
   audioFiles,
   input: INPUT,
   rumble: RUMBLE,
@@ -264,6 +266,8 @@ const data = {
   challenges: CHALLENGES, // sfide con medaglie (E15 passo 3)
   camera: CAMERA,
   pad: PAD, // bottoni sonori dell'arena musicale (#423)
+  belt: BELT, // nastri trasportatori della Fabbrica
+  genre: GENRE, // i generi del Palco
   tetris: TETRIS, // il power-up Tetris (#427)
   station: STATION, // postazioni: bombarda e munizioni (#433)
   pacman: PACMAN, // il power-up Pac-Man (#427)
@@ -278,6 +282,8 @@ const data = {
   bong: BONG, // #302
   funghi: FUNGHI, // #302
   fungo: FUNGO, // il fungo di Teemo (#419)
+  gear: GEAR, // oggetti per categoria (gear.ts)
+  itemCategories: ITEM_CATEGORIES, // le categorie degli oggetti, in ordine per la lobby
   spore: SPORE, // #358
   micelio: MICELIO, // #358
   colors: COLORS,

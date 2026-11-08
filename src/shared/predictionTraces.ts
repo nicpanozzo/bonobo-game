@@ -21,15 +21,18 @@ const MAX_TICKS = 480;
 // Arena, personaggio (statistiche diverse) e seme dei tasti
 const CASES: { stage: StageSpec; characterId: string; seed: number }[] = [
   { stage: getStage("palco"), characterId: "default", seed: 47 },
-  { stage: getStage("isole"), characterId: "orsoblu", seed: 19 },
+  { stage: getStage("isole"), characterId: "orsoblu", seed: 24 }, // seme che non lancia l'ancora (#547), che non si predice
   { stage: getStage("palestra"), characterId: "elvedeo", seed: 48 },
   { stage: generateStage(7), characterId: "default", seed: 34 },
   // Il palco con un ponte ad arco (#244) al posto delle due piattaforme basse: si cammina sulla curva
-  { stage: { ...getStage("palco"), id: "palco-arco", platforms: [{ x: 340, y: 420, width: 600, arch: 30 }, { x: 540, y: 290, width: 200 }] }, characterId: "bonobot", seed: 150 }, // seme scelto perché cammina a lungo sulla curva
+  { stage: { ...getStage("palco"), genres: undefined, pads: undefined, hazards: undefined, id: "palco-arco", platforms: [{ x: 340, y: 420, width: 600, arch: 30 }, { x: 540, y: 290, width: 200 }] }, characterId: "bonobot", seed: 150 }, // seme scelto perché cammina a lungo sulla curva
   // Il canale di Padova (#246): ponte ad arco e due scale inclinate che scendono al fondo; seme che ci cammina sopra a lungo
   {
     stage: {
       ...getStage("palco"),
+      genres: undefined, // il canale non ha i dischi e i generi del Palco
+      pads: undefined,
+      hazards: undefined,
       id: "canale-scala",
       width: 1920,
       solids: [{ x: 100, y: 520, width: 620, height: 200 }, { x: 1200, y: 520, width: 620, height: 200 }, { x: 720, y: 690, width: 480, height: 30 }],
@@ -145,7 +148,8 @@ function nextSegments(random: () => number, runRandom: () => number): { keys: st
   return [{ keys: dir + jump + down + dodge + attack + up + run, hold: 1 + Math.floor(random() * 30) }];
 }
 
-const outOfScope = (f: Fighter) => f.respawning || f.eliminated || f.hitstun || f.ledgeIndex >= 0 || f.riding >= 0;
+// L'ancora di OrsoBlu (#547) non si predice: la traccia si ferma al lancio
+const outOfScope = (f: Fighter) => f.respawning || f.eliminated || f.hitstun || f.ledgeIndex >= 0 || f.riding >= 0 || f.anchor !== undefined;
 
 export function predictionTraces(): PredictionTrace[] {
   return CASES.map(({ stage, characterId, seed }) => {

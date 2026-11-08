@@ -11,6 +11,9 @@ export class Prematch {
   private waitedMs = 0; // in "waiting": da quanto ci sono almeno minFighters lottatori
   private ready = new Set<string>();
 
+  // autoStartMs: dopo quanto si parte anche senza tutti pronti (i minigiochi di Bonobo Party, #579, aspettano meno)
+  constructor(private autoStartMs: number = PREMATCH.autoStartMs) {}
+
   setReady(id: string, ready: boolean) {
     if (ready) this.ready.add(id);
     else this.ready.delete(id);
@@ -42,7 +45,7 @@ export class Prematch {
       return null;
     }
     this.waitedMs += dtMs;
-    if (!waitingFor.every((id) => this.ready.has(id)) && this.waitedMs < PREMATCH.autoStartMs) return null;
+    if (!waitingFor.every((id) => this.ready.has(id)) && this.waitedMs < this.autoStartMs) return null;
     this.phase = "starting";
     this.leftMs = PREMATCH.introMs + PREMATCH.countdownMs;
     return "begin";
@@ -54,7 +57,7 @@ export class Prematch {
       phase: this.phase,
       leftMs: Math.max(0, Math.round(this.leftMs)),
       ready: ids.filter((id) => this.ready.has(id)),
-      autoStartMs: this.phase === "waiting" && ids.length >= PREMATCH.minFighters ? Math.max(0, Math.round(PREMATCH.autoStartMs - this.waitedMs)) : null,
+      autoStartMs: this.phase === "waiting" && ids.length >= PREMATCH.minFighters ? Math.max(0, Math.round(this.autoStartMs - this.waitedMs)) : null,
     };
   }
 }

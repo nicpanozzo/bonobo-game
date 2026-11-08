@@ -152,6 +152,38 @@ export const JAB = {
   ] as AttackSpec[],
 };
 
+// Arrembaggio, la combo di Capt. OrsoBlu (#557): chi è appena stato tirato a bordo dall'ancora (Tutti a bordo!,
+// ANCHOR.pull*) e viene colpito da lui con jab, pesante, attacco in corsa o Avanti tutta! vola più lontano
+export const ARREMBAGGIO = {
+  windowMs: 700, // ms dopo lo strattone dell'ancora in cui il colpo di OrsoBlu vale l'arrembaggio
+  knockbackMult: 1.35, // il colpo che chiude l'arrembaggio spinge di più
+  kinds: ["light", "heavy", "dashAttack", "specialSide"] as AttackKind[],
+};
+
+// Piano quinquennale, la combo di Marcomunista (#557): leggero e a gravità bassa, ogni suo colpo in aria che prende
+// lo rimette un po' in su, così resta in aria e allunga la catena (lo stallo in aria dei platform fighter)
+export const PIANO_QUINQUENNALE = {
+  popVy: -260, // pixel/s: chi colpisce in aria sale almeno così (negativo = in su)
+  maxPops: 3, // colpi che lo rialzano prima di toccare terra: poi cade come sempre
+  kinds: ["lightAir", "heavyAir"] as AttackKind[],
+};
+
+// Groove, la combo di Bradipo Giallo (#557): il bassista picchia a tempo. Un suo colpo che prende vicino a un battito
+// della musica dell'arena (StageSpec.music.bpm, sennò AUDIO.musicBpm) fa più danno; Godot fa pulsare il battito sotto di lui
+export const GROOVE = {
+  windowMs: 100, // ms prima o dopo il battito in cui il colpo è a tempo
+  damageMult: 1.3, // danno del colpo a tempo
+  kinds: ["light", "heavy", "lightUp", "lightDown", "lightAir", "heavyUp", "heavyDown", "heavyAir", "dashAttack"] as AttackKind[],
+};
+
+// Scivolone, la combo di Egiainuso (#557): chi prende il suo Sputo resta bagnato per un po'. La presa di Egiainuso
+// arriva più lontano su chi è bagnato, e il lancio che segue lo fa scivolare via più lontano
+export const SCIVOLONE = {
+  wetMs: 2500, // ms in cui si resta bagnati dallo sputo
+  grabReachPx: 40, // pixel in più della presa di Egiainuso verso chi è bagnato
+  throwMult: 1.25, // knockback del lancio di chi è bagnato
+};
+
 // Rialzata al volo (tech di Smash e Brawlhalla): lanciati da un colpo, premere scudo poco prima di toccare terra
 // fa rialzare subito, fermi o rotolando nella direzione tenuta, invece di restare storditi a terra
 export const TECH = {
@@ -210,6 +242,46 @@ export const CHARGE_EXAMPLE: ChargeSpecial = { type: "charge", name: "Carica", m
 export const RECOVERY = {
   speed: 1050, // velocità verso l'alto, pixel/s
   drift: 300, // velocità orizzontale verso la direzione tenuta, pixel/s
+};
+
+// L'ancora-ragnatela di Capt. OrsoBlu (#547): il suo recupero spara l'ancora, che si pianta in blocchi e
+// piattaforme; appeso si dondola come un pendolo con la catena tesa. Numeri provvisori, da rivedere al playtest (#22)
+export const ANCHOR = {
+  throwSpeed: 1900, // pixel/s dell'ancora in volo
+  retractSpeed: 2600, // pixel/s dell'ancora che torna in mano quando non trova niente
+  maxLength: 400, // pixel di catena al massimo: oltre, l'ancora torna indietro
+  minLength: 56, // pixel: arrampicandosi non si va più vicini di così
+  upAngleDeg: 72, // solo su: quasi in verticale, un po' in avanti
+  diagAngleDeg: 45, // su + una direzione: in diagonale da quella parte
+  forwardAngleDeg: 6, // la speciale neutra (Tutti a bordo!): quasi dritta in avanti, appena in su
+  forwardY: 50, // pixel sopra i piedi da cui parte quella in avanti: all'altezza del petto, così prende chi ha davanti
+  throwLift: 260, // pixel/s verso l'alto al lancio: il lancio frena la caduta
+  maxThrows: 2, // lanci prima di toccare terra, aggrapparsi a un bordo o essere colpiti
+  gripY: 80, // pixel sopra i piedi dove le mani tengono la catena
+  pumpAccel: 1100, // pixel/s² orizzontali tenendo avanti o indietro: lo slancio del pendolo
+  climbSpeed: 300, // pixel/s di catena accorciata tenendo su
+  lowerSpeed: 300, // pixel/s di catena allungata tenendo giù
+  maxSwingSpeed: 1150, // pixel/s al massimo appesi
+  swingDrag: 0.25, // frazione della velocità persa ogni secondo appesi
+  releaseBoost: 420, // pixel/s in più verso l'alto staccandosi col salto
+  maxHangMs: 4000, // ms appesi prima di lasciare la catena da soli
+  hookStepPx: 8, // pixel tra un controllo e l'altro dell'ancora in volo, così non passa attraverso le piattaforme sottili
+  platformGrabPx: 8, // pixel sopra o sotto una piattaforma sottile in cui l'ancora si pianta
+  zipSpeed: 1400, // pixel/s di Avanti tutta!: da appeso, Speciale riavvolge la catena e sfreccia verso l'ancora
+  zipEndSpeed: 260, // pixel/s che restano arrivati in cima: abbastanza per salire sul bordo, non per volare via
+  zipEndLagMs: 120, // ms dopo la teleferica prima di poter attaccare di nuovo
+  // Tutti a bordo!: l'ancora in volo che prende qualcuno lo tira verso OrsoBlu e torna in mano
+  pullDamage: 6, // percentuale
+  pullSpeed: 760, // pixel/s verso di lui
+  pullLift: 260, // pixel/s verso l'alto, così non striscia per terra
+  pullHitstunMs: 320, // ms senza controlli mentre arriva: il tempo per colpirlo
+  // Mira aiutata: l'ancora va verso il punto agganciabile più vicino alla direzione del lancio, se c'è
+  assistUpDeg: 30, // gradi di tolleranza per il lancio in su
+  assistDiagDeg: 25, // gradi per quello in diagonale
+  assistForwardDeg: 8, // gradi per quello in avanti: stretto, così prende chi ha davanti
+  assistStepPx: 16, // pixel tra i punti di bordi e piattaforme che si provano
+  releasePush: 180, // pixel/s in più nella direzione tenuta staccandosi col salto
+  platformHopPx: 40, // pixel sopra una piattaforma sottile a cui si arriva salendoci dalla catena
 };
 
 // Statistiche dei personaggi (E11, #13): moltiplicatori dei numeri di FIGHTER in characters.ts.
@@ -582,6 +654,38 @@ export const PAD = {
   landTolerancePx: 4, // px: chi atterra con i piedi fin qui dalla superficie del bottone lo preme
 };
 
+// L'impacchettatrice della Fabbrica (hazard con pack, physics/elements.ts): chi ci finisce sotto resta chiuso in una scatola
+export const PACK = {
+  mashMs: 90, // ms tolti alla scatola per ogni tasto appena premuto da chi ci è dentro
+  immuneMs: 1500, // ms dopo l'uscita in cui non si viene impacchettati di nuovo
+};
+
+// Il Diluvio (src/shared/floodStage.ts): quanto in fretta sale il mare e quanto si vede sopra di lui
+export const FLOOD = {
+  startMs: 6000, // ms di partita prima che il mare cominci a salire
+  pxPerS: 24, // pixel/s all'inizio
+  accelPxPerS2: 0.1, // pixel/s²: sale sempre un po' più in fretta, chi aspetta in basso viene preso
+  stepMs: 250, // ms tra uno scalino e l'altro della zona di espulsione (la vista dell'arena cambia così spesso)
+  skyPx: 1700, // pixel tra la superficie e il cielo che fa KO: chi scappa troppo in alto esce
+  respawnPx: 760, // pixel sopra la superficie del punto di ritorno
+  drownPx: 60, // pixel sotto la superficie oltre i quali un pezzo sommerso sparisce
+};
+
+// Nastri trasportatori della Fabbrica (src/shared/physics/belts.ts): velocità e verso stanno nei dati dell'arena
+export const BELT = {
+  turboMult: 2, // con due leve tirate insieme il nastro va a questa velocità per la durata delle leve
+  feetTolerancePx: 2, // px: con i piedi fin qui dalla superficie del nastro ci si è sopra
+  warnMs: 2000, // ms prima del cambio di verso automatico in cui suona la sirena (disegno e suono nel client)
+};
+
+// Il Palco (src/shared/physics/genre.ts): cosa cambia ogni genere musicale
+export const GENRE = {
+  metalKnockbackMult: 1.25, // col metal i colpi lanciano più lontano di tanto
+  reggaeGravityMult: 0.55, // col reggae la gravità è da luna: si salta più in alto e si cade piano
+  technoBlinkBeats: 4, // con la techno le piattaforme della techno si scambiano ogni tanti battiti
+  warnMs: 2000, // ms prima del cambio automatico di genere in cui il DJ lo annuncia (disegno e suono nel client)
+};
+
 // Postazioni (#433, src/shared/physics/stations.ts): bombarda e munizioni, come in Lovers in a Dangerous Spacetime.
 // Valgono quando la postazione nei dati dell'arena non dice altro
 export const STATION = {
@@ -617,7 +721,7 @@ export const STATION = {
 
 // Sala d'attesa 3D (src/shared/hall.ts): misure in centimetri, tempi in millisecondi
 export const HALL = {
-  width: 5400, // pavimento della sala, cm (da -2700 a 2700): ai lati la zona giochi, a sinistra gli scacchi e a destra il basket
+  width: 5800, // pavimento della sala, cm (da -2900 a 2900): ai lati la zona giochi, a sinistra gli scacchi e a destra il basket
   depth: 1800, // cm (da -900 davanti... a 900 verso la telecamera)
   walkSpeed: 520, // cm/s camminando
   accel: 4200, // cm/s² per arrivare alla velocità piena
@@ -640,12 +744,16 @@ export const HALL = {
   countdownMs: 5000, // dal "tutti pronti" al via
   returnAfterMs: 12_000, // a fine partita, dopo tanto si torna da soli nella sala (se nessuno chiede la rivincita)
   minFighters: 2, // lottatori (bot compresi) per poter partire
+  soloDummyMs: 1500, // ms da solo nel cerchio dei pronti prima che la sala chiami un manichino fermo
   gongCooldownMs: 1500,
   sendEveryTicks: 2, // uno snapshot della sala ogni 2 passi (30 al secondo)
   boardRows: 10, // righe del tabellone della classifica in sala
   cageRadius: 90, // cm: le due gabbie dei bot (chiama / manda via)
   gongRadius: 90, // cm: dentro si suona il gong col tasto leggero
   throneRadius: 80, // cm: il trono del campione
+  computerX: 1380, // cm: il computer delle regole (#567), davanti a destra
+  computerZ: 520, // cm
+  computerRadius: 90, // cm: dentro, il colpo leggero apre la schermata delle regole
   shoveLift: 320, // cm/s verso l'alto di chi viene spinto: vola via invece di scivolare
   collideHeight: 120, // cm di differenza d'altezza oltre cui due giocatori non si urtano (si salta sopra)
   boardRefreshMs: 10_000, // ogni quanto il server rilegge la classifica per il tabellone (non a ogni snapshot)
@@ -669,7 +777,7 @@ export const HALL = {
   courtRadius: 600, // cm: mezzo campo quadrato, metà lato (zona "court")
   threePointRadius: 600, // cm dal punto sotto il ferro: tirando da più lontano il canestro vale 3
   freeThrowDist: 420, // cm dal punto sotto il ferro alla lunetta (solo da disegnare)
-  rackX: 1900, // cm: centro della rastrelliera dei palloni da basket (lì tornano)
+  rackX: 2100, // cm: centro della rastrelliera dei palloni da basket (lì tornano)
   rackZ: -800,
   rackGap: 40, // cm tra un pallone e l'altro sulla rastrelliera
   basketballs: 3,
@@ -878,6 +986,175 @@ export const FUNGO = {
   slowMult: 0.65, // frazione della velocità orizzontale finché dura il veleno, come il rallentamento di Teemo
   bounceVx: 260, // pixel/s in avanti: un fungo che cade su un altro rimbalza nella direzione del lancio
   bounceVy: 420, // pixel/s verso l'alto del rimbalzo
+};
+
+// Oggetti per categoria (Nicola, 5 novembre 2026): due per categoria, ognuno con la sua versione rara che fa una cosa
+// particolare (meccaniche alla The Binding of Isaac). Un blocco per oggetto; le categorie sono in ItemSpec.category
+export const GEAR = {
+  // Lancio: la ciabatta vola tesa e veloce; quella della mamma insegue l'avversario più vicino
+  ciabatta: {
+    throwSpeed: 1250, // pixel/s in avanti: più tesa della banana
+    throwLift: 120, // pixel/s verso l'alto: quasi dritta
+    throwUpSpeed: 1150, // pixel/s tenendo su
+    gravityMult: 0.55, // in volo cade piano
+  },
+  ciabattaMamma: {
+    homingMs: 1800, // ms in cui insegue, poi cade come le altre
+    speed: 900, // pixel/s mentre insegue
+    turnDegPerSec: 300, // gradi al secondo di virata verso il bersaglio
+  },
+  // Lancio: il petardo si accende quando lo si lancia o lo si posa, si attacca a chi o a dove tocca e scoppia
+  petardo: {
+    fuseMs: 1600, // ms di miccia dal lancio
+    radius: 95, // pixel: raggio dello scoppio, dal centro al punto più vicino del corpo
+    damage: 15, // percentuale dello scoppio (prende anche chi l'ha lanciato, come le bombe di Isaac)
+    knockback: 560, // pixel/s di lancio di base
+    knockbackGrowth: 6, // pixel/s in più per ogni punto di percentuale
+    angleDeg: 55, // angolo di lancio, dal centro dello scoppio verso fuori
+    // Il petardo a grappolo: lo scoppio sparge petardini che scoppiano a loro volta
+    clusterCount: 4, // petardini sparsi dallo scoppio
+    clusterSpeed: 520, // pixel/s dei petardini
+    clusterLift: 520, // pixel/s verso l'alto dei petardini
+    clusterFuseMs: 700, // ms di miccia dei petardini, più clusterStepMs per ognuno dopo il primo
+    clusterStepMs: 120,
+    clusterRadius: 60, // pixel: raggio dello scoppio di un petardino
+    clusterDamage: 7, // percentuale di un petardino
+    clusterKnockback: 380, // pixel/s di lancio di base di un petardino
+  },
+  // Consumo: il caffè fa andare più svelti; la moka a razzo fa volare tenendo il salto
+  caffe: {
+    ms: 8000, // ms di effetto
+    speedMult: 1.3, // velocità orizzontale
+    attackSpeedMult: 1.25, // velocità degli attacchi normali
+  },
+  moka: {
+    ms: 7000, // ms di volo
+    speedMult: 1.2, // velocità orizzontale
+    thrust: 2600, // pixel/s² verso l'alto tenendo il salto
+    maxRise: 520, // pixel/s massimi di salita
+  },
+  // Consumo: il brownie spaziale, come le pillole di Isaac, sale dopo un po' con un effetto a sorpresa
+  brownie: {
+    delayMs: 2500, // ms in cui non succede niente
+    effectMs: 8000, // ms dell'effetto
+    nonnaMs: 11000, // ms del brownie della nonna: sempre gigante, e quando atterra fa tremare la terra
+    sleepMs: 2200, // ms addormentati, l'effetto peggiore: fermi e colpibili come con lo scudo rotto
+  },
+  // Gigante e mini, dal brownie
+  size: {
+    giant: 1.5, // scala del corpo da giganti
+    giantDamageMult: 1.35, // danno dei colpi dati
+    giantKnockbackMult: 0.7, // frazione del volo preso: si è pesanti
+    giantSpeedMult: 0.9,
+    mini: 0.6, // scala del corpo da mini
+    miniDamageMult: 0.75,
+    miniKnockbackMult: 1.35,
+    miniSpeedMult: 1.3,
+    quakeRadius: 220, // pixel: chi è a terra così vicino a un gigante della nonna che atterra salta via
+    quakeDamage: 5, // percentuale della scossa
+    quakeVy: 620, // pixel/s verso l'alto della scossa
+  },
+};
+
+// Oggetti da impugnare e da sparo (held.ts): J colpisce o spara, K lancia. Le armi da impugnare allungano e rinforzano
+// le mosse normali del personaggio, così vanno con le animazioni che ha già
+export const HELD = {
+  // La scopa: più portata. L'ombrellone (raro): colpi che lanciano in alto, e tenendo il salto in aria si plana
+  scopa: { reach: 46, damage: 4, uses: 12 }, // pixel di portata in più, percentuale in più, colpi a segno prima di rompersi
+  ombrellone: { reach: 40, damage: 5, uses: 12, launchDeg: 80, glideFallSpeed: 140 }, // angolo dei colpi; pixel/s di caduta planando
+  // Il pesce surgelato congela chi prende; l'anguilla (rara) dà una scossa a catena a chi gli sta vicino
+  pesce: { reach: 30, damage: 2, uses: 8, freezeMs: 1300 }, // ms congelati: fermi e colpibili
+  anguilla: { reach: 30, damage: 3, uses: 8, zapRadius: 240, zapDamage: 6, zapStunMs: 700 }, // pixel dal colpito, percentuale e ms storditi della scossa
+  // La pistola ad acqua spara gocce che spingono; l'idrante (raro) tenendo J carica un getto che attraversa l'arena
+  pistola: { ammo: 14, cooldownMs: 160, speed: 1300, lift: 40, flyMs: 600 }, // colpi, ms tra due colpi, pixel/s, ms di volo
+  idrante: {
+    ammo: 3, // getti
+    chargeMs: 700, // ms tenendo J per caricare il getto; lasciando prima esce una goccia
+    length: 900, // pixel di getto davanti
+    height: 34, // pixel di spessore del getto
+    damage: 16,
+    knockback: 620, // pixel/s di lancio di base
+    knockbackGrowth: 7, // pixel/s in più per ogni punto di percentuale
+    angleDeg: 18, // il getto spinge quasi in orizzontale
+  },
+  // Lo sparabolle chiude chi prende in una bolla che sale; quello triplo (raro) spara tre bolle a ventaglio che rimbalzano
+  sparabolle: { ammo: 6, cooldownMs: 450, speed: 380, flyMs: 2200, spreadDeg: 16 }, // ms di volo di una bolla, gradi tra le tre bolle
+  bolla: {
+    trapMs: 1800, // ms chiusi nella bolla
+    riseSpeed: 150, // pixel/s verso l'alto mentre si è dentro: vicino al cielo si può finire fuori
+    popDamage: 5, // percentuale quando la bolla scoppia da sola
+    popVy: 380, // pixel/s verso l'alto allo scoppio
+    bounceVy: 520, // pixel/s verso l'alto quando una bolla rimbalzina tocca terra
+  },
+  goccia: { damage: 3, knockback: 260 }, // la goccia della pistola: poco danno, spinge
+};
+
+// Oggetti pesanti e da cavalcare (physics/ride.ts), come GEAR: due per categoria, ognuno con la sua versione rara
+export const RIDE = {
+  // Peso: si porta sopra la testa, si va piano e si salta poco; scagliato vola corto e cade pesante
+  heavy: {
+    speedMult: 0.6, // velocità orizzontale con l'oggetto sopra la testa
+    jumpMult: 0.72, // altezza del salto
+    throwSpeed: 720, // pixel/s in avanti
+    throwLift: 300, // pixel/s verso l'alto
+    throwUpSpeed: 900, // pixel/s tenendo su
+    gravityMult: 1.6, // in volo cade svelto
+  },
+  // La cassa si rompe dove colpisce o atterra e lascia uno (quella d'oro tre) degli oggetti della stanza
+  crate: {
+    popVy: 520, // pixel/s verso l'alto degli oggetti che escono
+    popVx: 260, // pixel/s di lato, sparsi
+  },
+  // La lavatrice scagliata atterra e va in centrifuga: chi la tocca prende piccoli colpi a ripetizione
+  washer: {
+    spinMs: 4500, // ms di centrifuga; intanto non si raccoglie
+    tickMs: 300, // ms tra un colpo e l'altro a chi la tocca
+    damage: 3, // percentuale di ogni colpo
+    knockback: 330, // pixel/s di lancio di base di ogni colpo
+    knockbackGrowth: 2, // pixel/s in più per ogni punto di percentuale
+    angleDeg: 70, // quasi in verticale: si viene sbatacchiati
+    reach: 14, // pixel attorno alla lavatrice in cui si viene presi
+    // Quella impazzita salta addosso all'avversario più vicino di chi l'ha scagliata
+    crazySpinMs: 6500,
+    hopEveryMs: 650, // ms tra un salto e l'altro, da ferma a terra
+    hopVx: 420, // pixel/s verso il bersaglio
+    hopVy: 640, // pixel/s verso l'alto
+  },
+  // Cavalcatura: ci si sale sopra, a terra si va più svelti e si investe chi si incontra
+  mount: {
+    speedMult: 1.5, // velocità orizzontale
+    jumpMult: 0.85, // altezza del salto
+    ramSpeed: 320, // pixel/s: sopra questa velocità chi si tocca viene investito
+    ramDamage: 8, // percentuale dell'investimento
+    ramKnockback: 430, // pixel/s di lancio di base
+    ramGrowth: 5, // pixel/s in più per ogni punto di percentuale
+    ramAngleDeg: 35,
+    ramCooldownMs: 500, // ms prima di poter investire di nuovo lo stesso
+    chargeSpeed: 950, // pixel/s dello scatto con J
+    chargeMs: 320, // ms di scatto
+    chargeCooldownMs: 1100, // ms tra uno scatto e l'altro
+    dismountSpeed: 820, // pixel/s del mezzo che scende e va avanti da solo con K (colpisce come un lancio)
+  },
+  // Il monopattino a razzo: va sempre avanti da solo, in aria plana, finito il razzo scoppia sotto i piedi
+  rocket: {
+    speed: 780, // pixel/s in avanti, sempre
+    gravityMult: 0.3, // in aria si cade piano
+    fuelMs: 6000, // ms di razzo, poi scoppia
+    boomRadius: 90, // pixel dello scoppio finale
+    boomDamage: 10,
+    boomKnockback: 520,
+  },
+  // Il carrello della spesa: chi si investe ci finisce dentro; J lo catapulta, da solo dopo holdMs
+  cart: {
+    speedMult: 1.35, // il carrello normale è meno svelto del monopattino
+    turboSpeedMult: 1.65, // quello da tre
+    holdMs: 2600, // ms al massimo dentro il carrello
+    catapultDamage: 9, // percentuale della catapulta
+    catapultKnockback: 720, // pixel/s di lancio di base
+    catapultGrowth: 6,
+    catapultAngleDeg: 50,
+    seatLift: 26, // pixel sopra i piedi del guidatore dove sta chi è dentro
+  },
 };
 
 // Il filo di Kirschner di Dr. Micelium (#358): chi è infettato dalle spore va più piano, lui picchia più forte.
@@ -1108,4 +1385,78 @@ export const BOLOGNA = {
   busSpeedPxS: 400, // pixel/s mentre entra ed esce
   bellSwingMs: 4400, // l'altalena della campana tra le torri: un'andata e ritorno completa...
   bellAmplitudeDeg: 38, // ...fino a tanti gradi dalla verticale per parte: agli estremi sfiora la postazione (A) di ogni torre
+};
+
+// Bonobo Party (#579): tabellone a giri e minigiochi (src/shared/party/). Tempi in ms, prezzi e premi in banane
+export const PARTY = {
+  minRounds: 3,
+  maxRounds: 20,
+  defaultRounds: 10, // circa 30 minuti in quattro
+  startBananas: 10,
+  crownPrice: 20, // la Corona si compra passandoci sopra con almeno tante banane
+  placeBananas: [10, 5, 2, 0], // premio del minigioco per posto: primo, secondo, terzo, quarto (e oltre)
+  squareBananas: 3, // casella Banana (+) e Buccia (-)
+  dice: 6, // facce del dado
+  introMs: 4000, // il tabellone si presenta prima del primo tiro
+  rollMs: 15000, // tempo per tirare il dado: poi tira il server
+  stepMs: 300, // una casella di cammino
+  squareMs: 1800, // l'effetto della casella resta a schermo
+  pathMs: 8000, // tempo per scegliere la strada all'incrocio
+  shopMs: 10000, // tempo in bottega
+  voteMs: 15000, // tempo per votare il minigioco (o finché votano tutti)
+  revealMs: 3000, // il minigioco scelto resta a schermo prima di partire
+  practiceMs: 15000, // prova libera prima del minigioco: poi si parte anche senza tutti pronti
+  resultsMs: 3000, // dopo il GAME! del minigioco, prima di tornare al tabellone
+  feedbackMs: 35000, // tempo per lasciare il feedback (o finché lo mandano tutti)
+  podiumMs: 45000, // il podio, poi tutti in sala
+  botThinkMs: 1000, // i bot ci pensano un attimo, così si vede cosa fanno
+  sendEveryTicks: 6, // un messaggio party ogni tanti passi (10 al secondo)
+  voteOptions: 3, // minigiochi tra cui votare
+  recentMinigames: 4, // non si ripesca uno degli ultimi tanti minigiochi (se ce ne sono abbastanza)
+  feedbackMaxChars: 500,
+  bonusCrowns: 1, // premi di fine partita: Corone a chi ha vinto più minigiochi e a chi ha più banane
+};
+
+// I minigiochi di Bonobo Party (#579, src/shared/party/minigames/): durate in ms, distanze in pixel, velocità in pixel/s
+export const MINIGAME = {
+  fallGravity: 1400, // pixel/s²: banane e monete che cadono dal cielo (più lente dei lottatori, per vederle)
+  pioggia: { durationMs: 40000, everyMs: 450, goldEvery: 7, goldValue: 3, maxOnStage: 26, dropOnHit: 0.5, maxDrop: 6, pickRadius: 18 },
+  mezzogiorno: { rounds: 5, readyMs: 1200, waitMinMs: 1500, waitMaxMs: 4500, goMs: 2500, showMs: 1600, botReactMinMs: 260, botReactMaxMs: 620 },
+  contagio: { durationMs: 45000, infectPoints: 2, infectedColor: 0x6fbf3a },
+  scalata: { durationMs: 60000, afterFirstMs: 12000, height: 2700, rowGap: 150, checkpointEvery: 600 },
+  crollo: { durationMs: 60000, firstFallMs: 6000, everyMs: 2200, warnMs: 1600, keep: 2 },
+  // Il Bancomat Rotto: i colpi pesanti vicino alla macchina (range px) fanno uscire monete, poi si ricarica (cooldownMs)
+  bancomat: { durationMs: 40000, range: 130, cooldownMs: 700, coinsPerHit: 3, jackpotEvery: 6, jackpotCoins: 8, coinSpeed: 520, pickRadius: 16, maxCoins: 40, lostOnKo: 3 },
+  // Il Colosso: punti al Colosso per ogni KO, a chi lo butta fuori koPoints (e helpPoints agli altri cacciatori)
+  colosso: { durationMs: 45000, giantPoints: 2, koPoints: 4, helpPoints: 1 },
+  // Acqua Alta: l'acqua parte da startY e sale fino a topY in riseMs (pixel dell'arena), dopo una pausa iniziale
+  acqua: { durationMs: 50000, startY: 690, topY: 250, holdMs: 3000, riseMs: 40000 },
+  // Attraversa la Strada: corsie tra i due marciapiedi; ogni corsia ha un passaggio ogni periodMs (min..max), preavviso warnMs
+  strada: { durationMs: 45000, lanes: 5, periodMinMs: 1800, periodMaxMs: 3400, warnMs: 750, passMs: 550, bumpVx: 520, bumpVy: -680 },
+  // Il Filo: ognuno lascia un filo di micelio lungo maxPoints punti (uno ogni stepPx), che dura lifeMs; toccare quello
+  // degli altri (entro hitPx) butta fuori. Una vita sola
+  filo: { durationMs: 45000, stepPx: 22, maxPoints: 70, lifeMs: 7000, hitPx: 14, graceMs: 1500 },
+  // Mattoni a Mazzate: palle che rimbalzano (velocità px/s), colpite con le mosse entro reachPx; ogni mattone del proprio
+  // colore rotto vale un punto. Chi li finisce tutti per primo vince subito
+  mattoni: { durationMs: 50000, balls: 2, ballR: 16, speed: 560, maxSpeed: 900, reachPx: 90, bricksEach: 8, gravity: 0 },
+  // Casse al Posto Giusto: si spingono a colpi (pushVx px/s, frenate da friction al secondo) nella porta della propria parte
+  casse: { durationMs: 50000, crates: 3, size: 56, pushVx: 620, pushVy: -260, reachPx: 80, friction: 1.8, goalW: 150 },
+  // Il Muro: un muro con un buco arriva ogni everyMs e attraversa l'arena a speed px/s; chi non è nella posa del buco vola
+  muro: { durationMs: 50000, firstMs: 2500, everyMs: 4200, speed: 520, minSpeed: 420, maxSpeed: 760, bumpVx: 900, bumpVy: -700 },
+  // Ieri Me: giri da roundMs; a ogni giro si riparte e i fantasmi rifanno i giri di prima. Punti: hitPoints a colpo, koPoints a KO
+  ierime: { rounds: 4, roundMs: 10000, hitPoints: 1, koPoints: 3 },
+  // Un Solo Tasto: un tasto d'azione a testa, a sorte; punti a KO
+  unTasto: { durationMs: 45000, koPoints: 1 },
+  // Lo Specchio: ogni swapMs i comandi girano di un posto; punti a chi è al comando (hitPoints a colpo, koPoints a KO)
+  specchio: { durationMs: 45000, swapMs: 10000, hitPoints: 1, koPoints: 3 },
+  // Il Bonobo a Quattro: tutti guidano un solo bonobo gigante contro il Rivale; koPoints a KO del Rivale, -fallPoints a caduta
+  quattro: { durationMs: 45000, koPoints: 2, fallPoints: 1, rivalReach: 90, rivalThinkMs: 180 },
+  // Il Burattinaio: dall'alto lascia cadere mattoni, petardi e bucce (cooldownMs tra un lancio e l'altro); punti a chi colpisce
+  burattinaio: { durationMs: 45000, cooldownMs: 650, brickPoints: 2, boomPoints: 2, peelPoints: 1, fuseMs: 700, boomR: 120, peelMs: 6000, safeEveryMs: 1500 },
+  // Sala Prove: i colpi dati entro windowMs dal battito (bpm) valgono beatPoints, i KO a tempo koPoints
+  salaProve: { durationMs: 40000, bpm: 120, windowMs: 140, beatPoints: 2, offPoints: 0, koPoints: 3 },
+  // Gara di Provocazioni: si mostra una sequenza (showMs a passo), poi si ripete entro stepMs a passo più graceMs
+  provocazioni: { durationMs: 60000, startLen: 2, maxLen: 7, showMs: 800, stepMs: 1000, graceMs: 1500, pauseMs: 1500, botStepMs: 520, botMissChance: 0.12 },
+  // La Sfida del tabellone (carta Evento): duello 1 contro 1 a una vita, già un po' ammaccati; chi vince prende banane all'altro
+  sfida: { durationMs: 40000, startPercent: 60, bananas: 5 }, // ms, % di danno all'inizio, banane che passano di mano
 };

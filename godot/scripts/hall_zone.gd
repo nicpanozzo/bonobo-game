@@ -21,7 +21,7 @@ const FIBA_HOOP := 1.575 # m dal fondo al centro del ferro, nel campo vero largo
 const FIBA_THREE := 6.75 # m, raggio della linea da tre nel campo vero
 const BOARD_BORDER := 0.06 # quota del lato della scacchiera occupata dalla cornice (chessboard_material)
 
-const MODE_COLORS := {"ffa": Color("f1c40f"), "teams": Color("3498db"), "flag": Color("2ecc71"), "race": Color("b06bff")}
+const MODE_COLORS := {"ffa": Color("f1c40f"), "teams": Color("3498db"), "flag": Color("2ecc71"), "race": Color("b06bff"), "party": Color("ff8ad8")}
 const BOT_ADD := Color("2ecc71")
 const BOT_REMOVE := Color("e74c3c")
 
@@ -91,6 +91,7 @@ func setup(z: Dictionary, game: Dictionary, preview: Texture2D = null) -> void:
 		"court": _build_court(text)
 		"chessboard": _build_chessboard(text)
 		"rack": _build_rack(text)
+		"computer": _build_computer(text)
 		_: _build_generic(text)
 
 
@@ -155,6 +156,11 @@ func tick(delta: float, occupants: int, votes: int, leading: bool, ready_total :
 			_score_points.scale = _score_name.scale
 		"chessboard":
 			set_param(_board_frame_mat, "intensity", 1.4 + _flash * 4.0 * (0.5 + 0.5 * sin(_t * 18.0)))
+		"computer":
+			# lo schermo respira piano, si accende con qualcuno davanti e lampeggia quando si apre o cambiano le regole
+			set_param(_bounce_mat, "intensity", 1.2 + _occupied * 1.2 + _flash * 3.0 + sin(_t * 2.4) * 0.15)
+			if _count != null:
+				_count.modulate.a = (0.55 + _occupied * 0.45) * keep
 
 
 # Un evento su questa zona: voto, rimbalzo, gong, trono
@@ -285,6 +291,15 @@ func _mode_icon(parent: Node3D) -> void:
 						var sq := _box(Vector3(0.14, 0.12, 0.03), white if (i + j) % 2 == 0 else dark)
 						sq.position = Vector3(-0.2 + i * 0.14, 0.45 - j * 0.12, 0.0)
 						parent.add_child(sq)
+		"party": # Bonobo Party (#579): un dado che gira, con i puntini del cinque
+			var die := _box(Vector3(0.5, 0.5, 0.5), holo)
+			die.rotation = Vector3(0.5, 0.6, 0.0)
+			parent.add_child(die)
+			var pip := HallMaterials.neon(Color.WHITE, 1.6)
+			for off in [Vector2(-0.13, -0.13), Vector2(0.13, -0.13), Vector2.ZERO, Vector2(-0.13, 0.13), Vector2(0.13, 0.13)]:
+				var dot := _sphere(0.045, pip)
+				dot.position = Vector3(off.x, off.y, 0.26)
+				die.add_child(dot)
 		_:
 			parent.add_child(_sphere(0.3, holo))
 
@@ -292,7 +307,7 @@ func _mode_icon(parent: Node3D) -> void:
 func _build_portal(text: String, preview: Texture2D) -> void:
 	_fade_labels = true
 	color = Color("b06bff") if zone_id == "casuale" else Color("4ad9ff")
-	var w := minf(radius * 1.85, 2.3)
+	var w := minf(radius * 1.6, 1.9) # stretti abbastanza da lasciar vedere, tra due portali, quello della fila dietro
 	var h := w * 1.3
 	# la base: una lastra di metallo scuro e la pedana davanti per entrare
 	var pad := HallMaterials.pad(color, radius * 1.7)
@@ -585,6 +600,58 @@ func _build_generic(text: String) -> void:
 	_title = label(text, 40, Color.WHITE, Color(0, 0, 0, 0.8))
 	_title.position.y = 1.2
 	add_child(_title)
+
+
+# Il computer delle regole (#567): una scrivania col monitor acceso dietro la pedana, rivolto verso la sala.
+# Sullo schermo le regole della prossima partita (show_rules); davanti, col colpo leggero, si apre la schermata
+func _build_computer(text: String) -> void:
+	color = HallMaterials.CYAN
+	var pad := HallMaterials.pad(color, radius * 2.0)
+	_pad_mat = pad.material_override
+	add_child(pad)
+	var dark := HallMaterials.dark_metal(true)
+	var desk := _box(Vector3(1.5, 0.08, 0.7), HallMaterials.trim_gold(true))
+	desk.position = Vector3(0.0, 0.78, -radius - 0.2)
+	add_child(desk)
+	for side in [-1.0, 1.0]:
+		var leg := _box(Vector3(0.08, 0.76, 0.6), dark)
+		leg.position = Vector3(side * 0.68, 0.38, -radius - 0.2)
+		add_child(leg)
+	var stand := _box(Vector3(0.12, 0.35, 0.12), dark)
+	stand.position = Vector3(0.0, 0.98, -radius - 0.35)
+	add_child(stand)
+	var monitor := _box(Vector3(1.3, 0.85, 0.1), dark)
+	monitor.position = Vector3(0.0, 1.55, -radius - 0.38)
+	add_child(monitor)
+	var screen := _box(Vector3(1.18, 0.73, 0.02), HallMaterials.neon(color.darkened(0.55), 1.2))
+	screen.position = Vector3(0.0, 1.55, -radius - 0.32)
+	_bounce_mat = screen.material_override
+	add_child(screen)
+	var keyboard := _box(Vector3(0.8, 0.04, 0.24), HallMaterials.neon(color.darkened(0.3), 0.9, 0.5))
+	keyboard.position = Vector3(0.0, 0.84, -radius + 0.0)
+	add_child(keyboard)
+	var glow := HallMaterials.halo(color, 2.6, 0.45)
+	glow.position = Vector3(0.0, 1.55, -radius - 0.45)
+	add_child(glow)
+	# sullo schermo, fermo (non girato verso la telecamera): il titolo e le regole
+	var head := _flat_label("REGOLE", 30, Color.WHITE, Vector3(0.0, 1.78, -radius - 0.3))
+	head.rotation = Vector3.ZERO
+	_count = _flat_label("", 18, Color(0.85, 1.0, 1.0), Vector3(0.0, 1.5, -radius - 0.3))
+	_count.rotation = Vector3.ZERO
+	_count.autowrap_mode = TextServer.AUTOWRAP_WORD
+	_count.width = 220.0
+	_title = label(text, 36, color.lightened(0.5), Color(0, 0, 0, 0.85))
+	_title.position.y = 2.45
+	add_child(_title)
+	var how := label("Colpo leggero qui per cambiarle", 22, Color(1, 1, 1, 0.85), Color(0, 0, 0, 0.85))
+	how.position.y = 2.15
+	add_child(how)
+
+
+# Le regole della prossima partita sullo schermo del computer ("3 vite · senza tempo · oggetti")
+func show_rules(text: String) -> void:
+	if kind == "computer" and _count != null and _count.text != text:
+		_count.text = text.replace(" · ", "\n")
 
 
 # --- basket e scacchi ---

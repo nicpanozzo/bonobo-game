@@ -46,7 +46,8 @@ function canReach(f: Fighter, l: Ledge): boolean {
 export function tryGrabLedge(f: Fighter, fighters: readonly Fighter[], ctx: PhysicsContext): void {
   if (f.ledge || f.onGround || f.eliminated || f.respawning) return;
   if (f.hitstun || f.dodgeTimer > 0 || f.input.down || f.regrabTimer > 0) return;
-  if (f.vy < 0 && !f.helpless) return;
+  const climbing = f.anchor?.phase === "hold" || f.anchor?.phase === "climb"; // arrampicati sulla catena di OrsoBlu (#547) fino allo spigolo
+  if (f.vy < 0 && !f.helpless && !climbing) return;
   if (f.ledgeGrabs >= LEDGE.maxGrabs) return;
 
   const ledges = ledgesOf(ctx.stage);
@@ -71,6 +72,8 @@ export function tryGrabLedge(f: Fighter, fighters: readonly Fighter[], ctx: Phys
     f.recoveryUsed = false;
     f.helpless = false;
     f.airDodgeUsed = false;
+    f.anchor = undefined; // l'ancora di OrsoBlu (#547) torna in mano, i lanci si riprendono
+    f.anchorThrows = 0;
     const invulnerable = f.ledgeGrabs === 1;
     if (invulnerable) {
       f.invulnerableTimer = Math.max(f.invulnerableTimer, LEDGE.invulnMs);

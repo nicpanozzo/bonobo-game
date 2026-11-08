@@ -1,13 +1,17 @@
 // Attacchi: inizio, finestra attiva, hitbox e cosa succede a chi viene colpito.
 
 import { characterStats, getCharacter, hurtboxOf, SPECIAL_KINDS, specialAttackSpec, specialsFor, supremeAttackSpec, type SpecialSlot, type TweakableAttack } from "../characters";
-import { ATTACKS, FIGHTER, HITSTOP, HITSTUN_PER_KNOCKBACK, JAB, MICELIO, POWERUP, SMASH_CHARGE, type AttackSpec } from "../constants";
+import { ARREMBAGGIO, ATTACKS, AUDIO, FIGHTER, GROOVE, HITSTOP, SCIVOLONE, HITSTUN_PER_KNOCKBACK, JAB, MICELIO, PIANO_QUINQUENNALE, POWERUP, SMASH_CHARGE, type AttackSpec } from "../constants";
 import type { AttackKind, SpecialKind } from "../types";
 import { biteBox, biting, chooseBiter, hitPets } from "./companion";
-import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
+import { bodyScale, consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
+import { gearAttackSpeed, gearDamageMult, gearKnockbackMult } from "./gear";
+import { meleeDamage, meleeHit, meleeReach, popBubble } from "./held";
 import { clearStun, hitShield } from "./shield";
 import { counterHit, isCountering, tryStartSpecial } from "./specials";
+import { chasePigeon } from "./projectiles";
 import { chargeFromHit, hitOrigin, infect, snatch, spinRehit, supremeMelee, tryStartSupreme } from "./supreme";
+import { genreAt, genreKnockback } from "./genre";
 
 export function tryStartAttack(f: Fighter, ctx: PhysicsContext): void {
   if (f.hitstun || f.attack || f.helpless || f.dodgeTimer > 0) return;
@@ -120,7 +124,7 @@ export function updateAttack(f: Fighter, dtMs: number): void {
   if (f.smashChargeMs >= 0 && smashCharging(f, dtMs)) return;
   const spec = attackSpecFor(f);
   // il micelio rende più veloci gli attacchi normali di Dr. Micelium, non speciali e suprema
-  f.attackTimer += f.powerup === "micelio" && f.attack !== "supreme" && !isSpecialKind(f.attack) ? dtMs * MICELIO.attackSpeedMult : dtMs;
+  f.attackTimer += (f.powerup === "micelio" || f.powerup === "caffe") && f.attack !== "supreme" && !isSpecialKind(f.attack) ? dtMs * (f.powerup === "caffe" ? gearAttackSpeed(f) : MICELIO.attackSpeedMult) : dtMs; // anche il caffè (gear.ts)
   spinRehit(f, f.attackTimer, dtMs); // la suprema che gira colpisce a ogni giro (#358)
   f.attackActive = f.attackTimer >= spec.startupMs && f.attackTimer < spec.startupMs + spec.activeMs;
   if (f.attackTimer >= spec.startupMs + spec.activeMs) {
@@ -156,17 +160,21 @@ export function attackBox(f: Fighter): Box {
   const spec = attackSpecFor(f);
   if (biting(f)) return biteBox(f, spec.range, spec.height); // morde il beagle di Lampione (#369)
   const o = hitOrigin(f); // la suprema di Bonobot colpisce sulla liana, non dove sta lui (#102)
-  const front = spec.boxX ?? FIGHTER.width / 2;
-  const y = o.y + (spec.boxY ?? -FIGHTER.height * 0.7);
-  if (spec.bothSides) return { x: o.x - front - spec.range, y, w: 2 * (front + spec.range), h: spec.height }; // davanti e dietro
-  const x = f.facing === 1 ? o.x + front : o.x - front - spec.range;
-  return { x, y, w: spec.range, h: spec.height };
+  const s = bodyScale(f); // giganti e mini dal brownie (gear.ts): colpi più grandi o più piccoli
+  const front = (spec.boxX ?? FIGHTER.width / 2) * s;
+  const range = (spec.range + meleeReach(f)) * s; // più lunga con un'arma in mano (held.ts)
+  const height = spec.height * s;
+  const y = o.y + (spec.boxY ?? -FIGHTER.height * 0.7) * s;
+  if (spec.bothSides) return { x: o.x - front - range, y, w: 2 * (front + range), h: height }; // davanti e dietro
+  const x = f.facing === 1 ? o.x + front : o.x - front - range;
+  return { x, y, w: range, h: height };
 }
 
 // Il corpo che si può colpire: quello misurato sul disegno del personaggio (#243)
 export function bodyBox(f: Fighter): Box {
   const b = hurtboxOf(f.characterId);
-  return { x: f.x - b.width / 2, y: f.y - b.height, w: b.width, h: b.height };
+  const s = bodyScale(f); // giganti e mini dal brownie (gear.ts)
+  return { x: f.x - (b.width * s) / 2, y: f.y - b.height * s, w: b.width * s, h: b.height * s };
 }
 
 export function overlap(a: Box, b: Box): boolean {
@@ -214,10 +222,19 @@ export function resolveHits(fighters: Fighter[], ctx: PhysicsContext): void {
       }
 
       launch(target, attacker, attacker.attack, Math.round(ix), Math.round(iy), ctx);
+      meleeHit(attacker, target, fighters, ctx); // l'effetto dell'arma in mano: gelo, scossa, ombrellone (held.ts)
       armJab(attacker);
     }
     hitPets(attacker, box, spec.damage, fighters, attacker.alreadyHit, ctx); // anche il beagle di Lampione si colpisce (#369)
   }
+}
+
+// Groove di Bradipo Giallo (#557): il colpo cade vicino a un battito della musica dell'arena
+export function onBeat(attacker: Fighter, kind: AttackKind, ctx: PhysicsContext): boolean {
+  if (!getCharacter(attacker.characterId).groove || !GROOVE.kinds.includes(kind)) return false;
+  const beatMs = 60000 / (ctx.stage.music?.bpm ?? AUDIO.musicBpm);
+  const phase = (ctx.timeMs ?? 0) % beatMs;
+  return phase <= GROOVE.windowMs || beatMs - phase <= GROOVE.windowMs;
 }
 
 // Il colpo vero: percentuale e volo nella direzione in cui guarda chi colpisce. Lo usano anche i lanci della presa
@@ -225,16 +242,22 @@ export function resolveHits(fighters: Fighter[], ctx: PhysicsContext): void {
 // hit: altri numeri del colpo al posto di quelli di kind (l'aquila dell'Elefante, che ha i suoi)
 export function launch(target: Fighter, attacker: Fighter, kind: AttackKind, x: number, y: number, ctx: PhysicsContext, damage?: number, hit?: Pick<AttackSpec, "damage" | "baseKnockback" | "knockbackGrowth" | "angleDeg">): void {
   const own = hit ? { ...attackSpecFor(attacker, kind), damage: hit.damage, baseKnockback: hit.baseKnockback, knockbackGrowth: hit.knockbackGrowth, angleDeg: hit.angleDeg } : attackSpecFor(attacker, kind);
-  const base = damage === undefined ? own : { ...own, damage };
+  const extra = damage === undefined ? meleeDamage(attacker, kind) : 0; // l'arma in mano (held.ts)
+  const base = damage === undefined ? (extra ? { ...own, damage: own.damage + extra } : own) : { ...own, damage };
   // Potenziati dal fiore (#231) i colpi fanno più danno; il volo cresce già con la percentuale
-  const mult = attacker.powerup === "fiore" ? POWERUP.damageMult : attacker.powerup === "micelio" ? MICELIO.damageMult : 1; // il micelio di Dr. Micelium (#358)
+  const powered = attacker.powerup === "fiore" ? POWERUP.damageMult : attacker.powerup === "micelio" ? MICELIO.damageMult : 1; // il micelio di Dr. Micelium (#358)
+  const mult = powered * gearDamageMult(attacker) * (onBeat(attacker, kind, ctx) ? GROOVE.damageMult : 1); // il Groove di Bradipo (#557); giganti e mini (gear.ts)
   const spec = mult !== 1 ? { ...base, damage: Math.round(base.damage * mult * 10) / 10 } : base;
   // Stile Smash/Brawlhalla: il danno non toglie vita, fa volare più lontano
   target.percent = Math.min(999, target.percent + spec.damage);
   chargeFromHit(attacker, target, spec.damage); // #101
   // Colpo ad area (#102): si vola via dal centro di chi colpisce
   const dir = spec.outward ? ((Math.sign(target.x - hitOrigin(attacker).x) || attacker.facing) as 1 | -1) : attacker.facing;
-  const knockback = (spec.baseKnockback + spec.knockbackGrowth * target.percent) / characterStats(target.characterId).weight; // E11
+  // Arrembaggio di OrsoBlu (#557): il colpo dopo lo strattone dell'ancora spinge di più
+  const boarded = target.boardedMs > 0 && target.boardedBy === attacker.id && ARREMBAGGIO.kinds.includes(kind);
+  const wet = target.wetMs > 0 && target.wetBy === attacker.id && kind.startsWith("throw"); // lo Scivolone di Egiainuso
+  target.boardedMs = 0;
+  const knockback = ((spec.baseKnockback + spec.knockbackGrowth * target.percent) / characterStats(target.characterId).weight) * (boarded ? ARREMBAGGIO.knockbackMult : 1) * (wet ? SCIVOLONE.throwMult : 1) * genreKnockback(genreAt(ctx.stage, ctx.timeMs ?? 0, ctx.padsMs)) * gearKnockbackMult(target); // E11; giganti e mini (gear.ts); col metal del Palco si vola più lontano
   const angle = ((kind === "supreme" ? snatch(attacker, target, spec.angleDeg) : spec.angleDeg) * Math.PI) / 180; // snaack di Lampione (#358) tira e schiaccia
   target.vx = dir * Math.cos(angle) * knockback;
   target.vy = -Math.sin(angle) * knockback;
@@ -243,11 +266,21 @@ export function launch(target: Fighter, attacker: Fighter, kind: AttackKind, x: 
   target.attack = null;
   target.attackActive = false;
   target.facing = (-dir) as 1 | -1;
+  // Piano quinquennale di Marcomunista (#557): il colpo in aria che prende lo rialza, così la catena continua
+  if (getCharacter(attacker.characterId).airPop && !attacker.onGround && PIANO_QUINQUENNALE.kinds.includes(kind) && attacker.airPops < PIANO_QUINQUENNALE.maxPops) {
+    attacker.vy = Math.min(attacker.vy, PIANO_QUINQUENNALE.popVy);
+    attacker.airPops++;
+  }
+  // Capra e cavaliere di Elvedeo (#557): l'Incornata che prende fa partire il Piccione verso chi vola via
+  if (getCharacter(attacker.characterId).pigeonChase && kind === SPECIAL_KINDS.side) chasePigeon(attacker, target, ctx);
   target.lastHitById = attacker.id;
   // Chi viene colpito può di nuovo usare il recupero (#11)
   target.recoveryUsed = false;
   target.helpless = false;
+  target.anchor = undefined; // un colpo stacca dall'ancora di OrsoBlu e la riporta in mano (#547)
+  target.anchorThrows = 0;
   clearStun(target);
+  popBubble(target, ctx, false); // chi è nella bolla dello sparabolle esce col colpo (held.ts)
   if (kind === "supreme") infect(attacker, target, ctx); // il filo di Kirschner di Dr. Micelium (#358)
   ctx.events.push({
     type: "hit",

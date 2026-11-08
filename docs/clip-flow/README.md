@@ -6,6 +6,20 @@ Proposto da Riccardo (@GiovannifRana), scritto da Claude il 3/11/2026 dopo le pr
 
 **Se sei un agente:** leggi prima [Per gli agenti](#per-gli-agenti), poi il passo che ti è stato dato.
 
+## Prima una base per tutti (Nicola, 3/11/2026)
+
+Prima delle ondate qui sotto, ogni personaggio che non ha ancora disegni da Flow riceve il **pacchetto base**: un'immagine di partenza nuova e due clip Lite (movimento; leggero, pesante, colpito) che coprono le 7 animazioni obbligatorie, 20 crediti a personaggio. Sono 10 personaggi, 2 al giorno coi 50 crediti giornalieri. Poi un giro con le animazioni che si vedono di più (corsa, speciale firma, provocazione), poi le ondate. Prompt, ordine e cosa manca: [`base.md`](base.md).
+
+## L'obiettivo: pezzi riusabili per combo e oggetti (Nicola, 4/11/2026)
+
+Ogni clip si fa pensando a dove deve arrivare il gioco: **combo personalizzate** e **oggetti generici divisi per categoria**. Vale per chiunque lavori sulle animazioni, umano o agente. Il ragionamento completo è nel documento [Animazioni base per combo e oggetti](https://claude.ai/artifact/3AzkHTLNL2HVnzgxSTFD23).
+
+- **Ogni colpo parte e finisce nella stessa guardia** dell'immagine di partenza, con tre fasi leggibili (carica, colpo, ritorno) e mai due colpi nella stessa finestra di tempo: così i colpi si incatenano in qualsiasi ordine.
+- **Il personaggio resta tutto dentro l'inquadratura**, con margine su ogni lato anche in cima al salto e a braccio teso: una testa tagliata non si recupera.
+- **Gli oggetti si dividono per presa, non per oggetto:** lancio, impugnatura, sparo, consumo, peso, cavalcatura. Un oggetto nuovo sceglie la sua categoria e non costa clip nuove.
+- **Pose con oggetto = segnaposto magenta (#FF00FF)** in mano (o sgabello magenta per la cavalcatura): lo script ne ricava punto e angolo della mano, il gioco ci disegna l'oggetto vero. Da provare prima su una clip sola.
+- **Prima si rifinisce quel che c'è** (OrsoBlu, Lendmar, Marcomunista), poi si allarga agli altri.
+
 ## In breve
 
 | | |
@@ -25,6 +39,7 @@ docs/clip-flow/
 ├── README.md                  questo piano
 ├── produzione.md              il foglio di produzione: una riga per clip, si aggiorna a ogni PR
 ├── immagini-partenza.md       generato: i 16 prompt delle immagini con le armi
+├── base.md                    generato: il pacchetto base dei personaggi senza Flow
 ├── prompt/<personaggio>.md    generato: tutti i prompt delle clip, pronti da incollare
 └── riferimenti/
     ├── personaggi/<id>.png    il fermo del gioco su verde in 16:9: prima e ultima immagine delle clip
@@ -64,6 +79,8 @@ Ogni passo è un compito a sé. Chi lo prende lo scrive nell'issue #539 (`Prendo
 
 **Fatto quando:** la clip è nell'issue e lo script (o chi la guarda fotogramma per fotogramma) trova le due mosse separate da una pausa ferma. Allora valgono le regole di questo piano. Se non si ferma, si passa a **un attacco per clip**: si cambia `WINDOWS` e `SETS` in `prompt_flow.py` e il conto sale a circa 140 clip.
 
+**Fatto (4/11):** fra i due attacchi Bradipo si ferma per circa 1 secondo, ma in guardia coi pugni alti invece che nella posa di partenza. Lo script ora riconosce anche le pause in una posa diversa (mezzo secondo fermo) e divide la clip da solo. **Le regole del piano restano.** Difetti della clip: un arco bianco nell'aereo su e polvere all'atterraggio, nonostante l'AVOID. L'aereo avanti è venuto più "su e giù" che "in avanti".
+
 ### Passo 1 · Le 16 immagini di partenza con le armi (chi ha Flow)
 
 **Cosa serve:** i prompt in [`immagini-partenza.md`](immagini-partenza.md); le immagini in `riferimenti/personaggi/` e `riferimenti/armi/`.
@@ -95,6 +112,10 @@ Nella cartella di lavoro: `out/<stato>.png`, `foglio.png` (il foglio di controll
 - **avvisi `pausa non trovata`:** la mossa è tagliata dai secondi previsti. Guarda il foglio e, se serve, correggi i fotogrammi in `tools/sprite/flow_tagli.json`;
 - **avvisi `diviso in parti uguali`:** due stati nella stessa mossa (`turn+skid`, `tumble+prone+getup`). Il confine è a metà: controllalo sempre;
 - **`hitFrame_proposto`:** vale solo per gli attacchi. È il fotogramma in cui il disegno arriva più lontano dal centro; va confermato con `zone_dei_colpi.py`.
+
+**Due opzioni in più (4/11):**
+- `--pulisci` toglie gli archi bianchi dei fendenti e la polvere grigia ai piedi che Flow disegna nonostante l'AVOID. Non è perfetto: guarda il foglio e, se resta troppo, rigenera la clip;
+- `--passo 2` tiene un fotogramma ogni due (12 fps): strisce grandi la metà. Va bene per quasi tutti gli stati; per i colpi rapidi meglio tenerli tutti.
 
 **Limiti noti:** la polvere staccata dai piedi si toglie, quella attaccata ai piedi no (meglio rigenerare la clip). La scala viene dal fermo che il personaggio ha già nel gioco (`idle.png`): un personaggio senza `idle.png` va prima sistemato a mano.
 

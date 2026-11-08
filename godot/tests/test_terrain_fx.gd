@@ -20,7 +20,7 @@ func test_materiale_dalla_superficie() -> void:
 	runner.check(TerrainFx.material_at(BOLOGNA, 150, 1880) == "stone", "Bologna: il passaggio dei portici è di pietra")
 	var isole := {"id": "isole", "solids": [{"x": 0, "y": 500, "width": 400}], "platforms": [{"x": 500, "y": 300, "width": 200}]}
 	runner.check(TerrainFx.material_at(isole, 100, 500) == "grass", "Isole: l'isola è d'erba")
-	runner.check(TerrainFx.material_at(isole, 600, 300) == "dust", "Isole: la piattaforma resta polvere")
+	runner.check(TerrainFx.material_at(isole, 600, 300) == "wood", "Diluvio: i relitti sono di legno")
 	runner.check(TerrainFx.material_at({"id": "casuale-12"}, 0, 0) == "dust", "un'arena senza materiale resta come prima")
 
 

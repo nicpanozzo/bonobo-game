@@ -1,7 +1,7 @@
 // I personaggi giocabili. Aggiungerne uno = un blocco qui e una cartella in public/assets/characters/<id>/.
 // Cambiano aspetto e statistiche (E11 passo B); le mosse proprie arrivano con le speciali (E10).
 
-import { CHARACTER_STATS, CHARGE_EXAMPLE, DEFAULT_SPECIALS, FIGHTER, RECOVERY, type AttackSpec } from "./constants";
+import { ANCHOR, CHARACTER_STATS, CHARGE_EXAMPLE, DEFAULT_SPECIALS, FIGHTER, RECOVERY, type AttackSpec } from "./constants";
 import type { AttackKind, SpecialKind } from "./types";
 
 // Gli stati che ogni lottatore con sprite deve avere
@@ -35,6 +35,8 @@ export const OPTIONAL_ANIMATION_NAMES = [
   "specialDown",
   "dashAttack", // attacco in corsa: senza disegno, la posa del pesante
   "jumpSquat", // preparazione al salto (#384 A3): senza disegno, la posa dell'atterraggio
+  "anchorHang", // appeso all'ancora di Capt. OrsoBlu (#547): senza disegno, la posa appesa al bordo
+  "anchorClimb", // arrampicata sulla catena: senza disegno, la posa appesa all'ancora
 ] as const;
 export type OptionalAnimationName = (typeof OPTIONAL_ANIMATION_NAMES)[number];
 export type SpriteState = AnimationName | OptionalAnimationName;
@@ -68,6 +70,8 @@ export const ANIMATION_FALLBACK: Record<OptionalAnimationName, SpriteState> = {
   specialSide: "special",
   specialDown: "special",
   jumpSquat: "land", // e chi non ha nemmeno quella resta fermo (idle)
+  anchorHang: "ledge",
+  anchorClimb: "anchorHang",
 };
 
 export interface SpriteAnimation {
@@ -200,6 +204,7 @@ export interface ProjectileSpecial extends SpecialBase, SpecialHit {
   sprite?: ProjectileSprite; // in Godot il proiettile è questo disegno animato (il Piccione di Elvedeo)
   spawnX?: number; // pixel davanti al centro da cui parte (negativo: dietro); senza, davanti alle mani
   spawnY?: number; // pixel sopra i piedi da cui parte; senza, SPECIAL_MOVES.projectileY (il Piccione: dalla spalla)
+  rests?: boolean; // cadendo si posa su blocchi e piattaforme e resta lì finché qualcuno la tocca (la Mina di bordo di OrsoBlu)
 }
 // L'aquila della suprema "spin" (l'Elefante di Elvedeo): un proiettile tirato con la Speciale mentre si gira, una volta
 // sola. Chi tocca lo afferra, lo porta in volo per carryMs e lo molla con i numeri del colpo (damage, knockback...)
@@ -362,7 +367,26 @@ export interface RewindSupreme {
   stunRadius: number;
   stunMs: number;
 }
-export type SupremeSpec = DropSupreme | SpinSupreme | GrabSupreme | BurstSupreme | InfectSupreme | RewindSupreme;
+// Suprema "storm" (#547), Tempesta! di Capt. OrsoBlu: dopo windupMs (afferra il timone) per durationMs l'arena rolla
+// come una nave: tutti gli altri scivolano di lato avanti e indietro, un giro ogni rollPeriodMs, fino a rollSpeed
+// pixel/s a terra (in aria la spinta è rollAirAccel pixel/s²). A ogni fine rollio un'onda colpisce chi è a terra e
+// lo spinge da quella parte. Lui resta piantato al timone, imbersagliabile. Camminando contro il rollio si resiste
+export interface StormSupreme {
+  type: "storm";
+  name: string; // come si chiama nei menu
+  windupMs: number;
+  durationMs: number;
+  endLagMs: number;
+  rollPeriodMs: number; // un giro completo: a destra e poi a sinistra
+  rollSpeed: number; // pixel/s di scivolata a terra nel punto più forte
+  rollAirAccel: number; // pixel/s² in aria
+  damage: number; // per ogni onda
+  baseKnockback: number;
+  knockbackGrowth: number;
+  angleDeg: number;
+  insults: string[]; // le nuvolette che lancia a tutti (solo disegno)
+}
+export type SupremeSpec = DropSupreme | SpinSupreme | GrabSupreme | BurstSupreme | InfectSupreme | RewindSupreme | StormSupreme;
 
 export type SpecialSpec = ProjectileSpecial | DashSpecial | ChargeSpecial | CounterSpecial;
 export type SpecialSet = Record<SpecialSlot, SpecialSpec>;
@@ -399,9 +423,16 @@ export interface CharacterSpec {
   skins?: Record<string, SkinSpec>; // aspetti alternativi da scegliere nella lobby (#339)
   sprite?: SpriteSheetSpec | SpriteFolderSpec; // senza sprite si disegna il rettangolo colorato
   stats?: Partial<CharacterStats>; // quelle che mancano valgono 1
+  // La combo su misura del personaggio (#557): nome e come si fa, per la lista mosse in pausa. La regola è in physics/
+  combo?: { name: string; text: string };
+  airPop?: boolean; // i suoi colpi in aria a segno lo rialzano (PIANO_QUINQUENNALE, Marcomunista)
+  groove?: boolean; // i suoi colpi a tempo con la musica fanno più danno (GROOVE, Bradipo Giallo)
+  pigeonChase?: boolean; // l'Incornata che prende fa partire il Piccione verso chi vola via (Capra e cavaliere, Elvedeo)
+  spitWet?: boolean; // il suo Sputo bagna chi prende: presa più lunga e lancio più forte (SCIVOLONE, Egiainuso)
   specials?: Partial<SpecialSet>; // quelle che mancano sono DEFAULT_SPECIALS (E10)
   supreme?: SupremeSpec; // senza, la suprema di base (ATTACKS.supreme, #101)
   companion?: CompanionSpec; // un compagno che lo segue da solo (#369)
+  anchor?: Partial<typeof ANCHOR>; // il recupero spara un'ancora a cui appendersi (#547, Capt. OrsoBlu); i numeri che mancano sono ANCHOR
   recovery?: Partial<AttackSpec & typeof RECOVERY>; // numeri propri del recupero (#11): quelli che mancano restano i soliti
   quotes?: CharacterQuotes; // le battute della scheda, scritte in un fumetto (solo disegno, Godot)
   strikeColor?: string; // colore della scia dei suoi colpi, "#rrggbb" (#384 B2); senza, bianca o arancio per i pesanti
@@ -466,44 +497,6 @@ function communitySprite(id: string): SpriteFolderSpec {
   };
 }
 
-// I lottatori dai fogli delle pose a colori (tools/sprite/foglio_a_colori.py): una posa per stato, due per la corsa.
-// Misure del fotogramma e dei piedi come le stampa lo script
-// extra: le pose che il foglio non ha, disegnate a parte nel suo stile (la mossa resta quella della scheda)
-function sheetSprite(id: string, frameWidth: number, frameHeight: number, footY: number, extra: Partial<SpriteFolderSpec["animations"]> = {}): SpriteFolderSpec {
-  return {
-    dir: `assets/characters/${id}`,
-    frameWidth,
-    frameHeight,
-    footY,
-    scale: 0.5, // il foglio è disegnato grande come un disegno a 2x
-    animations: {
-      idle: { fps: 1, loop: true },
-      walk: { fps: 6, loop: true }, // passo e corsa del foglio, alternati
-      jump: { fps: 1, loop: false },
-      fall: { fps: 1, loop: false },
-      light: { fps: 1, loop: false }, // "Side Tilt"
-      heavy: { fps: 1, loop: false }, // "Side Smash"
-      hit: { fps: 1, loop: false }, // nel foglio non c'è: il fermo piegato all'indietro
-      land: { fps: 1, loop: false }, // "Crouch"
-      dash: { fps: 1, loop: false },
-      lightUp: { fps: 1, loop: false },
-      lightDown: { fps: 1, loop: false },
-      lightAir: { fps: 1, loop: false }, // "Neutral Air"
-      heavyUp: { fps: 1, loop: false },
-      heavyDown: { fps: 1, loop: false },
-      heavyAir: { fps: 1, loop: false }, // "Forward Air"
-      recovery: { fps: 1, loop: false }, // "Up Air"
-      shield: { fps: 1, loop: false },
-      grab: { fps: 1, loop: false },
-      throw: { fps: 1, loop: false }, // "Throw (forward)"
-      specialNeutral: { fps: 1, loop: false }, // "Pummel": le mani alla bocca
-      specialDown: { fps: 1, loop: false }, // "Shield", per il contrattacco
-      supreme: { fps: 1, loop: false }, // "Final Smash"
-      ...extra,
-    },
-  };
-}
-
 // Una suprema "drop" con i tempi di quella di Omar (Bonobot, già provati al playtest #257) e i disegni provvisori
 // fatti da tools/rig/genera_supreme_drop.py in assets/characters/<id>/supreme/<nome>-{cade,a-terra,corre}.png
 function communityDrop(id: string, art: string, name: string, more: Partial<DropSupreme> = {}): DropSupreme {
@@ -559,30 +552,88 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     id: "orsoblu",
     name: "Capt. OrsoBlu",
     crews: ["cuamm", "lolhardcore"],
+    combo: { name: "Arrembaggio", text: "Tutti a bordo! lo tira a te: subito jab, pesante o Avanti tutta! e vola più lontano" },
+    // Zone dei colpi sul disegno di OB-B2 e OB-B4 (tools/sprite/zone_dei_colpi.py)
+    attacks: {
+      light: { range: 67, height: 30, boxX: 1, boxY: -75 },
+      heavy: { range: 78, height: 44, boxX: 0, boxY: -82 },
+      lightUp: { range: 54, height: 48, boxX: 0, boxY: -118 }, // OB-B3
+      lightDown: { range: 42, height: 24, boxX: -1, boxY: -24 },
+      heavyDown: { range: 73, height: 30, boxX: 0, boxY: -38 },
+      lightAir: { range: 62, height: 50, boxX: 0, boxY: -92 }, // OB-B4: la stella
+      heavyAir: { range: 50, height: 60, boxX: 0, boxY: -94 }, // OB-B4: la martellata
+      dashAttack: { range: 75, height: 44, boxX: 2, boxY: -82 },
+    },
+    // Tempesta! (#547, scheda di Nicola del 3/11/2026): l'arena rolla, tutti scivolano tranne lui al timone che insulta.
+    // Timone e nuvolette li disegna Godot finché non c'è la clip; numeri provvisori
+    supreme: {
+      type: "storm",
+      name: "Tempesta",
+      windupMs: 500,
+      durationMs: 4800,
+      endLagMs: 400,
+      rollPeriodMs: 1600,
+      rollSpeed: 300,
+      rollAirAccel: 900,
+      damage: 4,
+      baseKnockback: 300,
+      knockbackGrowth: 4,
+      angleDeg: 35,
+      insults: ["Mozzi d'acqua dolce!", "Sacchi di sardine!", "Branco di triglie lesse!", "Tu! Lava il ponte!"],
+    },
+    // L'ancora-ragnatela (#547): il recupero spara l'ancora, appeso dondola, si arrampica e si stacca con lo slancio.
+    // Da appeso la speciale laterale riavvolge la catena e sfreccia verso l'ancora (Avanti tutta!, anchor.ts); da libero è la spallata
+    anchor: {},
     // Con la barchetta addosso è un po' più pesante e lento di Bonobot (E11)
     // TODO community: statistiche provvisorie, da confermare con @MauroGrecchi
     stats: { weight: 1.05, speed: 0.9, airSpeed: 0.95, jump: 0.95 },
     // E10: uno schizzo d'acqua veloce e corto, una remata in avanti e un colpo di remo da caricare
     // TODO community: nomi e numeri provvisori, da confermare con @MauroGrecchi (#37)
     specials: {
-      neutral: { type: "projectile", name: "Schizzo", startupMs: 200, cooldownMs: 500, speed: 900, gravity: 0, lifeMs: 550, maxAlive: 2, range: 20, height: 12, damage: 4, baseKnockback: 180, knockbackGrowth: 3, angleDeg: 25, color: 0x6ec8ff },
-      side: { type: "dash", name: "Remata", startupMs: 120, durationMs: 300, speed: 760, endLagMs: 320, range: 46, height: 50, damage: 10, baseKnockback: 380, knockbackGrowth: 8, angleDeg: 30 },
-      down: { ...CHARGE_EXAMPLE, name: "Colpo di remo" },
+      // la neutra spara l'ancora dritta in avanti (#547, anchor.ts): di questi numeri contano solo nome e tempi
+      neutral: { type: "projectile", name: "Tutti a bordo!", startupMs: 200, cooldownMs: 500, speed: 900, gravity: 0, lifeMs: 550, maxAlive: 2, range: 20, height: 12, damage: 4, baseKnockback: 180, knockbackGrowth: 3, angleDeg: 25, color: 0x6ec8ff },
+      side: { type: "dash", name: "Avanti tutta!", startupMs: 120, durationMs: 300, speed: 760, endLagMs: 320, range: 46, height: 50, damage: 10, baseKnockback: 380, knockbackGrowth: 8, angleDeg: 30 },
+      // Mina di bordo (#547): posata a terra davanti a lui, esplode sotto chi la tocca e lo sbalza in alto. Una alla volta.
+      // Disegno provvisorio: il pallino scuro dei proiettili
+      down: { type: "projectile", name: "Mina di bordo", startupMs: 250, cooldownMs: 600, speed: 0, gravity: 1800, lifeMs: 15000, maxAlive: 1, rests: true, spawnX: 36, spawnY: 14, range: 30, height: 22, damage: 12, baseKnockback: 420, knockbackGrowth: 6, angleDeg: 80, color: 0x2f3440 },
     },
+    // OrsoBlu v2 (Nicola, 3/11/2026): il capitano burbero con la barchetta in spalla, dalle clip di Google Flow
+    // tagliate con tools/sprite/dal_video.py (OB-01, 02, 03, 07; tagli a mano in flow_tagli.json). Incompleto apposta:
+    // si mette nel gioco quel che c'è. light, heavy e hit dalla clip base OB-B2 (4/11/2026): jab, pugno lungo, colpito.
+    // Provvisorio finché non arriva OB-B1: fall è un pezzo del salto.
+    // Appeso all'ancora e arrampicata sulla catena (#547): la catena e l'ancora le disegna Godot.
     sprite: {
-      path: "assets/characters/orsoblu/orsoblu.png",
-      frameWidth: 64,
-      frameHeight: 96,
-      columns: 6,
-      filter: "nearest", // pixel art: senza sfumare i pixel
+      dir: "assets/characters/orsoblu",
+      frameWidth: 360,
+      frameHeight: 300,
+      footY: 280,
+      scale: 0.5,
       animations: {
-        idle: { row: 0, frames: 4, fps: 4, loop: true },
-        walk: { row: 1, frames: 6, fps: 10, loop: true },
-        jump: { row: 2, frames: 2, fps: 8, loop: false },
-        fall: { row: 3, frames: 2, fps: 6, loop: true },
-        light: { row: 4, frames: 3, fps: 20, loop: false },
-        heavy: { row: 5, frames: 4, fps: 8, loop: false }, // il colpo di remo cade quando la hitbox si attiva (startupMs)
-        hit: { row: 6, frames: 2, fps: 10, loop: true },
+        idle: { fps: 12, loop: true }, // OB-B1: il respiro
+        walk: { fps: 8, loop: true }, // OB-B1: due passi al secondo, come nel video
+        jump: { fps: 18, loop: false },
+        fall: { fps: 8, loop: true },
+        light: { fps: 12, loop: false, hitFrame: 3, startFrame: 2 }, // i primi fotogrammi sono ancora la guardia
+        heavy: { fps: 8, loop: false, hitFrame: 5 },
+        hit: { fps: 12, loop: false },
+        jumpSquat: { fps: 24, loop: false },
+        land: { fps: 24, loop: false },
+        doubleJump: { fps: 10, loop: false }, // la capriola con la barca
+        taunt: { fps: 6, loop: false }, // fischietto e dito puntato: insulta tutti
+        heavyUp: { fps: 8, loop: false, hitFrame: 4 }, // la barca a ombrello
+        shield: { fps: 4, loop: true }, // sotto la barca come una tartaruga
+        recovery: { fps: 24, loop: false, hitFrame: 6 }, // lancia l'ancora in alto
+        specialSide: { fps: 8, loop: false, hitFrame: 3 }, // teleferica verso l'ancora
+        specialNeutral: { fps: 8, loop: false, hitFrame: 2 }, // ancora avanti e strattone
+        anchorHang: { fps: 6, loop: true }, // appeso all'ancora che dondola (#547)
+        anchorClimb: { fps: 12, loop: true }, // si tira su lungo la catena
+        // OB-B3 (5/11/2026): tolti i fotogrammi in cui il braccio restava fermo, per non allungare i colpi
+        lightUp: { fps: 15, loop: false, hitFrame: 2 }, // pugno in alto guardando su
+        lightDown: { fps: 15, loop: false, hitFrame: 5 }, // spazzata bassa con la mano
+        heavyDown: { fps: 15, loop: false, hitFrame: 7 }, // si carica accucciato e spazza ai due lati
+        // OB-B4 (5/11/2026): i colpi in aria. La stella a braccia e gambe aperte e la martellata a due pugni
+        lightAir: { fps: 12, loop: false, hitFrame: 10, startFrame: 7, activeEnd: 15 },
+        heavyAir: { fps: 12, loop: false, hitFrame: 11, startFrame: 1, activeEnd: 12 }, // i pugni scendono da sopra la testa
       },
     },
   },
@@ -705,6 +756,8 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     id: "elvedeo",
     name: "Elvedeo",
     crews: ["cuamm"],
+    combo: { name: "Capra e cavaliere", text: "Incornata: se prende, il Piccione parte da solo e insegue chi vola via" },
+    pigeonChase: true,
     // con la capra è più grosso e pesante, ma la capra corre e salta bene
     stats: { weight: 1.15, speed: 0.95, airSpeed: 0.9, jump: 0.95 },
     // il piccione che parte dalla spalla, l'incornata della capra, il calcione caricato
@@ -767,6 +820,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         specialSide: { fps: 24, loop: false, hitFrame: 3, activeEnd: 9 }, // la carica, poi lo schianto con le stelline
         specialDown: { fps: 24, loop: false, hitFrame: 4, activeEnd: 6 }, // la nuvola dietro
         supreme: { fps: 24, loop: false, hitFrame: 7, activeEnd: 14 }, // la nuvola, l'elefante con l'aquila, la nuvola
+        recovery: { fps: 12, loop: false, hitFrame: 3 }, // EL-06 (5/11/2026): il balzo da stambecco, la capra s'impenna e salta raccolta
       },
     },
     // il corpo che si può colpire: la capra e lui seduto sopra, misurato sul fermo (#243)
@@ -792,6 +846,8 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     id: "egiainuso",
     name: "Egiainuso",
     crews: ["lolhardcore"],
+    combo: { name: "Scivolone", text: "Sputo, poi presa: chi è bagnato si afferra da più lontano e il lancio lo fa scivolare più in là" },
+    spitWet: true,
     // TODO community: statistiche e mosse speciali di base, da decidere con @Marcomunista
     specials: {
       // al posto del tiro di base sputa (Nicola, 25 ottobre 2026): i numeri del Tiro, più piccolo e del colore della saliva
@@ -943,17 +999,18 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
   },
 
   // Giovanni: bradipo giallo piccoletto, casinista e chiacchierone, suona il basso (anche #335: saltatore, #f5c211).
-  // Il disegno è il foglio delle pose di @Marcomunista in #335, una posa per stato (due per la corsa), ritagliate da
-  // tools/sprite/foglio_a_colori.py come per Egiainuso (sheetSprite)
   bradipo: {
     id: "bradipo",
     strikeColor: "#ffd84a", // scia dei colpi: giallo come il bradipo (#384)
     name: "Bradipo Giallo",
     quotes: { supreme: "DEMACIAA!" }, // il fumetto della suprema, con la sua voce (voice/supreme.ogg)
     crews: ["lolhardcore"],
+    combo: { name: "Groove", text: "colpisci a tempo con la musica, quando l'anello giallo pulsa sotto di te: il colpo fa più danno" },
+    groove: true,
     // Dal video di tutte le mosse fatto da Nicola con Google Flow (tools/sprite/bradipo_dal_video.py): la Bassline col
     // basso e DEMACIAAA che gira in piedi come la E di Garen, brandendo il basso. Era la skin "Bassista": dal #506 è
     // l'aspetto di base, perché le zone dei colpi qui sotto sono misurate su questi disegni
+    // La vecchia skin "Foglio" (le pose ferme del foglio di @Marcomunista, #335) è stata tolta: poco animata (2026-11-04)
     sprite: {
       dir: "assets/characters/bradipo",
       frameWidth: 320, // largo: la scia del basso nella suprema esce di lato
@@ -989,14 +1046,6 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         specialSide: { fps: 24, loop: false, hitFrame: 5 }, // Bassline: il riff
         specialDown: { fps: 24, loop: false, hitFrame: 1 }, // Cambio pannolino: si copre
         supreme: { fps: 24, loop: true }, // DEMACIAAA: due giri col basso, ripetuti finché gira
-      },
-    },
-    skins: {
-      // Le pose ferme del foglio, con la Bassline col basso a tracolla (tools/sprite/bradipo_bassline.py): prima era
-      // l'aspetto di base. TODO community: il nome della skin
-      foglio: {
-        name: "Foglio",
-        sprite: { ...sheetSprite("bradipo", 298, 200, 185, { specialSide: { fps: 1, loop: false } }), dir: "assets/characters/bradipo/skins/foglio" },
       },
     },
     // dalla scheda: "DEMACIAAA", gira come Garen e fa danno a chi tocca (#358). Nel foglio è la palla della Final Smash
@@ -1084,6 +1133,8 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     name: "Marcomunista",
     quotes: { taunt: "Viva il comunismo!" }, // il suo tormentone; la scheda e la #352 non dicono altro
     crews: ["cuamm", "cologna"],
+    combo: { name: "Piano quinquennale", text: "lancia in alto e salta: ogni colpo in aria che prende ti tiene su, fino a tre di fila" },
+    airPop: true,
     // Animato dalla GIF di arti marziali di Nicola (tools/sprite/marcomunista_dalla_gif.py), con l'energia verde come scia;
     // corsa e scatto restano le pose del suo foglio (#352), allargate al fotogramma nuovo
     sprite: {
@@ -1149,7 +1200,21 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     id: "lendmar",
     name: "Lendmar",
     crews: ["lolhardcore"],
-    sprite: communitySprite("lendmar"),
+    // Pacchetto base Flow (4/11/2026; tools/sprite/dal_video.py, tagli in flow_tagli.json): movimento da LE-B1
+    // (fermo, camminata, salto, caduta, atterraggio), colpi da LE-B2. Nella clip c'è un pugno solo: leggero e pesante
+    // sono lo stesso pugno, il pesante con la carica intera. Gli altri colpi restano quelli disegnati col codice.
+    sprite: {
+      ...communitySprite("lendmar"),
+      animations: fromRest({
+        ...communitySprite("lendmar").animations,
+        walk: { fps: 12, loop: true }, // un fotogramma ogni due (tools/sprite/dirada_strisce.py)
+        idle: { fps: 12, loop: true }, // 46 fotogrammi del video: respiro lento
+        jumpSquat: { fps: 24, loop: false },
+        light: { fps: 8, loop: false, hitFrame: 3 },
+        heavy: { fps: 8, loop: false, hitFrame: 9 },
+        hit: { fps: 24, loop: false },
+      }),
+    },
     // TODO community: la scheda non ha statistiche; magro, quindi leggero e scattante
     stats: { weight: 0.95, speed: 1.05 },
     // dalla scheda: "IRA", si arrabbia e tira merda scivolosa da tutte le parti (#358): tre raffiche della sua speciale neutra, e dove cade restano pozze
@@ -1164,15 +1229,15 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     hurtbox: { width: 30, height: 106 },
     // le zone dei colpi dove arriva il disegno (#243, tools/sprite/zone_dei_colpi.py)
     attacks: {
-      light: { range: 58, height: 30, boxX: 0, boxY: -72 },
-      heavy: { range: 51, height: 44, boxX: 0, boxY: -56 },
+      light: { range: 54, height: 30, boxX: 0, boxY: -81 },
+      heavy: { range: 54, height: 44, boxX: 0, boxY: -88 },
       lightUp: { range: 54, height: 48, boxX: -18, boxY: -124 },
       lightDown: { range: 64, height: 24, boxX: 0, boxY: -34 },
       lightAir: { range: 54, height: 50, boxX: 0, boxY: -89 },
       heavyUp: { range: 80, height: 64, boxX: -34, boxY: -128 },
       heavyDown: { range: 68, height: 30, boxX: 0, boxY: -36 },
       heavyAir: { range: 52, height: 60, boxX: 0, boxY: -87 },
-      dashAttack: { range: 51, height: 44, boxX: 0, boxY: -56 },
+      dashAttack: { range: 54, height: 44, boxX: 0, boxY: -88 },
     },
   },
 
@@ -1440,6 +1505,10 @@ function toSupremeAttack(sp: SupremeSpec | undefined): AttackSpec | null {
   if (sp.type === "rewind") {
     // niente colpo: torna indietro e stordisce (stepRewinds in physics/supreme.ts)
     return { damage: 0, baseKnockback: 0, knockbackGrowth: 0, angleDeg: 0, startupMs: sp.windupMs, activeMs: 100, cooldownMs: sp.windupMs + 100 + sp.endLagMs, range: 0, height: 0 };
+  }
+  if (sp.type === "storm") {
+    // niente colpo corpo a corpo: rollio e onde (stepStorms in physics/supreme.ts)
+    return { damage: 0, baseKnockback: 0, knockbackGrowth: 0, angleDeg: 0, startupMs: sp.windupMs, activeMs: sp.durationMs, cooldownMs: sp.windupMs + sp.durationMs + sp.endLagMs, range: 0, height: 0 };
   }
   if (sp.type === "burst") {
     // niente colpo corpo a corpo: colpiscono i proiettili (supremeMelee in physics/supreme.ts)

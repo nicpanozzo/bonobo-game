@@ -17,7 +17,9 @@ const MIN_CHANGE := 0.05 # frazione della sagoma del fermo che deve cambiare
 const STEP := 4 # pixel del PNG tra un campione e l'altro: basta per la sagoma e il test resta veloce
 # Colpi che oggi non arrivano nella zona, da ridisegnare con chi ha fatto il foglio (#384 B5). Un colpo nuovo
 # fuori zona fa fallire il test; quando uno di questi viene sistemato, lo si toglie da qui
-const KNOWN_OFF := {}
+# Colpi con un disegno provvisorio che non arriva alla zona: OrsoBlu v2 usa la barca alzata per pesante e pesante su
+# finché non arriva il suo pacchetto base (docs/clip-flow/base.md). Le zone restano quelle di tutti, per non toccare il gioco
+const KNOWN_OFF := {"orsoblu": ["heavyUp"]}
 const UP := ["lightUp", "heavyUp"]
 const TIP_TOLERANCE := 12.0 # pixel di mondo tra la punta del disegno e il bordo della zona (tools/sprite/zone_dei_colpi.py)
 const MIN_RUN := 3 # pixel opachi in una colonna o riga perché conti come punta, non un capello

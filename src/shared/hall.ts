@@ -11,6 +11,7 @@ import { DEFAULT_STAGE_ID, STAGES } from "./stages";
 import type {
   BoardRow,
   ChessPiece,
+  HallBotLevel,
   HallEvent,
   HallMode,
   HallPlayerState,
@@ -27,6 +28,7 @@ export const HALL_MODES: { id: HallMode; label: string }[] = [
   { id: "teams", label: "Squadre" },
   { id: "flag", label: "Bandiera" },
   { id: "race", label: "Corsa" },
+  { id: "party", label: "Bonobo Party" }, // tabellone e minigiochi (#579)
 ];
 export const RANDOM_STAGE_ZONE = "casuale"; // il portale dell'arena generata: il seme lo decide la sala a ogni giro
 
@@ -40,36 +42,44 @@ export function hallFighterIds(): string[] {
   return Object.keys(CHARACTERS);
 }
 
-// La pianta della sala. In fondo le pedane delle modalità, a sinistra la galleria dei lottatori,
-// a destra i portali delle arene, al centro il cerchio dei pronti; davanti l'ingresso e le gabbie dei bot,
-// negli angoli in fondo il trono e il gong. Ai lati la zona giochi: a sinistra la scacchiera gigante,
-// a destra il mezzo campo da basket col canestro sul muro, rivolto verso la sala
+// La pianta della sala, pensata per la telecamera dall'alto di tre quarti (#581): le cose alte (portali,
+// piedistalli, trono, gong) stanno in fondo, quelle piatte (pedane, gabbie, computer) davanti, e niente di alto
+// sta subito dietro un'altra cosa alta. In fondo a sinistra la galleria dei lottatori, in fondo a destra i
+// portali delle arene, entrambi su due file sfalsate (quelli dietro si vedono negli spazi tra quelli davanti);
+// in fondo al centro, sotto il maxischermo, il trono e il gong. Al centro il cerchio dei pronti; davanti,
+// dove si entra, le pedane delle modalità; ai lati davanti le gabbie dei bot e il computer delle regole.
+// Ai lati la zona giochi: a sinistra la scacchiera gigante, a destra il mezzo campo da basket
 export function hallLayout(): HallZone[] {
   const zones: HallZone[] = [];
-  const modeX = [-660, -220, 220, 660];
-  HALL_MODES.forEach((m, i) => zones.push({ kind: "mode", id: m.id, x: modeX[i], z: -680, r: HALL.padRadius, label: m.label }));
-  // Galleria: tre colonne, file di 200 cm verso la telecamera
-  hallFighterIds().forEach((id, i) =>
-    zones.push({ kind: "fighter", id, x: -1380 + (i % 3) * 180, z: -380 + Math.floor(i / 3) * 200, r: HALL.pedestalRadius, label: getCharacter(id).name }),
+  // Modalità: una fila davanti, a 440 cm l'una dall'altra (un metro abbondante tra due pedane)
+  HALL_MODES.forEach((m, i) =>
+    zones.push({ kind: "mode", id: m.id, x: (i - (HALL_MODES.length - 1) / 2) * 440, z: MODE_Z, r: HALL.padRadius, label: m.label }),
   );
-  // Portali: due colonne, file di 280 cm
-  hallStageIds().forEach((id, i) =>
+  // Galleria: dal centro verso sinistra, due file sfalsate di mezzo passo
+  twoRows(hallFighterIds(), 190, 1240).forEach(({ id, along, back }) =>
+    zones.push({ kind: "fighter", id, x: -(380 + along), z: back ? -680 : -300, r: HALL.pedestalRadius, label: getCharacter(id).name }),
+  );
+  // Portali: dal centro verso destra, due file sfalsate; sono larghi, quindi passo più lungo e file più distanti
+  twoRows(hallStageIds(), 300, 1050).forEach(({ id, along, back }) =>
     zones.push({
       kind: "stage",
       id,
-      x: 1080 + (i % 2) * 280,
-      z: -400 + Math.floor(i / 2) * 280,
+      x: 380 + along,
+      z: back ? -660 : -260,
       r: HALL.portalRadius,
       label: id === RANDOM_STAGE_ZONE ? "Casuale" : STAGES[id].name,
     }),
   );
   zones.push({ kind: "ready", id: "ready", x: READY_X, z: READY_Z, r: HALL.readyRadius, label: "Pronti" });
-  zones.push({ kind: "trampoline", id: "trampolino-sinistra", x: -620, z: 250, r: HALL.trampolineRadius, label: "Trampolino" });
-  zones.push({ kind: "trampoline", id: "trampolino-destra", x: 620, z: 250, r: HALL.trampolineRadius, label: "Trampolino" });
-  zones.push({ kind: "botAdd", id: "bot-chiama", x: -720, z: 650, r: HALL.cageRadius, label: "Chiama un bot" });
-  zones.push({ kind: "botRemove", id: "bot-via", x: -480, z: 650, r: HALL.cageRadius, label: "Manda via un bot" });
-  zones.push({ kind: "gong", id: "gong", x: 1250, z: -720, r: HALL.gongRadius, label: "Gong" });
-  zones.push({ kind: "throne", id: "trono", x: -1250, z: -720, r: HALL.throneRadius, label: "Trono del campione" });
+  // I trampolini tra la galleria (o i portali) e le pedane, dove non coprono niente
+  zones.push({ kind: "trampoline", id: "trampolino-sinistra", x: -1000, z: 150, r: HALL.trampolineRadius, label: "Trampolino" });
+  zones.push({ kind: "trampoline", id: "trampolino-destra", x: 1000, z: 150, r: HALL.trampolineRadius, label: "Trampolino" });
+  zones.push({ kind: "botAdd", id: "bot-chiama", x: -1260, z: MODE_Z, r: HALL.cageRadius, label: "Chiama un bot" });
+  zones.push({ kind: "botRemove", id: "bot-via", x: -1500, z: MODE_Z, r: HALL.cageRadius, label: "Manda via un bot" });
+  // Il computer delle regole (#567): davanti a destra, simmetrico alle gabbie dei bot
+  zones.push({ kind: "computer", id: "computer", x: HALL.computerX, z: HALL.computerZ, r: HALL.computerRadius, label: "Regole della partita" });
+  zones.push({ kind: "gong", id: "gong", x: 130, z: -740, r: HALL.gongRadius, label: "Gong" });
+  zones.push({ kind: "throne", id: "trono", x: -130, z: -740, r: HALL.throneRadius, label: "Trono del campione" });
   // court: quadrato di lato 2r; hoop: centro del ferro (r = raggio del ferro), dentro il campo;
   // chessboard: 8x8 caselle da HALL.chessSquare, r = metà lato
   zones.push({ kind: "court", id: "campo", x: COURT_X, z: HOOP_Z, r: HALL.courtRadius, label: "Campo da basket" });
@@ -80,8 +90,20 @@ export function hallLayout(): HallZone[] {
   return zones;
 }
 
+// Due file sfalsate: i primi a metà davanti, gli altri dietro, spostati di mezzo passo così nessuno ne copre un
+// altro. along = distanza dall'inizio della galleria (cm); il passo si stringe se le cose non stanno in span cm
+function twoRows(ids: string[], step: number, span: number): { id: string; along: number; back: boolean }[] {
+  const perRow = Math.ceil(ids.length / 2);
+  const s = Math.min(step, span / Math.max(1, perRow - 0.5));
+  return ids.map((id, i) => {
+    const back = i >= perRow;
+    return { id, along: (i % perRow) * s + (back ? 0 : s / 2), back };
+  });
+}
+
+const MODE_Z = 520; // la fila delle pedane delle modalità, davanti
 const READY_X = 0;
-const READY_Z = 100;
+const READY_Z = 0;
 const ENTRANCE_Z = HALL.depth / 2 - 120; // si entra davanti, al centro
 const ENTRANCE_STEP = 120; // cm tra un nuovo arrivato e l'altro
 const BOT_RING = HALL.readyRadius + 90; // i bot aspettano dietro il cerchio, già "pronti"
@@ -97,8 +119,8 @@ const CHESS_X = -COURT_X; // la scacchiera, simmetrica dall'altra parte
 const CHESS_Z = 0;
 const CHESS_HALF = 4 * HALL.chessSquare;
 const BEACH_HOME: [number, number][] = [
-  [-400, -300],
-  [400, -300],
+  [-200, -420],
+  [200, -420],
 ];
 const BACK_RANK: ChessPiece[] = ["rook", "knight", "bishop", "queen", "king", "bishop", "knight", "rook"];
 const FILES = "abcdefgh";
@@ -163,6 +185,8 @@ export class Hall {
   private gongCooldown = 0;
   private arrivals = 0; // quanti sono entrati: decide dove spunta il prossimo
   private botCount = 0;
+  private dummies = new Set<string>(); // bot chiamati perché uno era da solo nel cerchio: in partita stanno fermi
+  private soloMs = 0; // ms passati da solo nel cerchio dei pronti
   private round = 0; // quante volte si è partiti: cambia il seme dell'arena casuale
   private randomStageId: string;
   private readonly props: HallProp[] = makeProps();
@@ -214,6 +238,11 @@ export class Hall {
   // Tutti, in ordine di arrivo: con questi si costruisce la partita
   roster(): readonly HallPlayerState[] {
     return [...this.players.values()];
+  }
+
+  // Il manichino chiamato da solo nel cerchio: game.ts lo fa stare fermo qualunque sia il livello dei bot
+  isDummy(id: string): boolean {
+    return this.dummies.has(id);
   }
 
   botIds(): string[] {
@@ -275,14 +304,16 @@ export class Hall {
   }
 
   // Un bot del server: lottatori a rotazione, da Bonobot in poi. null se la stanza è piena o ce ne sono già troppi
-  addBot(characterId?: string): string | null {
+  // dummy: un manichino fermo (Bonobot se non si sceglie il lottatore)
+  addBot(characterId?: string, dummy = false): string | null {
     if (this.isFull || this.botIds().length >= HALL.maxBots) return null;
     const roster = hallFighterIds();
     const n = this.botCount++;
     const start = Math.max(0, roster.indexOf("bonobot"));
-    const cid = characterId && Object.hasOwn(CHARACTERS, characterId) ? characterId : roster[(start + n) % roster.length];
+    const cid = characterId && Object.hasOwn(CHARACTERS, characterId) ? characterId : dummy ? roster[start] : roster[(start + n) % roster.length];
     const id = `bot-sala-${n + 1}`;
-    this.addPlayer(id, `Bot ${getCharacter(cid).name}`, cid, undefined, { bot: true });
+    this.addPlayer(id, dummy ? "Manichino" : `Bot ${getCharacter(cid).name}`, cid, undefined, { bot: true });
+    if (dummy) this.dummies.add(id);
     return id;
   }
 
@@ -299,6 +330,7 @@ export class Hall {
     if (!p) return;
     this.release(p);
     this.players.delete(id);
+    this.dummies.delete(id);
     this.events.push({ type: "leave", id });
     // Il padrone di casa se ne va: lo diventa il prossimo umano arrivato
     if (p.host) {
@@ -356,6 +388,8 @@ export class Hall {
     const missing = HALL.minFighters - fighters;
     if (missing > 0) {
       const head = missing === 1 ? "Serve un altro lottatore" : `Servono altri ${missing} lottatori`;
+      // Da soli basta restare nel cerchio: arriva un manichino fermo (soloDummy)
+      if (humans.length === 1 && missing === 1) return `${head}: resta nel cerchio e arriva un manichino, o chiama un bot dalla gabbia`;
       return `${head}: manda il link o chiama un bot dalla gabbia`;
     }
     const out = humans.filter((p) => !p.ready).map((p) => p.name);
@@ -415,11 +449,17 @@ export class Hall {
       p.ready = p.bot || !!this.inZone(p, "ready");
       p.prev = p.input;
     }
+    this.soloDummy(dtMs);
     this.updateCountdown(dtMs);
     return this.flush();
   }
 
-  snapshot(t: number, events: HallEvent[], board: BoardRow[], rules: MatchRules): HallSnapshot {
+  // Qualcuno ha cambiato le regole dal computer: lo vedono tutti nella sala
+  rulesChanged(id: string) {
+    if (this.players.has(id)) this.events.push({ type: "rules", id });
+  }
+
+  snapshot(t: number, events: HallEvent[], board: BoardRow[], rules: MatchRules, botLevel?: HallBotLevel): HallSnapshot {
     const votes: HallSnapshot["votes"] = { mode: {}, stage: {} };
     for (const p of this.voters()) {
       if (p.modeVote) votes.mode[p.modeVote] = (votes.mode[p.modeVote] ?? 0) + 1;
@@ -463,7 +503,8 @@ export class Hall {
       events,
       board,
       props: this.props.map(propState),
-      rules: { ...rules, mode: leading.mode },
+      rules: { ...rules, mode: leading.mode === "party" ? rules.mode : leading.mode }, // Bonobo Party (#579) non è una modalità di partita
+      ...(botLevel ? { botLevel } : {}),
     };
   }
 
@@ -528,6 +569,11 @@ export class Hall {
     if (this.inZone(p, "gong") && this.gongCooldown <= 0) {
       this.gongCooldown = HALL.gongCooldownMs;
       this.events.push({ type: "gong", id: p.id });
+    }
+    // Sul computer il colpo leggero apre la schermata delle regole, non spinge nessuno
+    if (!p.bot && this.inZone(p, "computer")) {
+      this.events.push({ type: "computer", id: p.id });
+      return;
     }
     const targets: string[] = [];
     for (const t of this.players.values()) {
@@ -1164,6 +1210,17 @@ export class Hall {
   }
 
   // --- partenza ---
+
+  // Da solo nel cerchio dei pronti, senza bot: dopo un po' la sala chiama un manichino, così si parte anche da soli
+  private soloDummy(dtMs: number) {
+    const humans = this.voters();
+    const alone = humans.length === 1 && this.botIds().length === 0 && humans[0].ready;
+    this.soloMs = alone ? this.soloMs + dtMs : 0;
+    if (this.soloMs < HALL.soloDummyMs) return;
+    this.soloMs = 0;
+    const id = this.addBot(undefined, true);
+    if (id) this.events.push({ type: "bot", id, added: true });
+  }
 
   private updateCountdown(dtMs: number) {
     const canStart = this.need() === null;

@@ -16,6 +16,8 @@ var attacks: Dictionary # ATTACKS: durata di ogni attacco
 var smash_charge: Dictionary # SMASH_CHARGE: il pesante a terra tenuto si carica
 var recovery: Dictionary # RECOVERY: spinta del recupero
 var own_recovery: Dictionary # i numeri propri del recupero del personaggio (characters.ts), se ne ha
+var anchor_lift := 0.0 # ANCHOR.throwLift
+var has_anchor := false # il recupero spara l'ancora (Capt. OrsoBlu, #547): niente spinta, solo la frenata del lancio
 var own_attacks: Dictionary # i ritocchi dei colpi normali del personaggio (#384 D2), se ne ha
 var buffer_ms: float # INPUT.bufferMs: per quanto una pressione del salto vale ancora
 var stats: Dictionary # statistiche del personaggio: speed, airSpeed, jump, gravity
@@ -23,15 +25,17 @@ var solids: Array
 var platforms: Array
 
 
-func _init(game: Dictionary, character_stats: Dictionary, stage_solids: Array, stage_platforms: Array, character_recovery := {}, character_attacks := {}) -> void:
+func _init(game: Dictionary, character_stats: Dictionary, stage_solids: Array, stage_platforms: Array, character_recovery := {}, character_attacks := {}, character_anchor := false) -> void:
 	fighter = game.fighter
 	dash = game.dash
 	dodge = game.dodge
 	attacks = game.attacks
 	smash_charge = game.smashCharge
 	recovery = game.recovery
+	anchor_lift = float(game.get("anchor", {}).get("throwLift", 0))
 	own_recovery = character_recovery
 	own_attacks = character_attacks
+	has_anchor = character_anchor
 	buffer_ms = float(game.input.bufferMs)
 	stats = character_stats
 	solids = stage_solids
@@ -167,6 +171,14 @@ func _apply_controls(s: Dictionary, dt: float) -> void:
 		s.facing = dir
 	# Recupero (#11): in aria, pesante tenendo su
 	if not s.onGround and s.attack == "" and not s.recoveryUsed and s.input.get("up", false) and (_pressed(s, "heavy") or s.heavyBuffer > 0):
+		if has_anchor:
+			# l'ancora (#547): lo snapshot dopo il lancio non si predice più, qui solo la frenata (throwAnchor in anchor.ts)
+			if dir != 0:
+				s.facing = dir
+			s.vy = minf(s.vy, -float(anchor_lift))
+			s.rising = false
+			_start_attack(s, "recovery")
+			return
 		s.vy = -float(recovery.speed)
 		s.vx = dir * float(recovery.drift)
 		s.recoveryUsed = true
@@ -476,8 +488,11 @@ static func surface_y(p: Dictionary, x: float) -> float:
 
 # Come pieceOn() in physics/timed.ts (#433): un pezzo con le finestre "on" c'è solo dentro una [da, a) del tempo dell'arena
 # Con forLeader (il premio) c'è solo se prize, la squadra in testa congelata a prizeAtMs, è la sua
+# I pezzi del Palco che ci sono solo con un genere (genre) qui non contano: vicino a loro decide il server (predictor.gd)
 static func piece_on(p: Dictionary, t: float, prize := 0) -> bool:
 	if p.get("forLeader") != null and int(p.forLeader) != prize:
+		return false
+	if p.get("genre") != null:
 		return false
 	if not (p.get("on") is Array):
 		return true

@@ -19,9 +19,9 @@ Ogni oggetto ha una **classe di frequenza** proporzionata a quanto cambia la par
 
 | Classe | Peso | Per cosa | Oggetti |
 | --- | --- | --- | --- |
-| comune | 8 | piccolo vantaggio, da lanciare | Banana |
-| normale | 4 | vantaggio a tempo o con un rischio | Fungo di Teemo, Bong |
-| raro | 2 | cambia uno scontro | Fiore, Chiama Bassanese |
+| comune | 8 | piccolo vantaggio, da lanciare | Banana, Ciabatta, Caffè, Pistola ad acqua |
+| normale | 4 | vantaggio a tempo o con un rischio | Fungo di Teemo, Bong, Petardo, Brownie spaziale, Scopa, Pesce surgelato, Sparabolle, Cassa, Lavatrice, Monopattino, Carrello della spesa |
+| raro | 2 | cambia uno scontro | Fiore, Chiama Bassanese, tutte le versioni rare |
 | rarissimo | 1 | cambia la partita per diversi secondi | Tetris, Pac-Man |
 | mai | 0 | non cade dal cielo | Funghetto piantato, Funghetti (messi da parte, #419) |
 
@@ -37,6 +37,34 @@ Ogni oggetto ha una **classe di frequenza** proporzionata a quanto cambia la par
 | **Tetris** (#427, idea di Nicola) | Ci si assenta per 9 s in un cabinato, fermi e intoccabili: i tasti guidano pezzi che cadono dall'alto (destra/sinistra spostano, su/salto/J ruotano, giù accelera, K li fa cadere di colpo). Il pezzo compare sopra l'avversario più vicino, con l'ombra di dove si poserà, e attraversa le piattaforme sottili. Colpisce chi tocca (12%, 18% se fatto cadere con K); posato, diventa blocchi solidi per 10 s. Sei blocchi in fila alla stessa altezza fanno una **riga**: esplode e lancia in alto chi ci sta sopra (16%). Tra un pezzo e il prossimo passano 0,8 s. Logica in `physics/arcade.ts`. |
 | **Pac-Man** (#427, idea di Nicola) | Per 8 s si è Pac-Man: niente gravità, si va sempre dritti nella direzione dell'ultima freccia premuta, attraverso muri e pavimenti, e chi esce da un lato dell'arena rientra dall'altro. Intoccabili; chi si tocca viene mangiato (14% e lancio, poi 1,2 s di respiro). Gli altri diventano fantasmini e compaiono le palline: ognuna mangiata fa andare un po' più veloce (+1,2%, le grandi valgono 5, fino a 1,8 volte) finché si resta Pac-Man. |
 | **Chiama Bassanese** (idea di Nicola) | Un telefono che squilla: chi lo raccoglie chiama il Bassanese, che entra dal lato dell'arena più lontano e la attraversa tutta, di superficie in superficie, col telefono all'orecchio. Su ogni superficie si guarda in giro con un "?" e borbotta ("Dove l'ho messo...?"): cerca qualcosa, ma non si sa cosa. Chi tocca vola via (11%), tranne chi l'ha chiamato e i compagni; arrivato in fondo se ne va. Il giro dura al massimo 15 s: nelle arene grandi cammina più svelto, in quelle piene (Bologna) visita 10 superfici sparse. Logica in `physics/bassanese.ts`, disegno in `bassanese_view.gd`. |
+
+## Oggetti per categoria (Nicola, 5 novembre 2026)
+
+Ogni oggetto ha una **categoria** (`category` in `items.ts`), che dice come si usa: la stessa per tutti gli oggetti
+dentro, così un oggetto nuovo non costa animazioni nuove (vedi `docs/clip-flow/README.md`, "L'obiettivo"). Nella
+lobby gli oggetti sono raggruppati per categoria. Due oggetti per categoria, uno dei due buffo, e ognuno ha la sua
+**versione rara** (`rareOf`, segnata con ★ nella lobby) che fa la stessa cosa più una particolare, con meccaniche
+alla The Binding of Isaac. Logica in `physics/gear.ts`, numeri in `GEAR`, disegno in `godot/scripts/gear_view.gd`.
+
+| Categoria | Oggetto | Classe | Cosa fa | Versione rara | Cosa fa in più |
+| --- | --- | --- | --- | --- | --- |
+| Lancio | Ciabatta | comune | Vola tesa e veloce, 7%. | Ciabatta della mamma (raro) | Insegue l'avversario più vicino per 1,8 s, 12%. |
+| Lancio | Petardo | normale | Lanciato o posato si accende: si attacca a chi o a dove tocca e dopo 1,6 s scoppia (15%), anche addosso a chi l'ha acceso. Acceso non si riprende. | Petardo a grappolo (raro) | Lo scoppio sparge quattro petardini che scoppiano a loro volta (7%). |
+| Consumo | Caffè | comune | 8 s più veloci, anche negli attacchi. | Moka a razzo (raro) | 7 s in cui tenendo il salto si vola. |
+| Consumo | Brownie spaziale | normale | Per 2,5 s niente, poi un effetto a sorpresa per 8 s: gigante, mini, caffè, comandi invertiti o sonno (2,2 s addormentati). | Brownie della nonna (raro) | Sempre gigante per 11 s, con la corona, e ogni atterraggio fa tremare la terra: chi è a terra vicino salta via (5%). |
+| Impugnatura | Scopa | normale | In mano, J fa le mosse normali del personaggio con 46 px di portata e 4% in più; si rompe dopo 12 colpi a segno. K la lancia. | Ombrellone (raro) | I colpi lanciano in alto e, tenendo il salto, si plana. |
+| Impugnatura | Pesce surgelato | normale | Colpi un po' più lunghi che congelano chi li prende per 1,3 s in un blocco di ghiaccio; 8 colpi. | Anguilla elettrica (raro) | La scossa ferma chi prende e salta a tutti quelli vicini (6%). |
+| Sparo | Pistola ad acqua | comune | J spara gocce che spingono (3%), 14 colpi, poi sparisce. | Idrante (raro) | Tenendo J per 0,7 s carica un getto lungo 900 px che prende tutti (16%); 3 getti. |
+| Sparo | Sparabolle | normale | J spara bolle lente: chi ne prende una ci resta chiuso e sale per 1,8 s, poi scoppia (5%). Colpirlo la fa scoppiare prima. 6 colpi. | Sparabolle triplo (raro) | Tre bolle a ventaglio che rimbalzano a terra. |
+| Peso | Cassa | normale | Sopra la testa: si va al 60% e si salta meno. Scagliata (J o K) vola corta e pesante, 13%, e si rompe dove colpisce o atterra lasciando un oggetto della stanza. | Cassa d'oro (raro) | Ne escono tre oggetti. |
+| Peso | Lavatrice | normale | Scagliata (16%) atterra e va in centrifuga per 4,5 s: chi la tocca prende un colpetto (3%) ogni 0,3 s, tranne chi l'ha scagliata. Mentre gira non si raccoglie. | Lavatrice impazzita (raro) | In centrifuga per 6,5 s salta addosso all'avversario più vicino. |
+| Cavalcatura | Monopattino | normale | Ci si sale sopra: a terra si va 1,5 volte più svelti e chi si tocca andando forte viene investito (9%). J scatta in avanti, K fa scendere e il monopattino va avanti da solo colpendo chi trova. | Monopattino a razzo (raro) | Va sempre avanti da solo, in aria si plana; dopo 6 s il razzo scoppia sotto i piedi e sbalza in alto chi guida. |
+| Cavalcatura | Carrello della spesa | normale | Chi si investe finisce dentro, stordito, e viaggia col carrello. J lo catapulta in avanti (9%); da solo dopo 2,6 s, o se qualcuno lo colpisce. | Carrello da tre (raro) | Ne tiene tre ed è più veloce. |
+
+Da giganti il corpo e i colpi sono 1,5 volte più grandi, i colpi fanno più male e si vola meno; da mini il contrario.
+Impugnatura e sparo sono in `physics/held.ts` (numeri in `HELD`, disegno in `godot/scripts/held_view.gd`): i colpi
+sparati (goccia, bolle) sono oggetti che non cadono mai dal cielo. Peso e cavalcatura sono in `physics/ride.ts` (numeri
+in `RIDE`, disegno in `godot/scripts/ride_view.gd`): chi porta un pesante o cavalca non viene predetto dal client, decide il server.
 
 ## Il Fungo di Teemo (idea di Riccardo, #419)
 

@@ -1,11 +1,12 @@
 // Le arene. Aggiungerne una = un blocco qui (e, se ha uno sfondo, una cartella in public/assets/stages/<id>/).
 // La fisica legge solo questi dati, il client li disegna: un'arena non ha codice suo.
 
-import { BOLOGNA, WORLD } from "./constants";
+import { AUDIO, BOLOGNA, WORLD } from "./constants";
 import { generateCourse, seedFromCourseId } from "./courseGenerator";
 import { generateStage, seedFromStageId } from "./stageGenerator";
 import { SALA_PROVE } from "./music/sala-prove";
 import { songMovers } from "./musicStage";
+import { floodStage } from "./floodStage";
 
 export interface Rect {
   x: number; // bordo sinistro, pixel
@@ -14,6 +15,8 @@ export interface Rect {
   height: number;
   on?: TimeWindows; // pezzo a tempo (#433): c'è solo dentro queste finestre del tempo dell'arena; senza, sempre
   forLeader?: number; // premio (#433): c'è solo se questa squadra era in testa ai punti torre a prizeAtMs (in pareggio nessuno)
+  genre?: Genre; // Il Palco: c'è solo mentre suona questo genere
+  beat?: number; // Il Palco, con genre "techno": c'è solo nei giri di GENRE.technoBlinkBeats battiti di questa parità (0 o 1)
 }
 
 // Finestre [da ms, a ms) del tempo dell'arena (#433): fuori il pezzo non c'è, niente ci sta sopra, fa male o spinge
@@ -27,6 +30,21 @@ export interface ThinPlatform {
   y2?: number; // piattaforma inclinata (#246): altezza dell'estremità destra (y è la sinistra), come una scala
   on?: TimeWindows; // pezzo a tempo (#433), come quello dei blocchi pieni
   forLeader?: number; // premio (#433), come quello dei blocchi pieni
+  genre?: Genre; // Il Palco, come quello dei blocchi pieni
+  beat?: number;
+}
+
+// Il Palco: i generi musicali che cambiano le regole (physics/genre.ts). metal: si colpisce più forte e partono le
+// fiamme; reggae: gravità da luna; techno: le piattaforme della techno si accendono e spengono a tempo
+export type Genre = "metal" | "reggae" | "techno";
+
+// Senza dischi il DJ cambia genere da solo ogni everyMs da startMs, in quest'ordine; un disco (pad con effect.genre) lo impone
+// per effect.durationMs. beatMs: la durata di un battito, per il lampeggio della techno
+export interface StageGenres {
+  startMs: number; // prima, la prova del suono: nessun genere finché qualcuno non mette un disco
+  order: Genre[];
+  everyMs: number;
+  beatMs: number;
 }
 
 // Piattaforma sottile che si muove (ascensore, montacarichi). La posizione dipende solo dal
@@ -99,6 +117,21 @@ export interface PadEffect {
   durationMs: number; // quanto dura l'effetto
   on?: boolean; // le accende tutte, anche fuori dalle loro note
   dy?: number; // le sposta in verticale di tanto (negativo = su), entrando e uscendo dolcemente
+  flip?: boolean; // leva della Fabbrica: inverte i nastri trasportatori (belts) con questo group; due leve insieme = turbo
+  genre?: Genre; // disco del Palco: impone questo genere per durationMs (vince l'ultimo premuto)
+}
+
+// Nastro trasportatore (La Fabbrica): una striscia di superficie che sposta chi ci sta sopra a terra. Il verso si
+// inverte da solo ogni flipEveryMs (con la sirena prima) e con le leve (pads con effect.flip) del suo gruppo.
+// Logica in physics/belts.ts, Godot rifà lo stesso calcolo (belt_velocity in stage_motion.gd)
+export interface Belt {
+  x: number; // bordo sinistro
+  y: number; // la superficie su cui scorre (di solito la cima di un blocco pieno)
+  width: number;
+  speed: number; // pixel/s
+  dir: 1 | -1; // verso all'inizio della partita: 1 verso destra
+  flipEveryMs?: number; // si inverte da solo a ogni giro di tanto; senza, mai
+  group?: string; // le leve con questo gruppo lo invertono
 }
 
 // Trappola: un rettangolo che, quando è acceso, toglie percentuale e lancia via chi lo tocca
@@ -116,6 +149,9 @@ export interface Hazard extends Rect {
   warnMs?: number;
   flood?: HazardFlood; // acqua alta (#228): la superficie sale e scende a ciclo
   travel?: HazardTravel; // trappola che viaggia (#229): passa lungo un percorso, come il ciclista di Padova
+  // Impacchettatrice (La Fabbrica): invece di lanciare chiude chi tocca in una scatola per baseMs + perPercentMs × percentuale
+  // (fermo, come stordito; i tasti premuti lo fanno uscire prima). Knockback e angolo non contano
+  pack?: { baseMs: number; perPercentMs: number };
 }
 
 // Trappola che viaggia (#229): a ogni giro, dopo la calma, c'è l'avviso (il campanello) e poi il passaggio
@@ -412,7 +448,10 @@ export interface StageSpec {
   movers?: MovingPlatform[];
   hazards?: Hazard[];
   jets?: Jet[]; // getti d'acqua a tempo che spingono in alto (#253)
+  belts?: Belt[]; // nastri trasportatori (La Fabbrica)
   phases?: StagePhase[]; // l'arena cambia a fasi durante la partita (#433), in ordine di startMs
+  genres?: StageGenres; // Il Palco: il genere che suona cambia le regole (physics/genre.ts)
+  rise?: StageRise; // Il Diluvio: il mare sale e si porta dietro zone di espulsione, punto di ritorno e telecamera
   prizeAtMs?: number; // premio (#433): a questo tempo dell'arena si congela la squadra in testa ai punti torre; i pezzi con forLeader ci sono solo per lei
   prizeShowMs?: number; // tempo dell'arena a cui il client annuncia il premio (senza, prizeAtMs)
   itemSpots?: ItemSpot[]; // zone dove gli oggetti cadono più spesso (#253)
@@ -424,6 +463,18 @@ export interface StageSpec {
   // Nascosta (#408): resta nella repo e il server la avvia ancora per id, ma la lobby non la mostra e non può essere
   // l'arena predefinita. Per rimetterla in gioco basta togliere il campo.
   hidden?: boolean;
+}
+
+// Il Diluvio: da startMs il mare sale di pxPerS (più accelPxPerS2 col passare del tempo) fino a maxPx, e con lui salgono
+// zone di espulsione e punto di ritorno (stageAt in physics/timed.ts, a scalini di stepMs). Il mare è il fondo della zona
+// di espulsione: toccarlo è KO. waterY è dove sta la superficie all'inizio
+export interface StageRise {
+  startMs: number;
+  pxPerS: number;
+  accelPxPerS2?: number;
+  maxPx: number;
+  stepMs: number;
+  waterY: number;
 }
 
 // Il brano di un'arena musicale (#423): public/assets/music/<id>.ogg, suonato in giro allineato al tempo dell'arena
@@ -527,14 +578,34 @@ const BOLOGNA_BUS = busRuns(1885, 400, 1100, [-600, 2400], BOLOGNA.busFirstMs, B
 
 export const STAGES: Record<string, StageSpec> = {
   // L'arena di partenza: un palco principale e tre piattaforme sottili
+  // Il Palco, cambio di genere: un concerto dove il genere che suona cambia le regole (physics/genre.ts). Dopo 12 s di
+  // prova del suono il DJ cambia genere da solo ogni 18 s; i tre dischi (sulle casse e in consolle: ci si salta sopra o si colpiscono) lo impongono
+  // per 12 s. Metal: i colpi lanciano più lontano e dal bordo del palco partono colonne di fiamme. Reggae: gravità da
+  // luna. Techno: compaiono le piattaforme della techno, che si scambiano ogni 4 battiti a tempo con lo strobo.
   palco: {
     id: "palco",
     name: "Il Palco",
     solids: [MAIN],
     platforms: [
-      { x: 340, width: 200, y: 420 },
-      { x: 740, width: 200, y: 420 },
-      { x: 540, width: 200, y: 290 },
+      { x: 340, width: 200, y: 420 }, // la cassa di sinistra, col disco del metal
+      { x: 740, width: 200, y: 420 }, // la cassa di destra, col disco del reggae
+      { x: 540, width: 200, y: 290 }, // la consolle del DJ, col disco della techno
+      // Le piattaforme della techno: a turno ogni GENRE.technoBlinkBeats battiti, solo mentre suona la techno
+      { x: 110, width: 130, y: 400, genre: "techno", beat: 0 },
+      { x: 1040, width: 130, y: 400, genre: "techno", beat: 0 },
+      { x: 360, width: 130, y: 250, genre: "techno", beat: 1 },
+      { x: 790, width: 130, y: 250, genre: "techno", beat: 1 },
+    ],
+    genres: { startMs: 12000, order: ["metal", "reggae", "techno"], everyMs: 18000, beatMs: 60000 / AUDIO.musicBpm }, // a tempo con la musica di sempre
+    pads: [
+      { x: 410, y: 420, width: 60, sound: "metal", cooldownMs: 14000, effect: { group: "genere", durationMs: 12000, genre: "metal" } },
+      { x: 810, y: 420, width: 60, sound: "reggae", cooldownMs: 14000, effect: { group: "genere", durationMs: 12000, genre: "reggae" } },
+      { x: 610, y: 290, width: 60, sound: "techno", cooldownMs: 14000, effect: { group: "genere", durationMs: 12000, genre: "techno" } },
+    ],
+    hazards: [
+      // Le fiamme del metal: colonne ai due bordi del palco, a tempo, con l'avviso prima
+      { kind: "pirotecnica", genre: "metal", x: 262, y: 400, width: 44, height: 160, damage: 6, knockback: 520, knockbackGrowth: 3, angleDeg: 80, periodMs: 3200, activeMs: 700, warnMs: 1000 },
+      { kind: "pirotecnica", genre: "metal", x: 974, y: 400, width: 44, height: 160, damage: 6, knockback: 520, knockbackGrowth: 3, angleDeg: 80, periodMs: 3200, activeMs: 700, warnMs: 1000, offsetMs: 1600 },
     ],
     blastZone: { left: -250, right: WORLD.width + 250, top: -350, bottom: WORLD.height + 200 },
     spawns: [0.3, 0.7, 0.45, 0.55, 0.2, 0.8, 0.37, 0.63].map((f) => ({ x: MAIN.x + MAIN.width * f, y: MAIN.y })),
@@ -542,86 +613,68 @@ export const STAGES: Record<string, StageSpec> = {
     colors: { sky: 0x1d2b3a, solid: 0x5a3d26, solidEdge: 0x8b6a45, platform: 0xa0a8b8 },
     // Un concerto di notte: cielo e città, tralicci con i fari, il pubblico sotto al palco
     art: {
-      layers: [
-        { file: "sfondo-0.png", parallax: 0.15 },
-        { file: "sfondo-1.png", parallax: 0.45 },
-        { file: "sfondo-2.png", parallax: 0.75 },
-      ],
+      layers: [], // il concerto lo disegna godot/scripts/concert_stage.gd, a seconda del genere che suona
       preview: "anteprima.png",
     },
   },
 
-  // Due isole con un vuoto in mezzo e un ponte sottile sopra: chi cade nel buco perde una vita.
-  // TODO community: un nome e un posto nostro per quest'arena (#14)
-  isole: {
-    id: "isole",
-    name: "Le Isole",
-    solids: [
-      { x: 200, y: 560, width: 340, height: 90 },
-      { x: 740, y: 560, width: 340, height: 90 },
-    ],
-    platforms: [
-      { x: 540, width: 200, y: 450 },
-      { x: 260, width: 180, y: 410 },
-      { x: 840, width: 180, y: 410 },
-      { x: 560, width: 160, y: 300 },
-    ],
-    blastZone: { left: -250, right: WORLD.width + 250, top: -350, bottom: WORLD.height + 200 },
-    spawns: [
-      { x: 370, y: 560 },
-      { x: 910, y: 560 },
-      { x: 270, y: 560 },
-      { x: 1010, y: 560 },
-      { x: 470, y: 560 },
-      { x: 810, y: 560 },
-      { x: 320, y: 560 },
-      { x: 960, y: 560 },
-    ],
-    respawn: { x: WORLD.width / 2, y: 170 },
-    colors: { sky: 0x123047, solid: 0x2f5d3a, solidEdge: 0x7cbf6a, platform: 0xe8d9a8 },
+  // Il Diluvio (ex Le Isole): il mare sale per tutta la partita, la telecamera con lui; si combatte arrampicandosi sui
+  // relitti fino all'Arca. Toccare il mare è KO. Pezzi generati in src/shared/floodStage.ts
+  isole: floodStage(),
 
-    // Più lenta e morbida, da isola. TODO community: un pezzo del canale da rifare?
-    music: { bpm: 108, chords: ["C", "Am", "F", "G"], lead: "triangle" },
-  },
-
-  // Un capannone con un ascensore in mezzo, una navetta che fa avanti e indietro,
-  // il fuoco che si accende nella fossa e gli spuntoni ai bordi (#14 passo 4).
-  // TODO community: un posto nostro con ascensori e trappole (un magazzino, un cantiere, la palestra?)
+  // La Fabbrica di banane: un capannone a cartone animato dove tutto scorre. I due pavimenti sono nastri trasportatori che
+  // all'inizio portano verso la fossa col forno in mezzo; ogni 14 s, dopo la sirena, girano verso i bordi, poi di nuovo
+  // verso la fossa. A metà di ogni nastro c'è l'impacchettatrice: non fa male, chiude chi ci passa sotto in una scatola
+  // di banane e il nastro se la porta via, verso la fossa o giù dal bordo (la spedizione). Nella scatola si esce prima
+  // premendo i tasti, o se qualcuno la rompe con un colpo. Le due leve sulle passerelle (ci si salta sopra o si
+  // colpiscono) invertono i nastri per 6 s: tirate tutte e due insieme è TURBO, il doppio della velocità.
+  // In mezzo l'ascensore esce dalla fossa, in alto passa la gru con la cassa.
   fabbrica: {
     id: "fabbrica",
     name: "La Fabbrica",
     solids: [
-      { x: 140, y: 560, width: 300, height: 90 },
-      { x: 840, y: 560, width: 300, height: 90 },
-      { x: 440, y: 640, width: 400, height: 60 }, // la fossa, sotto il livello delle isole
+      { x: 110, y: 560, width: 390, height: 90 }, // nastro di sinistra
+      { x: 780, y: 560, width: 390, height: 90 }, // nastro di destra
+      { x: 500, y: 650, width: 280, height: 50 }, // la fossa col forno, sotto il livello dei nastri
     ],
-    platforms: [],
+    platforms: [
+      { x: 360, y: 410, width: 150 }, // passerelle con le leve, sopra i bordi della fossa
+      { x: 770, y: 410, width: 150 },
+    ],
+    belts: [
+      { x: 110, y: 560, width: 390, speed: 150, dir: 1, flipEveryMs: 14000, group: "nastri" },
+      { x: 780, y: 560, width: 390, speed: 150, dir: -1, flipEveryMs: 14000, group: "nastri" },
+    ],
     movers: [
-      // Ascensore: sale e scende in mezzo alla fossa, fermandosi a ogni piano
-      { width: 140, path: [{ x: 570, y: 540 }, { x: 570, y: 260 }], periodMs: 7000, pauseMs: 1200 },
-      // Navetta: attraversa l'arena da un'isola all'altra
-      { width: 150, path: [{ x: 150, y: 400 }, { x: 980, y: 400 }], periodMs: 9000, pauseMs: 600 },
+      // Ascensore: esce dalla fossa e sale fino all'altezza della gru, fermandosi a ogni piano
+      { width: 120, path: [{ x: 580, y: 630 }, { x: 580, y: 330 }], periodMs: 6500, pauseMs: 1100 },
+      // La gru: una cassa di banane appesa che attraversa il capannone in alto
+      { width: 130, path: [{ x: 160, y: 255 }, { x: 990, y: 255 }], periodMs: 12000, pauseMs: 900, kind: "gru" },
+    ],
+    pads: [
+      { x: 407, y: 410, width: 56, sound: "leva", cooldownMs: 10000, effect: { group: "nastri", durationMs: 6000, flip: true } },
+      { x: 817, y: 410, width: 56, sound: "leva", cooldownMs: 10000, effect: { group: "nastri", durationMs: 6000, flip: true } },
     ],
     hazards: [
-      // Fuoco nella fossa: acceso 1,5 s ogni 4 s, lancia in alto
-      { kind: "fuoco", x: 440, y: 610, width: 400, height: 30, damage: 8, knockback: 600, knockbackGrowth: 4, angleDeg: 80, periodMs: 4000, activeMs: 1500 },
-      // Spuntoni sempre accesi sui bordi esterni delle isole
-      { kind: "spuntoni", x: 140, y: 540, width: 60, height: 20, damage: 10, knockback: 500, knockbackGrowth: 6, angleDeg: 60 },
-      { kind: "spuntoni", x: 1080, y: 540, width: 60, height: 20, damage: 10, knockback: 500, knockbackGrowth: 6, angleDeg: 60 },
+      // Il forno nella fossa: acceso 1,5 s ogni 4 s, lancia in alto
+      { kind: "fuoco", x: 500, y: 620, width: 280, height: 30, damage: 8, knockback: 600, knockbackGrowth: 4, angleDeg: 80, periodMs: 4000, activeMs: 1500 },
+      // Le impacchettatrici a metà dei nastri: scendono ogni 7 s (prima tremano), sfasate. Più percentuale, più a lungo si resta chiusi
+      { kind: "pressa", x: 215, y: 470, width: 90, height: 90, damage: 4, knockback: 0, knockbackGrowth: 0, angleDeg: 90, periodMs: 7000, activeMs: 350, warnMs: 1300, pack: { baseMs: 1400, perPercentMs: 10 } },
+      { kind: "pressa", x: 975, y: 470, width: 90, height: 90, damage: 4, knockback: 0, knockbackGrowth: 0, angleDeg: 90, periodMs: 7000, activeMs: 350, warnMs: 1300, offsetMs: 3500, pack: { baseMs: 1400, perPercentMs: 10 } },
     ],
     blastZone: { left: -250, right: WORLD.width + 250, top: -350, bottom: WORLD.height + 200 },
     spawns: [
-      { x: 300, y: 560 },
-      { x: 980, y: 560 },
-      { x: 380, y: 560 },
-      { x: 900, y: 560 },
-      { x: 240, y: 560 },
-      { x: 1040, y: 560 },
-      { x: 340, y: 560 },
-      { x: 940, y: 560 },
+      { x: 330, y: 560 },
+      { x: 950, y: 560 },
+      { x: 410, y: 560 },
+      { x: 870, y: 560 },
+      { x: 270, y: 560 },
+      { x: 1010, y: 560 },
+      { x: 370, y: 560 },
+      { x: 910, y: 560 },
     ],
     respawn: { x: WORLD.width / 2, y: 160 },
-    colors: { sky: 0x22201f, solid: 0x4a4f57, solidEdge: 0xf1c40f, platform: 0xc0c6cc },
+    colors: { sky: 0x2b2420, solid: 0x3d434c, solidEdge: 0xffc531, platform: 0xc9ced4 },
 
     // Veloce e metallica, da capannone
     music: { bpm: 152, chords: ["Em", "C", "D", "Bm"], lead: "sawtooth" },

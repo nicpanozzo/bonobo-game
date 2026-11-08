@@ -96,7 +96,7 @@ func test_scheda_del_lottatore() -> void:
 	var b: Button = lobby._card(lobby._chars, "orsoblu")
 	b.pressed.emit()
 	runner.check(lobby._big_name.text == "Capt. OrsoBlu" and lobby._character == "orsoblu", "cambia con il riquadro")
-	runner.check(lobby._big_moves.text.begins_with("Speciali: Schizzo"), lobby._big_moves.text)
+	runner.check(lobby._big_moves.text.begins_with("Speciali: Tutti a bordo!"), lobby._big_moves.text)
 	runner.check(lobby._summary.text.ends_with("Capt. OrsoBlu"), "e nel riassunto: %s" % lobby._summary.text)
 	lobby.free()
 
@@ -252,7 +252,10 @@ func test_suprema_e_oggetti() -> void:
 	runner.check(lobby._item_checks.size() >= 2 and lobby._item_checks["banana"].button_pressed and not lobby._item_checks["bong"].button_pressed, "tornano quelli scelti")
 	runner.check(lobby._item_checks["banana"].disabled, "con Nessuno i tipi non si scelgono")
 	var c := _last_choice(lobby, lobby._submit)
-	runner.check(is_equal_approx(float(c.rules.supremeSpeed), 2.0) and c.rules.itemAmount == 0 and c.rules.itemKinds == ["banana"], "nella scelta: %s" % [c.rules])
+	runner.check(is_equal_approx(float(c.rules.supremeSpeed), 2.0) and c.rules.itemAmount == 0 and c.rules.itemKinds.has("banana") and not c.rules.itemKinds.has("bong"), "nella scelta: %s" % [c.rules])
+	# Gli oggetti per categoria arrivati dopo le regole salvate partono accesi, quelli già visti restano come erano
+	runner.check(lobby._item_checks.has("ciabatta") and lobby._item_checks["ciabatta"].button_pressed, "un oggetto nuovo parte acceso")
+	runner.check(c.rules.itemKindsKnown.has("bong") and c.rules.itemKindsKnown.has("ciabatta"), "si ricorda quali oggetti c'erano")
 	lobby._set_mode("flag")
 	runner.check(not lobby._items_box.visible, "in Bandiera niente oggetti")
 	lobby.free()

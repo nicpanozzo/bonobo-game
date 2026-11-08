@@ -49,6 +49,8 @@ var stage_movers: Array = [] # piattaforme mobili dell'arena: la campana di Bolo
 var _swings := {} # indice della piattaforma -> ultimo estremo dell'altalena sentito
 var stage_pads: Array = [] # bottoni sonori dell'arena (#423): servono per sentire quando arriva la Meraviglia
 var _wonder_on := false
+var _theme: RefCounted = preload("res://scripts/theme_stage.gd").new() # arene a tema: suoni senza eventi (la sirena della Fabbrica)
+var _theme_ms := -1.0 # tempo dell'arena dell'ultimo snapshot sentito dal tema
 const WAKA_MS := 270
 const BASS_NOTES := [1.0, 1.189, 1.335, 1.498, 1.782] # la Bassline: Mi, Sol, La, Si, Re della pentatonica minore (pitch)
 var _waka_at := 0 # Pac-Man (#427): quando è suonato l'ultimo "waka" (ms dell'orologio)
@@ -166,6 +168,32 @@ func on_event(e: Dictionary) -> void:
 				"fire": _play("cannonFire", {"x": e.x})
 				"boom": _play("tetrisLand", {"volume": 0.7, "x": e.x, "pitch": 0.7})
 				"load", "ammo": _play("tetrisMove", {"volume": 0.4, "x": e.x, "pitch": 0.5})
+		# Oggetti per categoria (gear.ts): miccia, aggancio, scoppio del petardo e scossa del gigante della nonna
+		"gear":
+			match str(e.phase):
+				"fuse": _play("bubbles", {"volume": 0.35, "x": e.x, "pitch": 2.2})
+				"stick": _play("grab", {"volume": 0.6, "x": e.x, "pitch": 1.3})
+				"boom": _play("cannonFire", {"x": e.x, "volume": 0.6 if e.kind == "petardino" else 1.0, "pitch": 1.4 if e.kind == "petardino" else 1.0})
+				"quake": _play("tetrisLand", {"x": e.x, "pitch": 0.5})
+				# Pesanti e cavalcature (ride.ts)
+				"break": # la cassa che si rompe, o l'arma in mano rotta o scarica (held.ts)
+					if str(e.kind).begins_with("cassa"):
+						_play("slam", {"x": e.x, "pitch": 1.3})
+					else:
+						_play("shieldBreak", {"volume": 0.4, "x": e.x, "pitch": 1.2})
+				"spin": _play("bubbles", {"volume": 0.6, "x": e.x, "pitch": 0.6})
+				"hop": _play("boing", {"volume": 0.6, "x": e.x, "pitch": 0.8})
+				"charge": _play("whoosh", {"volume": 0.6, "x": e.x})
+				"ram": _play("hitHeavy", {"x": e.x, "pitch": 0.9})
+				"scoop": _play("grab", {"x": e.x, "pitch": 0.8})
+				"launch": _play("goBlast", {"volume": 0.7, "x": e.x})
+				# Impugnatura e sparo (held.ts)
+				"freeze": _play("shieldBreak", {"volume": 0.5, "x": e.x, "pitch": 1.8})
+				"zap": _play("dizzy", {"volume": 0.5, "x": e.x, "pitch": 2.0})
+				"shot": _play("bubbles" if str(e.kind).begins_with("sparabolle") else "projectile", {"volume": 0.45, "x": e.x, "pitch": 1.6})
+				"jet": _play("whoosh", {"x": e.x, "pitch": 0.6})
+				"trap": _play("bubbles", {"volume": 0.6, "x": e.x, "pitch": 0.8})
+				"pop": _play("projectilePop", {"volume": 0.5, "x": e.x, "pitch": 1.5})
 		# Chiama Bassanese: il telefono che squilla
 		"bassanese":
 			if e.phase == "call":
@@ -381,6 +409,12 @@ func on_prematch_cue(cue: String) -> void:
 
 
 # Dallo snapshot l'annunciatore sente solo il tempo: "Dieci secondi!" quando scende sotto la soglia
+# L'arena a tema della partita (theme_stage.gd): i suoi suoni a tempo ripartono da capo
+func set_stage_theme(spec: Dictionary) -> void:
+	_theme.setup(spec, game)
+	_theme_ms = -1.0
+
+
 func on_snapshot(data: Dictionary) -> void:
 	var left: float = data.timeLeftMs if data.get("timeLeftMs") != null else -1.0
 	var warning: float = game.audio.get("announcerTimeWarningMs", 10000)
@@ -443,6 +477,11 @@ func on_snapshot(data: Dictionary) -> void:
 			if cue != "":
 				_play(cue, {"x": float(j.x) + float(j.width) / 2.0})
 		_jets[i] = jp
+	# Le arene a tema: la sirena prima che i nastri cambino verso, le impacchettatrici, il turbo
+	var pressed: Array = data.get("pads", []) if data.get("pads") is Array else []
+	for cue: Array in _theme.cues(_theme_ms, stage_ms, pressed):
+		_play(str(cue[0]), {"x": float(cue[1])})
+	_theme_ms = stage_ms
 	# La Meraviglia dell'arena musicale (#423): i tre bottoni attivi insieme, un arpeggio che sale quando comincia
 	var wonder_now: bool = WonderStage.wonder(stage_ms, stage_pads, data.get("pads", []) if data.get("pads") is Array else [])[0] > 0.0
 	if wonder_now and not _wonder_on:
@@ -1019,6 +1058,54 @@ func _build_sounds() -> void:
 	_sounds.pad_piatto = make.call(0.9, func(s):
 		s.noise(0, "highpass", 9000, 5000, 0.85, 0.45)
 		s.noise(0, "bandpass", 4000, 3000, 0.3, 0.25))
+	# La Fabbrica: la leva (uno scatto metallico e un clang), la sirena prima del cambio di verso dei nastri, il turbo
+	# che parte (un motore che sale) e l'impacchettatrice che scende (sbuffo idraulico e tonfo di cartone)
+	_sounds.pad_leva = make.call(0.5, func(s):
+		s.noise(0, "bandpass", 3000, 1500, 0.05, 0.6)
+		s.tone(0.05, "square", 180, 120, 0.12, 0.3)
+		s.tone(0.05, "triangle", 900, 880, 0.35, 0.18))
+	_sounds.siren = make.call(1.9, func(s):
+		for k in 3:
+			s.tone(k * 0.6, "sawtooth", 520, 880, 0.3, 0.12)
+			s.tone(k * 0.6 + 0.3, "sawtooth", 880, 520, 0.3, 0.12))
+	_sounds.turbo = make.call(1.2, func(s):
+		s.tone(0, "sawtooth", 60, 240, 1.1, 0.25)
+		s.tone(0, "square", 120, 480, 1.1, 0.08)
+		s.noise(0, "bandpass", 400, 2000, 1.1, 0.2))
+	_sounds.pressa = make.call(0.6, func(s):
+		s.noise(0, "highpass", 4000, 1500, 0.18, 0.35)
+		s.noise(0.12, "lowpass", 800, 100, 0.3, 0.8)
+		s.tone(0.12, "sine", 140, 50, 0.3, 0.6))
+	# Il tuono del Diluvio: uno schiocco e poi il brontolio che rotola lontano
+	_sounds.thunder = make.call(2.2, func(s):
+		s.noise(0, "highpass", 3000, 800, 0.12, 0.35)
+		s.noise(0.05, "lowpass", 600, 60, 2.0, 0.8)
+		s.tone(0.05, "sine", 70, 35, 1.6, 0.35))
+	# Il Palco: i dischi (una grattata sul vinile e poi il genere: il power chord del metal, lo skank del reggae, la cassa
+	# dritta e la salita della techno), la tromba da stadio del DJ prima del cambio, lo sbuffo delle fiamme
+	_sounds.pad_metal = make.call(1.1, func(s):
+		s.noise(0, "bandpass", 1800, 600, 0.12, 0.5)
+		for f: float in [82.41, 123.47, 164.81]:
+			s.tone(0.12, "sawtooth", f, f, 0.9, 0.2)
+		s.noise(0.12, "lowpass", 1500, 400, 0.9, 0.25))
+	_sounds.pad_reggae = make.call(1.1, func(s):
+		s.noise(0, "bandpass", 1800, 600, 0.12, 0.5)
+		for k in 3:
+			for f: float in [196.0, 246.94, 293.66]:
+				s.tone(0.2 + k * 0.3, "square", f, f, 0.08, 0.1)
+		s.tone(0.12, "sine", 98.0, 98.0, 0.9, 0.5))
+	_sounds.pad_techno = make.call(1.1, func(s):
+		s.noise(0, "bandpass", 1800, 600, 0.12, 0.5)
+		for k in 4:
+			s.tone(0.12 + k * 0.22, "sine", 150, 45, 0.18, 0.9)
+		s.tone(0.12, "sawtooth", 200, 1600, 0.9, 0.12))
+	_sounds.airhorn = make.call(1.2, func(s):
+		for k in 3:
+			s.tone(k * 0.22, "square", 466.16, 440.0, 0.18 if k < 2 else 0.6, 0.18)
+			s.tone(k * 0.22, "sawtooth", 233.08, 220.0, 0.18 if k < 2 else 0.6, 0.12))
+	_sounds.pyro = make.call(0.8, func(s):
+		s.noise(0, "lowpass", 600, 2400, 0.7, 0.7)
+		s.tone(0, "sine", 90, 50, 0.5, 0.4))
 	# Rotolata dal bordo: un fruscio che scende
 	_sounds.roll = make.call(0.3, func(s): s.noise(0, "bandpass", 900, 350, 0.26, 0.4))
 	# Scudo colpito (#109): un "tonk" metallico e corto

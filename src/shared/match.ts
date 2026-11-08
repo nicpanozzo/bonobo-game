@@ -17,6 +17,7 @@ import { COURSE_PREFIX, seedFromCourseId } from "./courseGenerator";
 import { seedFromStageId } from "./stageGenerator";
 import { getStage, type StageSpec } from "./stages";
 import { Prematch } from "./prematch";
+import type { MinigameApi, MinigameRuntime } from "./party/minigame";
 import type { GameEvent, GameSnapshot, InputState, MatchRules, PlayerState, PredictionState } from "./types";
 
 export interface MatchOptions {
@@ -26,6 +27,8 @@ export interface MatchOptions {
   items?: boolean; // false = niente oggetti anche dove ci sarebbero (es. i test di bilanciamento dei personaggi, #302)
   prematch?: boolean; // true = prima si aspetta che tutti siano pronti, poi 3, 2, 1 (il server; mai in Allenamento)
   autoRestart?: boolean; // false = a fine partita si resta fermi finché qualcuno chiede la rivincita (le stanze con la sala d'attesa)
+  // Bonobo Party (#579): la partita è un minigioco. La regola decide punti e fine; vite infinite se unlimitedStocks
+  minigame?: { id: string; runtime: MinigameRuntime; unlimitedStocks?: boolean; practiceMs?: number };
 }
 
 export type MatchEndEvent = Extract<GameEvent, { type: "matchEnd" }>;
@@ -52,21 +55,26 @@ export class Match {
   private projectiles: ProjectileWorld = createProjectileWorld(); // proiettili delle speciali (E10)
   private prematch: Prematch | null; // attesa e conto alla rovescia prima di ogni partita, null = si comincia subito
   private autoRestart: boolean;
+  private game: { id: string; runtime: MinigameRuntime } | null; // il minigioco di Bonobo Party, se lo è (#579)
+  private places: Record<string, number> | null = null; // a minigioco finito, i posti d'arrivo
+  private ghosts = new Map<string, string>(); // fantasmi del minigioco -> di chi sono
 
   constructor(options: MatchOptions = {}) {
     this.rules = sanitizeRules(options.rules);
     this.stage = options.stage ?? stageFor(this.rules, options.stageId);
     const rules = this.rules;
+    const game = options.minigame;
+    this.game = game ? { id: game.id, runtime: game.runtime } : null;
     this.ctx = {
       stage: this.stage,
       events: [],
-      canHit: (a, t) => canHitWithRules(rules, a.team, t.team),
-      unlimitedStocks: rules.mode === "flag" || rules.mode === "race" || rules.mode === "training",
+      canHit: (a, t) => canHitWithRules(rules, a.team, t.team) && (game?.runtime.canHit?.(a, t) ?? true),
+      unlimitedStocks: game?.unlimitedStocks ?? (rules.mode === "flag" || rules.mode === "race" || rules.mode === "training"),
       projectiles: this.projectiles,
     };
     const amount = ITEM_AMOUNTS[rules.itemAmount];
     const withItems = options.items !== false && (rules.mode === "ffa" || rules.mode === "teams") && amount.maxOnStage > 0 && rules.itemKinds.length > 0;
-    this.prematch = options.prematch && rules.mode !== "training" ? new Prematch() : null;
+    this.prematch = options.prematch && rules.mode !== "training" ? new Prematch(game?.practiceMs) : null;
     this.autoRestart = options.autoRestart !== false;
     this.items = withItems ? createItemWorld(seedOf(this.stage.id), { everyMs: amount.everyMs, maxOnStage: amount.maxOnStage, kinds: rules.itemKinds }) : null;
   }
@@ -83,9 +91,24 @@ export class Match {
     return [...this.fighters.values()];
   }
 
+  // Il minigioco di Bonobo Party (#579), se la partita lo è: i bot gli chiedono dove andare
+  get minigame(): MinigameRuntime | null {
+    return this.game?.runtime ?? null;
+  }
+
+  // A minigioco finito: i posti d'arrivo (1 = primo), null prima
+  get minigamePlaces(): Record<string, number> | null {
+    return this.places;
+  }
+
+  // Chi gioca davvero (senza i fantasmi dei minigiochi)
+  get humansAndBots(): string[] {
+    return this.players.filter((f) => !this.ghosts.has(f.id)).map((f) => f.id);
+  }
+
   // L'arena com'è adesso (#433): senza pezzi a tempo è la stessa di stage, con loro solo quelli che ci sono ora
   get currentStage(): StageSpec {
-    return stageAt(this.stage, this.ctx.timeMs ?? 0, prizeLeader(this.ctx));
+    return stageAt(this.stage, this.ctx.timeMs ?? 0, prizeLeader(this.ctx), this.ctx.padsMs);
   }
 
   // team: la squadra chiesta (#409); se non c'è in queste regole si entra in quella con meno giocatori
@@ -152,6 +175,7 @@ export class Match {
   setInput(id: string, input: InputState) {
     const f = this.fighters.get(id);
     if (!f || f.away) return;
+    if (this.game?.runtime.mapInput && !this.ghosts.has(id)) input = this.game.runtime.mapInput(id, input);
     const next: InputState = {
       left: !!input.left,
       right: !!input.right,
@@ -231,6 +255,7 @@ export class Match {
     const pre = this.prematch?.step(dtMs, list.length, list.filter((f) => !f.away).map((f) => f.id));
     if (pre === "begin") this.restartMatch(false); // tutti al loro posto, da capo, per la presentazione
     if (pre === "go") this.ctx.events.push({ type: "matchStart" });
+    if (pre === "go" || (!this.prematch && this.game && this.matchTimeMs === 0 && !this.places)) this.game?.runtime.start?.(list, this.ctx, this.api);
     const phase = this.prematch?.phase;
     // Gli oggetti cadono solo quando c'è qualcuno con cui litigarseli e la partita è in corso
     const items = this.items && list.length >= 2 && !this.winnerId && !phase ? this.items : null;
@@ -248,11 +273,46 @@ export class Match {
     for (const f of list) f.inputTicks++; // E17: il client rigioca da qui il proprio movimento
     if (items) stepItems(items, list, fightMs, this.ctx);
     if (phase) return this.flushEvents();
+    if (this.game) {
+      this.stepMinigame(this.game.runtime, dtMs);
+      return this.flushEvents();
+    }
     if (this.rules.mode === "flag" && !this.winnerId) this.scoreFlags();
     if (this.rules.mode === "race" && !this.winnerId) this.updateCheckpoints(list);
     this.updateMatch(list, dtMs);
     return this.flushEvents();
   }
+
+  // Bonobo Party (#579): un passo della regola del minigioco; quando finisce si chiude la partita con i posti
+  private stepMinigame(game: MinigameRuntime, dtMs: number) {
+    if (this.places) return;
+    const list = this.players as Fighter[];
+    this.matchTimeMs += dtMs;
+    game.step(list, this.ctx, dtMs, [...this.ctx.events], this.api);
+    if (!game.done()) return;
+    this.places = game.places(this.humansAndBots);
+    const first = Object.entries(this.places).sort((a, b) => a[1] - b[1])[0];
+    const winner = first ? this.fighters.get(first[0]) : undefined;
+    this.winnerId = winner?.id ?? "";
+    this.ctx.events.push({ type: "matchEnd", winnerId: winner?.id ?? null, winnerTeam: winner?.team ?? 0, durationMs: Math.round(this.matchTimeMs) });
+  }
+
+  // Quello che un minigioco può chiedere alla partita: i fantasmi (Ieri Me) entrano come lottatori guidati da lui
+  private api: MinigameApi = {
+    addGhost: (id, ghostOf) => {
+      const owner = this.fighters.get(ghostOf);
+      if (!owner || this.fighters.has(id)) return null;
+      const index = this.slots.get(ghostOf) ?? 0;
+      const ghost = createFighter({ id, name: owner.name, characterId: owner.characterId, skinId: owner.skinId, color: owner.color, team: owner.team, index, teamRank: 0, stocks: this.rules.stocks, supremeRate: this.rules.supremeSpeed }, this.stage);
+      this.fighters.set(id, ghost);
+      this.ghosts.set(id, ghostOf);
+      return ghost;
+    },
+    removeGhost: (id) => {
+      if (!this.ghosts.delete(id)) return;
+      this.fighters.delete(id);
+    },
+  };
 
   private flushEvents(): GameEvent[] {
     const events = this.ctx.events;
@@ -270,6 +330,7 @@ export class Match {
         skinId: f.skinId,
         color: f.color,
         team: f.team,
+        ...(this.ghosts.has(f.id) && { ghostOf: this.ghosts.get(f.id) }),
         ...(this.pendingTeams.has(f.id) ? { nextTeam: this.pendingTeams.get(f.id) } : {}),
         x: Math.round(f.x),
         y: Math.round(f.y),
@@ -302,6 +363,8 @@ export class Match {
         ...(f.inputSeq >= 0 && { predict: predictionState(f) }),
         ...(f.pet && f.pet.koMs <= 0 && { companion: companionState(f)! }),
         ...(f.station !== undefined && { station: f.station }), // #433
+        ...(f.wetMs > 0 && { wet: true }), // lo Scivolone di Egiainuso (#557)
+        ...(f.anchor && { anchor: { x: Math.round(f.anchor.x), y: Math.round(f.anchor.y), phase: f.anchor.phase } }), // #547
       });
     }
     const teamScores = this.rules.mode === "flag" ? { ...this.scores } : null;
@@ -313,7 +376,8 @@ export class Match {
     const tetris = tetrisState(this.ctx); // #427
     const bassanese = bassaneseState(this.ctx);
     const prematch = this.prematch?.state(players.map((p) => p.id));
-    return { t, players, winnerId: this.winnerId, timeLeftMs: this.timeLeftMs(), teamScores, items, projectiles, puddles, events, stageMs, ...(pads && { pads }), ...(tetris && { tetris }), ...(bassanese && { bassanese }), ...stationSnapshot(this.ctx), ...(prematch && { prematch }) };
+    const party = this.game ? { ...this.game.runtime.hud(), id: this.game.id, ...(this.places && { places: this.places }) } : undefined;
+    return { ...(party && { party }), t, players, winnerId: this.winnerId, timeLeftMs: this.timeLeftMs(), teamScores, items, projectiles, puddles, events, stageMs, ...(pads && { pads }), ...(tetris && { tetris }), ...(bassanese && { bassanese }), ...stationSnapshot(this.ctx), ...(prematch && { prematch }) };
   }
 
   // Si entra nella squadra con meno giocatori (a parità, quella col numero più basso: prima la Rossa)
