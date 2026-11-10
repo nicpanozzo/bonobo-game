@@ -13,6 +13,7 @@ Questo file contiene solo le regole che valgono **sempre**. Il resto si legge so
 | Arene ed elementi nuovi | [docs/arene.md](docs/arene.md) |
 | Dove sta cosa nel codice | [docs/architettura.md](docs/architettura.md) e [godot/README.md](godot/README.md) |
 | Priorità del progetto | [docs/piano-prodotto.md](docs/piano-prodotto.md) e la specifica aperta in `docs/evolutive/` |
+| La CI di GitHub è ferma: provare una PR o pubblicare una versione dell'app | [scripts/locale/LEGGIMI.md](scripts/locale/LEGGIMI.md) |
 
 **Non leggere** (costano token e non servono): `godot/data/` (generato), `package-lock.json`, `docs/archivio/` (evolutive chiuse), immagini e audio. Cerca con `grep`/`rg` e leggi solo le righe che ti servono dei file lunghi.
 
