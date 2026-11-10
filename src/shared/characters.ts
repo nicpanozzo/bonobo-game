@@ -911,49 +911,51 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       footY: 290,
       scale: 0.5, // alto poco più della hitbox, come le vecchie pose del foglio
       animations: {
-        idle: { fps: 12, loop: true }, // clip Flow EG-01: respira
-        walk: { fps: 12, loop: true }, // clip Flow EG-02
+        idle: { fps: 6, loop: true }, // clip Flow EG-01: respira
+        walk: { fps: 6, loop: true }, // clip Flow EG-02
         jump: { fps: 24, loop: false }, // clip Flow EG-03
         fall: { fps: 6, loop: true }, // clip Flow EG-03
         light: { fps: 12, loop: false, hitFrame: 4 }, // clip Flow EG-04: il primo pugno
-        heavy: { fps: 12, loop: false, hitFrame: 12 }, // clip Flow EG-07: braccio elastico (senza i fotogrammi che escono dal bordo)
-        hit: { fps: 16, loop: false },
+        heavy: { fps: 12, loop: false, hitFrame: 7 }, // clip Flow EG-07B: braccio allungato (senza i 3 fotogrammi che escono dal bordo)
+        hit: { fps: 12, loop: false }, // clip Flow EG-17
         land: { fps: 24, loop: false }, // clip Flow EG-03
         dash: { fps: 12, loop: true }, // clip Flow EG-02: corsa
-        lightUp: { fps: 12, loop: false, hitFrame: 4 }, // clip Flow EG-04
+        lightUp: { fps: 6, loop: false, hitFrame: 2 }, // clip Flow EG-04
         lightDown: { fps: 8, loop: false, hitFrame: 7 }, // clip Flow EG-05: spazzata
         lightAir: { fps: 12, loop: false, hitFrame: 14 }, // clip Flow EG-09: braccia aperte
-        heavyUp: { fps: 24, loop: false, hitFrame: 3 },
-        heavyDown: { fps: 12, loop: false, hitFrame: 6 }, // clip Flow EG-08: spaccata
-        heavyAir: { fps: 12, loop: false, hitFrame: 6 }, // clip Flow EG-11: capriola col calcio
-        recovery: { fps: 12, loop: false, hitFrame: 2 }, // clip Flow EG-13: elica
-        shield: { fps: 8, loop: true },
+        heavyUp: { fps: 8, loop: false, hitFrame: 10 }, // clip Flow EG-07B: pugno in alto coi piedi a terra
+        heavyDown: { fps: 6, loop: false, hitFrame: 3 }, // clip Flow EG-08: spaccata
+        heavyAir: { fps: 6, loop: false, hitFrame: 3 }, // clip Flow EG-11: capriola col calcio
+        recovery: { fps: 6, loop: false, hitFrame: 1 }, // clip Flow EG-13: elica
+        shield: { fps: 12, loop: true }, // clip Flow EG-18: la mano davanti alla faccia
         grab: { fps: 24, loop: false, hitFrame: 1 },
-        throw: { fps: 24, loop: false, hitFrame: 0 },
-        supreme: { fps: 24, loop: true }, // l'aura nera a zig-zag
+        throw: { fps: 8, loop: false, hitFrame: 6 }, // clip Flow EG-15: la spinta in avanti
+        supreme: { fps: 6, loop: true }, // clip Flow EG-14B: l'aura nera a zig-zag, più piccola
         // clip Flow EG-12: lo sbuffo bianco è tolto, lo sputo lo disegna il gioco
-        specialNeutral: { fps: 8, loop: false, hitFrame: 11 },
-        specialSide: { fps: 12, loop: false, hitFrame: 9 }, // scatto a testa bassa
+        specialNeutral: { fps: 4, loop: false, hitFrame: 5 },
+        specialSide: { fps: 6, loop: false, hitFrame: 4 }, // scatto a testa bassa
         jumpSquat: { fps: 24, loop: false }, // clip Flow EG-03
-        doubleJump: { fps: 24, loop: false }, // clip Flow EG-03: capriola
+        doubleJump: { fps: 12, loop: false }, // clip Flow EG-03: capriola
         specialDown: { fps: 8, loop: false, hitFrame: 11 }, // clip Flow EG-13: guardia a braccia incrociate, poi pugno
         taunt: { fps: 8, loop: false }, // clip Flow EG-01: agita il braccio e gonfia le guance
+        dashAttack: { fps: 8, loop: false, hitFrame: 6 }, // clip Flow EG-06: scivolata
+        grabbed: { fps: 12, loop: true }, // clip Flow EG-20: tenuto, rannicchiato
         tumble: { fps: 8, loop: true }, // clip Flow EG-19: le capriole quando lo lanciano
       },
     },
     // il corpo che si può colpire, misurato sulla sagoma del fermo (#243)
-    hurtbox: { width: 38, height: 92 },
+    hurtbox: { width: 36, height: 90 },
     // le zone dei colpi dove arriva il disegno (#243, tools/sprite/zone_dei_colpi.py)
     attacks: {
-      light: { range: 40, height: 30, boxX: 0, boxY: -64 },
-      heavy: { range: 78, height: 44, boxX: 0, boxY: -71 },
-      lightUp: { range: 54, height: 48, boxX: -28, boxY: -100 },
-      lightDown: { range: 44, height: 24, boxX: 0, boxY: -36 },
-      lightAir: { range: 50, height: 50, boxX: 0, boxY: -74 },
-      heavyUp: { range: 80, height: 64, boxX: -54, boxY: -108 },
-      heavyDown: { range: 62, height: 30, boxX: -10, boxY: -37 },
-      heavyAir: { range: 47, height: 60, boxX: -5, boxY: -67 },
-      dashAttack: { range: 75, height: 44, boxX: 2, boxY: -71 },
+      light: { range: 38, height: 30, boxX: 0, boxY: -64 },
+      heavy: { range: 91, height: 44, boxX: 4, boxY: -66 },
+      lightUp: { range: 54, height: 48, boxX: -30, boxY: -98 },
+      lightDown: { range: 42, height: 24, boxX: -17, boxY: -24 },
+      lightAir: { range: 46, height: 50, boxX: 0, boxY: -71 },
+      heavyUp: { range: 80, height: 64, boxX: -30, boxY: -98 },
+      heavyDown: { range: 62, height: 30, boxX: -12, boxY: -37 },
+      heavyAir: { range: 47, height: 60, boxX: -6, boxY: -67 },
+      dashAttack: { range: 75, height: 44, boxX: 6, boxY: -55 },
     },
   },
   // Lottatori dalle schede della community (#13), compilate a ottobre 2026 nella cartella Drive del gruppo.
