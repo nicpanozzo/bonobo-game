@@ -106,8 +106,8 @@ describe("laboratorio delle combo", () => {
   });
 
   it("è deterministico: la stessa catena dà lo stesso risultato", () => {
-    const a = chain("egiainuso", ["light", "dashAttack"], 90);
-    const b = chain("egiainuso", ["light", "dashAttack"], 90);
+    const a = chain("egiainuso", ["light", "dashAttack"], 70);
+    const b = chain("egiainuso", ["light", "dashAttack"], 70);
     assert.deepEqual([a.hits, a.real, a.world?.t.x, a.world?.t.percent], [b.hits, b.real, b.world?.t.x, b.world?.t.percent]);
     assert.ok(a.real);
   });

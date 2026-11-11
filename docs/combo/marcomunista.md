@@ -14,7 +14,7 @@ Il laboratorio usa la fisica vera: la prima mossa colpisce un Bonobo fermo, poi 
 
 Le combo che c'erano già (la combo di leggeri e quella di #557), riprovate dal laboratorio.
 
-- **Combo di leggeri (jab)**: light → light → light. Vera a 10-70%. Entra solo se il bersaglio non reagisce a 0, 80-120%.
+- **Combo di leggeri (jab)**: light → light → light. Mai vera. Entra solo se il bersaglio non reagisce a 0-120%.
 - **Piano quinquennale**: throwUp → lightAir → lightAir → heavyAir. Mai vera. Entra solo se il bersaglio non reagisce a 10-100%.
 - **Piano quinquennale**: heavyUp → lightAir → lightAir → heavyAir. Mai vera. Entra solo se il bersaglio non reagisce a 30-50%.
 - **Piano quinquennale**: throwDown → lightAir → lightAir → heavyAir. Mai vera. Entra solo se il bersaglio non reagisce a 20-140%.

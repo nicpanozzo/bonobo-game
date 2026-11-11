@@ -203,7 +203,7 @@ describe("bot", () => {
         const heavy = i % 60 === 0;
         match.setInput("a", { left: false, right: false, up: false, jump: false, down: false, light: false, heavy, taunt: false, dodge: false, shield: false, special: false, supreme: false });
         bots.tick(match);
-        hits += match.step(DT).filter((e) => e.type === "hit" && e.targetId === id).length;
+        hits += match.step(DT).filter((e) => e.type === "hit" && e.targetId === id && e.kind === "heavy").length; // solo i pesanti: col jab vero (#594) gli scambi di leggeri contano poco
         // Il giocatore resta fermo dov'è: si riavvicina al bot per il prossimo colpo
         if (i % 60 === 59) {
           a.x = bot.x - (FIGHTER.width + 30);

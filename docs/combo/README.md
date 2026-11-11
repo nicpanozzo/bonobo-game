@@ -7,9 +7,15 @@ combos: [{ name: "Uomo in mare", steps: [{ move: "heavy", windowMs: 400 }, { mov
 ```
 
 - Il colpo di un passo che entra apre la finestra del passo dopo (`windowMs` dopo la fine della mossa, sennò `COMBO.windowMs`): in quella finestra la mossa dopo parte senza aspettare l'attesa del colpo.
+- `holdMs` tiene il bersaglio stordito almeno quei ms (max `COMBO.maxHoldMs`): serve ai passi di mezzo prima di una speciale lenta. Con `angleDeg: 0` chi è a terra resta a terra e non si rialza al volo.
+- `text` è la riga che si legge nel menu di pausa (sezione Combo, coi tasti di ogni colpo in fila).
 - `angleDeg` e `knockbackMult` ritoccano il lancio di quel passo. Sul primo passo valgono ogni volta che quella mossa entra: meglio lasciarlo senza ritocchi quando si può.
 - Un proiettile può chiudere una combo, non aprirla né continuarla. La presa non è un passo, i lanci sì.
-- La combo di leggeri e le combo di #557 (Arrembaggio, Piano quinquennale, Groove, Scivolone, Capra e cavaliere) restano regole a parte.
+- La combo di leggeri e le combo di #557 (Arrembaggio, Piano quinquennale, Groove, Scivolone, Capra e cavaliere) restano regole a parte. Dall'11/11/2026 tre sono vere come nei picchiaduro di riferimento: il jab spinge quasi in orizzontale chi sta a terra e lo stordisce almeno `JAB.holdMs` (vero a 0-70%, tranne Lampione, dove morde il beagle, ed Elvedeo e Marcomunista, il cui leggero alza); chi è tirato a bordo dall'ancora resta stordito 0,6 s e non si rialza al volo (Arrembaggio vero col jab e con Avanti tutta!); i colpi in aria che rialzano Marcomunista mandano in alto e stordiscono almeno `PIANO_QUINQUENNALE.holdMs` (due colpi in aria veri a 50-120%, la catena intera dal lancio si può evitare).
+
+## Le combo di tutti (11/11/2026)
+
+Ogni personaggio ne ha almeno tre vere. Le percentuali, rifatte dal laboratorio, sono in `<id>.md`. Lo schema che lega quasi sempre: leggero, leggero in giù tenuto a terra (`holdMs: 450, angleDeg: 0`) e una speciale, che dà a ognuno una chiusura sua; poi un giro in su (due leggeri in su) per le percentuali medie e un pesante in su per quelle basse.
 
 ## Laboratorio
 

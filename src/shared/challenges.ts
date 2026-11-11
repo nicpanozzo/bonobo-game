@@ -31,7 +31,7 @@ export const CHALLENGES: Challenge[] = [
   { id: "palleggio", title: "Palleggio", text: "Lancia in alto il manichino e colpiscilo di fila prima che tocchi terra.", stage: "palestra", bot: "manichino", botPercent: 0, goal: "juggle", limitSec: 30, medals: [3, 5, 7] },
   { id: "mitraglia", title: "Mitraglia", text: "Più danno possibile al manichino in 15 secondi.", stage: "palestra", bot: "manichino", botPercent: 0, goal: "damage", limitSec: 15, medals: [50, 70, 85] }, // soglie abbassate col gioco al 90% (#384 A4): in 15 s ci stanno meno colpi
   { id: "sparring", title: "Contro lo sparring", text: "Lo sparring risponde: buttalo fuori partendo dal 50%.", stage: "palestra", bot: "sparring", botPercent: 50, goal: "koTime", limitSec: 60, medals: [12, 7, 4] },
-  { id: "resisti", title: "Resisti", text: "Il bot difficile ti dà la caccia: resta in piedi 60 secondi.", stage: "palco", bot: "difficile", botPercent: 0, goal: "survive", limitSec: 60, medals: [20, 40, 60] },
+  { id: "resisti", title: "Resisti", text: "Il bot difficile ti dà la caccia: resta in piedi 60 secondi.", stage: "palco", bot: "difficile", botPercent: 0, goal: "survive", limitSec: 60, medals: [20, 30, 60] }, // argento a 30 s: col jab vero (#594) il bot che caccia picchia di più
 ];
 
 // Meno è meglio solo per il tempo del KO
