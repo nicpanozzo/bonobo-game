@@ -444,6 +444,23 @@ export interface CompanionSpec {
   bites: AttackKind[]; // attacchi del padrone che fa il compagno, partendo da dove è lui (#369 passo 2)
 }
 
+// Un passo di una combo (#594): la mossa e i piccoli ritocchi che la fanno legare alla successiva
+export interface ComboStep {
+  move: AttackKind; // una mossa già disegnata: il suo stato ha un PNG nella cartella del personaggio
+  windowMs?: number; // ms dopo la fine di questo colpo in cui la mossa del passo dopo continua la combo (manca = COMBO.windowMs)
+  angleDeg?: number; // angolo di lancio di questo colpo nella combo, al posto di quello della mossa
+  knockbackMult?: number; // moltiplicatore del knockback di questo colpo nella combo
+}
+
+// Una combo del personaggio (#594): i colpi in ordine. Il primo passo vale ogni volta che quella mossa entra; i passi
+// dopo solo se la mossa parte nella finestra del passo prima. Se due combo cominciano uguale, sui passi in comune
+// valgono i ritocchi di quella scritta prima. Un proiettile può chiudere una combo, non aprirla né continuarla.
+// Quali legano davvero, e a che percentuali, lo dice npm run combo-lab (docs/combo/<id>.md)
+export interface ComboSpec {
+  name: string;
+  steps: ComboStep[];
+}
+
 export interface CharacterSpec {
   id: string;
   name: string;
@@ -453,6 +470,7 @@ export interface CharacterSpec {
   stats?: Partial<CharacterStats>; // quelle che mancano valgono 1
   // La combo su misura del personaggio (#557): nome e come si fa, per la lista mosse in pausa. La regola è in physics/
   combo?: { name: string; text: string };
+  combos?: ComboSpec[]; // catene di colpi sulle mosse che ha disegnate (#594, COMBO); le prova npm run combo-lab
   airPop?: boolean; // i suoi colpi in aria a segno lo rialzano (PIANO_QUINQUENNALE, Marcomunista)
   groove?: boolean; // i suoi colpi a tempo con la musica fanno più danno (GROOVE, Bradipo Giallo)
   pigeonChase?: boolean; // l'Incornata che prende fa partire il Piccione verso chi vola via (Capra e cavaliere, Elvedeo)

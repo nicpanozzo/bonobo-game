@@ -1,7 +1,7 @@
 // Attacchi: inizio, finestra attiva, hitbox e cosa succede a chi viene colpito.
 
-import { characterStats, getCharacter, hurtboxOf, SPECIAL_KINDS, specialAttackSpec, specialsFor, supremeAttackSpec, type SpecialSlot, type TweakableAttack } from "../characters";
-import { ARREMBAGGIO, ATTACKS, AUDIO, FIGHTER, GROOVE, HITSTOP, SCIVOLONE, HITSTUN_PER_KNOCKBACK, JAB, MICELIO, PIANO_QUINQUENNALE, POWERUP, SMASH_CHARGE, type AttackSpec } from "../constants";
+import { characterStats, getCharacter, type ComboStep, hurtboxOf, SPECIAL_KINDS, specialAttackSpec, specialsFor, supremeAttackSpec, type SpecialSlot, type TweakableAttack } from "../characters";
+import { ARREMBAGGIO, ATTACKS, AUDIO, COMBO, FIGHTER, GROOVE, HITSTOP, SCIVOLONE, HITSTUN_PER_KNOCKBACK, JAB, MICELIO, PIANO_QUINQUENNALE, POWERUP, SMASH_CHARGE, type AttackSpec } from "../constants";
 import type { AttackKind, SpecialKind } from "../types";
 import { biteBox, biting, chooseBiter, hitPets } from "./companion";
 import { bodyScale, consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
@@ -17,8 +17,8 @@ export function tryStartAttack(f: Fighter, ctx: PhysicsContext): void {
   if (f.hitstun || f.attack || f.helpless || f.dodgeTimer > 0) return;
   if (f.jumpSquatTimer > 0 || f.landingTimer > 0) return; // #384 A3: il tasto resta nel buffer, l'aereo parte staccandosi
   if (canChainJab(f) && pressed(f, "light")) return startJab(f, f.jabStep + 1, ctx); // la combo non aspetta l'attesa
-  if (f.cooldownTimer > 0) return;
-  if (tryStartSupreme(f, ctx)) return; // #101: solo con la barra piena
+  if (f.cooldownTimer > 0 && !continuesCombo(f)) return; // la mossa dopo di una combo non aspetta l'attesa (#594)
+  if (f.cooldownTimer === 0 && tryStartSupreme(f, ctx)) return; // #101: solo con la barra piena
   if (pressed(f, "special")) tryStartSpecial(f, ctx); // E10
   else if (pressed(f, "heavy")) {
     const kind = f.dashing && f.onGround && !f.input.up && !f.input.down ? "dashAttack" : variant(f, "heavy"); // correndo, l'attacco in corsa
@@ -47,6 +47,45 @@ function armJab(f: Fighter): void {
   if (f.attack !== "light" || !f.onGround || f.jabStep >= JAB.steps.length) return;
   const spec = attackSpecFor(f);
   f.jabTimer = Math.max(0, spec.startupMs + spec.activeMs - f.attackTimer) + JAB.windowMs;
+}
+
+// La mossa che i tasti premuti farebbero partire adesso (come sotto in tryStartAttack e in tryStartSpecial)
+function wantedKind(f: Fighter): AttackKind | null {
+  if (pressed(f, "special")) return SPECIAL_KINDS[f.input.down ? "down" : f.input.left !== f.input.right ? "side" : "neutral"];
+  if (pressed(f, "heavy")) return f.dashing && f.onGround && !f.input.up && !f.input.down ? "dashAttack" : variant(f, "heavy");
+  return pressed(f, "light") ? variant(f, "light") : null;
+}
+
+// Combo del personaggio (#594): nella finestra aperta dal colpo prima, la mossa premuta è quella del passo dopo
+function continuesCombo(f: Fighter): boolean {
+  if (f.comboTimer <= 0) return false;
+  const kind = wantedKind(f);
+  return !!kind && !!getCharacter(f.characterId).combos?.some((c, n) => f.comboMask & (1 << n) && c.steps[f.comboStep]?.move === kind);
+}
+
+// Un colpo di f è entrato: se è un passo di una sua combo ne dà i ritocchi e apre la finestra del passo dopo.
+// Vale il passo dopo delle combo in corso, sennò il primo passo di quelle che cominciano con questa mossa
+function comboHit(f: Fighter, kind: AttackKind): ComboStep | undefined {
+  const combos = getCharacter(f.characterId).combos;
+  if (!combos) return undefined;
+  const matching = (at: number, among: number) => combos.reduce((m, c, n) => (among & (1 << n) && c.steps[at]?.move === kind ? m | (1 << n) : m), 0);
+  let at = f.comboTimer > 0 ? f.comboStep : 0;
+  let mask = at > 0 ? matching(at, f.comboMask) : 0;
+  if (!mask) {
+    at = 0;
+    mask = matching(0, -1);
+  }
+  f.comboMask = mask;
+  f.comboStep = at + 1;
+  f.comboTimer = 0;
+  if (!mask) return undefined;
+  const step = combos[31 - Math.clz32(mask & -mask)].steps[at]; // la prima scritta tra quelle in corso
+  if (combos.some((c, n) => mask & (1 << n) && c.steps.length > at + 1)) {
+    const spec = attackSpecFor(f, kind);
+    const busy = Math.max(f.attack === kind ? spec.startupMs + spec.activeMs - f.attackTimer : 0, f.specialTimer); // quel che resta della mossa
+    f.comboTimer = Math.max(0, busy) + (step.windowMs ?? COMBO.windowMs);
+  }
+  return step;
 }
 
 // La variante viene dai tasti tenuti: su vince su tutto, poi l'aria, poi giù (a terra)
@@ -116,6 +155,7 @@ export function startAttack(f: Fighter, kind: AttackKind, ctx: PhysicsContext) {
 
 export function updateAttack(f: Fighter, dtMs: number): void {
   f.jabTimer = Math.max(0, f.jabTimer - dtMs);
+  f.comboTimer = Math.max(0, f.comboTimer - dtMs);
   if (!f.attack) {
     f.attackActive = false;
     if (f.smashChargeMs >= 0) endSmashCharge(f); // colpiti, presi o finiti fuori mentre si caricava
@@ -257,8 +297,9 @@ export function launch(target: Fighter, attacker: Fighter, kind: AttackKind, x: 
   const boarded = target.boardedMs > 0 && target.boardedBy === attacker.id && ARREMBAGGIO.kinds.includes(kind);
   const wet = target.wetMs > 0 && target.wetBy === attacker.id && kind.startsWith("throw"); // lo Scivolone di Egiainuso
   target.boardedMs = 0;
-  const knockback = ((spec.baseKnockback + spec.knockbackGrowth * target.percent) / characterStats(target.characterId).weight) * (boarded ? ARREMBAGGIO.knockbackMult : 1) * (wet ? SCIVOLONE.throwMult : 1) * genreKnockback(genreAt(ctx.stage, ctx.timeMs ?? 0, ctx.padsMs)) * gearKnockbackMult(target); // E11; giganti e mini (gear.ts); col metal del Palco si vola più lontano
-  const angle = ((kind === "supreme" ? snatch(attacker, target, spec.angleDeg) : spec.angleDeg) * Math.PI) / 180; // snaack di Lampione (#358) tira e schiaccia
+  const step = hit ? undefined : comboHit(attacker, kind); // il passo di una sua combo (#594): angolo e knockback ritoccati
+  const knockback = (step?.knockbackMult ?? 1) * ((spec.baseKnockback + spec.knockbackGrowth * target.percent) / characterStats(target.characterId).weight) * (boarded ? ARREMBAGGIO.knockbackMult : 1) * (wet ? SCIVOLONE.throwMult : 1) * genreKnockback(genreAt(ctx.stage, ctx.timeMs ?? 0, ctx.padsMs)) * gearKnockbackMult(target); // E11; giganti e mini (gear.ts); col metal del Palco si vola più lontano
+  const angle = ((kind === "supreme" ? snatch(attacker, target, spec.angleDeg) : (step?.angleDeg ?? spec.angleDeg)) * Math.PI) / 180; // snaack di Lampione (#358) tira e schiaccia
   target.vx = dir * Math.cos(angle) * knockback;
   target.vy = -Math.sin(angle) * knockback;
   target.onGround = false;
