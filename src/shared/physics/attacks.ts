@@ -10,7 +10,7 @@ import { meleeDamage, meleeHit, meleeReach, popBubble } from "./held";
 import { clearStun, hitShield } from "./shield";
 import { counterHit, isCountering, tryStartSpecial } from "./specials";
 import { chasePigeon } from "./projectiles";
-import { chargeFromHit, hitOrigin, infect, snatch, spinRehit, supremeMelee, tryStartSupreme } from "./supreme";
+import { chargeFromHit, hitOrigin, infect, snatch, spinRehit, supremeMelee, supremeWet, tryStartSupreme } from "./supreme";
 import { genreAt, genreKnockback } from "./genre";
 
 export function tryStartAttack(f: Fighter, ctx: PhysicsContext): void {
@@ -324,6 +324,7 @@ export function launch(target: Fighter, attacker: Fighter, kind: AttackKind, x: 
   clearStun(target);
   popBubble(target, ctx, false); // chi è nella bolla dello sparabolle esce col colpo (held.ts)
   if (kind === "supreme") infect(attacker, target, ctx); // il filo di Kirschner di Dr. Micelium (#358)
+  if (kind === "supreme") supremeWet(attacker, target); // l'Aura nera di Egiainuso bagna
   ctx.events.push({
     type: "hit",
     attackerId: attacker.id,

@@ -224,11 +224,13 @@ function explode(world: ItemWorld, item: Item, fighters: Fighter[], ctx: Physics
   }
 }
 
-// Un'esplosione rotonda: percentuale e volo dal centro verso fuori, lo scudo para. byId prende il KO (non di sé stesso)
-function blast(cx: number, cy: number, radius: number, damage: number, base: number, byId: string | null, itemKind: string, fighters: Fighter[], ctx: PhysicsContext) {
+// Un'esplosione rotonda: percentuale e volo dal centro verso fuori, lo scudo para. byId prende il KO (non di sé stesso).
+// spareBy: non prende byId (la bomba di …COSA?, supreme.ts)
+export function blast(cx: number, cy: number, radius: number, damage: number, base: number, byId: string | null, itemKind: string, fighters: Fighter[], ctx: PhysicsContext, spareBy = false) {
   const by = fighters.find((f) => f.id === byId);
   for (const target of fighters) {
     if (target.eliminated || target.respawning || target.invulnerable) continue;
+    if (spareBy && target === by) continue;
     if (by && target !== by && ctx.canHit && !ctx.canHit(by, target)) continue;
     const body = bodyBox(target);
     const nx = Math.max(body.x, Math.min(cx, body.x + body.w));

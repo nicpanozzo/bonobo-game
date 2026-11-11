@@ -6,6 +6,8 @@ extends Node2D
 const ARCS := 3 # vortici intorno
 const TURN_MS := 140.0 # un giro dei vortici: veloce, come la E di Garen
 const WIND := Color(1, 1, 1) # aria bianca, niente contorno giallo (Nicola, 2026-10-24)
+const AURA := Color(0.12, 0.04, 0.16) # l'Aura nera di Egiainuso
+const PULL_MS := 500.0 # un anello dell'aura va dal bordo del risucchio a lui in tanto
 
 var where: Callable # id giocatore -> Vector2 dei piedi, o null; lo imposta world_view
 var fixed_now := -1.0 # per i test: se >= 0 è l'orologio in ms al posto di quello vero
@@ -57,6 +59,8 @@ func _draw() -> void:
 func _draw_spin(sp: Dictionary, ms: float, feet: Vector2) -> void:
 	var spin_ms := ms - float(sp.windupMs)
 	var dur := float(sp.durationMs)
+	if spin_ms >= 0 and spin_ms < dur and sp.get("pull") is Dictionary:
+		_draw_pull(sp, spin_ms, feet)
 	if spin_ms < 0 or not sp.get("whirl", true): # l'Elefante di Elvedeo si vede già nel disegno
 		return
 	# compare e sparisce in fretta, in mezzo è pieno
@@ -71,3 +75,21 @@ func _draw_spin(sp: Dictionary, ms: float, feet: Vector2) -> void:
 			var a := a0 + k * 0.16
 			pts.append(c + Vector2(cos(a) * r.x, sin(a) * r.y))
 		draw_polyline(pts, Color(WIND, 0.55 * alpha), 4.0, true)
+
+
+# L'Aura nera di Egiainuso (pull): anelli a zig-zag scuri che si stringono dal bordo del risucchio verso di lui,
+# così si vede fin dove tira e da che parte
+func _draw_pull(sp: Dictionary, spin_ms: float, feet: Vector2) -> void:
+	var radius := float(sp.pull.radius)
+	var c := feet - Vector2(0, float(sp.height) * 0.45)
+	var fade := clampf(minf(spin_ms, float(sp.durationMs) - spin_ms) / 150.0, 0.0, 1.0)
+	for ring in 3:
+		var k := fmod(spin_ms / PULL_MS + ring / 3.0, 1.0) # 0 al bordo, 1 addosso a lui
+		var r := radius * (1.0 - k) + 30.0 * k
+		var pts := PackedVector2Array()
+		var teeth := 28
+		for i in teeth + 1:
+			var a := TAU * i / teeth + spin_ms * 0.002
+			var jag := 1.0 + (0.08 if i % 2 == 0 else -0.08)
+			pts.append(c + Vector2(cos(a), sin(a) * 0.7) * r * jag)
+		draw_polyline(pts, Color(AURA, 0.55 * fade * (0.4 + 0.6 * k)), 3.0, true)

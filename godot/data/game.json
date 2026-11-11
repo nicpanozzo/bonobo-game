@@ -12479,12 +12479,18 @@
         "durationMs": 4800,
         "endLagMs": 400,
         "rollPeriodMs": 1600,
-        "rollSpeed": 300,
+        "rollSpeed": 340,
         "rollAirAccel": 900,
-        "damage": 4,
-        "baseKnockback": 300,
-        "knockbackGrowth": 4,
+        "damage": 6,
+        "baseKnockback": 320,
+        "knockbackGrowth": 5,
         "angleDeg": 35,
+        "finisher": {
+          "damage": 12,
+          "baseKnockback": 420,
+          "knockbackGrowth": 9,
+          "angleDeg": 40
+        },
         "insults": [
           "Mozzi d'acqua dolce!",
           "Sacchi di sardine!",
@@ -15890,6 +15896,33 @@
         }
       ],
       "spitWet": true,
+      "supreme": {
+        "type": "spin",
+        "name": "Aura nera",
+        "whirl": false,
+        "windupMs": 250,
+        "durationMs": 2000,
+        "hitEveryMs": 400,
+        "endLagMs": 350,
+        "moveSpeed": 0.5,
+        "width": 220,
+        "height": 160,
+        "damage": 4,
+        "baseKnockback": 90,
+        "knockbackGrowth": 0.5,
+        "angleDeg": 70,
+        "finisher": {
+          "damage": 14,
+          "baseKnockback": 520,
+          "knockbackGrowth": 11,
+          "angleDeg": 45
+        },
+        "pull": {
+          "radius": 300,
+          "speed": 380
+        },
+        "wets": true
+      },
       "specials": {
         "neutral": {
           "type": "projectile",
@@ -16384,7 +16417,20 @@
           "cooldownMs": 900
         }
       },
-      "supremeAttack": null,
+      "supremeAttack": {
+        "damage": 4,
+        "baseKnockback": 90,
+        "knockbackGrowth": 0.5,
+        "angleDeg": 70,
+        "startupMs": 250,
+        "activeMs": 2000,
+        "cooldownMs": 2600,
+        "range": 220,
+        "height": 160,
+        "boxX": -110,
+        "boxY": -152,
+        "outward": true
+      },
       "skins": {}
     },
     "lampione": {
@@ -17724,7 +17770,7 @@
         "type": "spin",
         "name": "DEMACIAAA",
         "windupMs": 150,
-        "durationMs": 4000,
+        "durationMs": 2500,
         "hitEveryMs": 150,
         "endLagMs": 300,
         "moveSpeed": 0.9,
@@ -17929,8 +17975,8 @@
         "knockbackGrowth": 1.6,
         "angleDeg": 60,
         "startupMs": 150,
-        "activeMs": 4000,
-        "cooldownMs": 4450,
+        "activeMs": 2500,
+        "cooldownMs": 2950,
         "range": 130,
         "height": 100,
         "boxX": -65,
@@ -18909,11 +18955,12 @@
       "supreme": {
         "type": "rewind",
         "name": "…COSA?",
-        "windupMs": 500,
+        "windupMs": 80,
         "backMs": 3000,
-        "endLagMs": 300,
-        "stunRadius": 150,
-        "stunMs": 1200
+        "endLagMs": 150,
+        "stunRadius": 160,
+        "stunMs": 1200,
+        "bombFuseMs": 900
       },
       "specials": {
         "neutral": {
@@ -19063,9 +19110,9 @@
         "baseKnockback": 0,
         "knockbackGrowth": 0,
         "angleDeg": 0,
-        "startupMs": 500,
+        "startupMs": 80,
         "activeMs": 100,
-        "cooldownMs": 900,
+        "cooldownMs": 330,
         "range": 0,
         "height": 0
       },
@@ -19452,13 +19499,19 @@
         "type": "burst",
         "name": "IRA",
         "windupMs": 350,
-        "waves": 3,
-        "waveEveryMs": 260,
+        "waves": 6,
+        "waveEveryMs": 300,
         "count": 6,
         "speed": 560,
         "lift": 820,
         "endLagMs": 400,
-        "slick": true
+        "slick": true,
+        "hit": {
+          "damage": 9,
+          "baseKnockback": 260,
+          "knockbackGrowth": 4.5,
+          "angleDeg": 55
+        }
       },
       "specials": {
         "neutral": {
@@ -19610,8 +19663,8 @@
         "knockbackGrowth": 0,
         "angleDeg": 0,
         "startupMs": 350,
-        "activeMs": 780,
-        "cooldownMs": 1530,
+        "activeMs": 1800,
+        "cooldownMs": 2550,
         "range": 0,
         "height": 0
       },

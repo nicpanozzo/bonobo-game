@@ -336,6 +336,8 @@ export interface SpinSupreme {
   knockbackGrowth: number;
   angleDeg: number; // verso l'alto e lontano dal centro
   finisher?: Pick<AttackSpec, "damage" | "baseKnockback" | "knockbackGrowth" | "angleDeg">; // l'ultimo giro, più forte
+  pull?: { radius: number; speed: number }; // mentre gira risucchia chi sta entro radius pixel, a speed pixel/s (Aura nera di Egiainuso)
+  wets?: boolean; // i suoi colpi bagnano come lo Sputo (SCIVOLONE): dopo, la presa arriva più lontano e il lancio spinge di più
 }
 // Suprema "grab" (#358), snaack di Lampione: dopo windupMs il braccio si allunga davanti fino a reach pixel per
 // reachMs; chi tocca viene tirato davanti a chi lo fa e scaraventato giù (angleDeg negativo). A terra
@@ -366,7 +368,8 @@ export interface BurstSupreme {
   speed: number;
   lift: number;
   endLagMs: number; // dopo l'ultima raffica, fermi
-  slick?: boolean; // i proiettili che cadono su un blocco lasciano una pozza scivolosa (SLICK, #13)
+  slick?: boolean; // i proiettili che cadono per terra (o su chi colpiscono) lasciano una pozza scivolosa (SLICK, #13)
+  hit?: Pick<AttackSpec, "damage" | "baseKnockback" | "knockbackGrowth" | "angleDeg">; // i colpi dei suoi proiettili; senza, quelli della speciale neutra
 }
 // Suprema "infect" (#358), il filo di Kirschner di Dr. Micelium: dopo windupMs un filo sottile parte davanti fino a
 // reach pixel per activeMs. Chi tocca prende le spore (powerup "spore": più lento per SPORE.ms) e chi la fa diventa
@@ -394,11 +397,13 @@ export interface RewindSupreme {
   endLagMs: number;
   stunRadius: number;
   stunMs: number;
+  bombFuseMs?: number; // dove era prima di tornare indietro lascia una bomba che scoppia dopo tanti ms (REWIND_BOMB)
 }
 // Suprema "storm" (#547), Tempesta! di Capt. OrsoBlu: dopo windupMs (afferra il timone) per durationMs l'arena rolla
 // come una nave: tutti gli altri scivolano di lato avanti e indietro, un giro ogni rollPeriodMs, fino a rollSpeed
 // pixel/s a terra (in aria la spinta è rollAirAccel pixel/s²). A ogni fine rollio un'onda colpisce chi è a terra e
-// lo spinge da quella parte. Lui resta piantato al timone, imbersagliabile. Camminando contro il rollio si resiste
+// lo spinge da quella parte. Lui resta piantato al timone, imbersagliabile. Camminando contro il rollio si resiste.
+// Alla fine il maroso (finisher) prende tutti verso dove guarda lui: al timone si gira con le frecce
 export interface StormSupreme {
   type: "storm";
   name: string; // come si chiama nei menu
@@ -413,6 +418,7 @@ export interface StormSupreme {
   knockbackGrowth: number;
   angleDeg: number;
   insults: string[]; // le nuvolette che lancia a tutti (solo disegno)
+  finisher?: Pick<AttackSpec, "damage" | "baseKnockback" | "knockbackGrowth" | "angleDeg">; // il maroso finale: prende tutti, a terra e in aria, verso dove guarda lui
 }
 export type SupremeSpec = DropSupreme | SpinSupreme | GrabSupreme | BurstSupreme | InfectSupreme | RewindSupreme | StormSupreme;
 
@@ -624,12 +630,14 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       durationMs: 4800,
       endLagMs: 400,
       rollPeriodMs: 1600,
-      rollSpeed: 300,
+      rollSpeed: 340,
       rollAirAccel: 900,
-      damage: 4,
-      baseKnockback: 300,
-      knockbackGrowth: 4,
+      damage: 6, // le onde fanno più male (Nicola, 2026-11-11: carina ma poco forte)
+      baseKnockback: 320,
+      knockbackGrowth: 5,
       angleDeg: 35,
+      // il maroso finale prende tutti, anche in aria, verso dove guarda lui: al timone si gira con le frecce
+      finisher: { damage: 12, baseKnockback: 420, knockbackGrowth: 9, angleDeg: 40 },
       insults: ["Mozzi d'acqua dolce!", "Sacchi di sardine!", "Branco di triglie lesse!", "Tu! Lava il ponte!"],
     },
     // L'ancora-ragnatela (#547): il recupero spara l'ancora, appeso dondola, si arrampica e si stacca con lo slancio.
@@ -933,6 +941,16 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       { name: "Tuffo e carica", steps: [{ move: "lightAir", windowMs: 400 }, { move: "dashAttack" }] },
     ],
     spitWet: true,
+    // Aura nera (Nicola, 11/11/2026: "più divertente da usare"; prima era la suprema di base, un colpo solo): l'aura a
+    // zig-zag della clip EG-14 risucchia chi è vicino mentre lui cammina, lo colpisce a ogni scatto dell'aura e lo bagna
+    // come lo Sputo; l'ultimo scatto lo scaraventa via. Dopo, la presa (Scivolone) arriva più lontano
+    supreme: {
+      type: "spin", name: "Aura nera", whirl: false, windupMs: 250, durationMs: 2000, hitEveryMs: 400, endLagMs: 350, moveSpeed: 0.5,
+      width: 220, height: 160, damage: 4, baseKnockback: 90, knockbackGrowth: 0.5, angleDeg: 70,
+      finisher: { damage: 14, baseKnockback: 520, knockbackGrowth: 11, angleDeg: 45 },
+      pull: { radius: 300, speed: 380 },
+      wets: true,
+    },
     // TODO community: statistiche e mosse speciali di base, da decidere con @Marcomunista
     specials: {
       // al posto del tiro di base sputa (Nicola, 25 ottobre 2026): i numeri del Tiro, più piccolo e del colore della saliva
@@ -1111,8 +1129,8 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       type: "spin",
       name: "DEMACIAAA",
       windupMs: 150,
-      durationMs: 4000, // più del doppio di prima (Nicola, 2026-10-24)
-      hitEveryMs: 150, // 26 colpi: gira veloce (Nicola, 2026-10-24)
+      durationMs: 2500, // 4 s duravano troppo (Nicola, 2026-11-11); prima ancora 1,7 s erano pochi (2026-10-24)
+      hitEveryMs: 150, // 16 colpi: gira veloce (Nicola, 2026-10-24)
       endLagMs: 300,
       moveSpeed: 0.9, // si sposta quasi di corsa mentre gira
       width: 130,
@@ -1236,8 +1254,9 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     },
     // dalla scheda: corsa non molto, aria e salto abbastanza, leggero, gravità bassa (la #352 dà lo stile del disegno, non i numeri)
     stats: { weight: 0.95, speed: 0.95, airSpeed: 1.05, jump: 1.05, gravity: 0.95 },
-    // dalla scheda: "…COSA?", torna a com'era 3 secondi prima e stordisce chi è vicino (#358)
-    supreme: { type: "rewind", name: "…COSA?", windupMs: 500, backMs: 3000, endLagMs: 300, stunRadius: 150, stunMs: 1200 },
+    // dalla scheda: "…COSA?", torna a com'era 3 secondi prima e stordisce chi è vicino (#358). Quasi istantanea e con una
+    // bomba lasciata dove era (Nicola, 2026-11-11: "estremamente reattiva"): si scappa e chi lo inseguiva salta in aria
+    supreme: { type: "rewind", name: "…COSA?", windupMs: 80, backMs: 3000, endLagMs: 150, stunRadius: 160, stunMs: 1200, bombFuseMs: 900 },
     specials: {
       // gira una canna mentre para; tiro e scatto restano quelli di base finché la scheda non li dice
       down: { type: "counter", name: "Rolling", startupMs: 60, windowMs: 420, endLagMs: 460, minDamage: 8, multiplier: 1.3, range: 60, height: 60, baseKnockback: 440, knockbackGrowth: 9, angleDeg: 40 },
@@ -1281,7 +1300,12 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     // TODO community: la scheda non ha statistiche; magro, quindi leggero e scattante
     stats: { weight: 0.95, speed: 1.05 },
     // dalla scheda: "IRA", si arrabbia e tira merda scivolosa da tutte le parti (#358): tre raffiche della sua speciale neutra, e dove cade restano pozze
-    supreme: { type: "burst", name: "IRA", windupMs: 350, waves: 3, waveEveryMs: 260, count: 6, speed: 560, lift: 820, endLagMs: 400, slick: true },
+    // IRA più lunga e più cattiva (Nicola, 2026-11-11: durava troppo poco, pochi danni ed effetti): 6 raffiche invece di 3,
+    // cacche più forti dello sputo normale, e ogni cacca lascia una pozza dove cade o su chi colpisce (SLICK)
+    supreme: {
+      type: "burst", name: "IRA", windupMs: 350, waves: 6, waveEveryMs: 300, count: 6, speed: 560, lift: 820, endLagMs: 400, slick: true,
+      hit: { damage: 9, baseKnockback: 260, knockbackGrowth: 4.5, angleDeg: 55 },
+    },
     specials: {
       // lancia merda ad arco
       neutral: { type: "projectile", name: "Fai schifo", startupMs: 230, cooldownMs: 600, speed: 540, gravity: 1800, lift: 540, lifeMs: 1400, maxAlive: 1, range: 24, height: 18, damage: 7, baseKnockback: 230, knockbackGrowth: 3.5, angleDeg: 50, color: 0x6b4a2b },

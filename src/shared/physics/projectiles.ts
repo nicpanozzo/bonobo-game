@@ -14,6 +14,7 @@ import { counterAbsorbs } from "./specials";
 export interface Projectile extends ProjectileState {
   ageMs: number;
   slick?: boolean; // dell'IRA di Lendmar (#13): dove sbatte per terra lascia una pozza che fa scivolare
+  burst?: boolean; // tirato dalla suprema "burst": colpisce coi numeri di lei (hit), se li ha
   carryId?: string; // l'aquila della suprema: chi sta portando in volo
   carryMs?: number; // da quanto lo porta
   spent?: boolean; // l'aquila ha già mollato la sua preda: vola via senza colpire
@@ -91,7 +92,7 @@ export function stepProjectiles(fighters: Fighter[], dtMs: number, ctx: PhysicsC
     } else if (ctx.stage.solids.some((s) => overlap(box, { x: s.x, y: s.y, w: s.width, h: s.height }))) {
       if (p.slick) dropPuddle(world, p, ctx);
       end(p, "wall");
-    }
+    } else if (p.slick && landsOnPlatform(world, p, sp, dt, ctx)) end(p, "wall"); // anche le piattaforme si sporcano
     else if (!p.spent) hitFighter(p, sp, box, fighters, byId, ctx, end);
   }
 
@@ -149,7 +150,9 @@ function hitFighter(
       return;
     }
     // Il colpo vola nella direzione del proiettile, non in quella in cui guarda chi l'ha tirato
-    launch(t, { ...owner, facing: dir }, p.kind, x, y, ctx);
+    const grounded = t.onGround;
+    launch(t, { ...owner, facing: dir }, p.kind, x, y, ctx, undefined, p.burst ? burstHit(p) : undefined);
+    if (p.slick && grounded) puddleAt(worldOf(ctx), p, t.x, t.y, ctx); // la cacca che prende sporca per terra sotto di lui
     if (getCharacter(owner.characterId).spitWet) {
       t.wetBy = owner.id; // lo Sputo di Egiainuso bagna (#557)
       t.wetMs = SCIVOLONE.wetMs;
@@ -210,6 +213,11 @@ function carry(p: Projectile, sp: SupremeEagle, byId: Map<string, Fighter>, dtMs
 // I numeri del proiettile: quelli della speciale del personaggio che l'ha tirato (fire controlla il tipo),
 // o dell'aquila della sua suprema
 const SLOT_OF = Object.fromEntries(Object.entries(SPECIAL_KINDS).map(([slot, kind]) => [kind, slot])) as Record<SpecialKind, SpecialSlot>;
+// I colpi dei proiettili della suprema "burst" (l'IRA di Lendmar): i suoi numeri, se ne ha
+const burstHit = (p: Projectile) => {
+  const sup = getCharacter(p.characterId).supreme;
+  return sup?.type === "burst" ? sup.hit : undefined;
+};
 const specOf = (p: Projectile): ProjectileSpecial => {
   const sup = getCharacter(p.characterId).supreme;
   if (p.supreme && sup?.type === "spin" && sup.eagle) return sup.eagle;
@@ -252,11 +260,35 @@ export const projectileStates = (world: ProjectileWorld): ProjectileState[] =>
 
 // Le pozze dell'IRA (#13): la merda che cade sopra un blocco resta lì per un po', le più vecchie spariscono per prime
 function dropPuddle(world: ProjectileWorld, p: Projectile, ctx: PhysicsContext): void {
-  const half = SLICK.width / 2;
   const s = ctx.stage.solids.find((s) => p.x >= s.x && p.x <= s.x + s.width && p.y <= s.y + SLICK.landSlackPx && p.vy > 0);
-  if (!s || s.width < SLICK.width) return; // presa di lato o da sotto: niente pozza
-  const x = Math.round(Math.min(s.x + s.width - half, Math.max(s.x + half, p.x)));
-  world.puddles.push({ id: p.id, ownerId: p.ownerId, x, y: s.y, width: SLICK.width, lifeMs: SLICK.lifeMs });
+  if (!s) return; // presa di lato o da sotto: niente pozza
+  puddleAt(world, p, p.x, s.y, ctx);
+}
+
+// La cacca dell'IRA che scende su una piattaforma ci lascia la pozza e finisce lì. true se è successo
+function landsOnPlatform(world: ProjectileWorld, p: Projectile, sp: ProjectileSpecial, dt: number, ctx: PhysicsContext): boolean {
+  if (p.vy <= 0) return false;
+  const bottom = p.y + sp.height / 2;
+  const prevBottom = bottom - p.vy * dt;
+  for (const q of ctx.stage.platforms) {
+    if (p.x < q.x || p.x > q.x + q.width) continue;
+    const y = platformSurfaceY(q, p.x);
+    if (bottom < y || prevBottom > y + 1) continue;
+    puddleAt(world, p, p.x, y, ctx);
+    return true;
+  }
+  return false;
+}
+
+// Una pozza della cacca p sulla superficie (blocco o piattaforma) all'altezza y sotto x, tagliata ai suoi bordi
+function puddleAt(world: ProjectileWorld, p: Projectile, x: number, y: number, ctx: PhysicsContext): void {
+  const on = (r: { x: number; width: number }) => x >= r.x && x <= r.x + r.width;
+  const s = ctx.stage.solids.find((b) => on(b) && Math.abs(b.y - y) < 3) ?? ctx.stage.platforms.find((q) => on(q) && Math.abs(platformSurfaceY(q, x) - y) < 3);
+  if (!s) return;
+  const width = Math.min(SLICK.width, s.width);
+  const half = width / 2;
+  const cx = Math.round(Math.min(s.x + s.width - half, Math.max(s.x + half, x)));
+  world.puddles.push({ id: p.id, ownerId: p.ownerId, x: cx, y: Math.round(y), width, lifeMs: SLICK.lifeMs });
   if (world.puddles.length > SLICK.max) world.puddles.shift();
 }
 

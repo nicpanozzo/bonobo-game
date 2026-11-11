@@ -3,10 +3,11 @@
 // arriva a parte (Bonobot: #102); finché non c'è, tutti usano ATTACKS.supreme.
 
 import { getCharacter, specialsFor, supremeAttackSpec, type BurstSupreme, type DropSupreme, type GrabSupreme, type InfectSupreme, type RewindSupreme, type SpinSupreme, type StormSupreme } from "../characters";
-import { ATTACKS, FIGHTER, GRAB, MICELIO, SPORE, SUPREME } from "../constants";
+import { ATTACKS, FIGHTER, GRAB, MICELIO, REWIND_BOMB, SCIVOLONE, SPORE, SUPREME } from "../constants";
 import { canBeHit, isSpecialKind, launch, startAttack } from "./attacks";
 import type { StageSpec } from "../stages";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
+import { blast } from "./gear";
 import { fire } from "./projectiles";
 import { cancelSpecial } from "./specials";
 
@@ -122,7 +123,12 @@ const stormWave = (sp: StormSupreme, t: number) => Math.floor((t - sp.rollPeriod
 export function stepStorms(fighters: Fighter[], dtMs: number, ctx: PhysicsContext): void {
   for (const f of fighters) {
     const sp = f.attack === "supreme" ? stormOf(f.characterId) : null;
+    if (!sp) f.stormEndDone = false;
     if (!sp || f.attackTimer < sp.windupMs || f.attackTimer > sp.windupMs + sp.durationMs) continue;
+    if (f.attackTimer + dtMs > sp.windupMs + sp.durationMs) {
+      if (!f.stormEndDone) stormFinisher(f, sp, fighters, ctx); // l'ultimo passo del rollio: il maroso
+      continue;
+    }
     const t = f.attackTimer - sp.windupMs;
     const roll = stormRoll(sp, t);
     const wave = t >= sp.rollPeriodMs / 4 && stormWave(sp, t) !== stormWave(sp, t - dtMs);
@@ -139,6 +145,51 @@ export function stepStorms(fighters: Fighter[], dtMs: number, ctx: PhysicsContex
       o.vx = Math.sign(roll) * Math.abs(o.vx); // l'onda spinge dalla parte del rollio, non dove guarda lui
     }
   }
+}
+
+// Il maroso alla fine della Tempesta: prende tutti, a terra e in aria, e li spinge verso dove guarda lui
+function stormFinisher(f: Fighter, sp: StormSupreme, fighters: Fighter[], ctx: PhysicsContext): void {
+  f.stormEndDone = true;
+  if (!sp.finisher) return;
+  for (const o of fighters) {
+    if (o === f || !canBeHit(o) || o.away || o.ledge || o.grabbedBy || o.station !== undefined) continue;
+    if (ctx.canHit && !ctx.canHit(f, o)) continue;
+    if (o.shielding) continue; // lo scudo regge anche il maroso
+    launch(o, f, "supreme", Math.round(o.x), Math.round(o.y - FIGHTER.height / 2), ctx, undefined, sp.finisher);
+    o.vx = f.facing * Math.abs(o.vx);
+  }
+}
+
+// Durante le supreme in cui ci si muove o si sta al timone, le frecce girano chi la fa (movement.ts):
+// l'Elefante di Elvedeo e l'Aura nera seguono dove vanno, OrsoBlu sceglie da che parte va il maroso
+export function supremeTurns(f: Fighter): boolean {
+  if (f.attack !== "supreme") return false;
+  return !!stormOf(f.characterId) || attackMoveFactor(f) > 0;
+}
+
+// L'Aura nera di Egiainuso: mentre la "spin" con pull gira, chi è entro radius scivola verso di lui. Dopo il passo
+// di tutti, come la Tempesta. Non lo porta più vicino di mezzo corpo: i colpi dell'aura lo spingono già via
+export function stepPulls(fighters: Fighter[], dtMs: number, ctx: PhysicsContext): void {
+  for (const f of fighters) {
+    const sp = f.attack === "supreme" ? spinOf(f.characterId) : null;
+    if (!sp?.pull || !f.attackActive) continue;
+    for (const o of fighters) {
+      if (o === f || !canBeHit(o) || o.away || o.ledge || o.grabbedBy || o.station !== undefined) continue;
+      if (ctx.canHit && !ctx.canHit(f, o)) continue;
+      const dx = f.x - o.x;
+      const dy = f.y - o.y;
+      if (Math.hypot(dx, dy) > sp.pull.radius || Math.abs(dx) < FIGHTER.width / 2) continue;
+      o.x += Math.sign(dx) * Math.min(Math.abs(dx) - FIGHTER.width / 2, (sp.pull.speed * dtMs) / 1000);
+    }
+  }
+}
+
+// Chi prende la suprema "spin" con wets resta bagnato come dallo Sputo (SCIVOLONE): la presa dopo arriva più lontano
+export function supremeWet(attacker: Fighter, target: Fighter): void {
+  const sp = attacker.attack === "supreme" ? spinOf(attacker.characterId) : null;
+  if (!sp?.wets) return;
+  target.wetBy = attacker.id;
+  target.wetMs = SCIVOLONE.wetMs;
 }
 
 // L'aquila dell'Elefante di Elvedeo: mentre la "spin" gira, la Speciale la tira una volta sola. Gli altri tasti
@@ -166,7 +217,9 @@ export function burstFire(f: Fighter, dtMs: number, ctx: PhysicsContext): void {
   for (let i = 0; i < sp.count; i++) {
     const k = Math.min(1, ((i + 0.5 + (w % 2) * 0.5) / sp.count) * 2 - 1); // da -1 (sinistra) a 1 (destra)
     fire(f, "specialNeutral", neutral, ctx, { vx: k * sp.speed, vy: -sp.lift * (1 - 0.35 * Math.abs(k)) });
-    if (sp.slick) ctx.projectiles!.list[ctx.projectiles!.list.length - 1].slick = true; // l'IRA lascia pozze (#13)
+    const p = ctx.projectiles!.list[ctx.projectiles!.list.length - 1];
+    p.burst = true; // colpisce coi numeri della suprema, se li ha (specOf in projectiles.ts)
+    if (sp.slick) p.slick = true; // l'IRA lascia pozze (#13)
   }
 }
 
@@ -200,6 +253,7 @@ export function stepRewinds(fighters: Fighter[], dtMs: number, ctx: PhysicsConte
   for (const f of fighters) {
     const sp = rewindOf(f.characterId);
     if (!sp) continue;
+    tickRewindBomb(f, fighters, dtMs, ctx);
     if (f.attack !== "supreme") f.rewindDone = false;
     else if (!f.rewindDone && f.attackTimer >= sp.windupMs) {
       f.rewindDone = true;
@@ -212,9 +266,22 @@ export function stepRewinds(fighters: Fighter[], dtMs: number, ctx: PhysicsConte
   }
 }
 
+// La bomba di …COSA?: la miccia brucia anche dopo la fine della suprema, e da KO la bomba resta lì
+function tickRewindBomb(f: Fighter, fighters: Fighter[], dtMs: number, ctx: PhysicsContext): void {
+  const b = f.rewindBomb;
+  if (!b) return;
+  b.ms -= dtMs;
+  if (b.ms > 0) return;
+  f.rewindBomb = null;
+  const cy = b.y - FIGHTER.height / 2;
+  ctx.events.push({ type: "gear", phase: "boom", kind: "petardo", id: f.id, x: Math.round(b.x), y: Math.round(cy), r: REWIND_BOMB.radius });
+  blast(b.x, cy, REWIND_BOMB.radius, REWIND_BOMB.damage, REWIND_BOMB.knockback, f.id, "petardo", fighters, ctx, true);
+}
+
 function rewind(f: Fighter, sp: RewindSupreme, fighters: Fighter[], ctx: PhysicsContext): void {
   const then = f.rewindTrail[0];
   f.rewindTrail = [];
+  if (sp.bombFuseMs && then) f.rewindBomb = { x: f.x, y: f.y, ms: sp.bombFuseMs }; // dove era, prima di sparire
   if (then) {
     f.x = then.x;
     f.y = then.y;
