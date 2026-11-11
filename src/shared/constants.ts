@@ -146,6 +146,8 @@ export const SMASH_CHARGE = {
 // anche durante l'attesa del colpo. Il secondo tiene vicino, il terzo è il finale che lancia
 export const JAB = {
   windowMs: 220, // ms dopo la fine di un colpo della combo in cui il leggero premuto fa il colpo dopo
+  angleDeg: 5, // gradi: i primi due colpi spingono quasi in orizzontale, così chi li prende resta a terra e non si rialza al volo
+  holdMs: 200, // ms: stordimento minimo dei primi due colpi, così il colpo dopo prende anche se il bersaglio reagisce (combo-lab)
   steps: [
     { damage: 3, baseKnockback: 150, knockbackGrowth: 1, startupMs: 40, activeMs: 90, cooldownMs: 280, range: 54, height: 30, angleDeg: 20 }, // il secondo: tiene vicino
     { damage: 6, baseKnockback: 380, knockbackGrowth: 6.5, startupMs: 70, activeMs: 110, cooldownMs: 420, range: 64, height: 40, angleDeg: 38 }, // il finale: lancia
@@ -158,6 +160,7 @@ export const JAB = {
 export const COMBO = {
   windowMs: 250, // ms dopo la fine di un colpo della combo in cui la mossa dopo continua la catena (se il passo non dice la sua)
   maxWindowMs: 1500, // ms: la finestra più lunga che un passo può chiedere
+  maxHoldMs: 450, // ms: lo stordimento minimo più lungo che un passo può chiedere (holdMs)
   maxSteps: 5, // colpi al massimo in una combo
   maxAngleShiftDeg: 30, // gradi: di quanto un passo può spostare l'angolo di lancio della sua mossa
   knockbackMult: [0.6, 1.3] as [number, number], // moltiplicatore di knockback di un passo: minimo e massimo
@@ -185,6 +188,8 @@ export const ARREMBAGGIO = {
 export const PIANO_QUINQUENNALE = {
   popVy: -260, // pixel/s: chi colpisce in aria sale almeno così (negativo = in su)
   maxPops: 3, // colpi che lo rialzano prima di toccare terra: poi cade come sempre
+  angleDeg: 75, // gradi: i colpi che lo rialzano mandano in alto, così chi li prende sale con lui invece di atterrare
+  holdMs: 450, // ms: stordimento minimo dei colpi che lo rialzano, così il colpo in aria dopo prende davvero (combo-lab)
   kinds: ["lightAir", "heavyAir"] as AttackKind[],
 };
 

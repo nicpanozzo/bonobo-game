@@ -456,6 +456,7 @@ export interface ComboStep {
   windowMs?: number; // ms dopo la fine di questo colpo in cui la mossa del passo dopo continua la combo (manca = COMBO.windowMs)
   angleDeg?: number; // angolo di lancio di questo colpo nella combo, al posto di quello della mossa
   knockbackMult?: number; // moltiplicatore del knockback di questo colpo nella combo
+  holdMs?: number; // ms: stordimento minimo di questo colpo nella combo, così il colpo dopo prende anche se è lento (max COMBO.maxHoldMs)
 }
 
 // Una combo del personaggio (#594): i colpi in ordine. Il primo passo vale ogni volta che quella mossa entra; i passi
@@ -464,6 +465,7 @@ export interface ComboStep {
 // Quali legano davvero, e a che percentuali, lo dice npm run combo-lab (docs/combo/<id>.md)
 export interface ComboSpec {
   name: string;
+  text?: string; // come si fa e che carattere ha, per la lista mosse in pausa
   steps: ComboStep[];
 }
 
@@ -604,11 +606,12 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     id: "orsoblu",
     name: "Capt. OrsoBlu",
     crews: ["cuamm", "lolhardcore"],
-    combo: { name: "Arrembaggio", text: "Tutti a bordo! lo tira a te: subito jab, pesante o Avanti tutta! e vola più lontano" },
+    combo: { name: "Arrembaggio", text: "Tutti a bordo! lo tira a te: subito jab o Avanti tutta! e vola più lontano (il pesante arriva tardi: si può evitare)" },
     // Combo sulle mosse disegnate (#594), provate da npm run combo-lab: docs/combo/orsoblu.md
     combos: [
-      { name: "Uomo in mare", steps: [{ move: "heavy", windowMs: 400 }, { move: "specialNeutral", windowMs: 400 }, { move: "light" }] }, // lo butta fuori bordo, lo ripesca con l'ancora e lo accoglie col pugno
-      { name: "Issa la vela", steps: [{ move: "lightUp", windowMs: 400 }, { move: "lightUp" }] }, // due pugni in su di fila
+      { name: "Uomo in mare", text: "pesante, ancora che lo ripesca e pugno di benvenuto", steps: [{ move: "heavy", windowMs: 400 }, { move: "specialNeutral", windowMs: 400 }, { move: "light" }] }, // lo butta fuori bordo, lo ripesca con l'ancora e lo accoglie col pugno
+      { name: "Issa la vela", text: "due pugni in su di fila", steps: [{ move: "lightUp", windowMs: 400 }, { move: "lightUp" }] }, // due pugni in su di fila
+      { name: "Bordata", text: "pugno, sgambetto e Avanti tutta! a tutta vela", steps: [{ move: "light", windowMs: 400 }, { move: "lightDown", windowMs: 400, holdMs: 450, angleDeg: 0 }, { move: "specialSide" }] },
     ],
     // Zone dei colpi sul disegno di OB-B2 e OB-B4 (tools/sprite/zone_dei_colpi.py)
     attacks: {
@@ -642,7 +645,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     },
     // L'ancora-ragnatela (#547): il recupero spara l'ancora, appeso dondola, si arrampica e si stacca con lo slancio.
     // Da appeso la speciale laterale riavvolge la catena e sfreccia verso l'ancora (Avanti tutta!, anchor.ts); da libero è la spallata
-    anchor: {},
+    anchor: { pullHitstunMs: 600 }, // tenuto più a lungo: il colpo dopo lo strattone prende davvero (Arrembaggio, combo-lab)
     // Con la barchetta addosso è un po' più pesante e lento di Bonobot (E11)
     // TODO community: statistiche provvisorie, da confermare con @MauroGrecchi
     stats: { weight: 1.05, speed: 0.9, airSpeed: 0.95, jump: 0.95 },
@@ -722,6 +725,12 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
   // Animato a pezzi (cutout) su uno scheletro e disegnato a 2x; i colpi seguono startupMs/activeMs di ATTACKS.
   bonobot: {
     id: "bonobot",
+    combos: [ // caratterizzate e provate con npm run combo-lab
+      { name: "Re della giungla", text: "pugno, sgambetto e lo travolge galoppando sulle nocche", steps: [{ move: "light", windowMs: 400 }, { move: "lightDown", windowMs: 400, holdMs: 450, angleDeg: 0 }, { move: "specialSide" }] },
+      { name: "Fumo in faccia", text: "pugno, sgambetto e un anello di fumo in faccia", steps: [{ move: "light", windowMs: 400 }, { move: "lightDown", windowMs: 400, holdMs: 450, angleDeg: 0 }, { move: "specialNeutral" }] },
+      { name: "Liana", text: "due pugni in su e gli salta dietro come su una liana", steps: [{ move: "lightUp", windowMs: 400 }, { move: "lightUp", windowMs: 400, holdMs: 450 }, { move: "lightAir" }] },
+      { name: "Batti il petto", text: "uppercut e su a battersi il petto", steps: [{ move: "heavyUp", windowMs: 400 }, { move: "recovery" }] },
+    ],
     name: "Bonobot",
     // Suprema "Omar" (#102): Bonobot salta ad afferrare la liana, la tira e fa una capriola indietro;
     // l'orsogufo Omar cade sulla liana, schiaccia chi sta lì, fa puff e diventa uno gnomo che scappa.
@@ -839,8 +848,9 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     combo: { name: "Capra e cavaliere", text: "Incornata: se prende, il Piccione parte da solo e insegue chi vola via" },
     // Combo sulle mosse disegnate (#594), provate da npm run combo-lab: docs/combo/elvedeo.md
     combos: [
-      { name: "Zoccolata", steps: [{ move: "heavyAir", windowMs: 400, angleDeg: 2, knockbackMult: 0.9 }, { move: "light" }] }, // gli zoccoli dall'alto lo piantano a terra davanti alla capra
-      { name: "Salto della capra", steps: [{ move: "light", windowMs: 400, angleDeg: 65 }, { move: "lightAir" }] }, // lo alza e gli salta dietro
+      { name: "Zoccolata", text: "zoccoli dall'alto che lo piantano a terra, poi il leggero", steps: [{ move: "heavyAir", windowMs: 400, angleDeg: 2, knockbackMult: 0.9 }, { move: "light" }] }, // gli zoccoli dall'alto lo piantano a terra davanti alla capra
+      { name: "Salto della capra", text: "il leggero lo alza e la capra gli salta dietro", steps: [{ move: "light", windowMs: 400, angleDeg: 65 }, { move: "lightAir" }] }, // lo alza e gli salta dietro
+      { name: "Carica della capra", text: "zoccoli dall'alto, calcetto e Incornata: parte anche il Piccione", steps: [{ move: "heavyAir", windowMs: 400 }, { move: "lightDown", windowMs: 400, holdMs: 450, angleDeg: 0 }, { move: "specialSide" }] },
     ],
     pigeonChase: true,
     // con la capra è più grosso e pesante, ma la capra corre e salta bene
@@ -936,9 +946,10 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     combo: { name: "Scivolone", text: "Sputo, poi presa: chi è bagnato si afferra da più lontano e il lancio lo fa scivolare più in là" },
     // Combo sulle mosse disegnate (#594), provate da npm run combo-lab: docs/combo/egiainuso.md
     combos: [
-      { name: "Rincorsa", steps: [{ move: "light", windowMs: 400 }, { move: "dashAttack" }] },
-      { name: "Travolgente", steps: [{ move: "heavy", windowMs: 400 }, { move: "dashAttack" }] }, // a percentuali basse
-      { name: "Tuffo e carica", steps: [{ move: "lightAir", windowMs: 400 }, { move: "dashAttack" }] },
+      { name: "Rincorsa", text: "leggero e attacco in corsa", steps: [{ move: "light", windowMs: 400 }, { move: "dashAttack" }] },
+      { name: "Travolgente", text: "pesante e attacco in corsa, a percentuali basse", steps: [{ move: "heavy", windowMs: 400 }, { move: "dashAttack" }] }, // a percentuali basse
+      { name: "Tuffo e carica", text: "leggero in aria e attacco in corsa appena atterra", steps: [{ move: "lightAir", windowMs: 400 }, { move: "dashAttack" }] },
+      { name: "Sputo in faccia", text: "pugno, sgambetto e sputo: bagnato, ora la presa lo fa scivolare (Scivolone)", steps: [{ move: "light", windowMs: 400 }, { move: "lightDown", windowMs: 400, holdMs: 450, angleDeg: 0 }, { move: "specialNeutral" }] },
     ],
     spitWet: true,
     // Aura nera (Nicola, 11/11/2026: "più divertente da usare"; prima era la suprema di base, un colpo solo): l'aura a
@@ -1018,6 +1029,11 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
   // Baldo: pazzo scatenato, ipercompetitivo, grosso, con i guanti da portiere e la racchetta da ping pong
   lampione: {
     id: "lampione",
+    combos: [ // caratterizzate e provate con npm run combo-lab
+      { name: "Tuffo del portiere", text: "il beagle morde, sgambetto e Tuffo da portiere", steps: [{ move: "light", windowMs: 400 }, { move: "lightDown", windowMs: 400, holdMs: 450, angleDeg: 0 }, { move: "specialSide" }] },
+      { name: "Ping pong", text: "il beagle morde, sgambetto e pallina da campione regionale", steps: [{ move: "light", windowMs: 400 }, { move: "lightDown", windowMs: 400, holdMs: 450, angleDeg: 0 }, { move: "specialNeutral" }] },
+      { name: "Rinvio", text: "due colpi in su e rinvio lungo col salto", steps: [{ move: "lightUp", windowMs: 400 }, { move: "lightUp", windowMs: 400, holdMs: 450 }, { move: "recovery" }] },
+    ],
     strikeColor: "#ffe9a8", // scia dei colpi: la luce del lampione (#384)
     name: "Lampione",
     quotes: { ko: "Grazie per essere passato nel nostro canale" }, // dalla scheda: l'urlo del KO
@@ -1079,8 +1095,10 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     combo: { name: "Groove", text: "colpisci a tempo con la musica, quando l'anello giallo pulsa sotto di te: il colpo fa più danno" },
     // Combo sulle mosse disegnate (#594), provate da npm run combo-lab: docs/combo/bradipo.md
     combos: [
-      { name: "Giro di basso", steps: [{ move: "lightUp", windowMs: 400 }, { move: "lightUp" }] }, // due note in su di fila
-      { name: "Slap", steps: [{ move: "heavyUp", windowMs: 400 }, { move: "lightUp" }] }, // a percentuali basse
+      { name: "Giro di basso", text: "due note in su di fila", steps: [{ move: "lightUp", windowMs: 400 }, { move: "lightUp" }] }, // due note in su di fila
+      { name: "Slap", text: "pesante in su e leggero in su, a percentuali basse", steps: [{ move: "heavyUp", windowMs: 400 }, { move: "lightUp" }] }, // a percentuali basse
+      { name: "Bassline", text: "pugno, sgambetto e una Bassline in faccia", steps: [{ move: "light", windowMs: 400 }, { move: "lightDown", windowMs: 400, holdMs: 450, angleDeg: 0 }, { move: "specialSide" }] },
+      { name: "Ciacole", text: "pugno, sgambetto e chiacchiere che non finiscono più", steps: [{ move: "light", windowMs: 400 }, { move: "lightDown", windowMs: 400, holdMs: 450, angleDeg: 0 }, { move: "specialNeutral" }] },
     ],
     groove: true,
     // Dal video di tutte le mosse fatto da Nicola con Google Flow (tools/sprite/bradipo_dal_video.py): la Bassline col
@@ -1172,6 +1190,11 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
   // Riccardo: spilungone calciatore, bonaccione e svampito, occhiali e capelli a tendina
   giovannifrana: {
     id: "giovannifrana",
+    combos: [ // caratterizzate e provate con npm run combo-lab
+      { name: "Contropiede", text: "pugno, sgambetto e Scivolata a recuperare palla", steps: [{ move: "light", windowMs: 400 }, { move: "lightDown", windowMs: 400, holdMs: 450, angleDeg: 0 }, { move: "specialSide" }] },
+      { name: "Tackle e rigore", text: "pugno, tackle basso e Rigore a porta vuota", steps: [{ move: "light", windowMs: 400 }, { move: "lightDown", windowMs: 400, holdMs: 450, angleDeg: 0 }, { move: "specialNeutral" }] },
+      { name: "Palleggio", text: "palleggi di testa e tiro al volo", steps: [{ move: "lightUp", windowMs: 400 }, { move: "lightUp", windowMs: 400, holdMs: 450 }, { move: "lightAir" }] },
+    ],
     name: "Giovanni fRana",
     crews: ["cuamm", "cologna"],
     sprite: communitySprite("giovannifrana"),
@@ -1209,11 +1232,12 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     name: "Marcomunista",
     quotes: { taunt: "Viva il comunismo!" }, // il suo tormentone; la scheda e la #352 non dicono altro
     crews: ["cuamm", "cologna"],
-    combo: { name: "Piano quinquennale", text: "lancia in alto e salta: ogni colpo in aria che prende ti tiene su, fino a tre di fila" },
+    combo: { name: "Piano quinquennale", text: "lancia in alto e salta: ogni colpo in aria che prende ti tiene su, fino a tre di fila (due colpi in aria sono sicuri, la catena intera si può evitare)" },
     // Combo sulle mosse disegnate (#594), provate da npm run combo-lab: docs/combo/marcomunista.md
     combos: [
-      { name: "Slancio rivoluzionario", steps: [{ move: "heavyUp", windowMs: 400 }, { move: "recovery" }] }, // lo lancia e gli vola dietro
-      { name: "Falce e martello", steps: [{ move: "light", windowMs: 400, angleDeg: 65 }, { move: "lightAir" }] }, // il leggero lo alza, il colpo in aria lo abbatte
+      { name: "Slancio rivoluzionario", text: "lo lancia in alto e gli vola dietro col recupero", steps: [{ move: "heavyUp", windowMs: 400 }, { move: "recovery" }] }, // lo lancia e gli vola dietro
+      { name: "Falce e martello", text: "il leggero lo alza, il colpo in aria lo abbatte", steps: [{ move: "light", windowMs: 400, angleDeg: 65 }, { move: "lightAir" }] }, // il leggero lo alza, il colpo in aria lo abbatte
+      { name: "Sol dell'avvenire", text: "colpo in aria, pugno in su e via verso il sole col recupero", steps: [{ move: "lightAir", windowMs: 400 }, { move: "lightUp", windowMs: 400, holdMs: 450 }, { move: "recovery" }] },
     ],
     airPop: true,
     // Animato dalla GIF di arti marziali di Nicola (tools/sprite/marcomunista_dalla_gif.py), con l'energia verde come scia;
@@ -1280,6 +1304,12 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
   // Michele: magro, un po' emo, iroso e indisposto
   lendmar: {
     id: "lendmar",
+    combos: [ // caratterizzate e provate con npm run combo-lab
+      { name: "Sbrocco", text: "pugno, sgambetto e si getta col Burnout", steps: [{ move: "light", windowMs: 400 }, { move: "lightDown", windowMs: 400, holdMs: 450, angleDeg: 0 }, { move: "specialSide" }] },
+      { name: "Fai schifo", text: "pugno, sgambetto e cacca in faccia", steps: [{ move: "light", windowMs: 400 }, { move: "lightDown", windowMs: 400, holdMs: 450, angleDeg: 0 }, { move: "specialNeutral" }] },
+      { name: "Testata", text: "due colpi in su e testata col salto", steps: [{ move: "lightUp", windowMs: 400 }, { move: "lightUp", windowMs: 400, holdMs: 450 }, { move: "recovery" }] },
+      { name: "Calcio in culo", text: "pesante in su e subito un altro calcio", steps: [{ move: "heavyUp", windowMs: 400 }, { move: "lightUp" }] },
+    ],
     name: "Lendmar",
     crews: ["lolhardcore"],
     // Pacchetto base Flow (4/11/2026; tools/sprite/dal_video.py, tagli in flow_tagli.json): movimento da LE-B1
@@ -1331,6 +1361,11 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
   // Gio (@elvedeo): chirurgo traumatologo rasta infettato dai funghi, "vi insegnerò la via del fungo"
   drmicelium: {
     id: "drmicelium",
+    combos: [ // caratterizzate e provate con npm run combo-lab
+      { name: "Bisturi", text: "pugno, sgambetto e Bisturi dritto in pancia", steps: [{ move: "light", windowMs: 400 }, { move: "lightDown", windowMs: 400, holdMs: 450, angleDeg: 0 }, { move: "specialSide" }] },
+      { name: "Via del fungo", text: "pugno, sgambetto e Nube di spore", steps: [{ move: "light", windowMs: 400 }, { move: "lightDown", windowMs: 400, holdMs: 450, angleDeg: 0 }, { move: "specialDown" }] },
+      { name: "Sutura", text: "due punti in su e il nodo in aria", steps: [{ move: "lightUp", windowMs: 400 }, { move: "lightUp", windowMs: 400, holdMs: 450 }, { move: "lightAir" }] },
+    ],
     strikeColor: "#a8c46b", // scia dei colpi: verde spora (#384)
     name: "Dr. Micelium",
     quotes: { taunt: "Vi insegnerò la via del fungo" },
@@ -1366,6 +1401,11 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
   // Griga (KittySeanKula): l'allenatore con la lavagnetta, le collane d'oro e la tuta verde e gialla
   coachcartier: {
     id: "coachcartier",
+    combos: [ // caratterizzate e provate con npm run combo-lab
+      { name: "Schema alla lavagna", text: "pugno, sgambetto e lavagnetta in testa", steps: [{ move: "light", windowMs: 400 }, { move: "lightDown", windowMs: 400, holdMs: 450, angleDeg: 0 }, { move: "specialSide" }] },
+      { name: "Cashback", text: "pugno, sgambetto e la collana d'oro che gira", steps: [{ move: "light", windowMs: 400 }, { move: "lightDown", windowMs: 400, holdMs: 450, angleDeg: 0 }, { move: "specialNeutral" }] },
+      { name: "Esercizio", text: "pesante in su e ripetizione in su", steps: [{ move: "heavyUp", windowMs: 400 }, { move: "lightUp" }] },
+    ],
     name: "Electronmaster",
     quotes: { taunt: "Va bene perdere se sei ricco!" },
     crews: ["cuamm", "cologna"], // dal LORE
@@ -1403,6 +1443,11 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
   // propri (attacks) e animazioni sue col mattarello (tools/rig/animazioni_nonnagina.py)
   nonnagina: {
     id: "nonnagina",
+    combos: [ // caratterizzate e provate con npm run combo-lab
+      { name: "Mattarello e ciabatta", text: "mattarellata, sgambetto e Ciabatta", steps: [{ move: "light", windowMs: 400 }, { move: "lightDown", windowMs: 400, holdMs: 450, angleDeg: 0 }, { move: "specialSide" }] },
+      { name: "Secondo piatto", text: "mattarellata, sgambetto e Polpetta", steps: [{ move: "light", windowMs: 400 }, { move: "lightDown", windowMs: 400, holdMs: 450, angleDeg: 0 }, { move: "specialNeutral" }] },
+      { name: "Scappellotto", text: "mattarello in su e scappellotto", steps: [{ move: "heavyUp", windowMs: 400 }, { move: "lightUp" }] },
+    ],
     name: "Nonna Gina",
     strikeColor: "#e0ae74", // scia dei colpi: il legno del mattarello
     quotes: { taunt: "Mangia che ti fa bene!", ko: "Ostrega!", victory: "Ti go fato el brodo" },
@@ -1452,6 +1497,11 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
   // pezzi e animazioni col codice (tools/rig/genera_pezzi_opus.py, animazioni_opus.py, genera_oggetti_opus.py)
   opus: {
     id: "opus",
+    combos: [ // caratterizzate e provate con npm run combo-lab
+      { name: "Glissando", text: "stoccata, sgambetto e Glissando sulle ginocchia", steps: [{ move: "light", windowMs: 400 }, { move: "lightDown", windowMs: 400, holdMs: 450, angleDeg: 0 }, { move: "specialSide" }] },
+      { name: "Staccato", text: "stoccata, sgambetto e note di Staccato", steps: [{ move: "light", windowMs: 400 }, { move: "lightDown", windowMs: 400, holdMs: 450, angleDeg: 0 }, { move: "specialNeutral" }] },
+      { name: "Da capo", text: "Fortissimo in su e si ricomincia dall'alto", steps: [{ move: "heavyUp", windowMs: 400 }, { move: "recovery" }] },
+    ],
     name: "Maestro Opus",
     strikeColor: "#ffd77a", // scia dei colpi: la punta d'oro della bacchetta
     quotes: { taunt: "Grazie, grazie, troppo gentili!", ko: "Che stonatura!", victory: "Bis! Bis!", supreme: "Gran Finale!" },

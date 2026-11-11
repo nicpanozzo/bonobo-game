@@ -92,6 +92,7 @@ static func move_keys(move: String, keys: Dictionary) -> String:
 		"heavyDown": return "%s+%s" % [k.call("down"), k.call("heavy")]
 		"heavyAir": return "%s in aria" % k.call("heavy")
 		"dashAttack": return "%s+%s" % [k.call("run"), k.call("heavy")]
+		"recovery": return "%s+%s in aria" % [k.call("up"), k.call("heavy")]
 		"specialNeutral": return k.call("special")
 		"specialSide": return "%s+%s" % [side, k.call("special")]
 		"specialDown": return "%s+%s" % [k.call("down"), k.call("special")]

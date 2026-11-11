@@ -25,6 +25,7 @@ describe("formato delle combo", () => {
           const move = lab.find((m) => m.id === s.move);
           assert.ok(move && drawn(ch.id, move), `${c.name}: ${s.move} non ha un disegno suo`);
           assert.ok((s.windowMs ?? COMBO.windowMs) <= COMBO.maxWindowMs, `${c.name}: finestra di ${s.move} troppo lunga`);
+          assert.ok((s.holdMs ?? 0) <= COMBO.maxHoldMs, `${c.name}: stordimento di ${s.move} troppo lungo`);
           const kb = s.knockbackMult ?? 1;
           assert.ok(kb >= COMBO.knockbackMult[0] && kb <= COMBO.knockbackMult[1], `${c.name}: knockbackMult di ${s.move} fuori dai limiti`);
           if (s.angleDeg === undefined) continue;
@@ -109,5 +110,25 @@ describe("laboratorio delle combo", () => {
     const b = chain("egiainuso", ["light", "dashAttack"], 90);
     assert.deepEqual([a.hits, a.real, a.world?.t.x, a.world?.t.percent], [b.hits, b.real, b.world?.t.x, b.world?.t.percent]);
     assert.ok(a.real);
+  });
+});
+
+// Jab, Arrembaggio e Piano quinquennale (#557) resi veri, e lo stordimento minimo dei passi (holdMs)
+describe("combo vere", () => {
+  it("il jab è vero a percentuali basse", () => {
+    assert.equal(chainCells("bonobot", ["light", "light", "light"])[0], "V");
+  });
+  it("l'Arrembaggio col jab è vero", () => {
+    assert.equal(chainCells("orsoblu", ["specialNeutral", "light"])[0], "V");
+  });
+  it("due colpi in aria del Piano quinquennale sono veri", () => {
+    assert.ok(chainCells("marcomunista", ["lightAir", "lightAir"]).includes("V"));
+  });
+  it("ogni personaggio con le combo ne ha almeno due vere", () => {
+    for (const ch of Object.values(CHARACTERS)) {
+      if (!ch.combos) continue;
+      const real = ch.combos.filter((c) => chainCells(ch.id, c.steps.map((s) => s.move)).includes("V"));
+      assert.ok(real.length >= 2, `${ch.id}: ${real.length} combo vere`);
+    }
   });
 });

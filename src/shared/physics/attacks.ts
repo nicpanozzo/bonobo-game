@@ -280,6 +280,16 @@ export function onBeat(attacker: Fighter, kind: AttackKind, ctx: PhysicsContext)
 // Il colpo vero: percentuale e volo nella direzione in cui guarda chi colpisce. Lo usano anche i lanci della presa
 // damage cambia il danno della mossa (la risposta del contrattacco dipende dal colpo parato)
 // hit: altri numeri del colpo al posto di quelli di kind (l'aquila dell'Elefante, che ha i suoi)
+// Jab e Piano quinquennale (#557) diventano combo vere: chi li subisce resta stordito almeno fino al colpo dopo
+// (il laboratorio, npm run combo-lab, li dava "entrano solo se non reagisce"). Il finale del jab e il colpo oltre maxPops no
+const jabHold = (a: Fighter, kind: AttackKind) => kind === "light" && a.onGround && a.jabStep < JAB.steps.length;
+function comboHoldMs(a: Fighter, kind: AttackKind): number {
+  if (jabHold(a, kind)) return JAB.holdMs;
+  return pianoHold(a, kind) ? PIANO_QUINQUENNALE.holdMs : 0;
+}
+const pianoHold = (a: Fighter, kind: AttackKind) =>
+  !!getCharacter(a.characterId).airPop && !a.onGround && PIANO_QUINQUENNALE.kinds.includes(kind) && a.airPops < PIANO_QUINQUENNALE.maxPops;
+
 export function launch(target: Fighter, attacker: Fighter, kind: AttackKind, x: number, y: number, ctx: PhysicsContext, damage?: number, hit?: Pick<AttackSpec, "damage" | "baseKnockback" | "knockbackGrowth" | "angleDeg">): void {
   const own = hit ? { ...attackSpecFor(attacker, kind), damage: hit.damage, baseKnockback: hit.baseKnockback, knockbackGrowth: hit.knockbackGrowth, angleDeg: hit.angleDeg } : attackSpecFor(attacker, kind);
   const extra = damage === undefined ? meleeDamage(attacker, kind) : 0; // l'arma in mano (held.ts)
@@ -300,11 +310,11 @@ export function launch(target: Fighter, attacker: Fighter, kind: AttackKind, x: 
   const combo = comboHit(attacker, kind); // il passo di una sua combo (#594): la catena va avanti anche coi colpi che hanno numeri loro (hit)
   const step = hit ? undefined : combo; // angolo e knockback ritoccati
   const knockback = (step?.knockbackMult ?? 1) * ((spec.baseKnockback + spec.knockbackGrowth * target.percent) / characterStats(target.characterId).weight) * (boarded ? ARREMBAGGIO.knockbackMult : 1) * (wet ? SCIVOLONE.throwMult : 1) * genreKnockback(genreAt(ctx.stage, ctx.timeMs ?? 0, ctx.padsMs)) * gearKnockbackMult(target); // E11; giganti e mini (gear.ts); col metal del Palco si vola più lontano
-  const angle = ((kind === "supreme" ? snatch(attacker, target, spec.angleDeg) : (step?.angleDeg ?? spec.angleDeg)) * Math.PI) / 180; // snaack di Lampione (#358) tira e schiaccia
+  const angle = ((kind === "supreme" ? snatch(attacker, target, spec.angleDeg) : (step?.angleDeg ?? (jabHold(attacker, kind) ? JAB.angleDeg : pianoHold(attacker, kind) ? PIANO_QUINQUENNALE.angleDeg : spec.angleDeg))) * Math.PI) / 180; // snaack di Lampione (#358) tira e schiaccia; il jab tiene a terra
   target.vx = dir * Math.cos(angle) * knockback;
   target.vy = -Math.sin(angle) * knockback;
   target.onGround = false;
-  target.hitstunTimer = knockback * HITSTUN_PER_KNOCKBACK;
+  target.hitstunTimer = Math.max(knockback * HITSTUN_PER_KNOCKBACK, comboHoldMs(attacker, kind), combo?.holdMs ?? 0); // jab, Piano quinquennale e passi delle combo tengono di più
   target.attack = null;
   target.attackActive = false;
   target.facing = (-dir) as 1 | -1;
