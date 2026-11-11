@@ -41,7 +41,8 @@ function juggler(me: Fighter, target: Fighter, tick: number) {
     input.up = Math.abs(dx) < 70;
     input.heavy = tick % 2 === 0 && !me.attack && Math.abs(dx) < 70; // premuto e lasciato: niente colpo caricato
   } else {
-    input.up = input.jump = dy < -60 && tick % 10 < 5; // salto tenuto 5 tick su 10: più della preparazione al salto (#384 A3), che col gioco al 90% (A4) dura 4 tick
+    input.jump = dy < -60 && tick % 10 < 5; // salto tenuto 5 tick su 10: più della preparazione al salto (#384 A3), che col gioco al 90% (A4) dura 4 tick
+    input.up = true; // il leggero in su: il leggero neutro su chi tocca terra fa il jab, che tiene a terra (#594)
     input.light = tick % 2 === 0 && Math.abs(dy) < 120;
   }
   return input;

@@ -18,6 +18,7 @@ export function tickTech(f: Fighter, dtMs: number): void {
 // Appena atterrati: con la finestra aperta lo stordimento finisce e si rotola (o ci si rialza sul posto)
 export function landTech(f: Fighter, wasOnGround: boolean, ctx: PhysicsContext): void {
   if (!f.onGround || wasOnGround || !f.hitstun || f.techTimer === 0) return;
+  if (f.boardedMs > 0) return; // tirato a bordo dall'ancora di OrsoBlu non ci si rialza al volo: l'Arrembaggio prende (#557)
   const dir = (f.input.right ? 1 : 0) - (f.input.left ? 1 : 0);
   f.techTimer = 0;
   f.hitstunTimer = 0;

@@ -8,6 +8,7 @@ Il laboratorio usa la fisica vera: la prima mossa colpisce un Bonobo fermo, poi 
 
 - **Zoccolata**: heavyAir → light. Vera a 50-120%. Entra solo se il bersaglio non reagisce a 0-40, 130-150%.
 - **Salto della capra**: light → lightAir. Vera a 80-110%. Entra solo se il bersaglio non reagisce a 0-70, 120-150%.
+- **Carica della capra**: heavyAir → lightDown → specialSide. Vera a 60-120%. Entra solo se il bersaglio non reagisce a 0-50, 130-150%.
 
 ## Combo note
 
@@ -42,9 +43,9 @@ Solo con mosse già disegnate. La seconda mossa prende per forza dopo la prima.
 
 | Prima | Dopo | Vera a % | Solo se non reagisce a % |
 |---|---|---|---|
-| light | light | 40-70 | 0-30, 80-150 |
+| light | light | 0-70 | 80-150 |
 | light | lightAir | 80-110 | 0-70, 120-150 |
-| light | recovery | 60 | 0-50, 70-150 |
+| light | recovery | 0-60 | 70-150 |
 | heavyAir | light | 50-120 | 0-40, 130-150 |
 | heavyAir | lightDown | 60-120 | 0-50, 130-150 |
 | heavyAir | lightUp | 90-120 | 0-80, 130-150 |
@@ -58,7 +59,7 @@ Solo con mosse già disegnate. La seconda mossa prende per forza dopo la prima.
 
 La seconda mossa arriva, ma il bersaglio non è più stordito o può uscirne.
 
-- dopo **light**: lightUp (0-150%), lightDown (0-140%), heavy (0-150%), heavyUp (0-150%), heavyDown (0-150%), specialNeutral (0-150%), specialSide (0-150%), grab (0-140%), heavyAir (0-150%), specialDown (50, 70-150%)
+- dopo **light**: lightUp (0-150%), lightDown (0-140%), heavy (0-150%), heavyUp (0-150%), heavyDown (0-150%), specialNeutral (0-150%), specialSide (0-150%), grab (0-140%), heavyAir (0-150%), specialDown (20, 70-150%)
 - dopo **lightAir**: heavy (0-130%), specialNeutral (0-150%), specialSide (0-150%), grab (0-150%), light (0-150%), heavyDown (0-150%), lightDown (0-150%), lightUp (0-150%), heavyUp (0-150%), lightAir (0-80%), heavyAir (0-130%), recovery (0-70%), specialDown (0-30, 70-80, 100-110, 130-140%)
 - dopo **heavy**: specialNeutral (20-110%), specialSide (20-110%), light (20-50%), lightUp (20-40%), lightDown (20-50%), heavy (20, 40%), heavyUp (20-40%), heavyDown (20-50%), grab (20-50%), heavyAir (20-30%), specialDown (40%)
 - dopo **heavyDown**: specialNeutral (30-130%), specialSide (30-130%), light (30-70%), lightUp (30-60%), lightDown (30-60%), heavy (30-50%), heavyUp (30-60%), heavyDown (30-70%), grab (30-70%), heavyAir (30-50%)

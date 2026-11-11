@@ -956,7 +956,7 @@
       "limitSec": 60,
       "medals": [
         20,
-        40,
+        30,
         60
       ]
     }
@@ -12390,11 +12390,12 @@
       ],
       "combo": {
         "name": "Arrembaggio",
-        "text": "Tutti a bordo! lo tira a te: subito jab, pesante o Avanti tutta! e vola più lontano"
+        "text": "Tutti a bordo! lo tira a te: subito jab o Avanti tutta! e vola più lontano (il pesante arriva tardi: si può evitare)"
       },
       "combos": [
         {
           "name": "Uomo in mare",
+          "text": "pesante, ancora che lo ripesca e pugno di benvenuto",
           "steps": [
             {
               "move": "heavy",
@@ -12411,6 +12412,7 @@
         },
         {
           "name": "Issa la vela",
+          "text": "due pugni in su di fila",
           "steps": [
             {
               "move": "lightUp",
@@ -12418,6 +12420,25 @@
             },
             {
               "move": "lightUp"
+            }
+          ]
+        },
+        {
+          "name": "Bordata",
+          "text": "pugno, sgambetto e Avanti tutta! a tutta vela",
+          "steps": [
+            {
+              "move": "light",
+              "windowMs": 400
+            },
+            {
+              "move": "lightDown",
+              "windowMs": 400,
+              "holdMs": 450,
+              "angleDeg": 0
+            },
+            {
+              "move": "specialSide"
             }
           ]
         }
@@ -12498,7 +12519,9 @@
           "Tu! Lava il ponte!"
         ]
       },
-      "anchor": {},
+      "anchor": {
+        "pullHitstunMs": 600
+      },
       "stats": {
         "speed": 0.9,
         "airSpeed": 0.95,
@@ -14645,6 +14668,77 @@
     },
     "bonobot": {
       "id": "bonobot",
+      "combos": [
+        {
+          "name": "Re della giungla",
+          "text": "pugno, sgambetto e lo travolge galoppando sulle nocche",
+          "steps": [
+            {
+              "move": "light",
+              "windowMs": 400
+            },
+            {
+              "move": "lightDown",
+              "windowMs": 400,
+              "holdMs": 450,
+              "angleDeg": 0
+            },
+            {
+              "move": "specialSide"
+            }
+          ]
+        },
+        {
+          "name": "Fumo in faccia",
+          "text": "pugno, sgambetto e un anello di fumo in faccia",
+          "steps": [
+            {
+              "move": "light",
+              "windowMs": 400
+            },
+            {
+              "move": "lightDown",
+              "windowMs": 400,
+              "holdMs": 450,
+              "angleDeg": 0
+            },
+            {
+              "move": "specialNeutral"
+            }
+          ]
+        },
+        {
+          "name": "Liana",
+          "text": "due pugni in su e gli salta dietro come su una liana",
+          "steps": [
+            {
+              "move": "lightUp",
+              "windowMs": 400
+            },
+            {
+              "move": "lightUp",
+              "windowMs": 400,
+              "holdMs": 450
+            },
+            {
+              "move": "lightAir"
+            }
+          ]
+        },
+        {
+          "name": "Batti il petto",
+          "text": "uppercut e su a battersi il petto",
+          "steps": [
+            {
+              "move": "heavyUp",
+              "windowMs": 400
+            },
+            {
+              "move": "recovery"
+            }
+          ]
+        }
+      ],
       "name": "Bonobot",
       "supreme": {
         "type": "drop",
@@ -15221,6 +15315,7 @@
       "combos": [
         {
           "name": "Zoccolata",
+          "text": "zoccoli dall'alto che lo piantano a terra, poi il leggero",
           "steps": [
             {
               "move": "heavyAir",
@@ -15235,6 +15330,7 @@
         },
         {
           "name": "Salto della capra",
+          "text": "il leggero lo alza e la capra gli salta dietro",
           "steps": [
             {
               "move": "light",
@@ -15243,6 +15339,25 @@
             },
             {
               "move": "lightAir"
+            }
+          ]
+        },
+        {
+          "name": "Carica della capra",
+          "text": "zoccoli dall'alto, calcetto e Incornata: parte anche il Piccione",
+          "steps": [
+            {
+              "move": "heavyAir",
+              "windowMs": 400
+            },
+            {
+              "move": "lightDown",
+              "windowMs": 400,
+              "holdMs": 450,
+              "angleDeg": 0
+            },
+            {
+              "move": "specialSide"
             }
           ]
         }
@@ -15860,6 +15975,7 @@
       "combos": [
         {
           "name": "Rincorsa",
+          "text": "leggero e attacco in corsa",
           "steps": [
             {
               "move": "light",
@@ -15872,6 +15988,7 @@
         },
         {
           "name": "Travolgente",
+          "text": "pesante e attacco in corsa, a percentuali basse",
           "steps": [
             {
               "move": "heavy",
@@ -15884,6 +16001,7 @@
         },
         {
           "name": "Tuffo e carica",
+          "text": "leggero in aria e attacco in corsa appena atterra",
           "steps": [
             {
               "move": "lightAir",
@@ -15891,6 +16009,25 @@
             },
             {
               "move": "dashAttack"
+            }
+          ]
+        },
+        {
+          "name": "Sputo in faccia",
+          "text": "pugno, sgambetto e sputo: bagnato, ora la presa lo fa scivolare (Scivolone)",
+          "steps": [
+            {
+              "move": "light",
+              "windowMs": 400
+            },
+            {
+              "move": "lightDown",
+              "windowMs": 400,
+              "holdMs": 450,
+              "angleDeg": 0
+            },
+            {
+              "move": "specialNeutral"
             }
           ]
         }
@@ -16435,6 +16572,64 @@
     },
     "lampione": {
       "id": "lampione",
+      "combos": [
+        {
+          "name": "Tuffo del portiere",
+          "text": "il beagle morde, sgambetto e Tuffo da portiere",
+          "steps": [
+            {
+              "move": "light",
+              "windowMs": 400
+            },
+            {
+              "move": "lightDown",
+              "windowMs": 400,
+              "holdMs": 450,
+              "angleDeg": 0
+            },
+            {
+              "move": "specialSide"
+            }
+          ]
+        },
+        {
+          "name": "Ping pong",
+          "text": "il beagle morde, sgambetto e pallina da campione regionale",
+          "steps": [
+            {
+              "move": "light",
+              "windowMs": 400
+            },
+            {
+              "move": "lightDown",
+              "windowMs": 400,
+              "holdMs": 450,
+              "angleDeg": 0
+            },
+            {
+              "move": "specialNeutral"
+            }
+          ]
+        },
+        {
+          "name": "Rinvio",
+          "text": "due colpi in su e rinvio lungo col salto",
+          "steps": [
+            {
+              "move": "lightUp",
+              "windowMs": 400
+            },
+            {
+              "move": "lightUp",
+              "windowMs": 400,
+              "holdMs": 450
+            },
+            {
+              "move": "recovery"
+            }
+          ]
+        }
+      ],
       "strikeColor": "#ffe9a8",
       "name": "Lampione",
       "quotes": {
@@ -17383,6 +17578,7 @@
       "combos": [
         {
           "name": "Giro di basso",
+          "text": "due note in su di fila",
           "steps": [
             {
               "move": "lightUp",
@@ -17395,6 +17591,7 @@
         },
         {
           "name": "Slap",
+          "text": "pesante in su e leggero in su, a percentuali basse",
           "steps": [
             {
               "move": "heavyUp",
@@ -17402,6 +17599,44 @@
             },
             {
               "move": "lightUp"
+            }
+          ]
+        },
+        {
+          "name": "Bassline",
+          "text": "pugno, sgambetto e una Bassline in faccia",
+          "steps": [
+            {
+              "move": "light",
+              "windowMs": 400
+            },
+            {
+              "move": "lightDown",
+              "windowMs": 400,
+              "holdMs": 450,
+              "angleDeg": 0
+            },
+            {
+              "move": "specialSide"
+            }
+          ]
+        },
+        {
+          "name": "Ciacole",
+          "text": "pugno, sgambetto e chiacchiere che non finiscono più",
+          "steps": [
+            {
+              "move": "light",
+              "windowMs": 400
+            },
+            {
+              "move": "lightDown",
+              "windowMs": 400,
+              "holdMs": 450,
+              "angleDeg": 0
+            },
+            {
+              "move": "specialNeutral"
             }
           ]
         }
@@ -17987,6 +18222,64 @@
     },
     "giovannifrana": {
       "id": "giovannifrana",
+      "combos": [
+        {
+          "name": "Contropiede",
+          "text": "pugno, sgambetto e Scivolata a recuperare palla",
+          "steps": [
+            {
+              "move": "light",
+              "windowMs": 400
+            },
+            {
+              "move": "lightDown",
+              "windowMs": 400,
+              "holdMs": 450,
+              "angleDeg": 0
+            },
+            {
+              "move": "specialSide"
+            }
+          ]
+        },
+        {
+          "name": "Tackle e rigore",
+          "text": "pugno, tackle basso e Rigore a porta vuota",
+          "steps": [
+            {
+              "move": "light",
+              "windowMs": 400
+            },
+            {
+              "move": "lightDown",
+              "windowMs": 400,
+              "holdMs": 450,
+              "angleDeg": 0
+            },
+            {
+              "move": "specialNeutral"
+            }
+          ]
+        },
+        {
+          "name": "Palleggio",
+          "text": "palleggi di testa e tiro al volo",
+          "steps": [
+            {
+              "move": "lightUp",
+              "windowMs": 400
+            },
+            {
+              "move": "lightUp",
+              "windowMs": 400,
+              "holdMs": 450
+            },
+            {
+              "move": "lightAir"
+            }
+          ]
+        }
+      ],
       "name": "Giovanni fRana",
       "crews": [
         "cuamm",
@@ -18570,11 +18863,12 @@
       ],
       "combo": {
         "name": "Piano quinquennale",
-        "text": "lancia in alto e salta: ogni colpo in aria che prende ti tiene su, fino a tre di fila"
+        "text": "lancia in alto e salta: ogni colpo in aria che prende ti tiene su, fino a tre di fila (due colpi in aria sono sicuri, la catena intera si può evitare)"
       },
       "combos": [
         {
           "name": "Slancio rivoluzionario",
+          "text": "lo lancia in alto e gli vola dietro col recupero",
           "steps": [
             {
               "move": "heavyUp",
@@ -18587,6 +18881,7 @@
         },
         {
           "name": "Falce e martello",
+          "text": "il leggero lo alza, il colpo in aria lo abbatte",
           "steps": [
             {
               "move": "light",
@@ -18595,6 +18890,24 @@
             },
             {
               "move": "lightAir"
+            }
+          ]
+        },
+        {
+          "name": "Sol dell'avvenire",
+          "text": "colpo in aria, pugno in su e via verso il sole col recupero",
+          "steps": [
+            {
+              "move": "lightAir",
+              "windowMs": 400
+            },
+            {
+              "move": "lightUp",
+              "windowMs": 400,
+              "holdMs": 450
+            },
+            {
+              "move": "recovery"
             }
           ]
         }
@@ -19120,6 +19433,77 @@
     },
     "lendmar": {
       "id": "lendmar",
+      "combos": [
+        {
+          "name": "Sbrocco",
+          "text": "pugno, sgambetto e si getta col Burnout",
+          "steps": [
+            {
+              "move": "light",
+              "windowMs": 400
+            },
+            {
+              "move": "lightDown",
+              "windowMs": 400,
+              "holdMs": 450,
+              "angleDeg": 0
+            },
+            {
+              "move": "specialSide"
+            }
+          ]
+        },
+        {
+          "name": "Fai schifo",
+          "text": "pugno, sgambetto e cacca in faccia",
+          "steps": [
+            {
+              "move": "light",
+              "windowMs": 400
+            },
+            {
+              "move": "lightDown",
+              "windowMs": 400,
+              "holdMs": 450,
+              "angleDeg": 0
+            },
+            {
+              "move": "specialNeutral"
+            }
+          ]
+        },
+        {
+          "name": "Testata",
+          "text": "due colpi in su e testata col salto",
+          "steps": [
+            {
+              "move": "lightUp",
+              "windowMs": 400
+            },
+            {
+              "move": "lightUp",
+              "windowMs": 400,
+              "holdMs": 450
+            },
+            {
+              "move": "recovery"
+            }
+          ]
+        },
+        {
+          "name": "Calcio in culo",
+          "text": "pesante in su e subito un altro calcio",
+          "steps": [
+            {
+              "move": "heavyUp",
+              "windowMs": 400
+            },
+            {
+              "move": "lightUp"
+            }
+          ]
+        }
+      ],
       "name": "Lendmar",
       "crews": [
         "lolhardcore"
@@ -19672,6 +20056,64 @@
     },
     "drmicelium": {
       "id": "drmicelium",
+      "combos": [
+        {
+          "name": "Bisturi",
+          "text": "pugno, sgambetto e Bisturi dritto in pancia",
+          "steps": [
+            {
+              "move": "light",
+              "windowMs": 400
+            },
+            {
+              "move": "lightDown",
+              "windowMs": 400,
+              "holdMs": 450,
+              "angleDeg": 0
+            },
+            {
+              "move": "specialSide"
+            }
+          ]
+        },
+        {
+          "name": "Via del fungo",
+          "text": "pugno, sgambetto e Nube di spore",
+          "steps": [
+            {
+              "move": "light",
+              "windowMs": 400
+            },
+            {
+              "move": "lightDown",
+              "windowMs": 400,
+              "holdMs": 450,
+              "angleDeg": 0
+            },
+            {
+              "move": "specialDown"
+            }
+          ]
+        },
+        {
+          "name": "Sutura",
+          "text": "due punti in su e il nodo in aria",
+          "steps": [
+            {
+              "move": "lightUp",
+              "windowMs": 400
+            },
+            {
+              "move": "lightUp",
+              "windowMs": 400,
+              "holdMs": 450
+            },
+            {
+              "move": "lightAir"
+            }
+          ]
+        }
+      ],
       "strikeColor": "#a8c46b",
       "name": "Dr. Micelium",
       "quotes": {
@@ -20231,6 +20673,59 @@
     },
     "coachcartier": {
       "id": "coachcartier",
+      "combos": [
+        {
+          "name": "Schema alla lavagna",
+          "text": "pugno, sgambetto e lavagnetta in testa",
+          "steps": [
+            {
+              "move": "light",
+              "windowMs": 400
+            },
+            {
+              "move": "lightDown",
+              "windowMs": 400,
+              "holdMs": 450,
+              "angleDeg": 0
+            },
+            {
+              "move": "specialSide"
+            }
+          ]
+        },
+        {
+          "name": "Cashback",
+          "text": "pugno, sgambetto e la collana d'oro che gira",
+          "steps": [
+            {
+              "move": "light",
+              "windowMs": 400
+            },
+            {
+              "move": "lightDown",
+              "windowMs": 400,
+              "holdMs": 450,
+              "angleDeg": 0
+            },
+            {
+              "move": "specialNeutral"
+            }
+          ]
+        },
+        {
+          "name": "Esercizio",
+          "text": "pesante in su e ripetizione in su",
+          "steps": [
+            {
+              "move": "heavyUp",
+              "windowMs": 400
+            },
+            {
+              "move": "lightUp"
+            }
+          ]
+        }
+      ],
       "name": "Electronmaster",
       "quotes": {
         "taunt": "Va bene perdere se sei ricco!"
@@ -20808,6 +21303,59 @@
     },
     "nonnagina": {
       "id": "nonnagina",
+      "combos": [
+        {
+          "name": "Mattarello e ciabatta",
+          "text": "mattarellata, sgambetto e Ciabatta",
+          "steps": [
+            {
+              "move": "light",
+              "windowMs": 400
+            },
+            {
+              "move": "lightDown",
+              "windowMs": 400,
+              "holdMs": 450,
+              "angleDeg": 0
+            },
+            {
+              "move": "specialSide"
+            }
+          ]
+        },
+        {
+          "name": "Secondo piatto",
+          "text": "mattarellata, sgambetto e Polpetta",
+          "steps": [
+            {
+              "move": "light",
+              "windowMs": 400
+            },
+            {
+              "move": "lightDown",
+              "windowMs": 400,
+              "holdMs": 450,
+              "angleDeg": 0
+            },
+            {
+              "move": "specialNeutral"
+            }
+          ]
+        },
+        {
+          "name": "Scappellotto",
+          "text": "mattarello in su e scappellotto",
+          "steps": [
+            {
+              "move": "heavyUp",
+              "windowMs": 400
+            },
+            {
+              "move": "lightUp"
+            }
+          ]
+        }
+      ],
       "name": "Nonna Gina",
       "strikeColor": "#e0ae74",
       "quotes": {
@@ -21369,6 +21917,59 @@
     },
     "opus": {
       "id": "opus",
+      "combos": [
+        {
+          "name": "Glissando",
+          "text": "stoccata, sgambetto e Glissando sulle ginocchia",
+          "steps": [
+            {
+              "move": "light",
+              "windowMs": 400
+            },
+            {
+              "move": "lightDown",
+              "windowMs": 400,
+              "holdMs": 450,
+              "angleDeg": 0
+            },
+            {
+              "move": "specialSide"
+            }
+          ]
+        },
+        {
+          "name": "Staccato",
+          "text": "stoccata, sgambetto e note di Staccato",
+          "steps": [
+            {
+              "move": "light",
+              "windowMs": 400
+            },
+            {
+              "move": "lightDown",
+              "windowMs": 400,
+              "holdMs": 450,
+              "angleDeg": 0
+            },
+            {
+              "move": "specialNeutral"
+            }
+          ]
+        },
+        {
+          "name": "Da capo",
+          "text": "Fortissimo in su e si ricomincia dall'alto",
+          "steps": [
+            {
+              "move": "heavyUp",
+              "windowMs": 400
+            },
+            {
+              "move": "recovery"
+            }
+          ]
+        }
+      ],
       "name": "Maestro Opus",
       "strikeColor": "#ffd77a",
       "quotes": {

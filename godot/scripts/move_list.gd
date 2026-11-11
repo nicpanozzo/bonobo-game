@@ -48,6 +48,10 @@ static func rows(game: Dictionary, character_id: String, keys: Dictionary) -> Ar
 		specials.append([str(s.get("name", "Speciale")), slot[1], "%s, %s" % [SPECIAL_HINTS.get(str(s.get("type", "")), "mossa speciale"), slot[2]]])
 	var supreme: Dictionary = c.get("supreme", {}) if c.get("supreme") is Dictionary else {}
 	specials.append([str(supreme.get("name", "Suprema")), plus.call("special", "heavy"), "insieme, con la barra piena: il lottatore brilla d'oro"])
+	var combos := []
+	for cs in (c.get("combos", []) if c.get("combos") is Array else []):
+		if cs is Dictionary:
+			combos.append([str(cs.get("name", "Combo")), combo_keys(cs.get("steps", []), keys), str(cs.get("text", "colpo dopo colpo, appena il primo entra"))])
 	var defense := [
 		["Scudo", k.call("shield"), "para i colpi ma si consuma"],
 		["Presa", plus.call("shield", "light"), "afferra chi si ripara; poi una direzione per lanciarlo"],
@@ -58,7 +62,45 @@ static func rows(game: Dictionary, character_id: String, keys: Dictionary) -> Ar
 		["Doppio salto", k.call("jump") + " in aria", "il secondo salto, una volta per volo"],
 		["Provocazione", k.call("taunt"), "per far arrabbiare gli amici"],
 	]
-	return [["Attacchi", attacks], ["Speciali", specials], ["Difesa e movimento", defense]]
+	var sections := [["Attacchi", attacks], ["Speciali", specials]]
+	if not combos.is_empty():
+		sections.append(["Combo", combos]) # le combo del personaggio (#594), coi tasti di ogni colpo in fila
+	sections.append(["Difesa e movimento", defense])
+	return sections
+
+
+# I tasti di una combo (#594): un colpo dopo l'altro, "↓+J  →  ↑+K"
+static func combo_keys(steps: Array, keys: Dictionary) -> String:
+	var parts := []
+	for step in steps:
+		if step is Dictionary:
+			parts.append(move_keys(str(step.get("move", "")), keys))
+	return "  →  ".join(parts)
+
+
+# I tasti di una mossa (AttackKind in types.ts)
+static func move_keys(move: String, keys: Dictionary) -> String:
+	var k := func(action: String) -> String: return str(keys.get(action, "?"))
+	var side := "%s/%s" % [k.call("left"), k.call("right")]
+	match move:
+		"light": return k.call("light")
+		"heavy": return k.call("heavy")
+		"lightUp": return "%s+%s" % [k.call("up"), k.call("light")]
+		"lightDown": return "%s+%s" % [k.call("down"), k.call("light")]
+		"lightAir": return "%s in aria" % k.call("light")
+		"heavyUp": return "%s+%s" % [k.call("up"), k.call("heavy")]
+		"heavyDown": return "%s+%s" % [k.call("down"), k.call("heavy")]
+		"heavyAir": return "%s in aria" % k.call("heavy")
+		"dashAttack": return "%s+%s" % [k.call("run"), k.call("heavy")]
+		"recovery": return "%s+%s in aria" % [k.call("up"), k.call("heavy")]
+		"specialNeutral": return k.call("special")
+		"specialSide": return "%s+%s" % [side, k.call("special")]
+		"specialDown": return "%s+%s" % [k.call("down"), k.call("special")]
+		"throwForward": return "presa, avanti"
+		"throwBack": return "presa, indietro"
+		"throwUp": return "presa, %s" % k.call("up")
+		"throwDown": return "presa, %s" % k.call("down")
+	return move
 
 
 # Il primo tasto di ogni azione, dalla tastiera o dal pad (come lo schema del primo avvio)
