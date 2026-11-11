@@ -152,6 +152,26 @@ export const JAB = {
   ] as AttackSpec[],
 };
 
+// Combo per personaggio (#594): una sequenza di mosse già disegnate (CharacterSpec.combos). Il colpo di un passo che
+// entra apre la finestra del passo dopo: in quella finestra la mossa dopo parte senza aspettare l'attesa del colpo
+// (come la combo di leggeri) e vola con i ritocchi del suo passo. I limiti dei ritocchi li controlla comboLab.test.ts
+export const COMBO = {
+  windowMs: 250, // ms dopo la fine di un colpo della combo in cui la mossa dopo continua la catena (se il passo non dice la sua)
+  maxWindowMs: 1500, // ms: la finestra più lunga che un passo può chiedere
+  maxSteps: 5, // colpi al massimo in una combo
+  maxAngleShiftDeg: 30, // gradi: di quanto un passo può spostare l'angolo di lancio della sua mossa
+  knockbackMult: [0.6, 1.3] as [number, number], // moltiplicatore di knockback di un passo: minimo e massimo
+};
+
+// Laboratorio delle combo (npm run combo-lab, scripts/combo-lab.ts): prova con la fisica vera se un colpo lega al successivo
+export const COMBO_LAB = {
+  percentMax: 150, // percentuale più alta provata sul bersaglio (da 0)
+  percentStep: 10, // passo delle percentuali provate
+  escapeMs: 250, // ms dopo la fine dello stordimento in cui un colpo che arriva vale ancora "fa in tempo a scappare"
+  endlessHits: 12, // colpi di fila della stessa coppia di mosse oltre i quali la catena "non finisce mai"
+  reachPx: 320, // pixel: più lontano di così dal bersaglio non si prova nemmeno a colpire
+};
+
 // Arrembaggio, la combo di Capt. OrsoBlu (#557): chi è appena stato tirato a bordo dall'ancora (Tutti a bordo!,
 // ANCHOR.pull*) e viene colpito da lui con jab, pesante, attacco in corsa o Avanti tutta! vola più lontano
 export const ARREMBAGGIO = {

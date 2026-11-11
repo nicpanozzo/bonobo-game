@@ -55,6 +55,9 @@ export interface Fighter extends PlayerState {
   smashChargeMs: number; // ms di carica del pesante a terra tenuto premuto (colpo caricato), -1 se non si carica
   jabStep: number; // colpo della combo di leggeri in corso (JAB): 0 il primo, 1 il secondo, 2 il finale
   jabTimer: number; // ms in cui un leggero premuto continua la combo
+  comboMask: number; // combo del personaggio ancora in corso (#594): un bit per ognuna di CharacterSpec.combos
+  comboStep: number; // colpi di quelle combo già entrati
+  comboTimer: number; // ms in cui la mossa del passo dopo continua la combo
   techTimer: number; // ms in cui toccando terra da storditi ci si rialza al volo (TECH)
   techLockout: number; // ms prima che lo scudo premuto in volo valga di nuovo
   pendingSpecial: SpecialKind | null; // la speciale che aspetta: proiettile in uscita o carica tenuta
@@ -258,6 +261,9 @@ export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
     smashChargeMs: -1,
     jabStep: 0,
     jabTimer: 0,
+    comboMask: 0,
+    comboStep: 0,
+    comboTimer: 0,
     techTimer: 0,
     techLockout: 0,
     pendingSpecial: null,
