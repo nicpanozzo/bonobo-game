@@ -75,4 +75,26 @@ describe("Tempesta! di Capt. OrsoBlu", () => {
     }
     assert.ok(other.x < x0, "tenendo sinistra va comunque a sinistra");
   });
+
+  it("alla fine il maroso prende anche chi è in aria e lo butta verso dove guarda lui, girato con le frecce", () => {
+    const { ctx, bear, other } = setup();
+    storm(bear);
+    run([bear, other], ctx, Math.round((sp.windupMs + 200) / DT));
+    bear.input = { ...emptyInput(), left: true }; // al timone si gira, ma non si muove
+    const x0 = bear.x;
+    run([bear, other], ctx, 1);
+    assert.equal(bear.facing, -1, "girato a sinistra");
+    assert.ok(Math.abs(bear.x - x0) < 1, "sempre fermo al timone");
+    run([bear, other], ctx, Math.round((sp.durationMs - 200) / DT) - 4);
+    other.x = 700;
+    other.y = 380; // in aria, dove le onde non arrivano
+    other.vx = other.vy = 0;
+    other.onGround = false;
+    other.hitstunTimer = 0;
+    other.hitstun = false;
+    const before = other.percent;
+    run([bear, other], ctx, 8);
+    assert.ok(other.percent >= before + sp.finisher!.damage, `preso dal maroso (${before} -> ${other.percent}%)`);
+    assert.ok(other.vx < 0, "buttato a sinistra, dove guarda lui");
+  });
 });

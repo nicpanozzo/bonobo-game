@@ -1215,10 +1215,18 @@ export const COMPANION = {
 // Le pozze dell'IRA di Lendmar (#13): la merda che cade su un blocco fa scivolare chi ci passa
 export const SLICK = {
   lifeMs: 5000, // ms prima che una pozza sparisca
-  width: 70, // pixel
-  max: 10, // pozze insieme in tutta l'arena: oltre, sparisce la più vecchia
+  width: 90, // pixel (erano 70: non si notavano, Nicola 2026-11-11)
+  max: 24, // pozze insieme in tutta l'arena: oltre, sparisce la più vecchia (l'IRA ne fa fino a 36)
   landSlackPx: 30, // pixel sotto il bordo del blocco entro cui il proiettile conta come caduto sopra
-  accel: 450, // pixel/s²: quanto in fretta si cambia velocità sopra una pozza (a terra di solito è subito)
+  accel: 300, // pixel/s²: quanto in fretta si cambia velocità sopra una pozza (a terra di solito è subito; era 450)
+};
+
+// La bomba di …COSA? di Marcomunista (Nicola, 2026-11-11): resta dove era prima di tornare indietro e scoppia dopo
+// bombFuseMs (characters.ts). Scoppia come il petardo (GEAR.petardo: crescita e angolo), ma non prende lui
+export const REWIND_BOMB = {
+  radius: 110, // pixel: raggio dello scoppio, dal centro al punto più vicino del corpo
+  damage: 16, // percentuale
+  knockback: 600, // pixel/s di lancio di base
 };
 
 // Il power-up Tetris (#427): chi lo prende si assenta (fermo e intoccabile) e guida pezzi che cadono dall'alto

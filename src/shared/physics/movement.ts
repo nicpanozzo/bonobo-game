@@ -9,7 +9,7 @@ import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
 import { gearSpeedMult } from "./gear";
 import { rideDrive, rideGravityMult, rideJumpMult, rideSpeedMult } from "./ride";
 import { onPuddle } from "./projectiles";
-import { attackMoveFactor } from "./supreme";
+import { attackMoveFactor, supremeTurns } from "./supreme";
 
 // Cosa fa il lottatore con i tasti premuti (solo se non è stordito)
 export function applyControls(f: Fighter, dt: number, ctx: PhysicsContext): void {
@@ -79,7 +79,7 @@ export function applyControls(f: Fighter, dt: number, ctx: PhysicsContext): void
     const slow = FIGHTER.airFriction * dt;
     f.vx = Math.abs(f.vx) <= slow ? 0 : f.vx - Math.sign(f.vx) * slow;
   }
-  if (dir !== 0 && !f.attack) f.facing = dir as 1 | -1;
+  if (dir !== 0 && (!f.attack || supremeTurns(f))) f.facing = dir as 1 | -1; // anche nelle supreme in cui ci si muove (l'Elefante si girava male)
   rideDrive(f); // lo scatto in sella e il monopattino a razzo spingono da soli (ride.ts)
 
   // Recupero (#11): in aria, K premuto tenendo su. Vince sul salto se i due tasti arrivano insieme.

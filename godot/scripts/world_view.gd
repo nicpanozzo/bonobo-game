@@ -203,6 +203,9 @@ func setup(game_data: Dictionary) -> void:
 	_storm_view = preload("res://scripts/supreme_storm_view.gd").new()
 	_storm_view.fighter_height = float(game.fighter.height)
 	_storm_view.where = _spin_view.where
+	_storm_view.facing = func(id: String) -> int:
+		var p: Variant = buffer.sample(id, Time.get_ticks_msec())
+		return int(p.facing) if p != null else 1
 	add_child(_storm_view)
 	_high_overlay = ColorRect.new()
 	var fatto := ShaderMaterial.new()

@@ -376,7 +376,8 @@ describe("suprema a raffiche, IRA di Lendmar (#358)", () => {
     run(fighters, ctx, ticks(ira.windupMs + ira.waves * ira.waveEveryMs + 1500));
     const puddles = ctx.projectiles?.puddles ?? [];
     assert.ok(puddles.length > 0 && puddles.length <= SLICK.max, `${puddles.length} pozze`);
-    assert.ok(puddles.every((q) => stage.solids.some((s) => s.y === q.y)), "sopra un blocco");
+    const surfaces = [...stage.solids, ...stage.platforms].map((s) => s.y);
+    assert.ok(puddles.every((q) => surfaces.includes(q.y)), "sopra un blocco o una piattaforma");
     run(fighters, ctx, ticks(SLICK.lifeMs));
     assert.equal(ctx.projectiles?.puddles.length, 0);
   });
@@ -617,5 +618,74 @@ describe("l'aquila dell'Elefante di Elvedeo", () => {
     assert.ok(b.x > x0 + 100, "lo ha portato avanti");
     assert.ok(b.vx > 0, "e lo lancia avanti");
     assert.equal(eagles(ctx)[0]?.carryId, undefined, "l'ha mollato");
+  });
+});
+
+describe("suprema ritoccate (Nicola, 11/11/2026)", () => {
+  const start = (f: Fighter, fighters: Fighter[], ctx: PhysicsContext) => {
+    f.supreme = SUPREME.max;
+    press(f, { supreme: true });
+    run(fighters, ctx, 1);
+    press(f, {});
+  };
+
+  it("l'Aura nera di Egiainuso risucchia chi è vicino, lo bagna e alla fine lo scaraventa via", () => {
+    const aura = getCharacter("egiainuso").supreme as SpinSupreme;
+    assert.equal(aura.type, "spin");
+    const { ctx, fighters, a: egia, b } = setup(150);
+    egia.characterId = "egiainuso";
+    start(egia, fighters, ctx);
+    const gap0 = b.x - egia.x;
+    run(fighters, ctx, ticks(aura.windupMs + 300));
+    assert.ok(b.x - egia.x < gap0 - 30, `tirato verso di lui (${Math.round(gap0)} -> ${Math.round(b.x - egia.x)} px)`);
+    run(fighters, ctx, ticks(aura.durationMs));
+    const hits = ofType(ctx.events, "hit").filter((h) => h.targetId === b.id && h.kind === "supreme");
+    assert.ok(hits.length >= 3, `preso più volte (${hits.length})`);
+    assert.ok(b.wetBy === egia.id && b.wetMs > 0, "bagnato come dallo Sputo");
+  });
+
+  it("l'Elefante di Elvedeo si gira quando cambi direzione", () => {
+    const { ctx, fighters, a: elv } = setup(400);
+    elv.characterId = "elvedeo";
+    const sp = getCharacter("elvedeo").supreme as SpinSupreme;
+    start(elv, fighters, ctx);
+    run(fighters, ctx, ticks(sp.windupMs) + 2);
+    assert.equal(elv.facing, 1);
+    press(elv, { left: true });
+    run(fighters, ctx, 3);
+    assert.equal(elv.attack, "supreme");
+    assert.equal(elv.facing, -1, "girato a sinistra");
+  });
+
+  it("…COSA? è quasi istantanea e lascia una bomba dove era, che non lo prende", () => {
+    const cosa = getCharacter("marcomunista").supreme as RewindSupreme;
+    assert.ok(cosa.windupMs <= 100, `avvio ${cosa.windupMs} ms`);
+    const { ctx, fighters, a: marco, b } = setup(400);
+    marco.characterId = "marcomunista";
+    run(fighters, ctx, ticks(cosa.backMs) + 2); // si ricorda qui
+    marco.x = 250; // poi è altrove, e b gli corre dietro
+    b.x = 300;
+    run(fighters, ctx, 2);
+    const from = marco.x;
+    start(marco, fighters, ctx);
+    run(fighters, ctx, ticks(cosa.windupMs) + 1);
+    assert.ok(Math.abs(marco.x - from) > 150, "tornato indietro");
+    const before = b.percent;
+    run(fighters, ctx, ticks(cosa.bombFuseMs!) + 2);
+    const boom = ofType(ctx.events, "gear").find((e) => e.phase === "boom");
+    assert.ok(boom && Math.abs(boom.x - from) < 5, "scoppia dove era");
+    assert.ok(b.percent > before, `b preso dalla bomba (${before} -> ${b.percent}%)`);
+    assert.ok(!ofType(ctx.events, "hit").some((h) => h.targetId === marco.id), "lui no");
+  });
+
+  it("l'IRA di Lendmar colpisce coi numeri suoi, più forti della speciale", () => {
+    const ira = getCharacter("lendmar").supreme as BurstSupreme;
+    assert.ok(ira.hit && ira.hit.damage > (getCharacter("lendmar").specials!.neutral as { damage: number }).damage);
+    const { ctx, fighters, a: lendmar, b } = setup(10);
+    lendmar.characterId = "lendmar";
+    start(lendmar, fighters, ctx);
+    run(fighters, ctx, ticks(ira.windupMs + ira.waves * ira.waveEveryMs + 1500));
+    const hits = ofType(ctx.events, "hit").filter((h) => h.targetId === b.id);
+    assert.ok(hits.length > 0 && hits.every((h) => h.damage >= ira.hit!.damage), hits.map((h) => h.damage).join(","));
   });
 });

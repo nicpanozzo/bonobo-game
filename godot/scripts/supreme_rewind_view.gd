@@ -47,16 +47,43 @@ func _process(_delta: float) -> void:
 	if _runs.is_empty():
 		return
 	var now := _now()
-	_runs = _runs.filter(func(r): return now - float(r.t0) < maxf(float(r.sp.windupMs) + WAVE_MS, SHOUT_MS))
+	_runs = _runs.filter(func(r): return now - float(r.t0) < maxf(float(r.sp.windupMs) + maxf(WAVE_MS, _fuse(r.sp)), SHOUT_MS))
+	for r in _runs: # la bomba resta dove era prima di sparire: l'ultimo punto visto mentre caricava
+		if now - float(r.t0) < float(r.sp.windupMs) and where.is_valid():
+			var feet: Variant = where.call(r.id)
+			if feet != null:
+				r["bomb"] = feet
 	queue_redraw()
+
+
+static func _fuse(sp: Dictionary) -> float:
+	return float(sp.get("bombFuseMs", 0))
 
 
 func _draw() -> void:
 	var now := _now()
 	for r in _runs:
+		var ms := now - float(r.t0)
 		var feet: Variant = where.call(r.id) if where.is_valid() else null
 		if feet != null:
-			_draw_rewind(r.sp, now - float(r.t0), feet)
+			_draw_rewind(r.sp, ms, feet)
+		var lit := ms - float(r.sp.windupMs)
+		if r.has("bomb") and lit >= 0.0 and lit < _fuse(r.sp):
+			_draw_bomb(r.bomb, lit / _fuse(r.sp), ms)
+
+
+# La bomba lasciata da …COSA?: palla nera con la miccia che si accorcia e lampeggia sempre più in fretta.
+# Lo scoppio lo disegna gear_view (evento gear "boom" del server)
+func _draw_bomb(feet: Vector2, burnt: float, ms: float) -> void:
+	var r := 16.0
+	var c := feet - Vector2(0, r)
+	draw_circle(c, r, INK)
+	draw_circle(c + Vector2(-5, -5), 4.0, Color(1, 1, 1, 0.35))
+	var top := c + Vector2(6, -r + 2)
+	var tip := top + Vector2(8, -14) * (1.0 - burnt) # la miccia si accorcia
+	draw_line(top, tip, SEPIA, 3.0)
+	var blink := 0.5 + 0.5 * sin(ms * (0.02 + 0.06 * burnt))
+	draw_circle(tip, 4.0 + 2.0 * blink, Color(1.0, 0.55 + 0.4 * blink, 0.1))
 
 
 func _draw_rewind(sp: Dictionary, ms: float, feet: Vector2) -> void:

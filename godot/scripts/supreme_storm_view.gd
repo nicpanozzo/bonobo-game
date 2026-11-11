@@ -9,8 +9,13 @@ const INSULT_MS := 1200.0 # una nuvoletta ogni tanto
 const WOOD := Color(0.55, 0.35, 0.17)
 const WOOD_DARK := Color(0.3, 0.18, 0.08)
 const RAIN := Color(0.75, 0.85, 1.0, 0.45)
+const SEA := Color(0.2, 0.45, 0.75)
+const FOAM := Color(0.9, 0.96, 1.0)
+const SURGE_MS := 600.0 # il maroso finale attraversa l'arena in tanto, a cavallo della fine del rollio
+const SURGE_PX := 1600.0 # quanta strada fa
 
 var where: Callable # id giocatore -> Vector2 dei piedi, o null; lo imposta world_view
+var facing: Callable # id giocatore -> 1 o -1, dove guarda: il maroso finale va da quella parte; lo imposta world_view
 var fighter_height := 96.0 # da game.fighter, lo imposta world_view
 var fixed_now := -1.0 # per i test: se >= 0 è l'orologio in ms al posto di quello vero
 var _runs: Array = [] # [{ id, sp, t0 }]
@@ -76,7 +81,7 @@ func _process(_delta: float) -> void:
 	if _runs.is_empty():
 		return
 	var now := _now()
-	_runs = _runs.filter(func(r): return now - float(r.t0) < total_ms(r.sp) + 200.0)
+	_runs = _runs.filter(func(r): return now - float(r.t0) < total_ms(r.sp) + SURGE_MS)
 	queue_redraw()
 
 
@@ -86,6 +91,33 @@ func _draw() -> void:
 		var feet: Variant = where.call(r.id) if where.is_valid() else null
 		if feet != null:
 			_draw_storm(r.sp, now - float(r.t0), feet)
+			if r.sp.get("finisher") is Dictionary:
+				var dir := int(facing.call(r.id)) if facing.is_valid() else 1
+				_draw_surge(now - float(r.t0) - total_ms(r.sp), feet, dir)
+
+
+# Il maroso finale: un'onda alta che parte da lui e corre verso dove guarda, a metà strada quando colpisce (il server)
+func _draw_surge(t: float, feet: Vector2, dir: int) -> void:
+	var k := (t + SURGE_MS / 2.0) / SURGE_MS
+	if k < 0.0 or k > 1.0:
+		return
+	var front := feet.x + dir * SURGE_PX * (k - 0.25)
+	var h := fighter_height * 2.2 * sin(k * PI)
+	if h < 6.0: # troppo bassa: niente poligono (si triangolerebbe male)
+		return
+	var back := front - dir * 500.0
+	var pts := PackedVector2Array([Vector2(back, feet.y + 20.0)])
+	for i in range(1, 13):
+		var u := i / 12.0
+		var x := lerpf(back, front, u)
+		pts.append(Vector2(x, feet.y - h * pow(u, 1.6) + 20.0))
+	pts.append(Vector2(front, feet.y + 20.0))
+	var a := sin(k * PI)
+	draw_colored_polygon(pts, Color(SEA, 0.7 * a))
+	var crest := PackedVector2Array()
+	for i in range(8, 13):
+		crest.append(pts[i])
+	draw_polyline(crest, Color(FOAM, 0.9 * a), 8.0, true)
 
 
 func _draw_storm(sp: Dictionary, ms: float, feet: Vector2) -> void:

@@ -44,7 +44,7 @@ import { cancelSpecial, specialing } from "./specials";
 import { endDash } from "./dash";
 import { collideWithStage, liftOutOfZone, loseStock, outOfBlastZone, respawn } from "./stage";
 export { platformSurfaceY } from "./stage";
-import { burstFire, eagleFire, stepRewinds, stepStorms, supreming, tickSupreme, tryComboSupreme } from "./supreme";
+import { burstFire, eagleFire, stepPulls, stepRewinds, stepStorms, supreming, tickSupreme, tryComboSupreme } from "./supreme";
 import { landTech, tickTech } from "./tech";
 import { stageAt } from "./timed";
 import { freezePrize, stepStations, useStation } from "./stations";
@@ -226,6 +226,7 @@ export function stepWorld(fighters: Fighter[], dtMs: number, ctx: PhysicsContext
   stepProjectiles(fighters, dtMs, ctx);
   stepRewinds(fighters, dtMs, ctx); // …COSA? di Marcomunista (#358)
   stepStorms(fighters, dtMs, ctx); // Tempesta! di Capt. OrsoBlu (#547)
+  stepPulls(fighters, dtMs, ctx); // l'Aura nera di Egiainuso risucchia
   resolveGrabs(fighters, ctx); // dopo i colpi: un colpo nello stesso tick vince sulla presa
   resolveHazards(fighters, ctx);
   applyJets(fighters, ctx, dtMs); // getti d'acqua (#253)
