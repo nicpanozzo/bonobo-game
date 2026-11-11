@@ -297,7 +297,8 @@ export function launch(target: Fighter, attacker: Fighter, kind: AttackKind, x: 
   const boarded = target.boardedMs > 0 && target.boardedBy === attacker.id && ARREMBAGGIO.kinds.includes(kind);
   const wet = target.wetMs > 0 && target.wetBy === attacker.id && kind.startsWith("throw"); // lo Scivolone di Egiainuso
   target.boardedMs = 0;
-  const step = hit ? undefined : comboHit(attacker, kind); // il passo di una sua combo (#594): angolo e knockback ritoccati
+  const combo = comboHit(attacker, kind); // il passo di una sua combo (#594): la catena va avanti anche coi colpi che hanno numeri loro (hit)
+  const step = hit ? undefined : combo; // angolo e knockback ritoccati
   const knockback = (step?.knockbackMult ?? 1) * ((spec.baseKnockback + spec.knockbackGrowth * target.percent) / characterStats(target.characterId).weight) * (boarded ? ARREMBAGGIO.knockbackMult : 1) * (wet ? SCIVOLONE.throwMult : 1) * genreKnockback(genreAt(ctx.stage, ctx.timeMs ?? 0, ctx.padsMs)) * gearKnockbackMult(target); // E11; giganti e mini (gear.ts); col metal del Palco si vola più lontano
   const angle = ((kind === "supreme" ? snatch(attacker, target, spec.angleDeg) : (step?.angleDeg ?? spec.angleDeg)) * Math.PI) / 180; // snaack di Lampione (#358) tira e schiaccia
   target.vx = dir * Math.cos(angle) * knockback;

@@ -12392,6 +12392,36 @@
         "name": "Arrembaggio",
         "text": "Tutti a bordo! lo tira a te: subito jab, pesante o Avanti tutta! e vola più lontano"
       },
+      "combos": [
+        {
+          "name": "Uomo in mare",
+          "steps": [
+            {
+              "move": "heavy",
+              "windowMs": 400
+            },
+            {
+              "move": "specialNeutral",
+              "windowMs": 400
+            },
+            {
+              "move": "light"
+            }
+          ]
+        },
+        {
+          "name": "Issa la vela",
+          "steps": [
+            {
+              "move": "lightUp",
+              "windowMs": 400
+            },
+            {
+              "move": "lightUp"
+            }
+          ]
+        }
+      ],
       "attacks": {
         "light": {
           "range": 67,
@@ -15182,6 +15212,35 @@
         "name": "Capra e cavaliere",
         "text": "Incornata: se prende, il Piccione parte da solo e insegue chi vola via"
       },
+      "combos": [
+        {
+          "name": "Zoccolata",
+          "steps": [
+            {
+              "move": "heavyAir",
+              "windowMs": 400,
+              "angleDeg": 2,
+              "knockbackMult": 0.9
+            },
+            {
+              "move": "light"
+            }
+          ]
+        },
+        {
+          "name": "Salto della capra",
+          "steps": [
+            {
+              "move": "light",
+              "windowMs": 400,
+              "angleDeg": 65
+            },
+            {
+              "move": "lightAir"
+            }
+          ]
+        }
+      ],
       "pigeonChase": true,
       "stats": {
         "speed": 0.95,
@@ -15792,6 +15851,44 @@
         "name": "Scivolone",
         "text": "Sputo, poi presa: chi è bagnato si afferra da più lontano e il lancio lo fa scivolare più in là"
       },
+      "combos": [
+        {
+          "name": "Rincorsa",
+          "steps": [
+            {
+              "move": "light",
+              "windowMs": 400
+            },
+            {
+              "move": "dashAttack"
+            }
+          ]
+        },
+        {
+          "name": "Travolgente",
+          "steps": [
+            {
+              "move": "heavy",
+              "windowMs": 400
+            },
+            {
+              "move": "dashAttack"
+            }
+          ]
+        },
+        {
+          "name": "Tuffo e carica",
+          "steps": [
+            {
+              "move": "lightAir",
+              "windowMs": 400
+            },
+            {
+              "move": "dashAttack"
+            }
+          ]
+        }
+      ],
       "spitWet": true,
       "specials": {
         "neutral": {
@@ -17237,6 +17334,32 @@
         "name": "Groove",
         "text": "colpisci a tempo con la musica, quando l'anello giallo pulsa sotto di te: il colpo fa più danno"
       },
+      "combos": [
+        {
+          "name": "Giro di basso",
+          "steps": [
+            {
+              "move": "lightUp",
+              "windowMs": 400
+            },
+            {
+              "move": "lightUp"
+            }
+          ]
+        },
+        {
+          "name": "Slap",
+          "steps": [
+            {
+              "move": "heavyUp",
+              "windowMs": 400
+            },
+            {
+              "move": "lightUp"
+            }
+          ]
+        }
+      ],
       "groove": true,
       "sprite": {
         "dir": "assets/characters/bradipo",
@@ -18403,6 +18526,33 @@
         "name": "Piano quinquennale",
         "text": "lancia in alto e salta: ogni colpo in aria che prende ti tiene su, fino a tre di fila"
       },
+      "combos": [
+        {
+          "name": "Slancio rivoluzionario",
+          "steps": [
+            {
+              "move": "heavyUp",
+              "windowMs": 400
+            },
+            {
+              "move": "recovery"
+            }
+          ]
+        },
+        {
+          "name": "Falce e martello",
+          "steps": [
+            {
+              "move": "light",
+              "windowMs": 400,
+              "angleDeg": 65
+            },
+            {
+              "move": "lightAir"
+            }
+          ]
+        }
+      ],
       "airPop": true,
       "sprite": {
         "dir": "assets/characters/marcomunista",

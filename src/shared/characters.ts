@@ -599,6 +599,11 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     name: "Capt. OrsoBlu",
     crews: ["cuamm", "lolhardcore"],
     combo: { name: "Arrembaggio", text: "Tutti a bordo! lo tira a te: subito jab, pesante o Avanti tutta! e vola più lontano" },
+    // Combo sulle mosse disegnate (#594), provate da npm run combo-lab: docs/combo/orsoblu.md
+    combos: [
+      { name: "Uomo in mare", steps: [{ move: "heavy", windowMs: 400 }, { move: "specialNeutral", windowMs: 400 }, { move: "light" }] }, // lo butta fuori bordo, lo ripesca con l'ancora e lo accoglie col pugno
+      { name: "Issa la vela", steps: [{ move: "lightUp", windowMs: 400 }, { move: "lightUp" }] }, // due pugni in su di fila
+    ],
     // Zone dei colpi sul disegno di OB-B2 e OB-B4 (tools/sprite/zone_dei_colpi.py)
     attacks: {
       light: { range: 67, height: 30, boxX: 1, boxY: -75 },
@@ -824,6 +829,11 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     name: "Elvedeo",
     crews: ["cuamm"],
     combo: { name: "Capra e cavaliere", text: "Incornata: se prende, il Piccione parte da solo e insegue chi vola via" },
+    // Combo sulle mosse disegnate (#594), provate da npm run combo-lab: docs/combo/elvedeo.md
+    combos: [
+      { name: "Zoccolata", steps: [{ move: "heavyAir", windowMs: 400, angleDeg: 2, knockbackMult: 0.9 }, { move: "light" }] }, // gli zoccoli dall'alto lo piantano a terra davanti alla capra
+      { name: "Salto della capra", steps: [{ move: "light", windowMs: 400, angleDeg: 65 }, { move: "lightAir" }] }, // lo alza e gli salta dietro
+    ],
     pigeonChase: true,
     // con la capra è più grosso e pesante, ma la capra corre e salta bene
     stats: { weight: 1.15, speed: 0.95, airSpeed: 0.9, jump: 0.95 },
@@ -916,6 +926,12 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     name: "Egiainuso",
     crews: ["lolhardcore"],
     combo: { name: "Scivolone", text: "Sputo, poi presa: chi è bagnato si afferra da più lontano e il lancio lo fa scivolare più in là" },
+    // Combo sulle mosse disegnate (#594), provate da npm run combo-lab: docs/combo/egiainuso.md
+    combos: [
+      { name: "Rincorsa", steps: [{ move: "light", windowMs: 400 }, { move: "dashAttack" }] },
+      { name: "Travolgente", steps: [{ move: "heavy", windowMs: 400 }, { move: "dashAttack" }] }, // a percentuali basse
+      { name: "Tuffo e carica", steps: [{ move: "lightAir", windowMs: 400 }, { move: "dashAttack" }] },
+    ],
     spitWet: true,
     // TODO community: statistiche e mosse speciali di base, da decidere con @Marcomunista
     specials: {
@@ -1043,6 +1059,11 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     quotes: { supreme: "DEMACIAA!" }, // il fumetto della suprema, con la sua voce (voice/supreme.ogg)
     crews: ["lolhardcore"],
     combo: { name: "Groove", text: "colpisci a tempo con la musica, quando l'anello giallo pulsa sotto di te: il colpo fa più danno" },
+    // Combo sulle mosse disegnate (#594), provate da npm run combo-lab: docs/combo/bradipo.md
+    combos: [
+      { name: "Giro di basso", steps: [{ move: "lightUp", windowMs: 400 }, { move: "lightUp" }] }, // due note in su di fila
+      { name: "Slap", steps: [{ move: "heavyUp", windowMs: 400 }, { move: "lightUp" }] }, // a percentuali basse
+    ],
     groove: true,
     // Dal video di tutte le mosse fatto da Nicola con Google Flow (tools/sprite/bradipo_dal_video.py): la Bassline col
     // basso e DEMACIAAA che gira in piedi come la E di Garen, brandendo il basso. Era la skin "Bassista": dal #506 è
@@ -1171,6 +1192,11 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     quotes: { taunt: "Viva il comunismo!" }, // il suo tormentone; la scheda e la #352 non dicono altro
     crews: ["cuamm", "cologna"],
     combo: { name: "Piano quinquennale", text: "lancia in alto e salta: ogni colpo in aria che prende ti tiene su, fino a tre di fila" },
+    // Combo sulle mosse disegnate (#594), provate da npm run combo-lab: docs/combo/marcomunista.md
+    combos: [
+      { name: "Slancio rivoluzionario", steps: [{ move: "heavyUp", windowMs: 400 }, { move: "recovery" }] }, // lo lancia e gli vola dietro
+      { name: "Falce e martello", steps: [{ move: "light", windowMs: 400, angleDeg: 65 }, { move: "lightAir" }] }, // il leggero lo alza, il colpo in aria lo abbatte
+    ],
     airPop: true,
     // Animato dalla GIF di arti marziali di Nicola (tools/sprite/marcomunista_dalla_gif.py), con l'energia verde come scia;
     // corsa e scatto restano le pose del suo foglio (#352), allargate al fotogramma nuovo
