@@ -10,7 +10,7 @@ var _out := "user://screenshots"
 var _game: Dictionary
 var _world: Node2D # nella partita finta: riceve uno snapshot a ogni frame
 var _hud: Control
-const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre", "lobby_regole", "musica", "tetris", "pacman", "bassanese", "bologna_piazza", "bologna_torri", "bologna_crollo", "bologna_zuffa", "oggetti", "oggetti_categorie", "oggetti_armi", "oggetti_pesanti", "oggetti_orsoblu", "prepartita_attesa", "prepartita_vs", "prepartita_conto", "fine_partita", "sala", "sala_conto", "sala_galleria", "sala_via", "sala_basket", "sala_scacchi", "sala_computer", "sala_regole", "sala_solo", "sala_pianta", "fabbrica", "diluvio", "palco_metal", "palco_reggae", "palco_techno", "orsoblu_mosse", "party_tabellone", "party_voto"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
+const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre", "lobby_regole", "musica", "tetris", "pacman", "bassanese", "bologna_piazza", "bologna_torri", "bologna_crollo", "bologna_zuffa", "oggetti", "oggetti_categorie", "oggetti_armi", "oggetti_pesanti", "oggetti_orsoblu", "prepartita_attesa", "prepartita_vs", "prepartita_conto", "fine_partita", "sala", "sala_conto", "sala_galleria", "sala_via", "sala_basket", "sala_scacchi", "sala_computer", "sala_regole", "sala_solo", "sala_pianta", "fabbrica", "diluvio", "palco_metal", "palco_reggae", "palco_techno", "orsoblu_mosse", "party_tabellone", "party_voto", "combo_nonnagina", "combo_giovannifrana"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
 var _index := -1
 var _frame := 0
 var _failed := false
@@ -727,3 +727,30 @@ func _add_hall() -> void:
 	_hall_hud.setup(_game)
 	_hall_hud.my_id = "p0"
 	_hall_hud.room_code = "ci"
+
+
+# La lista delle mosse dal menu di pausa, scorsa fino alle combo del personaggio (#594), coi tasti di tastiera di base
+func _combo_nonnagina() -> void:
+	_combo_list("nonnagina")
+
+
+func _combo_giovannifrana() -> void:
+	_combo_list("giovannifrana")
+
+
+func _combo_list(id: String) -> void:
+	var MoveList = load("res://scripts/move_list.gd")
+	var settings := Settings.new({"master": 0.8, "sfx": 0.7, "music": 0.35}, "user://screenshot_combo.cfg")
+	var moves: Control = MoveList.new()
+	root.add_child(moves)
+	moves.setup(_game, id, MoveList.keys_for(settings, false))
+	var scroll: ScrollContainer = moves.find_children("*", "ScrollContainer", true, false)[0]
+	_scroll_to_combo.call_deferred(scroll)
+
+
+func _scroll_to_combo(scroll: ScrollContainer) -> void:
+	await root.get_tree().process_frame
+	for l in scroll.find_children("*", "Label", true, false):
+		if (l as Label).text == "COMBO":
+			scroll.scroll_vertical = int(l.position.y) - 8
+			return
