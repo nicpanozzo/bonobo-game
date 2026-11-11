@@ -48,11 +48,20 @@ func test_combo_su_misura() -> void:
 	var plain := _all(MoveList.rows(game, "bonobot", {}))
 	runner.check(plain.filter(func(r): return r[1] == "combo").is_empty(), "chi non ha una combo sua non ne mostra")
 
+func test_combo_nella_lista() -> void:
+	var game := _game()
+	game.characters["prova"] = {"name": "Prova", "combos": [{"name": "Sbrocco", "text": "rabbia", "steps": [{"move": "lightDown"}, {"move": "specialSide"}]}]}
+	var sections := MoveList.rows(game, "prova", {"down": "S", "light": "J", "left": "A", "right": "D", "special": "U"})
+	runner.check(sections.size() == 4 and sections[2][0] == "Combo", "la sezione Combo dopo le speciali: %s" % [sections])
+	var row: Array = sections[2][1][0]
+	runner.check(row[0] == "Sbrocco" and row[1] == "S+J  →  A/D+U" and row[2] == "rabbia", "nome, tasti in fila e testo: %s" % [row])
+
+
 func test_ogni_personaggio_ha_la_sua_lista() -> void:
 	var game := _game()
 	for id in game.characters:
 		var sections := MoveList.rows(game, id, {})
-		runner.check(sections.size() == 3, "tre sezioni per %s" % id)
+		runner.check(sections.size() == (4 if game.characters[id].get("combos", []).size() > 0 else 3), "sezioni per %s" % id)
 		runner.check(sections[1][1].size() >= 2, "%s ha speciali e suprema" % id)
 	runner.check(MoveList.rows(game, "non-esiste", {}).size() == 3, "personaggio sconosciuto: quello base")
 
