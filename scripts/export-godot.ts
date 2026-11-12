@@ -8,7 +8,7 @@ import { basename, dirname, extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { SpriteFolderSpec } from "../src/shared/characters";
 import { CHARACTERS, CREWS, DEFAULT_CHARACTER_ID, isSpriteFolder, resolvedAnimations, SPECIAL_KINDS, SPECIAL_SLOTS, specialAttackSpec, specialsFor, spriteStatePath, supremeAttackSpec } from "../src/shared/characters";
-import { ANCHOR, ATTACKS, AUDIO, BONG, CAMERA, FUNGHI, FUNGO, GEAR, HALL, COLORS, EFFECTS, FIGHTER, INPUT, ITEM_AMOUNTS, ITEM_RULES, LEDGE, BELT, GENRE, MICELIO, NET, PAD, POWERUP, PREMATCH, PROTOCOL_VERSION, RUMBLE, SHIELD, SPORE, SUPREME_SPEEDS, TEAM_COLORS, TEAM_NAMES, VOICE, WORLD } from "../src/shared/constants";
+import { ANCHOR, FATTANZA, ATTACKS, AUDIO, BONG, CAMERA, FUNGHI, FUNGO, GEAR, HALL, COLORS, EFFECTS, FIGHTER, INPUT, ITEM_AMOUNTS, ITEM_RULES, LEDGE, BELT, GENRE, MICELIO, NET, PAD, POWERUP, PREMATCH, PROTOCOL_VERSION, RUMBLE, SHIELD, SPORE, SUPREME_SPEEDS, TEAM_COLORS, TEAM_NAMES, VOICE, WORLD } from "../src/shared/constants";
 import { RECONNECT, RECONNECT_HOLD_MS } from "../src/shared/constants";
 import { COLORS_COLORBLIND, MAX_TEAMS, TEAM_COLORS_COLORBLIND } from "../src/shared/constants";
 import { BASSANESE, PACMAN, TETRIS, TRAINING } from "../src/shared/constants";
@@ -267,6 +267,7 @@ const data = {
   smashCharge: SMASH_CHARGE, // colpi caricati: il pesante a terra tenuto, per la predizione (E17)
   recovery: RECOVERY, // spinta del recupero (#11), per la predizione (E17)
   anchor: ANCHOR, // l'ancora di Capt. OrsoBlu (#547): dove le mani tengono la catena, lancio per la predizione
+  fattanza: FATTANZA, // la Fattanza di Marcomunista: quante tacche ha la barra
   ledge: { hangOffsetY: LEDGE.hangOffsetY }, // bordo del palco (#110): dove sta la mano di chi è appeso
   shield: { maxHp: SHIELD.maxHp }, // scudo (#109): la bolla è grande in proporzione ai punti rimasti
   supreme: { max: SUPREME.max }, // barra della suprema (#101): piena a questo valore

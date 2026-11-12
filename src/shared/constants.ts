@@ -193,6 +193,28 @@ export const PIANO_QUINQUENNALE = {
   kinds: ["lightAir", "heavyAir"] as AttackKind[],
 };
 
+// La Fattanza di Marcomunista (Nicola, 12/11/2026): più è fatto più fluttua. La barra va da 0 a perLevel * levels;
+// ogni livello pieno abbassa la gravità e rafforza i colpi in aria, ma a terra è più lento. A Strafatto (livello pieno)
+// tenendo Salto fluttua quanto vuole per strafattoMs, poi crolla: barra a zero e bottaMs barcollando, colpibile
+export const FATTANZA = {
+  perLevel: 100, // punti di un livello
+  levels: 3, // livelli: 0 Lucido, 1 Rilassato, 2 Fatto, 3 Strafatto
+  airGain: 22, // punti al secondo stando in aria
+  airHitGain: 18, // punti per un colpo in aria che prende
+  counterGain: 100, // punti per un Rolling riuscito
+  tauntGain: 60, // punti per la provocazione (il tai chi): tanti, ma lo lascia scoperto
+  groundGraceMs: 2000, // ms a terra prima che la barra cominci a scendere
+  groundDrain: 30, // punti al secondo persi a terra dopo groundGraceMs
+  bigHit: 15, // percentuale di un colpo subito che fa perdere un livello
+  gravityMult: [1, 0.85, 0.7, 0.55], // frazione della gravità per livello
+  groundSpeedMult: [1, 0.95, 0.9, 0.85], // frazione della velocità a terra per livello
+  airDamageMult: [1, 1.1, 1.1, 1.15], // moltiplicatore del danno dei colpi dati in aria per livello
+  floatMs: [600, 1200, 2000, 2000], // ms di fluttuata per volo, per livello (a Strafatto non finisce)
+  floatFallSpeed: 85, // pixel/s: velocità massima di caduta fluttuando col cappello
+  strafattoMs: 4000, // ms a Strafatto prima della botta
+  bottaMs: 500, // ms barcollando dopo la botta: fermo e colpibile
+};
+
 // Groove, la combo di Bradipo Giallo (#557): il bassista picchia a tempo. Un suo colpo che prende vicino a un battito
 // della musica dell'arena (StageSpec.music.bpm, sennò AUDIO.musicBpm) fa più danno; Godot fa pulsare il battito sotto di lui
 export const GROOVE = {

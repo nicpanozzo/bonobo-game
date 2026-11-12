@@ -98,6 +98,11 @@ export interface Fighter extends PlayerState {
   airPops: number; // colpi in aria che l'hanno già rialzato da quando ha lasciato terra (Marcomunista, #557)
   wetBy?: string; // chi l'ha bagnato con lo Sputo (lo Scivolone di Egiainuso, #557)
   wetMs: number; // ms in cui resta bagnato
+  fattanza: number; // punti della Fattanza di Marcomunista (FATTANZA), da 0 a perLevel * levels
+  strafattoMs: number; // ms di Strafatto che restano, 0 se non lo è
+  groundMs: number; // ms passati a terra di fila (la Fattanza scende dopo groundGraceMs)
+  floatMs: number; // ms di fluttuata già usati in questo volo
+  floating: boolean; // fluttua col cappello in questo tick
   pacDir?: { x: number; y: number }; // da Pac-Man (#427): dove si va, una sola tra x e y è -1 o 1
   pacPellets?: number; // da Pac-Man: palline mangiate in questa forma (piccola 1, grande PACMAN.bigPelletValue), accelerano
   brownieNext?: string; // il brownie spaziale mangiato: l'effetto che salirà finita l'attesa (gear.ts)
@@ -293,6 +298,11 @@ export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
     airPops: 0,
     wetBy: undefined,
     wetMs: 0,
+    fattanza: 0,
+    strafattoMs: 0,
+    groundMs: 0,
+    floatMs: 0,
+    floating: false,
     anchor: undefined, // esplicito: resetForMatch copia anche questo e toglie l'ancora rimasta
   };
 }

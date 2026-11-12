@@ -3,10 +3,11 @@
 // girare in locale (allenamento, predizione) e un porting su un altro motore parte da qui.
 
 import { getCharacter, skinFor } from "./characters";
-import { COLORS, FIGHTER, GAME_SPEED, ITEM_AMOUNTS, MATCH_RESTART_MS, MAX_PLAYERS_PER_ROOM, RECONNECT_RESUME_INVULNERABLE_MS, TEAM_COLORS, TRAINING } from "./constants";
+import { COLORS, FATTANZA, FIGHTER, GAME_SPEED, ITEM_AMOUNTS, MATCH_RESTART_MS, MAX_PLAYERS_PER_ROOM, RECONNECT_RESUME_INVULNERABLE_MS, TEAM_COLORS, TRAINING } from "./constants";
 import { bufferPresses, createFighter, emptyInput, resetForMatch, stepWorld, type Fighter, type PhysicsContext } from "./physics";
 import { createItemWorld, handleItemInput, itemStates, resetItems, stepItems, type ItemWorld } from "./physics/items";
 import { companionState } from "./physics/companion";
+import { hasFattanza } from "./physics/fattanza";
 import { stageAt, stageIsTimed } from "./physics/timed";
 import { tetrisState } from "./physics/arcade";
 import { bassaneseState } from "./physics/bassanese";
@@ -363,6 +364,8 @@ export class Match {
         ...(f.inputSeq >= 0 && { predict: predictionState(f) }),
         ...(f.pet && f.pet.koMs <= 0 && { companion: companionState(f)! }),
         ...(f.station !== undefined && { station: f.station }), // #433
+        ...(hasFattanza(f) && { fattanza: Math.round((f.fattanza / FATTANZA.perLevel) * 100) / 100 }), // Marcomunista
+        ...(f.floating && { floating: true }),
         ...(f.wetMs > 0 && { wet: true }), // lo Scivolone di Egiainuso (#557)
         ...(f.anchor && { anchor: { x: Math.round(f.anchor.x), y: Math.round(f.anchor.y), phase: f.anchor.phase } }), // #547
       });

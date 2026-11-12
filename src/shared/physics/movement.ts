@@ -1,8 +1,9 @@
 // Corsa, controllo in aria, salti, caduta veloce e gravità.
 
 import { characterStats } from "../characters";
-import { ATTACKS, BONG, DASH, DODGE, FIGHTER, FLAG, FUNGO, HITSTUN_AIR_DRAG, POWERUP, RECOVERY, SLICK, SPORE } from "../constants";
+import { ATTACKS, BONG, DASH, DODGE, FATTANZA, FIGHTER, FLAG, FUNGO, HITSTUN_AIR_DRAG, POWERUP, RECOVERY, SLICK, SPORE } from "../constants";
 import { anchorSpec, throwAnchor } from "./anchor";
+import { addFattanza, fattanzaGravityMult, fattanzaGroundSpeedMult } from "./fattanza";
 import { attackSpecFor, startAttack } from "./attacks";
 import { endDash, stepDash } from "./dash";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
@@ -58,7 +59,7 @@ export function applyControls(f: Fighter, dt: number, ctx: PhysicsContext): void
     return;
   }
   const stats = characterStats(f.characterId);
-  const speed = (f.carrier ? FLAG.carrierSpeed : 1) * (f.powerup === "fiore" ? POWERUP.speedMult : f.powerup === "spore" ? SPORE.speedMult : f.powerup === "veleno" ? FUNGO.slowMult : gearSpeedMult(f)) * rideSpeedMult(f); // pesanti e cavalcature (ride.ts); caffè, moka, gigante e mini (gear.ts); la bandiera pesa, il fiore rilassa (#231), le spore rallentano (#358), il veleno del fungo di Teemo (#419)
+  const speed = (f.carrier ? FLAG.carrierSpeed : 1) * (f.powerup === "fiore" ? POWERUP.speedMult : f.powerup === "spore" ? SPORE.speedMult : f.powerup === "veleno" ? FUNGO.slowMult : gearSpeedMult(f)) * rideSpeedMult(f) * fattanzaGroundSpeedMult(f); // pesanti e cavalcature (ride.ts); caffè, moka, gigante e mini (gear.ts); la bandiera pesa, il fiore rilassa (#231), le spore rallentano (#358), il veleno del fungo di Teemo (#419)
   // Durante un attacco da terra si resta fermi, in aria si mantiene lo slancio
   const dashSpeed = stepDash(f, dir, dt * 1000, ctx); // scatto e corsa (#199)
   if (f.onGround && dashSpeed !== null) {
@@ -115,7 +116,10 @@ export function applyControls(f: Fighter, dt: number, ctx: PhysicsContext): void
 
 
   // Provocazione: solo da fermi a terra, la usano voci e animazioni (#16)
-  if (pressed(f, "taunt") && f.onGround && !f.attack) ctx.events.push({ type: "taunt", id: f.id });
+  if (pressed(f, "taunt") && f.onGround && !f.attack) {
+    ctx.events.push({ type: "taunt", id: f.id });
+    addFattanza(f, FATTANZA.tauntGain); // il tai chi di Marcomunista
+  }
 }
 
 // Giù attraversa le piattaforme sottili (in aria cade anche più veloce, applyGravity). In aria basta premerlo;
@@ -221,6 +225,6 @@ export function applyGravity(f: Fighter, dt: number, mult = 1): void {
   const maxFall = fastFall ? FIGHTER.fastFallSpeed : FIGHTER.maxFallSpeed;
   // Fatti col bong si è più leggeri (#302), sempre di più finché non si soffia
   const high = f.powerup === "bong" ? BONG.gravityMult + (BONG.gravityMultMax - BONG.gravityMult) * (1 - f.powerupMs / BONG.highMs) : 1;
-  f.vy = Math.min(f.vy + FIGHTER.gravity * characterStats(f.characterId).gravity * high * mult * rideGravityMult(f) * dt, f.hitstun ? Infinity : maxFall);
+  f.vy = Math.min(f.vy + FIGHTER.gravity * characterStats(f.characterId).gravity * high * fattanzaGravityMult(f) * mult * rideGravityMult(f) * dt, f.hitstun ? Infinity : maxFall);
   if (fastFall && !f.onGround && f.vy > 0) f.vy = Math.max(f.vy, maxFall * 0.8);
 }

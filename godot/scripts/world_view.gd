@@ -48,6 +48,9 @@ var _sun := {} # la luce del sole o della luna di questo frame (#288), vuota nel
 var _high_overlay: ColorRect # lo schermo distorto di chi è fatto col bong (#302)
 var effects := true # scie e polvere (opzioni → Video), main.gd lo legge dalle preferenze
 var outlines := true # contorno uniforme dei lottatori (opzioni → Video → Luce e colori dell'arena, come post_fx.gd)
+const FATTANZA_LEAF := Color("#e4ff3a") # le foglie del cappello di Marcomunista
+const FATTANZA_LILAC := Color("#c9a7f0") # la sua energia, mai verde
+const FATTANZA_HAT := Color("#ff3fa4") # il cappello rosa fluo
 const OUTLINE_PX := 2.5 # spessore del contorno dei lottatori, in pixel di mondo: uguale per tutti gli sprite
 var _beams: Array = [] # [{ x, y, age, color }] raggi dei KO, dal punto di uscita verso il centro
 var _shards: Array = [] # [{ x, y, vx, vy, age, color }] schegge di uno scudo rotto (#109)
@@ -900,6 +903,12 @@ func on_event(e: Dictionary) -> void:
 			elif e.phase == "stun":
 				# Troppo fatto: stelline gialle sopra la testa, come uno stordito
 				_sparks.append({"x": e.x, "y": float(e.y) - float(game.fighter.height) * 1.1, "age": 0.0, "size": 30.0, "color": Color(1, 0.9, 0.4)})
+		"botta":
+			# Marcomunista crolla dopo lo Strafatto (FATTANZA): stelline lilla e la sua battuta
+			var pb: Variant = buffer.sample(e.id, Time.get_ticks_msec())
+			if pb != null:
+				_sparks.append({"x": pb.x, "y": float(pb.y) - float(game.fighter.height) * 1.1, "age": 0.0, "size": 30.0, "color": FATTANZA_LILAC})
+			_speech.say(e.id, "Ho fame...")
 		"counter":
 			# Contrattacco (E10): lampo azzurro grande dove para, così si capisce perché l'altro vola via
 			_sparks.append({"x": e.x, "y": e.y, "age": 0.0, "size": 46.0, "color": Color(0.55, 0.85, 1)})
@@ -2522,6 +2531,49 @@ func _draw_groove(p: Dictionary, height: float) -> void:
 
 
 # Scivolone di Egiainuso (#557): chi è bagnato dallo Sputo gocciola, gocce verdine che cadono dal corpo
+# La Fattanza di Marcomunista (FATTANZA in constants.ts): una barra a tre tacche sopra la testa, gialla come le
+# foglie del cappello; a Strafatto pulsa e gli girano attorno anelli di fumo lilla. Fluttuando, sopra la testa il
+# cappello aperto come un paracadute che ondeggia (provvisorio, finché non c'è la clip di Flow)
+func _draw_fattanza(p: Dictionary, now: float, height: float) -> void:
+	var level := float(p.get("fattanza", 0.0))
+	var levels := float(game.get("fattanza", {}).get("levels", 3))
+	var full := level >= levels
+	var top := Vector2(float(p.x), float(p.y) - height * 1.25)
+	var w := 42.0
+	var h := 6.0
+	var bar := Rect2(top.x - w / 2, top.y, w, h)
+	draw_rect(bar, Color(0, 0, 0, 0.55))
+	var fill := clampf(level / levels, 0.0, 1.0)
+	var col := FATTANZA_LEAF
+	if full:
+		col = FATTANZA_LEAF.lerp(FATTANZA_LILAC, 0.5 + 0.5 * sin(now / 120.0))
+	if fill > 0.0:
+		draw_rect(Rect2(bar.position, Vector2(w * fill, h)), col)
+	for k in range(1, int(levels)):
+		var x := bar.position.x + w * float(k) / levels
+		draw_line(Vector2(x, bar.position.y), Vector2(x, bar.end.y), Color(0, 0, 0, 0.8), 1.0)
+	if full and not Access.calm:
+		var offset := float(hash(p.id) % 1000) / 1000.0
+		for k in 4:
+			var life := fmod(now / 1400.0 + float(k) / 4.0 + offset, 1.0)
+			var pos := Vector2(float(p.x) + sin(now / 500.0 + k * 1.6) * height * 0.35, float(p.y) - height * (0.3 + 0.9 * life))
+			draw_arc(pos, 5.0 + life * 9.0, 0, TAU, 16, Color(FATTANZA_LILAC, 0.7 * (1.0 - life)), 2.0)
+	if p.get("floating", false):
+		var sway := sin(now / 260.0) * 0.18
+		var c := Vector2(float(p.x), float(p.y) - height * 1.05)
+		var pts := PackedVector2Array()
+		for k in 13:
+			var a := PI + PI * float(k) / 12.0 + sway
+			pts.append(c + Vector2(cos(a) * 30.0, sin(a) * 16.0))
+		draw_colored_polygon(pts, FATTANZA_HAT)
+		draw_polyline(pts, Color.BLACK, 2.0)
+		for k in 3:
+			var lx := c.x - 14.0 + 14.0 * k
+			draw_circle(Vector2(lx, c.y - 8.0), 3.0, FATTANZA_LEAF)
+		draw_line(c + Vector2(-26, 2), Vector2(float(p.x) - 8, float(p.y) - height * 0.85), Color.BLACK, 1.5)
+		draw_line(c + Vector2(26, 2), Vector2(float(p.x) + 8, float(p.y) - height * 0.85), Color.BLACK, 1.5)
+
+
 func _draw_wet(p: Dictionary, now: float, height: float) -> void:
 	var offset := float(hash(p.id) % 1000) / 1000.0
 	for k in 6:
@@ -3124,6 +3176,8 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 		_draw_groove(p, fh) # il battito del Groove di Bradipo (#557)
 	if p.get("wet", false):
 		_draw_wet(p, now, fh) # bagnato dallo Sputo di Egiainuso (#557)
+	if p.has("fattanza"):
+		_draw_fattanza(p, now, fh) # la barra a foglia e la fluttuata col cappello di Marcomunista
 	var charge := float(p.get("charge", 0.0))
 	if charge > 0.0:
 		_draw_charge(Vector2(p.x, p.y - fh / 2), charge, now)

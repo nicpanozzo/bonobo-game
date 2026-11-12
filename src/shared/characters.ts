@@ -480,6 +480,7 @@ export interface CharacterSpec {
   combo?: { name: string; text: string };
   combos?: ComboSpec[]; // catene di colpi sulle mosse che ha disegnate (#594, COMBO); le prova npm run combo-lab
   airPop?: boolean; // i suoi colpi in aria a segno lo rialzano (PIANO_QUINQUENNALE, Marcomunista)
+  fattanza?: boolean; // la barra della Fattanza: fluttua col cappello, gravità più bassa a ogni livello (FATTANZA, Marcomunista)
   groove?: boolean; // i suoi colpi a tempo con la musica fanno più danno (GROOVE, Bradipo Giallo)
   pigeonChase?: boolean; // l'Incornata che prende fa partire il Piccione verso chi vola via (Capra e cavaliere, Elvedeo)
   spitWet?: boolean; // il suo Sputo bagna chi prende: presa più lunga e lancio più forte (SCIVOLONE, Egiainuso)
@@ -1244,6 +1245,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       { name: "Sol dell'avvenire", text: "colpo in aria, pugno in su e via verso il sole col recupero", steps: [{ move: "lightAir", windowMs: 400 }, { move: "lightUp", windowMs: 400, holdMs: 450 }, { move: "recovery" }] },
     ],
     airPop: true,
+    fattanza: true, // il personaggio fatto (Nicola, 12/11/2026): physics/fattanza.ts
     // Animato dalla GIF di arti marziali di Nicola (tools/sprite/marcomunista_dalla_gif.py), con l'energia verde come scia;
     // corsa e scatto restano le pose del suo foglio (#352), allargate al fotogramma nuovo
     sprite: {

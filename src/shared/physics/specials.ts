@@ -3,8 +3,9 @@
 // Qui il motore di scatto, contrattacco, carica e tiro; il volo dei proiettili è in projectiles.ts.
 
 import { SPECIAL_KINDS, specialsFor, type SpecialSlot } from "../characters";
-import { SPECIAL_MOVES } from "../constants";
+import { FATTANZA, SPECIAL_MOVES } from "../constants";
 import type { SpecialKind } from "../types";
+import { addFattanza } from "./fattanza";
 import { anchorSpec, throwAnchor } from "./anchor";
 import { launch, startAttack } from "./attacks";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
@@ -130,6 +131,7 @@ export function counterHit(f: Fighter, attacker: Fighter, damage: number, x: num
   if (sp.type !== "counter") return;
   f.facing = attacker.x >= f.x ? 1 : -1; // si gira verso chi ha colpito, anche se arrivava da dietro
   endCounter(f, attacker.id, x, y, ctx);
+  addFattanza(f, FATTANZA.counterGain); // il Rolling riuscito di Marcomunista
   const answer = Math.max(sp.minDamage, damage * sp.multiplier);
   launch(attacker, f, SPECIAL_KINDS.down, Math.round(attacker.x), Math.round(attacker.y - 40), ctx, Math.round(answer * 10) / 10);
 }
