@@ -355,7 +355,10 @@
     ],
     "floatFallSpeed": 85,
     "strafattoMs": 4000,
-    "bottaMs": 500
+    "bottaMs": 500,
+    "echoLevel": 2,
+    "echoDelayMs": 300,
+    "echoDamageMult": 0.5
   },
   "ledge": {
     "hangOffsetY": 56

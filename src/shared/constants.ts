@@ -213,6 +213,9 @@ export const FATTANZA = {
   floatFallSpeed: 85, // pixel/s: velocità massima di caduta fluttuando col cappello
   strafattoMs: 4000, // ms a Strafatto prima della botta
   bottaMs: 500, // ms barcollando dopo la botta: fermo e colpibile
+  echoLevel: 2, // livello da cui i colpi in aria lasciano l'eco (da Fatto in su)
+  echoDelayMs: 300, // ms dopo cui l'ombra lilla ripete il colpo nello stesso punto
+  echoDamageMult: 0.5, // frazione del danno del colpo che fa l'eco
 };
 
 // Groove, la combo di Bradipo Giallo (#557): il bassista picchia a tempo. Un suo colpo che prende vicino a un battito

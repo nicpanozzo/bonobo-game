@@ -4,7 +4,9 @@
 // Tenendo Salto in aria mentre scende fluttua col cappello sopra la testa, come un paracadute.
 import { getCharacter } from "../characters";
 import { FATTANZA } from "../constants";
+import { attackSpecFor, bodyBox, canBeHit, isGrabKind, launch, overlap } from "./attacks";
 import type { Fighter, PhysicsContext } from "./fighter";
+import { hitShield } from "./shield";
 
 const max = FATTANZA.perLevel * FATTANZA.levels;
 
@@ -66,4 +68,46 @@ export function floatHat(f: Fighter, dtMs: number): void {
   f.floating = true;
   f.floatMs += dtMs;
   if (f.vy > FATTANZA.floatFallSpeed) f.vy = FATTANZA.floatFallSpeed;
+}
+
+// L'eco (da Fatto in su): il primo tick attivo di un colpo dato in aria segna dove l'ombra lilla lo ripeterà
+export function queueEcho(f: Fighter, box: { x: number; y: number; w: number; h: number }): void {
+  if (f.echoQueued || !f.attack || !f.attackAir || fattanzaLevel(f) < FATTANZA.echoLevel) return;
+  if (isGrabKind(f.attack) || f.attack === "supreme" || f.attack.startsWith("special")) return;
+  f.echoQueued = true;
+  f.echoes.push({ kind: f.attack, x: box.x, y: box.y, w: box.w, h: box.h, facing: f.facing, ms: FATTANZA.echoDelayMs });
+}
+
+// Le ombre che arrivano colpiscono chi trovano in quel punto, con metà danno
+export function stepEchoes(fighters: Fighter[], dtMs: number, ctx: PhysicsContext): void {
+  for (const a of fighters) {
+    if (a.echoes.length === 0) continue;
+    if (a.eliminated || a.respawning) {
+      a.echoes = [];
+      continue;
+    }
+    for (const e of a.echoes) e.ms -= dtMs;
+    const ready = a.echoes.filter((e) => e.ms <= 0);
+    if (ready.length === 0) continue;
+    a.echoes = a.echoes.filter((e) => e.ms > 0);
+    for (const e of ready) {
+      ctx.events.push({ type: "echo", id: a.id, kind: e.kind, x: Math.round(e.x + e.w / 2), y: Math.round(e.y + e.h / 2), facing: e.facing });
+      const damage = Math.round(attackSpecFor(a, e.kind).damage * FATTANZA.echoDamageMult * 10) / 10;
+      for (const t of fighters) {
+        if (t === a || !canBeHit(t) || (ctx.canHit && !ctx.canHit(a, t))) continue;
+        const body = bodyBox(t);
+        if (!overlap(e, body)) continue;
+        const ix = Math.round(body.x + body.w / 2);
+        const iy = Math.round(body.y + body.h / 2);
+        if (t.shielding) {
+          hitShield(t, a.id, damage, e.facing, ix, iy, ctx);
+          continue;
+        }
+        const facing = a.facing;
+        a.facing = e.facing; // l'ombra spinge dove guardava lui quando ha colpito
+        launch(t, a, e.kind, ix, iy, ctx, damage);
+        a.facing = facing;
+      }
+    }
+  }
 }

@@ -3,12 +3,23 @@
 
 import { DASH, FIGHTER, GEAR, INPUT, SHIELD } from "../constants";
 import type { StageSpec } from "../stages";
-import type { GameEvent, InputState, PlayerState, SpecialKind } from "../types";
+import type { AttackKind, GameEvent, InputState, PlayerState, SpecialKind } from "../types";
 import type { ArcadeWorld } from "./arcade";
 import type { ProjectileWorld } from "./projectiles";
 import type { Companion } from "./companion";
 import type { StationWorld } from "./stations";
 import type { BassaneseWorld } from "./bassanese";
+
+// L'eco di un colpo in aria di Marcomunista da Fatto (FATTANZA.echo*): dove colpirà e fra quanto
+export interface Echo {
+  kind: AttackKind;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  facing: 1 | -1;
+  ms: number; // ms che mancano al colpo dell'ombra
+}
 
 export interface Fighter extends PlayerState {
   input: InputState;
@@ -103,6 +114,8 @@ export interface Fighter extends PlayerState {
   groundMs: number; // ms passati a terra di fila (la Fattanza scende dopo groundGraceMs)
   floatMs: number; // ms di fluttuata già usati in questo volo
   floating: boolean; // fluttua col cappello in questo tick
+  echoes: Echo[]; // le ombre lilla che ripeteranno i suoi colpi in aria (Fattanza di Marcomunista)
+  echoQueued: boolean; // l'attacco in corso ha già lasciato la sua eco
   pacDir?: { x: number; y: number }; // da Pac-Man (#427): dove si va, una sola tra x e y è -1 o 1
   pacPellets?: number; // da Pac-Man: palline mangiate in questa forma (piccola 1, grande PACMAN.bigPelletValue), accelerano
   brownieNext?: string; // il brownie spaziale mangiato: l'effetto che salirà finita l'attesa (gear.ts)
@@ -303,6 +316,8 @@ export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
     groundMs: 0,
     floatMs: 0,
     floating: false,
+    echoes: [],
+    echoQueued: false,
     anchor: undefined, // esplicito: resetForMatch copia anche questo e toglie l'ancora rimasta
   };
 }

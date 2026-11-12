@@ -903,6 +903,10 @@ func on_event(e: Dictionary) -> void:
 			elif e.phase == "stun":
 				# Troppo fatto: stelline gialle sopra la testa, come uno stordito
 				_sparks.append({"x": e.x, "y": float(e.y) - float(game.fighter.height) * 1.1, "age": 0.0, "size": 30.0, "color": Color(1, 0.9, 0.4)})
+		"echo":
+			# L'eco di Marcomunista da Fatto (FATTANZA): l'ombra lilla ripete il colpo in aria dove l'aveva dato
+			_sparks.append({"x": e.x, "y": e.y, "age": 0.0, "size": 44.0, "color": Color(FATTANZA_LILAC, 0.8)})
+			_sparks.append({"x": float(e.x) - float(e.facing) * 14.0, "y": float(e.y) + 6.0, "age": 0.0, "size": 26.0, "color": FATTANZA_HAT.lerp(FATTANZA_LILAC, 0.6)})
 		"botta":
 			# Marcomunista crolla dopo lo Strafatto (FATTANZA): stelline lilla e la sua battuta
 			var pb: Variant = buffer.sample(e.id, Time.get_ticks_msec())

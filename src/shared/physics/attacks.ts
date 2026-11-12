@@ -3,7 +3,7 @@
 import { characterStats, getCharacter, type ComboStep, hurtboxOf, SPECIAL_KINDS, specialAttackSpec, specialsFor, supremeAttackSpec, type SpecialSlot, type TweakableAttack } from "../characters";
 import { ARREMBAGGIO, ATTACKS, AUDIO, COMBO, FATTANZA, FIGHTER, GROOVE, HITSTOP, SCIVOLONE, HITSTUN_PER_KNOCKBACK, JAB, MICELIO, PIANO_QUINQUENNALE, POWERUP, SMASH_CHARGE, type AttackSpec } from "../constants";
 import type { AttackKind, SpecialKind } from "../types";
-import { addFattanza, fattanzaDamageMult, hurtFattanza } from "./fattanza";
+import { addFattanza, fattanzaDamageMult, hurtFattanza, queueEcho } from "./fattanza";
 import { biteBox, biting, chooseBiter, hitPets } from "./companion";
 import { bodyScale, consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
 import { gearAttackSpeed, gearDamageMult, gearKnockbackMult } from "./gear";
@@ -149,6 +149,7 @@ export function startAttack(f: Fighter, kind: AttackKind, ctx: PhysicsContext) {
   f.jabTimer = 0;
   f.cooldownTimer = attackSpecFor(f, kind).cooldownMs;
   f.alreadyHit.clear();
+  f.echoQueued = false; // la Fattanza di Marcomunista: ogni colpo in aria lascia la sua eco
   chooseBiter(f); // il beagle di Lampione morde solo se è lì (#369)
   consume(f, "light", "heavy", "special"); // anche il recupero, l'attacco dal bordo e le speciali passano da qui
   ctx.events.push({ type: "attack", id: f.id, kind });
@@ -235,6 +236,7 @@ export function resolveHits(fighters: Fighter[], ctx: PhysicsContext): void {
     if (attacker.attack === "supreme" && !supremeMelee(attacker.characterId)) continue; // IRA colpisce coi proiettili (#358)
     const spec = attackSpecFor(attacker);
     const box = attackBox(attacker);
+    queueEcho(attacker, box); // da Fatto l'ombra lilla ripeterà il colpo (fattanza.ts)
     for (const target of fighters) {
       if (target === attacker || !canBeHit(target) || attacker.alreadyHit.has(target.id)) continue;
       if (ctx.canHit && !ctx.canHit(attacker, target)) continue;

@@ -100,4 +100,36 @@ describe("Fattanza di Marcomunista", () => {
     hurtFattanza(f, FATTANZA.bigHit);
     assert.equal(f.fattanza, 50);
   });
+
+  it("da Fatto un colpo in aria lascia un'eco che colpisce 0,3 s dopo nello stesso punto", () => {
+    const ctx: PhysicsContext = { stage, events: [] };
+    const make = (id: string, characterId: string, index: number) =>
+      createFighter({ id, name: id, characterId, color: 0, team: 0, index, stocks: 3 }, stage);
+    const m = make("m", "marcomunista", 0);
+    const t = make("t", "default", 1);
+    const fighters = [m, t];
+    for (let i = 0; i < 10; i++) stepWorld(fighters, DT, ctx);
+    m.fattanza = 2 * FATTANZA.perLevel;
+    m.echoes = [{ kind: "lightAir", x: t.x - 20, y: t.y - 60, w: 40, h: 40, facing: 1, ms: FATTANZA.echoDelayMs }];
+    ctx.events.length = 0;
+    const before = t.percent;
+    for (let i = 0; i < Math.ceil((FATTANZA.echoDelayMs / 1000) * TICK_RATE) + 2; i++) stepWorld(fighters, DT, ctx);
+    assert.ok(ctx.events.some((e) => e.type === "echo"), "l'ombra colpisce");
+    assert.ok(t.percent > before, `danno dell'eco ${t.percent - before}`);
+    assert.equal(m.echoes.length, 0);
+  });
+
+  it("a Lucido i colpi in aria non lasciano eco", async () => {
+    const { queueEcho } = await import("./fattanza");
+    const { f } = setup();
+    airborne(f);
+    f.attack = "lightAir";
+    f.attackAir = true;
+    queueEcho(f, { x: 0, y: 0, w: 10, h: 10 });
+    assert.equal(f.echoes.length, 0);
+    f.fattanza = 2 * FATTANZA.perLevel;
+    queueEcho(f, { x: 0, y: 0, w: 10, h: 10 });
+    queueEcho(f, { x: 0, y: 0, w: 10, h: 10 });
+    assert.equal(f.echoes.length, 1, "una sola eco per colpo");
+  });
 });
