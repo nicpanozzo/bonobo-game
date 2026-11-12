@@ -12487,10 +12487,10 @@
           "boxY": -94
         },
         "dashAttack": {
-          "range": 75,
+          "range": 64,
           "height": 44,
-          "boxX": 2,
-          "boxY": -82
+          "boxX": 0,
+          "boxY": -61
         }
       },
       "supreme": {
@@ -12788,16 +12788,17 @@
           "specialDown": {
             "fps": 8,
             "loop": false,
-            "hitFrame": 5,
-            "frames": 17,
-            "src": "heavy"
+            "hitFrame": 4,
+            "frames": 19,
+            "src": "specialDown"
           },
           "dashAttack": {
-            "fps": 8,
+            "fps": 12,
             "loop": false,
-            "hitFrame": 5,
-            "frames": 17,
-            "src": "heavy"
+            "hitFrame": 14,
+            "activeEnd": 19,
+            "frames": 22,
+            "src": "dashAttack"
           },
           "jumpSquat": {
             "fps": 24,
@@ -15702,12 +15703,11 @@
             "src": "specialDown"
           },
           "dashAttack": {
-            "fps": 24,
+            "fps": 6,
             "loop": false,
             "hitFrame": 5,
-            "activeEnd": 6,
-            "frames": 11,
-            "src": "heavy"
+            "frames": 15,
+            "src": "dashAttack"
           },
           "jumpSquat": {
             "fps": 16,
@@ -15902,10 +15902,10 @@
           "boxY": -86
         },
         "dashAttack": {
-          "range": 50,
+          "range": 64,
           "height": 44,
           "boxX": 0,
-          "boxY": -80
+          "boxY": -83
         }
       },
       "portrait": "assets/characters/elvedeo/portrait.png",
@@ -17855,12 +17855,12 @@
             "src": "specialDown"
           },
           "dashAttack": {
-            "fps": 24,
+            "fps": 8,
             "loop": false,
-            "hitFrame": 2,
-            "activeEnd": 5,
-            "frames": 10,
-            "src": "heavy"
+            "hitFrame": 5,
+            "activeEnd": 15,
+            "frames": 19,
+            "src": "dashAttack"
           },
           "jumpSquat": {
             "fps": 24,
@@ -18162,10 +18162,10 @@
           "boxY": -76
         },
         "dashAttack": {
-          "range": 68,
+          "range": 75,
           "height": 44,
-          "boxX": 0,
-          "boxY": -66
+          "boxX": 9,
+          "boxY": -44
         }
       },
       "portrait": "assets/characters/bradipo/portrait.png",

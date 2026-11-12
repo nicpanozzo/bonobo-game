@@ -622,7 +622,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       heavyDown: { range: 73, height: 30, boxX: 0, boxY: -38 },
       lightAir: { range: 62, height: 50, boxX: 0, boxY: -92 }, // OB-B4: la stella
       heavyAir: { range: 50, height: 60, boxX: 0, boxY: -94 }, // OB-B4: la martellata
-      dashAttack: { range: 75, height: 44, boxX: 2, boxY: -82 },
+      dashAttack: { range: 64, height: 44, boxX: 0, boxY: -61 },
     },
     // Tempesta! (#547, scheda di Nicola del 3/11/2026): l'arena rolla, tutti scivolano tranne lui al timone che insulta.
     // Timone e nuvolette li disegna Godot finché non c'è la clip; numeri provvisori
@@ -697,6 +697,8 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         lightAir: { fps: 12, loop: false, hitFrame: 10, startFrame: 7, activeEnd: 15 },
         heavyAir: { fps: 12, loop: false, hitFrame: 11, startFrame: 1, activeEnd: 12 }, // i pugni scendono da sopra la testa
         dash: { fps: 12, loop: true }, // OB-B5 (7/11/2026): corre curvo in avanti, un passo e mezzo
+        dashAttack: { fps: 12, loop: false, hitFrame: 14, activeEnd: 19 }, // OB-09B (12/11/2026): si tuffa sulla slitta che scivola
+        specialDown: { fps: 8, loop: false, hitFrame: 4 }, // OB-09C: Mina di bordo, si accovaccia e la posa davanti
         // Pose con gli oggetti (5/11/2026, docs/clip-flow/pose-oggetti.md): OB-O1 impugnatura e OB-O2 sparo, la presa in mani.json
         gripIdle: { fps: 12, loop: true }, // il bastone tenuto in guardia
         gripWalk: { fps: 12, loop: true }, // marcia col bastone basso
@@ -895,6 +897,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         idle: { fps: 10, loop: true }, // fuma, la capra rumina (avanti e indietro)
         walk: { fps: 18, loop: true }, // un passo di galoppo, lento
         dash: { fps: 28, loop: true }, // lo stesso passo, veloce
+        dashAttack: { fps: 6, loop: false, hitFrame: 5 }, // EL-03 (12/11/2026): carica in groppa alla capra
         jump: { fps: 12, loop: false },
         fall: { fps: 6, loop: true },
         land: { fps: 16, loop: false },
@@ -931,7 +934,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       heavyUp: { range: 80, height: 64, boxX: -70, boxY: -137 },
       heavyDown: { range: 62, height: 30, boxX: -26, boxY: -44 },
       heavyAir: { range: 72, height: 60, boxX: 0, boxY: -86 }, // la bastonata di EL-06b
-      dashAttack: { range: 50, height: 44, boxX: 0, boxY: -80 },
+      dashAttack: { range: 64, height: 44, boxX: 0, boxY: -83 },
     },
   },
 
@@ -1116,6 +1119,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         idle: { fps: 8, loop: true },
         walk: { fps: 14, loop: true },
         dash: { fps: 14, loop: true },
+        dashAttack: { fps: 8, loop: false, hitFrame: 5, activeEnd: 15 }, // BR-03 (12/11/2026): scivolata di pancia in avanti
         jump: { fps: 18, loop: false },
         fall: { fps: 10, loop: true },
         doubleJump: { fps: 24, loop: false }, // la capriola
@@ -1183,7 +1187,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       heavyUp: { range: 80, height: 64, boxX: -28, boxY: -115 },
       heavyDown: { range: 62, height: 30, boxX: -4, boxY: -36 },
       heavyAir: { range: 49, height: 60, boxX: 0, boxY: -76 },
-      dashAttack: { range: 68, height: 44, boxX: 0, boxY: -66 },
+      dashAttack: { range: 75, height: 44, boxX: 9, boxY: -44 },
     },
   },
 
