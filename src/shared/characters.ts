@@ -232,6 +232,7 @@ export interface ProjectileSpecial extends SpecialBase, SpecialHit {
   sprite?: ProjectileSprite; // in Godot il proiettile è questo disegno animato (il Piccione di Elvedeo)
   spawnX?: number; // pixel davanti al centro da cui parte (negativo: dietro); senza, davanti alle mani
   spawnY?: number; // pixel sopra i piedi da cui parte; senza, SPECIAL_MOVES.projectileY (il Piccione: dalla spalla)
+  boomerang?: boolean; // va avanti, si ferma e torna da chi l'ha tirato; colpisce all'andata e al ritorno (HAT, il cappello di Marcomunista)
   rests?: boolean; // cadendo si posa su blocchi e piattaforme e resta lì finché qualcuno la tocca (la Mina di bordo di OrsoBlu)
 }
 // L'aquila della suprema "spin" (l'Elefante di Elvedeo): un proiettile tirato con la Speciale mentre si gira, una volta
@@ -1288,7 +1289,8 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     // bomba lasciata dove era (Nicola, 2026-11-11: "estremamente reattiva"): si scappa e chi lo inseguiva salta in aria
     supreme: { type: "rewind", name: "…COSA?", windupMs: 80, backMs: 3000, endLagMs: 150, stunRadius: 160, stunMs: 1200, bombFuseMs: 900 },
     specials: {
-      // gira una canna mentre para; tiro e scatto restano quelli di base finché la scheda non li dice
+      // gira una canna mentre para; lo scatto resta quello di base finché la scheda non lo dice
+      neutral: { type: "projectile", name: "Cappello boomerang", startupMs: 180, cooldownMs: 450, speed: 900, gravity: 0, lifeMs: 3500, maxAlive: 1, boomerang: true, range: 46, height: 18, damage: 6, baseKnockback: 220, knockbackGrowth: 3, angleDeg: 40, color: 0xff3fa4 }, // ci si rimbalza sopra (physics/hat.ts)
       down: { type: "counter", name: "Rolling", startupMs: 60, windowMs: 420, endLagMs: 460, minDamage: 8, multiplier: 1.3, range: 60, height: 60, baseKnockback: 440, knockbackGrowth: 9, angleDeg: 40 },
     },
     // il corpo che si può colpire, misurato sulla sagoma del fermo (#243)

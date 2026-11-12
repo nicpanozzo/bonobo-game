@@ -10,6 +10,7 @@ import type { Fighter, PhysicsContext } from "./fighter";
 import { hitShield } from "./shield";
 import { platformSurfaceY } from "./stage";
 import { counterAbsorbs } from "./specials";
+import { stepHat } from "./hat";
 
 export interface Projectile extends ProjectileState {
   ageMs: number;
@@ -18,6 +19,9 @@ export interface Projectile extends ProjectileState {
   carryId?: string; // l'aquila della suprema: chi sta portando in volo
   carryMs?: number; // da quanto lo porta
   spent?: boolean; // l'aquila ha già mollato la sua preda: vola via senza colpire
+  hatDir?: 1 | -1; // il Cappello boomerang (hat.ts): verso dell'andata
+  hatHit?: string[]; // chi ha già preso in questo tratto (andata o ritorno)
+  hatBack?: boolean; // sta tornando
 }
 
 export interface Puddle extends PuddleState {
@@ -78,6 +82,10 @@ export function stepProjectiles(fighters: Fighter[], dtMs: number, ctx: PhysicsC
     const sp = specOf(p);
     if (p.carryId !== undefined) {
       carry(p, sp as SupremeEagle, byId, dtMs, ctx, end);
+      continue;
+    }
+    if (sp.boomerang) {
+      stepHat(p, sp, fighters, byId, dtMs, ctx, end);
       continue;
     }
     p.ageMs += dtMs;
@@ -218,7 +226,7 @@ const burstHit = (p: Projectile) => {
   const sup = getCharacter(p.characterId).supreme;
   return sup?.type === "burst" ? sup.hit : undefined;
 };
-const specOf = (p: Projectile): ProjectileSpecial => {
+export const specOf = (p: Projectile): ProjectileSpecial => {
   const sup = getCharacter(p.characterId).supreme;
   if (p.supreme && sup?.type === "spin" && sup.eagle) return sup.eagle;
   return specialsFor(p.characterId)[SLOT_OF[p.kind]] as ProjectileSpecial;
@@ -252,7 +260,7 @@ function rest(p: Projectile, sp: ProjectileSpecial, y: number, dt: number): true
   return true;
 }
 
-const boxOf = (p: Projectile, sp: ProjectileSpecial) => ({ x: p.x - sp.range / 2, y: p.y - sp.height / 2, w: sp.range, h: sp.height });
+export const boxOf = (p: Projectile, sp: ProjectileSpecial) => ({ x: p.x - sp.range / 2, y: p.y - sp.height / 2, w: sp.range, h: sp.height });
 
 // Per lo snapshot: solo quello che serve al client
 export const projectileStates = (world: ProjectileWorld): ProjectileState[] =>
