@@ -23,6 +23,7 @@
 //   held.ts      oggetti da impugnare e da sparo: scopa, pesce, pistola ad acqua, sparabolle
 
 import { isArcade, playPacman, playTetris, stepArcade } from "./arcade";
+import { floatHat, tickFattanza } from "./fattanza";
 import { hookFighters, onRope, stepHook, swingAnchor, tightenAnchor } from "./anchor";
 import { resolveHits, tryStartAttack, updateAttack } from "./attacks";
 import { stepBassanese } from "./bassanese";
@@ -106,6 +107,7 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
   tickBuffer(f, dtMs);
   f.hitstun = f.hitstunTimer > 0;
   tickPowerup(f, dtMs, ctx); // #231
+  tickFattanza(f, dtMs, ctx); // Marcomunista
   f.invulnerable = f.invulnerableTimer > 0 || (f.powerup === "fiore" && f.powerupMs > 0) || isArcade(f); // il bong (#302) non protegge
   // A Tetris (#427) si è assenti: fermi dove si era, i tasti guidano il pezzo
   if (f.powerup === "tetris") {
@@ -177,6 +179,7 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
     stepDrop(f, dtMs, true);
   }
   if (!swinging) applyGravity(f, dt, genreGravity(genreAt(ctx.stage, ctx.timeMs ?? 0, ctx.padsMs))); // col reggae del Palco si vola
+  floatHat(f, dtMs); // Marcomunista fluttua col cappello (fattanza.ts)
   fly(f, dt); // la moka a razzo: tenendo il salto si sale (gear.ts)
   glide(f); // l'ombrellone in mano: tenendo il salto si plana (held.ts)
 

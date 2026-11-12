@@ -84,6 +84,8 @@ export interface PlayerState {
   predict?: PredictionState; // E17: solo per chi manda InputState.seq
   companion?: CompanionState; // il compagno che lo segue (#369, il beagle di Lampione); manca se non ne ha
   anchor?: AnchorState; // l'ancora di Capt. OrsoBlu (#547): in volo, piantata o di ritorno; manca se è in mano
+  fattanza?: number; // la Fattanza di Marcomunista, da 0 a FATTANZA.levels (3 = Strafatto); manca per gli altri
+  floating?: boolean; // fluttua col cappello sopra la testa (Marcomunista); manca se no
   wet?: boolean; // bagnato dallo Sputo di Egiainuso (Scivolone, #557): si afferra da più lontano; manca se asciutto
   station?: number; // indice della postazione che sta usando (#433, stage.stations): fermo, i tasti guidano lei; manca se nessuna
 }
@@ -280,6 +282,7 @@ export type GameEvent =
   | { type: "shieldBreak"; id: string; x: number; y: number } // lo scudo di id si è rotto
   | { type: "grab"; id: string; targetId: string; x: number; y: number } // id afferra targetId (#109)
   | { type: "grabRelease"; id: string; targetId: string } // la presa finisce senza lancio: targetId si è liberato
+  | { type: "botta"; id: string } // Marcomunista crolla dopo lo Strafatto (FATTANZA): sbadiglia e barcolla
   | { type: "counter"; id: string; attackerId: string; x: number; y: number } // id para il colpo di attackerId col contrattacco (E10) e risponde
   | { type: "projectile"; id: string; projectileId: number; x: number; y: number } // id tira un proiettile (E10)
   | { type: "projectileEnd"; projectileId: number; reason: "hit" | "blocked" | "expired" | "wall"; x: number; y: number } // il proiettile sparisce

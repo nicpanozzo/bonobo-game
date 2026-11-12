@@ -1,8 +1,9 @@
 // Attacchi: inizio, finestra attiva, hitbox e cosa succede a chi viene colpito.
 
 import { characterStats, getCharacter, type ComboStep, hurtboxOf, SPECIAL_KINDS, specialAttackSpec, specialsFor, supremeAttackSpec, type SpecialSlot, type TweakableAttack } from "../characters";
-import { ARREMBAGGIO, ATTACKS, AUDIO, COMBO, FIGHTER, GROOVE, HITSTOP, SCIVOLONE, HITSTUN_PER_KNOCKBACK, JAB, MICELIO, PIANO_QUINQUENNALE, POWERUP, SMASH_CHARGE, type AttackSpec } from "../constants";
+import { ARREMBAGGIO, ATTACKS, AUDIO, COMBO, FATTANZA, FIGHTER, GROOVE, HITSTOP, SCIVOLONE, HITSTUN_PER_KNOCKBACK, JAB, MICELIO, PIANO_QUINQUENNALE, POWERUP, SMASH_CHARGE, type AttackSpec } from "../constants";
 import type { AttackKind, SpecialKind } from "../types";
+import { addFattanza, fattanzaDamageMult, hurtFattanza } from "./fattanza";
 import { biteBox, biting, chooseBiter, hitPets } from "./companion";
 import { bodyScale, consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
 import { gearAttackSpeed, gearDamageMult, gearKnockbackMult } from "./gear";
@@ -298,11 +299,13 @@ export function launch(target: Fighter, attacker: Fighter, kind: AttackKind, x: 
   const base = damage === undefined ? (extra ? { ...own, damage: own.damage + extra } : own) : { ...own, damage };
   // Potenziati dal fiore (#231) i colpi fanno più danno; il volo cresce già con la percentuale
   const powered = attacker.powerup === "fiore" ? POWERUP.damageMult : attacker.powerup === "micelio" ? MICELIO.damageMult : 1; // il micelio di Dr. Micelium (#358)
-  const mult = powered * gearDamageMult(attacker) * (onBeat(attacker, kind, ctx) ? GROOVE.damageMult : 1); // il Groove di Bradipo (#557); giganti e mini (gear.ts)
+  const mult = powered * fattanzaDamageMult(attacker) * gearDamageMult(attacker) * (onBeat(attacker, kind, ctx) ? GROOVE.damageMult : 1); // il Groove di Bradipo (#557); giganti e mini (gear.ts)
   const spec = mult !== 1 ? { ...base, damage: Math.round(base.damage * mult * 10) / 10 } : base;
   // Stile Smash/Brawlhalla: il danno non toglie vita, fa volare più lontano
   target.percent = Math.min(999, target.percent + spec.damage);
   chargeFromHit(attacker, target, spec.damage); // #101
+  if (!attacker.onGround && attacker !== target) addFattanza(attacker, FATTANZA.airHitGain); // Marcomunista: il colpo in aria lo fa salire
+  hurtFattanza(target, spec.damage);
   // Colpo ad area (#102): si vola via dal centro di chi colpisce
   const dir = spec.outward ? ((Math.sign(target.x - hitOrigin(attacker).x) || attacker.facing) as 1 | -1) : attacker.facing;
   // Arrembaggio di OrsoBlu (#557): il colpo dopo lo strattone dell'ancora spinge di più
