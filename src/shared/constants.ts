@@ -218,6 +218,22 @@ export const FATTANZA = {
   echoDamageMult: 0.5, // frazione del danno del colpo che fa l'eco
 };
 
+// Il Cappello boomerang di Marcomunista (speciale neutra, Nicola 12/11/2026): va avanti frenando, si ferma a mezz'aria,
+// poi torna da lui. Fermo a mezz'aria ci si può rimbalzare sopra come Mario, con un'onda d'urto lilla
+export const HAT = {
+  outMs: 350, // ms di andata: parte a speed e frena fino a fermarsi
+  hoverMs: [600, 600, 600, 1200], // ms fermo a mezz'aria, per livello di Fattanza (a Strafatto il doppio)
+  returnSpeed: 720, // pixel/s del ritorno verso di lui
+  catchPx: 34, // pixel: così vicino a lui lo riprende
+  bounceVy: 780, // pixel/s verso l'alto del rimbalzo sul cappello
+  bounceHalfWidth: 34, // pixel a destra e sinistra del centro del cappello in cui i piedi lo trovano
+  bounceAbovePx: 26, // pixel sopra il centro del cappello in cui i piedi lo trovano scendendo
+  bounceBelowPx: 12, // pixel sotto il centro, per non mancarlo a velocità alta
+  maxBounces: [1, 1, 1, 2], // rimbalzi per volo, per livello di Fattanza; si ricaricano toccando terra o un bordo
+  shockRadius: 80, // pixel dell'onda d'urto del rimbalzo
+  shockHit: { damage: 4, baseKnockback: 340, knockbackGrowth: 2, angleDeg: 90 }, // l'onda manda in su
+};
+
 // Groove, la combo di Bradipo Giallo (#557): il bassista picchia a tempo. Un suo colpo che prende vicino a un battito
 // della musica dell'arena (StageSpec.music.bpm, sennò AUDIO.musicBpm) fa più danno; Godot fa pulsare il battito sotto di lui
 export const GROOVE = {

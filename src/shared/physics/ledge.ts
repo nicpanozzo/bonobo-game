@@ -142,6 +142,7 @@ function finishGetup(f: Fighter, l: Ledge, extra: number): void {
   f.jumpsLeft = FIGHTER.maxJumps;
   f.airDodgeUsed = false;
   f.ledgeGrabs = 0;
+  f.hatBounces = 0; // il bordo ridà il rimbalzo sul cappello di Marcomunista
   f.ledge = null;
   f.ledgeIndex = -1;
   f.ledgeTimer = 0;

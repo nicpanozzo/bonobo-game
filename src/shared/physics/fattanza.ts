@@ -6,6 +6,7 @@ import { getCharacter } from "../characters";
 import { FATTANZA } from "../constants";
 import { attackSpecFor, bodyBox, canBeHit, isGrabKind, launch, overlap } from "./attacks";
 import type { Fighter, PhysicsContext } from "./fighter";
+import { hatAway } from "./hat";
 import { hitShield } from "./shield";
 
 const max = FATTANZA.perLevel * FATTANZA.levels;
@@ -59,9 +60,9 @@ export function tickFattanza(f: Fighter, dtMs: number, ctx: PhysicsContext): voi
 }
 
 // Dopo la gravità: tenendo Salto mentre scende fluttua col cappello finché ha fluttuata
-export function floatHat(f: Fighter, dtMs: number): void {
+export function floatHat(f: Fighter, dtMs: number, ctx: PhysicsContext): void {
   f.floating = false;
-  if (!hasFattanza(f) || f.onGround || !f.input.jump || f.hitstun || f.stunTimer > 0 || f.vy < 0) return;
+  if (!hasFattanza(f) || hatAway(f, ctx) || f.onGround || !f.input.jump || f.hitstun || f.stunTimer > 0 || f.vy < 0) return;
   if (f.ledgeIndex >= 0 || f.anchor || f.helpless) return;
   const level = fattanzaLevel(f);
   if (f.strafattoMs === 0 && f.floatMs >= FATTANZA.floatMs[level]) return;

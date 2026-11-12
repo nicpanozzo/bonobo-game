@@ -903,6 +903,11 @@ func on_event(e: Dictionary) -> void:
 			elif e.phase == "stun":
 				# Troppo fatto: stelline gialle sopra la testa, come uno stordito
 				_sparks.append({"x": e.x, "y": float(e.y) - float(game.fighter.height) * 1.1, "age": 0.0, "size": 30.0, "color": Color(1, 0.9, 0.4)})
+		"hatBounce":
+			# Marcomunista rimbalza sul Cappello boomerang (HAT): onda d'urto lilla e un po' di tremolio
+			_sparks.append({"x": e.x, "y": e.y, "age": 0.0, "size": 70.0, "color": Color(FATTANZA_LILAC, 0.75)})
+			_sparks.append({"x": e.x, "y": e.y, "age": 0.0, "size": 30.0, "color": FATTANZA_HAT})
+			_shake = maxf(_shake, 3.0)
 		"echo":
 			# L'eco di Marcomunista da Fatto (FATTANZA): l'ombra lilla ripete il colpo in aria dove l'aveva dato
 			_sparks.append({"x": e.x, "y": e.y, "age": 0.0, "size": 44.0, "color": Color(FATTANZA_LILAC, 0.8)})

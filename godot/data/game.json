@@ -19320,20 +19320,21 @@
       "specials": {
         "neutral": {
           "type": "projectile",
-          "name": "Tiro",
-          "startupMs": 216,
-          "cooldownMs": 550,
-          "speed": 700,
+          "name": "Cappello boomerang",
+          "startupMs": 180,
+          "cooldownMs": 450,
+          "speed": 900,
           "gravity": 0,
-          "lifeMs": 1200,
+          "lifeMs": 3500,
           "maxAlive": 1,
-          "range": 24,
-          "height": 16,
+          "boomerang": true,
+          "range": 46,
+          "height": 18,
           "damage": 6,
           "baseKnockback": 220,
-          "knockbackGrowth": 3.5,
-          "angleDeg": 30,
-          "color": 16767050
+          "knockbackGrowth": 3,
+          "angleDeg": 40,
+          "color": 16727972
         },
         "side": {
           "type": "dash",
@@ -19428,14 +19429,14 @@
       "specialAttacks": {
         "specialNeutral": {
           "baseKnockback": 220,
-          "knockbackGrowth": 3.5,
-          "angleDeg": 30,
-          "range": 24,
-          "height": 16,
+          "knockbackGrowth": 3,
+          "angleDeg": 40,
+          "range": 46,
+          "height": 18,
           "damage": 6,
-          "startupMs": 216,
+          "startupMs": 180,
           "activeMs": 0,
-          "cooldownMs": 550
+          "cooldownMs": 450
         },
         "specialSide": {
           "baseKnockback": 360,

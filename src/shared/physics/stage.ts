@@ -127,6 +127,7 @@ function land(f: Fighter, y: number) {
   f.ledgeGrabs = 0;
   f.anchorThrows = 0; // l'ancora di OrsoBlu (#547)
   f.floatMs = 0; // la fluttuata col cappello di Marcomunista riparte
+  f.hatBounces = 0; // e anche i rimbalzi sul cappello
 }
 
 export function outOfBlastZone(f: Fighter, ctx: PhysicsContext): boolean {
