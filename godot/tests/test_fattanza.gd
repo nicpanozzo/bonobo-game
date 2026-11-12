@@ -12,3 +12,6 @@ func test_da_fatto_non_si_predice() -> void:
 	p.fattanza = 0.0
 	p.floating = true
 	runner.check(not Predictor.predictable(p, {}), "fluttuando col cappello no")
+	p.floating = false
+	p.sballato = true
+	runner.check(not Predictor.predictable(p, {}), "sballato dalla Nuvola no: gravità e passo cambiano")

@@ -19337,18 +19337,24 @@
           "color": 16727972
         },
         "side": {
-          "type": "dash",
-          "name": "Scatto",
-          "startupMs": 100,
-          "durationMs": 250,
-          "speed": 900,
-          "endLagMs": 300,
-          "range": 40,
-          "height": 50,
-          "damage": 9,
-          "baseKnockback": 360,
-          "knockbackGrowth": 8,
-          "angleDeg": 35
+          "type": "projectile",
+          "name": "Nuvola",
+          "startupMs": 300,
+          "cooldownMs": 700,
+          "speed": 140,
+          "gravity": 0,
+          "lifeMs": 3000,
+          "maxAlive": 1,
+          "cloud": true,
+          "spawnX": 80,
+          "spawnY": 60,
+          "range": 130,
+          "height": 80,
+          "damage": 0,
+          "baseKnockback": 100,
+          "knockbackGrowth": 1,
+          "angleDeg": 0,
+          "color": 13215728
         },
         "down": {
           "type": "counter",
@@ -19439,15 +19445,15 @@
           "cooldownMs": 450
         },
         "specialSide": {
-          "baseKnockback": 360,
-          "knockbackGrowth": 8,
-          "angleDeg": 35,
-          "range": 40,
-          "height": 50,
-          "damage": 9,
-          "startupMs": 100,
-          "activeMs": 250,
-          "cooldownMs": 650
+          "baseKnockback": 100,
+          "knockbackGrowth": 1,
+          "angleDeg": 0,
+          "range": 130,
+          "height": 80,
+          "damage": 0,
+          "startupMs": 300,
+          "activeMs": 0,
+          "cooldownMs": 700
         },
         "specialDown": {
           "baseKnockback": 440,

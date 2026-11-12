@@ -95,6 +95,7 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
   f.hitstunTimer = Math.max(0, f.hitstunTimer - dtMs);
   f.boardedMs = Math.max(0, f.boardedMs - dtMs);
   f.wetMs = Math.max(0, f.wetMs - dtMs);
+  f.sballoMs = Math.max(0, f.sballoMs - dtMs); // la Nuvola di Marcomunista
   f.invulnerableTimer = Math.max(0, f.invulnerableTimer - dtMs);
   f.dropTimer = Math.max(0, f.dropTimer - dtMs);
   f.dodgeTimer = Math.max(0, f.dodgeTimer - dtMs);

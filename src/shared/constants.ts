@@ -234,6 +234,17 @@ export const HAT = {
   shockHit: { damage: 4, baseKnockback: 340, knockbackGrowth: 2, angleDeg: 90 }, // l'onda manda in su
 };
 
+// La Nuvola di Marcomunista (speciale laterale, Nicola 12/11/2026): una grossa nuvola lilla che avanza piano.
+// Chi ci entra resta sballato: gravità bassa e passo lento, così galleggia ed è facile da colpire in aria.
+// Lui ci può atterrare sopra una volta: si ferma, fa un saltello e riprende il doppio salto
+export const NUVOLA = {
+  sballoMs: 2000, // ms sballati dopo essere usciti dalla nuvola
+  gravityMult: 0.5, // frazione della gravità da sballati
+  speedMult: 0.7, // frazione della velocità da sballati
+  restHopVy: 320, // pixel/s verso l'alto del saltello quando lui atterra sulla nuvola
+  restTopPx: 30, // pixel sotto il bordo alto della nuvola in cui i suoi piedi la trovano scendendo
+};
+
 // Groove, la combo di Bradipo Giallo (#557): il bassista picchia a tempo. Un suo colpo che prende vicino a un battito
 // della musica dell'arena (StageSpec.music.bpm, sennò AUDIO.musicBpm) fa più danno; Godot fa pulsare il battito sotto di lui
 export const GROOVE = {

@@ -85,6 +85,7 @@ export interface PlayerState {
   companion?: CompanionState; // il compagno che lo segue (#369, il beagle di Lampione); manca se non ne ha
   anchor?: AnchorState; // l'ancora di Capt. OrsoBlu (#547): in volo, piantata o di ritorno; manca se è in mano
   fattanza?: number; // la Fattanza di Marcomunista, da 0 a FATTANZA.levels (3 = Strafatto); manca per gli altri
+  sballato?: boolean; // dentro o appena uscito dalla Nuvola di Marcomunista: galleggia e va piano; manca se no
   floating?: boolean; // fluttua col cappello sopra la testa (Marcomunista); manca se no
   wet?: boolean; // bagnato dallo Sputo di Egiainuso (Scivolone, #557): si afferra da più lontano; manca se asciutto
   station?: number; // indice della postazione che sta usando (#433, stage.stations): fermo, i tasti guidano lei; manca se nessuna

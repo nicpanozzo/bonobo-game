@@ -366,6 +366,7 @@ export class Match {
         ...(f.station !== undefined && { station: f.station }), // #433
         ...(hasFattanza(f) && { fattanza: Math.round((f.fattanza / FATTANZA.perLevel) * 100) / 100 }), // Marcomunista
         ...(f.floating && { floating: true }),
+        ...(f.sballoMs > 0 && { sballato: true }), // la Nuvola di Marcomunista
         ...(f.wetMs > 0 && { wet: true }), // lo Scivolone di Egiainuso (#557)
         ...(f.anchor && { anchor: { x: Math.round(f.anchor.x), y: Math.round(f.anchor.y), phase: f.anchor.phase } }), // #547
       });
