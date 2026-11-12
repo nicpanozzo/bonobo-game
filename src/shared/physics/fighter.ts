@@ -115,6 +115,7 @@ export interface Fighter extends PlayerState {
   floatMs: number; // ms di fluttuata già usati in questo volo
   floating: boolean; // fluttua col cappello in questo tick
   echoes: Echo[]; // le ombre lilla che ripeteranno i suoi colpi in aria (Fattanza di Marcomunista)
+  sballoMs: number; // ms che resta sballato dalla Nuvola di Marcomunista (NUVOLA): galleggia e va piano
   hatBounces: number; // rimbalzi sul suo cappello in questo volo (HAT, Marcomunista)
   echoQueued: boolean; // l'attacco in corso ha già lasciato la sua eco
   pacDir?: { x: number; y: number }; // da Pac-Man (#427): dove si va, una sola tra x e y è -1 o 1
@@ -320,6 +321,7 @@ export function createFighter(s: FighterSetup, stage: StageSpec): Fighter {
     echoes: [],
     echoQueued: false,
     hatBounces: 0,
+    sballoMs: 0,
     anchor: undefined, // esplicito: resetForMatch copia anche questo e toglie l'ancora rimasta
   };
 }

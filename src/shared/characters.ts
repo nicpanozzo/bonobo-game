@@ -232,6 +232,7 @@ export interface ProjectileSpecial extends SpecialBase, SpecialHit {
   sprite?: ProjectileSprite; // in Godot il proiettile è questo disegno animato (il Piccione di Elvedeo)
   spawnX?: number; // pixel davanti al centro da cui parte (negativo: dietro); senza, davanti alle mani
   spawnY?: number; // pixel sopra i piedi da cui parte; senza, SPECIAL_MOVES.projectileY (il Piccione: dalla spalla)
+  cloud?: boolean; // non colpisce: chi ci entra resta sballato e chi l'ha tirata ci può atterrare una volta (NUVOLA, Marcomunista)
   boomerang?: boolean; // va avanti, si ferma e torna da chi l'ha tirato; colpisce all'andata e al ritorno (HAT, il cappello di Marcomunista)
   rests?: boolean; // cadendo si posa su blocchi e piattaforme e resta lì finché qualcuno la tocca (la Mina di bordo di OrsoBlu)
 }
@@ -1291,6 +1292,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     specials: {
       // gira una canna mentre para; lo scatto resta quello di base finché la scheda non lo dice
       neutral: { type: "projectile", name: "Cappello boomerang", startupMs: 180, cooldownMs: 450, speed: 900, gravity: 0, lifeMs: 3500, maxAlive: 1, boomerang: true, range: 46, height: 18, damage: 6, baseKnockback: 220, knockbackGrowth: 3, angleDeg: 40, color: 0xff3fa4 }, // ci si rimbalza sopra (physics/hat.ts)
+      side: { type: "projectile", name: "Nuvola", startupMs: 300, cooldownMs: 700, speed: 140, gravity: 0, lifeMs: 3000, maxAlive: 1, cloud: true, spawnX: 80, spawnY: 60, range: 130, height: 80, damage: 0, baseKnockback: 100, knockbackGrowth: 1, angleDeg: 0, color: 0xc9a7f0 }, // chi ci entra galleggia (physics/nuvola.ts); il knockback non si usa, la nuvola non colpisce
       down: { type: "counter", name: "Rolling", startupMs: 60, windowMs: 420, endLagMs: 460, minDamage: 8, multiplier: 1.3, range: 60, height: 60, baseKnockback: 440, knockbackGrowth: 9, angleDeg: 40 },
     },
     // il corpo che si può colpire, misurato sulla sagoma del fermo (#243)

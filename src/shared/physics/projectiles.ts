@@ -11,6 +11,7 @@ import { hitShield } from "./shield";
 import { platformSurfaceY } from "./stage";
 import { counterAbsorbs } from "./specials";
 import { stepHat } from "./hat";
+import { stepCloud } from "./nuvola";
 
 export interface Projectile extends ProjectileState {
   ageMs: number;
@@ -22,6 +23,7 @@ export interface Projectile extends ProjectileState {
   hatDir?: 1 | -1; // il Cappello boomerang (hat.ts): verso dell'andata
   hatHit?: string[]; // chi ha già preso in questo tratto (andata o ritorno)
   hatBack?: boolean; // sta tornando
+  rested?: boolean; // la Nuvola (nuvola.ts): chi l'ha tirata ci è già atterrato sopra
 }
 
 export interface Puddle extends PuddleState {
@@ -84,6 +86,10 @@ export function stepProjectiles(fighters: Fighter[], dtMs: number, ctx: PhysicsC
       carry(p, sp as SupremeEagle, byId, dtMs, ctx, end);
       continue;
     }
+    if (sp.cloud) {
+      stepCloud(p, sp, fighters, byId, dtMs, ctx, end);
+      continue;
+    }
     if (sp.boomerang) {
       stepHat(p, sp, fighters, byId, dtMs, ctx, end);
       continue;
@@ -111,7 +117,8 @@ export function stepProjectiles(fighters: Fighter[], dtMs: number, ctx: PhysicsC
       const a = alive[i];
       const b = alive[j];
       if (ended.has(a) || ended.has(b) || a.ownerId === b.ownerId) continue;
-      if (a.supreme || b.supreme) continue; // l'aquila non si ferma per un tiro
+      if (a.supreme || b.supreme) continue;
+      if (specOf(a).cloud || specOf(b).cloud) continue; // i tiri passano attraverso la Nuvola // l'aquila non si ferma per un tiro
       if (!overlap(boxOf(a, specOf(a)), boxOf(b, specOf(b)))) continue;
       end(a, "hit");
       end(b, "hit");

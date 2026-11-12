@@ -157,6 +157,7 @@ export function loseStock(f: Fighter, ctx: PhysicsContext): void {
   f.anchor = undefined; // l'ancora di OrsoBlu (#547) resta in mano
   f.fattanza = 0; // la Fattanza di Marcomunista riparte da Lucido
   f.echoes = [];
+  f.sballoMs = 0; // si rientra lucidi
   f.strafattoMs = 0;
   f.anchorThrows = 0;
   f.rewindTrail = []; // col KO il passato si perde: …COSA? non riporta in vita (#358)

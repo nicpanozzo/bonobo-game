@@ -1826,6 +1826,9 @@ func _draw_projectiles() -> void:
 		if word != "":
 			_draw_projectile_word(word, c, vel, color)
 			continue
+		if shot.get("cloud", false):
+			_draw_nuvola(c, size, color, float(pr.id)) # la Nuvola di Marcomunista: sbuffi trasparenti, non un ovale pieno
+			continue
 		var art: Variant = shot.get("sprite")
 		if art is Dictionary and _draw_projectile_sprite(art, c, vel, color):
 			continue
@@ -1835,6 +1838,17 @@ func _draw_projectiles() -> void:
 			_draw_oval(c - vel * 0.018 * i, angle, size * (1.0 - 0.15 * i), tc)
 		_draw_oval(c, angle, size, color)
 		_draw_oval(c + Vector2(-2, -2).rotated(angle), angle, size * 0.45, color.lightened(0.6))
+
+
+# La Nuvola di Marcomunista (NUVOLA): sbuffi lilla trasparenti che respirano piano, a forma di anello
+func _draw_nuvola(c: Vector2, size: Vector2, color: Color, seed: float) -> void:
+	var t := Time.get_ticks_msec() / 1000.0
+	for k in 9:
+		var a := TAU * float(k) / 9.0 + seed
+		var pos := c + Vector2(cos(a) * size.x * 0.36, sin(a) * size.y * 0.32)
+		var r := size.y * (0.26 + 0.05 * sin(t * 2.0 + float(k)))
+		draw_circle(pos, r, Color(color, 0.35))
+	draw_arc(c, size.y * 0.22, 0, TAU, 20, Color(color.lightened(0.4), 0.7), 3.0)
 
 
 # Un PNG di godot/data caricato una volta sola (null se manca): i proiettili disegnati e la suprema senza aquila
@@ -2583,6 +2597,14 @@ func _draw_fattanza(p: Dictionary, now: float, height: float) -> void:
 		draw_line(c + Vector2(26, 2), Vector2(float(p.x) + 8, float(p.y) - height * 0.85), Color.BLACK, 1.5)
 
 
+# Sballato dalla Nuvola di Marcomunista (NUVOLA): tre anelli di fumo lilla girano piano attorno alla testa
+func _draw_sballato(p: Dictionary, now: float, height: float) -> void:
+	var c := Vector2(float(p.x), float(p.y) - height * 1.05)
+	for k in 3:
+		var a := now / 450.0 + TAU * float(k) / 3.0
+		draw_arc(c + Vector2(cos(a) * height * 0.3, sin(a) * height * 0.08), 6.0, 0, TAU, 12, Color(FATTANZA_LILAC, 0.8), 2.0)
+
+
 func _draw_wet(p: Dictionary, now: float, height: float) -> void:
 	var offset := float(hash(p.id) % 1000) / 1000.0
 	for k in 6:
@@ -3185,6 +3207,8 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 		_draw_groove(p, fh) # il battito del Groove di Bradipo (#557)
 	if p.get("wet", false):
 		_draw_wet(p, now, fh) # bagnato dallo Sputo di Egiainuso (#557)
+	if p.get("sballato", false):
+		_draw_sballato(p, now, fh) # dentro la Nuvola di Marcomunista: anelli lilla che girano attorno alla testa
 	if p.has("fattanza"):
 		_draw_fattanza(p, now, fh) # la barra a foglia e la fluttuata col cappello di Marcomunista
 	var charge := float(p.get("charge", 0.0))

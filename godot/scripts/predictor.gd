@@ -209,7 +209,7 @@ static func predictable(p: Dictionary, stage: Dictionary, t := -1.0) -> bool:
 		return false
 	# La Fattanza di Marcomunista cambia gravità e passo a ogni livello e la fluttuata frena la caduta: il port
 	# non li sa, decide il server (si predice solo da Lucido e senza cappello aperto)
-	if p.get("floating", false) or float(p.get("fattanza", 0.0)) >= 1.0:
+	if p.get("floating", false) or p.get("sballato", false) or float(p.get("fattanza", 0.0)) >= 1.0:
 		return false
 	# Col fiore (#231) si va più piano: il port non lo sa, si torna allo stato del server finché dura
 	if p.get("powerup") != null:
