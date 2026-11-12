@@ -282,6 +282,7 @@ export type GameEvent =
   | { type: "shieldBreak"; id: string; x: number; y: number } // lo scudo di id si è rotto
   | { type: "grab"; id: string; targetId: string; x: number; y: number } // id afferra targetId (#109)
   | { type: "grabRelease"; id: string; targetId: string } // la presa finisce senza lancio: targetId si è liberato
+  | { type: "echo"; id: string; kind: AttackKind; x: number; y: number; facing: 1 | -1 } // l'ombra lilla di Marcomunista ripete un colpo in aria (FATTANZA)
   | { type: "botta"; id: string } // Marcomunista crolla dopo lo Strafatto (FATTANZA): sbadiglia e barcolla
   | { type: "counter"; id: string; attackerId: string; x: number; y: number } // id para il colpo di attackerId col contrattacco (E10) e risponde
   | { type: "projectile"; id: string; projectileId: number; x: number; y: number } // id tira un proiettile (E10)

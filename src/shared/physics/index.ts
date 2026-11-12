@@ -23,7 +23,7 @@
 //   held.ts      oggetti da impugnare e da sparo: scopa, pesce, pistola ad acqua, sparabolle
 
 import { isArcade, playPacman, playTetris, stepArcade } from "./arcade";
-import { floatHat, tickFattanza } from "./fattanza";
+import { floatHat, stepEchoes, tickFattanza } from "./fattanza";
 import { hookFighters, onRope, stepHook, swingAnchor, tightenAnchor } from "./anchor";
 import { resolveHits, tryStartAttack, updateAttack } from "./attacks";
 import { stepBassanese } from "./bassanese";
@@ -226,6 +226,7 @@ export function stepWorld(fighters: Fighter[], dtMs: number, ctx: PhysicsContext
   hookFighters(fighters, ctx); // l'ancora di OrsoBlu che prende qualcuno lo tira (#547)
   for (const f of fighters) stepCompanion(f, dtMs, ctx); // il beagle di Lampione (#369)
   resolveHits(fighters, ctx);
+  stepEchoes(fighters, dtMs, ctx); // le ombre lilla di Marcomunista da Fatto
   stepProjectiles(fighters, dtMs, ctx);
   stepRewinds(fighters, dtMs, ctx); // …COSA? di Marcomunista (#358)
   stepStorms(fighters, dtMs, ctx); // Tempesta! di Capt. OrsoBlu (#547)
