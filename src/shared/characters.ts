@@ -1259,16 +1259,16 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       footY: 222,
       scale: 0.5, // alto come le pose del foglio
       animations: {
-        idle: { fps: 8, loop: true }, // respira, le braccia si aprono appena
-        walk: { fps: 6, loop: true }, // passo e corsa del foglio, alternati
-        dash: { fps: 1, loop: false },
+        idle: { fps: 8, loop: true }, // MA-01 (13/11/2026, nuovo look): respira rilassato in guardia
+        walk: { fps: 8, loop: true }, // MA-02: cammina
+        dash: { fps: 8, loop: true }, // MA-02: corre
         jump: { fps: 24, loop: false },
         fall: { fps: 10, loop: true },
         doubleJump: { fps: 24, loop: false }, // la giravolta con l'anello verde
         tumble: { fps: 18, loop: true },
         land: { fps: 24, loop: false },
         hit: { fps: 12, loop: false }, // mano in faccia, piegato all'indietro
-        taunt: { fps: 10, loop: false }, // tai chi con l'energia
+        taunt: { fps: 6, loop: false }, // MA-01: tai chi con l'energia lilla
         shield: { fps: 8, loop: true },
         light: { fps: 24, loop: false, hitFrame: 2 }, // colpo di palmo
         heavy: { fps: 24, loop: false, hitFrame: 5 }, // calcio con l'esplosione verde
@@ -1281,9 +1281,10 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         recovery: { fps: 24, loop: false, hitFrame: 0 },
         grab: { fps: 24, loop: false, hitFrame: 2 },
         throw: { fps: 24, loop: false, hitFrame: 0 },
-        specialNeutral: { fps: 24, loop: false, hitFrame: 5 }, // spinta in avanti
+        specialNeutral: { fps: 6, loop: false, hitFrame: 9, startFrame: 4 }, // MA-12: lancia il Cappello boomerang (il cappello in volo lo disegna il gioco)
+        specialSide: { fps: 6, loop: false, hitFrame: 7, startFrame: 3 }, // MA-12: soffia la Nuvola
         specialDown: { fps: 24, loop: false, hitFrame: 1 }, // Rolling: para, mano alla bocca
-        supreme: { fps: 24, loop: false, hitFrame: 12 }, // …COSA?: l'anello, poi la nuvola quando torna indietro
+        supreme: { fps: 12, loop: false, hitFrame: 6 }, // …COSA?: l'anello, poi la nuvola quando torna indietro
       },
     },
     // dalla scheda: corsa non molto, aria e salto abbastanza, leggero, gravità bassa (la #352 dà lo stile del disegno, non i numeri)
