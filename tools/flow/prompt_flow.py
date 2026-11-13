@@ -55,10 +55,10 @@ CHARS = {
     ),
     "marcomunista": dict(
         code="MA", name="Marcomunista", style="illustrato", set="completo", wave=3,
-        character="CHARACTER (must stay identical in every frame, same proportions, same colors, same face): the bearded man from the reference image. Stocky, light skin, completely bald under the hat. A fisherman bucket hat with patches of hot pink (#E16393), mint (#A5CEB7) and yellow (#F2C840). Thick black rectangular glasses, a full bushy dark-brown beard (#3B2A20) and mustache, a friendly confident smile. A bright yellow hoodie (#F2C840) with drawstrings and a front pocket, charcoal-grey jeans (#4A484E), white sneakers (#E2E6ED) with pink details (#B75B7A). When he does martial arts his energy is lilac (#C9A7F0), never green.",
-        avoid="hair, green energy, a different hat",
+        character="CHARACTER (must stay identical in every frame, same proportions, same colors, same face): the man from the reference image, a sly, laid-back stoner. Stocky, light skin, completely bald with a shiny scalp. A small snug bucket hat sitting low on his head, fluorescent hot pink (#FF3FA4) with a pattern of small neon lime-yellow cannabis leaves (#E4FF3A). Thin round wire glasses, a short trimmed dark-brown beard (#3B2A20) and mustache, half-closed heavy-lidded eyes and a sly lazy half-smile. A bright yellow hoodie (#F2C840) with drawstrings and a front pocket, charcoal-grey jeans (#4A484E), white sneakers (#E2E6ED) with pink details (#B75B7A). When he does martial arts his energy is lilac (#C9A7F0), never green.",
+        avoid="hair, a long or bushy beard, rectangular glasses, green energy, green leaves, a bigger, taller or different hat, smoke",
         hold="holds it in the hand nearer to the viewer",
-        note="Da rifare del tutto: set completo. La sua energia è lilla (come `strikeColor`), mai verde: sparirebbe col verde dello sfondo. Il tormentone \"Viva il comunismo!\" lo mostra il gioco, non la clip.",
+        note="Nuovo look del 12/11 (immagine di partenza v2: cappello rosa piccolo con foglie gialle, occhiali tondi, barba corta). Da rifare del tutto: set completo più le clip della Fattanza (MA-22, MA-23). La sua energia è lilla (come `strikeColor`), mai verde: sparirebbe col verde dello sfondo, e per lo stesso motivo le foglie sul cappello sono gialle. Il tormentone \"Viva il comunismo!\" lo mostra il gioco, non la clip.",
     ),
     "egiainuso": dict(
         code="EG", name="Egiainuso", style="omino", set="completo", wave=4,
@@ -119,6 +119,10 @@ M = {
     "specialDown": ("speciale giù", ["specialDown"], True, "he raises both arms in a guard, holds it for a moment, then throws one quick punch forward"),
     "recovery": ("recupero", ["recovery"], True, "he crouches and leaps very high straight up, spinning around his vertical axis with both arms raised, then falls back down and lands on the same spot"),
     "recovery_helpless": ("recupero e caduta indifesa", ["recovery", "helpless"], True, "he crouches and leaps very high straight up, spinning around his vertical axis with both arms raised, then falls back down limp, arms and legs flailing loosely, and lands on the same spot"),
+    "hatFloat": ("fluttua col cappello", ["float"], False, "he jumps up high and drifts down very slowly, holding his hat above his head like a parachute"),
+    "hatBounce": ("rimbalzo sul cappello", ["hatBounce"], False, "he jumps, bounces off an invisible point in mid-air and lands on the same spot"),
+    "botta": ("la botta", ["botta"], False, "he yawns hugely and staggers drowsily on the spot, but never falls"),
+    "strafatto": ("strafatto", ["strafatto"], False, "he floats a little above the ground in a blissful cross-legged pose, then lands softly"),
     "stunned": ("stordito", ["stunned"], False, "he is dizzy on the spot: he wobbles and sways, head circling, knees buckling, arms dangling, but never falls"),
     "grab_pummel": ("presa e colpetti", ["grab", "pummel"], True, "he lunges forward and grabs an invisible opponent with both hands at chest height, holds the empty air firmly and headbutts forward twice, then lets go; nothing is drawn in his hands"),
     "pummel": ("colpetti", ["pummel"], True, "he grabs an invisible opponent in front of him with both hands at chest height, holds the empty air firmly and headbutts forward twice, then lets go; nothing is drawn in his hands"),
@@ -202,9 +206,9 @@ OVR = {
         "airUp": "he jumps straight up; at the top he does one quick scissor kick upward, and lands on the same spot",
         "airDown": "he jumps straight up; at the top he punches straight down below him, pulls the fist back, and lands on the same spot",
         "heavyAir": "he jumps straight up; at the top he spins once with a ring of lilac energy around his waist that fades at once, and lands on the same spot",
-        "specialNeutral": "he pushes both open palms forward in one strong martial-arts push; nothing leaves his hands",
-        "specialSide": "he slides quickly forward a short distance with one palm strike, then steps back to the same spot",
-        "specialDown": "he raises both open hands in a parry, holds the guard for a moment, then brings one hand to his mouth as if smoking",
+        "specialNeutral": "he snatches the pink hat off his head with the hand nearer to the viewer and throws it forward like a frisbee with a snap of the wrist: the hat spins away to the right and leaves the frame; bald, he holds the follow-through for a moment, then opens his hand as the spinning hat flies back in from the right, he catches it and puts it back on his head",
+        "specialSide": "he cups both hands in front of his mouth and blows out slowly: a small round puffy lilac cloud forms in front of him and drifts forward, then it fades away before reaching the edge of the frame",
+        "specialDown": "he raises both open hands in a parry, holds the guard for a moment, then brings one hand to his mouth as if smoking, with no smoke",
         "recovery_helpless": "he thrusts both arms to the sky and rises very high straight up with a short trail of lilac energy under his feet, then falls back down limp, arms and legs flailing loosely, and lands on the same spot",
         "supreme": "he raises both hands to his head in shock; a ring of lilac energy spreads around his waist; then a small lilac cloud wraps around him for a moment and fades away, leaving him standing",
         "grab_pummel": "he lunges forward and grabs an invisible opponent with both hands, holds the empty air firmly and strikes twice with his palm, then lets go; nothing is drawn in his hands",
@@ -216,6 +220,10 @@ OVR = {
         "hit": "he is struck by an invisible blow: one hand goes to his face and he bends backward, then recovers",
         "getupAttack": "he falls flat on his back, then spins on the ground in a breakdance windmill kick, legs swinging in a full circle, and stands up",
         "ledge_strike": "one quick low forward kick",
+        "hatFloat": "he jumps up high; at the top he takes the pink hat off his head and holds it above him with both hands by the brim, like a little parachute, and drifts down very slowly, legs dangling and swaying lazily, with a dreamy smile; just before landing he puts the hat back on his head and lands softly on the same spot",
+        "hatBounce": "he jumps straight up, lands with both feet on an invisible springy point in mid-air at the height of his own head, bounces off it even higher with a small ring of lilac energy under his feet that fades at once, and falls back to land on the same spot",
+        "botta": "he gives a huge slow yawn, his eyes almost closed, then staggers drowsily on the spot, swaying and wobbling on soft knees with his head nodding, but never falls, and finally shakes his head awake",
+        "strafatto": "he grins blissfully with half-closed eyes and floats a little above the ground in a cross-legged meditation pose, slowly bobbing up and down, a soft lilac glow pulsing around him, then he lands softly back on his feet",
     },
     "egiainuso": {
         "idle": "he sways gently on his stick legs, breathing",
@@ -288,6 +296,8 @@ SETS = {
         ("bordo", "Bordo", ["ledge"]),
     ],
 }
+# Clip in più di un personaggio, in coda al suo set (Marcomunista: la Fattanza del 12/11)
+EXTRA = {"marcomunista": [("fattanza-a", "Fattanza A", ["hatFloat", "hatBounce"]), ("fattanza-b", "Fattanza B", ["botta", "strafatto"])]}
 # Elvedeo: il doppio salto e il pesante in aria mancano ai suoi video
 VARIANTS = {"elvedeo": {"salti": ["salti_doppio", "airDodge", "helpless"], "recupero": ["recovery", "heavyAir", "stunned"]}}
 
@@ -619,7 +629,7 @@ def clips_of(cid):
     c = CHARS[cid]
     ref = f"{REF}/personaggi/{cid}.png"
     out = []
-    for n, (slug, title, moves) in enumerate(SETS[c["set"]], 1):
+    for n, (slug, title, moves) in enumerate(SETS[c["set"]] + EXTRA.get(cid, []), 1):
         moves = VARIANTS.get(cid, {}).get(slug, moves)
         code = f"{c['code']}-{n:02d}"
         if moves == ["supreme"]:

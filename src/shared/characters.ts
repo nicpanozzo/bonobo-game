@@ -1245,6 +1245,8 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       { name: "Slancio rivoluzionario", text: "lo lancia in alto e gli vola dietro col recupero", steps: [{ move: "heavyUp", windowMs: 400 }, { move: "recovery" }] }, // lo lancia e gli vola dietro
       { name: "Falce e martello", text: "il leggero lo alza, il colpo in aria lo abbatte", steps: [{ move: "light", windowMs: 400, angleDeg: 65 }, { move: "lightAir" }] }, // il leggero lo alza, il colpo in aria lo abbatte
       { name: "Sol dell'avvenire", text: "colpo in aria, pugno in su e via verso il sole col recupero", steps: [{ move: "lightAir", windowMs: 400 }, { move: "lightUp", windowMs: 400, holdMs: 450 }, { move: "recovery" }] },
+      { name: "Cappellata", text: "pugno, sgambetto che lo solleva e cappello in faccia", steps: [{ move: "light", windowMs: 400 }, { move: "lightDown", windowMs: 400, holdMs: 450, angleDeg: 45 }, { move: "specialNeutral" }] }, // il Cappello boomerang chiude (12/11); sollevato non tocca terra e non può fare la tecnica
+      { name: "Mongolfiera", text: "due colpi in aria di fila, leggero come un pallone", steps: [{ move: "lightAir", windowMs: 400 }, { move: "lightAir", holdMs: 450 }] },
     ],
     airPop: true,
     fattanza: true, // il personaggio fatto (Nicola, 12/11/2026): physics/fattanza.ts
@@ -1291,7 +1293,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     supreme: { type: "rewind", name: "…COSA?", windupMs: 80, backMs: 3000, endLagMs: 150, stunRadius: 160, stunMs: 1200, bombFuseMs: 900 },
     specials: {
       // gira una canna mentre para; lo scatto resta quello di base finché la scheda non lo dice
-      neutral: { type: "projectile", name: "Cappello boomerang", startupMs: 180, cooldownMs: 450, speed: 900, gravity: 0, lifeMs: 3500, maxAlive: 1, boomerang: true, range: 46, height: 18, damage: 6, baseKnockback: 220, knockbackGrowth: 3, angleDeg: 40, color: 0xff3fa4 }, // ci si rimbalza sopra (physics/hat.ts)
+      neutral: { type: "projectile", name: "Cappello boomerang", startupMs: 60, cooldownMs: 450, speed: 900, gravity: 0, lifeMs: 3500, maxAlive: 1, boomerang: true, range: 46, height: 18, damage: 6, baseKnockback: 220, knockbackGrowth: 3, angleDeg: 40, color: 0xff3fa4 }, // ci si rimbalza sopra (physics/hat.ts)
       side: { type: "projectile", name: "Nuvola", startupMs: 300, cooldownMs: 700, speed: 140, gravity: 0, lifeMs: 3000, maxAlive: 1, cloud: true, spawnX: 80, spawnY: 60, range: 130, height: 80, damage: 0, baseKnockback: 100, knockbackGrowth: 1, angleDeg: 0, color: 0xc9a7f0 }, // chi ci entra galleggia (physics/nuvola.ts); il knockback non si usa, la nuvola non colpisce
       down: { type: "counter", name: "Rolling", startupMs: 60, windowMs: 420, endLagMs: 460, minDamage: 8, multiplier: 1.3, range: 60, height: 60, baseKnockback: 440, knockbackGrowth: 9, angleDeg: 40 },
     },
