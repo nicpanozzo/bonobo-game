@@ -3,6 +3,8 @@ extends RefCounted
 
 var runner
 
+const FighterPose := preload("res://scripts/fighter_pose.gd")
+
 
 func test_da_fatto_non_si_predice() -> void:
 	var p := {"x": 100, "y": 100, "predict": {}, "attack": null, "hitstun": false, "fattanza": 0.4}
