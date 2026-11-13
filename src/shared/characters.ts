@@ -1273,12 +1273,12 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         taunt: { fps: 6, loop: false }, // MA-01: tai chi con l'energia lilla
         shield: { fps: 8, loop: true },
         light: { fps: 6, loop: false, hitFrame: 6, startFrame: 2 }, // MA-04: colpo di palmo con lo sbuffo lilla
-        heavy: { fps: 24, loop: false, hitFrame: 5 }, // calcio con l'esplosione verde
+        heavy: { fps: 6, loop: false, hitFrame: 5, startFrame: 1 }, // MA-07 (13/11/2026): calcio laterale con lo scoppio lilla
         lightUp: { fps: 6, loop: false, hitFrame: 1 }, // MA-04: palmo verso l'alto
-        heavyUp: { fps: 24, loop: false, hitFrame: 4 },
+        heavyUp: { fps: 6, loop: false, hitFrame: 8, startFrame: 1 }, // MA-07: braccia al cielo col lampo lilla
         lightDown: { fps: 6, loop: false, hitFrame: 1 }, // MA-05: palmo basso, accucciato
-        heavyDown: { fps: 24, loop: false, hitFrame: 3 }, // giù di peso, energia a terra dai due lati
-        lightAir: { fps: 24, loop: false, hitFrame: 1 },
+        heavyDown: { fps: 6, loop: false, hitFrame: 6, startFrame: 1 }, // MA-08: palmi a terra, l'onda lilla ai due lati
+        lightAir: { fps: 6, loop: false, hitFrame: 10, startFrame: 8, activeEnd: 12 }, // MA-09: la stella a braccia e gambe aperte
         heavyAir: { fps: 24, loop: false, hitFrame: 3 }, // l'anello attorno alla vita
         recovery: { fps: 24, loop: false, hitFrame: 0 },
         grab: { fps: 24, loop: false, hitFrame: 2 },
@@ -1305,12 +1305,12 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     // le zone dei colpi dove arriva il disegno (#243, tools/sprite/zone_dei_colpi.py)
     attacks: {
       light: { range: 46, height: 30, boxX: 0, boxY: -53 },
-      heavy: { range: 74, height: 44, boxX: 0, boxY: -66 },
+      heavy: { range: 49, height: 44, boxX: -3, boxY: -59 },
       lightUp: { range: 54, height: 48, boxX: -21, boxY: -77 },
       lightDown: { range: 42, height: 24, boxX: -14, boxY: -28 },
       lightAir: { range: 49, height: 50, boxX: 0, boxY: -86 },
-      heavyUp: { range: 80, height: 64, boxX: -41, boxY: -96 },
-      heavyDown: { range: 62, height: 30, boxX: -22, boxY: -32 },
+      heavyUp: { range: 80, height: 64, boxX: -34, boxY: -80 },
+      heavyDown: { range: 62, height: 30, boxX: -24, boxY: -30 },
       heavyAir: { range: 54, height: 60, boxX: 0, boxY: -68 },
       dashAttack: { range: 41, height: 44, boxX: -2, boxY: -58 },
     },
