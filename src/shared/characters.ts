@@ -1314,18 +1314,18 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       down: { type: "counter", name: "Rolling", startupMs: 60, windowMs: 420, endLagMs: 460, minDamage: 8, multiplier: 1.3, range: 60, height: 60, baseKnockback: 440, knockbackGrowth: 9, angleDeg: 40 },
     },
     // il corpo che si può colpire, misurato sulla sagoma del fermo (#243)
-    hurtbox: { width: 32, height: 92 },
+    hurtbox: { width: 33, height: 96 },
     // le zone dei colpi dove arriva il disegno (#243, tools/sprite/zone_dei_colpi.py)
     attacks: {
-      light: { range: 46, height: 30, boxX: 0, boxY: -53 },
-      heavy: { range: 49, height: 44, boxX: -3, boxY: -59 },
-      lightUp: { range: 54, height: 48, boxX: -21, boxY: -77 },
-      lightDown: { range: 42, height: 24, boxX: -14, boxY: -28 },
+      light: { range: 67, height: 30, boxX: 34, boxY: -74 },
+      heavy: { range: 91, height: 44, boxX: 8, boxY: -73 },
+      lightUp: { range: 54, height: 62, boxX: -12, boxY: -150 },
+      lightDown: { range: 58, height: 24, boxX: 0, boxY: -24 },
       lightAir: { range: 49, height: 50, boxX: 0, boxY: -86 },
-      heavyUp: { range: 80, height: 64, boxX: -34, boxY: -80 },
-      heavyDown: { range: 62, height: 30, boxX: -24, boxY: -30 },
+      heavyUp: { range: 80, height: 83, boxX: -25, boxY: -159 },
+      heavyDown: { range: 81, height: 30, boxX: 0, boxY: -30 },
       heavyAir: { range: 54, height: 60, boxX: 0, boxY: -68 },
-      dashAttack: { range: 41, height: 44, boxX: -2, boxY: -58 },
+      dashAttack: { range: 75, height: 44, boxX: 8, boxY: -82 },
     },
   },
 
