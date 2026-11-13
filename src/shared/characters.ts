@@ -1261,7 +1261,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       dir: "assets/characters/marcomunista",
       frameWidth: 400, // largo: calcio e nuvola della super escono di lato
       frameHeight: 240,
-      footY: 222,
+      footY: 206, // le clip Flow del nuovo look hanno le suole a 206: con 222 restava sollevato da terra
       scale: 0.63, // nuovo look (13/11/2026): la sagoma delle clip Flow è più bassa, così resta alto come prima
       animations: {
         idle: { fps: 8, loop: true }, // MA-01 (13/11/2026, nuovo look): respira rilassato in guardia
