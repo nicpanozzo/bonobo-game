@@ -9,7 +9,9 @@ Per ogni fotogramma di ogni stato in public/assets/characters/<id>/:
 Salva anche cappello.png, il cappello del primo fotogramma del fermo (in "image" larghezza del rosa e centro): il gioco lo disegna sopra la testa
 quando lo indossa e lo usa come Cappello boomerang quando lo lancia.
 
-Uso: python3 tools/sprite/stacca_cappello.py marcomunista [footY]
+Uso: python3 tools/sprite/stacca_cappello.py marcomunista [footY] [--controlla]
+Con --controlla non tocca le strisce: ricontrolla solo i punti di cappello.json su quelle già calve
+(toglie quelli lontani dal corpo, gira di 180 gradi quelli a testa in giù).
 Si lancia una volta sola sulle strisce col cappello: rilanciato su strisce già calve non trova niente.
 """
 import colorsys
@@ -21,8 +23,9 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
-cid = sys.argv[1] if len(sys.argv) > 1 else "marcomunista"
-FOOT_Y = int(sys.argv[2]) if len(sys.argv) > 2 else 206
+ARGS = [a for a in sys.argv[1:] if not a.startswith("--")]
+cid = ARGS[0] if ARGS else "marcomunista"
+FOOT_Y = int(ARGS[1]) if len(ARGS) > 1 else 206
 D = Path("public/assets/characters") / cid
 FW, FH = 400, 240
 
@@ -144,7 +147,35 @@ def process_state(path, hat_img_out=None):
     return pts, hat_crop
 
 
+def check(data):
+    """Un punto vale se sta sulla testa: vicino al corpo (il cappello caduto per terra nella clip no).
+    A testa in giù (punto sotto il centro del corpo) il cappello si gira."""
+    for state, pts in data.items():
+        a = np.array(Image.open(D / f"{state}.png").convert("RGBA"))
+        for f, p in enumerate(pts):
+            if not p:
+                continue
+            fr = a[:, f * FW:(f + 1) * FW, 3] > 100
+            ys, xs = np.nonzero(fr)
+            if len(xs) == 0:
+                pts[f] = None
+                continue
+            x, y = p[0] + FW / 2, p[1] + FOOT_Y
+            if np.min((xs - x) ** 2 + (ys - y) ** 2) > 8 ** 2:
+                pts[f] = None
+                continue
+            if y > ys.mean() + 10 and abs(p[2]) <= 90:
+                p[2] = round(p[2] + 180.0, 1)
+    return data
+
+
 def main():
+    if "--controlla" in sys.argv:
+        j = json.loads((D / "cappello.json").read_text())
+        j["states"] = check(j["states"])
+        (D / "cappello.json").write_text(json.dumps(j, separators=(",", ":")) + "\n")
+        print("punti ricontrollati")
+        return
     data = {}
     hat = None
     order = sorted(D.glob("*.png"), key=lambda p: (p.stem != "idle", p.stem))
@@ -157,6 +188,7 @@ def main():
         if p.stem == "idle" and crop is not None:
             hat = crop
         print(f"{p.stem}: cappello in {sum(1 for x in pts if x)} fotogrammi su {len(pts)}")
+    data = check(data)
     meta = {}
     if hat:
         c, px, py, w = hat
