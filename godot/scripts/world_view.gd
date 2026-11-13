@@ -129,6 +129,8 @@ var show_hitboxes := false # allenamento (E15): corpo dei lottatori visibile anc
 var attack_boxes := true # rettangolo del colpo in corso (opzioni → Video), main.gd lo legge dalle preferenze
 var _air_jumps := {} # id giocatore -> quando ha fatto il doppio salto (ms), per l'animazione doubleJump (#103)
 var _taunts := {} # id giocatore -> quando ha provocato (ms), per l'animazione taunt (E7)
+var _fattanza_lvl := {} # id giocatore -> ultimo livello di Fattanza visto, per l'effetto quando cambia
+const FATTANZA_NAMES := ["Lucido", "Rilassato...", "Fatto!", "STRAFATTO!"]
 var _bottas := {} # id giocatore -> quando è crollato dopo lo Strafatto (ms), per l'animazione botta
 var _supreme_ready := {} # id giocatore -> true se aveva la suprema pronta all'ultimo disegno: al passaggio un'onda dorata
 var _holding := {} # id di chi tiene qualcuno con la presa (#109), dall'ultimo snapshot
@@ -2563,11 +2565,33 @@ func _draw_fattanza(p: Dictionary, now: float, height: float) -> void:
 	var level := float(p.get("fattanza", 0.0))
 	var levels := float(game.get("fattanza", {}).get("levels", 3))
 	var full := level >= levels
-	var top := Vector2(float(p.x), float(p.y) - height * 1.25)
-	var w := 42.0
-	var h := 6.0
+	var step := int(floor(level))
+	var before: int = int(_fattanza_lvl.get(p.id, step))
+	_fattanza_lvl[p.id] = step
+	var mid := Vector2(float(p.x), float(p.y) - height * 0.5)
+	if step > before and not p.get("respawning", false):
+		# Sale di livello: scoppio di foglie gialle e anello lilla, e lo dice
+		_sparks.append({"x": mid.x, "y": mid.y, "age": 0.0, "size": 50.0 + 25.0 * step, "color": Color(FATTANZA_LILAC, 0.85)})
+		_sparks.append({"x": mid.x, "y": float(p.y) - height * 1.05, "age": 0.0, "size": 30.0 + 10.0 * step, "color": FATTANZA_LEAF})
+		_speech.say(p.id, FATTANZA_NAMES[clampi(step, 0, FATTANZA_NAMES.size() - 1)])
+		if step >= int(levels):
+			_shake = maxf(_shake, 4.0)
+	elif step < before and step > 0:
+		_sparks.append({"x": mid.x, "y": mid.y, "age": 0.0, "size": 36.0, "color": Color(0.7, 0.7, 0.75, 0.6)}) # scende: sbuffo grigio
+	if step >= 1 and not Access.calm:
+		# Più è fatto, più è avvolto: alone lilla che pulsa e fumo lilla che sale dal cappello
+		var k := level / levels
+		var glow := Color(FATTANZA_LILAC, (0.10 + 0.16 * k) * (0.75 + 0.25 * sin(now / 300.0)))
+		draw_set_transform(mid, 0.0, Vector2(1.0, 1.6))
+		draw_circle(Vector2.ZERO, height * (0.32 + 0.12 * k), glow)
+		draw_set_transform(Vector2.ZERO)
+		_draw_power_smoke(p, now, height, k * 0.8, Color(FATTANZA_LILAC.lerp(Color.WHITE, 0.35)))
+	var top := Vector2(float(p.x), float(p.y) - height * 1.3)
+	var w := 56.0
+	var h := 8.0
 	var bar := Rect2(top.x - w / 2, top.y, w, h)
-	draw_rect(bar, Color(0, 0, 0, 0.55))
+	draw_rect(bar.grow(1.5), Color(1, 1, 1, 0.85)) # bordo chiaro: si legge su ogni fondale
+	draw_rect(bar, Color(0, 0, 0, 0.7))
 	var fill := clampf(level / levels, 0.0, 1.0)
 	var col := FATTANZA_LEAF
 	if full:
@@ -2619,7 +2643,7 @@ func _draw_wet(p: Dictionary, now: float, height: float) -> void:
 
 # Il fumo: sbuffi grigio-verdi che salgono lenti dalla testa e si allargano, sempre gli stessi per lo stesso istante
 # level (#302): quanto si è fatti col bong; il fumo diventa più fitto, grande e mosso. 0 = il fiore, fumo leggero
-func _draw_power_smoke(p: Dictionary, now: float, height: float, level: float = 0.0) -> void:
+func _draw_power_smoke(p: Dictionary, now: float, height: float, level: float = 0.0, tint := Color(0.86, 0.9, 0.84)) -> void:
 	if Access.calm:
 		return
 	var offset := float(hash(p.id) % 1000) / 1000.0
@@ -2628,7 +2652,7 @@ func _draw_power_smoke(p: Dictionary, now: float, height: float, level: float = 
 		var life := fmod(now / (1800.0 - 600.0 * level) + float(k) / puffs + offset, 1.0)
 		var drift := sin(now / 700.0 + k * 1.7 + offset * TAU) * (10.0 + 26.0 * level) * life
 		var pos := Vector2(p.x + p.facing * 14.0 + drift, p.y - height * 0.85 - life * (80.0 + 60.0 * level))
-		draw_circle(pos, (5.0 + life * 13.0) * (1.0 + level), Color(0.86, 0.9, 0.84, (0.55 + 0.25 * level) * (1.0 - life)))
+		draw_circle(pos, (5.0 + life * 13.0) * (1.0 + level), Color(tint, (0.55 + 0.25 * level) * (1.0 - life)))
 
 
 # Chi vola veloce (lanciato lontano) lascia dietro di sé delle sagome che sbiadiscono
