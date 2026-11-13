@@ -12859,6 +12859,24 @@
             "frames": 21,
             "src": "anchorClimb"
           },
+          "float": {
+            "fps": 8,
+            "loop": true,
+            "frames": 6,
+            "src": "fall"
+          },
+          "botta": {
+            "fps": 12,
+            "loop": false,
+            "frames": 17,
+            "src": "hit"
+          },
+          "strafatto": {
+            "fps": 12,
+            "loop": true,
+            "frames": 20,
+            "src": "idle"
+          },
           "gripIdle": {
             "fps": 12,
             "loop": true,
@@ -15104,6 +15122,24 @@
             "frames": 24,
             "src": "ledge"
           },
+          "float": {
+            "fps": 24,
+            "loop": true,
+            "frames": 12,
+            "src": "fall"
+          },
+          "botta": {
+            "fps": 24,
+            "loop": false,
+            "frames": 8,
+            "src": "hit"
+          },
+          "strafatto": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
           "gripIdle": {
             "fps": 12,
             "loop": true,
@@ -15768,6 +15804,24 @@
             "frames": 3,
             "src": "jump"
           },
+          "float": {
+            "fps": 6,
+            "loop": true,
+            "frames": 2,
+            "src": "fall"
+          },
+          "botta": {
+            "fps": 24,
+            "loop": false,
+            "frames": 5,
+            "src": "hit"
+          },
+          "strafatto": {
+            "fps": 10,
+            "loop": true,
+            "frames": 18,
+            "src": "idle"
+          },
           "gripIdle": {
             "fps": 10,
             "loop": true,
@@ -16375,6 +16429,24 @@
             "frames": 17,
             "src": "jump"
           },
+          "float": {
+            "fps": 6,
+            "loop": true,
+            "frames": 3,
+            "src": "fall"
+          },
+          "botta": {
+            "fps": 12,
+            "loop": false,
+            "frames": 12,
+            "src": "hit"
+          },
+          "strafatto": {
+            "fps": 6,
+            "loop": true,
+            "frames": 11,
+            "src": "idle"
+          },
           "gripIdle": {
             "fps": 6,
             "loop": true,
@@ -16923,6 +16995,24 @@
             "frames": 24,
             "src": "ledge"
           },
+          "float": {
+            "fps": 24,
+            "loop": true,
+            "frames": 12,
+            "src": "fall"
+          },
+          "botta": {
+            "fps": 24,
+            "loop": false,
+            "frames": 8,
+            "src": "hit"
+          },
+          "strafatto": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
           "gripIdle": {
             "fps": 12,
             "loop": true,
@@ -17289,6 +17379,24 @@
                 "loop": true,
                 "frames": 24,
                 "src": "ledge"
+              },
+              "float": {
+                "fps": 24,
+                "loop": true,
+                "frames": 12,
+                "src": "fall"
+              },
+              "botta": {
+                "fps": 24,
+                "loop": false,
+                "frames": 8,
+                "src": "hit"
+              },
+              "strafatto": {
+                "fps": 12,
+                "loop": true,
+                "frames": 24,
+                "src": "idle"
               },
               "gripIdle": {
                 "fps": 12,
@@ -17920,6 +18028,24 @@
             "loop": false,
             "frames": 4,
             "src": "jump"
+          },
+          "float": {
+            "fps": 10,
+            "loop": true,
+            "frames": 4,
+            "src": "fall"
+          },
+          "botta": {
+            "fps": 16,
+            "loop": false,
+            "frames": 8,
+            "src": "hit"
+          },
+          "strafatto": {
+            "fps": 8,
+            "loop": true,
+            "frames": 15,
+            "src": "idle"
           },
           "gripIdle": {
             "fps": 8,
@@ -18568,6 +18694,24 @@
             "loop": true,
             "frames": 24,
             "src": "ledge"
+          },
+          "float": {
+            "fps": 24,
+            "loop": true,
+            "frames": 12,
+            "src": "fall"
+          },
+          "botta": {
+            "fps": 24,
+            "loop": false,
+            "frames": 8,
+            "src": "hit"
+          },
+          "strafatto": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
           },
           "gripIdle": {
             "fps": 12,
@@ -19229,6 +19373,24 @@
             "frames": 14,
             "src": "jump"
           },
+          "float": {
+            "fps": 8,
+            "loop": true,
+            "frames": 13,
+            "src": "float"
+          },
+          "botta": {
+            "fps": 16,
+            "loop": false,
+            "frames": 16,
+            "src": "botta"
+          },
+          "strafatto": {
+            "fps": 8,
+            "loop": true,
+            "frames": 20,
+            "src": "strafatto"
+          },
           "gripIdle": {
             "fps": 8,
             "loop": true,
@@ -19850,6 +20012,24 @@
             "frames": 24,
             "src": "ledge"
           },
+          "float": {
+            "fps": 24,
+            "loop": true,
+            "frames": 18,
+            "src": "fall"
+          },
+          "botta": {
+            "fps": 24,
+            "loop": false,
+            "frames": 21,
+            "src": "hit"
+          },
+          "strafatto": {
+            "fps": 12,
+            "loop": true,
+            "frames": 23,
+            "src": "idle"
+          },
           "gripIdle": {
             "fps": 12,
             "loop": true,
@@ -20464,6 +20644,24 @@
             "frames": 24,
             "src": "ledge"
           },
+          "float": {
+            "fps": 24,
+            "loop": true,
+            "frames": 12,
+            "src": "fall"
+          },
+          "botta": {
+            "fps": 24,
+            "loop": false,
+            "frames": 8,
+            "src": "hit"
+          },
+          "strafatto": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
           "gripIdle": {
             "fps": 12,
             "loop": true,
@@ -21075,6 +21273,24 @@
             "loop": true,
             "frames": 24,
             "src": "ledge"
+          },
+          "float": {
+            "fps": 24,
+            "loop": true,
+            "frames": 12,
+            "src": "fall"
+          },
+          "botta": {
+            "fps": 24,
+            "loop": false,
+            "frames": 8,
+            "src": "hit"
+          },
+          "strafatto": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
           },
           "gripIdle": {
             "fps": 12,
@@ -21706,6 +21922,24 @@
             "frames": 24,
             "src": "ledge"
           },
+          "float": {
+            "fps": 24,
+            "loop": true,
+            "frames": 12,
+            "src": "fall"
+          },
+          "botta": {
+            "fps": 24,
+            "loop": false,
+            "frames": 8,
+            "src": "hit"
+          },
+          "strafatto": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
+          },
           "gripIdle": {
             "fps": 12,
             "loop": true,
@@ -22318,6 +22552,24 @@
             "loop": true,
             "frames": 24,
             "src": "ledge"
+          },
+          "float": {
+            "fps": 24,
+            "loop": true,
+            "frames": 12,
+            "src": "fall"
+          },
+          "botta": {
+            "fps": 24,
+            "loop": false,
+            "frames": 8,
+            "src": "hit"
+          },
+          "strafatto": {
+            "fps": 12,
+            "loop": true,
+            "frames": 24,
+            "src": "idle"
           },
           "gripIdle": {
             "fps": 12,

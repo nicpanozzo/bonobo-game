@@ -40,3 +40,7 @@ npm run export:godot
 ```
 
 La GIF non è nella repo (chiedila a Nicola). Quali fotogrammi vanno in quale stato e dove togliere i capelli lo dice lo script (`PLAN` e `NAPE`). Se cambiano i fotogrammi d'impatto, vanno ricopiati in `characters.ts`.
+
+## Fattanza (13/11/2026)
+
+Dalle clip Flow col nuovo look: `float` (MA-22, fotogrammi 16-40 a passi di 2: il cappello sopra la testa come paracadute, in ciclo), `botta` (MA-23, uno ogni 4: sbadiglia e barcolla dopo lo Strafatto) e `strafatto` (MA-23, fotogrammi 2-21: medita sospeso, in ciclo, quando è fermo a barra piena). `hatBounce` resta in `in-attesa/`: nella clip è senza cappello.

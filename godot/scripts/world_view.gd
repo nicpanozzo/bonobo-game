@@ -129,6 +129,7 @@ var show_hitboxes := false # allenamento (E15): corpo dei lottatori visibile anc
 var attack_boxes := true # rettangolo del colpo in corso (opzioni → Video), main.gd lo legge dalle preferenze
 var _air_jumps := {} # id giocatore -> quando ha fatto il doppio salto (ms), per l'animazione doubleJump (#103)
 var _taunts := {} # id giocatore -> quando ha provocato (ms), per l'animazione taunt (E7)
+var _bottas := {} # id giocatore -> quando è crollato dopo lo Strafatto (ms), per l'animazione botta
 var _supreme_ready := {} # id giocatore -> true se aveva la suprema pronta all'ultimo disegno: al passaggio un'onda dorata
 var _holding := {} # id di chi tiene qualcuno con la presa (#109), dall'ultimo snapshot
 var _palette := {} # colori dell'arena già convertiti (stage.colors), per non rifarlo a ogni frame
@@ -914,6 +915,7 @@ func on_event(e: Dictionary) -> void:
 			_sparks.append({"x": float(e.x) - float(e.facing) * 14.0, "y": float(e.y) + 6.0, "age": 0.0, "size": 26.0, "color": FATTANZA_HAT.lerp(FATTANZA_LILAC, 0.6)})
 		"botta":
 			# Marcomunista crolla dopo lo Strafatto (FATTANZA): stelline lilla e la sua battuta
+			_bottas[e.id] = Time.get_ticks_msec()
 			var pb: Variant = buffer.sample(e.id, Time.get_ticks_msec())
 			if pb != null:
 				_sparks.append({"x": pb.x, "y": float(pb.y) - float(game.fighter.height) * 1.1, "age": 0.0, "size": 30.0, "color": FATTANZA_LILAC})
@@ -2581,7 +2583,8 @@ func _draw_fattanza(p: Dictionary, now: float, height: float) -> void:
 			var life := fmod(now / 1400.0 + float(k) / 4.0 + offset, 1.0)
 			var pos := Vector2(float(p.x) + sin(now / 500.0 + k * 1.6) * height * 0.35, float(p.y) - height * (0.3 + 0.9 * life))
 			draw_arc(pos, 5.0 + life * 9.0, 0, TAU, 16, Color(FATTANZA_LILAC, 0.7 * (1.0 - life)), 2.0)
-	if p.get("floating", false):
+	var sprite: Dictionary = game.characters.get(str(p.characterId), {}).get("sprite", {})
+	if p.get("floating", false) and not FighterPose.has_own(sprite.get("animations", {}), "float"): # chi ha la clip la disegna da sé
 		var sway := sin(now / 260.0) * 0.18
 		var c := Vector2(float(p.x), float(p.y) - height * 1.05)
 		var pts := PackedVector2Array()
@@ -3457,10 +3460,15 @@ func _draw_sprite(p: Dictionary, character: Dictionary, now: float, react := Tra
 			name = "land"
 		elif prev_name == "land" and now - float(state.since) < FighterPose.animation_ms(anims.land):
 			name = "land"
+	var botta: float = float(_bottas.get(p.id, -1.0))
+	if name in ["hit", "idle"] and FighterPose.has_own(anims, "botta") and botta >= 0.0 and now - botta < FighterPose.animation_ms(anims.botta):
+		name = "botta" # crollato dopo lo Strafatto: sbadiglia e barcolla, non è un colpo
 	var taunted: float = float(_taunts.get(p.id, -1.0))
 	if name == "idle" and FighterPose.has_own(anims, "taunt") and taunted >= 0.0 and now - taunted < FighterPose.animation_ms(anims.taunt):
 		name = "taunt"
 		since = taunted
+	elif name == "idle" and FighterPose.has_own(anims, "strafatto") and int(p.get("fattanza", 0)) >= int(game.fattanza.levels):
+		name = "strafatto" # a barra piena, fermo, medita sospeso
 	elif name == "doubleJump":
 		since = air_jump # la capriola parte dal momento del doppio salto, non da quando la si disegna
 	# Con un oggetto in mano, lanciato o mangiato: la posa della sua categoria, se disegnata (item_pose.gd)
