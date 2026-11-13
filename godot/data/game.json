@@ -19136,7 +19136,7 @@
         "dir": "assets/characters/marcomunista",
         "frameWidth": 400,
         "frameHeight": 240,
-        "footY": 222,
+        "footY": 206,
         "scale": 0.63,
         "animations": {
           "idle": {

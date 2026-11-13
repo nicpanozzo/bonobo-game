@@ -5,7 +5,7 @@ Marco col cappello da pescatore, la felpa gialla, gli occhiali e la barba. Pelat
 ## Sprite: formato a cartella (E7)
 
 - **Animato dalla GIF di arti marziali** fornita da Nicola il 2026-10-19 (480×270, 160 fotogrammi da 60 ms): tai chi, giravolta con l'anello verde, calcio con l'esplosione. Scontornata, specchiata per guardare a destra e ritoccata: dove la GIF mostra la nuca coi capelli (di schiena e girato) è diventata pelle. L'energia verde resta: fa da scia dei colpi.
-- Fotogrammi da **400×240 px** con i piedi a 222 (`footY`) e `scale: 0.5`: alto come le pose del foglio, quindi come la hitbox.
+- Fotogrammi da **400×240 px** con i piedi a 206 (`footY`) e `scale: 0.63` (nuovo look, 13/11/2026). Tutte le strisce hanno il personaggio alla stessa altezza (cappello largo circa 15 px): MA-01, MA-02, MA-12 e MA-22 erano tagliate 1,7 volte più grandi e sono state rimpicciolite attorno ai piedi.
 - **Contorno chiaro** di 2 px attorno al corpo (non all'energia), come le pose del foglio, per leggersi sui fondali scuri.
 - PNG a 256 colori: la GIF è retinata e a colori pieni pesava il triplo.
 - `portrait.png`: testa e cappello del fermo, per lobby e HUD.
