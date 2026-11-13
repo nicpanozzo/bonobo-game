@@ -22,6 +22,7 @@ from pathlib import Path
 
 import numpy as np
 from PIL import Image
+from scipy import ndimage
 
 ARGS = [a for a in sys.argv[1:] if not a.startswith("--")]
 cid = ARGS[0] if ARGS else "marcomunista"
@@ -77,6 +78,71 @@ def hat_masks(fr):
     return full, pink, (x0, y0, x1, y1), skin
 
 
+# La calotta calva presa da un fotogramma della clip calva (in-attesa/hatBounce.png, fotogramma 0): dalla cima
+# della testa fino a sopra le sopracciglia, col contorno chiaro. bottom: larghezza della testa all'ultima riga
+DOME_SRC = ("in-attesa/hatBounce.png", 0, 15)  # file, fotogramma, righe dalla cima del contorno
+
+
+def dome_patch():
+    src, f, rows = DOME_SRC
+    a = np.array(Image.open(D / src).convert("RGBA"))[:, f * FW:(f + 1) * FW]
+    al = a[..., 3] > 0
+    ys, xs = np.nonzero(al)
+    top = ys.min()
+    # solo la testa: le colonne della testa alla riga più bassa della calotta
+    row = np.nonzero(a[top + rows, :, 3] > 100)[0]
+    runs = np.split(row, np.nonzero(np.diff(row) > 1)[0] + 1)
+    head = runs[0]
+    hx0, hx1 = head.min() - 3, head.max() + 3
+    p = a[top:top + rows + 1, hx0:hx1 + 1].copy()
+    return p, head.max() - head.min() + 1, (head.min() + head.max()) / 2 - hx0
+
+
+DOME = None
+
+
+def put_dome(fr, cx, y1, deg, hole):
+    global DOME
+    if DOME is None:
+        DOME = dome_patch()
+    patch, pw, pcx = DOME
+    # la testa sotto il cappello: il pezzo pieno della riga sotto la tesa che sta sotto il cappello
+    for yb in range(int(y1) + 1, min(FH, int(y1) + 6)):
+        row = np.nonzero(fr[yb, :, 3] > 100)[0]
+        if len(row) == 0:
+            continue
+        runs = np.split(row, np.nonzero(np.diff(row) > 1)[0] + 1)
+        run = min(runs, key=lambda r: abs((r.min() + r.max()) / 2 - cx))
+        if run.min() - 4 <= cx <= run.max() + 4 and 8 <= len(run) <= 60:
+            break
+    else:
+        return
+    k = len(run) / pw
+    ph, pwid = patch.shape[:2]
+    img = Image.fromarray(patch).resize((max(1, round(pwid * k)), max(1, round(ph * k))), Image.NEAREST)
+    # ruota intorno al centro della riga di base, come il cappello
+    bx, by = pcx * k, img.size[1] - 1
+    pad = max(img.size) * 2
+    canvas = Image.new("RGBA", (pad * 2, pad * 2))
+    canvas.paste(img, (int(pad - bx), int(pad - by)))
+    canvas = canvas.rotate(-deg, resample=Image.NEAREST, center=(pad, pad))
+    c = np.array(canvas)
+    ox, oy = int(round((run.min() + run.max()) / 2 - pad)), int(yb + 1 - pad)
+    ys, xs = np.nonzero(c[..., 3] > 0)
+    for y, x in zip(ys, xs):
+        X, Y = x + ox, y + oy
+        if 0 <= X < FW and 0 <= Y < FH and Y <= yb + 1 and fr[Y, X, 3] < 100:
+            fr[Y, X] = c[y, x]
+    # i puntini delle foglie rimasti intorno alla testa
+    near = dilate(hole, 3)
+    solid = fr[..., 3] > 0
+    lab, n = ndimage.label(solid)
+    for i in range(1, n + 1):
+        comp = lab == i
+        if comp.sum() < 14 and (comp & near).any():
+            fr[comp] = 0
+
+
 def frames_of(img):
     return img.size[0] // FW
 
@@ -110,38 +176,9 @@ def process_state(path, hat_img_out=None):
             hat_crop = (c, cxh - fx.min(), cyh - fy.min(), x1 - x0 + 1)
         # Cancella il cappello
         fr[full] = 0
-        # La testa sotto: la pelle appena sotto il cappello
-        below = skin[y1 - 1:min(FH, y1 + 7), max(0, x0 - 4):x1 + 5]
-        bys, bxs = np.nonzero(below)
-        if len(bxs) >= 6:
-            hx0, hx1 = bxs.min() + max(0, x0 - 4), bxs.max() + max(0, x0 - 4)
-            hw = hx1 - hx0 + 1
-            col = np.median(fr[y1 - 1:min(FH, y1 + 7), max(0, x0 - 4):x1 + 5][below][:, :3], axis=0).astype(np.uint8)
-            ccx, base = (hx0 + hx1) / 2, y1 + 3
-            ra, rb = hw / 2 + 0.5, max(5.0, hw * 0.62)
-            for yy in range(int(base - rb) - 1, int(base) + 1):
-                for xx in range(int(ccx - ra) - 1, int(ccx + ra) + 2):
-                    if not (0 <= yy < FH and 0 <= xx < FW):
-                        continue
-                    d = ((xx - ccx) / ra) ** 2 + ((yy - base) / rb) ** 2
-                    if d <= 1.0 and fr[yy, xx, 3] < 100:
-                        fr[yy, xx, :3] = col
-                        fr[yy, xx, 3] = 255
-            # il contorno: scuro sul bordo della cupola, poi quello chiaro di tutte le pose
-            dome = np.zeros((FH, FW), bool)
-            for yy in range(int(base - rb) - 1, int(base) + 1):
-                for xx in range(int(ccx - ra) - 1, int(ccx + ra) + 2):
-                    if 0 <= yy < FH and 0 <= xx < FW and ((xx - ccx) / ra) ** 2 + ((yy - base) / rb) ** 2 <= 1.0:
-                        dome[yy, xx] = True
-            solid = fr[..., 3] > 100
-            edge = dome & dilate(~solid, 1)
-            fr[edge, :3] = (col * 0.45).astype(np.uint8)
-            halo = dilate(dome, 2) & ~solid & (np.arange(FH)[:, None] <= base)
-            fr[halo] = [226, 226, 232, 255]
-            # il riflesso della pelata
-            hx, hy = int(ccx - ra * 0.3), int(base - rb * 0.6)
-            if 0 <= hy < FH and 0 <= hx < FW and fr[hy, hx, 3] > 0:
-                fr[hy, hx, :3] = np.minimum(255, col.astype(int) + 70)
+        # La pelata: la calotta vera dei fotogrammi calvi (clip hatBounce), larga quanto la testa sotto il cappello
+        # e inclinata come il cappello; riempie solo il vuoto lasciato dal cappello, la faccia resta quella disegnata
+        put_dome(fr, (x0 + x1) / 2, y1, deg, full)
         a[:, f * FW:(f + 1) * FW] = fr
     Image.fromarray(a).save(path, optimize=True)
     return pts, hat_crop
