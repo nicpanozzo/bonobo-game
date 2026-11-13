@@ -1254,7 +1254,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       { name: "Slancio rivoluzionario", text: "lo lancia in alto e gli vola dietro col recupero", steps: [{ move: "heavyUp", windowMs: 400 }, { move: "recovery" }] }, // lo lancia e gli vola dietro
       { name: "Falce e martello", text: "il leggero lo alza, il colpo in aria lo abbatte", steps: [{ move: "light", windowMs: 400, angleDeg: 65 }, { move: "lightAir" }] }, // il leggero lo alza, il colpo in aria lo abbatte
       { name: "Sol dell'avvenire", text: "colpo in aria, pugno in su e via verso il sole col recupero", steps: [{ move: "lightAir", windowMs: 400 }, { move: "lightUp", windowMs: 400, holdMs: 450 }, { move: "recovery" }] },
-      { name: "Cappellata", text: "pugno, sgambetto che lo solleva e cappello in faccia", steps: [{ move: "light", windowMs: 400 }, { move: "lightDown", windowMs: 400, holdMs: 450, angleDeg: 45 }, { move: "specialNeutral" }] }, // il Cappello boomerang chiude (12/11); sollevato non tocca terra e non può fare la tecnica
+      { name: "Cappellata", text: "pugno, sgambetto che lo solleva e banana in faccia", steps: [{ move: "light", windowMs: 400 }, { move: "lightDown", windowMs: 400, holdMs: 450, angleDeg: 45 }, { move: "specialNeutral" }] }, // la Banana boomerang chiude (12/11); sollevato non tocca terra e non può fare la tecnica
       { name: "Mongolfiera", text: "due colpi in aria di fila, leggero come un pallone", steps: [{ move: "lightAir", windowMs: 400 }, { move: "lightAir", holdMs: 450 }] },
     ],
     airPop: true,
@@ -1270,7 +1270,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       animations: {
         idle: { fps: 8, loop: true }, // MA-01 (13/11/2026, nuovo look): respira rilassato in guardia
         walk: { fps: 8, loop: true }, // MA-02: cammina
-        dash: { fps: 8, loop: true }, // MA-02: corre
+        dash: { fps: 8, loop: true }, // MA-02: corre (fotogrammi 0-15: negli ultimi tre il cappello volava via)
         jump: { fps: 8, loop: false }, // MA-03 (13/11/2026): stacco
         fall: { fps: 8, loop: true }, // MA-03: scende a braccia aperte
         doubleJump: { fps: 12, loop: false }, // MA-03: giravolta nell'anello lilla
@@ -1293,8 +1293,8 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         recovery: { fps: 12, loop: false, hitFrame: 9, startFrame: 4 }, // MA-13: braccia al cielo e su con la scia lilla
         grab: { fps: 12, loop: false, hitFrame: 9 }, // MA-15: si allunga e afferra
         throw: { fps: 6, loop: false, hitFrame: 6 }, // MA-15: spinta a due palmi
-        specialNeutral: { fps: 6, loop: false, hitFrame: 9, startFrame: 4 }, // MA-12: lancia il Cappello boomerang (il cappello in volo lo disegna il gioco)
-        specialSide: { fps: 6, loop: false, hitFrame: 7, startFrame: 3 }, // MA-12: soffia la Nuvola
+        specialNeutral: { fps: 6, loop: false, hitFrame: 6, startFrame: 1 }, // la spinta a due palmi di MA-15 (13/11: in MA-12 si toglie il cappello, che invece resta in testa): lancia la Banana boomerang
+        specialSide: { fps: 6, loop: false, hitFrame: 3 }, // MA-12 dal fotogramma 4: soffia la Nuvola (i primi quattro erano senza cappello)
         specialDown: { fps: 8, loop: false, hitFrame: 1 }, // MA-13 Rolling: para, poi mano alla bocca
         supreme: { fps: 4, loop: false, hitFrame: 6, startFrame: 1 }, // MA-14 …COSA?: mani in testa, l'anello, poi la nuvola
         float: { fps: 8, loop: true }, // MA-22: il cappello sopra la testa come un paracadute
@@ -1309,7 +1309,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     supreme: { type: "rewind", name: "…COSA?", windupMs: 80, backMs: 3000, endLagMs: 150, stunRadius: 160, stunMs: 1200, bombFuseMs: 900 },
     specials: {
       // gira una canna mentre para; lo scatto resta quello di base finché la scheda non lo dice
-      neutral: { type: "projectile", name: "Cappello boomerang", startupMs: 60, cooldownMs: 450, speed: 900, gravity: 0, lifeMs: 3500, maxAlive: 1, boomerang: true, range: 46, height: 18, damage: 6, baseKnockback: 220, knockbackGrowth: 3, angleDeg: 40, color: 0xff3fa4 }, // ci si rimbalza sopra (physics/hat.ts)
+      neutral: { type: "projectile", name: "Banana boomerang", startupMs: 60, cooldownMs: 450, speed: 900, gravity: 0, lifeMs: 3500, maxAlive: 1, boomerang: true, range: 46, height: 18, damage: 6, baseKnockback: 220, knockbackGrowth: 3, angleDeg: 40, color: 0xffe135 }, // ci si rimbalza sopra (physics/hat.ts); era il cappello, ora una banana (Nicola 13/11/2026)
       side: { type: "projectile", name: "Nuvola", startupMs: 300, cooldownMs: 700, speed: 140, gravity: 0, lifeMs: 3000, maxAlive: 1, cloud: true, spawnX: 80, spawnY: 60, range: 130, height: 80, damage: 0, baseKnockback: 100, knockbackGrowth: 1, angleDeg: 0, color: 0xc9a7f0 }, // chi ci entra galleggia (physics/nuvola.ts); il knockback non si usa, la nuvola non colpisce
       down: { type: "counter", name: "Rolling", startupMs: 60, windowMs: 420, endLagMs: 460, minDamage: 8, multiplier: 1.3, range: 60, height: 60, baseKnockback: 440, knockbackGrowth: 9, angleDeg: 40 },
     },

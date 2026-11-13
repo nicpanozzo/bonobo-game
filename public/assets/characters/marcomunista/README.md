@@ -45,6 +45,6 @@ La GIF non è nella repo (chiedila a Nicola). Quali fotogrammi vanno in quale st
 
 Dalle clip Flow col nuovo look: `float` (MA-22, fotogrammi 16-40 a passi di 2: il cappello sopra la testa come paracadute, in ciclo), `botta` (MA-23, uno ogni 4: sbadiglia e barcolla dopo lo Strafatto) e `strafatto` (MA-23, fotogrammi 2-21: medita sospeso, in ciclo, quando è fermo a barra piena). `hatBounce` resta in `in-attesa/`: nella clip è senza cappello.
 
-## Cappello staccato (13/11/2026)
+## Cappello sempre in testa (13/11/2026)
 
-Il cappello non è più nei fotogrammi: `tools/sprite/stacca_cappello.py` lo ha tolto da tutte le strisce e al suo posto ha disegnato la testa calva. Ha scritto in `cappello.json` dove stava in ogni fotogramma (x, y dai piedi, gradi, larghezza) e ha salvato `cappello.png`. Il gioco disegna il cappello sopra la testa, con una molla che lo fa ballonzolare. Quando parte il Cappello boomerang, in volo si vede il cappello vero e lui resta pelato finché non lo riprende. Le strisce nuove vanno passate allo script una volta sola, prima di metterle qui.
+Il cappello resta nei fotogrammi, come nelle clip: Nicola ha scartato la testa calva con il cappello disegnato a parte (#613, #618), perché le pelate incollate stonavano. La speciale neutra ora lancia una **Banana boomerang**, disegnata dal gioco come la banana degli oggetti. `tools/sprite/stacca_cappello.py` resta per chi un giorno avrà clip calve vere.

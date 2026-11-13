@@ -129,7 +129,6 @@ var show_hitboxes := false # allenamento (E15): corpo dei lottatori visibile anc
 var attack_boxes := true # rettangolo del colpo in corso (opzioni → Video), main.gd lo legge dalle preferenze
 var _air_jumps := {} # id giocatore -> quando ha fatto il doppio salto (ms), per l'animazione doubleJump (#103)
 var _taunts := {} # id giocatore -> quando ha provocato (ms), per l'animazione taunt (E7)
-var _hat_spring := {} # id giocatore -> {pos, vel, ms}: il cappello di Marcomunista segue la testa con un po' di molla
 var _fattanza_lvl := {} # id giocatore -> ultimo livello di Fattanza visto, per l'effetto quando cambia
 const FATTANZA_NAMES := ["Lucido", "Rilassato...", "Fatto!", "STRAFATTO!"]
 var _bottas := {} # id giocatore -> quando è crollato dopo lo Strafatto (ms), per l'animazione botta
@@ -1831,7 +1830,7 @@ func _draw_projectiles() -> void:
 		if word != "":
 			_draw_projectile_word(word, c, vel, color)
 			continue
-		if shot.get("boomerang", false) and _draw_hat_boomerang(pr, c, vel):
+		if shot.get("boomerang", false) and _draw_banana_boomerang(pr, c, vel):
 			continue
 		if shot.get("cloud", false):
 			_draw_nuvola(c, size, color, float(pr.id)) # la Nuvola di Marcomunista: sbuffi trasparenti, non un ovale pieno
@@ -1847,24 +1846,17 @@ func _draw_projectiles() -> void:
 		_draw_oval(c + Vector2(-2, -2).rotated(angle), angle, size * 0.45, color.lightened(0.6))
 
 
-# Il Cappello boomerang col cappello vero, staccato dai fotogrammi: in volo gira come un frisbee, fermo ondeggia
-func _draw_hat_boomerang(pr: Dictionary, c: Vector2, vel: Vector2) -> bool:
-	var character: Dictionary = game.characters.get(str(pr.characterId), {})
-	var sheet: Dictionary = character.get("sprite", {})
-	var hat: Variant = sheet.get("hat")
-	if not (hat is Dictionary):
-		return false
-	var tex := _data_texture(str(hat.image))
-	if tex == null:
+# La Banana boomerang di Marcomunista (Nicola 13/11/2026: il cappello resta in testa): in volo gira su se stessa,
+# ferma a mezz'aria ondeggia piano
+func _draw_banana_boomerang(pr: Dictionary, c: Vector2, vel: Vector2) -> bool:
+	var spec: Dictionary = game.items.get("banana", {})
+	if spec.is_empty():
 		return false
 	var t := Time.get_ticks_msec() / 1000.0 + float(pr.id)
-	var k := float(sheet.get("scale", 1.0)) * 1.2
 	var moving := vel.length() > 1.0
-	var squash := 0.65 + 0.35 * absf(cos(t * 22.0)) if moving else 1.0 # il frisbee che gira mostra il fianco
-	var rot := sin(t * 14.0) * 0.18 if moving else sin(t * 4.0) * 0.08
+	var spin := t * 16.0 * (1.0 if vel.x >= 0.0 else -1.0) if moving else sin(t * 4.0) * 0.3
 	var bob := Vector2(0.0, 0.0 if moving else sin(t * 5.0) * 2.0)
-	draw_set_transform(c + bob, rot, Vector2(k * squash * (1.0 if vel.x >= 0.0 else -1.0), k))
-	draw_texture(tex, Vector2(-float(hat.cx), -float(hat.cy)))
+	_draw_item("banana", c + bob + Vector2(0, float(spec.height) * ITEM_SCALE / 2.0), spin)
 	draw_set_transform(Vector2.ZERO)
 	return true
 
@@ -3557,57 +3549,9 @@ func _draw_sprite(p: Dictionary, character: Dictionary, now: float, react := Tra
 		tint.b = outline_tint(OUTLINE_PX, fw * scale, src.size.x)
 	draw_texture_rect_region(texture, Rect2(-fw / 2, -foot_y, fw, fh), src, tint)
 	draw_set_transform(Vector2.ZERO)
-	_draw_hat(p, sheet, str(a.src), frame, scale, react, now, tint.a)
 	var hand: Variant = ItemPose.hand_point(sheet, str(a.src), frame)
 	if hand != null: # la presa dell'oggetto in mano, per _draw_items
 		_hands[p.id] = ItemPose.hand_world(hand, p.x, p.y, p.facing, scale, react)
-
-
-# Il cappello staccato dai fotogrammi (tools/sprite/stacca_cappello.py): i PNG hanno la testa calva e il cappello si
-# disegna sopra, dove stava in quel fotogramma. Segue la testa con una molla, così ballonzola un po' nei salti e nei
-# colpi; mentre è in volo come Cappello boomerang non c'è e lui resta pelato
-func _draw_hat(p: Dictionary, sheet: Dictionary, src: String, frame: int, scale: float, react: Transform2D, now: float, alpha: float) -> void:
-	var hat: Variant = sheet.get("hat")
-	if not (hat is Dictionary) or _hat_thrown(str(p.id)):
-		_hat_spring.erase(p.id)
-		return
-	var pts: Variant = hat.points.get(src)
-	if not (pts is Array) or (pts as Array).is_empty():
-		return
-	var h: Variant = null
-	for k in range(clampi(frame, 0, pts.size() - 1), -1, -1): # dove non si vedeva, quello di prima
-		if pts[k] != null:
-			h = pts[k]
-			break
-	if h == null:
-		return
-	var tex := _data_texture(str(hat.image))
-	if tex == null:
-		return
-	var facing := float(p.facing)
-	var target: Vector2 = react * (Transform2D(0.0, Vector2(facing * scale, scale), 0.0, Vector2(p.x, p.y)) * Vector2(float(h[0]), float(h[1])))
-	var s: Dictionary = _hat_spring.get(p.id, {"pos": target, "vel": Vector2.ZERO, "ms": now})
-	var dt := clampf((now - float(s.ms)) / 1000.0, 0.0, 0.05)
-	var vel: Vector2 = s.vel
-	var pos: Vector2 = s.pos
-	vel += ((target - pos) * 700.0 - vel * 32.0) * dt # molla poco smorzata: rimbalza un attimo e si ferma
-	pos += vel * dt
-	if pos.distance_to(target) > 5.0:
-		pos = target + (pos - target).limit_length(5.0)
-	_hat_spring[p.id] = {"pos": pos, "vel": vel, "ms": now}
-	var k := scale * float(h[3]) / maxf(1.0, float(hat.w))
-	var rot := deg_to_rad(float(h[2])) + clampf(-vel.x * 0.004 * facing, -0.35, 0.35)
-	draw_set_transform_matrix(Transform2D(0.0, pos) * Transform2D(0.0, Vector2(facing, 1.0), 0.0, Vector2.ZERO) * Transform2D(rot, Vector2(k, k), 0.0, Vector2.ZERO))
-	draw_texture(tex, Vector2(-float(hat.cx), -float(hat.cy)), Color(1, 1, 1, alpha))
-	draw_set_transform(Vector2.ZERO)
-
-
-# Il cappello di chi è in volo come Cappello boomerang (la speciale neutra di chi ha il cappello staccato)
-func _hat_thrown(id: String) -> bool:
-	for pr in _projectiles:
-		if str(pr.ownerId) == id and str(pr.kind) == "specialNeutral":
-			return true
-	return false
 
 
 # Il blu del modulate che chiede a palette.gdshader il contorno: 2 + spessore in texel / 8. Lo spessore è in pixel
