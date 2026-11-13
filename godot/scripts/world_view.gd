@@ -1817,7 +1817,7 @@ func _draw_projectiles() -> void:
 	for pr in _projectiles:
 		var shot := FighterPose.projectile_of(game, pr)
 		var spec := shot if pr.get("supreme", false) else FighterPose.attack_spec(game, str(pr.characterId), str(pr.kind))
-		var size := Vector2(float(spec.get("range", 24)), float(spec.get("height", 16)))
+		var size := Vector2(float(spec.get("range", 24)), float(spec.get("height", 16))) * float(pr.get("scale", 1.0)) # la Nuvola grande di …COSA? a Strafatto
 		var vel := Vector2(pr.vx, pr.vy)
 		var c := Vector2(pr.x, pr.y) + vel * minf(dt, 0.1)
 		var color := Color.hex((int(shot.color) << 8) | 0xff) if shot.has("color") else FighterPose.projectile_color(game, str(pr.characterId), str(pr.kind))

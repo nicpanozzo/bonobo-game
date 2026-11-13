@@ -2,11 +2,12 @@
 // lifeMs. Non fa danno: chi ci entra resta sballato (NUVOLA.sballoMs dopo esserne uscito), con gravità bassa e
 // passo lento, così galleggia ed è facile da colpire in aria. Chi l'ha tirata ci può atterrare sopra una volta:
 // si ferma, fa un saltello e riprende il doppio salto
-import type { ProjectileSpecial } from "../characters";
-import { FIGHTER, NUVOLA } from "../constants";
+import { SPECIAL_KINDS, specialsFor, type ProjectileSpecial } from "../characters";
+import { FATTANZA, FIGHTER, NUVOLA } from "../constants";
 import { bodyBox, canBeHit, overlap } from "./attacks";
 import type { Fighter, PhysicsContext } from "./fighter";
-import { boxOf, type Projectile } from "./projectiles";
+import { fattanzaLevel } from "./fattanza";
+import { boxOf, fire, type Projectile } from "./projectiles";
 
 type End = (p: Projectile, reason: "hit" | "blocked" | "expired" | "wall") => void;
 
@@ -14,7 +15,7 @@ export function stepCloud(p: Projectile, sp: ProjectileSpecial, fighters: Fighte
   const owner = byId.get(p.ownerId);
   p.ageMs += dtMs;
   const z = ctx.stage.blastZone;
-  if (!owner || p.ageMs >= sp.lifeMs || p.x < z.left || p.x > z.right) {
+  if (!owner || p.ageMs >= (p.scale ? NUVOLA.bigLifeMs : sp.lifeMs) || p.x < z.left || p.x > z.right) {
     end(p, "expired");
     return;
   }
@@ -37,4 +38,13 @@ function rest(p: Projectile, box: { x: number; y: number; w: number; h: number }
   f.jumpsLeft = Math.max(f.jumpsLeft, FIGHTER.maxJumps - 1);
   f.floatMs = 0;
   ctx.events.push({ type: "hatBounce", id: f.id, x: Math.round(f.x), y: Math.round(box.y) });
+}
+
+// …COSA? a Strafatto (Nicola 12/11/2026): tornando indietro nel tempo lascia, dove era, una Nuvola grande e ferma
+export function bigCloud(f: Fighter, ctx: PhysicsContext): void {
+  const sp = specialsFor(f.characterId).side;
+  if (sp.type !== "projectile" || !sp.cloud || fattanzaLevel(f) < FATTANZA.levels) return;
+  const p = fire(f, SPECIAL_KINDS.side, sp, ctx, { vx: 0, vy: 0 });
+  p.scale = NUVOLA.bigScale;
+  p.y = f.y - (sp.height * NUVOLA.bigScale) / 2; // poggiata sul punto dei piedi, non a mezz'aria
 }
