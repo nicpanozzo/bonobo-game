@@ -2611,21 +2611,7 @@ func _draw_fattanza(p: Dictionary, now: float, height: float) -> void:
 		draw_circle(Vector2.ZERO, height * (0.32 + 0.12 * k), glow)
 		draw_set_transform(Vector2.ZERO)
 		_draw_power_smoke(p, now, height, k * 0.8, Color(FATTANZA_LILAC.lerp(Color.WHITE, 0.35)))
-	var top := Vector2(float(p.x), float(p.y) - height * 1.3)
-	var w := 56.0
-	var h := 8.0
-	var bar := Rect2(top.x - w / 2, top.y, w, h)
-	draw_rect(bar.grow(1.5), Color(1, 1, 1, 0.85)) # bordo chiaro: si legge su ogni fondale
-	draw_rect(bar, Color(0, 0, 0, 0.7))
-	var fill := clampf(level / levels, 0.0, 1.0)
-	var col := FATTANZA_LEAF
-	if full:
-		col = FATTANZA_LEAF.lerp(FATTANZA_LILAC, 0.5 + 0.5 * sin(now / 120.0))
-	if fill > 0.0:
-		draw_rect(Rect2(bar.position, Vector2(w * fill, h)), col)
-	for k in range(1, int(levels)):
-		var x := bar.position.x + w * float(k) / levels
-		draw_line(Vector2(x, bar.position.y), Vector2(x, bar.end.y), Color(0, 0, 0, 0.8), 1.0)
+	# La barra sta nella scheda in basso, sotto la suprema (hud.gd, Nicola 13/11/2026); qui solo gli effetti
 	if full and not Access.calm:
 		var offset := float(hash(p.id) % 1000) / 1000.0
 		for k in 4:

@@ -257,6 +257,8 @@ func _draw_cards(band: Vector2, h: float, flag: bool) -> void:
 		_draw_percent(p, Vector2(x + 20, h - 25), 31 if roomy else 26)
 		if not out:
 			_draw_supreme(Rect2(x + 20, h - 22, card_w - 52, 5), float(p.get("supreme", 0)))
+		if not out and p.has("fattanza"):
+			_draw_fattanza(Rect2(x + 20, h - 15, card_w - 52, 5), float(p.fattanza)) # Marcomunista: sotto la suprema
 		if p.get("powerup") != null and not out:
 			_draw_powerup(Rect2(x + 14, h - 80, card_w - 28, 66), float(p.get("powerupMs", 0)), str(p.powerup))
 		var right := x + card_w - 20 # bordo destro della lastra, dove stanno vite e bandiera
@@ -271,6 +273,26 @@ func _draw_cards(band: Vector2, h: float, flag: bool) -> void:
 				draw_polyline(flag_pts + PackedVector2Array([flag_pts[0]]), UI.INK, 2.0)
 		elif rules.get("mode", "ffa") != "training": # in allenamento le vite sono infinite
 			_draw_stocks(p, col, right, h - 36, roomy)
+
+
+# La Fattanza di Marcomunista nella scheda: tre tacche gialle come le foglie del cappello; a Strafatto pulsa
+# di lilla. Il nome del livello lo dice il fumetto quando sale (world_view.gd)
+const FATTANZA_LEAF := Color("#e4ff3a")
+const FATTANZA_LILAC := Color("#c9a7f0")
+func _draw_fattanza(r: Rect2, level: float) -> void:
+	var levels := float(game.get("fattanza", {}).get("levels", 3))
+	var full := level >= levels
+	draw_rect(r.grow(1.0), UI.INK)
+	draw_rect(r, Color(0.12, 0.1, 0.16))
+	var col := FATTANZA_LEAF
+	if full and not Access.calm:
+		col = FATTANZA_LEAF.lerp(FATTANZA_LILAC, 0.5 + 0.5 * sin(Time.get_ticks_msec() / 120.0))
+	var fill := clampf(level / levels, 0.0, 1.0)
+	if fill > 0.0:
+		draw_rect(Rect2(r.position, Vector2(r.size.x * fill, r.size.y)), col)
+	for k in range(1, int(levels)):
+		var tx := r.position.x + r.size.x * float(k) / levels
+		draw_line(Vector2(tx, r.position.y), Vector2(tx, r.end.y), UI.INK, 2.0)
 
 
 # Un bollino storto col contorno a inchiostro, centrato in at (sotto il ritratto)
