@@ -50,7 +50,15 @@ prova "prestazioni del server" npm run bench -- --check
 
 LOG="$DIR/log"; mkdir -p "$LOG"
 carica() {
-  "$GODOT" --headless --path godot --import > "$LOG/import.log" 2>&1
+  # Godot 4.5.1 sul Mac a volte va in crash a metà import (signal 11, errore di thread su un font):
+  # le risorse restano non importate e i test del client falliscono per finta. Si riprova fino a 3 volte
+  local i
+  for i in 1 2 3; do
+    "$GODOT" --headless --path godot --import > "$LOG/import.log" 2>&1
+    grep -q "handle_crash" "$LOG/import.log" || break
+    echo "Import di Godot andato in crash (tentativo $i)"
+  done
+  if grep -q "handle_crash" "$LOG/import.log"; then echo "Import in crash anche al terzo tentativo"; return 1; fi
   "$GODOT" --headless --path godot --quit-after 60 > "$LOG/run.log" 2>&1
   ! grep -E "SCRIPT ERROR|Parse Error|Failed to load script" "$LOG/import.log" "$LOG/run.log"
 }
