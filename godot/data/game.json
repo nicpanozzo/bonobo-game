@@ -19036,9 +19036,9 @@
             "src": "heavy"
           },
           "hit": {
-            "fps": 12,
+            "fps": 8,
             "loop": false,
-            "frames": 2,
+            "frames": 17,
             "src": "hit"
           },
           "doubleJump": {
@@ -19048,9 +19048,9 @@
             "src": "doubleJump"
           },
           "tumble": {
-            "fps": 18,
+            "fps": 8,
             "loop": true,
-            "frames": 6,
+            "frames": 16,
             "src": "tumble"
           },
           "ledge": {
@@ -19111,17 +19111,19 @@
             "src": "heavyDown"
           },
           "heavyAir": {
-            "fps": 24,
+            "fps": 6,
             "loop": false,
-            "hitFrame": 3,
-            "frames": 6,
+            "hitFrame": 2,
+            "activeEnd": 8,
+            "frames": 16,
             "src": "heavyAir"
           },
           "recovery": {
-            "fps": 24,
+            "fps": 12,
             "loop": false,
-            "hitFrame": 0,
-            "frames": 4,
+            "hitFrame": 9,
+            "startFrame": 4,
+            "frames": 20,
             "src": "recovery"
           },
           "taunt": {
@@ -19131,30 +19133,30 @@
             "src": "taunt"
           },
           "shield": {
-            "fps": 8,
+            "fps": 12,
             "loop": true,
-            "frames": 6,
+            "frames": 11,
             "src": "shield"
           },
           "grab": {
-            "fps": 24,
+            "fps": 12,
             "loop": false,
-            "hitFrame": 2,
-            "frames": 3,
+            "hitFrame": 9,
+            "frames": 16,
             "src": "grab"
           },
           "throw": {
-            "fps": 24,
+            "fps": 6,
             "loop": false,
-            "hitFrame": 0,
-            "frames": 4,
+            "hitFrame": 6,
+            "frames": 15,
             "src": "throw"
           },
           "grabbed": {
-            "fps": 12,
-            "loop": false,
-            "frames": 2,
-            "src": "hit"
+            "fps": 6,
+            "loop": true,
+            "frames": 16,
+            "src": "grabbed"
           },
           "special": {
             "fps": 6,
@@ -19195,10 +19197,10 @@
             "src": "specialSide"
           },
           "specialDown": {
-            "fps": 24,
+            "fps": 8,
             "loop": false,
             "hitFrame": 1,
-            "frames": 8,
+            "frames": 16,
             "src": "specialDown"
           },
           "dashAttack": {
@@ -19290,17 +19292,17 @@
             "src": "idle"
           },
           "itemThrow": {
-            "fps": 24,
+            "fps": 6,
             "loop": false,
-            "hitFrame": 0,
-            "frames": 4,
+            "hitFrame": 6,
+            "frames": 15,
             "src": "throw"
           },
           "itemThrowUp": {
-            "fps": 24,
+            "fps": 6,
             "loop": false,
-            "hitFrame": 0,
-            "frames": 4,
+            "hitFrame": 6,
+            "frames": 15,
             "src": "throw"
           },
           "itemEat": {
@@ -19322,10 +19324,10 @@
             "src": "walk"
           },
           "carryToss": {
-            "fps": 24,
+            "fps": 6,
             "loop": false,
-            "hitFrame": 0,
-            "frames": 4,
+            "hitFrame": 6,
+            "frames": 15,
             "src": "throw"
           },
           "rideIdle": {

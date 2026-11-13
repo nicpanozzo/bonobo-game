@@ -1265,13 +1265,14 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         jump: { fps: 8, loop: false }, // MA-03 (13/11/2026): stacco
         fall: { fps: 8, loop: true }, // MA-03: scende a braccia aperte
         doubleJump: { fps: 12, loop: false }, // MA-03: giravolta nell'anello lilla
-        tumble: { fps: 18, loop: true },
+        tumble: { fps: 8, loop: true }, // MA-19: vola via girando
         jumpSquat: { fps: 24, loop: false }, // MA-03
         dashAttack: { fps: 6, loop: false, hitFrame: 10, startFrame: 6 }, // MA-06: due passi e calcio volante
         land: { fps: 24, loop: false }, // MA-03
-        hit: { fps: 12, loop: false }, // mano in faccia, piegato all'indietro
+        grabbed: { fps: 6, loop: true }, // MA-20: preso, si dimena
+        hit: { fps: 8, loop: false }, // MA-17: colpito, si piega all'indietro
         taunt: { fps: 6, loop: false }, // MA-01: tai chi con l'energia lilla
-        shield: { fps: 8, loop: true },
+        shield: { fps: 12, loop: true }, // MA-18: guardia a mani aperte
         light: { fps: 6, loop: false, hitFrame: 6, startFrame: 2 }, // MA-04: colpo di palmo con lo sbuffo lilla
         heavy: { fps: 6, loop: false, hitFrame: 5, startFrame: 1 }, // MA-07 (13/11/2026): calcio laterale con lo scoppio lilla
         lightUp: { fps: 6, loop: false, hitFrame: 1 }, // MA-04: palmo verso l'alto
@@ -1279,13 +1280,13 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         lightDown: { fps: 6, loop: false, hitFrame: 1 }, // MA-05: palmo basso, accucciato
         heavyDown: { fps: 6, loop: false, hitFrame: 6, startFrame: 1 }, // MA-08: palmi a terra, l'onda lilla ai due lati
         lightAir: { fps: 6, loop: false, hitFrame: 10, startFrame: 8, activeEnd: 12 }, // MA-09: la stella a braccia e gambe aperte
-        heavyAir: { fps: 24, loop: false, hitFrame: 3 }, // l'anello attorno alla vita
-        recovery: { fps: 24, loop: false, hitFrame: 0 },
-        grab: { fps: 24, loop: false, hitFrame: 2 },
-        throw: { fps: 24, loop: false, hitFrame: 0 },
+        heavyAir: { fps: 6, loop: false, hitFrame: 2, activeEnd: 8 }, // MA-11 (13/11/2026): giravolta nell'anello lilla
+        recovery: { fps: 12, loop: false, hitFrame: 9, startFrame: 4 }, // MA-13: braccia al cielo e su con la scia lilla
+        grab: { fps: 12, loop: false, hitFrame: 9 }, // MA-15: si allunga e afferra
+        throw: { fps: 6, loop: false, hitFrame: 6 }, // MA-15: spinta a due palmi
         specialNeutral: { fps: 6, loop: false, hitFrame: 9, startFrame: 4 }, // MA-12: lancia il Cappello boomerang (il cappello in volo lo disegna il gioco)
         specialSide: { fps: 6, loop: false, hitFrame: 7, startFrame: 3 }, // MA-12: soffia la Nuvola
-        specialDown: { fps: 24, loop: false, hitFrame: 1 }, // Rolling: para, mano alla bocca
+        specialDown: { fps: 8, loop: false, hitFrame: 1 }, // MA-13 Rolling: para, poi mano alla bocca
         supreme: { fps: 4, loop: false, hitFrame: 6, startFrame: 1 }, // MA-14 …COSA?: mani in testa, l'anello, poi la nuvola
       },
     },
