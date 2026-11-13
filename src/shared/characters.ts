@@ -1257,24 +1257,26 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       frameWidth: 400, // largo: calcio e nuvola della super escono di lato
       frameHeight: 240,
       footY: 222,
-      scale: 0.5, // alto come le pose del foglio
+      scale: 0.63, // nuovo look (13/11/2026): la sagoma delle clip Flow è più bassa, così resta alto come prima
       animations: {
         idle: { fps: 8, loop: true }, // MA-01 (13/11/2026, nuovo look): respira rilassato in guardia
         walk: { fps: 8, loop: true }, // MA-02: cammina
         dash: { fps: 8, loop: true }, // MA-02: corre
-        jump: { fps: 24, loop: false },
-        fall: { fps: 10, loop: true },
-        doubleJump: { fps: 24, loop: false }, // la giravolta con l'anello verde
+        jump: { fps: 8, loop: false }, // MA-03 (13/11/2026): stacco
+        fall: { fps: 8, loop: true }, // MA-03: scende a braccia aperte
+        doubleJump: { fps: 12, loop: false }, // MA-03: giravolta nell'anello lilla
         tumble: { fps: 18, loop: true },
-        land: { fps: 24, loop: false },
+        jumpSquat: { fps: 24, loop: false }, // MA-03
+        dashAttack: { fps: 6, loop: false, hitFrame: 10, startFrame: 6 }, // MA-06: due passi e calcio volante
+        land: { fps: 24, loop: false }, // MA-03
         hit: { fps: 12, loop: false }, // mano in faccia, piegato all'indietro
         taunt: { fps: 6, loop: false }, // MA-01: tai chi con l'energia lilla
         shield: { fps: 8, loop: true },
-        light: { fps: 24, loop: false, hitFrame: 2 }, // colpo di palmo
+        light: { fps: 6, loop: false, hitFrame: 6, startFrame: 2 }, // MA-04: colpo di palmo con lo sbuffo lilla
         heavy: { fps: 24, loop: false, hitFrame: 5 }, // calcio con l'esplosione verde
-        lightUp: { fps: 24, loop: false, hitFrame: 3 },
+        lightUp: { fps: 6, loop: false, hitFrame: 1 }, // MA-04: palmo verso l'alto
         heavyUp: { fps: 24, loop: false, hitFrame: 4 },
-        lightDown: { fps: 24, loop: false, hitFrame: 2 },
+        lightDown: { fps: 6, loop: false, hitFrame: 1 }, // MA-05: palmo basso, accucciato
         heavyDown: { fps: 24, loop: false, hitFrame: 3 }, // giù di peso, energia a terra dai due lati
         lightAir: { fps: 24, loop: false, hitFrame: 1 },
         heavyAir: { fps: 24, loop: false, hitFrame: 3 }, // l'anello attorno alla vita
@@ -1284,7 +1286,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         specialNeutral: { fps: 6, loop: false, hitFrame: 9, startFrame: 4 }, // MA-12: lancia il Cappello boomerang (il cappello in volo lo disegna il gioco)
         specialSide: { fps: 6, loop: false, hitFrame: 7, startFrame: 3 }, // MA-12: soffia la Nuvola
         specialDown: { fps: 24, loop: false, hitFrame: 1 }, // Rolling: para, mano alla bocca
-        supreme: { fps: 12, loop: false, hitFrame: 6 }, // …COSA?: l'anello, poi la nuvola quando torna indietro
+        supreme: { fps: 4, loop: false, hitFrame: 6, startFrame: 1 }, // MA-14 …COSA?: mani in testa, l'anello, poi la nuvola
       },
     },
     // dalla scheda: corsa non molto, aria e salto abbastanza, leggero, gravità bassa (la #352 dà lo stile del disegno, non i numeri)
@@ -1302,15 +1304,15 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
     hurtbox: { width: 32, height: 92 },
     // le zone dei colpi dove arriva il disegno (#243, tools/sprite/zone_dei_colpi.py)
     attacks: {
-      light: { range: 46, height: 30, boxX: 0, boxY: -71 },
+      light: { range: 46, height: 30, boxX: 0, boxY: -53 },
       heavy: { range: 74, height: 44, boxX: 0, boxY: -66 },
-      lightUp: { range: 54, height: 48, boxX: -33, boxY: -96 },
-      lightDown: { range: 42, height: 24, boxX: -5, boxY: -32 },
+      lightUp: { range: 54, height: 48, boxX: -21, boxY: -77 },
+      lightDown: { range: 42, height: 24, boxX: -14, boxY: -28 },
       lightAir: { range: 49, height: 50, boxX: 0, boxY: -86 },
       heavyUp: { range: 80, height: 64, boxX: -41, boxY: -96 },
       heavyDown: { range: 62, height: 30, boxX: -22, boxY: -32 },
       heavyAir: { range: 54, height: 60, boxX: 0, boxY: -68 },
-      dashAttack: { range: 74, height: 44, boxX: 0, boxY: -66 },
+      dashAttack: { range: 41, height: 44, boxX: -2, boxY: -58 },
     },
   },
 
