@@ -15,3 +15,10 @@ func test_da_fatto_non_si_predice() -> void:
 	p.floating = false
 	p.sballato = true
 	runner.check(not Predictor.predictable(p, {}), "sballato dalla Nuvola no: gravità e passo cambiano")
+
+
+func test_fluttuando_usa_la_posa_float() -> void:
+	var p := {"hitstun": false, "attack": null, "onGround": false, "vy": 80.0, "floating": true}
+	runner.check(FighterPose.animation_for(p) == "float", "col cappello aperto la posa è float (senza disegno ripiega sulla caduta)")
+	p.floating = false
+	runner.check(FighterPose.animation_for(p) == "fall", "senza fluttuare cade e basta")

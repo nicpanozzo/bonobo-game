@@ -203,6 +203,8 @@ static func animation_for(p: Dictionary, holding := false) -> String:
 	if float(p.get("landing", 0)) > 0 and p.onGround:
 		return "land" # pausa all'atterraggio (#384 A3); senza disegno la posa ferma
 	if not p.onGround:
+		if p.get("floating", false):
+			return "float" # la Fattanza di Marcomunista: scende col cappello come paracadute; senza disegno la caduta
 		return "jump" if p.vy < 0 else "fall"
 	if p.get("dashing", false):
 		return "dash" # scatto e corsa (#199); senza disegno, la camminata

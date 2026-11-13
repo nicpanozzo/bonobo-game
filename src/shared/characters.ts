@@ -37,6 +37,8 @@ export const OPTIONAL_ANIMATION_NAMES = [
   "jumpSquat", // preparazione al salto (#384 A3): senza disegno, la posa dell'atterraggio
   "anchorHang", // appeso all'ancora di Capt. OrsoBlu (#547): senza disegno, la posa appesa al bordo
   "anchorClimb", // arrampicata sulla catena: senza disegno, la posa appesa all'ancora
+  // La Fattanza di Marcomunista (12/11/2026): fluttua col cappello, la botta, la posa da Strafatto
+  "float", "botta", "strafatto",
   // Pose con gli oggetti, una presa per categoria (docs/clip-flow/pose-oggetti.md): si usano solo se disegnate,
   // e l'oggetto si disegna sul punto della presa di mani.json. Impugnatura, sparo, lancio e consumo, peso, cavalcatura
   "gripIdle", "gripWalk", "gripLight", "gripHeavy",
@@ -73,6 +75,9 @@ export const ANIMATION_FALLBACK: Record<OptionalAnimationName, SpriteState> = {
   special: "heavy",
   dash: "walk", // senza disegno, la camminata (per Bonobot: il galoppo sulle nocche)
   supreme: "special", // senza disegno, la posa della speciale (e poi del pesante)
+  float: "fall", // tenendo Salto scende piano col cappello sopra la testa
+  botta: "hit", // crolla dopo lo Strafatto
+  strafatto: "idle", // fermo a barra piena: medita sospeso
   specialNeutral: "special",
   specialSide: "special",
   specialDown: "special",
@@ -1288,6 +1293,9 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
         specialSide: { fps: 6, loop: false, hitFrame: 7, startFrame: 3 }, // MA-12: soffia la Nuvola
         specialDown: { fps: 8, loop: false, hitFrame: 1 }, // MA-13 Rolling: para, poi mano alla bocca
         supreme: { fps: 4, loop: false, hitFrame: 6, startFrame: 1 }, // MA-14 …COSA?: mani in testa, l'anello, poi la nuvola
+        float: { fps: 8, loop: true }, // MA-22: il cappello sopra la testa come un paracadute
+        botta: { fps: 16, loop: false }, // MA-23: sbadiglia e barcolla (1 s, poco più della botta)
+        strafatto: { fps: 8, loop: true }, // MA-23: sospeso a gambe incrociate, beato
       },
     },
     // dalla scheda: corsa non molto, aria e salto abbastanza, leggero, gravità bassa (la #352 dà lo stile del disegno, non i numeri)
