@@ -18993,7 +18993,7 @@
         "frameWidth": 400,
         "frameHeight": 240,
         "footY": 222,
-        "scale": 0.5,
+        "scale": 0.63,
         "animations": {
           "idle": {
             "fps": 8,
@@ -19008,22 +19008,23 @@
             "src": "walk"
           },
           "jump": {
-            "fps": 24,
+            "fps": 8,
             "loop": false,
-            "frames": 5,
+            "frames": 14,
             "src": "jump"
           },
           "fall": {
-            "fps": 10,
+            "fps": 8,
             "loop": true,
-            "frames": 4,
+            "frames": 14,
             "src": "fall"
           },
           "light": {
-            "fps": 24,
+            "fps": 6,
             "loop": false,
-            "hitFrame": 2,
-            "frames": 5,
+            "hitFrame": 6,
+            "startFrame": 2,
+            "frames": 16,
             "src": "light"
           },
           "heavy": {
@@ -19040,9 +19041,9 @@
             "src": "hit"
           },
           "doubleJump": {
-            "fps": 24,
+            "fps": 12,
             "loop": false,
-            "frames": 8,
+            "frames": 14,
             "src": "doubleJump"
           },
           "tumble": {
@@ -19052,35 +19053,35 @@
             "src": "tumble"
           },
           "ledge": {
-            "fps": 24,
+            "fps": 8,
             "loop": false,
-            "frames": 5,
+            "frames": 14,
             "src": "jump"
           },
           "climb": {
-            "fps": 24,
+            "fps": 8,
             "loop": false,
-            "frames": 5,
+            "frames": 14,
             "src": "jump"
           },
           "land": {
             "fps": 24,
             "loop": false,
-            "frames": 3,
+            "frames": 15,
             "src": "land"
           },
           "lightUp": {
-            "fps": 24,
+            "fps": 6,
             "loop": false,
-            "hitFrame": 3,
-            "frames": 6,
+            "hitFrame": 1,
+            "frames": 16,
             "src": "lightUp"
           },
           "lightDown": {
-            "fps": 24,
+            "fps": 6,
             "loop": false,
-            "hitFrame": 2,
-            "frames": 5,
+            "hitFrame": 1,
+            "frames": 16,
             "src": "lightDown"
           },
           "lightAir": {
@@ -19164,10 +19165,11 @@
             "src": "dash"
           },
           "supreme": {
-            "fps": 12,
+            "fps": 4,
             "loop": false,
             "hitFrame": 6,
-            "frames": 11,
+            "startFrame": 1,
+            "frames": 19,
             "src": "supreme"
           },
           "specialNeutral": {
@@ -19194,28 +19196,29 @@
             "src": "specialDown"
           },
           "dashAttack": {
-            "fps": 24,
+            "fps": 6,
             "loop": false,
-            "hitFrame": 5,
-            "frames": 11,
-            "src": "heavy"
+            "hitFrame": 10,
+            "startFrame": 6,
+            "frames": 15,
+            "src": "dashAttack"
           },
           "jumpSquat": {
             "fps": 24,
             "loop": false,
-            "frames": 3,
-            "src": "land"
+            "frames": 15,
+            "src": "jumpSquat"
           },
           "anchorHang": {
-            "fps": 24,
+            "fps": 8,
             "loop": false,
-            "frames": 5,
+            "frames": 14,
             "src": "jump"
           },
           "anchorClimb": {
-            "fps": 24,
+            "fps": 8,
             "loop": false,
-            "frames": 5,
+            "frames": 14,
             "src": "jump"
           },
           "gripIdle": {
@@ -19231,10 +19234,11 @@
             "src": "walk"
           },
           "gripLight": {
-            "fps": 24,
+            "fps": 6,
             "loop": false,
-            "hitFrame": 2,
-            "frames": 5,
+            "hitFrame": 6,
+            "startFrame": 2,
+            "frames": 16,
             "src": "light"
           },
           "gripHeavy": {
@@ -19257,10 +19261,11 @@
             "src": "walk"
           },
           "aimShoot": {
-            "fps": 24,
+            "fps": 6,
             "loop": false,
-            "hitFrame": 2,
-            "frames": 5,
+            "hitFrame": 6,
+            "startFrame": 2,
+            "frames": 16,
             "src": "light"
           },
           "aimCharge": {
@@ -19328,9 +19333,9 @@
             "src": "dash"
           },
           "rideHop": {
-            "fps": 24,
+            "fps": 8,
             "loop": false,
-            "frames": 5,
+            "frames": 14,
             "src": "jump"
           }
         }
@@ -19415,7 +19420,7 @@
           "range": 46,
           "height": 30,
           "boxX": 0,
-          "boxY": -71
+          "boxY": -53
         },
         "heavy": {
           "range": 74,
@@ -19426,14 +19431,14 @@
         "lightUp": {
           "range": 54,
           "height": 48,
-          "boxX": -33,
-          "boxY": -96
+          "boxX": -21,
+          "boxY": -77
         },
         "lightDown": {
           "range": 42,
           "height": 24,
-          "boxX": -5,
-          "boxY": -32
+          "boxX": -14,
+          "boxY": -28
         },
         "lightAir": {
           "range": 49,
@@ -19460,10 +19465,10 @@
           "boxY": -68
         },
         "dashAttack": {
-          "range": 74,
+          "range": 41,
           "height": 44,
-          "boxX": 0,
-          "boxY": -66
+          "boxX": -2,
+          "boxY": -58
         }
       },
       "portrait": "assets/characters/marcomunista/portrait.png",
