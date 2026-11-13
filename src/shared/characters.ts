@@ -169,6 +169,10 @@ export interface SpriteFolderSpec {
   // Il punto della presa degli oggetti (docs/clip-flow/pose-oggetti.md): lo scrive export:godot da <dir>/mani.json,
   // per stato e per fotogramma [x, y, gradi, lunghezza] dai piedi, o null dove il segnaposto non si vedeva
   hands?: Record<string, ([number, number, number, number] | null)[]>;
+  // Il cappello staccato dai fotogrammi (Marcomunista, tools/sprite/stacca_cappello.py): lo scrive export:godot da
+  // <dir>/cappello.json e cappello.png. Per stato e fotogramma [x, y, gradi, larghezza] dai piedi, null dove non si vede;
+  // image: il PNG del cappello, largo w pixel di rosa col centro in (cx, cy). Godot lo disegna sopra la testa
+  hat?: { image: string; w: number; cx: number; cy: number; points: Record<string, ([number, number, number, number] | null)[]> };
   animations: Record<AnimationName, SpriteStateSpec> & Partial<Record<OptionalAnimationName, SpriteStateSpec>>;
 }
 

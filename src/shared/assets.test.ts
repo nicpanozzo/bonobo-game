@@ -9,7 +9,7 @@ import { CHARACTERS, SPRITE_STATES, isSpriteFolder, type SpriteFolderSpec, type 
 const PUBLIC = new URL("../../public/", import.meta.url);
 const ASSETS = new URL("assets/", PUBLIC);
 const MAX_FILE_BYTES = 5 * 1024 * 1024; // AGENTS.md: oltre i 5 MB solo dopo averne parlato con il gruppo
-const NOT_STATES = new Set(["portrait.png"]); // il ritratto per lobby e HUD, accanto agli stati
+const NOT_STATES = new Set(["portrait.png", "cappello.png"]); // il ritratto per lobby e HUD, e il cappello staccato di Marcomunista (stacca_cappello.py)
 
 // ---------------------------------------------------------------------------------------------------------
 // Lettura dei PNG: solo quello che serve al controllo (misure, canale alfa, alfa di un pixel)

@@ -96,13 +96,14 @@ function folderSprite(id: string, sprite: SpriteFolderSpec): SpriteFolderSpec {
   }
   // Un PNG nella cartella che il blocco non nomina non si usa: lo si dice, potrebbe essere un nome sbagliato
   for (const file of existsSync(publicDir + sprite.dir) ? readdirSync(publicDir + sprite.dir) : []) {
-    if (extname(file) === ".png" && file !== "portrait.png" && !Object.hasOwn(sprite.animations, basename(file, ".png"))) {
+    if (extname(file) === ".png" && file !== "portrait.png" && file !== "cappello.png" && !Object.hasOwn(sprite.animations, basename(file, ".png"))) {
       console.warn(`Attenzione: ${sprite.dir}/${file} non è uno stato di ${id} in characters.ts, non si usa`);
     }
   }
   const rig = sprite.rig ? rigFor(id, sprite.rig, animations) : undefined;
   const hands = handsFor(id, sprite.dir, animations);
-  return { ...sprite, rig, hands, animations: resolvedAnimations(animations) as SpriteFolderSpec["animations"] };
+  const hat = hatFor(id, sprite.dir, animations);
+  return { ...sprite, rig, hands, hat, animations: resolvedAnimations(animations) as SpriteFolderSpec["animations"] };
 }
 
 // Il punto della presa degli oggetti (docs/clip-flow/pose-oggetti.md), da <dir>/mani.json (tools/sprite/dal_video.py):
@@ -122,6 +123,25 @@ function handsFor(id: string, dir: string, animations: Record<string, object>): 
     out[state] = points;
   }
   return Object.keys(out).length ? out : undefined;
+}
+
+// Il cappello staccato di Marcomunista (tools/sprite/stacca_cappello.py): <dir>/cappello.json e cappello.png
+function hatFor(id: string, dir: string, animations: Record<string, object>): SpriteFolderSpec["hat"] {
+  const path = `${publicDir}${dir}/cappello.json`;
+  if (!existsSync(path) || !existsSync(`${publicDir}${dir}/cappello.png`)) return undefined;
+  const all = JSON.parse(readFileSync(path, "utf8")) as { image: { w: number; cx: number; cy: number }; states: NonNullable<SpriteFolderSpec["hat"]>["points"] };
+  const points: NonNullable<SpriteFolderSpec["hat"]>["points"] = {};
+  for (const [state, pts] of Object.entries(all.states)) {
+    const a = animations[state] as { frames?: number } | undefined;
+    if (!a) continue;
+    if (pts.length !== a.frames) {
+      spriteErrors.push(`${id}: cappello.json ha ${pts.length} punti per "${state}", ma i fotogrammi sono ${a.frames}`);
+      continue;
+    }
+    points[state] = pts;
+  }
+  spriteFiles.push(`${dir}/cappello.png`);
+  return { image: `${dir}/cappello.png`, ...all.image, points };
 }
 
 // La prova del rig in tempo reale (#403): da rig.json e animazioni.json di tools/rig/ un file solo per Godot,
