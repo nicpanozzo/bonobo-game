@@ -41,12 +41,13 @@ export const createProjectileWorld = (): ProjectileWorld => ({ list: [], nextId:
 
 const worldOf = (ctx: PhysicsContext) => (ctx.projectiles ??= createProjectileWorld());
 
-// Quanti proiettili di f sono in volo: oltre maxAlive la speciale non parte
-export const aliveOf = (f: Fighter, ctx: PhysicsContext) => worldOf(ctx).list.filter((p) => p.ownerId === f.id).length;
+// Quanti proiettili di f sono in volo (di quella speciale, se detta): oltre maxAlive la speciale non parte.
+// Per speciale, così la Nuvola in giro non blocca il Cappello di Marcomunista
+export const aliveOf = (f: Fighter, ctx: PhysicsContext, kind?: SpecialKind) => worldOf(ctx).list.filter((p) => p.ownerId === f.id && (!kind || p.kind === kind)).length;
 
 // Il proiettile esce dalle mani di f (o da spawnX/spawnY), nella direzione in cui guarda.
 // v: un'altra velocità (la suprema "burst", #358). supreme: è l'aquila della suprema, coi numeri di lei
-export function fire(f: Fighter, kind: SpecialKind, sp: ProjectileSpecial, ctx: PhysicsContext, v?: { vx: number; vy: number }, supreme = false): void {
+export function fire(f: Fighter, kind: SpecialKind, sp: ProjectileSpecial, ctx: PhysicsContext, v?: { vx: number; vy: number }, supreme = false): Projectile {
   const world = worldOf(ctx);
   // le Ciacole di Bradipo: ogni tiro prende l'angolo successivo della lista (#13)
   const deg = !v && sp.spreadDeg?.length ? sp.spreadDeg[world.nextId % sp.spreadDeg.length] : 0;
@@ -64,6 +65,7 @@ export function fire(f: Fighter, kind: SpecialKind, sp: ProjectileSpecial, ctx: 
   if (supreme) p.supreme = true;
   world.list.push(p);
   ctx.events.push({ type: "projectile", id: f.id, projectileId: p.id, x: Math.round(p.x), y: Math.round(p.y) });
+  return p;
 }
 
 // Un tick: volo, poi muri, lottatori e altri proiettili
@@ -267,11 +269,14 @@ function rest(p: Projectile, sp: ProjectileSpecial, y: number, dt: number): true
   return true;
 }
 
-export const boxOf = (p: Projectile, sp: ProjectileSpecial) => ({ x: p.x - sp.range / 2, y: p.y - sp.height / 2, w: sp.range, h: sp.height });
+export const boxOf = (p: Projectile, sp: ProjectileSpecial) => {
+  const k = p.scale ?? 1; // la Nuvola grande della suprema a Strafatto
+  return { x: p.x - (sp.range * k) / 2, y: p.y - (sp.height * k) / 2, w: sp.range * k, h: sp.height * k };
+};
 
 // Per lo snapshot: solo quello che serve al client
 export const projectileStates = (world: ProjectileWorld): ProjectileState[] =>
-  world.list.map((p) => ({ id: p.id, ownerId: p.ownerId, kind: p.kind, characterId: p.characterId, x: Math.round(p.x), y: Math.round(p.y), vx: Math.round(p.vx), vy: Math.round(p.vy), ...(p.supreme ? { supreme: true } : {}) }));
+  world.list.map((p) => ({ id: p.id, ownerId: p.ownerId, kind: p.kind, characterId: p.characterId, x: Math.round(p.x), y: Math.round(p.y), vx: Math.round(p.vx), vy: Math.round(p.vy), ...(p.supreme ? { supreme: true } : {}), ...(p.scale ? { scale: p.scale } : {}) }));
 
 // Le pozze dell'IRA (#13): la merda che cade sopra un blocco resta lì per un po', le più vecchie spariscono per prime
 function dropPuddle(world: ProjectileWorld, p: Projectile, ctx: PhysicsContext): void {

@@ -243,6 +243,8 @@ export const NUVOLA = {
   speedMult: 0.7, // frazione della velocità da sballati
   restHopVy: 320, // pixel/s verso l'alto del saltello quando lui atterra sulla nuvola
   restTopPx: 30, // pixel sotto il bordo alto della nuvola in cui i suoi piedi la trovano scendendo
+  bigScale: 2.2, // …COSA? a Strafatto lascia dove era una Nuvola ferma grande così (fattore su range e height)
+  bigLifeMs: 5000, // ms che dura la Nuvola grande
 };
 
 // Groove, la combo di Bradipo Giallo (#557): il bassista picchia a tempo. Un suo colpo che prende vicino a un battito

@@ -36,7 +36,7 @@ export function tryStartSpecial(f: Fighter, ctx: PhysicsContext): void {
     startAttack(f, kind, ctx);
     f.specialTimer = sp.startupMs + sp.windowMs + sp.endLagMs;
   } else if (sp.type === "projectile") {
-    if (aliveOf(f, ctx) >= sp.maxAlive) return consume(f, "special"); // già troppi in volo: il tasto non fa niente
+    if (aliveOf(f, ctx, kind) >= sp.maxAlive) return consume(f, "special"); // già troppi in volo: il tasto non fa niente
     startAttack(f, kind, ctx);
     f.specialTimer = sp.startupMs; // fermi finché non parte, poi solo l'attesa per attaccare di nuovo
     f.projectileTimer = sp.startupMs;

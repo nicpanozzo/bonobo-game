@@ -8,6 +8,7 @@ import { canBeHit, isSpecialKind, launch, startAttack } from "./attacks";
 import type { StageSpec } from "../stages";
 import { consume, pressed, type Fighter, type PhysicsContext } from "./fighter";
 import { blast } from "./gear";
+import { bigCloud } from "./nuvola";
 import { fire } from "./projectiles";
 import { cancelSpecial } from "./specials";
 
@@ -282,6 +283,7 @@ function rewind(f: Fighter, sp: RewindSupreme, fighters: Fighter[], ctx: Physics
   const then = f.rewindTrail[0];
   f.rewindTrail = [];
   if (sp.bombFuseMs && then) f.rewindBomb = { x: f.x, y: f.y, ms: sp.bombFuseMs }; // dove era, prima di sparire
+  if (then) bigCloud(f, ctx); // a Strafatto anche la Nuvola grande, lì
   if (then) {
     f.x = then.x;
     f.y = then.y;

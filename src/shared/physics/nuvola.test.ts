@@ -3,10 +3,11 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { specialsFor, type ProjectileSpecial } from "../characters";
-import { NUVOLA, TICK_RATE } from "../constants";
+import { FATTANZA, NUVOLA, TICK_RATE } from "../constants";
 import { getStage } from "../stages";
 import { createFighter, emptyInput, stepWorld, type Fighter, type PhysicsContext } from "./index";
-import { boxOf, createProjectileWorld, fire } from "./projectiles";
+import { bigCloud } from "./nuvola";
+import { aliveOf, boxOf, createProjectileWorld, fire } from "./projectiles";
 
 const DT = 1000 / TICK_RATE;
 const stage = getStage(undefined);
@@ -80,5 +81,25 @@ describe("Nuvola di Marcomunista", () => {
     assert.ok(m.jumpsLeft >= 1);
     land();
     assert.ok(m.vy > 0, "la seconda volta ci passa attraverso");
+  });
+
+  it("…COSA? a Strafatto lascia una Nuvola grande e ferma, da Lucido no", () => {
+    const { ctx, m } = setup();
+    bigCloud(m, ctx);
+    assert.equal(ctx.projectiles!.list.length, 0, "da Lucido niente nuvola");
+    m.fattanza = FATTANZA.perLevel * FATTANZA.levels;
+    bigCloud(m, ctx);
+    const p = ctx.projectiles!.list[0];
+    assert.equal(p.scale, NUVOLA.bigScale);
+    assert.equal(p.vx, 0);
+    assert.equal(boxOf(p, spec).w, spec.range * NUVOLA.bigScale);
+    assert.ok(Math.abs(p.y + (spec.height * NUVOLA.bigScale) / 2 - m.y) < 1, "poggiata sui piedi");
+  });
+
+  it("la Nuvola in giro non blocca il Cappello", () => {
+    const { ctx, m } = setup();
+    fire(m, "specialSide", spec, ctx);
+    assert.equal(aliveOf(m, ctx, "specialNeutral"), 0);
+    assert.equal(aliveOf(m, ctx, "specialSide"), 1);
   });
 });
