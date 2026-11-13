@@ -18951,6 +18951,39 @@
               "move": "recovery"
             }
           ]
+        },
+        {
+          "name": "Cappellata",
+          "text": "pugno, sgambetto che lo solleva e cappello in faccia",
+          "steps": [
+            {
+              "move": "light",
+              "windowMs": 400
+            },
+            {
+              "move": "lightDown",
+              "windowMs": 400,
+              "holdMs": 450,
+              "angleDeg": 45
+            },
+            {
+              "move": "specialNeutral"
+            }
+          ]
+        },
+        {
+          "name": "Mongolfiera",
+          "text": "due colpi in aria di fila, leggero come un pallone",
+          "steps": [
+            {
+              "move": "lightAir",
+              "windowMs": 400
+            },
+            {
+              "move": "lightAir",
+              "holdMs": 450
+            }
+          ]
         }
       ],
       "airPop": true,
@@ -19321,7 +19354,7 @@
         "neutral": {
           "type": "projectile",
           "name": "Cappello boomerang",
-          "startupMs": 180,
+          "startupMs": 60,
           "cooldownMs": 450,
           "speed": 900,
           "gravity": 0,
@@ -19440,7 +19473,7 @@
           "range": 46,
           "height": 18,
           "damage": 6,
-          "startupMs": 180,
+          "startupMs": 60,
           "activeMs": 0,
           "cooldownMs": 450
         },
