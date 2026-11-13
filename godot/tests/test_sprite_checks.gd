@@ -19,7 +19,9 @@ const STEP := 4 # pixel del PNG tra un campione e l'altro: basta per la sagoma e
 # fuori zona fa fallire il test; quando uno di questi viene sistemato, lo si toglie da qui
 # Colpi con un disegno provvisorio che non arriva alla zona: OrsoBlu v2 usa la barca alzata per pesante e pesante su
 # finché non arriva il suo pacchetto base (docs/clip-flow/base.md). Le zone restano quelle di tutti, per non toccare il gioco
-const KNOWN_OFF := {"orsoblu": ["heavyUp"]}
+# Marcomunista (13/11/2026): la giravolta del pesante in aria disegna un anello lilla largo il doppio della zona; la zona
+# resta quella che tiene vero il Piano quinquennale (comboLab.test.ts)
+const KNOWN_OFF := {"orsoblu": ["heavyUp"], "marcomunista": ["heavyAir"]}
 const UP := ["lightUp", "heavyUp"]
 const TIP_TOLERANCE := 12.0 # pixel di mondo tra la punta del disegno e il bordo della zona (tools/sprite/zone_dei_colpi.py)
 const MIN_RUN := 3 # pixel opachi in una colonna o riga perché conti come punta, non un capello
