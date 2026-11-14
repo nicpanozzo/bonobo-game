@@ -335,21 +335,63 @@ func _atm(c: Vector2, w: float, h: float, screen: Color, text: String) -> void:
 
 # L'autobus di Attraversa la Strada visto di muso: la scatola col parabrezza e i fari
 func _bus(c: Vector2, w: float, h: float, col: Color) -> void:
-	_box(c, w, h, col)
-	# La targa della linea in alto, il paraurti, le ruote che spuntano sotto
-	var line_box := Rect2(c.x - 18, c.y - h / 2 - 16, 36, 16)
-	draw_rect(line_box, INK)
-	draw_string(_display, Vector2(c.x - 11, line_box.position.y + 13), "27", HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color("ffb000"))
-	draw_rect(Rect2(c.x - w / 2 - 3, c.y + h / 2 - 8, w + 6, 8), Color("2b2b33"))
-	for side in [-1, 1]:
-		draw_circle(Vector2(c.x + side * (w / 2 - 12), c.y + h / 2 + 2), 9.0, INK)
-		draw_circle(Vector2(c.x + side * (w / 2 - 12), c.y + h / 2 + 2), 4.0, Color("8a8a95"))
-	var glass := Rect2(c.x - w / 2 + 8, c.y - h / 2 + 10, w - 16, h * 0.38)
+	var r := Rect2(c.x - w / 2, c.y - h / 2, w, h)
+	# Un filo di tremolio: il motore acceso
+	var shake := Vector2(0, sin(_t * 40.0 + c.x) * 0.8)
+	r.position += shake
+	# Ombra a terra e ruote sotto la carrozzeria
+	draw_rect(Rect2(r.position.x - 6, r.end.y - 2, w + 12, 8), Color(0, 0, 0, 0.3))
+	for side in [-1.0, 1.0]:
+		var wheel := Rect2(c.x + side * (w / 2 - 16) - 9, r.end.y - 8, 18, 14)
+		draw_rect(wheel, INK)
+	# La carrozzeria con gli spigoli di sopra arrotondati, fascia bianca a metà e il tetto più scuro
+	var body := StyleBoxFlat.new()
+	body.bg_color = col
+	body.set_corner_radius_all(4)
+	body.corner_radius_top_left = 16
+	body.corner_radius_top_right = 16
+	body.border_color = INK
+	body.set_border_width_all(3)
+	draw_style_box(body, r)
+	draw_rect(Rect2(r.position.x + 3, r.position.y + 3, w - 6, 10), col.darkened(0.2))
+	draw_rect(Rect2(r.position.x + 3, r.position.y + h * 0.62, w - 6, 8), Color("f4efe6"))
+	# L'insegna luminosa della linea
+	var sign := Rect2(r.position.x + 12, r.position.y + 14, w - 24, 16)
+	draw_rect(sign, INK)
+	var label := "27 CENTRO"
+	var px := 12
+	while px > 7 and _display.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x > sign.size.x - 6:
+		px -= 1
+	var lw := _display.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
+	draw_string(_display, Vector2(c.x - lw / 2, sign.position.y + 12), label, HORIZONTAL_ALIGNMENT_LEFT, -1, px, Color("ffb000"))
+	# Il parabrezza in due, coi riflessi e i tergicristalli
+	var glass := Rect2(r.position.x + 8, r.position.y + 34, w - 16, h * 0.3)
 	draw_rect(glass, Color("bfe3ff"))
-	draw_rect(glass, INK, false, 2.0)
-	for side in [-1, 1]:
-		draw_circle(Vector2(c.x + side * (w / 2 - 14), c.y + h / 2 - 16), 7.0, Color("fff3a0"))
-		draw_arc(Vector2(c.x + side * (w / 2 - 14), c.y + h / 2 - 16), 7.0, 0, TAU, 14, INK, 1.6)
+	draw_line(Vector2(c.x, glass.position.y), Vector2(c.x, glass.end.y), INK, 3.0)
+	draw_line(glass.position + Vector2(8, glass.size.y - 4), glass.position + Vector2(18, 4), Color(1, 1, 1, 0.8), 3.0)
+	draw_line(Vector2(c.x + 6, glass.end.y - 4), Vector2(c.x + 14, glass.position.y + 6), Color(1, 1, 1, 0.6), 2.0)
+	for side in [-1.0, 1.0]:
+		var base := Vector2(c.x + side * w * 0.22, glass.end.y - 2)
+		draw_line(base, base + Vector2(-side * 14.0, -glass.size.y * 0.6), INK, 2.0)
+	draw_rect(glass, INK, false, 2.5)
+	# Specchietti ai lati
+	for side in [-1.0, 1.0]:
+		var arm := Vector2(c.x + side * w / 2, glass.position.y + 6)
+		draw_line(arm, arm + Vector2(side * 10.0, -4.0), INK, 2.5)
+		draw_rect(Rect2(arm + Vector2(side * 10.0 - 4.0, -14.0), Vector2(8, 14)), INK)
+	# Griglia, fari accesi e paraurti
+	var grille := Rect2(c.x - w * 0.2, r.end.y - 30, w * 0.4, 12)
+	draw_rect(grille, Color("3a3a44"))
+	for k in 4:
+		var y := grille.position.y + 2 + k * 2.5
+		draw_line(Vector2(grille.position.x + 2, y), Vector2(grille.end.x - 2, y), Color("6a6a76"), 1.0)
+	for side in [-1.0, 1.0]:
+		var lamp := Vector2(c.x + side * (w / 2 - 16), r.end.y - 24)
+		draw_circle(lamp, 11.0, Color(1, 0.95, 0.6, 0.25 + 0.1 * sin(_t * 10.0)))
+		draw_circle(lamp, 7.0, Color("fff3a0"))
+		draw_arc(lamp, 7.0, 0, TAU, 14, INK, 1.6)
+	draw_rect(Rect2(r.position.x - 3, r.end.y - 10, w + 6, 8), Color("2b2b33"))
+	draw_rect(Rect2(r.position.x - 3, r.end.y - 10, w + 6, 8), INK, false, 1.5)
 
 
 func _trail(pts: Variant, col: Color) -> void:
