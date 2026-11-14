@@ -186,4 +186,39 @@ describe("Bonobo Party: la partita", () => {
     run(p, 5000, (q) => q.turnId !== turn || q.phase === "vote" || q.phase === "minigame");
     assert.ok(p.turnId !== turn || p.phase !== "move", "il turno va avanti");
   });
+
+  // Fa giocare a soli bot fino al giro `to`: i minigiochi (e le Sfide) finiscono subito con questi posti
+  function playTo(p: Party, to: number, snaps: PartySnapshot[] = []) {
+    for (let i = 0; i < 200 && p.round < to && p.phase !== "podium"; i++) {
+      snaps.push(...run(p, 300_000, (q) => q.minigameReady || q.phase === "podium"));
+      if (!p.minigameReady) break;
+      const ids = p.duel ?? p.playerIds;
+      p.minigameDone(Object.fromEntries(ids.map((id, k) => [id, k + 1])));
+    }
+  }
+
+  it("Gran Finale: negli ultimi giri i premi dei minigiochi valgono il doppio", () => {
+    const p = party([member("a", true), member("b", true)], { rounds: 10 });
+    playTo(p, 10 - PARTY.finalRounds + 1);
+    assert.ok(p.finale, `giro ${p.round}: è il finale`);
+    run(p, 300_000, (q) => (q.minigameReady && !q.duel) || q.phase === "podium");
+    const before = p.snapshot(0).players.find((x) => x.id === "a")!.bananas;
+    p.minigameDone({ a: 1, b: 2 });
+    const after = p.snapshot(0).players.find((x) => x.id === "a")!.bananas;
+    assert.equal(after - before, PARTY.placeBananas[0] * PARTY.finalMultiplier);
+  });
+
+  it("lo Spintone ruba banane a chi sta sulla stessa casella, e chi è ultimo trova qualche banana", () => {
+    const snaps: PartySnapshot[] = [];
+    for (let seed = 1; seed < 6; seed++) playTo(party([member("a", true), member("b", true), member("c", true), member("d", true)], { seed, rounds: 10 }), 11, snaps);
+    const events = snaps.flatMap((x) => x.events);
+    const bumps = events.filter((e) => e.type === "square" && e.text.startsWith("Spintone!"));
+    assert.ok(bumps.length >= 2, `spintoni: ${bumps.length}`);
+    // Le banane passano di mano: quelle perse dall'uno sono quelle prese dall'altro
+    for (let i = 0; i + 1 < bumps.length; i += 2) {
+      const [lost, won] = bumps.slice(i, i + 2) as Extract<(typeof bumps)[number], { type: "square" }>[];
+      assert.equal(lost.bananas, -won.bananas);
+    }
+    assert.ok(events.some((e) => e.type === "square" && e.text.includes("è ultimo")), "la mano a chi è ultimo");
+  });
 });

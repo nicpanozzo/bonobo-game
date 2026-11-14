@@ -37,6 +37,12 @@ func test_dado_e_pedine() -> void:
 	runner.check(p == Vector2(60, 220), "le caselle da 0..1 al riquadro: %s" % p)
 
 
+func test_gran_finale() -> void:
+	runner.check(not PartyView.is_finale({"round": 7, "rounds": 10}), "il giro 7 di 10 non è ancora il finale")
+	runner.check(PartyView.is_finale({"round": 8, "rounds": 10}), "gli ultimi 3 giri sì")
+	runner.check(not PartyView.is_finale({"round": 3, "rounds": 3}), "con 3 giri in tutto niente finale")
+
+
 func test_tocca_a_me_tiro_e_uso_l_oggetto() -> void:
 	var v: Control = PartyView.new()
 	v.setup(_game(), "a")

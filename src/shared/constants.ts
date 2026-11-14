@@ -1503,6 +1503,10 @@ export const PARTY = {
   recentMinigames: 4, // non si ripesca uno degli ultimi tanti minigiochi (se ce ne sono abbastanza)
   feedbackMaxChars: 500,
   bonusCrowns: 1, // premi di fine partita: Corone a chi ha vinto più minigiochi e a chi ha più banane
+  finalRounds: 3, // gli ultimi tanti giri sono il Gran Finale: caselle e premi dei minigiochi valgono di più
+  finalMultiplier: 2, // per quanto si moltiplicano banane delle caselle e premi nel Gran Finale
+  bumpBananas: 3, // chi si ferma sulla casella di un altro gli ruba tante banane (lo Spintone)
+  catchUpBananas: 3, // chi è ultimo in classifica all'inizio del suo tiro trova tante banane in tasca
 };
 
 // I minigiochi di Bonobo Party (#579, src/shared/party/minigames/): durate in ms, distanze in pixel, velocità in pixel/s

@@ -27,6 +27,7 @@ const PAWN_SPEED := 900.0 # pixel al secondo con cui la pedina raggiunge la sua 
 const PANEL_W := 300.0 # la classifica a destra
 const DICE_S := 0.7 # secondi in cui il dado "rotola" prima di fermarsi sul numero
 const FLOAT_S := 1.4 # secondi di una scritta che sale da una pedina (+3, -3)
+const FINAL_ROUNDS := 3 # come PARTY.finalRounds in constants.ts: gli ultimi giri sono il Gran Finale
 const FOCUS_ZOOM := 1.3 # la telecamera del tabellone si avvicina a chi è di turno
 const FOCUS_MS := 450.0 # quanto ci mette ad avvicinarsi o allontanarsi, ms
 
@@ -129,6 +130,12 @@ func camera_aim() -> Array:
 	if str(snap.get("phase", "")) in ["roll", "move", "path", "shop"] and turn != null and _pawns.has(turn):
 		return [FOCUS_ZOOM, r.get_center().lerp(_pawns[turn], 0.7)]
 	return [1.0, r.get_center()]
+
+
+# Gli ultimi giri valgono doppio (Party.finale in src/shared/party/party.ts)
+static func is_finale(s: Dictionary) -> bool:
+	var rounds := int(s.get("rounds", 0))
+	return rounds > FINAL_ROUNDS and int(s.get("round", 0)) > rounds - FINAL_ROUNDS
 
 
 # Da pixel del tabellone a pixel dello schermo, con la telecamera
@@ -446,6 +453,9 @@ func _draw_pawns() -> void:
 
 func _draw_header() -> void:
 	var round_text := "GIRO %d DI %d" % [int(snap.get("round", 1)), int(snap.get("rounds", 1))]
+	if is_finale(snap):
+		var pulse := 1.0 + 0.06 * sin(_t * 5.0)
+		UI.draw_sticker(self, _display, Vector2(30, 116), "GRAN FINALE · BANANE DOPPIE", int(Access.px(20) * pulse), UI.PUNCH, 6, Vector2(2, 3))
 	UI.draw_sticker(self, _display, Vector2(28, 52), "BONOBO PARTY", Access.px(34), UI.BANANA, 7, Vector2(2, 4))
 	UI.draw_sticker(self, _display, Vector2(30, 82), round_text + ("   ·   minigioco a voto" if snap.get("pick") == "vote" else ""), Access.px(18), UI.LILAC, 5, Vector2(0, 2)) # col bordo: sotto c'è l'isola
 

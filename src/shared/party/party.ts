@@ -249,6 +249,13 @@ export class Party {
       return;
     }
     this.text = null;
+    // Una mano a chi è ultimo: qualche banana in tasca prima del tiro, così può ancora sperare nella Corona
+    const ranked = this.standings();
+    if (this.round > 1 && ranked.length > 1 && ranked[ranked.length - 1] === m && ranked[ranked.length - 2].bananas + ranked[ranked.length - 2].crowns * PARTY.crownPrice > m.bananas + m.crowns * PARTY.crownPrice) {
+      m.bananas += PARTY.catchUpBananas;
+      this.text = `${m.name} è ultimo: trova ${PARTY.catchUpBananas} banane in tasca`;
+      this.events.push({ type: "square", id: m.id, kind: this.squares[m.square].kind, bananas: PARTY.catchUpBananas, text: this.text });
+    }
     this.setPhase("roll", PARTY.rollMs);
   }
 
@@ -299,6 +306,15 @@ export class Party {
     this.stepTo(m, next[0]);
   }
 
+  // Il Gran Finale: gli ultimi PARTY.finalRounds giri (se la partita ne ha abbastanza) valgono di più
+  get finale(): boolean {
+    return this.rounds > PARTY.finalRounds && this.round > this.rounds - PARTY.finalRounds;
+  }
+
+  private bonus(n: number): number {
+    return this.finale ? n * PARTY.finalMultiplier : n;
+  }
+
   private stepTo(m: Member, square: number) {
     m.square = square;
     this.moveLeft--;
@@ -338,11 +354,11 @@ export class Party {
     let text = "";
     switch (sq.kind) {
       case "banana":
-        delta = PARTY.squareBananas;
+        delta = this.bonus(PARTY.squareBananas);
         text = `${m.name}: +${delta} banane`;
         break;
       case "buccia":
-        delta = -Math.min(m.bananas, PARTY.squareBananas);
+        delta = -Math.min(m.bananas, this.bonus(PARTY.squareBananas));
         text = `${m.name} scivola su una buccia: ${delta} banane`;
         break;
       case "evento":
@@ -357,8 +373,21 @@ export class Party {
     }
     m.bananas += delta;
     this.events.push({ type: "square", id: m.id, kind: sq.kind, bananas: delta, text });
-    this.text = text;
+    this.text = this.bump(m, sq.kind) ?? text;
     this.setPhase("move", PARTY.squareMs);
+  }
+
+  // Lo Spintone: chi si ferma dove c'è già qualcuno gli ruba qualche banana (al più ricco, se sono in tanti)
+  private bump(m: Member, kind: PartySquare["kind"]): string | null {
+    const rivals = [...this.members.values()].filter((p) => p.id !== m.id && !p.away && p.square === m.square && p.bananas > 0);
+    if (rivals.length === 0) return null;
+    const o = rivals.sort((a, b) => b.bananas - a.bananas)[0];
+    const taken = Math.min(o.bananas, this.bonus(PARTY.bumpBananas));
+    o.bananas -= taken;
+    m.bananas += taken;
+    const text = `Spintone! ${m.name} ruba ${taken} banane a ${o.name}`;
+    this.events.push({ type: "square", id: o.id, kind, bananas: -taken, text }, { type: "square", id: m.id, kind, bananas: taken, text });
+    return text;
   }
 
   // Le carte Evento: piccole sorprese che rimescolano la classifica senza decidere la partita
@@ -519,7 +548,7 @@ export class Party {
     for (const [id, place] of Object.entries(places)) {
       const m = this.members.get(id);
       if (!m) continue;
-      const prize = PARTY.placeBananas[place - 1] ?? 0;
+      const prize = this.bonus(PARTY.placeBananas[place - 1] ?? 0);
       m.bananas += prize;
       bananas[id] = prize;
       if (place === 1) m.wins++;
@@ -556,7 +585,7 @@ export class Party {
     this.options = [];
     if (this.round >= this.rounds) return this.podium();
     this.round++;
-    this.text = `Giro ${this.round} di ${this.rounds}`;
+    this.text = this.finale && this.round === this.rounds - PARTY.finalRounds + 1 ? `GRAN FINALE! Ultimi ${PARTY.finalRounds} giri: caselle e minigiochi valgono il doppio` : `Giro ${this.round} di ${this.rounds}`;
     this.beginTurn();
   }
 
