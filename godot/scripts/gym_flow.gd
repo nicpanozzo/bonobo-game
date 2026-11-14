@@ -7,6 +7,7 @@ var _m: Node # main.gd: collegamento, mondo, menu e preferenze
 var training: Control # pannello dell'allenamento, solo nelle stanze "training"
 var tutorial: Control # riquadro del tutorial a tappe, solo se si è entrati da "Tutorial"
 var challenge_run: Control # sfida in corso, solo se si è entrati da "Sfide"
+var dojo: Control # tutorial delle mosse del proprio lottatore, solo se si è entrati da "Dojo"
 var picked: Dictionary = {} # sfida appena scelta nell'elenco
 var speed := 1.0 # velocità scelta nel pannello dell'allenamento
 
@@ -18,7 +19,9 @@ func _init(main_node: Node) -> void:
 # All'ingresso nella stanza: in una sfida niente pannello, perché rallentatore e percentuale cambierebbero il risultato
 func on_welcome(data: Dictionary) -> void:
 	var challenge: Dictionary = _m.params.get("challenge", {})
-	set_training(data.get("rules", {}).get("mode", "") == "training" and challenge.is_empty())
+	var in_dojo: bool = _m.params.get("dojo", false)
+	set_training(data.get("rules", {}).get("mode", "") == "training" and challenge.is_empty() and not in_dojo)
+	set_dojo(in_dojo)
 	set_tutorial(_m.params.get("tutorial", false))
 	set_challenge(not challenge.is_empty())
 
@@ -28,6 +31,8 @@ func on_event(e: Dictionary) -> void:
 		training.on_event(e, _m.world.my_id)
 	if is_instance_valid(tutorial):
 		tutorial.on_event(e, _m.world.my_id)
+	if is_instance_valid(dojo):
+		dojo.on_event(e, _m.world.my_id)
 
 
 func on_snapshot(data: Dictionary) -> void:
@@ -42,6 +47,7 @@ func close_all() -> void:
 	set_training(false)
 	set_tutorial(false)
 	set_challenge(false)
+	set_dojo(false)
 
 
 # Sfide e tutorial hanno la loro fine: niente Rivincita e Cambia lottatore
@@ -70,6 +76,8 @@ func set_training(on: bool) -> void:
 func command(data: Dictionary) -> void:
 	if data.has("speed"):
 		speed = float(data.speed)
+		if is_instance_valid(dojo):
+			dojo.speed = speed # la dimostrazione accende i tasti con l'orologio della stanza
 		_m._apply_prediction()
 	_m.socket.emit("training", data)
 
@@ -89,6 +97,51 @@ func join_gym(with_tutorial: bool) -> void:
 		"tutorial": with_tutorial,
 		"gym": true,
 	})
+
+
+# Dal titolo: il Dojo è una palestra tutta propria sull'arena del Dojo, col manichino fermo; alla prima prova
+# il server lo fa diventare Bonobot, lo stesso bersaglio con cui il laboratorio registra le dimostrazioni
+func join_dojo() -> void:
+	_m._join({
+		"name": _player_name(),
+		"room": "dojo-" + str(randi() % 100000),
+		"char": _m.settings.profile.get("char", ""),
+		"skin": _m.settings.profile.get("skin", ""),
+		"stage": "dojo",
+		"rules": {"mode": "training"},
+		"bot": "manichino",
+		"dojo": true,
+		"gym": true,
+	})
+
+
+func set_dojo(on: bool) -> void:
+	if on == is_instance_valid(dojo):
+		return
+	if not on:
+		dojo.queue_free()
+		dojo = null
+		_m._apply_prediction()
+		return
+	dojo = preload("res://scripts/dojo.gd").new()
+	dojo.theme = UI.theme()
+	_m.ui_layer.add_child(dojo)
+	dojo.speed = speed
+	dojo.setup(_m.game, _m.settings, _my_character())
+	dojo.command.connect(command)
+	dojo.demo_changed.connect(func(_on: bool): _m._apply_prediction())
+	dojo.lesson_done.connect(func(): _m.audio.on_event({"type": "flag"}))
+
+
+# Durante la dimostrazione i tasti del proprio lottatore li fa il server: niente predizione
+func demo_playing() -> bool:
+	return is_instance_valid(dojo) and dojo.is_demo()
+
+
+# Il lottatore con cui si è entrati (quello del profilo, o quello predefinito)
+func _my_character() -> String:
+	var id := str(_m.settings.profile.get("char", ""))
+	return id if _m.game.characters.has(id) else str(_m.game.get("defaultCharacterId", ""))
 
 
 func set_tutorial(on: bool) -> void:

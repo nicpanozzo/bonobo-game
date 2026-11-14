@@ -1,5 +1,5 @@
 // Dojo: il tutorial delle mosse. Per ogni mossa o combo di un personaggio registra con il laboratorio delle combo
-// (comboLab.ts) i tasti tick per tick che la fanno entrare su un Bonobo fermo; Match li rifà al lottatore vero nella
+// (comboLab.ts) i tasti tick per tick che la fanno entrare su Bonobot fermo; Match li rifà al lottatore vero nella
 // stanza, e il client li mostra a schermo mentre succede. Stessa arena, stessi passi: la fisica dà lo stesso risultato.
 
 import { getCharacter } from "./characters";
@@ -39,7 +39,7 @@ export function dojoMoves(characterId: string, pick: DojoPick): string[] | null 
 
 const cache = new Map<string, DojoDemo>();
 
-// La dimostrazione: la percentuale più bassa (a passi di COMBO_LAB) a cui la catena entra tutta su un Bonobo fermo.
+// La dimostrazione: la percentuale più bassa (a passi di COMBO_LAB) a cui la catena entra tutta su Bonobot fermo.
 // Si calcola la prima volta che serve (pochi ms) e poi resta in memoria
 export function dojoDemo(characterId: string, moves: string[]): DojoDemo {
   const key = `${characterId}:${moves.join(">")}`;

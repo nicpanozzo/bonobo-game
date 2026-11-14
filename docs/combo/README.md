@@ -22,3 +22,7 @@ Ogni personaggio ne ha almeno tre vere. Le percentuali, rifatte dal laboratorio,
 `npm run combo-lab` (i 5 del nucleo) o `npm run combo-lab -- <id>` prova con la fisica vera ogni coppia di mosse a ogni percentuale e riscrive `docs/combo/<id>.md`: le combo del personaggio con le percentuali a cui sono vere, le coppie che legano, le catene che non finiscono mai e le **clip che servono**. Dopo aver cambiato una combo o i numeri di un colpo, rilancialo.
 
 Per trovare una combo nuova: guarda in `<id>.md` le coppie che entrano "solo se non reagisce", scrivile in `combos` e rilancia il laboratorio: spesso basta la finestra, che toglie l'attesa.
+
+## Dojo
+
+Dal titolo, **Da solo → Dojo**: ogni combo e mossa del proprio lottatore con i suoi tasti. Scelta una voce, il server rifà al lottatore i tasti che il laboratorio ha registrato (`src/shared/dojo.ts`, sull'arena `dojo`, che è il pavimento del laboratorio) e il client li accende a schermo mentre i colpi entrano; poi tocca a chi gioca, sullo stesso manichino alla stessa percentuale. Una combo nuova in `combos` compare da sola nel Dojo: `npm test` controlla che la sua dimostrazione entri tutta.

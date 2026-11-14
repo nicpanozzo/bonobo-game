@@ -253,7 +253,7 @@ export class Match {
     this.restartMatch();
   }
 
-  // Dojo: chi impara (id) e il manichino (un Bonobo) tornano come nuovi dove il laboratorio ha registrato la prova,
+  // Dojo: chi impara (id) e il manichino (Bonobot) tornano come nuovi dove il laboratorio ha registrato la prova,
   // nello stesso ordine; con play la dimostrazione rifà i suoi tasti tick per tick, senza si prova da soli
   startDojo(id: string, demo: DojoDemo, play: boolean) {
     const me = this.fighters.get(id);

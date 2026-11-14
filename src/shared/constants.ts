@@ -1424,7 +1424,7 @@ export const STAGE_CHECK = {
 // Dojo: tutorial delle mosse con la dimostrazione esatta di ogni combo (src/shared/dojo.ts)
 export const DOJO = {
   startX: 710, // pixel: dove sta chi impara all'inizio di una prova (come nel laboratorio delle combo)
-  dummyCharacterId: "default", // il manichino del Dojo è sempre un Bonobo, come il bersaglio del laboratorio
+  dummyCharacterId: "bonobot", // il manichino del Dojo è sempre Bonobot (disegnato, a differenza del Bonobo del laboratorio)
   maxDemoTicks: 600, // tick: una dimostrazione più lunga non si registra (10 s)
 };
 

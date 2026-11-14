@@ -124,7 +124,7 @@ export function newWorld(characterId: string, percent: number, gap: number, matc
   const ctx: PhysicsContext = { stage: STAGE, events: [], ...(match && { unlimitedStocks: true }) };
   const mk = (id: string, ch: string, index: number) => createFighter({ id, name: id, characterId: ch, color: 0, team: 0, index, stocks: 3 }, STAGE);
   const a = mk("a", characterId, 0);
-  const t = mk("t", DOJO.dummyCharacterId, 1); // il bersaglio è sempre un Bonobo: peso 1
+  const t = mk("t", match ? DOJO.dummyCharacterId : "default", 1); // il bersaglio: un Bonobo (peso 1), nel Dojo il suo manichino
   a.x = DOJO.startX;
   t.x = a.x + gap;
   a.y = t.y = FLOOR_Y;

@@ -2,11 +2,12 @@
 // Si lancia con `npm test`.
 
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 import { CHARACTERS } from "./characters";
 import { movesOf } from "./comboLab";
 import { TICK_RATE } from "./constants";
-import { dojoDemo, dojoMoves, keysMask, maskKeys } from "./dojo";
+import { DEMO_KEYS, dojoDemo, dojoMoves, keysMask, maskKeys } from "./dojo";
 import { Match } from "./match";
 import type { GameEvent } from "./types";
 
@@ -16,7 +17,7 @@ const DT = 1000 / TICK_RATE;
 function play(characterId: string, moves: string[]) {
   const demo = dojoDemo(characterId, moves);
   const match = new Match({ stageId: "dojo", rules: { mode: "training" } });
-  match.addPlayer("bot", "Manichino", "default"); // il bot entra per primo, come nella stanza vera
+  match.addPlayer("bot", "Manichino", "lampione"); // il bot entra per primo (e diventa Bonobot), come nella stanza vera
   match.addPlayer("me", "Io", characterId);
   for (let i = 0; i < 30; i++) match.step(DT);
   match.startDojo("me", demo, true);
@@ -33,6 +34,11 @@ describe("Dojo", () => {
   it("i tasti passano da numero a tasti e ritorno", () => {
     const keys = { light: true, down: true, run: true };
     assert.deepEqual(Object.entries(maskKeys(keysMask(keys))).filter(([, v]) => v).map(([k]) => k).sort(), Object.keys(keys).sort());
+  });
+
+  it("il client Godot legge i tasti nello stesso ordine", () => {
+    const gd = readFileSync(new URL("../../godot/scripts/dojo.gd", import.meta.url), "utf8");
+    assert.ok(gd.includes(`const DEMO_KEYS := [${DEMO_KEYS.map((k) => `"${k}"`).join(", ")}]`), "DEMO_KEYS diversi in godot/scripts/dojo.gd");
   });
 
   it("chiede solo combo e mosse che il personaggio ha", () => {
@@ -68,11 +74,11 @@ describe("Dojo", () => {
   it("annuncia la prova con i tasti, e senza dimostrazione non li manda", () => {
     const match = new Match({ stageId: "dojo", rules: { mode: "training" } });
     match.addPlayer("me", "Io", "orsoblu");
-    match.addPlayer("bot", "Manichino", "bonobot");
+    match.addPlayer("bot", "Manichino", "elvedeo");
     const demo = dojoDemo("orsoblu", ["light"]);
     match.startDojo("me", demo, false);
     const e = match.step(DT).find((x) => x.type === "dojo");
     assert.ok(e && e.type === "dojo" && !e.keys && e.percent === demo.percent);
-    assert.equal(match.players.find((p) => p.id === "bot")!.characterId, "default", "il manichino diventa un Bonobo");
+    assert.equal(match.players.find((p) => p.id === "bot")!.characterId, "bonobot", "il manichino diventa Bonobot");
   });
 });
