@@ -24,6 +24,7 @@ interface Crate {
 
 class Casse extends TimedGame {
   private crates: Crate[] = [];
+  private drops = 0; // casse cadute finora: le nuove cadono a turno in tre punti diversi, così non finiscono una sopra l'altra
 
   constructor(private team: Record<string, 0 | 1>) {
     super(C.durationMs, "casse");
@@ -33,7 +34,8 @@ class Casse extends TimedGame {
     for (let i = 0; i < C.crates; i++) this.crates.push(this.fresh((i - (C.crates - 1) / 2) * 90));
   }
 
-  private fresh(dx = 0): Crate {
+  private fresh(dx = ((this.drops % 3) - 1) * 90): Crate {
+    this.drops++;
     return { x: 640 + dx, y: 120, vx: 0, vy: 0, hitMs: 0 };
   }
 

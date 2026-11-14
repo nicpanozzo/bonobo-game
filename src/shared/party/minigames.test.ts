@@ -131,6 +131,7 @@ describe("Bonobo Party: i minigiochi della seconda tornata", () => {
     run(match, 200, () => false);
     const props = snap(match).party?.props ?? [];
     assert.ok(props.filter((p) => p.kind === "coin").length >= MINIGAME.bancomat.coinsPerHit, "le monete escono");
+    assert.equal(props.filter((p) => p.kind === "atm").length, 1, "il bancomat disegnato come tale");
   });
 
   it("Il Colosso: uno è gigante per tutto il minigioco, anche dopo un KO", () => {
@@ -186,6 +187,8 @@ describe("Bonobo Party: classici e puzzle", () => {
     assert.equal(new Set(Object.values(setup.roles ?? {})).size, 2);
     run(match, 6000, () => false);
     assert.equal((snap(match).party?.props ?? []).filter((p) => p.kind === "crate").length, MINIGAME.casse.crates);
+    const xs = (snap(match).party?.props ?? []).filter((p) => p.kind === "crate").map((p) => p.x);
+    assert.equal(new Set(xs).size, xs.length, "le casse non cadono una sopra l'altra");
   });
 
   it("Il Muro: chi è a terra quando passa un muro col buco in alto vola via", () => {

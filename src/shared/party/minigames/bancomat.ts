@@ -90,10 +90,9 @@ class Bancomat extends TimedGame {
         return false;
       });
     }
-    // La macchina: una cassa scura con lo schermo che si accende quando è pronta
-    this.props = [
-      { kind: "crate", x: MACHINE.x, y: MACHINE.y - MACHINE.h / 2, w: MACHINE.w, h: MACHINE.h, color: 0x4a5a6a },
-      { kind: "crate", x: MACHINE.x, y: MACHINE.y - MACHINE.h + 30, w: 50, h: 26, color: this.cooldownMs > 0 ? 0x2a2f3a : 0x5ef0a0 },
+        this.props = [
+      // Il bancomat (disegnato da party_props.gd): lo schermo verde e "COLPISCI!" quando è pronto a sputare
+      { kind: "atm", x: MACHINE.x, y: MACHINE.y - MACHINE.h / 2, w: MACHINE.w, h: MACHINE.h, color: this.cooldownMs > 0 ? 0x2a2f3a : 0x5ef0a0, text: this.cooldownMs > 0 ? "ERRORE" : "COLPISCI!" },
       ...this.coins.map((c) => ({ kind: "coin", x: Math.round(c.x), y: Math.round(c.y - 10), color: 0xffd700 })),
     ];
   }
