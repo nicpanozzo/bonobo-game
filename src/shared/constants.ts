@@ -1539,7 +1539,7 @@ export const MINIGAME = {
   // colore rotto vale un punto. Chi li finisce tutti per primo vince subito
   mattoni: { durationMs: 50000, balls: 2, ballR: 16, speed: 560, maxSpeed: 900, reachPx: 90, bricksEach: 8, gravity: 0 },
   // Casse al Posto Giusto: si spingono a colpi (pushVx px/s, frenate da friction al secondo) nella porta della propria parte
-  casse: { durationMs: 50000, crates: 3, size: 56, pushVx: 620, pushVy: -260, reachPx: 80, friction: 1.8, goalW: 150 },
+  casse: { durationMs: 50000, crates: 3, size: 56, pushVx: 300, pushVy: -160, reachPx: 80, friction: 3, goalW: 150 }, // un colpo pesante porta una cassa ~250 px: dal centro alla porta ne servono due o tre
   // Il Muro: un muro con un buco arriva ogni everyMs e attraversa l'arena a speed px/s; chi non è nella posa del buco vola
   muro: { durationMs: 50000, firstMs: 2500, everyMs: 4200, speed: 520, minSpeed: 420, maxSpeed: 760, bumpVx: 900, bumpVy: -700 },
   // Ieri Me: giri da roundMs; a ogni giro si riparte e i fantasmi rifanno i giri di prima. Punti: hitPoints a colpo, koPoints a KO
