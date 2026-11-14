@@ -3,7 +3,7 @@
 // girare in locale (allenamento, predizione) e un porting su un altro motore parte da qui.
 
 import { getCharacter, skinFor } from "./characters";
-import { COLORS, FATTANZA, FIGHTER, GAME_SPEED, ITEM_AMOUNTS, MATCH_RESTART_MS, MAX_PLAYERS_PER_ROOM, RECONNECT_RESUME_INVULNERABLE_MS, TEAM_COLORS, TRAINING } from "./constants";
+import { COLORS, DOJO, FATTANZA, FIGHTER, GAME_SPEED, ITEM_AMOUNTS, MATCH_RESTART_MS, MAX_PLAYERS_PER_ROOM, RECONNECT_RESUME_INVULNERABLE_MS, TEAM_COLORS, TRAINING } from "./constants";
 import { bufferPresses, createFighter, emptyInput, resetForMatch, stepWorld, type Fighter, type PhysicsContext } from "./physics";
 import { createItemWorld, handleItemInput, itemStates, resetItems, stepItems, type ItemWorld } from "./physics/items";
 import { companionState } from "./physics/companion";
@@ -18,6 +18,7 @@ import { COURSE_PREFIX, seedFromCourseId } from "./courseGenerator";
 import { seedFromStageId } from "./stageGenerator";
 import { getStage, type StageSpec } from "./stages";
 import { Prematch } from "./prematch";
+import { maskKeys, type DojoDemo } from "./dojo";
 import type { MinigameApi, MinigameRuntime } from "./party/minigame";
 import type { GameEvent, GameSnapshot, InputState, MatchRules, PlayerState, PredictionState } from "./types";
 
@@ -59,6 +60,7 @@ export class Match {
   private game: { id: string; runtime: MinigameRuntime } | null; // il minigioco di Bonobo Party, se lo è (#579)
   private places: Record<string, number> | null = null; // a minigioco finito, i posti d'arrivo
   private ghosts = new Map<string, string>(); // fantasmi del minigioco -> di chi sono
+  private demo: { id: string; keys: number[]; tick: number } | null = null; // Dojo: i tasti che fa la dimostrazione
 
   constructor(options: MatchOptions = {}) {
     this.rules = sanitizeRules(options.rules);
@@ -175,7 +177,7 @@ export class Match {
   // I dati arrivano dalla rete: si tengono solo booleani
   setInput(id: string, input: InputState) {
     const f = this.fighters.get(id);
-    if (!f || f.away) return;
+    if (!f || f.away || this.demo?.id === id) return; // durante la dimostrazione del Dojo i tasti li fa lei
     if (this.game?.runtime.mapInput && !this.ghosts.has(id)) input = this.game.runtime.mapInput(id, input);
     const next: InputState = {
       left: !!input.left,
@@ -247,7 +249,34 @@ export class Match {
 
   // Allenamento: tutti tornano al loro posto come a inizio partita
   reset() {
+    this.demo = null;
     this.restartMatch();
+  }
+
+  // Dojo: chi impara (id) e il manichino (Bonobot) tornano come nuovi dove il laboratorio ha registrato la prova,
+  // nello stesso ordine; con play la dimostrazione rifà i suoi tasti tick per tick, senza si prova da soli
+  startDojo(id: string, demo: DojoDemo, play: boolean) {
+    const me = this.fighters.get(id);
+    const dummy = this.players.find((f) => f.id !== id && !this.ghosts.has(f.id));
+    if (!me || !dummy) return;
+    const fresh = (f: Fighter, characterId: string, index: number) =>
+      createFighter({ id: f.id, name: f.name, characterId, skinId: characterId === f.characterId ? f.skinId : undefined, color: f.color, team: f.team, index, stocks: this.rules.stocks, supremeRate: this.rules.supremeSpeed }, this.stage);
+    const a = fresh(me, me.characterId, 0);
+    const t = fresh(dummy, DOJO.dummyCharacterId, 1);
+    const floor = this.stage.solids[0]?.y ?? a.y;
+    a.x = DOJO.startX;
+    t.x = a.x + demo.gap;
+    a.y = t.y = floor;
+    a.facing = 1;
+    t.facing = -1;
+    t.percent = demo.percent;
+    this.fighters.clear(); // l'ordine conta: la fisica muove prima chi impara, come nel laboratorio
+    this.fighters.set(a.id, a).set(t.id, t);
+    this.projectiles.list = [];
+    this.projectiles.puddles = [];
+    this.winnerId = null;
+    this.demo = play && demo.keys ? { id, keys: demo.keys, tick: 0 } : null;
+    this.ctx.events.push({ type: "dojo", id, moves: demo.moves, percent: demo.percent, ...(this.demo && { keys: demo.keys! }) });
   }
 
   // Un passo di simulazione; restituisce gli eventi nati da allora (anche fuori dal passo, es. la rivincita)
@@ -265,6 +294,7 @@ export class Match {
     // Al 3, 2, 1 i lottatori stanno fermi: i tasti tenuti restano, e valgono dal VIA
     const held = phase === "starting" ? list.map((f) => f.input) : null;
     if (held) for (const f of list) f.input = emptyInput();
+    this.playDemo();
     // Nell'attesa ci si scalda: chi esce torna senza perdere vite
     const unlimited = this.ctx.unlimitedStocks;
     if (phase === "waiting") this.ctx.unlimitedStocks = true;
@@ -282,6 +312,19 @@ export class Match {
     if (this.rules.mode === "race" && !this.winnerId) this.updateCheckpoints(list);
     this.updateMatch(list, dtMs);
     return this.flushEvents();
+  }
+
+  // Dojo: i tasti della dimostrazione di questo tick, messi come li mette il laboratorio (senza il buffer delle pressioni)
+  private playDemo() {
+    const demo = this.demo;
+    if (!demo) return;
+    const f = this.fighters.get(demo.id);
+    if (!f || demo.tick >= demo.keys.length) {
+      if (f) f.input = emptyInput(); // finita: fermo finché chi impara non tocca un tasto
+      this.demo = null;
+      return;
+    }
+    f.input = { ...emptyInput(), ...maskKeys(demo.keys[demo.tick++]) };
   }
 
   // Bonobo Party (#579): un passo della regola del minigioco; quando finisce si chiude la partita con i posti

@@ -1421,6 +1421,13 @@ export const STAGE_CHECK = {
 };
 
 // Allenamento (E15, #113): comandi della palestra, accettati solo con un umano nella stanza
+// Dojo: tutorial delle mosse con la dimostrazione esatta di ogni combo (src/shared/dojo.ts)
+export const DOJO = {
+  startX: 710, // pixel: dove sta chi impara all'inizio di una prova (come nel laboratorio delle combo)
+  dummyCharacterId: "bonobot", // il manichino del Dojo è sempre Bonobot (disegnato, a differenza del Bonobo del laboratorio)
+  maxDemoTicks: 600, // tick: una dimostrazione più lunga non si registra (10 s)
+};
+
 export const TRAINING = {
   speeds: [1, 0.9, 0.8, 0.5, 0.25], // velocità dell'orologio ammesse: 1 normale, 0.9 e 0.8 per provare un gioco più lento (#384), 0.5 e 0.25 rallentatore
   maxPercent: 999, // percentuale massima che si può dare al bot

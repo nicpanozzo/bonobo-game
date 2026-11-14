@@ -4462,6 +4462,74 @@
         "platform": 12101004
       }
     },
+    "dojo": {
+      "id": "dojo",
+      "name": "Il Dojo",
+      "hidden": true,
+      "width": 1580,
+      "camera": {
+        "minZoom": 0.8
+      },
+      "solids": [
+        {
+          "x": 0,
+          "y": 560,
+          "width": 1580,
+          "height": 80
+        }
+      ],
+      "platforms": [],
+      "blastZone": {
+        "left": -100,
+        "right": 1680,
+        "top": -350,
+        "bottom": 920
+      },
+      "spawns": [
+        {
+          "x": 650,
+          "y": 560
+        },
+        {
+          "x": 930,
+          "y": 560
+        },
+        {
+          "x": 755,
+          "y": 560
+        },
+        {
+          "x": 825,
+          "y": 560
+        },
+        {
+          "x": 580,
+          "y": 560
+        },
+        {
+          "x": 1000,
+          "y": 560
+        },
+        {
+          "x": 699,
+          "y": 560
+        },
+        {
+          "x": 881,
+          "y": 560
+        }
+      ],
+      "respawn": {
+        "x": 790,
+        "y": 160
+      },
+      "colors": {
+        "sky": 2825492,
+        "solid": 9067059,
+        "solidEdge": 14725234,
+        "platform": 12101004
+      }
+    },
     "padova": {
       "id": "padova",
       "name": "Padova",

@@ -192,7 +192,9 @@ func _ready() -> void:
 	touch.free_tap.connect(func(): socket.emit("rematch")) # come R: il server lo accetta solo a partita finita
 	touch.extra_pressed.connect(func(extra: String):
 		if extra == "panel" and is_instance_valid(gym.training):
-			gym.training.toggle())
+			gym.training.toggle()
+		elif extra == "panel" and is_instance_valid(gym.dojo):
+			gym.dojo.toggle())
 	ui_layer.layer = 2 # menu sopra l'HUD
 	add_child(ui_layer)
 	_setup_voice()
@@ -311,6 +313,9 @@ func _show_title(skip_press := false) -> void:
 	title.training_requested.connect(func():
 		title.queue_free()
 		gym.join_gym(false))
+	title.dojo_requested.connect(func():
+		title.queue_free()
+		gym.join_dojo())
 	title.challenges_requested.connect(func():
 		gym.show_challenges(func():
 			title.queue_free()
@@ -354,6 +359,7 @@ func _show_first_run() -> void:
 func _join(choice: Dictionary) -> void:
 	params.merge(choice, true)
 	params.tutorial = choice.get("tutorial", false) # vale solo per questa entrata
+	params.dojo = choice.get("dojo", false) # anche il Dojo
 	params.challenge = choice.get("challenge", {})
 	params.kind = choice.get("kind", "") # come si è entrati dalla lobby (#250): vale solo per questa entrata
 	params.hall = HallFlow.truthy(choice.get("hall", false)) # la sala d'attesa: anche lei solo per questa entrata
@@ -466,7 +472,7 @@ func _flash_status(text: String) -> void:
 
 # Predizione (E17): accesa dall'opzione, e solo a velocità normale (l'allenamento rallentato fa meno tick)
 func _apply_prediction() -> void:
-	world.predictor.enabled = bool(settings.video.get("predict", true)) and gym.speed == 1.0 and not (prematch != null and prematch.frozen()) and not _in_hall and not _in_party and not (party_hud != null and party_hud.active()) # nei minigiochi i tasti possono guidare un altro lottatore (Lo Specchio)
+	world.predictor.enabled = bool(settings.video.get("predict", true)) and gym.speed == 1.0 and not gym.demo_playing() and not (prematch != null and prematch.frozen()) and not _in_hall and not _in_party and not (party_hud != null and party_hud.active()) # nei minigiochi i tasti possono guidare un altro lottatore (Lo Specchio)
 
 
 func _apply_volumes() -> void:
@@ -922,9 +928,9 @@ func _process(_delta: float) -> void:
 		socket.drop()
 	if playing and gym.speed == 1.0: # al rallentatore dell'allenamento il brano non insegue l'arena
 		audio.sync_song(world._t_draw) # l'arena musicale (#423): il brano a tempo con le piattaforme
-	var panel_open: bool = is_instance_valid(gym.training) and gym.training.is_open()
+	var panel_open: bool = (is_instance_valid(gym.training) and gym.training.is_open()) or (is_instance_valid(gym.dojo) and gym.dojo.is_open())
 	touch.visible = playing and touch.active and not is_instance_valid(pause_menu) and not panel_open
-	touch.extras = {"panel": "Pannello"} if is_instance_valid(gym.training) else {}
+	touch.extras = {"panel": "Pannello"} if is_instance_valid(gym.training) else {"panel": "Mosse"} if is_instance_valid(gym.dojo) else {}
 	touch.supreme_ready = _my_supreme_ready()
 	_rotate_hint.visible = touch.active and TouchControls.portrait(Vector2(DisplayServer.window_get_size()))
 	if touch.active and playing:

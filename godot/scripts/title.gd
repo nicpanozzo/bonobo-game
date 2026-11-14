@@ -12,6 +12,7 @@ signal leaderboard_requested # la classifica a punti (leaderboard_view.gd)
 signal tutorial_requested # tutorial a tappe con lo sparring (E15)
 signal training_requested # palestra col manichino e il pannello dell'allenamento (E15)
 signal challenges_requested # sfide con medaglie (E15)
+signal dojo_requested # Dojo: le mosse e le combo del proprio lottatore, con la dimostrazione
 signal invite_requested(invite: Dictionary) # entra nella stanza del link copiato: {room, server?}
 
 const Lobby := preload("res://scripts/lobby.gd")
@@ -147,6 +148,7 @@ func setup(game_data: Dictionary, skip_press := false, own_room := "") -> void:
 	_tile(solo_grid, "Allenamento", "Le mosse sul manichino, coi numeri", "LAB", func(): training_requested.emit(), false, solo_h)
 	_tile(solo_grid, "Tutorial", "I comandi un passo alla volta", "ABC", func(): tutorial_requested.emit(), false, solo_h)
 	_tile(solo_grid, "Sfide", "Prove a tempo, con le medaglie", "TOP", func(): challenges_requested.emit(), false, solo_h)
+	_tile(solo_grid, "Dojo", "Ogni mossa e combo: guarda come si fa e prova", "DOJ", func(): dojo_requested.emit(), false, solo_h)
 	var back := _small("‹ Indietro", _show_main)
 	back.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	_solo.add_child(back)

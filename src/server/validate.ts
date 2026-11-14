@@ -3,6 +3,7 @@
 // o null, così i gestori di index.ts non si fidano mai di quello che ricevono.
 import { NET_LIMITS, PARTY, TRAINING, VOICE } from "../shared/constants";
 import type { InputState, MatchRules, PartyCommand, VoiceSignal } from "../shared/types";
+import type { DojoPick } from "../shared/dojo";
 
 export interface JoinData {
   room: string;
@@ -90,6 +91,7 @@ export interface TrainingData {
   percent?: number;
   speed?: number;
   reset: boolean;
+  dojo?: DojoPick & { play: boolean }; // Dojo: si riparte per provare una combo (indice) o una mossa; play = la dimostrazione
 }
 
 // Comandi dell'allenamento (#113): percentuale tra 0 e TRAINING.maxPercent, velocità solo tra quelle ammesse
@@ -98,7 +100,14 @@ export function parseTraining(raw: unknown): TrainingData | null {
   const percent =
     typeof raw.percent === "number" && Number.isFinite(raw.percent) ? Math.max(0, Math.min(TRAINING.maxPercent, Math.round(raw.percent))) : undefined;
   const speed = typeof raw.speed === "number" && TRAINING.speeds.includes(raw.speed) ? raw.speed : undefined;
-  return { percent, speed, reset: raw.reset === true };
+  return { percent, speed, reset: raw.reset === true, ...(isObject(raw.dojo) && { dojo: parseDojo(raw.dojo) }) };
+}
+
+// Una combo è un indice piccolo, una mossa un nome corto: se esiste davvero lo decide dojoMoves
+function parseDojo(raw: Record<string, unknown>): DojoPick & { play: boolean } {
+  const combo = Number.isSafeInteger(raw.combo) && (raw.combo as number) >= 0 && (raw.combo as number) < 32 ? (raw.combo as number) : undefined;
+  const move = typeof raw.move === "string" && /^[A-Za-z]{1,24}$/.test(raw.move) ? raw.move : undefined;
+  return { ...(combo !== undefined ? { combo } : move !== undefined && { move }), play: raw.play === true };
 }
 
 // Chat vocale: il server gira il messaggio così com'è, quindi controlla solo tipo, destinatario e dimensione.
