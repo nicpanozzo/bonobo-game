@@ -693,6 +693,23 @@ export const STAGES: Record<string, StageSpec> = {
     colors: { sky: 0x2a2433, solid: 0x6b4f3a, solidEdge: 0xd9a066, platform: 0xb8a58c },
   },
 
+  // Il Dojo: un pavimento largo e nient'altro, dove si imparano le mosse e si guarda la dimostrazione delle combo.
+  // È anche il pavimento del laboratorio delle combo (src/shared/comboLab.ts): la dimostrazione registrata lì si rifà
+  // uguale nella stanza vera, quindi niente piattaforme, trappole o pezzi a tempo. Non si sceglie nella lobby.
+  dojo: {
+    id: "dojo",
+    name: "Il Dojo",
+    hidden: true,
+    width: 1580,
+    camera: { minZoom: 0.8 },
+    solids: [{ x: 0, y: 560, width: 1580, height: 80 }],
+    platforms: [],
+    blastZone: { left: -100, right: WORLD.width + 400, top: -350, bottom: WORLD.height + 200 },
+    spawns: [0.3, 0.7, 0.45, 0.55, 0.2, 0.8, 0.37, 0.63].map((f) => ({ x: 440 + 700 * f, y: 560 })),
+    respawn: { x: 790, y: 160 },
+    colors: { sky: 0x2b1d14, solid: 0x8a5a33, solidEdge: 0xe0b072, platform: 0xb8a58c },
+  },
+
   // Padova, Prato della Valle (#230, idea di Riccardo): un'isola sospesa sopra il Prato (#288), una piazza continua
   // con al centro la fontana dell'Isola Memmia: dall'idea di Nicola (#378) i suoi tre spruzzi portano in giro tre tazze
   // su cui si sta in piedi. Le statue del Prato reggono le lastre, dietro si vede l'isola con le statue e il ponticello,

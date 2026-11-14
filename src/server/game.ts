@@ -5,6 +5,7 @@ import type { Server, Socket } from "socket.io";
 import { HALL, NET_LIMITS, ROOM_IDLE_MS, VOICE } from "../shared/constants";
 import type { ClientToServer, IceServer, MatchRules, ServerToClient, VoiceState } from "../shared/types";
 import { botCharacter, Bots, parseBotKind } from "./bot";
+import { dojoDemo, dojoMoves } from "../shared/dojo";
 import { discordHooks } from "./discord";
 import type { FeedbackStore } from "./feedback";
 import type { Leaderboard } from "./leaderboard";
@@ -218,6 +219,10 @@ export function attachGame(io: Server<ClientToServer, ServerToClient>, deps: Gam
       if (cmd.speed !== undefined) room.setSpeed(cmd.speed);
       // La percentuale è quella degli avversari (il bot), non la propria
       if (cmd.percent !== undefined) for (const f of room.match.players) if (f.id !== playerId) room.match.setPercent(f.id, cmd.percent);
+      // Dojo: la prova di una mossa o combo, con la dimostrazione registrata dal laboratorio se si chiede di guardarla
+      const me = room.match.players.find((f) => f.id === playerId);
+      const moves = cmd.dojo && me ? dojoMoves(me.characterId, cmd.dojo) : null;
+      if (moves && me && cmd.dojo) room.match.startDojo(playerId, dojoDemo(me.characterId, moves), cmd.dojo.play);
     });
 
     // Chat vocale: il server fa solo da centralino tra due giocatori della stessa stanza.

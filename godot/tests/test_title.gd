@@ -29,7 +29,7 @@ func test_fondo_logo_e_menu() -> void:
 func test_da_solo_e_ritorno() -> void:
 	var t := _title()
 	var tiles: Array = t._solo.find_children("*", "Button", true, false).filter(func(b): return b.get_script() == MenuTile)
-	runner.check(tiles.size() == 4, "quattro strade in Da solo: %d" % tiles.size())
+	runner.check(tiles.size() == 5, "cinque strade in Da solo (col Dojo): %d" % tiles.size())
 	var got := []
 	t.bot_requested.connect(func(): got.append("bot"))
 	t._show_solo()

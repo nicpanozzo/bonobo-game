@@ -10,7 +10,7 @@ var _out := "user://screenshots"
 var _game: Dictionary
 var _world: Node2D # nella partita finta: riceve uno snapshot a ogni frame
 var _hud: Control
-const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre", "lobby_regole", "musica", "tetris", "pacman", "bassanese", "bologna_piazza", "bologna_torri", "bologna_crollo", "bologna_zuffa", "oggetti", "oggetti_categorie", "oggetti_armi", "oggetti_pesanti", "oggetti_orsoblu", "prepartita_attesa", "prepartita_vs", "prepartita_conto", "fine_partita", "sala", "sala_conto", "sala_galleria", "sala_via", "sala_basket", "sala_scacchi", "sala_computer", "sala_regole", "sala_solo", "sala_pianta", "fabbrica", "diluvio", "palco_metal", "palco_reggae", "palco_techno", "orsoblu_mosse", "party_tabellone", "party_voto", "minigioco"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
+const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre", "lobby_regole", "musica", "tetris", "pacman", "bassanese", "bologna_piazza", "bologna_torri", "bologna_crollo", "bologna_zuffa", "oggetti", "oggetti_categorie", "oggetti_armi", "oggetti_pesanti", "oggetti_orsoblu", "prepartita_attesa", "prepartita_vs", "prepartita_conto", "fine_partita", "sala", "sala_conto", "sala_galleria", "sala_via", "sala_basket", "sala_scacchi", "sala_computer", "sala_regole", "sala_solo", "sala_pianta", "fabbrica", "diluvio", "palco_metal", "palco_reggae", "palco_techno", "dojo", "orsoblu_mosse", "party_tabellone", "party_voto", "minigioco"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
 var _index := -1
 var _frame := 0
 var _failed := false
@@ -44,6 +44,8 @@ var _mini_cam: Camera2D
 var _mini_hud: Control
 var _mini_props: Node2D
 const THEME_SHOTS := {
+	# Il Dojo: pareti di carta accese, lanterne, il rotolo con la banana e i tatami; due in prova al centro
+	"dojo": {"id": "dojo", "ms": 4000, "cam": Vector2(790, 380), "zoom": 1.0, "x": [640, 720, 900, 1000, 560], "y": [560, 560, 560, 560, 560]},
 	# La Fabbrica: sirena del cambio di verso, le due leve appena tirate (TURBO!) e uno impacchettato sul nastro
 	"fabbrica": {"ms": 13300, "cam": Vector2(640, 380), "zoom": 1.0, "x": [180, 300, 860, 1010, 440], "y": [560, 560, 560, 560, 410],
 		"pads": [12650, 12700], "packed": 2, "hazard": 2},
@@ -703,6 +705,11 @@ func _sala_regole() -> void:
 func _fabbrica() -> void:
 	_theme_shot = THEME_SHOTS.fabbrica.duplicate()
 	_theme_shot.id = "fabbrica"
+	_partita()
+
+
+func _dojo() -> void:
+	_theme_shot = THEME_SHOTS.dojo.duplicate()
 	_partita()
 
 
