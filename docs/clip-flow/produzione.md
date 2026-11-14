@@ -83,27 +83,29 @@ Creato da `tools/flow/prompt_flow.py`, che non lo riscrive più: da qui si aggio
 
 | Codice | Clip | Stato | Tentativi | Modello | Crediti | Commento con l'mp4 | Note |
 |---|---|---|---|---|---|---|---|
-| MA-01 | Fermo | da fare | | | | | |
-| MA-02 | Corsa | da fare | | | | | |
-| MA-03 | Salto | da fare | | | | | |
-| MA-04 | Leggeri A | da fare | | | | | |
-| MA-05 | Leggeri B | da fare | | | | | |
-| MA-06 | Attacchi in corsa | da fare | | | | | |
-| MA-07 | Pesanti A | da fare | | | | | |
-| MA-08 | Pesanti B | da fare | | | | | |
-| MA-09 | Aerei A | da fare | | | | | |
-| MA-10 | Aerei B | da fare | | | | | |
-| MA-11 | Aerei C | da fare | | | | | |
-| MA-12 | Speciali A | da fare | | | | | |
-| MA-13 | Speciali B | da fare | | | | | |
-| MA-14 | Suprema | da fare | | | | | |
-| MA-15 | Presa | da fare | | | | | |
-| MA-16 | Lanci | da fare | | | | | |
-| MA-17 | Colpito | da fare | | | | | |
-| MA-18 | Difesa | da fare | | | | | |
-| MA-19 | A terra A | da fare | | | | | |
-| MA-20 | A terra B | da fare | | | | | |
-| MA-21 | Bordo | da fare | | | | | |
+| MA-01 | Fermo | nel gioco | 1 | Veo 3.1 Lite | ~10 | in libreria del progetto (13/11) | nel gioco: idle, taunt (#606); crouch in in-attesa |
+| MA-02 | Corsa | nel gioco | 1 | Veo 3.1 Lite | ~10 | in libreria del progetto (13/11) | cappello sparisce dopo ~2 s: si usa solo walk e dash fino al fotogramma 15 (#606); skid e turn in in-attesa |
+| MA-03 | Salto | nel gioco | 1 | Veo 3.1 Lite | ~10 | in libreria del progetto (13/11) | nel gioco (#607) |
+| MA-04 | Leggeri A | nel gioco | 1 | Veo 3.1 Lite | ~10 | in libreria del progetto (13/11) | nel gioco (#607); lightUp |
+| MA-05 | Leggeri B | nel gioco | 1 | Veo 3.1 Lite | ~10 | in libreria del progetto (13/11) | nel gioco (#607) |
+| MA-06 | Attacchi in corsa | nel gioco | 1 | Veo 3.1 Lite | ~10 | in libreria del progetto (13/11) | nel gioco (#607); calcio volante, scintille a terra |
+| MA-07 | Pesanti A | nel gioco | 1 | Veo 3.1 Lite | ~10 | in libreria del progetto (13/11) | nel gioco (#608); gamba tesa dopo il calcio |
+| MA-08 | Pesanti B | nel gioco | 1 | Veo 3.1 Lite | ~10 | in libreria del progetto (13/11) | nel gioco (#608); la schivata `airDodge` è sfocata |
+| MA-09 | Aerei A | nel gioco | 1 | Veo 3.1 Lite | ~10 | in libreria del progetto (13/11) | nel gioco (#608); fulmine lilla non richiesto sul calcio |
+| MA-10 | Aerei B | nel gioco | 1 | Veo 3.1 Lite | ~10 | in libreria del progetto (13/11) | nel gioco (#608); scintille lilla non richieste |
+| MA-11 | Aerei C | nel gioco | 1 | Veo 3.1 Lite | ~10 | in libreria del progetto (13/11) | nel gioco (#609); il cappello vola via e torna in `airDown` |
+| MA-12 | Speciali A | nel gioco | 1 | Veo 3.1 Lite | ~10 | in libreria del progetto (13/11) | nel gioco (#606): specialSide (nuvola); lancio del cappello sostituito dalla Banana (#619) |
+| MA-13 | Speciali B | nel gioco | 1 | Veo 3.1 Lite | ~10 | in libreria del progetto (13/11) | nel gioco (#609); la testa sfiora il bordo alto in `recovery` |
+| MA-14 | Suprema | nel gioco | 1 | Veo 3.1 Lite | ~10 | in libreria del progetto (13/11) | nel gioco (#607) |
+| MA-15 | Presa | nel gioco | 1 | Veo 3.1 Lite | ~10 | in libreria del progetto (13/11) | nel gioco (#609); spinta tenuta con braccia tese |
+| MA-16 | Lanci | nel gioco | 1 | Veo 3.1 Lite | ~10 | in libreria del progetto (13/11) | nel gioco (#609) in-attesa: throwUp/throwBack; lampo lilla in più |
+| MA-17 | Colpito | nel gioco | 1 | Veo 3.1 Lite | ~10 | in libreria del progetto (13/11) | nel gioco (#609): hit; throwDown/stunned in in-attesa |
+| MA-18 | Difesa | nel gioco | 1 | Veo 3.1 Lite | ~10 | in libreria del progetto (13/11) | nel gioco (#609): shield; dodge/roll in in-attesa; la capriola arriva al bordo destro |
+| MA-19 | A terra A | nel gioco | 1 | Veo 3.1 Lite | ~10 | in libreria del progetto (13/11) | nel gioco (#609): tumble; prone/getup in in-attesa; capriole sfocate |
+| MA-20 | A terra B | nel gioco | 1 | Veo 3.1 Lite | ~10 | in libreria del progetto (13/11) | nel gioco (#609): grabbed; tech non cade, getupAttack in in-attesa |
+| MA-21 | Bordo | tagliata | 1 | Veo 3.1 Lite | ~10 | in libreria del progetto (13/11) | stati in in-attesa; testa fuori dal bordo alto e blocco che cambia altezza (climb, ledgeAttack): primo da rifare |
+| MA-22 | Fattanza A | nel gioco | 1 | Veo 3.1 Lite | ~10 | in libreria del progetto (13/11) | nel gioco (#610): float; hatBounce in in-attesa (senza cappello) |
+| MA-23 | Fattanza B | nel gioco | 1 | Veo 3.1 Lite | ~10 | in libreria del progetto (13/11) | nel gioco (#610): botta e strafatto, cappello sempre in testa |
 | MA-A1 | Spada: movimento | da fare | | | | | |
 | MA-A2 | Spada: attacchi | da fare | | | | | |
 | MA-A3 | Pistola: movimento | da fare | | | | | |
@@ -207,3 +209,11 @@ Cosa è venuto peggio del resto o dove si è scesi a compromessi, una riga per p
 | OB-B1 (base) | `jump` e `fall` restano quelli vecchi di OB-03: in cima al salto la testa esce dal bordo. | Idle, walk, jumpSquat e land sono buoni. | Rigenerare il salto con più spazio sopra. |
 | OB-B2 (base) | Il pesante è un pugno lungo tenuto teso, non la spallata del prompt. | Si legge comunque come colpo forte. | Clip di riparazione con la spallata. |
 | OB-B3 (base) | Tolti a mano i fotogrammi col braccio fermo, che allungavano i colpi. | Senza, i colpi duravano troppo. | Niente: è il taglio giusto. |
+| MA-02 (13/11) | Dopo ~2 s il cappello sparisce e resta calvo fino alla fine. | Generata prima del prompt rinforzato; una sola prova per risparmiare crediti. | Si usano i fotogrammi 0-15; per skid e turn rigenerare col prompt di #605. |
+| MA-22 (13/11) | `hatBounce`: senza cappello. | Una sola prova. | Rigenerare con il prompt rinforzato; intanto resta in `in-attesa/`. |
+| MA-11 (13/11) | `airDown`: il cappello vola via dalla testa e poi torna; polvere a terra. | Una sola prova. | Rigenerare se si nota in gioco. |
+| MA-13, MA-18 (13/11) | In cima al salto (`recovery`) la testa sfiora il bordo alto; nella capriola (`roll`) il personaggio arriva al bordo destro. | Una sola prova. | Rigenerare con più margine nel prompt. |
+| MA-19, MA-08 (13/11) | Capriole di `tumble` e schivata `airDodge` sfocate o deformate. | Una sola prova. | Rigenerare se si nota in gioco. |
+| MA-20 (13/11) | `tech`: non cade, resta in piedi con le mani in tasca. | Una sola prova. | Rigenerare quel solo stato. |
+| MA-21 (13/11) | Il blocco grigio cambia altezza e la testa esce dal bordo alto (`climb`, `ledgeAttack`); il calcio non si vede. | Una sola prova. | Primo da rifare, se avanzano crediti. |
+| MA-07, 09, 10, 15, 16, 17 (13/11) | Gamba o braccia tese dopo il colpo, lampi e scintille lilla non richiesti. | Si leggono comunque come colpi. | Niente, a meno che in gioco stonino. |
