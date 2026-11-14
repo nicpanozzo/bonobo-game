@@ -644,7 +644,7 @@ export const CHARACTERS: Record<string, CharacterSpec> = {
       windupMs: 500,
       durationMs: 4800,
       endLagMs: 400,
-      rollPeriodMs: 1600,
+      rollPeriodMs: 2400, // più lenta, un'onda ogni 1,2 s (Nicola, 2026-11-14: le onde si leggevano male)
       rollSpeed: 340,
       rollAirAccel: 900,
       damage: 6, // le onde fanno più male (Nicola, 2026-11-11: carina ma poco forte)

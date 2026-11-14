@@ -12540,7 +12540,7 @@
         "windupMs": 500,
         "durationMs": 4800,
         "endLagMs": 400,
-        "rollPeriodMs": 1600,
+        "rollPeriodMs": 2400,
         "rollSpeed": 340,
         "rollAirAccel": 900,
         "damage": 6,
