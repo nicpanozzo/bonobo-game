@@ -37,6 +37,12 @@ func test_dado_e_pedine() -> void:
 	runner.check(p == Vector2(60, 220), "le caselle da 0..1 al riquadro: %s" % p)
 
 
+func test_gran_finale() -> void:
+	runner.check(not PartyView.is_finale({"round": 7, "rounds": 10}), "il giro 7 di 10 non è ancora il finale")
+	runner.check(PartyView.is_finale({"round": 8, "rounds": 10}), "gli ultimi 3 giri sì")
+	runner.check(not PartyView.is_finale({"round": 3, "rounds": 3}), "con 3 giri in tutto niente finale")
+
+
 func test_tocca_a_me_tiro_e_uso_l_oggetto() -> void:
 	var v: Control = PartyView.new()
 	v.setup(_game(), "a")
@@ -50,6 +56,10 @@ func test_tocca_a_me_tiro_e_uso_l_oggetto() -> void:
 	runner.check(sent == [{"kind": "roll", "useItem": true}], "il tiro con l'oggetto va al server: %s" % [sent])
 	v.on_snapshot(_snap("roll", "b"))
 	runner.check(v.actions_key().begins_with("roll:false"), "tocca a un altro: niente pulsanti miei")
+	v._process(0.1)
+	runner.check(v.camera_aim()[0] > 1.0, "nel turno la telecamera si avvicina alla pedina")
+	v.on_snapshot(_snap("vote", ""))
+	runner.check(v.camera_aim()[0] == 1.0, "al voto si vede l'isola intera")
 	v.free()
 
 
@@ -89,6 +99,9 @@ func test_oggetti_di_scena() -> void:
 	runner.check(pr.props.size() == 2, "arrivano gli oggetti")
 	pr.set_props(null)
 	runner.check(pr.props.is_empty(), "niente oggetti se lo snapshot non li ha")
+	var r := Rect2(0, 0, 1280, 720)
+	runner.check(PartyProps.edge_point(r, Vector2(640, -2000)) == Vector2(640, 0), "la freccia per la cima sta sul bordo di sopra")
+	runner.check(PartyProps.edge_point(r, Vector2(3000, 360)) == Vector2(1280, 360), "e a destra se l'arrivo è a destra")
 	pr.free()
 
 

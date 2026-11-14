@@ -86,7 +86,8 @@ class Provocazioni extends TimedGame {
       this.text = `Ripeti dopo di me (${i + 1}/${this.seq.length})`;
       this.props = [{ kind: "sign", x: 640, y: 260, color: 0xffc928, text: SHOUT[this.seq[i]] }];
     } else if (this.phase === "go") {
-      this.text = `VAI! ${this.seq.map((m) => SHOUT[m].replace("!", "")).join(" · ")}`;
+      // I secondi che restano si vedono: il feedback di Marco (#620) diceva "troppo poco tempo"
+      this.text = `VAI! ${this.seq.map((m) => SHOUT[m].replace("!", "")).join(" · ")}  (${Math.max(0, Math.ceil(this.phaseMs / 1000))} s)`;
       this.props = fighters
         .filter((f) => !f.respawning)
         .map((f) => {
