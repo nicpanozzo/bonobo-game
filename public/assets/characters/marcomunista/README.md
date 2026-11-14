@@ -8,7 +8,7 @@ Marco col cappello da pescatore, la felpa gialla, gli occhiali e la barba. Pelat
 - Fotogrammi da **400×240 px** con i piedi a 206 (`footY`) e `scale: 1.5` (nuovo look, 13/11/2026: calvo è alto 64 px, in gioco circa 96 come gli altri). Tutte le strisce hanno il personaggio alla stessa altezza (cappello largo circa 15 px): MA-01, MA-02, MA-12 e MA-22 erano tagliate 1,7 volte più grandi e sono state rimpicciolite attorno ai piedi.
 - **Contorno chiaro** di 2 px attorno al corpo (non all'energia), come le pose del foglio, per leggersi sui fondali scuri.
 - PNG a 256 colori: la GIF è retinata e a colori pieni pesava il triplo.
-- `portrait.png`: testa e cappello del fermo, per lobby e HUD.
+- `portrait.png`: testa e spalle col nuovo look (cappello rosa), ritagliato da `docs/clip-flow/riferimenti/personaggi/marcomunista.png` a 150×150, per lobby e HUD.
 
 | Stato | Fotogrammi della GIF | Colpo (`hitFrame`) |
 |---|---|---|
