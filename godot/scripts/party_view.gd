@@ -9,6 +9,7 @@ signal command(cmd: Dictionary) # main.gd lo manda al server come messaggio "par
 const UI := preload("res://scripts/ui.gd")
 const LobbyScript := preload("res://scripts/lobby.gd")
 const PartyHud := preload("res://scripts/party_hud.gd")
+const Art := preload("res://scripts/party_board_art.gd")
 
 # Le caselle (PartySquareKind in src/shared/types.ts): colore e scritta
 const SQUARES := {
@@ -26,6 +27,8 @@ const PAWN_SPEED := 900.0 # pixel al secondo con cui la pedina raggiunge la sua 
 const PANEL_W := 300.0 # la classifica a destra
 const DICE_S := 0.7 # secondi in cui il dado "rotola" prima di fermarsi sul numero
 const FLOAT_S := 1.4 # secondi di una scritta che sale da una pedina (+3, -3)
+const FOCUS_ZOOM := 1.3 # la telecamera del tabellone si avvicina a chi è di turno
+const FOCUS_MS := 450.0 # quanto ci mette ad avvicinarsi o allontanarsi, ms
 
 var game: Dictionary
 var my_id := ""
@@ -45,6 +48,10 @@ var _star_buttons: Array = []
 var _sent_feedback := false
 var _display: Font
 var _body: Font
+var _zoom := 1.0 # la telecamera del tabellone: zoom e punto inquadrato (in pixel del tabellone)
+var _focus := Vector2.ZERO
+var _decor: Array = [] # palme e cespugli dell'isola (party_board_art.gd decor), rifatti se cambiano le caselle
+var _decor_key := ""
 
 
 func setup(game_data: Dictionary, id: String) -> void:
@@ -107,7 +114,27 @@ func _process(delta: float) -> void:
 	for f in _floats:
 		f.age += delta
 	_floats = _floats.filter(func(f): return f.age < FLOAT_S)
+	var aim := camera_aim()
+	var k := 1.0 - exp(-delta * 1000.0 / FOCUS_MS)
+	_zoom = lerpf(_zoom, aim[0], k)
+	_focus = _focus.lerp(aim[1], k) if _focus != Vector2.ZERO else aim[1]
 	queue_redraw()
+
+
+# Dove guarda la telecamera: [zoom, punto]. Nei momenti del turno (tiro, cammino, bivio, bottega) si avvicina alla
+# pedina di chi gioca; negli altri momenti mostra l'isola intera
+func camera_aim() -> Array:
+	var r := board_rect()
+	var turn = snap.get("turnId")
+	if str(snap.get("phase", "")) in ["roll", "move", "path", "shop"] and turn != null and _pawns.has(turn):
+		return [FOCUS_ZOOM, r.get_center().lerp(_pawns[turn], 0.7)]
+	return [1.0, r.get_center()]
+
+
+# Da pixel del tabellone a pixel dello schermo, con la telecamera
+func _cam_transform() -> Transform2D:
+	var c := board_rect().get_center()
+	return Transform2D(0.0, Vector2(_zoom, _zoom), 0.0, c - _focus * _zoom)
 
 
 # --- Geometria ---
@@ -303,13 +330,16 @@ static func feedback_url(info: Dictionary, stars: int, text: String, place: int,
 func _draw() -> void:
 	if snap.is_empty():
 		return
-	draw_rect(Rect2(Vector2.ZERO, size), UI.NIGHT)
+	Art.sea(self, Rect2(Vector2.ZERO, size), _t)
 	_place_actions()
 	var r := board_rect()
+	draw_set_transform_matrix(_cam_transform())
 	_draw_paths(r)
+	_draw_decor(r)
 	_draw_squares(r)
 	_draw_crown(_square_pos(int(snap.get("crownSquare", 0))))
 	_draw_pawns()
+	draw_set_transform_matrix(Transform2D.IDENTITY)
 	_draw_header()
 	_draw_standings()
 	_draw_middle()
@@ -317,35 +347,51 @@ func _draw() -> void:
 
 func _draw_paths(r: Rect2) -> void:
 	var squares: Array = snap.get("squares", [])
+	var edges: Array = []
+	var pts := PackedVector2Array()
 	for i in squares.size():
 		var a := board_point(r, squares[i])
+		pts.append(a)
 		for n in squares[i].get("next", []):
 			if int(n) >= 0 and int(n) < squares.size():
-				var b := board_point(r, squares[int(n)])
-				draw_line(a, b, UI.INK, 12.0)
-				draw_line(a, b, UI.GRAPE_HI, 6.0)
+				edges.append([a, board_point(r, squares[int(n)])])
+	Art.island(self, edges, Geometry2D.convex_hull(pts))
+
+
+# Palme e cespugli sull'erba, fermi finché non cambiano le caselle o la grandezza dello schermo
+func _draw_decor(r: Rect2) -> void:
+	var squares: Array = snap.get("squares", [])
+	var key := "%d:%s" % [squares.size(), r]
+	if key != _decor_key:
+		_decor_key = key
+		var pts: Array = []
+		var edges: Array = []
+		for i in squares.size():
+			pts.append(board_point(r, squares[i]))
+			for n in squares[i].get("next", []):
+				if int(n) >= 0 and int(n) < squares.size():
+					edges.append([board_point(r, squares[i]), board_point(r, squares[int(n)])])
+		# Niente palme sotto il titolo in alto a sinistra e sotto la classifica
+		var keep_out: Array[Rect2] = [Rect2(0, 0, 360, 100), Rect2(size.x - PANEL_W - 40, 0, PANEL_W + 40, 380)]
+		_decor = Art.decor(pts, edges, squares.size() * 7919).filter(func(d): return not keep_out.any(func(k): return k.grow(30).has_point(d[0])))
+	for d in _decor:
+		if d[2]:
+			Art.palm(self, d[0], d[1], _t, d[3])
+		else:
+			Art.bush(self, d[0], d[1])
 
 
 func _draw_squares(r: Rect2) -> void:
 	var squares: Array = snap.get("squares", [])
 	for i in squares.size():
 		var sq: Dictionary = squares[i]
-		var c := board_point(r, sq)
 		var spec: Array = SQUARES.get(str(sq.get("kind", "")), [UI.LILAC, ""])
-		var fork: bool = sq.get("next", []).size() > 1
-		draw_circle(c + Vector2(0, 4), SQUARE_R, UI.INK)
-		draw_circle(c, SQUARE_R, spec[0])
-		draw_arc(c, SQUARE_R, 0, TAU, 24, UI.INK, 3.0, true)
-		if fork:
-			draw_arc(c, SQUARE_R + 6, 0, TAU, 24, UI.PAPER, 2.0, true)
-		var label: String = spec[1]
-		var px := Access.px(14 if label.length() > 1 else 18)
-		var w := _display.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
-		draw_string(_display, c + Vector2(-w / 2, px * 0.36), label, HORIZONTAL_ALIGNMENT_LEFT, -1, px, UI.INK)
+		Art.tile(self, board_point(r, sq), str(sq.get("kind", "")), spec[0], sq.get("next", []).size() > 1)
 
 
 # La Corona: tre punte d'oro sopra la casella, che dondola un po'
 func _draw_crown(c: Vector2) -> void:
+	Art.crown_beam(self, c, _t)
 	var at := c + Vector2(0, -SQUARE_R - 18 + sin(_t * 3.0) * 3.0)
 	_crown(at, 1.0)
 
@@ -376,6 +422,7 @@ func _draw_pawns() -> void:
 		var hop := -absf(sin(_t * 14.0)) * 12.0 if moving else 0.0
 		var c := at + pawn_offset(group.find(p.id), group.size()) + Vector2(0, -26 + hop)
 		var col := Access.color(p.get("color", 0xffffff))
+		Art.shadow(self, at + pawn_offset(group.find(p.id), group.size()) + Vector2(0, 4), PAWN, hop)
 		var rect := Rect2(c - Vector2(PAWN, PAWN) / 2, Vector2(PAWN, PAWN))
 		if p.id == turn:
 			draw_circle(c, PAWN * 0.75 + sin(_t * 6.0) * 3.0, Color(UI.BANANA, 0.35))
@@ -400,7 +447,7 @@ func _draw_pawns() -> void:
 func _draw_header() -> void:
 	var round_text := "GIRO %d DI %d" % [int(snap.get("round", 1)), int(snap.get("rounds", 1))]
 	UI.draw_sticker(self, _display, Vector2(28, 52), "BONOBO PARTY", Access.px(34), UI.BANANA, 7, Vector2(2, 4))
-	draw_string(_display, Vector2(30, 82), round_text + ("   ·   minigioco a voto" if snap.get("pick") == "vote" else ""), HORIZONTAL_ALIGNMENT_LEFT, -1, Access.px(18), UI.LILAC)
+	UI.draw_sticker(self, _display, Vector2(30, 82), round_text + ("   ·   minigioco a voto" if snap.get("pick") == "vote" else ""), Access.px(18), UI.LILAC, 5, Vector2(0, 2)) # col bordo: sotto c'è l'isola
 
 
 func _draw_standings() -> void:
@@ -528,7 +575,8 @@ func _draw_votes() -> void:
 	var line := "   ·   ".join(parts)
 	var px := Access.px(UI.SIZE_SMALL + 1)
 	var w := _body.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
-	draw_string(_body, Vector2((size.x - PANEL_W - w) / 2, size.y - 140), line, HORIZONTAL_ALIGNMENT_LEFT, -1, px, UI.LILAC)
+	var r := board_rect()
+	UI.draw_sticker(self, _body, Vector2(r.get_center().x - w / 2, r.end.y + 2), line, px, UI.LILAC, 4, Vector2(0, 2)) # sopra la scritta del momento
 
 
 # Il podio: i primi tre su tre gradini, col ritratto sopra

@@ -50,6 +50,10 @@ func test_tocca_a_me_tiro_e_uso_l_oggetto() -> void:
 	runner.check(sent == [{"kind": "roll", "useItem": true}], "il tiro con l'oggetto va al server: %s" % [sent])
 	v.on_snapshot(_snap("roll", "b"))
 	runner.check(v.actions_key().begins_with("roll:false"), "tocca a un altro: niente pulsanti miei")
+	v._process(0.1)
+	runner.check(v.camera_aim()[0] > 1.0, "nel turno la telecamera si avvicina alla pedina")
+	v.on_snapshot(_snap("vote", ""))
+	runner.check(v.camera_aim()[0] == 1.0, "al voto si vede l'isola intera")
 	v.free()
 
 
