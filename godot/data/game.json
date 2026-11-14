@@ -1921,7 +1921,8 @@
       "ms": 7000,
       "speedMult": 1.2,
       "thrust": 2600,
-      "maxRise": 520
+      "maxRise": 520,
+      "ceilingMarginPx": 200
     },
     "brownie": {
       "delayMs": 2500,
