@@ -65,6 +65,15 @@ func on_snapshot(snap: Dictionary) -> void:
 	queue_redraw()
 
 
+# I minigiochi dove i punti vengono dai colpi e dai KO (src/shared/party/minigames/): solo lì accanto al nome si vede
+# la percentuale di danno. Negli altri si corre, si raccoglie o si va a tempo, e il numero sarebbe solo rumore
+const FIGHT_GAMES := ["colosso", "contagio", "sfida", "ierime", "untasto", "specchio", "salaprove", "quattro"]
+
+
+static func shows_damage(id: String) -> bool:
+	return FIGHT_GAMES.has(id)
+
+
 static func category_name(cat: String) -> String:
 	return str(CATEGORIES.get(cat, [cat, Color.WHITE])[0])
 
@@ -130,6 +139,9 @@ func _draw_playing(w: float, _h: float) -> void:
 	var title := str(info.get("title", ""))
 	var clock := clock_text(_hud.get("leftMs"))
 	var tpx := Access.px(22)
+	var n_rows: int = (_hud.get("scores", {}) as Dictionary).size() if _hud.get("scores") is Dictionary else 0
+	# Il pannello sotto titolo e punti: si leggono anche sopra i mattoni o un cielo chiaro
+	draw_style_box(UI.panel_box(Color(UI.GRAPE, 0.82), 12), Rect2(10, 10, 370, 46 + n_rows * ROW_H + 10))
 	UI.draw_sticker(self, _display, Vector2(24, 40), title + ("   " + clock if clock != "" else ""), tpx, UI.BANANA, 5, Vector2(2, 3))
 	var rows := ranking(_hud.get("scores", {}) if _hud.get("scores") is Dictionary else {}, _names)
 	var out: Array = _hud.get("out", []) if _hud.get("out") is Array else []
@@ -139,6 +151,8 @@ func _draw_playing(w: float, _h: float) -> void:
 		var id: String = row[0]
 		var col: Color = _colors.get(id, Color.WHITE)
 		var faded := 0.45 if out.has(id) else 1.0
+		if id == my_id:
+			draw_rect(Rect2(16, y - 21, 358, ROW_H - 2), Color(UI.BANANA, 0.14))
 		UI.draw_plate(self, Rect2(24, y - 16, 14, 18), Color(col, faded), 5.0, UI.INK, 2.0)
 		var label := str(_names.get(id, id)) + (" (tu)" if id == my_id else "")
 		draw_string(_body, Vector2(46, y), label, HORIZONTAL_ALIGNMENT_LEFT, 200, Access.px(UI.SIZE_SMALL + 1), Color(UI.PAPER, faded))

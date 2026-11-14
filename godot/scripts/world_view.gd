@@ -68,6 +68,7 @@ var _font: Font = ThemeDB.fallback_font
 var _projectile_tex := {} # percorso -> Texture2D dei proiettili disegnati (null se manca)
 const AFTER_EAGLE := "supreme senza aquila" # in _state_textures: non è uno stato, si scambia con "supreme"
 var _eagle_out := {} # id -> true: nella suprema in corso l'aquila è già partita (l'Elefante di Elvedeo, senza aquila sul braccio)
+var show_percent := true # i minigiochi senza combattimento nascondono la percentuale accanto al nome (main.gd, party_hud.gd)
 var view_rect := Rect2(0, 0, 1280, 720) # la parte di mondo che si vede, decisa dalla telecamera in main.gd
 var _layers: Array = [] # strati dello sfondo dell'arena (E12), dal più lontano: [texture, parallasse]
 var _foreground: Array = [] # strato davanti ai lottatori, o []
@@ -3341,7 +3342,7 @@ func _draw_fighter(p: Dictionary, now: float) -> void:
 		c.a = 0.85 if p.attackActive else 0.25
 		draw_rect(_attack_rect(p, spec), c)
 
-	var label := "%s  %d%%" % [p.name, roundi(p.percent)]
+	var label := "%s  %d%%" % [p.name, roundi(p.percent)] if show_percent else str(p.name)
 	var size := _font.get_string_size(label, HORIZONTAL_ALIGNMENT_CENTER, -1, Access.px(16))
 	var label_pos := Vector2(p.x - size.x / 2, p.y - head - 10)
 	if int(p.team) > 0:

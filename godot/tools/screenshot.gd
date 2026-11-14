@@ -748,6 +748,7 @@ func _minigioco() -> void:
 	root.add_child(world)
 	world.setup(_game)
 	world.set_stage_spec(_mini.stage)
+	world.show_percent = load("res://scripts/party_hud.gd").shows_damage(str(_mini.minigame.id))
 	world.my_id = "p0"
 	_mini_props = load("res://scripts/party_props.gd").new()
 	world.add_child(_mini_props)

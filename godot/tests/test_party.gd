@@ -82,6 +82,7 @@ func test_scheda_e_punti_del_minigioco() -> void:
 	runner.check(PartyHud.clock_text(42000) == "0:42" and PartyHud.clock_text(61500) == "1:02" and PartyHud.clock_text(null) == "", "il tempo in m:ss")
 	var rows := PartyHud.ranking({"a": 2, "b": 5, "c": 2}, {"a": "Zeta", "b": "B", "c": "Alfa"})
 	runner.check(rows.map(func(r): return r[0]) == ["b", "c", "a"], "dal più alto, a pari punti per nome: %s" % [rows])
+	runner.check(PartyHud.shows_damage("colosso") and not PartyHud.shows_damage("pioggia"), "la percentuale solo dove si combatte")
 	runner.check(PartyHud.category_name("ritmo") == "Ritmo e riflessi" and PartyHud.category_name("boh") == "boh", "le categorie")
 	var h: Control = PartyHud.new()
 	runner.check(not h.active(), "fuori dai minigiochi è spento")

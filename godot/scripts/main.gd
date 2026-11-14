@@ -21,6 +21,7 @@ const RESULTS_BAR_BOTTOM_PHONE := 24 # sul telefono le schede spariscono a fine 
 const P2_NAME_CHARS := 13 # caratteri del nome tenuti per il secondo giocatore, che ci aggiunge " 2" (il server ne tiene 16)
 const PAGES_URL := "https://nicpanozzo.github.io/bonobo-game/godot/" # dove sta la versione web (pages.yml)
 const HallFlow := preload("res://scripts/hall_flow.gd") # sala d'attesa 3D: le scelte di main.gd senza scena, per i test
+const PartyHud := preload("res://scripts/party_hud.gd") # quali minigiochi mostrano la percentuale di danno
 const HALL_RETURN_MS := 12000 # come HALL.returnAfterMs in constants.ts: si usa se game.json non ha ancora "hall"
 
 var game: Dictionary
@@ -700,9 +701,11 @@ func _on_event(name: String, data: Variant) -> void:
 				# Un minigioco del party: la prova libera parte da sola, Pronto la accorcia
 				party_hud.start(data.minigame)
 				_last_minigame = data.minigame
+				world.show_percent = PartyHud.shows_damage(str(data.minigame.get("id", "")))
 				_apply_prediction()
 			else:
 				party_hud.reset()
+				world.show_percent = true
 				_apply_prediction()
 				# Nel cerchio dei pronti ci sono già entrati tutti: nessuno deve ridire Pronto
 				socket.emit("ready", {"ready": true})
