@@ -9,6 +9,7 @@ const SCRIPTS := {
 	"fabbrica": preload("res://scripts/factory_stage.gd"),
 	"isole": preload("res://scripts/flood_stage.gd"), # Il Diluvio
 	"palco": preload("res://scripts/concert_stage.gd"), # cambio di genere
+	"dojo": preload("res://scripts/dojo_stage.gd"), # il tutorial delle mosse
 }
 
 var current: RefCounted = null
