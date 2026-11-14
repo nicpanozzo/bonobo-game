@@ -1,7 +1,8 @@
 // Bonobo Party (#579): arene semplici per i minigiochi, fatte con gli stessi blocchi e piattaforme delle arene vere.
-// Niente sfondi nuovi: il client le disegna coi colori, come le arene generate.
+// Niente sfondi nuovi: lo sfondo a sagome delle arene generate, che prende il colore del cielo di ogni minigioco.
 
 import { PREMATCH, WORLD } from "../constants";
+import { RANDOM_STAGE_ART } from "../stageGenerator";
 import type { StageSpec, ThinPlatform } from "../stages";
 import type { Rect } from "../stages";
 
@@ -39,6 +40,7 @@ export function arena(p: ArenaParts): StageSpec {
     spawns,
     respawn: p.respawn ?? { x: Math.round(width / 2), y: Math.max(120, ground.y - 400) },
     colors: { sky: p.sky ?? 0x2b3a55, solid: p.solid ?? 0x5d4a3a, solidEdge: p.edge ?? 0xf2c14e, platform: p.platform ?? 0xc9b48f },
+    art: RANDOM_STAGE_ART,
     ...(p.width && { width: p.width }),
     ...(p.height && { height: p.height }),
     ...(p.camera && { camera: p.camera }),

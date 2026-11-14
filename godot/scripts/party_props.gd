@@ -63,6 +63,41 @@ func _draw() -> void:
 				_coin(pos, col, float(p.get("w", 16)))
 			"trail":
 				_trail(p.get("pts", []), col)
+		if str(p.get("kind", "")) == "goal":
+			_pointer(pos + Vector2(0, -40))
+
+
+# Dove la retta dal centro del riquadro verso target esce dal riquadro
+static func edge_point(r: Rect2, target: Vector2) -> Vector2:
+	var from := r.get_center()
+	var dir := (target - from).normalized()
+	var tx := INF if is_zero_approx(dir.x) else ((r.end.x if dir.x > 0 else r.position.x) - from.x) / dir.x
+	var ty := INF if is_zero_approx(dir.y) else ((r.end.y if dir.y > 0 else r.position.y) - from.y) / dir.y
+	return from + dir * minf(tx, ty)
+
+
+# L'arrivo fuori dall'inquadratura (la CIMA della Scalata, #621 "non si è visto nulla"): una freccia sul bordo dello
+# schermo che lo indica, coi metri che mancano. view_rect è la parte di mondo che la telecamera inquadra (world_view.gd)
+func _pointer(target: Vector2) -> void:
+	var view: Variant = get_parent().get("view_rect") if get_parent() != null else null
+	if not (view is Rect2) or (view as Rect2).has_point(target):
+		return
+	var r: Rect2 = view
+	var k := r.size.x / 1280.0 # le misure sono di schermo: con la telecamera lontana si ingrandiscono
+	var from := r.get_center()
+	var dir := (target - from).normalized()
+	var at := edge_point(r.grow(-60.0 * k), target)
+	var bob := sin(_t * 6.0) * 6.0 * k
+	at += dir * bob
+	var side := dir.orthogonal()
+	var tip := at + dir * 30.0 * k
+	var tri := PackedVector2Array([tip, at - dir * 14.0 * k + side * 24.0 * k, at - dir * 14.0 * k - side * 24.0 * k])
+	draw_colored_polygon(tri, UI.BANANA)
+	draw_polyline(tri + PackedVector2Array([tri[0]]), INK, 4.0 * k, true)
+	var metres := "%d m" % ceili(from.distance_to(target) / 100.0)
+	var px := int(24 * k)
+	var tw := _display.get_string_size(metres, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
+	UI.draw_sticker(self, _display, at - dir * 50.0 * k + Vector2(-tw / 2, px * 0.35), metres, px, UI.BANANA, int(5 * k), Vector2(0, 3) * k)
 
 
 # Una banana a terra (x, y = base): dorata quando vale di più

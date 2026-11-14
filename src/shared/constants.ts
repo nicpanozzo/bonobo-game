@@ -1543,7 +1543,7 @@ export const MINIGAME = {
   // Sala Prove: i colpi dati entro windowMs dal battito (bpm) valgono beatPoints, i KO a tempo koPoints
   salaProve: { durationMs: 40000, bpm: 120, windowMs: 140, beatPoints: 2, offPoints: 0, koPoints: 3 },
   // Gara di Provocazioni: si mostra una sequenza (showMs a passo), poi si ripete entro stepMs a passo più graceMs
-  provocazioni: { durationMs: 60000, startLen: 2, maxLen: 7, showMs: 800, stepMs: 1000, graceMs: 1500, pauseMs: 1500, botStepMs: 520, botMissChance: 0.12 },
+  provocazioni: { durationMs: 75000, startLen: 2, maxLen: 7, showMs: 1000, stepMs: 1500, graceMs: 2500, pauseMs: 1500, botStepMs: 520, botMissChance: 0.12 },
   // La Sfida del tabellone (carta Evento): duello 1 contro 1 a una vita, già un po' ammaccati; chi vince prende banane all'altro
   sfida: { durationMs: 40000, startPercent: 60, bananas: 5 }, // ms, % di danno all'inizio, banane che passano di mano
 };

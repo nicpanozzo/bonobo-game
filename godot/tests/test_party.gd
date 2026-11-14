@@ -89,6 +89,9 @@ func test_oggetti_di_scena() -> void:
 	runner.check(pr.props.size() == 2, "arrivano gli oggetti")
 	pr.set_props(null)
 	runner.check(pr.props.is_empty(), "niente oggetti se lo snapshot non li ha")
+	var r := Rect2(0, 0, 1280, 720)
+	runner.check(PartyProps.edge_point(r, Vector2(640, -2000)) == Vector2(640, 0), "la freccia per la cima sta sul bordo di sopra")
+	runner.check(PartyProps.edge_point(r, Vector2(3000, 360)) == Vector2(1280, 360), "e a destra se l'arrivo è a destra")
 	pr.free()
 
 

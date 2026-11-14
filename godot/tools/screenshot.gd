@@ -10,7 +10,7 @@ var _out := "user://screenshots"
 var _game: Dictionary
 var _world: Node2D # nella partita finta: riceve uno snapshot a ogni frame
 var _hud: Control
-const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre", "lobby_regole", "musica", "tetris", "pacman", "bassanese", "bologna_piazza", "bologna_torri", "bologna_crollo", "bologna_zuffa", "oggetti", "oggetti_categorie", "oggetti_armi", "oggetti_pesanti", "oggetti_orsoblu", "prepartita_attesa", "prepartita_vs", "prepartita_conto", "fine_partita", "sala", "sala_conto", "sala_galleria", "sala_via", "sala_basket", "sala_scacchi", "sala_computer", "sala_regole", "sala_solo", "sala_pianta", "fabbrica", "diluvio", "palco_metal", "palco_reggae", "palco_techno", "orsoblu_mosse", "party_tabellone", "party_voto"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
+const SHOTS := ["lobby", "partita", "lobby_squadre", "squadre", "lobby_regole", "musica", "tetris", "pacman", "bassanese", "bologna_piazza", "bologna_torri", "bologna_crollo", "bologna_zuffa", "oggetti", "oggetti_categorie", "oggetti_armi", "oggetti_pesanti", "oggetti_orsoblu", "prepartita_attesa", "prepartita_vs", "prepartita_conto", "fine_partita", "sala", "sala_conto", "sala_galleria", "sala_via", "sala_basket", "sala_scacchi", "sala_computer", "sala_regole", "sala_solo", "sala_pianta", "fabbrica", "diluvio", "palco_metal", "palco_reggae", "palco_techno", "orsoblu_mosse", "party_tabellone", "party_voto", "minigioco"] # nome del PNG = funzione che prepara la scena (_lobby, _partita, ...)
 var _index := -1
 var _frame := 0
 var _failed := false
@@ -37,6 +37,12 @@ var _hall_scene := "sala" # quale serata finta (tests/hall_fake.gd): sala, conto
 var _only: Array = [] # --only=sala,sala_basket: si scattano solo queste (per provare in fretta)
 # Le arene a tema (theme_stage.gd): {id, ms, cam, zoom, x, y, pads, packed, events}, vuoto nelle altre partite
 var _theme_shot: Dictionary = {}
+# Un minigioco vero (npx tsx scripts/party-shot.ts <id> <secondi> <file>): --mini=<file>; senza, la foto si salta
+var _mini_file := ""
+var _mini: Dictionary = {}
+var _mini_cam: Camera2D
+var _mini_hud: Control
+var _mini_props: Node2D
 const THEME_SHOTS := {
 	# La Fabbrica: sirena del cambio di verso, le due leve appena tirate (TURBO!) e uno impacchettato sul nastro
 	"fabbrica": {"ms": 13300, "cam": Vector2(640, 380), "zoom": 1.0, "x": [180, 300, 860, 1010, 440], "y": [560, 560, 560, 560, 410],
@@ -62,6 +68,8 @@ func _initialize() -> void:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--out="):
 			_out = arg.trim_prefix("--out=")
+		if arg.begins_with("--mini="):
+			_mini_file = arg.trim_prefix("--mini=")
 		if arg.begins_with("--only="):
 			_only = arg.trim_prefix("--only=").split(",")
 	DirAccess.make_dir_recursive_absolute(_out)
@@ -83,6 +91,8 @@ func _process(_delta: float) -> bool:
 			_pre_view.on_snapshot(snap)
 		if _results != null:
 			_results.on_snapshot(snap)
+	if not _mini.is_empty():
+		_mini_frame()
 	if _hall_view != null:
 		var hall: Dictionary = load("res://tests/hall_fake.gd").party(_frame * 33.0, _hall_scene)
 		if _frame == 18:
@@ -108,7 +118,7 @@ func _process(_delta: float) -> bool:
 			_fixed_cam.make_current()
 	if _frame < SHOT_FRAME:
 		return false
-	var name: String = SHOTS[_index]
+	var name: String = SHOTS[_index] if SHOTS[_index] != "minigioco" else "minigioco_" + str(_mini.minigame.id)
 	var image := root.get_texture().get_image()
 	var path := _out.path_join(name + ".png")
 	image.save_png(path)
@@ -128,7 +138,7 @@ func _next() -> void:
 	for c in root.get_children():
 		c.queue_free()
 	_index += 1
-	while not _only.is_empty() and _index < SHOTS.size() and not _only.has(SHOTS[_index]):
+	while _index < SHOTS.size() and ((not _only.is_empty() and not _only.has(SHOTS[_index])) or (SHOTS[_index] == "minigioco" and _mini_file.is_empty())):
 		_index += 1
 	_frame = 0
 	_world = null
@@ -138,6 +148,7 @@ func _next() -> void:
 	_hall_view = null
 	_hall_hud = null
 	_fixed_cam = null
+	_mini = {}
 	if _index < SHOTS.size():
 		call("_" + SHOTS[_index])
 
@@ -354,7 +365,7 @@ func _party_board(phase: String, extra: Dictionary) -> void:
 	var view: Control = load("res://scripts/party_view.gd").new()
 	root.add_child(view)
 	view.setup(_game, "p0")
-	view.size = Vector2(_game.world.width, _game.world.height)
+	view.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT) # come in main.gd: tutto lo schermo
 	view.on_snapshot(snap)
 
 
@@ -727,3 +738,49 @@ func _add_hall() -> void:
 	_hall_hud.setup(_game)
 	_hall_hud.my_id = "p0"
 	_hall_hud.room_code = "ci"
+
+
+# Un minigioco vero, giocato dai bot in scripts/party-shot.ts: l'arena, gli oggetti di scena, la scheda coi punti e
+# la telecamera che inquadra i lottatori come in main.gd
+func _minigioco() -> void:
+	_mini = JSON.parse_string(FileAccess.get_file_as_string(_mini_file))
+	var world: Node2D = load("res://scripts/world_view.gd").new()
+	root.add_child(world)
+	world.setup(_game)
+	world.set_stage_spec(_mini.stage)
+	world.my_id = "p0"
+	_mini_props = load("res://scripts/party_props.gd").new()
+	world.add_child(_mini_props)
+	_mini_cam = Camera2D.new()
+	_mini_cam.anchor_mode = Camera2D.ANCHOR_MODE_FIXED_TOP_LEFT
+	root.add_child(_mini_cam)
+	_mini_cam.make_current()
+	var layer := CanvasLayer.new()
+	root.add_child(layer)
+	_mini_hud = load("res://scripts/party_hud.gd").new()
+	layer.add_child(_mini_hud)
+	_mini_hud.size = Vector2(_game.world.width, _game.world.height)
+	_mini_hud.my_id = "p0"
+	_mini_hud.start(_mini.minigame)
+	_world = null
+	_mini_world = world
+
+
+var _mini_world: Node2D
+
+
+func _mini_frame() -> void:
+	var snap: Dictionary = _mini.snapshot.duplicate(true)
+	snap.t = _frame * 16
+	_mini_world.on_snapshot(snap)
+	_mini_hud.on_snapshot(snap)
+	_mini_props.set_props(snap.party.get("props", []) if snap.get("party") is Dictionary else [])
+	var aim: Dictionary = load("res://scripts/main.gd").framing(_mini_world.stage, _game.camera, _game, _mini_world.alive_positions())
+	_mini_cam.zoom = Vector2.ONE * float(aim.zoom)
+	var size := Vector2(_game.world.width, _game.world.height) / float(aim.zoom)
+	var c: Vector2 = aim.center
+	var lim: Rect2 = aim.limits
+	c.x = clampf(c.x, lim.position.x + size.x / 2, lim.end.x - size.x / 2)
+	c.y = clampf(c.y, lim.position.y + size.y / 2, lim.end.y - size.y / 2)
+	_mini_cam.position = c - size / 2
+	_mini_world.view_rect = Rect2(_mini_cam.position, size)
