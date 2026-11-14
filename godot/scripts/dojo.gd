@@ -8,8 +8,11 @@ extends Control
 signal command(data: Dictionary) # da mandare al server così com'è (messaggio "training")
 signal demo_changed(playing: bool) # durante la dimostrazione la predizione si spegne: i tasti non sono i propri
 signal lesson_done # una prova riuscita: main ci suona sopra
+signal fighter_chosen(character_id: String) # cambia lottatore: gym_flow rientra in un Dojo nuovo con lui
 
 const MoveList := preload("res://scripts/move_list.gd")
+const Lobby := preload("res://scripts/lobby.gd") # face_texture: i ritratti nella scelta del lottatore
+const PICK_CELL := Vector2(150, 108) # pixel: una scheda nella scelta del lottatore
 # I tasti della dimostrazione, un bit ciascuno: lo stesso ordine di DEMO_KEYS in src/shared/dojo.ts
 const DEMO_KEYS := ["left", "right", "up", "down", "jump", "light", "heavy", "special", "shield", "run"]
 const PANEL_WIDTH := 400.0 # pixel
@@ -142,6 +145,7 @@ func _build_list(char_name: String) -> void:
 		_buttons.append(b)
 	# Al rallentatore la dimostrazione si segue meglio, e anche provare è più facile
 	box.add_child(UI.toggle("Al rallentatore", false, func(on: bool): command.emit({"speed": SLOW if on else 1.0})))
+	box.add_child(UI.button("Cambia lottatore", open_fighters))
 	var close := UI.button("Chiudi l'elenco (P)", close_list)
 	box.add_child(close)
 
@@ -318,7 +322,8 @@ func _paint_live(now: int) -> void:
 			try_it()
 	elif settings != null and not is_open():
 		for action in DEMO_KEYS:
-			if settings.is_pressed(action) or (action == "jump" and settings.jump_pressed()):
+			# Solo il tasto premuto: sulla tastiera su fa anche saltare (Settings.jump_pressed), ma qui W resta W
+			if settings.is_pressed(action):
 				on.append(action)
 	for k: Label in _live.get_children():
 		_light(k, String(k.name) in on)
@@ -399,3 +404,46 @@ func _input(event: InputEvent) -> void:
 	elif not is_open() and code == KEY_G and current >= 0 and lessons[current].demo:
 		get_viewport().set_input_as_handled()
 		watch()
+
+
+# La scelta del lottatore sopra il Dojo: un ritratto per personaggio, scelto uno si rientra con lui
+func open_fighters() -> void:
+	var parts := UI.overlay(PICK_CELL.x * 5 + UI.GAP_M * 4)
+	var veil: Control = parts[0]
+	add_child(veil)
+	var box: VBoxContainer = parts[1]
+	box.add_child(UI.header("Con chi ti alleni?"))
+	var grid := GridContainer.new()
+	grid.columns = 5
+	grid.add_theme_constant_override("h_separation", UI.GAP_M)
+	grid.add_theme_constant_override("v_separation", UI.GAP_M)
+	box.add_child(grid)
+	var first: Control = null
+	for id: String in fighter_ids(game):
+		var c: Dictionary = game.characters[id]
+		var b := Button.new()
+		b.custom_minimum_size = PICK_CELL
+		b.tooltip_text = str(c.get("name", id))
+		b.icon = Lobby.face_texture(c)
+		b.expand_icon = true
+		b.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		b.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
+		b.text = str(c.get("name", id))
+		b.clip_text = true
+		b.add_theme_font_size_override("font_size", UI.SIZE_NOTE)
+		b.pressed.connect(func():
+			veil.queue_free()
+			fighter_chosen.emit.call_deferred(id)) # fuori dal pulsante: uscire dalla stanza libera anche lui
+		grid.add_child(b)
+		if first == null:
+			first = b
+	var back := UI.button("Indietro", func():
+		veil.queue_free()
+		open_list())
+	box.add_child(back)
+	UI.keep_focus(veil, first if first != null else back)
+
+
+# I lottatori che si possono scegliere, nell'ordine della lobby (senza il Bonobo di base, che non ha disegno)
+static func fighter_ids(game_data: Dictionary) -> Array:
+	return Array(game_data.characters.keys()).filter(func(id): return id != "default")

@@ -35,3 +35,9 @@ func test_tasti_della_dimostrazione() -> void:
 	# light è il bit 5, down il 3 (DEMO_KEYS in src/shared/dojo.ts)
 	runner.check(Dojo.mask_actions((1 << 5) | (1 << 3)) == ["down", "light"], "%s" % [Dojo.mask_actions((1 << 5) | (1 << 3))])
 	runner.check(Dojo.mask_actions(0).is_empty(), "nessun tasto")
+
+
+func test_si_sceglie_tra_i_lottatori_disegnati() -> void:
+	var ids := Dojo.fighter_ids(_game())
+	runner.check("orsoblu" in ids and "marcomunista" in ids, "%s" % [ids])
+	runner.check(not ("default" in ids), "il Bonobo senza disegno resta fuori")

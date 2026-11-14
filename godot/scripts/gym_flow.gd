@@ -131,6 +131,16 @@ func set_dojo(on: bool) -> void:
 	dojo.command.connect(command)
 	dojo.demo_changed.connect(func(_on: bool): _m._apply_prediction())
 	dojo.lesson_done.connect(func(): _m.audio.on_event({"type": "flag"}))
+	dojo.fighter_chosen.connect(change_dojo_fighter)
+
+
+# Nel Dojo si cambia lottatore rientrando in un Dojo nuovo con lui: il server non cambia lottatore a partita in corso
+func change_dojo_fighter(character_id: String) -> void:
+	_m.settings.profile["char"] = character_id
+	_m.settings.profile["skin"] = ""
+	_m.settings.save()
+	_m._leave()
+	join_dojo.call_deferred()
 
 
 # Durante la dimostrazione i tasti del proprio lottatore li fa il server: niente predizione
