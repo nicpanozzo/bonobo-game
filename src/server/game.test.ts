@@ -356,6 +356,22 @@ test("allenamento: percentuale al bot da soli, comandi ignorati con due umani o 
 });
 
 
+// Dojo: la dimostrazione di una combo arriva con i suoi tasti e il manichino diventa un Bonobo
+test("dojo: la dimostrazione di una combo arriva con i tasti, una mossa che non c'è no", LIMIT, async () => {
+  const a = await client();
+  const me = (await joinWith(a, { room: "dojo-prova", name: "A", characterId: "orsoblu", stageId: "dojo", rules: { mode: "training" }, bot: "manichino", botCharacterId: "default" })).id;
+  const seen: { keys?: number[]; moves: string[] }[] = [];
+  a.on("snapshot", (s) => seen.push(...s.events.flatMap((e) => (e.type === "dojo" ? [e] : []))));
+  a.emit("training", { dojo: { move: "volare", play: true } });
+  a.emit("training", { dojo: { combo: 0, play: true } });
+  await until(() => seen.length > 0);
+  assert.equal(seen.length, 1, "la mossa che non esiste non riparte");
+  assert.deepEqual(seen[0].moves, ["heavy", "specialNeutral", "light"]);
+  assert.ok((seen[0].keys?.length ?? 0) > 10);
+  assert.ok(rooms.get("dojo-prova")!.match.players.some((f) => f.id !== me && f.characterId === "default"));
+  a.disconnect();
+});
+
 // Sala d'attesa 3D: chi crea la stanza con hall: true la apre nella sala; i client di prima giocano come sempre
 
 const TICK = 1000 / TICK_RATE;

@@ -292,6 +292,7 @@ export type GameEvent =
   | { type: "projectileEnd"; projectileId: number; reason: "hit" | "blocked" | "expired" | "wall"; x: number; y: number } // il proiettile sparisce
   | { type: "dash"; id: string; x: number; y: number } // parte uno scatto con il doppio tocco (#199)
   | { type: "matchStart" }
+  | { type: "dojo"; id: string; moves: string[]; percent: number; keys?: number[] } // Dojo: id riparte per una prova; keys = i tasti della dimostrazione (bit di DEMO_KEYS in dojo.ts), uno per tick
   | { type: "away"; id: string } // id si è disconnesso: il suo posto resta tenuto per un po' (#107)
   | { type: "back"; id: string } // id è rientrato nel suo posto
   | { type: "matchEnd"; winnerId: string | null; winnerTeam: number; durationMs: number };
@@ -506,7 +507,7 @@ export interface ClientToServer {
   team: (data: { team: number }) => void;
   // Allenamento (#113): percentuale degli avversari, velocità dell'orologio (TRAINING.speeds), si ricomincia da capo.
   // Il server li accetta solo in una stanza "training" con un solo umano
-  training: (data: { percent?: number; speed?: number; reset?: boolean }) => void;
+  training: (data: { percent?: number; speed?: number; reset?: boolean; dojo?: { combo?: number; move?: string; play?: boolean } }) => void; // dojo: si riparte per provare una combo (indice in combos) o una mossa, play = guarda la dimostrazione
   // Dal computer della sala (#567): regole della prossima partita (senza modalità, che si vota) e livello dei bot.
   // Lo accetta solo una stanza nella sala d'attesa; il server ripulisce tutto con sanitizeRules
   hallRules: (data: { rules?: Partial<MatchRules>; botLevel?: HallBotLevel }) => void;
