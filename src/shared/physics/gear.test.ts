@@ -163,6 +163,17 @@ describe("oggetti per categoria", () => {
     assert.ok(s.a.y < groundY - FIGHTER.height * 3, `sale ben oltre un salto: ${groundY - s.a.y}`);
   });
 
+  it("con la moka a razzo non si esce da soli dal bordo in alto (#590)", () => {
+    const s = setup();
+    pickUp(s, "moka");
+    s.a.powerupMs = 1e6; // tutto il tempo per arrivare in cima
+    press(s.a, { jump: true });
+    run(s.world, s.fighters, s.ctx, TICK_RATE * 6);
+    assert.equal(s.a.stocks, 3, "nessuna vita persa");
+    assert.ok(s.a.y > s.ctx.stage.blastZone.top, `resta dentro: ${s.a.y}`);
+    assert.ok(s.a.y < s.ctx.stage.blastZone.top + GEAR.moka.ceilingMarginPx + FIGHTER.height, `ma arriva in alto: ${s.a.y}`);
+  });
+
   it("il brownie spaziale non fa niente per un po', poi sale l'effetto scelto quando lo si è mangiato", () => {
     const s = setup();
     pickUp(s, "brownie");

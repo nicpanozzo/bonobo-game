@@ -1921,7 +1921,8 @@
       "ms": 7000,
       "speedMult": 1.2,
       "thrust": 2600,
-      "maxRise": 520
+      "maxRise": 520,
+      "ceilingMarginPx": 200
     },
     "brownie": {
       "delayMs": 2500,
@@ -12540,7 +12541,7 @@
         "windupMs": 500,
         "durationMs": 4800,
         "endLagMs": 400,
-        "rollPeriodMs": 1600,
+        "rollPeriodMs": 2400,
         "rollSpeed": 340,
         "rollAirAccel": 900,
         "damage": 6,

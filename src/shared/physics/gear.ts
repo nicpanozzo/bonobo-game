@@ -50,8 +50,13 @@ export function gearKnockbackMult(f: Fighter): number {
 }
 
 // La moka a razzo: tenendo il salto si sale, dopo la gravità (index.ts). Non si è inermi dopo il recupero
-export function fly(f: Fighter, dt: number): void {
+export function fly(f: Fighter, dt: number, ctx: PhysicsContext): void {
   if (f.powerup !== "razzo" || f.powerupMs <= 0 || !f.input.jump || f.hitstun || f.onGround) return;
+  // Sotto il bordo in alto il razzo si spegne (#590): da soli non si esce dall'arena, si va fuori solo se ti lanciano
+  if (f.y < ctx.stage.blastZone.top + GEAR.moka.ceilingMarginPx) {
+    f.vy = Math.max(f.vy, 0);
+    return;
+  }
   f.vy = Math.max(-GEAR.moka.maxRise, f.vy - GEAR.moka.thrust * dt);
   f.helpless = false;
 }

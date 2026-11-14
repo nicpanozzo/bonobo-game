@@ -21,6 +21,13 @@ func test_insulti_a_turno() -> void:
 	runner.check(StormView.insult(SP, 500.0 + 1300.0) == "B!", "poi la seconda")
 
 
+func test_onde_a_ogni_fine_rollio() -> void:
+	var w := StormView.wave_times(SP)
+	runner.check(w.size() == 6, "sei onde in 4,8 s con un giro ogni 1,6 s (%d)" % w.size())
+	runner.check(is_equal_approx(float(w[0][0]), 900.0) and int(w[0][1]) == 1, "la prima a destra, a un quarto di giro")
+	runner.check(int(w[1][1]) == -1, "la seconda a sinistra")
+
+
 func test_inclina_e_finisce() -> void:
 	var v := StormView.new()
 	v.fixed_now = 1000.0

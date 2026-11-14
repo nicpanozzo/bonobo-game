@@ -181,7 +181,7 @@ export function stepFighter(f: Fighter, dtMs: number, ctx: PhysicsContext): void
   }
   if (!swinging) applyGravity(f, dt, genreGravity(genreAt(ctx.stage, ctx.timeMs ?? 0, ctx.padsMs))); // col reggae del Palco si vola
   floatHat(f, dtMs, ctx); // Marcomunista fluttua col cappello (fattanza.ts)
-  fly(f, dt); // la moka a razzo: tenendo il salto si sale (gear.ts)
+  fly(f, dt, ctx); // la moka a razzo: tenendo il salto si sale (gear.ts)
   glide(f); // l'ombrellone in mano: tenendo il salto si plana (held.ts)
 
   const prevY = f.y;
