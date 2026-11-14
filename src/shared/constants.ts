@@ -1111,6 +1111,7 @@ export const GEAR = {
     speedMult: 1.2, // velocità orizzontale
     thrust: 2600, // pixel/s² verso l'alto tenendo il salto
     maxRise: 520, // pixel/s massimi di salita
+    ceilingMarginPx: 200, // pixel sotto il bordo alto dell'arena dove il razzo si spegne: da soli non si esce dall'alto (#590)
   },
   // Consumo: il brownie spaziale, come le pillole di Isaac, sale dopo un po' con un effetto a sorpresa
   brownie: {
